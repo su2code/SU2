@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,7 +59,7 @@ private:
    * a nonlinear iteration for stability.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(const CConfig *config) override;
+  void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) override;
 
 public:
   /*!

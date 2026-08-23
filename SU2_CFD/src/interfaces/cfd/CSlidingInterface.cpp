@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,6 +40,7 @@ CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val
   valAggregated      = false;
 
   nVar = val_nVar;
+  InterfaceType = ENUM_TRANSFER::SLIDING_INTERFACE;
 
 }
 

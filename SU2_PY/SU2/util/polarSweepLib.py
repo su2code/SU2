@@ -1,7 +1,7 @@
 # \file polarSweepLib.py
 #  \brief Functions library for compute_polar.py script.
 #  \author E Arad
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -147,7 +147,6 @@ def readParameter(dataFile, nLines, keyWord, iDoNot, verbose):
 def setContribution(dataFile, nLines, keyWord, iDoNot, verbose):
 
     from numpy import size
-    import string
 
     #
     # default values
@@ -176,7 +175,7 @@ def setContribution(dataFile, nLines, keyWord, iDoNot, verbose):
 
         # now find out where the standard text ends
         iBF = firstPart.lower().index("family") + 6
-        nameText = string.join(firstPart[iBF:].split(), "")
+        nameText = "".join(firstPart[iBF:].split())
 
         # component name located. Now check about its contribution
         try:

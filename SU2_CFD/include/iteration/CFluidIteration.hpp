@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -115,12 +115,7 @@ class CFluidIteration : public CIteration {
    * \param[in] iZone - The current zone
    * \param[in] ramp_flag - Flag indicating type of ramp (grid or boundary)
    */
-  void UpdateRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag);
-
-  /*!
-   * \brief Computes turboperformance.
-   */
-  void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter);
+  void UpdateRamps(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag);
 
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.

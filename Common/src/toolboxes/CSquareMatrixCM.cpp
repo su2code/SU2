@@ -2,7 +2,7 @@
  * \file CSquareMatrixCM.cpp
  * \brief Implementation of dense matrix helper class in Column Major order (see hpp).
  * \author Edwin van der Weide, Pedro Gomes.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,11 +38,20 @@ using namespace std;
 #endif
 #elif defined(HAVE_LAPACK)
 /*--- Lapack / Blas routines used in CSquareMatrixCM. ---*/
-extern "C" void dgetrf_(const int*, const int*, passivedouble*, const int*, int*, int*);
-extern "C" void dgetri_(const int*, passivedouble*, const int*, int*, passivedouble*, const int*, int*);
-extern "C" void dgemm_(char*, char*, const int*, const int*, const int*, const passivedouble*, const passivedouble*,
-                       const int*, const passivedouble*, const int*, const passivedouble*, passivedouble*, const int*);
-#define DGEMM dgemm_
+#ifdef USE_SINGLE_PRECISION
+#define GEMM_IMPL sgemm_
+#define GETRF_IMPL sgetrf_
+#define GETRI_IMPL sgetri_
+#else
+#define GEMM_IMPL dgemm_
+#define GETRF_IMPL dgetrf_
+#define GETRI_IMPL dgetri_
+#endif
+extern "C" void GETRF_IMPL(const int*, const int*, passivedouble*, const int*, int*, int*);
+extern "C" void GETRI_IMPL(const int*, passivedouble*, const int*, int*, passivedouble*, const int*, int*);
+extern "C" void GEMM_IMPL(char*, char*, const int*, const int*, const int*, const passivedouble*, const passivedouble*,
+                          const int*, const passivedouble*, const int*, const passivedouble*, passivedouble*,
+                          const int*);
 #endif
 
 void CSquareMatrixCM::Transpose() {
@@ -59,10 +68,10 @@ void CSquareMatrixCM::Invert() {
   vector<int> ipiv(sz);
   vector<passivedouble> work(sz);
 
-  dgetrf_(&sz, &sz, mat.data(), &sz, ipiv.data(), &info);
+  GETRF_IMPL(&sz, &sz, mat.data(), &sz, ipiv.data(), &info);
   if (info != 0) SU2_MPI::Error(string("Matrix is singular"), CURRENT_FUNCTION);
 
-  dgetri_(&sz, mat.data(), &sz, ipiv.data(), work.data(), &sz, &info);
+  GETRI_IMPL(&sz, mat.data(), &sz, ipiv.data(), work.data(), &sz, &info);
   if (info != 0) SU2_MPI::Error(string("Matrix inversion failed"), CURRENT_FUNCTION);
 
 #else
@@ -88,7 +97,7 @@ void CSquareMatrixCM::MatMatMult(const char side, const ColMajorMatrix<passivedo
     passivedouble alpha = 1.0, beta = 0.0;
     char trans = 'N';
 
-    DGEMM(&trans, &trans, &M, &N, &M, &alpha, mat.data(), &M, mat_in.data(), &M, &beta, mat_out.data(), &M);
+    GEMM_IMPL(&trans, &trans, &M, &N, &M, &alpha, mat.data(), &M, mat_in.data(), &M, &beta, mat_out.data(), &M);
 #else
     /*--- Naive product. ---*/
     for (int i = 0; i < M; ++i) {
@@ -114,7 +123,7 @@ void CSquareMatrixCM::MatMatMult(const char side, const ColMajorMatrix<passivedo
     passivedouble alpha = 1.0, beta = 0.0;
     char trans = 'N';
 
-    DGEMM(&trans, &trans, &M, &N, &N, &alpha, mat_in.data(), &M, mat.data(), &N, &beta, mat_out.data(), &M);
+    GEMM_IMPL(&trans, &trans, &M, &N, &N, &alpha, mat_in.data(), &M, mat.data(), &N, &beta, mat_out.data(), &M);
 #else
     /*--- Naive product. ---*/
     for (int i = 0; i < M; ++i) {

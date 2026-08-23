@@ -4,7 +4,7 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring and F. Poli
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -69,7 +69,7 @@ def init_submodules(
     github_repo_ninja = "https://github.com/ninja-build/ninja"
     sha_version_mpp = "5ff579f43781cae07411e5ab46291c9971536be6"
     github_repo_mpp = "https://github.com/mutationpp/Mutationpp"
-    sha_version_coolprop = "bafdea1f39ee873a6bb9833e3a21fe41f90b85e8"
+    sha_version_coolprop = "98b3523d5daa98454618d381d2ae53f7471d216b"
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
     sha_version_cantera = "f22643ecb91f7e8d1852197658efc5260d54d4a3"
     github_repo_cantera = "https://github.com/cantera/cantera"
@@ -77,7 +77,7 @@ def init_submodules(
     github_repo_mel = "https://github.com/pcarruscag/MEL"
     sha_version_fado = "ce7ee018e4e699af5028d69baa1939fea290e18a"
     github_repo_fado = "https://github.com/pcarruscag/FADO"
-    sha_version_mlpcpp = "ff57e0cf9e60127196d3f1be71e711d47ff646ef"
+    sha_version_mlpcpp = "e23facf388902f262fbe7ba3bcc84d36c85350b9"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
     sha_version_eigen = "d71c30c47858effcbd39967097a2d99ee48db464"
     github_repo_eigen = "https://gitlab.com/libeigen/eigen.git"

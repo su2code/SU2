@@ -3,7 +3,7 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,17 +28,16 @@
 
 #pragma once
 
+#include "../code_config.hpp"
+
 #ifdef HAVE_PASTIX
 
 #ifdef CODI_FORWARD_TYPE
 #error Cannot use PaStiX with forward mode AD
 #endif
 
-namespace PaStiX {
-extern "C" {
 #include <pastix.h>
-}
-}  // namespace PaStiX
+#include <spm.h>
 #include <vector>
 
 using namespace std;
@@ -55,58 +54,63 @@ class CGeometry;
 template <class ScalarType>
 class CPastixWrapper {
  private:
-  PaStiX::pastix_data_t* state;         /*!< \brief Internal state of the solver. */
-  PaStiX::pastix_int_t nCols;           /*!< \brief Local number of columns. */
-  vector<PaStiX::pastix_int_t> colptr;  /*!< \brief Equiv. to our "row_ptr". */
-  vector<PaStiX::pastix_int_t> rowidx;  /*!< \brief Equiv. to our "col_ind". */
-  vector<passivedouble> values;         /*!< \brief Equiv. to our "matrix". */
-  vector<PaStiX::pastix_int_t> loc2glb; /*!< \brief Global index of the columns held by this rank. */
-  vector<PaStiX::pastix_int_t> perm;    /*!< \brief Ordering computed by PaStiX. */
-  vector<passivedouble> workvec;        /*!< \brief RHS vector which then becomes the solution. */
+  pastix_data_t* state{};        /*!< \brief Internal state of the solver. */
+  spmatrix_t spm;                /*!< \brief Matrix format used by the solver. */
+  pastix_int_t nCols;            /*!< \brief Local number of columns. */
+  vector<pastix_int_t> colptr;   /*!< \brief Equiv. to our "row_ptr". */
+  vector<pastix_int_t> rowidx;   /*!< \brief Equiv. to our "col_ind". */
+  vector<su2mixedfloat> values;  /*!< \brief Equiv. to our "matrix". */
+  vector<pastix_int_t> loc2glb;  /*!< \brief Global index of the columns held by this rank. */
+  vector<pastix_int_t> perm;     /*!< \brief Ordering computed by PaStiX. */
+  vector<su2mixedfloat> workvec; /*!< \brief RHS vector which then becomes the solution. */
 
-  PaStiX::pastix_int_t iparm[PaStiX::IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
-  passivedouble dparm[PaStiX::DPARM_SIZE];        /*!< \brief Floating point parameters for PaStiX. */
+  vector<unsigned long> csr_row_ptr; /*!< \brief Owned CSR row pointers (built from LDU). */
+  vector<unsigned long> csr_col_ind; /*!< \brief Owned CSR column indices (built from LDU). */
+
+  pastix_int_t iparm[IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
+  double dparm[DPARM_SIZE];       /*!< \brief Floating point parameters for PaStiX. */
 
   struct {
     unsigned long nVar = 0;
     unsigned long nPoint = 0;
     unsigned long nPointDomain = 0;
-    const unsigned long* rowptr = nullptr;
-    const unsigned long* colidx = nullptr;
-    const ScalarType* values = nullptr;
+    unsigned long blkSz = 0; /*!< \brief Block size (nVar * nVar) for value assembly. */
+
+    const su2uint* row_ptr_l = nullptr; /*!< \brief LDU lower row pointers (geometry-owned). */
+    const su2uint* row_ptr_u = nullptr; /*!< \brief LDU upper row pointers (geometry-owned). */
+    const ScalarType* d = nullptr;      /*!< \brief Diagonal blocks (matrix-owned). */
+    const ScalarType* l = nullptr;      /*!< \brief Lower blocks (matrix-owned). */
+    const ScalarType* u = nullptr;      /*!< \brief Upper blocks (matrix-owned). */
 
     unsigned long size_rhs() const { return nPointDomain * nVar; }
-  } matrix; /*!< \brief Pointers and sizes of the input matrix. */
+  } matrix; /*!< \brief Dimensions and LDU pointers captured from the owning CSysMatrix. */
 
-  bool issetup;        /*!< \brief Signals that the matrix data has been provided. */
-  bool isinitialized;  /*!< \brief Signals that the sparsity pattern has been set. */
-  bool isfactorized;   /*!< \brief Signals that a factorization has been computed. */
-  unsigned long iter;  /*!< \brief Number of times a factorization has been requested. */
-  unsigned short verb; /*!< \brief Verbosity level. */
-  const int mpi_size, mpi_rank;
+  bool issetup{};        /*!< \brief Signals that the structure has been provided. */
+  bool isinitialized{};  /*!< \brief Signals that the sparsity pattern has been set. */
+  bool isfactorized{};   /*!< \brief Signals that a factorization has been computed. */
+  bool transpose{};      /*!< \brief Solve A^T x = b instead of A x = b. */
+  unsigned long iter{};  /*!< \brief Number of times a factorization has been requested. */
+  unsigned short verb{}; /*!< \brief Verbosity level. */
+  const int mpi_size = SU2_MPI::GetSize();
+  const int mpi_rank = SU2_MPI::GetRank();
 
-  vector<unsigned long> sort_rows;           /*!< \brief List of rows with halo points. */
-  vector<vector<unsigned long> > sort_order; /*!< \brief How each of those rows needs to be sorted. */
-
-  /*!
-   * \brief Run the external solver for the task it is currently setup to execute.
-   */
-  void Run() {
-    dpastix(&state, SU2_MPI::GetComm(), nCols, colptr.data(), rowidx.data(), values.data(), loc2glb.data(), perm.data(),
-            NULL, workvec.data(), 1, iparm, dparm);
-  }
+  vector<unsigned long> sort_rows;          /*!< \brief List of rows with halo points. */
+  vector<vector<unsigned long>> sort_order; /*!< \brief How each of those rows needs to be sorted. */
 
   /*!
    * \brief Run the "clean" task, releases all memory, leaves object in unusable state.
    */
   void Clean() {
-    using namespace PaStiX;
-    if (isfactorized) {
-      iparm[IPARM_VERBOSE] = (verb > 0) ? API_VERBOSE_NO : API_VERBOSE_NOT;
-      iparm[IPARM_START_TASK] = API_TASK_CLEAN;
-      iparm[IPARM_END_TASK] = API_TASK_CLEAN;
-      Run();
+    if (isinitialized) {
+      iparm[IPARM_VERBOSE] = (verb > 0) ? PastixVerboseNo : PastixVerboseNot;
+      pastixFinalize(&state);
+      spm.colptr = nullptr;
+      spm.rowptr = nullptr;
+      spm.values = nullptr;
+      if (mpi_size > 1) spm.loc2glob = nullptr;
+      spmExit(&spm);
       isfactorized = false;
+      isinitialized = false;
     }
   }
 
@@ -115,19 +119,13 @@ class CPastixWrapper {
    */
   void Initialize(CGeometry* geometry, const CConfig* config);
 
- public:
   /*!
-   * \brief Class constructor.
+   * \brief Assemble CSR values from the stored LDU pointers directly into the values buffer.
    */
-  CPastixWrapper()
-      : state(nullptr),
-        issetup(false),
-        isinitialized(false),
-        isfactorized(false),
-        iter(0),
-        verb(0),
-        mpi_size(SU2_MPI::GetSize()),
-        mpi_rank(SU2_MPI::GetRank()) {}
+  void AssembleValues();
+
+ public:
+  CPastixWrapper() = default;
 
   /*--- Move or copy is not allowed. ---*/
   CPastixWrapper(CPastixWrapper&&) = delete;
@@ -141,23 +139,43 @@ class CPastixWrapper {
   ~CPastixWrapper() { Clean(); }
 
   /*!
-   * \brief Set matrix data, only once.
-   * \param[in] nVar - DOF per point.
-   * \param[in] nPoint - Total number of points including halos.
-   * \param[in] nPointDomain - Number of internal points.
-   * \param[in] rowptr - Array, where column index data starts for each matrix row.
-   * \param[in] colidx - Non zeros column indices.
-   * \param[in] values - Matrix coefficients.
+   * \brief Returns true once SetLDU has been called.
    */
-  void SetMatrix(unsigned long nVar, unsigned long nPoint, unsigned long nPointDomain, const unsigned long* rowptr,
-                 const unsigned long* colidx, const ScalarType* values) {
+  bool IsSetup() const { return issetup; }
+
+  /*!
+   * \brief Set LDU structure and value pointers; builds and owns assembled CSR (called once).
+   * \param[in] nVar - DOF per point (square blocks: nVar x nVar).
+   * \param[in] nPoint - Total number of points including halos.
+   * \param[in] nPointDomain - Number of internal points (domain rows).
+   * \param[in] row_ptr_l/u - LDU lower/upper row pointers (geometry-owned, must outlive wrapper).
+   * \param[in] col_ind_l/u - LDU lower/upper column indices (geometry-owned).
+   * \param[in] d/l/u - LDU value blocks (matrix-owned, must outlive wrapper).
+   */
+  void SetLDU(unsigned long nVar, unsigned long nPoint, unsigned long nPointDomain, const su2uint* row_ptr_l,
+              const su2uint* col_ind_l, const su2uint* row_ptr_u, const su2uint* col_ind_u, const ScalarType* d,
+              const ScalarType* l, const ScalarType* u) {
     if (issetup) return;
     matrix.nVar = nVar;
     matrix.nPoint = nPoint;
     matrix.nPointDomain = nPointDomain;
-    matrix.rowptr = rowptr;
-    matrix.colidx = colidx;
-    matrix.values = values;
+    matrix.row_ptr_l = row_ptr_l;
+    matrix.row_ptr_u = row_ptr_u;
+    matrix.d = d;
+    matrix.l = l;
+    matrix.u = u;
+    matrix.blkSz = nVar * nVar;
+
+    const unsigned long nnz_domain = row_ptr_l[nPointDomain] + nPointDomain + row_ptr_u[nPointDomain];
+    csr_row_ptr.resize(nPointDomain + 1);
+    csr_col_ind.reserve(nnz_domain);
+    for (auto i = 0ul; i < nPointDomain; ++i) {
+      csr_row_ptr[i] = static_cast<unsigned long>(csr_col_ind.size());
+      for (auto k = row_ptr_l[i]; k < row_ptr_l[i + 1]; ++k) csr_col_ind.push_back(col_ind_l[k]);
+      csr_col_ind.push_back(i);
+      for (auto k = row_ptr_u[i]; k < row_ptr_u[i + 1]; ++k) csr_col_ind.push_back(col_ind_u[k]);
+    }
+    csr_row_ptr[nPointDomain] = static_cast<unsigned long>(csr_col_ind.size());
     issetup = true;
   }
 
@@ -173,11 +191,7 @@ class CPastixWrapper {
    * \brief Request solves with the transposed matrix.
    * \param[in] transposed - Yes or no.
    */
-  void SetTransposedSolve(bool transposed = true) {
-    using namespace PaStiX;
-    if (iparm[IPARM_SYM] == API_SYM_NO)
-      iparm[IPARM_TRANSPOSE_SOLVE] = pastix_int_t(!transposed);  // negated due to CSR to CSC copy
-  }
+  void SetTransposedSolve(bool transposed = true) { transpose = transposed; }
 
   /*!
    * \brief Runs the "solve" task for any rhs/sol with operator []
@@ -186,20 +200,21 @@ class CPastixWrapper {
    */
   template <class T>
   void Solve(const T& rhs, T& sol) {
-    using namespace PaStiX;
-
     if (!isfactorized) SU2_MPI::Error("The factorization has not been computed yet.", CURRENT_FUNCTION);
 
-    unsigned long i;
+    /*--- Inverted logic due to CSR to CSC direct copy (PaStiX's A is our A^T). ---*/
+    if (iparm[IPARM_FACTORIZATION] == PastixFactLDLT || transpose) {
+      iparm[IPARM_TRANSPOSE_SOLVE] = PastixNoTrans;
+    } else {
+      iparm[IPARM_TRANSPOSE_SOLVE] = PastixTrans;
+    }
+    iparm[IPARM_VERBOSE] = PastixVerboseNot;
 
-    for (i = 0; i < matrix.size_rhs(); ++i) workvec[i] = rhs[i];
-
-    iparm[IPARM_VERBOSE] = API_VERBOSE_NOT;
-    iparm[IPARM_START_TASK] = API_TASK_SOLVE;
-    iparm[IPARM_END_TASK] = API_TASK_SOLVE;
-    Run();
-
-    for (i = 0; i < matrix.size_rhs(); ++i) sol[i] = workvec[i];
+    for (auto i = 0ul; i < matrix.size_rhs(); ++i) workvec[i] = rhs[i];
+    if (pastix_task_solve(state, matrix.size_rhs(), 1, workvec.data(), matrix.size_rhs()) != PASTIX_SUCCESS) {
+      SU2_MPI::Error("Error solving linear system.", CURRENT_FUNCTION);
+    }
+    for (auto i = 0ul; i < matrix.size_rhs(); ++i) sol[i] = workvec[i];
   }
 };
 #endif

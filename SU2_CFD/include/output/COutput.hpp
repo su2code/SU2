@@ -2,7 +2,7 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -56,6 +56,7 @@ class CFileWriter;
 class CParallelDataSorter;
 class CConfig;
 class CHeatOutput;
+class CAdjHeatOutput;
 
 using namespace std;
 
@@ -67,6 +68,7 @@ using namespace std;
 class COutput {
 protected:
   friend class CHeatOutput;
+  friend class CAdjHeatOutput;
 
   /*----------------------------- General ----------------------------*/
 
@@ -91,10 +93,13 @@ protected:
   curOuterIter,                   /*!< \brief Current value of the outer iteration index */
   curInnerIter;                   /*!< \brief Current value of the inner iteration index */
 
+  su2double PrevStopTime;         /*!< \brief Previous stop time for iteration timing. */
+
   string historyFilename;   /*!< \brief The history filename*/
   ofstream histFile;        /*!< \brief Output file stream for the history */
 
   bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
+  bool maxTimeDelayActive;  /*! \brief: Flag for delaying stop at max_time with 2nd order time stepping. */
 
   /** \brief Enum to identify the screen output format. */
   enum class ScreenOutputFormat {
@@ -406,7 +411,7 @@ public:
    */
   void SetHistoryOutput(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                          std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf,
-                         std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone,
+                         su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, unsigned short val_iZone,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst);
 
   /*!
@@ -977,7 +982,7 @@ protected:
    * \param[in] OuterIter - Index of current outer iteration
    * \param[in] InnerIter - Index of current inner iteration
    */
-  inline virtual void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
+  inline virtual void SetTurboPerformance_Output(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
 
   /*!
    * \brief Sets the multizone turboperformacne screen output
@@ -985,7 +990,7 @@ protected:
    * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  inline virtual void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
+  inline virtual void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboPerf, CConfig *config) {}
 
   /*!
    * \brief Loads the turboperformacne history data
@@ -993,7 +998,7 @@ protected:
    * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
+  inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboPerf, CConfig *config) {}
 
   /*!
    * \brief Write the kinematic and thermodynamic variables at each spanwise division
@@ -1002,7 +1007,7 @@ protected:
    * \param[in] config - Descripiton of the particular problem
    * \param[in] val_iZone - Idientifier of current zone
   */
-  inline virtual void WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
+  inline virtual void WriteTurboSpanwisePerformance(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CGeometry *geometry, CConfig **config,
                                        unsigned short val_iZone) {};
 
   /*!

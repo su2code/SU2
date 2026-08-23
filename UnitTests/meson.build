@@ -17,13 +17,14 @@ su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
                        'SU2_CFD/numerics/CNumerics_tests.cpp',
                        'SU2_CFD/fluid/CFluidModel_tests.cpp',
                        'SU2_CFD/gradients.cpp',
-                       'SU2_CFD/windowing.cpp'])
+                       'SU2_CFD/windowing.cpp',
+                       'Common/toolboxes/random_toolbox_tests.cpp',
+                       'Common/linear_algebra/quantization_tests.cpp'])
 
 # Reverse-mode (algorithmic differentiation) tests:
-su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp'])
-if get_option('enable-mlpcpp')
-  su2_cfd_tests_ad = su2_cfd_tests_ad + files(['SU2_CFD/fluid/CFluidModel_tests_AD.cpp'])
-endif
+su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp',
+                          'SU2_CFD/fluid/CFluidModel_tests_AD.cpp',
+                          'Common/toolboxes/multilayer_perceptron/MLP_Jacobian_tests.cpp'])
 
 # Forward-mode (direct differentiation) tests:
 su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp'])
@@ -38,8 +39,7 @@ if get_option('enable-tests')
     unit_test_files = su2_cfd_tests + files(['test_driver.cpp'])
     dependencies_default = [su2_cfd_dep, common_dep, su2_deps, catch2_dep]
     if get_option('enable-cantera')
-      su2_cpp_args += '-DHAVE_CANTERA'
-      dependencies_default += dependency('cantera')
+      dependencies_default += cantera_dep
     endif
     test_driver = executable(
         'test_driver',

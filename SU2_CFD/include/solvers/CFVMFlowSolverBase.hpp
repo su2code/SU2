@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -109,9 +109,19 @@ class CFVMFlowSolverBase : public CSolver {
 
     void allocate(int size); /*!< \brief Allocates arrays. */
 
-    void setZero(int i); /*!< \brief Sets all values to zero at a particular index. */
-    void setZero() {     /*!< \brief Sets all values to zero for all indices. */
+    /*!< \brief Sets all values to zero at a particular index. */
+    void setZero(int i) {
+      CD[i] = CL[i] = CSF[i] = CEff[i] = 0.0;
+      CFx[i] = CFy[i] = CFz[i] = CMx[i] = 0.0;
+      CMy[i] = CMz[i] = CoPx[i] = CoPy[i] = 0.0;
+      CoPz[i] = CT[i] = CQ[i] = CMerit[i] = 0.0;
+    }
+
+    /*!< \brief Sets all values to zero for all indices. */
+    void setZero() {
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE / 2)
       for (int i = 0; i < _size; ++i) setZero(i);
+      END_SU2_OMP_FOR
     }
 
     AeroCoeffsArray(int size = 0) : _size(size) {
@@ -287,6 +297,7 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline void FinalizeResidualComputation(const CGeometry *geometry, bool pausePreacc,
                                           unsigned long localCounter, CConfig* config) {
+    SU2_ZONE_SCOPED
 
     /*--- Restore preaccumulation and adjoint evaluation state. ---*/
     AD::ResumePreaccumulation(pausePreacc);
@@ -302,12 +313,10 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Warning message about non-physical reconstructions. ---*/
     if ((MGLevel == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       /*--- Add counter results for all threads. ---*/
-      SU2_OMP_ATOMIC
-      ErrorCounter += localCounter;
+      atomicAdd(localCounter, ErrorCounter);
 
       /*--- Add counter results for all ranks. ---*/
-      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-      {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
         localCounter = ErrorCounter;
         SU2_MPI::Reduce(&localCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
         config->SetNonphysical_Reconstr(ErrorCounter);
@@ -328,25 +337,65 @@ class CFVMFlowSolverBase : public CSolver {
 
   /*!
    * \brief Compute the viscous contribution for a particular edge.
-   * \note The convective residual methods include a call to this for each edge,
-   *       this allows convective and viscous loops to be "fused".
+   * \note The convective residual methods include a call to this for each edge, this allows convective and
+   *       viscous loops to be "fused". Only the residual is applied here, the Jacobians are returned so that
+   *       the caller can update the system matrix in a single operation together with the convective part
+   *       (a requirement of quantized matrix storage).
    * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
+   * \return The viscous Jacobians (null for inviscid solvers).
    */
-  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                       CNumerics *numerics, CConfig *config) { }
-  void Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                             CNumerics *numerics, CConfig *config);
+  inline virtual CNumerics::ResidualType<> Viscous_Residual(unsigned long iEdge, CGeometry *geometry,
+                                                            CSolver **solver_container, CNumerics *numerics,
+                                                            CConfig *config) {
+    return CNumerics::ResidualType<>(nullptr, nullptr, nullptr);
+  }
+  CNumerics::ResidualType<> Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry,
+                                                  CSolver **solver_container, CNumerics *numerics, CConfig *config);
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
+
+  /*!
+   * \brief Update the Jacobian for one edge with the fused convective and viscous contributions.
+   * \note Both contributions must be applied at once because in quantized mode the
+   *       off-diagonal blocks of the matrix can only be overwritten, not accumulated.
+   * \param[in] iEdge - Edge index for the off-diagonal blocks.
+   * \param[in] iPoint, jPoint - Points connected by the edge (diagonal blocks).
+   * \param[in] conv - Convective residual/Jacobians (added to i, subtracted from j).
+   * \param[in] visc - Viscous residual/Jacobians (subtracted from i, added to j), may hold null Jacobians.
+   */
+  inline void UpdateJacobian(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
+                             const CNumerics::ResidualType<>& conv, const CNumerics::ResidualType<>& visc) {
+    /*--- Lazy element-wise difference, presented with the [i][j] access the matrix expects. ---*/
+    struct CJacobianDifference {
+      const su2double* const* conv;
+      const su2double* const* visc;
+      struct Row {
+        const su2double *c, *v;
+        su2double operator[](unsigned long j) const { return c[j] - v[j]; }
+      };
+      Row operator[](unsigned long i) const { return {conv[i], visc[i]}; }
+    };
+    if (visc.jacobian_i != nullptr) {
+      const CJacobianDifference jac_i{conv.jacobian_i, visc.jacobian_i};
+      const CJacobianDifference jac_j{conv.jacobian_j, visc.jacobian_j};
+      if (ReducerStrategy) Jacobian.SetBlocks(iEdge, jac_i, jac_j);
+      else Jacobian.UpdateBlocks<true>(iEdge, iPoint, jPoint, jac_i, jac_j);
+    } else {
+      if (ReducerStrategy) Jacobian.SetBlocks(iEdge, conv.jacobian_i, conv.jacobian_j);
+      else Jacobian.UpdateBlocks<true>(iEdge, iPoint, jPoint, conv.jacobian_i, conv.jacobian_j);
+    }
+  }
 
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
    * iteration for stability.
    */
-  virtual void ComputeUnderRelaxationFactor(const CConfig* config);
+  virtual void ComputeUnderRelaxationFactor(const CConfig* config) {
+    SU2_MPI::Error("Not implemented for this solver.", CURRENT_FUNCTION);
+  }
 
   /*!
    * \brief General implementation to load a flow solution from a restart file.
@@ -524,14 +573,10 @@ class CFVMFlowSolverBase : public CSolver {
         }
       }
       END_SU2_OMP_FOR
+
       /*--- Min/max over threads. ---*/
-      SU2_OMP_CRITICAL
-      {
-        Min_Delta_Time = min(Min_Delta_Time, minDt);
-        Max_Delta_Time = max(Max_Delta_Time, maxDt);
-        Global_Delta_Time = Min_Delta_Time;
-      }
-      END_SU2_OMP_CRITICAL
+      atomicMin(minDt, Min_Delta_Time);
+      atomicMax(maxDt, Max_Delta_Time);
     }
 
     /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
@@ -545,6 +590,7 @@ class CFVMFlowSolverBase : public CSolver {
         SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
         Max_Delta_Time = rbuf_time;
       }
+      Global_Delta_Time = Min_Delta_Time;
     } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
@@ -578,7 +624,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     }
 
-    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0.
+    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is different from 0.
      * This is only done once because in dual time the time step cannot be variable. ---*/
 
     if (dual_time && (Iteration == config->GetRestart_Iter()) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
@@ -591,9 +637,7 @@ class CFVMFlowSolverBase : public CSolver {
         glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
       }
       END_SU2_OMP_FOR
-      SU2_OMP_CRITICAL
-      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
-      END_SU2_OMP_CRITICAL
+      atomicMin(glbDtND, Global_Delta_UnstTimeND);
 
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
@@ -728,6 +772,7 @@ class CFVMFlowSolverBase : public CSolver {
   template<class SensVarFunc>
   FORCEINLINE void SetCentered_Dissipation_Sensor_impl(const SensVarFunc& sensVar,
                                                        CGeometry *geometry, const CConfig *config) {
+    const bool msw = config->GetKind_Upwind_Flow() == UPWIND::MSW;
 
     /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
 
@@ -742,8 +787,8 @@ class CFVMFlowSolverBase : public CSolver {
       const su2double sensVar_i = sensVar(*nodes, iPoint);
 
       /*--- Initialize. ---*/
-      iPoint_UndLapl[iPoint] = 0.0;
-      jPoint_UndLapl[iPoint] = 0.0;
+      iPoint_UndLapl[iPoint] = 0;
+      jPoint_UndLapl[iPoint] = msw ? 1 : 0;
 
       /*--- Loop over the neighbors of point i. ---*/
       for (auto jPoint : geometry->nodes->GetPoints(iPoint))
@@ -755,9 +800,16 @@ class CFVMFlowSolverBase : public CSolver {
 
         su2double sensVar_j = sensVar(*nodes, jPoint);
 
-        /*--- Dissipation sensor, add variable difference and variable sum. ---*/
-        iPoint_UndLapl[iPoint] += sensVar_j - sensVar_i;
-        jPoint_UndLapl[iPoint] += sensVar_j + sensVar_i;
+        if (msw) {
+          /*--- More conservative formulation (triggered by large gradient instead of large laplacian).
+           * From "Development of an Unstructured Navier-Stokes Solver For Hypersonic Nonequilibrium
+           * Aerothermodynamics". ---*/
+          iPoint_UndLapl[iPoint] = fmax(iPoint_UndLapl[iPoint], fabs(sensVar_j - sensVar_i) / fmin(sensVar_j, sensVar_i));
+        } else {
+          /*--- Jameson dissipation sensor, add variable difference and variable sum. ---*/
+          iPoint_UndLapl[iPoint] += sensVar_j - sensVar_i;
+          jPoint_UndLapl[iPoint] += sensVar_j + sensVar_i;
+        }
       }
 
       if (!isPeriodic) {
@@ -803,7 +855,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     static_assert(IntegrationType == CLASSICAL_RK4_EXPLICIT ||
                   IntegrationType == RUNGE_KUTTA_EXPLICIT ||
-                  IntegrationType == EULER_EXPLICIT, "");
+                  IntegrationType == EULER_EXPLICIT);
 
     const bool adjoint = config->GetContinuous_Adjoint();
 
@@ -960,12 +1012,11 @@ class CFVMFlowSolverBase : public CSolver {
       }
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        unsigned long total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-        LinSysSol[total_index] = 0.0;
+        LinSysRes(iPoint, iVar) = -(LinSysRes(iPoint, iVar) + local_Res_TruncError[iVar]);
+        LinSysSol(iPoint, iVar) = 0.0;
 
         /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-        ResidualReductions_PerThread(iPoint, iVar, LinSysRes[total_index], resRMS, resMax, idxMax);
+        ResidualReductions_PerThread(iPoint, iVar, LinSysRes(iPoint, iVar), resRMS, resMax, idxMax);
       }
     }
     END_SU2_OMP_FOR
@@ -973,39 +1024,6 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- "Add" residuals from all threads to global residual variables. ---*/
     ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
 
-  }
-
-  /*!
-   * \brief Generic implementation to complete an implicit iteration, i.e. update the solution.
-   * \tparam compute_ur - Whether to use automatic under-relaxation for the update.
-   */
-  template<bool compute_ur>
-  void CompleteImplicitIteration_impl(CGeometry *geometry, CConfig *config) {
-
-    if (compute_ur) ComputeUnderRelaxationFactor(config);
-
-    /*--- Update solution with under-relaxation and communicate it. ---*/
-
-    if (!config->GetContinuous_Adjoint()) {
-      SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-          nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
-        }
-      }
-      END_SU2_OMP_FOR
-    }
-
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    }
-
-    InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-    CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-
-    /*--- For verification cases, compute the global error metrics. ---*/
-    ComputeVerificationError(geometry, config);
   }
 
   /*!
@@ -1075,6 +1093,13 @@ class CFVMFlowSolverBase : public CSolver {
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+
+  /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -1131,6 +1156,8 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Call the equivalent symmetry plane boundary condition. ---*/
     BC_Sym_Plane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
   }
+
+  void MultigridProjectEulerWall(CGeometry* geometry, const CConfig* config, bool use_solution_old) override;
 
   /*!
    * \author T. Kattmann
@@ -2430,7 +2457,7 @@ class CFVMFlowSolverBase : public CSolver {
     return UTau[val_marker][val_vertex];
   }
 
-   /*!
+  /*!
    * \brief Get the eddy viscosity at the wall (wall functions).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.

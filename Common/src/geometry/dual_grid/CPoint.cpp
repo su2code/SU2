@@ -2,7 +2,7 @@
  * \file CPoint.cpp
  * \brief Main classes for defining the points of the dual grid
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <climits>
 #include "../../../include/geometry/dual_grid/CPoint.hpp"
 #include "../../../include/CConfig.hpp"
 #include "../../../include/parallelization/omp_structure.hpp"
@@ -73,7 +74,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig* config) {
 
   /*--- Multigrid structures. ---*/
   if (config->GetnMGLevels() > 0) {
-    Parent_CV.resize(npoint) = 0;
+    Parent_CV.resize(npoint) = numeric_limits<unsigned long>::max();
     Agglomerate.resize(npoint) = false;
     Agglomerate_Indirect.resize(npoint) = false;
     /*--- The finest grid does not have children CV's. ---*/

@@ -2,7 +2,7 @@
  * \file CNumericsSIMD.hpp
  * \brief Vectorized (SIMD) numerics classes.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,7 @@
 #pragma once
 
 #include "../../../Common/include/parallelization/vectorization.hpp"
+#include "../../../Common/include/containers/C2DContainer.hpp"
 
 /*!
  * \enum UpdateType
@@ -74,6 +75,8 @@ public:
    * \param[in] updateMask - SIMD array of 1's and 0's, the latter prevent the update.
    * \param[in,out] vector - Target for the fluxes.
    * \param[in,out] matrix - Target for the flux Jacobians.
+   * \param[out] edgeMassFluxes - Optional, per-edge mass flux (density-equation flux),
+   *             used by "bounded scalar" discretization of transported scalars (turbulence, species).
    * \note The update mask is used to handle "remainder" edges (nEdge mod simdSize).
    */
   virtual void ComputeFlux(Int iEdge,
@@ -83,7 +86,8 @@ public:
                            UpdateType updateType,
                            Double updateMask,
                            CSysVector<su2double>& vector,
-                           SparseMatrixType& matrix) const = 0;
+                           SparseMatrixType& matrix,
+                           su2activevector* edgeMassFluxes) const = 0;
 
   /*! \brief Destructor of the class. */
   virtual ~CNumericsSIMD(void) = default;

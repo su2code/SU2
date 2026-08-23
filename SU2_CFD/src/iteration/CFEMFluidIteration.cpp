@@ -2,7 +2,7 @@
  * \file CFEMFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@ void CFEMFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
                                     CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                     CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                     CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   unsigned long TimeIter = config[ZONE_0]->GetTimeIter();
   const bool restart = (config[ZONE_0]->GetRestart() || config[ZONE_0]->GetRestart_Flow());
 
@@ -45,6 +46,7 @@ void CFEMFluidIteration::Iterate(COutput* output, CIntegration**** integration, 
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   /*--- Update global parameters ---*/
 
   const auto kind_solver = config[val_iZone]->GetKind_Solver();

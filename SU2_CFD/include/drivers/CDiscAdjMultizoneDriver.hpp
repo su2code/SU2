@@ -2,7 +2,7 @@
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,45 +28,21 @@
 #pragma once
 #include "CMultizoneDriver.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
-#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
-#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
 /*!
  * \brief Block Gauss-Seidel driver for multizone / multiphysics discrete adjoint problems.
  * \ingroup DiscAdj
  */
+
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 
 protected:
-#ifdef CODI_FORWARD_TYPE
-  using Scalar = su2double;
-#else
-  using Scalar = passivedouble;
-#endif
-
-  class AdjointProduct : public CMatrixVectorProduct<Scalar> {
-  public:
-    CDiscAdjMultizoneDriver* const driver;
-    const unsigned short iZone = 0;
-    mutable unsigned long iInnerIter = 0;
-
-    AdjointProduct(CDiscAdjMultizoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
-
-    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
-      driver->SetAllSolutions(iZone, true, u);
-      driver->Iterate(iZone, iInnerIter, true);
-      driver->GetAllSolutions(iZone, true, v);
-      v -= u;
-      ++iInnerIter;
-    }
-  };
-
-  class Identity : public CPreconditioner<Scalar> {
-  public:
-    inline bool IsIdentity() const override { return true; }
-    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
-  };
+  #ifdef CODI_FORWARD_TYPE
+    using Scalar = su2double;
+  #else
+    using Scalar = passivedouble;
+  #endif
 
   /*!
    * \brief Kinds of recordings.
@@ -161,13 +137,13 @@ public:
    */
   void Run() override;
 
-protected:
-
   /*!
    * \brief Run one inner iteration for a given zone.
    * \return The result of "monitor".
    */
   bool Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode = false);
+
+protected:
 
   /*!
    * \brief Run inner iterations using a Krylov method (GMRES atm).

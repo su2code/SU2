@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,6 +42,9 @@ class CDiscAdjFEAIteration final : public CIteration {
  private:
   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
 
+  /*!< \brief Used for thermo elastic problems to avoid duplicating code. */
+  CIteration* DiscAdjHeatIteration = nullptr;
+
   /*!
    * \brief load solution for dynamic problems
    * \param[in] geometry - Geometrical definition of the problem.
@@ -64,7 +67,7 @@ class CDiscAdjFEAIteration final : public CIteration {
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEAIteration(void) override;
+  ~CDiscAdjFEAIteration() override;
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.

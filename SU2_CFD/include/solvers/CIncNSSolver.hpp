@@ -2,7 +2,7 @@
  * \file CIncNSSolver.hpp
  * \brief Headers of the CIncNSSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -63,9 +63,10 @@ class CIncNSSolver final : public CIncEulerSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
+   * \return The viscous Jacobians, to be applied by the caller together with the convective part.
    */
-  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                        CNumerics *numerics, CConfig *config) override;
+  CNumerics::ResidualType<> Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                             CNumerics *numerics, CConfig *config) override;
 
 /*!
    * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.

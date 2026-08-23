@@ -2,7 +2,7 @@
  * \file special_vectorization.hpp
  * \brief Code generator header to create specializations of simd::Array.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -152,6 +152,8 @@ MAKE_BINARY_FUN(fmin, min_p)
     FOREACH { res[k] = IMPL(x[k]); }           \
     return res;                                \
   }
+
+MAKE_UNARY_FUN(exp, ::exp)
 
 #undef MAKE_UNARY_FUN
 

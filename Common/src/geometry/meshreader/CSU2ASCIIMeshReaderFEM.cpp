@@ -3,7 +3,7 @@
  * \brief Reads a native SU2 ASCII grid into linear partitions for the
  *        finite element solver (FEM).
  * \author T. Economon, E. van der Weide
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,6 +46,9 @@ CSU2ASCIIMeshReaderFEM::CSU2ASCIIMeshReaderFEM(CConfig* val_config, unsigned sho
   /*--- Read the surface connectivity and store the surface elements whose
         corresponding volume element is stored on this MPI rank. ---*/
   ReadSurfaceElementConnectivity({});
+
+  /*--- Duplicate some markers if requested. ---*/
+  CopyMarkers(val_config->GetMarkerCreateCopy());
 }
 
 CSU2ASCIIMeshReaderFEM::~CSU2ASCIIMeshReaderFEM() = default;

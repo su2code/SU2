@@ -2,7 +2,7 @@
  * \file CNearestNeighbor.cpp
  * \brief Implementation of nearest neighbor interpolation.
  * \author H. Kline
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
 CNearestNeighbor::CNearestNeighbor(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
                                    unsigned int jZone)
     : CInterpolator(geometry_container, config, iZone, jZone) {
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
 void CNearestNeighbor::PrintStatistics() const {
@@ -41,7 +41,7 @@ void CNearestNeighbor::PrintStatistics() const {
   cout << "  Avg/max distance to closest donor point: " << AvgDistance << "/" << MaxDistance << endl;
 }
 
-void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
+void CNearestNeighbor::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
   /*--- Desired number of donor points. ---*/
   const auto nDonor = max<unsigned long>(config[donorZone]->GetNumNearestNeighbors(), 1);
 
@@ -153,12 +153,9 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         }
       }
       END_SU2_OMP_FOR
-      SU2_OMP_CRITICAL {
-        totalTargetPoints += numTarget;
-        AvgDistance += avgDist;
-        MaxDistance = max(MaxDistance, maxDist);
-      }
-      END_SU2_OMP_CRITICAL
+      atomicAdd(numTarget, totalTargetPoints);
+      atomicAdd(avgDist, AvgDistance);
+      atomicMax(maxDist, MaxDistance);
     }
     END_SU2_OMP_PARALLEL
   }

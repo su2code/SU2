@@ -2,7 +2,7 @@
  * \file CFEAElasticity.hpp
  * \brief Declaration and inlines of the base class for elasticity problems.
  * \author Ruben Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <memory>
 #include "../CNumerics.hpp"
 #include "../../../../Common/include/geometry/elements/CElement.hpp"
 
@@ -38,7 +39,7 @@
  *        The methods we override in this class with an empty implementation are here just to better
  *        document the public interface of this class hierarchy.
  * \author R.Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  */
 class CFEAElasticity : public CNumerics {
 
@@ -61,23 +62,17 @@ protected:
   su2double Kappa     = 0.0;              /*!< \brief Aux. variable, Compressibility constant. */
   su2double ThermalStressTerm = 0.0;      /*!< \brief Aux. variable, Relationship between stress and delta T. */
 
-  su2double *E_i      = nullptr;          /*!< \brief Young's modulus of elasticity. */
-  su2double *Nu_i     = nullptr;          /*!< \brief Poisson's ratio. */
-  su2double *Rho_s_i  = nullptr;          /*!< \brief Structural density. */
-  su2double *Rho_s_DL_i = nullptr;        /*!< \brief Structural density (for dead loads). */
-  su2double *Alpha_i  = nullptr;          /*!< \brief Thermal expansion coefficient. */
+  std::unique_ptr<su2double[]> E_i;        /*!< \brief Young's modulus of elasticity. */
+  std::unique_ptr<su2double[]> Nu_i;       /*!< \brief Poisson's ratio. */
+  std::unique_ptr<su2double[]> Rho_s_i;    /*!< \brief Structural density. */
+  std::unique_ptr<su2double[]> Rho_s_DL_i; /*!< \brief Structural density (for dead loads). */
+  std::unique_ptr<su2double[]> Alpha_i;    /*!< \brief Thermal expansion coefficient. */
 
   su2double ReferenceTemperature = 0.0;   /*!< \brief Reference temperature for thermal expansion. */
 
-  su2double **Ba_Mat = nullptr;           /*!< \brief Matrix B for node a - Auxiliary. */
-  su2double **Bb_Mat = nullptr;           /*!< \brief Matrix B for node b - Auxiliary. */
-  su2double *Ni_Vec  = nullptr;           /*!< \brief Vector of shape functions - Auxiliary. */
-  su2double **D_Mat  = nullptr;           /*!< \brief Constitutive matrix - Auxiliary. */
-  su2double **KAux_ab = nullptr;          /*!< \brief Node ab stiffness matrix - Auxiliary. */
-  su2double **GradNi_Ref_Mat = nullptr;   /*!< \brief Gradients of Ni - Auxiliary. */
-  su2double **GradNi_Curr_Mat = nullptr;  /*!< \brief Gradients of Ni - Auxiliary. */
+  su2double D_Mat[DIM_STRAIN_3D][DIM_STRAIN_3D];  /*!< \brief Constitutive matrix - Auxiliary. */
 
-  su2double *DV_Val = nullptr;            /*!< \brief For optimization cases, value of the design variables. */
+  std::unique_ptr<su2double[]> DV_Val;    /*!< \brief For optimization cases, value of the design variables. */
   unsigned short n_DV = 0;                /*!< \brief For optimization cases, number of design variables. */
 
   bool plane_stress = false;              /*!< \brief Checks if we are solving a plane stress case. */
@@ -96,11 +91,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEAElasticity(void) override;
 
   /*!
    * \brief Set elasticity modulus and Poisson ratio.
@@ -243,6 +233,27 @@ protected:
    */
   inline static passivedouble deltaij(unsigned short iVar, unsigned short jVar) {
     return static_cast<passivedouble>(iVar == jVar);
+  }
+
+  template <typename Mat1, typename Mat2>
+  void FillBMat(unsigned short iNode, const Mat1& GradNi_Mat, Mat2& B_Mat) const {
+    if (nDim == 2) {
+      B_Mat[0][0] = GradNi_Mat[iNode][0];
+      B_Mat[1][1] = GradNi_Mat[iNode][1];
+      B_Mat[2][0] = GradNi_Mat[iNode][1];
+      B_Mat[2][1] = GradNi_Mat[iNode][0];
+    }
+    else {
+      B_Mat[0][0] = GradNi_Mat[iNode][0];
+      B_Mat[1][1] = GradNi_Mat[iNode][1];
+      B_Mat[2][2] = GradNi_Mat[iNode][2];
+      B_Mat[3][0] = GradNi_Mat[iNode][1];
+      B_Mat[3][1] = GradNi_Mat[iNode][0];
+      B_Mat[4][0] = GradNi_Mat[iNode][2];
+      B_Mat[4][2] = GradNi_Mat[iNode][0];
+      B_Mat[5][1] = GradNi_Mat[iNode][2];
+      B_Mat[5][2] = GradNi_Mat[iNode][1];
+    }
   }
 
 };

@@ -2,7 +2,7 @@
  * \file CfluidFlamelet.cpp
  * \brief Main subroutines of CFluidFlamelet class
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -224,23 +224,6 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = beta_mixfrac;
 
   preferential_diffusion = flamelet_options.preferential_diffusion;
-  switch (Kind_DataDriven_Method) {
-    case ENUM_DATADRIVEN_METHOD::LUT:
-      preferential_diffusion = look_up_table->CheckForVariables(varnames_PD);
-      break;
-    case ENUM_DATADRIVEN_METHOD::MLP:
-#ifdef USE_MLPCPP
-      n_betas = 0;
-      for (auto iMLP = 0u; iMLP < datadriven_fluid_options.n_filenames; iMLP++) {
-        auto outputMap = lookup_mlp->FindVariableIndices(iMLP, varnames_PD, false);
-        n_betas += outputMap.size();
-      }
-      preferential_diffusion = (n_betas == varnames_PD.size());
-#endif
-      break;
-    default:
-      break;
-  }
 
   if (!preferential_diffusion && flamelet_options.preferential_diffusion)
     SU2_MPI::Error("Preferential diffusion scalars not included in flamelet manifold.", CURRENT_FUNCTION);
@@ -252,7 +235,8 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     iomap_LookUp = new MLPToolbox::CIOMap(controlling_variable_names, varnames_LookUp);
     lookup_mlp->PairVariableswithMLPs(*iomap_TD);
     lookup_mlp->PairVariableswithMLPs(*iomap_Sources);
-    lookup_mlp->PairVariableswithMLPs(*iomap_LookUp);
+    if (n_lookups > 1)
+      lookup_mlp->PairVariableswithMLPs(*iomap_LookUp);
     if (preferential_diffusion) {
       iomap_PD = new MLPToolbox::CIOMap(controlling_variable_names, varnames_PD);
       lookup_mlp->PairVariableswithMLPs(*iomap_PD);
@@ -329,7 +313,7 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
-  bool inside;
+  bool inside{true};
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
       if (output_refs.size() != LUT_idx.size())
@@ -339,19 +323,20 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
       } else {
         inside = look_up_table->LookUp_XY(LUT_idx, output_refs, val_prog, val_enth);
       }
-      if (inside) extrapolation = 0;
-      else extrapolation = 1;
+      
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
       refs_vars.resize(output_refs.size());
       for (auto iVar = 0u; iVar < output_refs.size(); iVar++) refs_vars[iVar] = &output_refs[iVar];
 #ifdef USE_MLPCPP
-      extrapolation = lookup_mlp->PredictANN(iomap_Current, input_scalar, refs_vars);
+      inside=lookup_mlp->Predict(*iomap_Current, input_scalar, refs_vars);
 #endif
       break;
     default:
       break;
   }
+  if (inside) extrapolation = 0;
+      else extrapolation = 1;
   for (auto iVar = 0u; iVar < output_refs.size(); iVar++) AD::SetPreaccOut(output_refs[iVar]);
   AD::EndPreacc();
   return extrapolation;

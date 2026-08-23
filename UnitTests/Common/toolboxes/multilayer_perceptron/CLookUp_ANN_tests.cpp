@@ -2,7 +2,7 @@
  * \file CLookUp_ANN_tests.cpp
  * \brief Unit tests for CLookUp_ANN and CIOMap classes.
  * \author E.C.Bunschoten
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,7 @@
 #include "catch.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 #if defined(HAVE_MLPCPP)
+#define MLP_CUSTOM_TYPE su2double
 #include "../../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
 #define USE_MLPCPP
 #endif
@@ -35,43 +36,59 @@
 
 #ifdef USE_MLPCPP
 TEST_CASE("LookUp ANN test", "[LookUpANN]") {
-  std::string MLP_input_files[] = {"src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/simple_mlp.mlp"};
-  unsigned short n_MLPs = 1;
-  MLPToolbox::CLookUp_ANN ANN(n_MLPs, MLP_input_files);
-  std::vector<std::string> MLP_input_names, MLP_output_names;
-  std::vector<double> MLP_inputs;
-  std::vector<double*> MLP_outputs;
-  su2double x, y, z;
+  MLPToolbox::CLookUp_ANN ANN;
+  MLPToolbox::CNeuralNetwork mlp =
+      MLPToolbox::CNeuralNetwork("src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/simple_mlp.mlp");
 
-  /*--- Define MLP inputs and outputs ---*/
-  MLP_input_names.resize(2);
-  MLP_input_names[0] = "x";
-  MLP_input_names[1] = "y";
-  MLP_inputs.resize(2);
+  ANN.AddNetwork(&mlp);
+  su2double x, y, z, z_alt;
 
-  MLP_outputs.resize(1);
-  MLP_output_names.resize(1);
-  MLP_output_names[0] = "z";
-  MLP_outputs[0] = &z;
+  /*--- Create a query where the value of z is calculated from x and y ---*/
+  MLPToolbox::CIOMap iomap_ref;
+  iomap_ref.AddQueryInput("x", &x);
+  iomap_ref.AddQueryInput("y", &y);
+  iomap_ref.AddQueryOutput("z", &z);
 
-  /*--- Generate input-output map ---*/
-  MLPToolbox::CIOMap iomap(MLP_input_names, MLP_output_names);
-  ANN.PairVariableswithMLPs(iomap);
-  /*--- MLP evaluation on point in the middle of the training data range ---*/
+  ANN.PairVariableswithMLPs(iomap_ref);
+
+  MLPToolbox::CIOMap iomap_vec;
+  std::vector<std::string> input_names = {"x", "y"}, output_names = {"z"};
+  std::vector<su2double*> output_refs = {&z_alt};
+  std::vector<su2double> mlp_inputs;
+
+  iomap_vec.SetQueryInput(input_names);
+  iomap_vec.SetQueryOutput(output_names);
+  ANN.PairVariableswithMLPs(iomap_vec);
+
+  /*--- MLP evaluation on two points in the middle of the training data range ---*/
   x = 1.0;
   y = -0.5;
 
-  MLP_inputs[0] = x;
-  MLP_inputs[1] = y;
-  ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
+  bool inside = ANN.Predict(iomap_ref);
   CHECK(z == Approx(0.344829));
+  CHECK(inside);
 
-  /*--- MLP evaluation on point outside the training data range ---*/
-  x = 3.0;
-  y = -10;
-  MLP_inputs[0] = x;
-  MLP_inputs[1] = y;
-  ANN.PredictANN(&iomap, MLP_inputs, MLP_outputs);
-  CHECK(z == Approx(0.012737));
+  mlp_inputs.resize(2);
+  mlp_inputs[0] = x;
+  mlp_inputs[1] = y;
+  ANN.Predict(iomap_vec, mlp_inputs, output_refs);
+  CHECK(z == z_alt);
+
+  x = 0.5;
+  y = -0.23;
+  inside = ANN.Predict(iomap_ref);
+
+  CHECK(z == Approx(0.224986));
+  CHECK(inside);
+
+  mlp_inputs[0] = x;
+  mlp_inputs[1] = y;
+  ANN.Predict(iomap_vec, mlp_inputs, output_refs);
+
+  /*--- */
+  x = 10.0;
+  y = -20.0;
+  inside = ANN.Predict(iomap_ref);
+  CHECK(!inside);
 }
 #endif

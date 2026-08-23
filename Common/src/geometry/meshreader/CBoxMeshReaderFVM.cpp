@@ -3,7 +3,7 @@
  * \brief Reads a 3D box grid into linear partitions for the
  *        finite volume solver (FVM).
  * \author T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -61,6 +61,9 @@ CBoxMeshReaderFVM::CBoxMeshReaderFVM(const CConfig* val_config, unsigned short v
   ComputeBoxPointCoordinates();
   ComputeBoxVolumeConnectivity();
   ComputeBoxSurfaceConnectivity();
+
+  /*--- Duplicate some markers if requested. ---*/
+  CopyMarkers(val_config->GetMarkerCreateCopy());
 }
 
 CBoxMeshReaderFVM::~CBoxMeshReaderFVM() = default;

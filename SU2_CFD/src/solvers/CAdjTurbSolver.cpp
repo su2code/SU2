@@ -2,7 +2,7 @@
  * \file CAdjTurbVariable.cpp
  * \brief Main subroutines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,6 +31,7 @@
 CAdjTurbSolver::CAdjTurbSolver() : CSolver() {}
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
+  SU2_ZONE_SCOPED
 
   adjoint = true;
 
@@ -164,10 +165,12 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 }
 
 CAdjTurbSolver::~CAdjTurbSolver() {
+  SU2_ZONE_SCOPED
   delete nodes;
 }
 
 void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint, iVertex;
 
@@ -184,7 +187,7 @@ void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      Jacobian.DeleteValsRowi(iPoint);
+      Jacobian.DeleteValsRowi(iPoint, 0);
 
     }
   }
@@ -192,6 +195,7 @@ void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CAdjTurbSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint, iVertex;
 
@@ -208,7 +212,7 @@ void CAdjTurbSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      Jacobian.DeleteValsRowi(iPoint);
+      Jacobian.DeleteValsRowi(iPoint, 0);
 
     }
   }
@@ -216,6 +220,7 @@ void CAdjTurbSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 }
 
 void CAdjTurbSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned long iPoint, iVertex;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -243,17 +248,10 @@ void CAdjTurbSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CAdjTurbSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  unsigned long iPoint;
+  SU2_ZONE_SCOPED
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-  /*--- Initialize the residual vector ---*/
-    LinSysRes.SetBlock_Zero(iPoint);
-
-  }
-
-
-    /*--- Initialize the Jacobian matrices ---*/
+  LinSysRes.SetValZero();
+  /*--- Initialize the Jacobian matrices ---*/
   Jacobian.SetValZero();
 
   /*--- Gradient of the adjoint turbulent variables ---*/
@@ -268,6 +266,7 @@ void CAdjTurbSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
@@ -317,6 +316,7 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 
 void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -366,6 +366,7 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
 
 void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
   //CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
@@ -453,9 +454,10 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar;
-  unsigned long iPoint, total_index;
+  unsigned long iPoint;
   su2double Delta, Vol;
 
   /*--- Set maximum residual to zero ---*/
@@ -479,11 +481,10 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = -LinSysRes[total_index];
-      LinSysSol[total_index] = 0.0;
-      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
+      LinSysRes(iPoint, iVar) = -LinSysRes(iPoint, iVar);
+      LinSysSol(iPoint, iVar) = 0.0;
+      Residual_RMS[iVar] += LinSysRes(iPoint, iVar)*LinSysRes(iPoint, iVar);
+      AddRes_Max(iVar, fabs(LinSysRes(iPoint, iVar)), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
   }
@@ -492,9 +493,8 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
+      LinSysRes(iPoint, iVar) = 0.0;
+      LinSysSol(iPoint, iVar) = 0.0;
     }
   }
 

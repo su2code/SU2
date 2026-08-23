@@ -2,7 +2,7 @@
  * \file CAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,6 +38,7 @@
 #include "../../include/iteration/CFEAIteration.hpp"
 
 CIteration* CIterationFactory::CreateIteration(MAIN_SOLVER kindSolver, const CConfig* config){
+  SU2_ZONE_SCOPED
 
   CIteration *iteration = nullptr;
 

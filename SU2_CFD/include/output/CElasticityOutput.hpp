@@ -2,7 +2,7 @@
  * \file CElasticityOutput.hpp
  * \brief  Headers of the elasticity output.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,6 @@
 class CElasticityOutput final: public COutput {
 protected:
 
-  unsigned short nVar_FEM; //!< Number of FEM variables
   bool linear_analysis,    //!< Boolean indicating a linear analysis
        nonlinear_analysis, //!< Boolean indicating a nonlinear analysis
        coupled_heat,       //!< Boolean indicating a thermoelastic analysis

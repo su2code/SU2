@@ -2,7 +2,7 @@
  * \file CSurfaceMovement.cpp
  * \brief Subroutines for moving mesh surface elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3902,7 +3902,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry* boundary, CConfig* config) {
   su2double *VarCoord, *Coord, NewYCoord, NewXCoord, *Coord_i, *Coord_ip1, yp1, ypn,
       Airfoil_Coord[2] = {0.0, 0.0}, factor, coeff = 10000, Upper, Lower, Arch = 0.0, TotalArch = 0.0, x_i, x_ip1, y_i,
       y_ip1;
-  passivedouble AirfoilScale;
+  double AirfoilScale;
   vector<su2double> Svalue, Xcoord, Ycoord, Xcoord2, Ycoord2, Xcoord_Aux, Ycoord_Aux;
   bool AddBegin = true, AddEnd = true;
   char AirfoilFile[256], AirfoilFormat[15], MeshOrientation[15], AirfoilClose[15];
@@ -5046,7 +5046,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
   if (rank == MASTER_NODE) {
     /*--- Read the name of the output file ---*/
 
-    auto str = config[ZONE_0]->GetMesh_Out_FileName() + ".su2";
+    auto str = config[ZONE_0]->GetMesh_Out_FileName() + config[ZONE_0]->GetMesh_Out_FileExtension();
 
     output_file.precision(15);
     output_file.open(str, ios::out | ios::app);

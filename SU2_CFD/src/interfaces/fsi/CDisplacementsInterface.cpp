@@ -2,7 +2,7 @@
  * \file CDisplacementsInterface.cpp
  * \brief Main subroutines for transferring boundary displacements.
  * \author Ruben Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,6 +33,7 @@
 CDisplacementsInterface::CDisplacementsInterface(unsigned short val_nVar,
                                                  unsigned short val_nConst) :
   CInterface(val_nVar, val_nConst) {
+  InterfaceType = ENUM_TRANSFER::BOUNDARY_DISPLACEMENTS;
 }
 
 void CDisplacementsInterface::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry,
