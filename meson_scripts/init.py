@@ -111,7 +111,7 @@ def init_submodules(
     alt_name_eigen = base_path + "eigen"
     alt_name_mpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "Mutationpp"
     alt_name_coolprop = cur_dir + os.path.sep + "subprojects" + os.path.sep + "CoolProp"
-    alt_name_cantera =  cur_dir + os.path.sep + "subprojects" + os.path.sep + "cantera"
+    alt_name_cantera = cur_dir + os.path.sep + "subprojects" + os.path.sep + "cantera"
     alt_name_mlpcpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "MLPCpp"
 
     if method == "auto":

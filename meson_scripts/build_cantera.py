@@ -72,12 +72,30 @@ CANTERA_SCONS_ARGS = [
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", required=True, help="Path to the Cantera submodule checkout")
-    parser.add_argument("--prefix", required=True, help="Install prefix for the built library")
-    parser.add_argument("--stamp", required=True, help="File to create on a successful build, for meson tracking")
-    parser.add_argument("--boost-inc-dir", default="", help="Explicit Boost header directory (optional)")
-    parser.add_argument("--eigen-inc-dir", required=True, help="SU2's own Eigen include directory (externals/eigen)")
-    parser.add_argument("--cpu-arch", default="", help="Value of SU2's -march= target (cpu-arch option), kept in sync so Eigen template code Cantera and SU2 both instantiate is not ODR-mixed across incompatible vectorization ISAs")
+    parser.add_argument(
+        "--source", required=True, help="Path to the Cantera submodule checkout"
+    )
+    parser.add_argument(
+        "--prefix", required=True, help="Install prefix for the built library"
+    )
+    parser.add_argument(
+        "--stamp",
+        required=True,
+        help="File to create on a successful build, for meson tracking",
+    )
+    parser.add_argument(
+        "--boost-inc-dir", default="", help="Explicit Boost header directory (optional)"
+    )
+    parser.add_argument(
+        "--eigen-inc-dir",
+        required=True,
+        help="SU2's own Eigen include directory (externals/eigen)",
+    )
+    parser.add_argument(
+        "--cpu-arch",
+        default="",
+        help="Value of SU2's -march= target (cpu-arch option), kept in sync so Eigen template code Cantera and SU2 both instantiate is not ODR-mixed across incompatible vectorization ISAs",
+    )
     args = parser.parse_args()
 
     if not os.path.exists(os.path.join(args.source, "SConstruct")):
