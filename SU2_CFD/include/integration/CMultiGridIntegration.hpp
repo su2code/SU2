@@ -57,10 +57,12 @@ public:
    * \brief Record CONV_FIELD on the active Full-MG level and decide whether the level is done,
    *        either because it has converged by MG_STARTUP_CONVERGENCE orders of magnitude or
    *        because it has stopped reducing the error (MG_STARTUP_STAGNATION).
-   * \param[in] convFieldValue - Value of CONV_FIELD on the active level (log10 of the residual).
+   * \param[in] convFields - Name and value (log10 of the residual) of each of the residual
+   *                         fields CONV_FIELD monitors, evaluated on the active level.
    * \param[in] config - Definition of the particular problem.
    */
-  void MonitorFullMG_Startup(passivedouble convFieldValue, const CConfig *config) override;
+  void MonitorFullMG_Startup(const vector<pair<string, passivedouble> >& convFields,
+                             const CConfig *config) override;
 
 private:
   /*!
@@ -255,6 +257,32 @@ private:
                         unsigned short FinestMesh, bool FullMG);
 
   /*!
+   * \brief Whether the level-0 CFL is inside the Full-MG ramp window, and therefore has to be
+   *        written before the cycle, not after it as in ordinary operation.
+   * \param[in] config     - Definition of the particular problem.
+   * \param[in] FinestMesh - Currently active finest mesh level.
+   * \param[in] FullMG     - Whether the Full-MG cycle is active.
+   */
+  bool FullMG_Mesh0RampWindow(const CConfig* config, unsigned short FinestMesh, bool FullMG) const {
+    const unsigned long startup_iter = config->GetMGOptions().MG_Startup_Iter;
+    if (!FullMG || (FinestMesh != MESH_0) || (startup_iter == 0) || (mg_ramp_cfl_start <= 0.0)) return false;
+    return (config->GetInnerIter() - mg_ramp_level_start_iter) <= startup_iter;
+  }
+
+  /*!
+   * \brief Interpolate a scalar solver's solution onto the newly activated Full-MG level, so that
+   *        it continues from what the level below converged instead of from its initial condition.
+   * \param[in,out] sol_fine       - Solver on the level being activated.
+   * \param[in]     sol_coarse     - Solver on the level handing over.
+   * \param[in]     geo_fine       - Geometry of the level being activated.
+   * \param[in]     geo_coarse     - Geometry of the level handing over.
+   * \param[in]     config         - Definition of the particular problem.
+   * \param[in]     eddy_viscosity - Carry the eddy viscosity across as well.
+   */
+  void SetProlongated_ScalarSolution(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
+                                     CGeometry *geo_coarse, CConfig *config, bool eddy_viscosity);
+
+  /*!
    * \brief Helper function for early-exit logic during pre/post-smoothing.
    * \param[in] iSmooth - Current smoothing iteration index.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
@@ -308,6 +336,10 @@ private:
    *    iterations instead of jumping discontinuously at promotion. ---*/
   unsigned short mg_ramp_last_FinestMesh = MAX_MG_LEVELS + 1; /*!< \brief FinestMesh observed on the previous call; sentinel forces a reset on the first call. */
   unsigned long mg_ramp_level_start_iter = 0;                 /*!< \brief InnerIter at which the currently active FMG level became active. */
+  passivedouble mg_ramp_cfl_start = 0.0;                      /*!< \brief CFL the level below was running at when it handed over; 0 before the first promotion. */
+  passivedouble mg_ramp_cfl_mesh0 = 0.0;                      /*!< \brief Ramped level-0 CFL, while the ramp onto the finest grid lasts. */
+  bool mg_ramp_mesh0_write = false;                           /*!< \brief Whether the level-0 CFL is currently written by the ramp. */
+  bool mg_ramp_mesh0_active = false;                          /*!< \brief Whether the level-0 CFL ramp is still climbing, so adaptation has to wait. */
 
   /*--- User-configured damping factors, captured before any adaptation so they can be
    *    restored whenever the active FMG level changes (the cross-cycle EMA that drives
@@ -318,13 +350,18 @@ private:
 
   /*--- Full-MG startup promotion state, fed by MonitorFullMG_Startup once per iteration.
    *
-   *    The values are CONV_FIELD (log10 of residual) ---*/
-  bool mg_startup_conv_captured = false;    /*!< \brief Whether the level's starting value has been recorded yet. */
-  passivedouble mg_startup_conv_start = 0.0;/*!< \brief CONV_FIELD when the active level became active. */
-  bool mg_startup_conv_prev_set = false;    /*!< \brief Whether a previous-iteration value is available. */
-  passivedouble mg_startup_conv_prev = 0.0; /*!< \brief CONV_FIELD on the previous iteration. */
+   *    The monitored fields are the residual ones CONV_FIELD selects, so the startup promotes on
+   *    the same quantities the run is converged on, and the values are their log10. CONV_FIELD is
+   *    a list and the convergence monitor requires all of its fields to converge, so the criteria
+   *    below are met only when every monitored field meets them. ---*/
+  vector<string> mg_startup_conv_names;      /*!< \brief Names of the monitored fields, for reporting. */
+  vector<passivedouble> mg_startup_conv_start; /*!< \brief Field values when the active level became active. */
+  vector<passivedouble> mg_startup_conv_prev;  /*!< \brief Field values on the previous iteration. */
+  bool mg_startup_conv_captured = false;    /*!< \brief Whether the level's starting values have been recorded yet. */
+  bool mg_startup_conv_prev_set = false;    /*!< \brief Whether previous-iteration values are available. */
   unsigned long mg_startup_stall_count = 0; /*!< \brief Consecutive iterations without useful reduction. */
   bool mg_startup_promote = false;          /*!< \brief Set once a promotion criterion is met; consumed at the next promotion check. */
   bool mg_startup_promoted_on_stall = false;/*!< \brief Whether the pending promotion was triggered by stagnation (for reporting). */
+  bool mg_startup_no_residual_warned = false;/*!< \brief Whether the "nothing to monitor" warning has been given. */
 
 };

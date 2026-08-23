@@ -1987,18 +1987,14 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
 }
 
-void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) {
+void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config, bool force) {
   SU2_ZONE_SCOPED
 
-  /*--- On coarse levels the reduction is normally skipped for performance, unless
-   *    MG_Smooth_EarlyExit needs it, or a Full-MG startup needs a globally consistent residual on
-   *    the active level to decide when to promote. In the latter case the value is read back as
-   *    CONV_FIELD in CFluidIteration::Monitor; leaving it un-reduced would let each rank see its
-   *    own local accumulator and disagree with the others about when to move up a level. ---*/
-  const bool fmg_needs_reduction = geometry->GetMGLevel() != MESH_0 &&
-                                    config->GetMGCycle() == MG_CYCLE::FULL &&
-                                    config->GetFinestMesh() == geometry->GetMGLevel();
-  if (geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit && !fmg_needs_reduction) return;
+  /*--- On coarse levels the reduction is skipped for performance, unless MG_Smooth_EarlyExit
+   *    needs it or the caller asks for it: a Full-MG startup needs one globally consistent
+   *    residual per iteration on the active level, since it reads it back as CONV_FIELD to decide
+   *    when to promote and the ranks would otherwise each see their own partial sum. ---*/
+  if (!force && geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit) return;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 

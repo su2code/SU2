@@ -323,6 +323,7 @@ protected:
   bool convergence;              /*!< \brief To indicate if the solver has converged or not. */
   su2double initResidual;        /*!< \brief Initial value of the residual to evaluate the convergence level. */
   vector<string> convFields;     /*!< \brief Name of the field to be monitored for convergence. */
+  unsigned long convergenceStartIter = 0; /*!< \brief Iteration the convergence history is counted from. */
 
   /*----------------------------- Adaptive CFL ----------------------------*/
 
@@ -487,18 +488,41 @@ public:
   }
 
   /*!
-   * \brief Value of a history output field, if it exists and is a residual field.
-   *        Residual fields are stored as log10 of the residual, so the value can be compared
-   *        against thresholds expressed in orders of magnitude (as CONV_RESIDUAL_MINVAL is).
-   * \param[in]  name  - Name of the field.
-   * \param[out] value - Value of the field, untouched if the field is not a residual field.
-   * \return True if the field exists and is a residual field.
+   * \brief Discard the convergence history and count it from the given iteration instead.
+   *
+   *        A Cauchy criterion averages the change of a coefficient over the last
+   *        CONV_CAUCHY_ELEMS iterations, and only starts judging once that many have been seen.
+   *        Both of those are meaningless across a change of mesh: a Full-MG startup fills the
+   *        window on the coarse grids, so when the finest one becomes active the criterion is
+   *        already armed on another grid's history. Starting the count again at the handover
+   *        makes it mean what it says.
+   * \param[in] Iteration - Iteration the history restarts from.
    */
-  bool GetResidualFieldValue(const string& name, su2double& value) const {
-    const auto it = historyOutput_Map.find(name);
-    if (it == historyOutput_Map.end() || it->second.fieldType != HistoryFieldType::RESIDUAL) return false;
-    value = it->second.value;
-    return true;
+  void ResetConvergenceMonitoring(unsigned long Iteration) { convergenceStartIter = Iteration; }
+
+  /*!
+   * \brief Names and values of the fields convergence is monitored on that are residuals.
+   *
+   *        These are the very fields CONV_FIELD selects, after the solver-specific default has
+   *        been applied (RMS_DENSITY for compressible, RMS_PRESSURE for incompressible, and so
+   *        on), so anything deciding on convergence sees exactly what the convergence monitor
+   *        sees. Residual fields are stored as log10 of the residual, hence a drop of a given
+   *        number of orders of magnitude is simply a difference, on the same scale as
+   *        CONV_RESIDUAL_MINVAL. Fields that are not residuals, a force coefficient say, carry
+   *        no such notion and are left out, so the list is empty when convergence is monitored
+   *        on coefficients alone.
+   * \return Name and current value of every monitored residual field, in CONV_FIELD order.
+   */
+  vector<pair<string, passivedouble>> GetResidualConvFields() const {
+    vector<pair<string, passivedouble>> fields;
+    for (const auto& name : convFields) {
+      const auto it = historyOutput_Map.find(name);
+      if (it == historyOutput_Map.end()) continue;
+      if ((it->second.fieldType != HistoryFieldType::RESIDUAL) &&
+          (it->second.fieldType != HistoryFieldType::AUTO_RESIDUAL)) continue;
+      fields.emplace_back(name, SU2_TYPE::GetValue(it->second.value));
+    }
+    return fields;
   }
 
  /*!

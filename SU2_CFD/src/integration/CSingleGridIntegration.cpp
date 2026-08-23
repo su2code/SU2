@@ -50,17 +50,20 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   CSolver** solvers_fine = solver_container[iZone][iInst][FinestMesh];
 
   /*--- During the Full-MG startup the flow equations are being solved on a coarse level at that
-   *    level's (ramped) CFL, while the turbulence equations are always solved on the grid the
-   *    flow solver is currently using. Put the turbulence solver on the matching CFL so the two
-   *    advance together instead of the turbulence running at the fine-grid number.
+   *    level's ramped CFL, and afterwards the finest grid is itself ramped up to the configured
+   *    number, while the turbulence equations are always solved on the grid the flow solver is
+   *    currently using. Put the turbulence solver on the matching CFL, taken from the flow solver
+   *    so it follows whichever of those ramps is in progress, instead of leaving the turbulence at
+   *    the fine-grid number.
    *
-   *    Strictly limited to the startup phase: outside it this would overwrite the per-point CFL
-   *    the turbulence solver maintains itself, discarding any CFL adaptation, on every RANS run
-   *    whether or not multigrid is used at all. ---*/
+   *    Strictly limited to the startup and the ramp that ends it: outside those this would
+   *    overwrite the per-point CFL the turbulence solver maintains itself, discarding any CFL
+   *    adaptation, on every RANS run whether or not multigrid is used at all. ---*/
   if (RunTime_EqSystem == RUNTIME_TURB_SYS && config[iZone]->GetMGCycle() == MG_CYCLE::FULL &&
-      FinestMesh != MESH_0) {
+      ((FinestMesh != MESH_0) || config[iZone]->GetFullMG_CFLRamp())) {
     const su2double turbReduction = SU2_TYPE::GetValue(config[iZone]->GetCFLRedCoeff_Turb());
-    const su2double turbCFL = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh)) * turbReduction;
+    const su2double turbCFL =
+        SU2_TYPE::GetValue(solvers_fine[FLOW_SOL]->GetAvg_CFL_Local()) * turbReduction;
     auto* turbSolver = solvers_fine[Solver_Position];
 
     SU2_OMP_SAFE_GLOBAL_ACCESS(turbSolver->SetCFL_Local_Stats(turbCFL);)

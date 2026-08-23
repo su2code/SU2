@@ -114,12 +114,14 @@ public:
                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
 
   /*!
-   * \brief Report the value of the convergence field on the active mesh level, so that a
-   *        Full-MG startup can decide to do an early exit 
-   * \param[in] convFieldValue - Value of CONV_FIELD on the active level (log10 of the residual).
+   * \brief Report the convergence fields on the active mesh level, so that a Full-MG startup
+   *        can decide to do an early exit.
+   * \param[in] convFields - Name and value (log10 of the residual) of each of the residual
+   *                         fields CONV_FIELD monitors, evaluated on the active level.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void MonitorFullMG_Startup(passivedouble convFieldValue, const CConfig *config) { };
+  virtual void MonitorFullMG_Startup(const vector<pair<string, passivedouble> >& convFields,
+                                     const CConfig *config) { };
 
   /*!
    * \brief A virtual member.

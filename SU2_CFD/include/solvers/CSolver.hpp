@@ -318,9 +318,11 @@ public:
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] force - Reduce on a coarse level too, where it is skipped by default.
    */
-  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config);
+  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config, bool force = false);
 
   /*!
    * \brief Communicate the value of the max residual and RMS residual.

@@ -935,6 +935,12 @@ bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   convergence = true;
 
+  /*--- The history is counted from wherever it was last restarted, which is the start of the run
+   *    unless a Full-MG startup handed the solution over to the finest grid part way through. ---*/
+
+  if (Iteration >= convergenceStartIter) Iteration -= convergenceStartIter;
+  else Iteration = 0;
+
   for (auto iField_Conv = 0ul; iField_Conv < convFields.size(); iField_Conv++) {
 
     const auto& convField = convFields[iField_Conv];

@@ -132,9 +132,11 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
         During Full-MG warmup (FinestMesh > MESH_0), skip adaptation entirely until the finest
-        mesh is active. ---*/
+        mesh is active, and for as long after that as its CFL is still being ramped up to the
+        configured number, which the adaptation would otherwise be fighting over. ---*/
+  const bool fmg_cfl_ramp = config[val_iZone]->GetFullMG_CFLRamp();
   SU2_OMP_PARALLEL
-  if (!disc_adj && config[val_iZone]->GetFinestMesh() == MESH_0) {
+  if (!disc_adj && config[val_iZone]->GetFinestMesh() == MESH_0 && !fmg_cfl_ramp) {
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->IdentifySolutionOutliers(config[val_iZone], InnerIter);
@@ -250,6 +252,18 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
   /*--- During Full-MG startup FinestMesh > 0: read residuals from the active (coarse) level. ---*/
   const unsigned short finestMesh = config[val_iZone]->GetFinestMesh();
+
+  /*--- The startup has just handed the solution to the finest grid, so restart the convergence
+   *    history here: everything in it up to now was measured on a coarser mesh, and a Cauchy
+   *    criterion would otherwise judge the finest grid on a window it never filled. Done before
+   *    this iteration is recorded, so the history holds fine grid values only. ---*/
+
+  if ((config[val_iZone]->GetMGCycle() == MG_CYCLE::FULL) && (finestMesh == MESH_0) &&
+      !fmg_convergence_rebased) {
+    output->ResetConvergenceMonitoring(config[val_iZone]->GetInnerIter());
+    fmg_convergence_rebased = true;
+  }
+
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][finestMesh], solver[val_iZone][val_iInst][finestMesh],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
@@ -261,19 +275,16 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   if (finestMesh != MESH_0) StopCalc = false;
 
   /*--- Feed the Full-MG startup its promotion criterion. The history fields were just written
-   *    from the active (coarse) level, so this is CONV_FIELD on exactly the level being iterated,
-   *    which is the level whose convergence decides when to move up. Reading it here rather than
-   *    inside the integration is what lets the criterion use CONV_FIELD at all: the name-to-field
-   *    mapping only exists in the output module. Fields that are not residuals (a force
-   *    coefficient, say) carry no notion of a drop in orders of magnitude and are ignored. ---*/
+   *    from the active (coarse) level, so these are the convergence fields on exactly the level
+   *    being iterated, which is the level whose convergence decides when to move up. Asking the
+   *    output for them rather than the config is what makes the criterion agree with the run's
+   *    own convergence criterion: CONV_FIELD is only turned into a concrete field here, with the
+   *    default that belongs to the solver at hand (RMS_DENSITY for compressible, RMS_PRESSURE
+   *    for incompressible, ...), and only the output knows which of those fields are residuals
+   *    that can be said to drop by so many orders of magnitude. ---*/
   if (config[val_iZone]->GetMGCycle() == MG_CYCLE::FULL && finestMesh != MESH_0) {
-    const string convField = (config[val_iZone]->GetnConv_Field() > 0) ? config[val_iZone]->GetConv_Field(0)
-                                                                      : string("RMS_DENSITY");
-    su2double convValue = 0.0;
-    if (output->GetResidualFieldValue(convField, convValue)) {
-      integration[val_iZone][val_iInst][FLOW_SOL]->MonitorFullMG_Startup(SU2_TYPE::GetValue(convValue),
-                                                                        config[val_iZone]);
-    }
+    integration[val_iZone][val_iInst][FLOW_SOL]->MonitorFullMG_Startup(output->GetResidualConvFields(),
+                                                                      config[val_iZone]);
   }
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
