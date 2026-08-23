@@ -52,6 +52,8 @@
 #include "../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../include/geometry/primal_grid/CVertexMPI.hpp"
 
+#include "../../../Common/include/tracy_structure.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
@@ -4505,9 +4507,15 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
     InQueue[iPoint] = true;
   }
 
+  const auto numSeeds = std::max<unsigned short>(1, config->GetRCM_NumSeeds());
+  constexpr auto unreached = std::numeric_limits<unsigned long>::max();
+  vector<unsigned long> dist;
+  if (numSeeds > 1) dist.assign(nPoint, unreached);
+  vector<unsigned long> component, bfsQueue;
+
   /*--- Repeat as many times as necessary to handle disconnected graphs. ---*/
   while (Result.size() < nPointDomain) {
-    /*--- Select the node with the lowest degree in the grid. ---*/
+    /*--- Select the node with the lowest degree in the grid as the first seed. ---*/
     auto AddPoint = nPoint;
     auto MinDegree = std::numeric_limits<unsigned short>::max();
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
@@ -4521,11 +4529,54 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
       SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
     }
 
-    /*--- Seed the queue with the minimum degree node. ---*/
-    Result.push_back(AddPoint);
-    InQueue[AddPoint] = true;
+    /*--- Farthest-point sampling: grow the seed set with up to numSeeds-1 more points, each
+     * the node with the largest BFS distance (within this connected component) from every
+     * seed picked so far. Starting the RCM growth from several spread-out fronts instead of
+     * one bounds the number of levels by the covering radius of the seed set rather than the
+     * full component diameter, while keeping the RCM ordering local (and hence bandwidth and
+     * ILU quality) around each front.
+     * The distance from each point to its nearest seed is maintained incrementally: the first
+     * seed does a full BFS of the component, each later seed only relaxes the points it is
+     * strictly closer to than all previous seeds, keeping the total work close to a single
+     * BFS instead of one BFS per seed. ---*/
+    vector<unsigned long> Seeds(1, AddPoint);
+    if (numSeeds > 1) {
+      auto relaxFrom = [&](unsigned long seed) {
+        dist[seed] = 0;
+        bfsQueue.clear();
+        bfsQueue.push_back(seed);
+        for (auto iBfs = 0ul; iBfs < bfsQueue.size(); ++iBfs) {
+          const auto iPoint = bfsQueue[iBfs];
+          for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
+            const auto jPoint = nodes->GetPoint(iPoint, iNode);
+            if (!InQueue[jPoint] && dist[iPoint] + 1 < dist[jPoint]) {
+              dist[jPoint] = dist[iPoint] + 1;
+              bfsQueue.push_back(jPoint);
+            }
+          }
+        }
+      };
+      relaxFrom(AddPoint);
+      /*--- The first BFS reaches exactly the connected component of the seed. ---*/
+      component = bfsQueue;
+      for (auto iSeed = 1u; iSeed < numSeeds; ++iSeed) {
+        auto farthest = AddPoint;
+        for (const auto iPoint : component)
+          if (dist[iPoint] > dist[farthest]) farthest = iPoint;
+        /*--- The component is already fully covered by the existing seeds. ---*/
+        if (dist[farthest] == 0) break;
+        Seeds.push_back(farthest);
+        relaxFrom(farthest);
+      }
+    }
 
-    /*--- Loop until reorganizing all nodes connected to AddPoint. This will
+    /*--- Seed the queue with all selected fronts. ---*/
+    for (auto seed : Seeds) {
+      Result.push_back(seed);
+      InQueue[seed] = true;
+    }
+
+    /*--- Loop until reorganizing all nodes connected to the seeds. This will
      * also terminate early once the ordering + queue include all points. ---*/
     while (QueueStart < Result.size() && Result.size() < nPointDomain) {
       /*--- Move the start of the queue, equivalent to taking from the front of
@@ -5696,9 +5747,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
       }
     }
     if (marker_flag == INFLOW) {
-      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow";
     } else {
-      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow";
     }
     char buffer[50];
 
@@ -10173,7 +10224,6 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
   if (!WallADT->IsEmpty()) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
-
     SU2_OMP_PARALLEL {
       CPHYSGEO_PARFOR
       for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {

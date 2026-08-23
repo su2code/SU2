@@ -83,7 +83,12 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     auto spark_init = flamelet_config_options.spark_init;
     spark_iter_start = ceil(spark_init[4]);
     spark_duration = ceil(spark_init[5]);
-    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+    unsigned long iter;
+    if (config->GetTime_Domain()) {
+      iter = config->GetTimeIter();  // Use time step counter for unsteady problems
+    } else {
+      iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+    }
     ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
   }
 

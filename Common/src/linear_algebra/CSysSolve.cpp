@@ -427,7 +427,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   const bool flexible = !precond.IsIdentity();
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
-  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1 && !VecExpr::UseDeviceExpressions();
 
   /*---  Check the subspace size ---*/
 
@@ -664,7 +664,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
   const bool masterRank = SU2_MPI::GetRank() == MASTER_NODE;
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
-  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1 && !VecExpr::UseDeviceExpressions();
 
   /*--- Check the subspace size. ---*/
 
@@ -1464,7 +1464,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
   auto externalFunction = [&]() {
     /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
 
-    HandleTemporariesIn(LinSysRes, LinSysSol);
+    HandleTemporariesIn(LinSysRes, LinSysSol, config->GetCUDA());
 
     auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
@@ -1539,7 +1539,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
     }
     END_SU2_OMP_MASTER
 
-    HandleTemporariesOut(LinSysSol);
+    HandleTemporariesOut(LinSysSol, config->GetCUDA());
 
     delete normal_prec;
     delete nested_prec;
@@ -1566,6 +1566,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
           break;
         case JACOBI:
         case LINELET:
+        case Q_JACOBI:
+          /*--- BuildJacobiPreconditioner() quantizes the diagonal itself when needed. ---*/
           if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
           break;
         case LU_SGS:

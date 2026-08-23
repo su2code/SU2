@@ -77,6 +77,7 @@ class CDriver : public CDriverBase {
       interpolator_container; /*!< \brief Definition of the interpolation method between non-matching discretizations of
                                  the interface. */
   CInterface*** interface_container; /*!< \brief Definition of the interface of information and physics. */
+  unsigned short** interface_types;  /*!< \brief Type of coupling between the distinct (physical) zones. */
   bool dry_run;                      /*!< \brief Flag if SU2_CFD was started as dry-run via "SU2_CFD -d <config>.cfg" */
 
  public:
@@ -203,8 +204,8 @@ class CDriver : public CDriverBase {
    * \param[in] interpolation -  Object defining the interpolation.
    */
   void InitializeInterface(CConfig** config, CSolver***** solver, CGeometry**** geometry,
-                               unsigned short** interface_types, CInterface*** interface,
-                               vector<vector<unique_ptr<CInterpolator>>>& interpolation);
+                              unsigned short** interface_types, CInterface*** interface,
+                              vector<vector<unique_ptr<CInterpolator>>>& interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -292,17 +293,14 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] interface - Class defining the physical transfer of information.
+   * \param[in] iteration - Class defining the iteration strcuture.
    * \param[in] dummy - Definition of dummy driver
    */
   void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
-                                    CInterface*** interface, bool dummy);
+                                    CInterface*** interface, CIteration*** iteration, bool dummy);
 
-  /*!
-   * \brief Ramp some simulation settings for turbomachinery problems.
-   * \param[in] iter - Iteration for the ramp (can be outer or time depending on type of simulation).
-   * \note TODO This is not compatible with inner iterations because they are delegated to the iteration class.
-   */
-  void RampTurbomachineryValues(unsigned long iter);
+  void PreprocessTurboVertex(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+                                    CInterface*** interface, CIteration*** iteration, bool dummy);
 
   /*!
    * \brief A virtual member.

@@ -966,6 +966,8 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   const bool center     = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
   const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST || config->GetKind_Centered_Flow() == CENTERED::LD2) && (iMesh == MESH_0);
   const bool outlet     = (config->GetnMarker_Outlet() != 0);
+  const bool dual_time  = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   /*--- Set the primitive variables ---*/
 
@@ -973,6 +975,11 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
+
+  /*--- InnerIter is not reset while recording the discrete adjoint tape. ---*/
+  if (dual_time && (config->GetInnerIter() == 0 || AD::TapeActive())) {
+    RecomputeDensity_time_n(solver_container, config);
+  }
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -1070,6 +1077,42 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
   AD::EndNoSharedReading();
 
   return nonPhysicalPoints;
+}
+
+void CIncEulerSolver::RecomputeDensity_time_n(CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  /*--- Only variable-density (non-constant) cases allocate the density history. ---*/
+  if (config->GetKind_DensityModel() == INC_DENSITYMODEL::CONSTANT) return;
+
+  const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+
+  CVariable* speciesNodes = (solver_container[SPECIES_SOL] != nullptr)
+                              ? solver_container[SPECIES_SOL]->GetNodes() : nullptr;
+
+  /*--- The species solver only exists on the fine grid; MG with scalar-dependent density is rejected in CConfig. ---*/
+  const bool needs_scalars = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE);
+  if (needs_scalars && speciesNodes == nullptr) return;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    /*--- Per-thread fluid model, mirroring the recipe in SetPrimitive_Variables. ---*/
+    CFluidModel* fluidModel = GetFluidModel();
+
+    const su2double* scalar_n = speciesNodes ? speciesNodes->GetSolution_time_n(iPoint) : nullptr;
+    const su2double Enthalpy_n = nodes->GetSolution_time_n(iPoint, nDim + 1);
+    fluidModel->SetTDState_h(Enthalpy_n, scalar_n);
+    nodes->SetDensity_time_n(iPoint, fluidModel->GetDensity());
+
+    if (second_order) {
+      const su2double* scalar_n1 = speciesNodes ? speciesNodes->GetSolution_time_n1(iPoint) : nullptr;
+      const su2double Enthalpy_n1 = nodes->GetSolution_time_n1(iPoint, nDim + 1);
+      fluidModel->SetTDState_h(Enthalpy_n1, scalar_n1);
+      nodes->SetDensity_time_n1(iPoint, fluidModel->GetDensity());
+    }
+  }
+  END_SU2_OMP_FOR
 }
 
 void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -2863,14 +2906,17 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V_time_n   = nodes->GetSolution_time_n(iPoint);
       V_time_nP1 = nodes->GetSolution(iPoint);
 
-      /*--- Access the density at this node (constant for now). ---*/
+      /*--- Access the density at different time levels for non-constant density. ---*/
 
-      Density = nodes->GetDensity(iPoint);
+      su2double Density_nM1 = nodes->GetDensity_time_n1(iPoint);
+      su2double Density_n = nodes->GetDensity_time_n(iPoint);
+      Density = nodes->GetDensity(iPoint);  // Density at n+1
 
-      /*--- Compute the conservative variable vector for all time levels. ---*/
+      /*--- Compute the conservative variable vector for all time levels.
+       Use the density from the corresponding time level. ---*/
 
-      V2U(Density, V_time_nM1, U_time_nM1);
-      V2U(Density, V_time_n, U_time_n);
+      V2U(Density_nM1, V_time_nM1, U_time_nM1);
+      V2U(Density_n, V_time_n, U_time_n);
       V2U(Density, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
@@ -2918,8 +2964,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the conservative variables. ---*/
 
       V_time_n = nodes->GetSolution_time_n(iPoint);
-      Density = nodes->GetDensity(iPoint);
-      V2U(Density, V_time_n, U_time_n);
+      su2double Density_n = nodes->GetDensity_time_n(iPoint);
+      V2U(Density_n, V_time_n, U_time_n);
 
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
 
@@ -2973,8 +3019,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           /*--- Compute the GCL component of the source term for node i ---*/
 
           V_time_n = nodes->GetSolution_time_n(iPoint);
-          Density = nodes->GetDensity(iPoint);
-          V2U(Density, V_time_n, U_time_n);
+          su2double Density_n = nodes->GetDensity_time_n(iPoint);
+          V2U(Density_n, V_time_n, U_time_n);
 
           for (iVar = 0; iVar < nVar-!energy; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
@@ -3000,14 +3046,17 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V_time_n   = nodes->GetSolution_time_n(iPoint);
       V_time_nP1 = nodes->GetSolution(iPoint);
 
-      /*--- Access the density at this node (constant for now). ---*/
+      /*--- Access the density at different time levels for non-constant density. ---*/
 
-      Density = nodes->GetDensity(iPoint);
+      su2double Density_nM1 = nodes->GetDensity_time_n1(iPoint);
+      su2double Density_n = nodes->GetDensity_time_n(iPoint);
+      Density = nodes->GetDensity(iPoint);  // Density at n+1
 
-      /*--- Compute the conservative variable vector for all time levels. ---*/
+      /*--- Compute the conservative variable vector for all time levels.
+       Use the density from the corresponding time level. ---*/
 
-      V2U(Density, V_time_nM1, U_time_nM1);
-      V2U(Density, V_time_n, U_time_n);
+      V2U(Density_nM1, V_time_nM1, U_time_nM1);
+      V2U(Density_n, V_time_n, U_time_n);
       V2U(Density, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
