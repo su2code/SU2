@@ -30,6 +30,39 @@
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
+#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
+
+namespace {
+#ifdef CODI_FORWARD_TYPE
+  using Scalar = su2double;
+#else
+  using Scalar = passivedouble;
+#endif
+
+class AdjointProduct : public CMatrixVectorProduct<Scalar> {
+public:
+  CDiscAdjMultizoneDriver* const driver;
+  const unsigned short iZone = 0;
+  mutable unsigned long iInnerIter = 0;
+
+  AdjointProduct(CDiscAdjMultizoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
+
+  inline void operator()(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const override {
+    driver->SetAllSolutions(iZone, true, u);
+    driver->Iterate(iZone, iInnerIter, true);
+    driver->GetAllSolutions(iZone, true, v);
+    v -= u;
+    ++iInnerIter;
+  }
+};
+
+class Identity : public CPreconditioner<Scalar> {
+public:
+  inline bool IsIdentity() const override { return true; }
+  inline void operator()(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const override { v = u; }
+};
+} // namespace
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
@@ -251,25 +284,26 @@ void CDiscAdjMultizoneDriver::TapeTest() {
 
   /*--- This recording will assign the initial (same) tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
+  AD::SetTag(1);
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
-      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
     else {
-      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLUTION_VARIABLES." << endl;
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
   }
   else {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
-      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_AND_MESH, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
     else {
-      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLVER_VARIABLES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLUTION_VARIABLES." << endl;
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
   }
   total_errors = TapeTestGatherErrors(error_report);
@@ -282,18 +316,19 @@ void CDiscAdjMultizoneDriver::TapeTest() {
    *    from the initial recording and a mismatch with the "check" recording tag will throw an error.
    *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
+  AD::SetTag(2);
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     else
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   }
   else {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     else
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
   }
   total_errors += TapeTestGatherErrors(error_report);
 
@@ -719,7 +754,9 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     switch(kind_recording) {
     case RECORDING::CLEAR_INDICES:      cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
-    case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
+    case RECORDING::SOLUTION_VARIABLES:
+      cout << "Storing computational graph wrt CONSERVATIVE VARIABLES.\n";
+      cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
     case RECORDING::TAG_INIT_SOLVER_VARIABLES:    cout << "Simulating recording with tag 1 on conservative variables." << endl; AD::SetTag(1); break;
     case RECORDING::TAG_CHECK_SOLVER_VARIABLES:   cout << "Checking first recording with tag 2 on conservative variables." << endl; AD::SetTag(2); break;
     case RECORDING::TAG_INIT_SOLVER_AND_MESH:     cout << "Simulating recording with tag 1 on conservative variables and mesh coordinates." << endl; AD::SetTag(1); break;
@@ -850,8 +887,14 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
         solvers[FLOW_SOL]->Friction_Forces(geometry, config);
 
-        if(config->GetWeakly_Coupled_Heat()) {
+        if (config->GetWeakly_Coupled_Heat()) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
+        }
+
+        if(config->GetBoolTurbomachinery()){
+          /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
+          solvers[FLOW_SOL]->GatherInOutAverageValues(config, geometry);
+          solvers[FLOW_SOL]->ComputeTurboBladePerformance(geometry, config, iZone);
         }
 
         direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
@@ -865,6 +908,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         break;
 
       case MAIN_SOLVER::DISC_ADJ_FEM:
+        if (config->GetWeakly_Coupled_Heat()) {
+          solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
+        }
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
         direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
@@ -883,7 +929,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         kind_recording == RECORDING::TAG_CHECK_SOLVER_VARIABLES ||
         kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH ||
         kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH) {
-      cout << " Objective function                   : " << ObjFunc << endl;
+      cout << "Objective function value: " << std::setprecision(driver_config->GetOutput_Precision()) << ObjFunc << endl;
     }
   }
 }

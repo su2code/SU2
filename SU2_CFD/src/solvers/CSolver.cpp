@@ -27,6 +27,9 @@
 
 
 #include "../../include/solvers/CSolver.hpp"
+
+#include <limits>
+
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
@@ -89,7 +92,7 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
   Jacobian_jj        = nullptr;
   base_nodes         = nullptr;
   nOutputVariables   = 0;
-  ResLinSolver       = 0.0;
+  ResLinSolver       = EPS;
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
 
@@ -542,9 +545,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             if (implicit_periodic) {
 
+              const auto block = Jacobian.GetBlockView(iPoint, iPoint);
+
               for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
-                  jacBlock[iVar][jVar] = Jacobian.GetBlock(iPoint, iPoint, iVar, jVar);
+                  jacBlock[iVar][jVar] = block(iVar, jVar);
                 }
               }
 
@@ -553,21 +558,15 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               if (rotate_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
                   if (nDim == 2) {
-                    jacBlock[1][iVar] = (rotMatrix2D[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix2D[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
-                    jacBlock[2][iVar] = (rotMatrix2D[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix2D[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
+                    jacBlock[1][iVar] = rotMatrix2D[0][0]*block(1, iVar) + rotMatrix2D[0][1]*block(2, iVar);
+                    jacBlock[2][iVar] = rotMatrix2D[1][0]*block(1, iVar) + rotMatrix2D[1][1]*block(2, iVar);
                   } else {
-
-                    jacBlock[1][iVar] = (rotMatrix3D[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[0][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[2][iVar] = (rotMatrix3D[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[1][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[3][iVar] = (rotMatrix3D[2][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[2][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[2][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
+                    jacBlock[1][iVar] = rotMatrix3D[0][0]*block(1, iVar) + rotMatrix3D[0][1]*block(2, iVar) +
+                                        rotMatrix3D[0][2]*block(3, iVar);
+                    jacBlock[2][iVar] = rotMatrix3D[1][0]*block(1, iVar) + rotMatrix3D[1][1]*block(2, iVar) +
+                                        rotMatrix3D[1][2]*block(3, iVar);
+                    jacBlock[3][iVar] = rotMatrix3D[2][0]*block(1, iVar) + rotMatrix3D[2][1]*block(2, iVar) +
+                                        rotMatrix3D[2][2]*block(3, iVar);
                   }
                 }
               }
@@ -1747,6 +1746,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CConfig   *config) {
   SU2_ZONE_SCOPED
 
+  if (config->GetCFL_Adapt() != YES) return;
+
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
 
@@ -1811,7 +1812,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     canIncrease = (linRes < linTol) && (iter >= startingIter);
 
-    if ((iMesh == MESH_0) && (Res_Count > 0)) {
+    /* Do not use the residual flip-flop criteria when we are mitigating outliers
+     * because the former was never very reliable for large cases where monotonic
+     * residual reduction is impossible to achieve. */
+    if (!config->OptionIsSet("OUTLIER_MITIGATION_PARAM") && iMesh == MESH_0 && Res_Count > 0) {
       Old_Func = New_Func;
       if (NonLinRes_Series.empty()) NonLinRes_Series.resize(Res_Count,0.0);
 
@@ -1986,13 +1990,13 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) {
   SU2_ZONE_SCOPED
 
-  if (geometry->GetMGLevel() != MESH_0) return;
+  if (geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit) return;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- Set the L2 Norm residual in all the processors. ---*/
 
-  vector<su2double> rbuf_res(nVar);
+  vector<su2double> rbuf_res(nVar * nDim);
   unsigned long Global_nPointDomain = 0;
 
   if (config->GetComm_Level() == COMM_FULL) {
@@ -2023,21 +2027,22 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
   /*--- Set the Maximum residual in all the processors. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-
-    const unsigned long nProcessor = size;
-
-    su2activematrix rbuf_residual(nProcessor,nVar);
-    su2matrix<unsigned long> rbuf_point(nProcessor,nVar);
-    su2activematrix rbuf_coord(nProcessor*nVar, nDim);
-
-    SU2_MPI::Allgather(Residual_Max.data(), nVar, MPI_DOUBLE, rbuf_residual.data(), nVar, MPI_DOUBLE, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Point_Max.data(), nVar, MPI_UNSIGNED_LONG, rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Point_Max_Coord.data(), nVar*nDim, MPI_DOUBLE, rbuf_coord.data(), nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
-
+    SU2_MPI::Allreduce(Residual_Max.data(), rbuf_res.data(), nVar, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (auto iProcessor = 0ul; iProcessor < nProcessor; iProcessor++) {
-        AddRes_Max(iVar, rbuf_residual(iProcessor,iVar), rbuf_point(iProcessor,iVar), rbuf_coord[iProcessor*nVar+iVar]);
+      if (Residual_Max[iVar] < rbuf_res[iVar]) {
+        Point_Max[iVar] = 0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Point_Max_Coord(iVar, iDim) = std::numeric_limits<su2double>::lowest();
+        }
       }
+      Residual_Max[iVar] = rbuf_res[iVar];
+    }
+    vector<unsigned long> rbuf_point(nVar);
+    SU2_MPI::Allreduce(Point_Max.data(), rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Point_Max_Coord.data(), rbuf_res.data(), nVar*nDim, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    Point_Max = std::move(rbuf_point);
+    for (unsigned short iVar = 0; iVar < nVar * nDim; iVar++) {
+      Point_Max_Coord.data()[iVar] = rbuf_res[iVar];
     }
   }
 
@@ -2326,7 +2331,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
                   *geometry, *config, 0, nVar, umusclKappa, solution, gradient, solMin, solMax, limiter);
 }
 
-void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {
+void CSolver::GaussElimination(su2double** A, su2double* rhs, unsigned short nVar) {
   SU2_ZONE_SCOPED
 
   short iVar, jVar, kVar;

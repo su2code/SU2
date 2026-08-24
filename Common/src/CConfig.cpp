@@ -37,6 +37,7 @@
 
 #include "../include/basic_types/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
+#include "../include/toolboxes/SwapBytes.hpp"
 
 using namespace PrintingToolbox;
 
@@ -598,12 +599,60 @@ void CConfig::addPythonOption(const string& name) {
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+unsigned short CConfig::CheckOpenSU2BinFile(const string& val_mesh_filename, bool readnDim) {
+  /*--- Check if the mesh file can be opened for binary reading. ---*/
+  FILE *mesh_file = fopen(val_mesh_filename.c_str(), "rb");
+  if ( !mesh_file )
+    SU2_MPI::Error("There is no geometry file called " + val_mesh_filename,
+                   CURRENT_FUNCTION);
+
+  /*--- Read the size of the connectivity type and determine whether
+        or not byte swapping must be applied. The size of the connectivity
+        type must be either 4 or 8. ---*/
+  int size_conn_type;
+  auto ret = fread(&size_conn_type, sizeof(int), 1, mesh_file);
+  if (ret != 1)
+    SU2_MPI::Error("Error while reading the file " + val_mesh_filename,
+                   CURRENT_FUNCTION);
+
+  bool swap_bytes = false;
+  if ((size_conn_type != 4) && (size_conn_type != 8)) {
+    SwapBytes((char *) &size_conn_type, sizeof(int), 1);
+    swap_bytes = true;
+  }
+
+  if ((size_conn_type != 4) && (size_conn_type != 8))
+    SU2_MPI::Error("The file " + val_mesh_filename +
+                   " is not a valid SU2 binary file", CURRENT_FUNCTION);
+
+  /*--- Skip the number of zones and the zone ID,
+        if the number of dimensions must be read. ---*/
+  if( readnDim ) {
+    if( fseek(mesh_file, 2*sizeof(int), SEEK_CUR) )
+      SU2_MPI::Error("Failed to jump forward in the file" + val_mesh_filename,
+                     CURRENT_FUNCTION);
+  }
+
+  /*--- Read the information to be returned. ---*/
+  int info;
+  ret = fread(&info, sizeof(int), 1, mesh_file);
+  if (ret != 1)
+    SU2_MPI::Error("Error while reading the file " + val_mesh_filename,
+                   CURRENT_FUNCTION);
+  if ( swap_bytes)
+    SwapBytes((char *) &info, sizeof(int), 1);
+
+  fclose(mesh_file);
+
+  return (unsigned short) info;
+}
+
 unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short val_format) {
 
   int nZone = 1; /* Default value if nothing is specified. */
 
   switch (val_format) {
-    case SU2: {
+    case ENUM_GRID::SU2: {
 
       /*--- Local variables for reading the SU2 file. ---*/
       string text_line;
@@ -612,8 +661,8 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
       /*--- Check if the mesh file can be opened for reading. ---*/
       mesh_file.open(val_mesh_filename.c_str(), ios::in);
       if (mesh_file.fail())
-        SU2_MPI::Error(string("There is no geometry file called ") + val_mesh_filename,
-                              CURRENT_FUNCTION);
+        SU2_MPI::Error("There is no geometry file called " + val_mesh_filename,
+                       CURRENT_FUNCTION);
 
       /*--- Read the SU2 mesh file until the zone data is reached or
             when it can be decided that it is not present. ---*/
@@ -639,7 +688,15 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
 
     }
 
-    case CGNS_GRID: {
+    case ENUM_GRID::SU2_BIN: {
+
+      /*--- Open and check the grid file and read the number of zones
+            at the correct location. */
+      nZone = CheckOpenSU2BinFile(val_mesh_filename, false);
+      break;
+    }
+
+    case ENUM_GRID::CGNS_GRID: {
 
 #ifdef HAVE_CGNS
 
@@ -706,11 +763,11 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
 
       break;
     }
-    case RECTANGLE: {
+    case ENUM_GRID::RECTANGLE: {
       nZone = 1;
       break;
     }
-    case BOX: {
+    case ENUM_GRID::BOX: {
       nZone = 1;
       break;
     }
@@ -722,10 +779,10 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
 
 unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short val_format) {
 
-  short nDim = -1;
+  int nDim = -1;
 
   switch (val_format) {
-    case SU2: {
+    case ENUM_GRID::SU2: {
 
       /*--- Local variables for reading the SU2 file. ---*/
       string text_line;
@@ -734,7 +791,7 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
       /*--- Open grid file ---*/
       mesh_file.open(val_mesh_filename.c_str(), ios::in);
       if (mesh_file.fail()) {
-        SU2_MPI::Error(string("The SU2 mesh file named ") + val_mesh_filename + string(" was not found."), CURRENT_FUNCTION);
+        SU2_MPI::Error("The SU2 mesh file named " + val_mesh_filename + " was not found.", CURRENT_FUNCTION);
       }
 
       /*--- Read the SU2 mesh file until the dimension data is reached
@@ -760,14 +817,22 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
 
       /*--- Throw an error if the dimension was not found. ---*/
       if (nDim == -1) {
-        SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
+        SU2_MPI::Error(val_mesh_filename + " is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check.",
                        CURRENT_FUNCTION);
       }
 
       break;
     }
 
-    case CGNS_GRID: {
+    case ENUM_GRID::SU2_BIN: {
+
+      /*--- Open and check the grid file and read the number of dimensions
+            at the correct location. */
+      nDim = CheckOpenSU2BinFile(val_mesh_filename, true);
+      break;
+    }
+
+    case ENUM_GRID::CGNS_GRID: {
 
 #ifdef HAVE_CGNS
 
@@ -816,11 +881,11 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
 
       break;
     }
-    case RECTANGLE: {
+    case ENUM_GRID::RECTANGLE: {
       nDim = 2;
       break;
     }
-    case BOX: {
+    case ENUM_GRID::BOX: {
       nDim = 3;
       break;
     }
@@ -1311,9 +1376,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Definition of the turbulent thermal conductivity model (CONSTANT_PRANDTL_TURB (default), NONE). */
   addEnumOption("TURBULENT_CONDUCTIVITY_MODEL", Kind_ConductivityModel_Turb, TurbConductivityModel_Map, CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL);
 
- /*--- Options related to Constant Thermal Conductivity Model ---*/
+  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
- /* DESCRIPTION: default value for AIR */
+  /* DESCRIPTION: default value for AIR */
   addDoubleListOption("THERMAL_CONDUCTIVITY_CONSTANT", nThermal_Conductivity_Constant , Thermal_Conductivity_Constant);
 
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
@@ -1410,6 +1475,10 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief FLAME_INIT_METHOD \n DESCRIPTION: Ignition method for flamelet solver \n DEFAULT: no ignition; cold flow only. */
   addEnumOption("FLAME_INIT_METHOD", flamelet_ParsedOptions.ignition_method, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
+  /*!\brief FLAME_ENTHALPY_BC \n DESCRIPTION: enthalpy BC for thermal walls. FLOW_MARKERS (default): enthalpy derived
+   from MARKER_ISOTHERMAL temperature or MARKER_HEATFLUX via GetEnthFromTemp. SPECIES_MARKERS: enthalpy and all other
+   scalars taken directly from MARKER_WALL_SPECIES or the Python wrapper (SetMarkerCustomScalar). \n DEFAULT: FLOW_MARKERS \ingroup Config */
+  addEnumOption("FLAME_ENTHALPY_BC", flamelet_ParsedOptions.enthalpy_bc, Flamelet_Enthalpy_BC_Map, FLAMELET_ENTHALPY_BC::FLOW_MARKERS);
   /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
   addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(), false, flamelet_ParsedOptions.flame_init.begin());
 
@@ -1815,6 +1884,11 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
   /* DESCRIPTION:  Max time step in local time stepping simulations */
   addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
+  /* !\brief OUTLIER_MITIGATION_PARAM
+   * DESCRIPTION: Parameters of the outlier mitigation strategy: start iteration, update frequency, print frequency,
+   * and number of standard deviations (N * sigma) to identify outliers statistically. \ingroup Config*/
+  outlierMitigationParam[0] = 999999; outlierMitigationParam[1] = 5; outlierMitigationParam[2] = 2; outlierMitigationParam[3] = 5;
+  addULongArrayOption("OUTLIER_MITIGATION_PARAM", 4, true, outlierMitigationParam);
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
   /* !\brief CFL_ADAPT_PARAM
@@ -1895,9 +1969,11 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
-  addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
+  addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", IluOptions.FillIn, 0);
   /* DESCRIPTION: Use level scheduling for OMP parallelization of the ILU preconditioner */
-  addBoolOption("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING", Linear_Solver_ILU_levels, false);
+  addBoolOption("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING", IluOptions.LevelScheduling, false);
+  /* DESCRIPTION: Number of colored Gauss-Seidel sweeps used to build the GPU ILU factorization */
+  addUnsignedShortOption("LINEAR_SOLVER_ILU_GPU_SWEEPS", IluOptions.GPUSweeps, 2);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Number of vectors used for deflated restarts */
@@ -1981,16 +2057,22 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.5);
   /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing when RMS drops below threshold. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_SMOOTH_EARLY_EXIT", MGOptions.MG_Smooth_EarlyExit, true);
-  /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: Smoothing stops when current_rms < threshold * initial_rms. DEFAULT: 0.1 \ingroup Config*/
-  addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MGOptions.MG_Smooth_Res_Threshold, 0.5);
+  /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: Early exit smoothing when current_rms drops below threshold * initial_rms. DEFAULT: 0.9 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MGOptions.MG_Smooth_Res_Threshold, 0.9);
   /*!\brief MG_SMOOTH_OUTPUT\n DESCRIPTION: Print compact per-cycle smoothing iteration summary. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_SMOOTH_OUTPUT", MGOptions.MG_Smooth_Output, false);
+  /*!\brief MG_SMOOTH_STAGNATION_TOL\n DESCRIPTION: Stop smoothing if current_rms >= previous_rms * this value. Values < 1.0 enable early exit on stagnation, 1.0 only exits on defect growth. DEFAULT: 0.99 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_STAGNATION_TOL", MGOptions.MG_Smooth_StagnationTol, 0.99);
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_COEFF", MGOptions.MG_Smooth_Coeff, 1.25);
   /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level. Levels that would produce fewer CVs are not created. DEFAULT: 50 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
+  /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
+  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
+  /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i). If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
+  addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
   /*--- Options related to the spatial discretization ---*/
@@ -2025,7 +2107,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
   /*!\brief RAMP_MUSCL \n DESCRIPTION: Enable ramping of the MUSCL scheme from 1st to 2nd order using specified method*/
   addBoolOption("RAMP_MUSCL", RampMUSCL, false);
-  /*! brief RAMP_OUTLET_COEFF \n DESCRIPTION: the 1st coeff is the ramp start iteration,
+  /*! brief RAMP_MUSCL_COEFF \n DESCRIPTION: the 1st coeff is the ramp start iteration,
    * the 2nd coeff is the iteration update frequenct, 3rd coeff is the total number of iterations */
   RampMUSCLParam.rampMUSCLCoeff[0] = 0.0; RampMUSCLParam.rampMUSCLCoeff[1] = 1.0; RampMUSCLParam.rampMUSCLCoeff[2] = 500.0;
   addULongArrayOption("RAMP_MUSCL_COEFF", 3, false, RampMUSCLParam.rampMUSCLCoeff);
@@ -2212,9 +2294,11 @@ void CConfig::SetConfig_Options() {
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
-  addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
+  addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, ENUM_GRID::SU2);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh"));
+  /*!\brief MESH_OUT_FORMAT \n DESCRIPTION: Mesh output file format \n OPTIONS: see \link OutputMesh_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
+  addEnumOption("MESH_OUT_FORMAT", Mesh_Out_FileFormat, OutputMesh_Map, ENUM_GRID::SU2);
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out"));
 
@@ -3101,6 +3185,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Allow fallback to smaller edge color group sizes for the discrete adjoint and allow more colors. */
   addBoolOption("EDGE_COLORING_RELAX_DISC_ADJ", edgeColoringRelaxDiscAdj, true);
+
+  /* DESCRIPTION: Number of concurrent BFS fronts used to build the RCM reordering (1 is standard single-seed RCM). */
+  addUnsignedShortOption("RCM_NUM_SEEDS", rcmNumSeeds, 1);
 
   /*--- options that are used for libROM ---*/
   /*!\par CONFIG_CATEGORY:libROM options \ingroup Config*/
@@ -4053,8 +4140,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nMGLevels = 0;
     if (!OptionIsSet("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING")) {
       /*--- Different default behavior for this solver type. ---*/
-      Linear_Solver_ILU_levels = true;
+      IluOptions.LevelScheduling = true;
     }
+  }
+
+  if (IluOptions.GPUSweeps == 0) {
+    SU2_MPI::Error("LINEAR_SOLVER_ILU_GPU_SWEEPS must be at least 1; 0 sweeps never factorizes the preconditioner.",
+                   CURRENT_FUNCTION);
   }
 
   Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);
@@ -4785,6 +4877,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                [](unsigned short  ) { return (unsigned short)0; });
     fillSmooth(nMG_CorrecSmooth_p, MG_CorrecSmooth_p, MGOptions.MG_CorrecSmooth,
                [](unsigned short  ) { return (unsigned short)0; });
+
+    /*--- Fill MG_CflScaling to size nMGLevels (one entry per coarse level transition). ---*/
+    MGOptions.MG_CflScaling.resize(nMGLevels);
+    if (nMG_CflScaling_p != 0) {
+      for (unsigned short i = 0; i < nMGLevels; ++i)
+        MGOptions.MG_CflScaling[i] = (i < nMG_CflScaling_p) ? MG_CflScaling_p[i] : MG_CflScaling_p[nMG_CflScaling_p - 1];
+    } else {
+      for (unsigned short i = 0; i < nMGLevels; ++i)
+        MGOptions.MG_CflScaling[i] = 0.25;
+    }
   }
 
   /*--- Override MG Smooth parameters ---*/
@@ -5662,6 +5764,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Kind_Solver != MAIN_SOLVER::MULTIPHYSICS)
       SU2_MPI::Error("Species transport currently only available for compressible and incompressible flow.", CURRENT_FUNCTION);
 
+    /*--- The dual-time density history is recomputed via the fluid model, which needs the species
+          solution; the species solver only exists on the finest grid. ---*/
+    if ((Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) && (Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) &&
+        (TimeMarching == TIME_MARCHING::DT_STEPPING_1ST || TimeMarching == TIME_MARCHING::DT_STEPPING_2ND) &&
+        (nMGLevels > 0))
+      SU2_MPI::Error("Dual-time stepping with species-dependent variable density does not support MGLEVEL > 0.",
+                     CURRENT_FUNCTION);
+
     /*--- Species specific OF currently can only handle one entry in Marker_Analyze. ---*/
     for (unsigned short iObj = 0; iObj < nObj; iObj++) {
       if ((Kind_ObjFunc[iObj] == SURFACE_SPECIES_0 ||
@@ -5770,10 +5880,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (flamelet_ParsedOptions.Flame_T_ignition <= Inc_Temperature_Init) {
       SU2_MPI::Error("Flame ignition temperature must be higher than the initial temperature of the flow field.", CURRENT_FUNCTION);
     }
-  }
-
-  if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
-    SU2_MPI::Error("BOUNDED_SCALAR discretization can only be used for incompressible problems.", CURRENT_FUNCTION);
   }
 
 }
@@ -7034,6 +7140,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         case TOPOL_DISCRETENESS:         cout << "Topology discreteness objective function." << endl; break;
         case TOPOL_COMPLIANCE:           cout << "Topology compliance objective function." << endl; break;
         case STRESS_PENALTY:             cout << "Stress penalty objective function." << endl; break;
+        case ENTROPY_GENERATION:         cout << "Entropy generation objective function." << endl; break;
       }
     }
     else {
@@ -7370,18 +7477,22 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 }
               }
               switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
-                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS:  cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI:  cout << "Using a Jacobi preconditioning."<< endl; break;
+                case ILU: cout << "Using ILU("<< IluOptions.FillIn <<") preconditioning."<< endl; break;
+                case LINELET: cout << "Using linelet preconditioning."<< endl; break;
+                case LU_SGS:  cout << "Using LU-SGS preconditioning."<< endl; break;
+                case Q_LU_SGS:  cout << "Using LU-SGS preconditioning with matrix quantization."<< endl; break;
+                case JACOBI:  cout << "Using Jacobi preconditioning."<< endl; break;
+                case Q_JACOBI:  cout << "Using Jacobi preconditioning with matrix quantization."<< endl; break;
               }
               break;
             case SMOOTHER:
               switch (Kind_Linear_Solver_Prec) {
-                case ILU:     cout << "A ILU(" << Linear_Solver_ILU_n << ")"; break;
+                case ILU:     cout << "A ILU(" << IluOptions.FillIn << ")"; break;
                 case LINELET: cout << "A Linelet"; break;
                 case LU_SGS:  cout << "A LU-SGS"; break;
+                case Q_LU_SGS:  cout << "A quantized LU-SGS"; break;
                 case JACOBI:  cout << "A Jacobi"; break;
+                case Q_JACOBI:  cout << "A quantized Jacobi"; break;
               }
               cout << " method is used for smoothing the linear system." << endl;
               break;
@@ -7530,10 +7641,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         MGTable.AddColumn("Presmooth",     10);
         MGTable.AddColumn("PostSmooth",    10);
         MGTable.AddColumn("CorrectSmooth", 10);
+        MGTable.AddColumn("CFL Scaling",   12);
         MGTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
         MGTable.PrintHeader();
         for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
-          MGTable << iLevel << MGOptions.MG_PreSmooth[iLevel] << MGOptions.MG_PostSmooth[iLevel] << MGOptions.MG_CorrecSmooth[iLevel];
+          const string cflStr = (iLevel == 0) ? "-" : std::to_string(MGOptions.MG_CflScaling[iLevel-1]).substr(0,6);
+          MGTable << iLevel << MGOptions.MG_PreSmooth[iLevel] << MGOptions.MG_PostSmooth[iLevel] << MGOptions.MG_CorrecSmooth[iLevel] << cflStr;
         }
         MGTable.PrintFooter();
       }
@@ -7655,7 +7768,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_COMPONENT::SU2_DEF) {
-    cout << "Output mesh file name: " << GetMesh_Out_FileName() << ".su2. " << endl;
+    cout << "Output mesh file name: " << GetMesh_Out_FileName() << GetMesh_Out_FileExtension() << ". " << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
@@ -8636,6 +8749,7 @@ CConfig::~CConfig() {
 
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
+
 }
 
 /*--- Input is the filename base, output is the completed filename. ---*/
@@ -8779,6 +8893,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case TOPOL_DISCRETENESS:          AdjExt = "_topdisc";  break;
         case TOPOL_COMPLIANCE:            AdjExt = "_topcomp";  break;
         case STRESS_PENALTY:              AdjExt = "_stress";   break;
+        case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
+        case TOTAL_PRESSURE_LOSS:         AdjExt = "_tot_press_loss"; break;
+        case KINETIC_ENERGY_LOSS:         AdjExt = "_kin_en_loss"; break;
       }
     }
     else{
@@ -10077,6 +10194,23 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
     if ((tag == sideA) || (tag == sideB)) return iMarker;
   }
   return -1;
+}
+
+short CConfig::FindMixingPlaneInterfaceMarker(unsigned short nMarker, unsigned short iMarkerInt) const {
+  short mark;
+  for (auto iMarker = 0; iMarker < nMarker; iMarker++){
+      /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
+      if (GetMarker_All_MixingPlaneInterface(iMarker) == iMarkerInt){
+          /*--- We have identified the local index of the marker ---*/
+          /*--- Store the identifier for the marker ---*/
+          mark = iMarker;
+          /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
+          return mark;
+      }
+      /*--- If the tag hasn't matched any tag within the donor markers ---*/
+      mark = -1;
+  }
+  return mark;
 }
 
 void CConfig::GEMM_Tick(double *val_start_time) const {

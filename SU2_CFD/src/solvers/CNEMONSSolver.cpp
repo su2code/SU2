@@ -100,7 +100,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Compute vorticity and strain mag. ---*/
 
-  ComputeVorticityAndStrainMag(*config, geometry, iMesh);
+  if (Output) ComputeVorticityAndStrainMag(*config, geometry, iMesh);
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -798,7 +798,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                 Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
 
           /*--- Apply to the linear system ---*/
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
         }
 
       } else {

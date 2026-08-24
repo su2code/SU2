@@ -37,17 +37,21 @@
 #define HAVE_LAPACK
 #endif
 #elif defined(HAVE_LAPACK)
+#ifdef USE_SINGLE_PRECISION
+#define GEMM_IMPL sgemm_
+#else
+#define GEMM_IMPL dgemm_
+#endif
 // dgemm(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc)
-extern "C" void dgemm_(const char*, const char*, const int*, const int*, const int*, const passivedouble*,
-                       const passivedouble*, const int*, const passivedouble*, const int*, const passivedouble*,
-                       passivedouble*, const int*);
-#define DGEMM dgemm_
+extern "C" void GEMM_IMPL(const char*, const char*, const int*, const int*, const int*, const passivedouble*,
+                          const passivedouble*, const int*, const passivedouble*, const int*, const passivedouble*,
+                          passivedouble*, const int*);
 #endif
 
 CRadialBasisFunction::CRadialBasisFunction(CGeometry**** geometry_container, const CConfig* const* config,
                                            unsigned int iZone, unsigned int jZone)
     : CInterpolator(geometry_container, config, iZone, jZone) {
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
 void CRadialBasisFunction::PrintStatistics() const {
@@ -98,7 +102,7 @@ su2double CRadialBasisFunction::Get_RadialBasisValue(RADIAL_BASIS type, const su
   return rbf;
 }
 
-void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
+void CRadialBasisFunction::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
   /*--- RBF options. ---*/
   const auto kindRBF = config[donorZone]->GetKindRadialBasisFunction();
   const bool usePolynomial = config[donorZone]->GetRadialBasisFunctionPolynomialOption();
@@ -334,7 +338,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
         const int M = interpMat.cols(), N = slabSize, K = funcMat.cols();
         // lda = C_inv_trunc.cols() = M; ldb = funcMat.cols() = K; ldc = interpMat.cols() = M;
         const passivedouble alpha = 1.0, beta = 0.0;
-        DGEMM(&op, &op, &M, &N, &K, &alpha, C_inv_trunc[0], &M, funcMat[0], &K, &beta, interpMat[0], &M);
+        GEMM_IMPL(&op, &op, &M, &N, &K, &alpha, C_inv_trunc[0], &M, funcMat[0], &K, &beta, interpMat[0], &M);
 #else
         /*--- Naive product, loop order considers short-wide
          *    nature of funcMat and interpMat. ---*/
@@ -480,7 +484,7 @@ void CRadialBasisFunction::ComputeGeneratorMatrix(RADIAL_BASIS type, bool usePol
     const int M = nVertexDonor, N = nVertexDonor, K = nPolynomial + 1;
     // lda = C_inv_top.cols() = M; ldb = Q.cols() = M; ldc = C_inv_bot.cols() = M;
     const passivedouble alpha = -1.0, beta = 1.0;
-    DGEMM(&opa, &opb, &M, &N, &K, &alpha, C_inv_top[0], &M, Q[0], &M, &beta, C_inv_bot[0], &M);
+    GEMM_IMPL(&opa, &opb, &M, &N, &K, &alpha, C_inv_top[0], &M, Q[0], &M, &beta, C_inv_bot[0], &M);
 #else  // naive product
     for (int i = 0; i < nVertexDonor; ++i)
       for (int j = 0; j < nVertexDonor; ++j)

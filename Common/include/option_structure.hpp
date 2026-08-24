@@ -195,6 +195,9 @@ inline unsigned short nPointsOfElementType(unsigned short elementType) {
 }
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
+const int SU2_BINARY_STRING_SIZE = 65; /*!< \brief Length of strings (e.g. marker names) used in the native
+                                                    SU2 binary mesh format. Shared by CSU2BinaryMeshReaderBase
+                                                    and CSU2MeshBinaryFileWriter so they cannot drift apart. */
 const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that is allocated for each element
                                              that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
 const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
@@ -1117,9 +1120,12 @@ struct CMGOptions {
   std::vector<unsigned short> MG_PreSmooth;    /*!< \brief Multigrid pre-smoothing iterations per level. */
   std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
   std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
+  std::vector<su2double> MG_CflScaling;        /*!< \brief Per-level CFL scaling factors relative to the previous (finer) level. Entry [i] scales level i+1 from level i. Size = nMGLevels. */
   bool MG_Smooth_EarlyExit{false};        /*!< \brief Enable early exit for MG smoothing iterations. */
   bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
+  su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
+  unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
 };
 
 /*!
@@ -1442,11 +1448,29 @@ static const MapType<std::string, FLAMELET_INIT_TYPE> Flamelet_Init_Map = {
 };
 
 /*!
+ * \brief Selects the source of wall/inlet enthalpy boundary conditions for the flamelet solver.
+ * SPECIES_MARKERS (default): inlet H is taken directly from MARKER_INLET_SPECIES; wall enthalpy BC
+ * is obtained from MARKER_WALL_SPECIES.
+ * FLOW_MARKERS: inlet H is derived from the MARKER_INLET temperature via a Newton iteration on the
+ * LUT (reverse lookup using Z,T) from MARKER_ISOTHERMAL or MARKER_HEATFLUX.
+ */
+enum class FLAMELET_ENTHALPY_BC {
+  FLOW_MARKERS,    /*!< \brief Derive inlet H from MARKER_INLET T (LUT Newton); walls from MARKER_ISOTHERMAL/MARKER_HEATFLUX. */
+  SPECIES_MARKERS, /*!< \brief Take inlet H directly from MARKER_INLET_SPECIES; walls from MARKER_WALL_SPECIES (default). */
+};
+
+static const MapType<std::string, FLAMELET_ENTHALPY_BC> Flamelet_Enthalpy_BC_Map = {
+  MakePair("FLOW_MARKERS",    FLAMELET_ENTHALPY_BC::FLOW_MARKERS)
+  MakePair("SPECIES_MARKERS", FLAMELET_ENTHALPY_BC::SPECIES_MARKERS)
+};
+
+/*!
  * \brief Structure containing parsed options for flamelet fluid model.
  */
 struct FluidFlamelet_ParsedOptions {
   ///TODO: Add python wrapper initialization option
   FLAMELET_INIT_TYPE ignition_method = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
+  FLAMELET_ENTHALPY_BC enthalpy_bc = FLAMELET_ENTHALPY_BC::SPECIES_MARKERS; /*!< \brief Source of enthalpy BCs: species markers (default, backward-compatible) or flow markers. */
   unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
   unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
   unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
@@ -2123,6 +2147,9 @@ enum ENUM_OBJECTIVE {
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
   TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
   STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
+  ENTROPY_GENERATION = 80,      /*!< \brief Entropy generation turbomachinery objective function. */
+  TOTAL_PRESSURE_LOSS = 81,     /*!< \brief Total pressure loss turbomachinery objective function. */
+  KINETIC_ENERGY_LOSS = 82      /*!< \breif Kinetic energy loss coefficient turbomachinery objective function. */
 };
 static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
@@ -2165,24 +2192,32 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
+  MakePair("ENTROPY_GENERATION", ENTROPY_GENERATION)
+  MakePair("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
+  MakePair("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 };
 
 /*!
- * \brief Types of input file formats
+ * \brief Types of grid file formats
  */
-enum ENUM_INPUT {
-  SU2       = 1,  /*!< \brief SU2 input format. */
-  CGNS_GRID = 2,  /*!< \brief CGNS input format for the computational grid. */
-  RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
-  BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
+enum ENUM_GRID {
+  SU2       = 1,  /*!< \brief SU2 ascii format. */
+  SU2_BIN   = 2,  /*!< \brief SU2 binary format. */
+  CGNS_GRID = 3,  /*!< \brief CGNS format for the computational grid. */
+  RECTANGLE = 4,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
+  BOX       = 5   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
-static const MapType<std::string, ENUM_INPUT> Input_Map = {
-  MakePair("SU2", SU2)
-  MakePair("CGNS", CGNS_GRID)
-  MakePair("RECTANGLE", RECTANGLE)
-  MakePair("BOX", BOX)
+static const MapType<std::string, ENUM_GRID> Input_Map = {
+  MakePair("SU2", ENUM_GRID::SU2)
+  MakePair("SU2B", ENUM_GRID::SU2_BIN)
+  MakePair("CGNS", ENUM_GRID::CGNS_GRID)
+  MakePair("RECTANGLE", ENUM_GRID::RECTANGLE)
+  MakePair("BOX", ENUM_GRID::BOX)
 };
-
+static const MapType<std::string, ENUM_GRID> OutputMesh_Map = {
+  MakePair("SU2", ENUM_GRID::SU2)
+  MakePair("SU2B", ENUM_GRID::SU2_BIN)
+};
 
 /*!
  * \brief Type of solution output file formats
@@ -2198,7 +2233,8 @@ enum class OUTPUT_TYPE {
   PARAVIEW_LEGACY_BINARY,  /*!< \brief Paraview binary format for the solution output. */
   SURFACE_PARAVIEW_ASCII,  /*!< \brief Paraview ASCII format for the solution output. */
   SURFACE_PARAVIEW_LEGACY_BINARY, /*!< \brief Paraview binary format for the solution output. */
-  MESH,                    /*!< \brief SU2 mesh format. */
+  MESH,                    /*!< \brief SU2 ASCII mesh format. */
+  MESH_BINARY,             /*!< \brief SU2 binary mesh format. */
   RESTART_BINARY,          /*!< \brief SU2 binary restart format. */
   RESTART_ASCII,           /*!< \brief SU2 ASCII restart format. */
   PARAVIEW_XML,            /*!< \brief Paraview XML with binary data format */
@@ -2224,6 +2260,7 @@ static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
   MakePair("SURFACE_PARAVIEW", OUTPUT_TYPE::SURFACE_PARAVIEW_XML)
   MakePair("PARAVIEW_MULTIBLOCK", OUTPUT_TYPE::PARAVIEW_MULTIBLOCK)
   MakePair("MESH", OUTPUT_TYPE::MESH)
+  MakePair("MESH_BINARY", OUTPUT_TYPE::MESH_BINARY)
   MakePair("RESTART_ASCII", OUTPUT_TYPE::RESTART_ASCII)
   MakePair("RESTART", OUTPUT_TYPE::RESTART_BINARY)
   MakePair("CGNS", OUTPUT_TYPE::CGNS)
@@ -2492,19 +2529,30 @@ static const MapType<std::string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
  * \brief Types of preconditioners for the linear solver
  */
 enum ENUM_LINEAR_SOLVER_PREC {
+  IDENTITY,       /*!< \brief No preconditioner. */
   JACOBI,         /*!< \brief Jacobi preconditioner. */
   LU_SGS,         /*!< \brief LU SGS preconditioner. */
   LINELET,        /*!< \brief Line implicit preconditioner. */
   ILU,            /*!< \brief ILU(k) preconditioner. */
+  Q_LU_SGS,       /*!< \brief LU-SGS with quantized (int8) off-diagonal storage; L/U are never allocated as ScalarType. */
+  Q_JACOBI,       /*!< \brief Jacobi with quantized (int8) off-diagonal storage; same matvec quantization as Q_LU_SGS,
+                       the diagonal inverse is still computed and applied at full precision. */
+  Q_IDENTITY,     /*!< \brief No preconditioner, but the matrix-vector product still uses quantized (int8)
+                       off-diagonal storage, same matvec quantization as Q_LU_SGS/Q_JACOBI. */
   PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
   PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
   PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
 };
 static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
+  MakePair("NONE", IDENTITY)
+  MakePair("IDENTITY", IDENTITY)
   MakePair("JACOBI", JACOBI)
   MakePair("LU_SGS", LU_SGS)
   MakePair("LINELET", LINELET)
   MakePair("ILU", ILU)
+  MakePair("Q_LU_SGS", Q_LU_SGS)
+  MakePair("Q_JACOBI", Q_JACOBI)
+  MakePair("Q_IDENTITY", Q_IDENTITY)
   MakePair("PASTIX_ILU", PASTIX_ILU)
   MakePair("PASTIX_LU", PASTIX_LU_P)
   MakePair("PASTIX_LDLT", PASTIX_LDLT_P)
@@ -2639,7 +2687,7 @@ enum class CHECK_TAPE_VARIABLES {
 };
 static const MapType<std::string, CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
     MakePair("SOLVER_VARIABLES", CHECK_TAPE_VARIABLES::SOLVER_VARIABLES)
-    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
+    MakePair("MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
 };
 
 enum class RECORDING {

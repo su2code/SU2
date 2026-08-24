@@ -9,7 +9,7 @@
 * The SU2 Project is maintained by the SU2 Foundation
 * (http://su2foundation.org)
 *
-* Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+* Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 *
 * SU2 is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,11 @@
 * You should have received a copy of the GNU Lesser General Public
 * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 */
+
+#pragma once
+
+#ifndef SU2_COMMON_LINEAR_ALGEBRA_GPUCOMMS_CUH
+#define SU2_COMMON_LINEAR_ALGEBRA_GPUCOMMS_CUH
 
 #include<cuda_runtime.h>
 #include<iostream>
@@ -51,3 +56,5 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 #define gpuErrChk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+
+#endif  // SU2_COMMON_LINEAR_ALGEBRA_GPUCOMMS_CUH
