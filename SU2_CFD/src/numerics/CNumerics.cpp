@@ -53,7 +53,9 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Gamma_Minus_One = Gamma - 1.0;
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
-  energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  energy_multicomponent =
+      (config->GetKind_FluidModel() == FLUID_MIXTURE || config->GetKind_FluidModel() == FLUID_CANTERA) &&
+      config->GetEnergy_Equation();
 
   tau = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)

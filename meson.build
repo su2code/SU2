@@ -8,7 +8,6 @@ project('SU2', 'c', 'cpp',
                           'b_ndebug=true',
                           'c_std=c99',
                           'cpp_std=c++17'])
-
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
   error('SU2 must be (pre-)configured with the extended Meson script (./meson.py) or with the ./preconfigure.py script in the SU2 root directory.')
@@ -344,6 +343,49 @@ if get_option('enable-coolprop')
   endif
 endif
 
+if get_option('enable-cantera')
+  # Cantera is built from source via its own SCons build, driven silently as part of
+  # the normal SU2 build (custom_target below), rather than requiring a separate manual
+  # build step or a prebuilt system/conda package. Building from source (instead of
+  # linking a prebuilt shared library) keeps the door open for a future AD-enabled
+  # Cantera build variant compiled against SU2's own scalar type.
+  cantera_source_dir = join_paths(meson.current_source_dir(), 'subprojects', 'cantera')
+  cantera_prefix = join_paths(meson.current_build_dir(), 'cantera_install')
+  cantera_build_script = join_paths(meson.current_source_dir(), 'meson_scripts', 'build_cantera.py')
+
+  cantera_build_command = [python, cantera_build_script,
+                           '--source', cantera_source_dir,
+                           '--prefix', cantera_prefix,
+                           '--stamp', '@OUTPUT@',
+                           '--eigen-inc-dir', join_paths(meson.current_source_dir(), 'externals', 'eigen')]
+  if get_option('cantera-boost-inc-dir') != ''
+    cantera_build_command += ['--boost-inc-dir', get_option('cantera-boost-inc-dir')]
+  endif
+  if get_option('cpu-arch') != ''
+    cantera_build_command += ['--cpu-arch', get_option('cpu-arch')]
+  endif
+
+  cantera_build = custom_target('build_cantera',
+    output: 'cantera_build.stamp',
+    command: cantera_build_command,
+    build_always_stale: true,
+    console: true,
+  )
+
+  # build_cantera.py makes Cantera's installed headers resolve Eigen through an
+  # "eigen3/Eigen/..." shim it creates next to the install prefix, pointing at SU2's
+  # own Eigen copy (see the ODR note in that script). Anything compiling those headers -
+  # including SU2's own CFluidCantera.cpp - needs that same shim directory on its
+  # include path so the "eigen3/..." form resolves for it too.
+  cantera_dep = declare_dependency(
+    compile_args: ['-I' + join_paths(cantera_prefix, 'include'),
+                   '-I' + cantera_prefix + '_eigen_shim'],
+    link_args: ['-L' + join_paths(cantera_prefix, 'lib'), '-lcantera'],
+    sources: [cantera_build],
+  )
+  su2_cpp_args +='-DHAVE_CANTERA'
+endif
+
 if get_option('enable-mlpcpp')
   su2_cpp_args += '-DHAVE_MLPCPP'
 endif
@@ -400,6 +442,7 @@ message('''---------------------------------------------------------------------
          CoolProp:       @12@
          MLPCpp:         @13@
          Tracy Profiler: @14@
+         Cantera:        @16@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -415,7 +458,8 @@ message('''---------------------------------------------------------------------
 '''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
-           get_option('enable-mlpcpp'), get_option('tracy_enable'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
+           get_option('enable-mlpcpp'), get_option('tracy_enable'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root(),
+           get_option('enable-cantera')))
 
 if get_option('enable-mpp')
   if get_option('install-mpp')
@@ -433,6 +477,17 @@ if get_option('enable-mpp')
 
             ''')
   endif
+endif
+
+if get_option('enable-cantera')
+  message(''' To run SU2 with Cantera, add this line to your .bashrc file:
+
+          export CANTERA_DATA=@0@/data
+
+          Cantera's own compiled-in default data directory should normally be
+          found automatically, but setting CANTERA_DATA explicitly avoids
+          relying on that at runtime.
+          '''.format(cantera_prefix))
 endif
 
 if get_option('enable-librom')

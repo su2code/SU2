@@ -57,7 +57,11 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* conf
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("RMS_ADJ_SPECIES_" + std::to_string(iVar), "rms[A_rho*Y_" + std::to_string(iVar) + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
+      if(config->GetKind_FluidModel()==FLUID_CANTERA){
+        AddHistoryOutput("RMS_ADJ_SPECIES_" + config->GetChemical_GasComposition(iVar), "rms[A_rho*Y_" + config->GetChemical_GasComposition(iVar) + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
+      }else{
+        AddHistoryOutput("RMS_ADJ_SPECIES_" + std::to_string(iVar), "rms[A_rho*Y_" + std::to_string(iVar) + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
+      }
     }
   }
 
@@ -94,7 +98,11 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* conf
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("MAX_ADJ_SPECIES_" + std::to_string(iVar), "max[A_rho*Y_" + std::to_string(iVar) + "]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
+      if(config->GetKind_FluidModel()==FLUID_CANTERA){
+        AddHistoryOutput("MAX_ADJ_SPECIES_" + config->GetChemical_GasComposition(iVar), "max[A_rho*Y_" + config->GetChemical_GasComposition(iVar) + "]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
+      }else{
+        AddHistoryOutput("MAX_ADJ_SPECIES_" + std::to_string(iVar), "max[A_rho*Y_" + std::to_string(iVar) + "]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
+      }
     }
   }
 
@@ -204,10 +212,18 @@ void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolv
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      SetHistoryOutputValue("RMS_ADJ_SPECIES_" + std::to_string(iVar), log10(adjspecies_solver->GetRes_RMS(iVar)));
-      SetHistoryOutputValue("MAX_ADJ_SPECIES_" + std::to_string(iVar), log10(adjspecies_solver->GetRes_Max(iVar)));
-      if (multiZone) {
-        SetHistoryOutputValue("BGS_ADJ_SPECIES_" + std::to_string(iVar), log10(adjspecies_solver->GetRes_BGS(iVar)));
+      if (config->GetKind_FluidModel() == FLUID_CANTERA) {
+        SetHistoryOutputValue("RMS_ADJ_SPECIES_" + config->GetChemical_GasComposition(iVar), log10(adjspecies_solver->GetRes_RMS(iVar)));
+        SetHistoryOutputValue("MAX_ADJ_SPECIES_" + config->GetChemical_GasComposition(iVar), log10(adjspecies_solver->GetRes_Max(iVar)));
+        if (multiZone) {
+          SetHistoryOutputValue("BGS_ADJ_SPECIES_" + config->GetChemical_GasComposition(iVar), log10(adjspecies_solver->GetRes_BGS(iVar)));
+        }
+      } else {
+        SetHistoryOutputValue("RMS_ADJ_SPECIES_" + std::to_string(iVar), log10(adjspecies_solver->GetRes_RMS(iVar)));
+        SetHistoryOutputValue("MAX_ADJ_SPECIES_" + std::to_string(iVar), log10(adjspecies_solver->GetRes_Max(iVar)));
+        if (multiZone) {
+          SetHistoryOutputValue("BGS_ADJ_SPECIES_" + std::to_string(iVar), log10(adjspecies_solver->GetRes_BGS(iVar)));
+        }
       }
     }
 
