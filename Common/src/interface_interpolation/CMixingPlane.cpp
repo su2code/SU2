@@ -209,13 +209,13 @@ void CMixingPlane::WriteInterpolationDetails(const std::string& filename, const 
     outFile << "---------------------\n";
 
     // Find max donor span
-    unsigned long maxDonorSpan = 0;
+    size_t maxDonorSpan = 0;
     for (const auto& ts : targetSpans[iMarkerInt]) {
       maxDonorSpan = std::max(maxDonorSpan, ts.donorSpan);
     }
 
     // Group by donor span
-    for (unsigned long iDonor = 0; iDonor <= maxDonorSpan; iDonor++) {
+    for (size_t iDonor = 0; iDonor <= maxDonorSpan; iDonor++) {
       bool hasTargets = false;
       std::ostringstream targets;
 
