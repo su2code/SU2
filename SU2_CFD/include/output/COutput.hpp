@@ -501,17 +501,7 @@ public:
   void ResetConvergenceMonitoring(unsigned long Iteration) { convergenceStartIter = Iteration; }
 
   /*!
-   * \brief Names and values of the fields convergence is monitored on that are residuals.
-   *
-   *        These are the very fields CONV_FIELD selects, after the solver-specific default has
-   *        been applied (RMS_DENSITY for compressible, RMS_PRESSURE for incompressible, and so
-   *        on), so anything deciding on convergence sees exactly what the convergence monitor
-   *        sees. Residual fields are stored as log10 of the residual, hence a drop of a given
-   *        number of orders of magnitude is simply a difference, on the same scale as
-   *        CONV_RESIDUAL_MINVAL. Fields that are not residuals, a force coefficient say, carry
-   *        no such notion and are left out, so the list is empty when convergence is monitored
-   *        on coefficients alone.
-   * \return Name and current value of every monitored residual field, in CONV_FIELD order.
+   * \brief Names and values (log10) of the fields whose convergence is monitored and that are residuals.
    */
   vector<pair<string, passivedouble>> GetResidualConvFields() const {
     vector<pair<string, passivedouble>> fields;
