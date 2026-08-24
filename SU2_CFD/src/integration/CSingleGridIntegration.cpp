@@ -34,7 +34,7 @@ CSingleGridIntegration::CSingleGridIntegration() : CIntegration() { }
 void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                                   CNumerics ******numerics_container, CConfig **config,
                                                   unsigned short RunTime_EqSystem, unsigned short iZone,
-                                                  unsigned short iInst) {
+                                                  unsigned short iInst, bool fmg_cfl_ramp) {
   SU2_ZONE_SCOPED
 
   const unsigned short Solver_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
@@ -49,27 +49,25 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   CGeometry* geometry_fine = geometry[iZone][iInst][FinestMesh];
   CSolver** solvers_fine = solver_container[iZone][iInst][FinestMesh];
 
-  /*--- During the Full-MG startup the flow equations are being solved on a coarse level at that
-   *    level's ramped CFL, and afterwards the finest grid is itself ramped up to the configured
-   *    number, while the turbulence equations are always solved on the grid the flow solver is
-   *    currently using. Put the turbulence solver on the matching CFL, taken from the flow solver
-   *    so it follows whichever of those ramps is in progress, instead of leaving the turbulence at
-   *    the fine-grid number.
-   *
-   *    Strictly limited to the startup and the ramp that ends it: outside those this would
-   *    overwrite the per-point CFL the turbulence solver maintains itself, discarding any CFL
-   *    adaptation, on every RANS run whether or not multigrid is used at all. ---*/
-  if (RunTime_EqSystem == RUNTIME_TURB_SYS && config[iZone]->GetMGCycle() == MG_CYCLE::FULL &&
-      ((FinestMesh != MESH_0) || config[iZone]->GetFullMG_CFLRamp())) {
-    const su2double turbReduction = SU2_TYPE::GetValue(config[iZone]->GetCFLRedCoeff_Turb());
-    const su2double turbCFL =
-        SU2_TYPE::GetValue(solvers_fine[FLOW_SOL]->GetAvg_CFL_Local()) * turbReduction;
-    auto* turbSolver = solvers_fine[Solver_Position];
+  /*--- These solvers scale the flow's time step by CFL_scalar/CFL_flow, so keep the two in step
+        while the Full-MG startup ramps the flow's CFL. ---*/
+  const bool follows_flow_cfl = (RunTime_EqSystem == RUNTIME_TURB_SYS) ||
+                                (RunTime_EqSystem == RUNTIME_TRANS_SYS) ||
+                                (RunTime_EqSystem == RUNTIME_SPECIES_SYS);
 
-    SU2_OMP_SAFE_GLOBAL_ACCESS(turbSolver->SetCFL_Local_Stats(turbCFL);)
+  if (follows_flow_cfl && config[iZone]->GetMGCycle() == MG_CYCLE::FULL &&
+      ((FinestMesh != MESH_0) || fmg_cfl_ramp)) {
+    const su2double reduction = SU2_TYPE::GetValue((RunTime_EqSystem == RUNTIME_SPECIES_SYS)
+                                                   ? config[iZone]->GetCFLRedCoeff_Species()
+                                                   : config[iZone]->GetCFLRedCoeff_Turb());
+    const su2double scalarCFL =
+        SU2_TYPE::GetValue(solvers_fine[FLOW_SOL]->GetAvg_CFL_Local()) * reduction;
+    auto* scalarSolver = solvers_fine[Solver_Position];
+
+    SU2_OMP_SAFE_GLOBAL_ACCESS(scalarSolver->SetCFL_Local_Stats(scalarCFL);)
     SU2_OMP_FOR_STAT(roundUpDiv(geometry_fine->GetnPoint(), omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < geometry_fine->GetnPoint(); ++iPoint) {
-      turbSolver->GetNodes()->SetLocalCFL(iPoint, turbCFL);
+      scalarSolver->GetNodes()->SetLocalCFL(iPoint, scalarCFL);
     }
     END_SU2_OMP_FOR
   }

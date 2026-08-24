@@ -489,28 +489,12 @@ public:
 
   /*!
    * \brief Discard the convergence history and count it from the given iteration instead.
-   *
-   *        A Cauchy criterion averages the change of a coefficient over the last
-   *        CONV_CAUCHY_ELEMS iterations, and only starts judging once that many have been seen.
-   *        Both of those are meaningless across a change of mesh: a Full-MG startup fills the
-   *        window on the coarse grids, so when the finest one becomes active the criterion is
-   *        already armed on another grid's history. Starting the count again at the handover
-   *        makes it mean what it says.
    * \param[in] Iteration - Iteration the history restarts from.
    */
   void ResetConvergenceMonitoring(unsigned long Iteration) { convergenceStartIter = Iteration; }
 
   /*!
    * \brief Names and values of the fields convergence is monitored on that are residuals.
-   *
-   *        These are the very fields CONV_FIELD selects, after the solver-specific default has
-   *        been applied (RMS_DENSITY for compressible, RMS_PRESSURE for incompressible, and so
-   *        on), so anything deciding on convergence sees exactly what the convergence monitor
-   *        sees. Residual fields are stored as log10 of the residual, hence a drop of a given
-   *        number of orders of magnitude is simply a difference, on the same scale as
-   *        CONV_RESIDUAL_MINVAL. Fields that are not residuals, a force coefficient say, carry
-   *        no such notion and are left out, so the list is empty when convergence is monitored
-   *        on coefficients alone.
    * \return Name and current value of every monitored residual field, in CONV_FIELD order.
    */
   vector<pair<string, passivedouble>> GetResidualConvFields() const {

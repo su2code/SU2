@@ -37,9 +37,6 @@
  * \author T. Economon
  */
 class CFluidIteration : public CIteration {
- private:
-  bool fmg_convergence_rebased = false; /*!< \brief Whether the convergence history has been restarted at the end of the Full-MG startup. */
-
  public:
   /*!
    * \brief Constructor of the class.

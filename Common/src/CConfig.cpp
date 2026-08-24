@@ -2071,18 +2071,12 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
   /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
-  /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Number of iterations spent on each mesh during the Full
-   * Multigrid (FMG) startup phase before advancing to the next finer one, and the length of the CFL
-   * ramp each of those levels is brought up over, the finest grid included. 0 removes the iteration
-   * budget, leaving MG_STARTUP_CONVERGENCE and MG_STARTUP_STAGNATION to decide, and disables the
-   * ramp. DEFAULT: 100 \ingroup Config*/
+  /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
+   * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
   /*!\brief MG_STARTUP_CONVERGENCE\n DESCRIPTION: During the startup phase of Full-MG, leave the current level once
-   * CONV_FIELD has dropped by this many orders of magnitude relative to its value when the level became active, without
-   * waiting out MG_STARTUP_ITER. Negative for a drop, on the same log10 scale as CONV_RESIDUAL_MINVAL, so -2 asks for a
-   * fall to 1% of the starting residual. Only residual convergence fields are used; a coefficient such as DRAG carries
-   * no notion of a drop in orders of magnitude and leaves this criterion inactive. A large negative value effectively
-   * disables it and leaves MG_STARTUP_ITER and MG_STARTUP_STAGNATION in charge. DEFAULT: -2 \ingroup Config*/
+   * CONV_FIELD has dropped by this many orders of magnitude relative to its value when the level became active.
+   * DEFAULT: -2 \ingroup Config*/
   addDoubleOption("MG_STARTUP_CONVERGENCE", MGOptions.MG_Startup_Convergence, -2.0);
   /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio
    * between successive iterations exceeds this value for MG_STARTUP_STAGNATION_ITER consecutive iterations, promote to
@@ -4855,34 +4849,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  /*--- The Full-MG startup begins on the coarsest grid and is promoted towards MESH_0 by
-   *    CMultiGridIntegration. That promotion only runs for the direct problem, and only when the
-   *    multigrid integration is what advances the solution; a restart already starts from a fine
-   *    grid solution and would only lose it by dropping back to the coarsest level. Fall back to
-   *    a V cycle in those cases, and derive FinestMesh from the cycle that is actually going to
-   *    be run, otherwise FinestMesh stays on the coarsest level for the entire simulation, or
-   *    points past the last level once the agglomeration reduces nMGLevels. ---*/
+  /*--- Only the direct problem promotes a Full-MG startup. Downgrade before FinestMesh is
+   *    derived from the cycle, or it stays on the coarsest level for the entire run. ---*/
 
-  /*--- With no iteration budget the startup leans entirely on the two residual criteria. Whether
-   *    MG_STARTUP_CONVERGENCE can act is only known once the output has resolved CONV_FIELD, so the
-   *    integration errors out at that point if nothing is left; warn here, where the combination is
-   *    visible. ---*/
-
-  FullMG_NoBudget = (Kind_MGCycle == MG_CYCLE::FULL) && (MGOptions.MG_Startup_Iter == 0) &&
-                    ((MGOptions.MG_Startup_Stagnation <= 0.0) || (MGOptions.MG_Startup_Stagnation_Iter == 0));
-
-  if (Restart || ContinuousAdjoint || NewtonKrylov) {
-
-    /*--- Reported by SetOutput, which runs once, instead of here, as the postprocessing is
-     *    repeated for every CConfig that is built for the case. ---*/
-
-    Downgraded_FullMG = (Kind_MGCycle == MG_CYCLE::FULL);
-
-    /*--- A restart falls back to a V cycle whatever was requested, which is pre-existing
-     *    behaviour, the other two only downgrade the Full-MG startup itself. ---*/
-
-    if (Restart || (Kind_MGCycle == MG_CYCLE::FULL)) Kind_MGCycle = MG_CYCLE::V;
-  }
+  if (Restart || ((Kind_MGCycle == MG_CYCLE::FULL) && ContinuousAdjoint)) Kind_MGCycle = MG_CYCLE::V;
 
   FinestMesh = MESH_0;
   if (Kind_MGCycle == MG_CYCLE::FULL) FinestMesh = nMGLevels;
@@ -7668,18 +7638,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Kind_MGCycle == MG_CYCLE::V) cout << "V Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
       if (Kind_MGCycle == MG_CYCLE::W) cout << "W Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
       if (Kind_MGCycle == MG_CYCLE::FULL) cout << "Full Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
-
-      if (FullMG_NoBudget) {
-        cout << "WARNING: MG_STARTUP_ITER= 0 and MG_STARTUP_STAGNATION off leave the Full multigrid "
-                "startup relying on MG_STARTUP_CONVERGENCE alone." << endl;
-      }
-
-      if (Downgraded_FullMG) {
-        const char* reason = Restart ? "a restart" : (ContinuousAdjoint ? "the continuous adjoint"
-                                                                        : "Newton-Krylov");
-        cout << "WARNING: The Full multigrid startup is not available for " << reason
-             << ", using a V cycle instead." << endl;
-      }
 
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<< endl;
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;

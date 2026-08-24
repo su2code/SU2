@@ -82,6 +82,10 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
 
+  /*--- Whether the Full-MG startup is still ramping the finest grid's CFL. ---*/
+
+  const bool fmg_cfl_ramp = integration[val_iZone][val_iInst][FLOW_SOL]->GetFullMG_CFLRamp();
+
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
 
   if (config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE && !frozen_visc) {
@@ -91,20 +95,23 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
       config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TRANS_SYS);
       integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                         RUNTIME_TRANS_SYS, val_iZone, val_iInst);
+                                                                         RUNTIME_TRANS_SYS, val_iZone, val_iInst,
+                                                                         fmg_cfl_ramp);
     }
 
     /*--- Solve the turbulence model ---*/
 
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
     integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                      RUNTIME_TURB_SYS, val_iZone, val_iInst);
+                                                                      RUNTIME_TURB_SYS, val_iZone, val_iInst,
+                                                                      fmg_cfl_ramp);
   }
 
   if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_SPECIES_SYS);
     integration[val_iZone][val_iInst][SPECIES_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                         RUNTIME_SPECIES_SYS, val_iZone, val_iInst);
+                                                                         RUNTIME_SPECIES_SYS, val_iZone, val_iInst,
+                                                                         fmg_cfl_ramp);
 
     // This only applies if mixture properties are used. But this also doesn't hurt if done w/out mixture properties.
     // In case of turbulence, the Turb-Post computes the correct eddy viscosity based on mixture-density and
@@ -131,10 +138,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   }
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
-        During Full-MG warmup (FinestMesh > MESH_0), skip adaptation entirely until the finest
-        mesh is active, and for as long after that as its CFL is still being ramped up to the
-        configured number, which the adaptation would otherwise be fighting over. ---*/
-  const bool fmg_cfl_ramp = config[val_iZone]->GetFullMG_CFLRamp();
+        The Full-MG startup owns the CFL while it ramps, so leave it alone until then. ---*/
   SU2_OMP_PARALLEL
   if (!disc_adj && config[val_iZone]->GetFinestMesh() == MESH_0 && !fmg_cfl_ramp) {
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
@@ -253,15 +257,13 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   /*--- During Full-MG startup FinestMesh > 0: read residuals from the active (coarse) level. ---*/
   const unsigned short finestMesh = config[val_iZone]->GetFinestMesh();
 
-  /*--- The startup has just handed the solution to the finest grid, so restart the convergence
-   *    history here: everything in it up to now was measured on a coarser mesh, and a Cauchy
-   *    criterion would otherwise judge the finest grid on a window it never filled. Done before
-   *    this iteration is recorded, so the history holds fine grid values only. ---*/
+  /*--- The startup has just handed over to the finest grid, so restart the convergence history:
+   *    everything in it up to now was measured on a coarser mesh. ---*/
 
   if ((config[val_iZone]->GetMGCycle() == MG_CYCLE::FULL) && (finestMesh == MESH_0) &&
-      !fmg_convergence_rebased) {
+      (config[val_iZone]->GetInnerIter() ==
+       integration[val_iZone][val_iInst][FLOW_SOL]->GetLevelStartIter())) {
     output->ResetConvergenceMonitoring(config[val_iZone]->GetInnerIter());
-    fmg_convergence_rebased = true;
   }
 
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][finestMesh], solver[val_iZone][val_iInst][finestMesh],
@@ -270,18 +272,10 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
   auto StopCalc = output->GetConvergence();
 
-  /*--- During Full-MG warmup the convergence criterion is evaluated against coarse-mesh residuals.
-   *    Never stop before the fine mesh is active. ---*/
+  /*--- Never stop before the fine mesh is active. ---*/
   if (finestMesh != MESH_0) StopCalc = false;
 
-  /*--- Feed the Full-MG startup its promotion criterion. The history fields were just written
-   *    from the active (coarse) level, so these are the convergence fields on exactly the level
-   *    being iterated, which is the level whose convergence decides when to move up. Asking the
-   *    output for them rather than the config is what makes the criterion agree with the run's
-   *    own convergence criterion: CONV_FIELD is only turned into a concrete field here, with the
-   *    default that belongs to the solver at hand (RMS_DENSITY for compressible, RMS_PRESSURE
-   *    for incompressible, ...), and only the output knows which of those fields are residuals
-   *    that can be said to drop by so many orders of magnitude. ---*/
+  /*--- The history fields were just written from the active level, feed them to the startup. ---*/
   if (config[val_iZone]->GetMGCycle() == MG_CYCLE::FULL && finestMesh != MESH_0) {
     integration[val_iZone][val_iInst][FLOW_SOL]->MonitorFullMG_Startup(output->GetResidualConvFields(),
                                                                       config[val_iZone]);

@@ -824,14 +824,14 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
   else if(cauchyTimeConverged){
     TimeConvergence = cauchyTimeConverged;
   }
-  
+
   // Handle max time delay for 2nd order time stepping
   // Delay stopping at max_time to ensure both timestep N and N-1 are written for proper restart
   if(config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND){
     const su2double cur_time = GetHistoryFieldValue("CUR_TIME");
     const su2double max_time = config->GetMax_Time();
     const bool final_time_reached = (cur_time >= max_time);
-    
+
     // If max_time is reached on first detection, delay the stop
     if(final_time_reached && !maxTimeDelayActive){
       maxTimeDelayActive = true;
@@ -842,7 +842,7 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
       maxTimeDelayActive = false;   // Reset for next run
     }
   }
-  
+
   return TimeConvergence;
 }
 
@@ -935,8 +935,7 @@ bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   convergence = true;
 
-  /*--- The history is counted from wherever it was last restarted, which is the start of the run
-   *    unless a Full-MG startup handed the solution over to the finest grid part way through. ---*/
+  /*--- Count from wherever the history was last restarted. ---*/
 
   if (Iteration >= convergenceStartIter) Iteration -= convergenceStartIter;
   else Iteration = 0;

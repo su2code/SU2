@@ -498,9 +498,6 @@ private:
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
   MG_CYCLE Kind_MGCycle;              /*!< \brief Kind of multigrid cycle. */
-  bool Downgraded_FullMG{false};      /*!< \brief A Full-MG cycle was requested but cannot be run. */
-  bool FullMG_NoBudget{false};        /*!< \brief Full-MG has no iteration budget and no stagnation criterion. */
-  bool FullMG_CFLRamp{false};         /*!< \brief The Full-MG startup is ramping the CFL of the finest grid. */
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
@@ -2939,9 +2936,7 @@ public:
    */
   void SetMGLevels(unsigned short val_nMGLevels) {
     nMGLevels = val_nMGLevels;
-    /*--- A Full-MG cycle restarts its startup phase from the new coarsest level. Any other cycle
-     *    runs from MESH_0, but clamp it too so that FinestMesh can never point past the last
-     *    level that exists after the agglomeration reduced their number. ---*/
+    /*--- Clamp so FinestMesh can never point past the last level that still exists. ---*/
     if ((Kind_MGCycle == MG_CYCLE::FULL) || (FinestMesh > val_nMGLevels)) {
       SetFinestMesh(val_nMGLevels);
     }
@@ -2953,18 +2948,6 @@ public:
    performing a Full multigrid.
    */
   unsigned short GetFinestMesh(void) const { return FinestMesh; }
-
-  /*!
-   * \brief Whether the Full-MG startup is still ramping the CFL of the finest grid, during
-   *        which CFL adaptation has to stay out of the way and the scalar equations follow the
-   *        ramped number rather than the configured one.
-   */
-  bool GetFullMG_CFLRamp(void) const { return FullMG_CFLRamp; }
-
-  /*!
-   * \brief Record whether the Full-MG startup is ramping the CFL of the finest grid.
-   */
-  void SetFullMG_CFLRamp(bool val_ramp) { FullMG_CFLRamp = val_ramp; }
 
   /*!
    * \brief Get the kind of multigrid (V, W or FULLMG).

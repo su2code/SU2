@@ -1991,9 +1991,7 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config, 
   SU2_ZONE_SCOPED
 
   /*--- On coarse levels the reduction is skipped for performance, unless MG_Smooth_EarlyExit
-   *    needs it or the caller asks for it: a Full-MG startup needs one globally consistent
-   *    residual per iteration on the active level, since it reads it back as CONV_FIELD to decide
-   *    when to promote and the ranks would otherwise each see their own partial sum. ---*/
+   *    needs it or the caller asks for it. ---*/
   if (!force && geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit) return;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {

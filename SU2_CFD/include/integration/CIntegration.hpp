@@ -114,14 +114,22 @@ public:
                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
 
   /*!
-   * \brief Report the convergence fields on the active mesh level, so that a Full-MG startup
-   *        can decide to do an early exit.
-   * \param[in] convFields - Name and value (log10 of the residual) of each of the residual
-   *                         fields CONV_FIELD monitors, evaluated on the active level.
+   * \brief Report the convergence fields on the active mesh level to a Full-MG startup.
+   * \param[in] convFields - Name and log10 value of each monitored residual field.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void MonitorFullMG_Startup(const vector<pair<string, passivedouble> >& convFields,
                                      const CConfig *config) { };
+
+  /*!
+   * \brief Whether the Full-MG startup is still ramping the CFL of the finest grid.
+   */
+  virtual bool GetFullMG_CFLRamp() const { return false; }
+
+  /*!
+   * \brief InnerIter at which the currently active Full-MG level became active.
+   */
+  virtual unsigned long GetLevelStartIter() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -130,10 +138,12 @@ public:
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] fmg_cfl_ramp - Whether the Full-MG startup is still ramping the finest grid's CFL.
    */
   virtual void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                     CNumerics ******numerics_container, CConfig **config,
-                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
+                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst,
+                                    bool fmg_cfl_ramp = false) { };
 
   /*!
    * \brief A virtual member.
