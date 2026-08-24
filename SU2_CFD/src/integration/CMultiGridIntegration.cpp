@@ -1319,35 +1319,30 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                       unsigned short FinestMesh, unsigned short RunTime_EqSystem,
                                                       su2double *monitor) {
   SU2_ZONE_SCOPED
+
+  if (RunTime_EqSystem == RUNTIME_FLOW_SYS) {
+    /*--- Calculate the inviscid and viscous forces ---*/
+
+    solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
+    solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
+    solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
+  }
+
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  switch (RunTime_EqSystem) {
+  if (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) {
+    /*--- Calculate the inviscid and viscous sensitivities ---*/
 
-    case RUNTIME_FLOW_SYS:
+    solver_container[FinestMesh][ADJFLOW_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
+                                                numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
 
-      /*--- Calculate the inviscid and viscous forces ---*/
+    solver_container[FinestMesh][ADJFLOW_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
+                                                numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
 
-      solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
-      solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
-      solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
+    /*--- Smooth the inviscid and viscous sensitivities ---*/
 
-      break;
-
-    case RUNTIME_ADJFLOW_SYS:
-
-      /*--- Calculate the inviscid and viscous sensitivities ---*/
-
-      solver_container[FinestMesh][ADJFLOW_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
-                                                 numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
-
-      solver_container[FinestMesh][ADJFLOW_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
-                                                 numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
-
-      /*--- Smooth the inviscid and viscous sensitivities ---*/
-
-      if (config->GetKind_SensSmooth() != NONE)
-        solver_container[FinestMesh][ADJFLOW_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
-                                                   numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
-      break;
+    if (config->GetKind_SensSmooth() != NONE)
+      solver_container[FinestMesh][ADJFLOW_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh],
+                                                  numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
