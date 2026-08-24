@@ -391,6 +391,8 @@ class C2DContainer
   static constexpr bool IsRowMajor = (Store == StorageType::RowMajor);
   static constexpr bool IsColumnMajor = (Store == StorageType::ColumnMajor);
   static constexpr size_t StaticSize = StaticRows * StaticCols;
+  static constexpr size_t StaticNRows = StaticRows;
+  static constexpr size_t StaticNCols = StaticCols;
 
   /*!
    * \brief Scalar iterator to the inner dimension of the container, read-only.
