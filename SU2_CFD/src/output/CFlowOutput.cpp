@@ -1405,12 +1405,12 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   }
 }
 
-void CFlowOutput::LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) {
+// void CFlowOutput::LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
-  SetCustomOutputs(solver, geometry, config);
+//   SetCustomOutputs(solver, geometry, config);
 
-  SetCustomAndComboObjectives(FLOW_SOL, config, solver);
-}
+//   SetCustomAndComboObjectives(FLOW_SOL, config, solver);
+// }
 
 void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   /*--- Only place outputs of the "RESIDUAL" group here. ---*/

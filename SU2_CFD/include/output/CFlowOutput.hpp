@@ -122,7 +122,7 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - The container holding all solution data.
    */
-  void LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) override;
+  // void LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) override;
 
   /*!
    * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
