@@ -880,7 +880,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
       /*--- If in tape debug mode, set the zone-specific test tag for computations in this zone. ---*/
       int tag = AD::ComputeTag(iZone);
       AD::SetTag(tag);
-      cout << "    - check solver of zone " << iZone << " against tag " << tag << endl;
+      if(tag != 0) { cout << "    - check solver of zone " << iZone << " against tag " << tag << endl; }
 
       DirectIteration(iZone, kind_recording);
 
