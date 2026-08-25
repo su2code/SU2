@@ -190,7 +190,7 @@ __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nV
  */
 template <class ScalarType>
 __global__ void QuantizeDiagonalBlocksKernel(unsigned long nRows, unsigned long nVar,
-                                             const ScalarType* __restrict__ mat_d, int8_t* __restrict__ q_scale_d,
+                                             const ScalarType* __restrict__ mat_d, uint8_t* __restrict__ q_scale_d,
                                              int8_t* __restrict__ q_blocks_d) {
   const unsigned long rowsPerBlock = blockDim.x / nVar;
   const unsigned long iVar = threadIdx.x % nVar;
@@ -495,17 +495,18 @@ __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
 template <class ScalarType>
 __global__ void QuantizedBlockLDU_SpMV_kernel(
     unsigned long nRows, unsigned long nVar, const su2uint* __restrict__ row_ptr_l,
-    const su2uint* __restrict__ col_ind_l, const int8_t* __restrict__ q_scale_l,
-    const int8_t* __restrict__ q_blocks_l, const int8_t* __restrict__ q_scale_d,
+    const su2uint* __restrict__ col_ind_l, const uint8_t* __restrict__ q_scale_l,
+    const int8_t* __restrict__ q_blocks_l, const uint8_t* __restrict__ q_scale_d,
     const int8_t* __restrict__ q_blocks_d, const su2uint* __restrict__ row_ptr_u,
-    const su2uint* __restrict__ col_ind_u, const int8_t* __restrict__ q_scale_u,
+    const su2uint* __restrict__ col_ind_u, const uint8_t* __restrict__ q_scale_u,
     const int8_t* __restrict__ q_blocks_u, const ScalarType* __restrict__ x, ScalarType* __restrict__ y) {
   const unsigned long rowsPerBlock = blockDim.x / nVar;
   const unsigned long iVar = threadIdx.x % nVar;
   const unsigned long iRow = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + threadIdx.x / nVar;
   if (iRow >= nRows) return;
 
-  auto addBlock = [&](const int8_t* __restrict__ qs, const int8_t* __restrict__ qv, const ScalarType* __restrict__ xk) {
+  auto addBlock = [&](const uint8_t* __restrict__ qs, const int8_t* __restrict__ qv,
+                      const ScalarType* __restrict__ xk) {
     const float row_scale = DecodeQuantScale(qs[iVar]);
     const int8_t* __restrict__ row = qv + iVar * nVar;
     ScalarType partial = 0;
@@ -964,11 +965,11 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
      * stream. ---*/
     if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
     if (htd_event == nullptr) gpuErrChk(cudaEventCreateWithFlags(&htd_event, cudaEventDisableTiming));
-    gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice,
+    gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantScaleType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice,
                               aux_stream));
     gpuErrChk(cudaMemcpyAsync(d_q_blocks.l, q_blocks.l, sizeof(QuantType) * mat.nnz_l * nVar * nEqn,
                               cudaMemcpyHostToDevice, aux_stream));
-    gpuErrChk(cudaMemcpyAsync(d_q_scale.u, q_scale.u, sizeof(QuantType) * mat.nnz_u * nVar, cudaMemcpyHostToDevice,
+    gpuErrChk(cudaMemcpyAsync(d_q_scale.u, q_scale.u, sizeof(QuantScaleType) * mat.nnz_u * nVar, cudaMemcpyHostToDevice,
                               aux_stream));
     gpuErrChk(cudaMemcpyAsync(d_q_blocks.u, q_blocks.u, sizeof(QuantType) * mat.nnz_u * nVar * nEqn,
                               cudaMemcpyHostToDevice, aux_stream));
