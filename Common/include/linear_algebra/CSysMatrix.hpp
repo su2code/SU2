@@ -679,6 +679,16 @@ class CSysMatrix {
    */
   void ComputeLU_SGSBackwardGPU(CSysVector<ScalarType>& prod) const;
 
+  /*!
+   * \brief Apply the forward pass of the LU-SGS preconditioner
+   */
+  void ComputeLU_SGSPreconditionerForward(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
+
+  /*!
+   * \brief Apply the backward pass of the LU-SGS preconditioner
+   */
+  void ComputeLU_SGSPreconditionerBackward(CSysVector<ScalarType>& prod) const;
+  
  public:
   /*!
    * \brief Constructor of the class.
@@ -1258,16 +1268,6 @@ class CSysMatrix {
    */
   void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                                    const CConfig* config) const;
-
-  /*!
-   * \brief Apply the forward pass of the LU-SGS preconditioner
-   */
-  void ComputeLU_SGSPreconditionerForward(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
-
-  /*!
-   * \brief Apply the backward pass of the LU-SGS preconditioner
-   */
-  void ComputeLU_SGSPreconditionerBackward(CSysVector<ScalarType>& prod) const;
 
   /*!
    * \brief Build the Linelet preconditioner.
