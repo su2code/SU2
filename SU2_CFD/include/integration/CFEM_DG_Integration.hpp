@@ -51,8 +51,7 @@ public:
    */
   void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                             CNumerics ******numerics_container, CConfig **config,
-                            unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst,
-                            bool fmg_cfl_ramp) override;
+                            unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
 
 private:
   /*!

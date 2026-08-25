@@ -95,23 +95,20 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
       config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TRANS_SYS);
       integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                         RUNTIME_TRANS_SYS, val_iZone, val_iInst,
-                                                                         fmg_cfl_ramp);
+                                                                         RUNTIME_TRANS_SYS, val_iZone, val_iInst);
     }
 
     /*--- Solve the turbulence model ---*/
 
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
     integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                      RUNTIME_TURB_SYS, val_iZone, val_iInst,
-                                                                      fmg_cfl_ramp);
+                                                                      RUNTIME_TURB_SYS, val_iZone, val_iInst);
   }
 
   if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_SPECIES_SYS);
     integration[val_iZone][val_iInst][SPECIES_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                         RUNTIME_SPECIES_SYS, val_iZone, val_iInst,
-                                                                         fmg_cfl_ramp);
+                                                                         RUNTIME_SPECIES_SYS, val_iZone, val_iInst);
 
     // This only applies if mixture properties are used. But this also doesn't hurt if done w/out mixture properties.
     // In case of turbulence, the Turb-Post computes the correct eddy viscosity based on mixture-density and

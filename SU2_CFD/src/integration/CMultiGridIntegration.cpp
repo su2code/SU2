@@ -237,6 +237,29 @@ void CMultiGridIntegration::SetCoarseGridCFL(CGeometry ****geometry, CSolver ***
       sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
     END_SU2_OMP_FOR
   }
+
+  /*--- These solvers scale the flow's time step by CFL_scalar/CFL_flow, so keep the two in step
+   *    on the active level for as long as the startup owns the flow's CFL. ---*/
+
+  if ((Solver_Position != FLOW_SOL) || !FullMG || ((FinestMesh == MESH_0) && !mesh0_ramp_window)) return;
+
+  CGeometry* geo_a = geometry[iZone][iInst][FinestMesh];
+  const passivedouble cfl_flow =
+      SU2_TYPE::GetValue(solver_container[iZone][iInst][FinestMesh][FLOW_SOL]->GetAvg_CFL_Local());
+
+  for (const auto Scalar_Position : {TURB_SOL, TRANS_SOL, SPECIES_SOL}) {
+    CSolver* sol_s = solver_container[iZone][iInst][FinestMesh][Scalar_Position];
+    if (sol_s == nullptr) continue;
+
+    const su2double cfl = cfl_flow * SU2_TYPE::GetValue((Scalar_Position == SPECIES_SOL)
+                                                        ? config[iZone]->GetCFLRedCoeff_Species()
+                                                        : config[iZone]->GetCFLRedCoeff_Turb());
+    SU2_OMP_SAFE_GLOBAL_ACCESS(sol_s->SetCFL_Local_Stats(cfl);)
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_a->GetnPoint(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geo_a->GetnPoint(); iPoint++)
+      sol_s->GetNodes()->SetLocalCFL(iPoint, cfl);
+    END_SU2_OMP_FOR
+  }
 }
 
 void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,

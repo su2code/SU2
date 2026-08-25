@@ -138,12 +138,10 @@ public:
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] fmg_cfl_ramp - Whether the Full-MG startup is still ramping the finest grid's CFL.
    */
   virtual void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                     CNumerics ******numerics_container, CConfig **config,
-                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst,
-                                    bool fmg_cfl_ramp = false) { };
+                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
 
   /*!
    * \brief A virtual member.
