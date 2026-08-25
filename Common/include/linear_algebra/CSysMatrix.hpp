@@ -684,7 +684,7 @@ class CSysMatrix {
    * \brief Apply the backward pass of the LU-SGS preconditioner
    */
   void ComputeLU_SGSPreconditionerBackward(CSysVector<ScalarType>& prod) const;
-  
+
  public:
   /*!
    * \brief Constructor of the class.

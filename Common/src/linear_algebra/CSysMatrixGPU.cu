@@ -332,10 +332,10 @@ __device__ FORCEINLINE ScalarType DeviceSparseBlockMatVec(unsigned long iRow, un
 /*!
  * \brief Compute Quantized blk[iVar,jVar].x[col,jVar] and sum over neighbor rows on device
  */
-template <class ScalarType, class QuantType>
+template <class ScalarType, class QuantType, class QuantScaleType>
 __device__ FORCEINLINE ScalarType QuantizedDeviceSparseBlockMatVec(unsigned long iRow, unsigned long iVar, unsigned long jVar, unsigned long nVar,
                                                                    const su2uint* __restrict__ row_ptr, const su2uint* __restrict__ col_ind,
-                                                                   const QuantType* __restrict__ q_blk, const QuantType* __restrict__ q_scale,
+                                                                   const QuantType* __restrict__ q_blk, const QuantScaleType* __restrict__ q_scale,
                                                                    const ScalarType* __restrict__ x, unsigned long nRows= ~0ul) {
 
   const auto blockSize = nVar * nVar;
@@ -742,10 +742,10 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
  * \brief Exact forward substitution for the rows of one level, x* = D^{-1}.(b-Lx*)
  * \note See notes in IluForwardKernel for more details.
  */
-template <class ScalarType, class QuantType>
+template <class ScalarType, class QuantType, class QuantScaleType>
 __global__ void LU_SGS_ForwardKernel(const su2uint* __restrict__ level_idx, unsigned long level_begin,
                                      unsigned long level_size, unsigned long nVar, DeviceLDU<ScalarType> M,
-                                     const QuantType* __restrict__ q_l, const QuantType* __restrict__ q_scale_l,
+                                     const QuantType* __restrict__ q_l, const QuantScaleType* __restrict__ q_scale_l,
                                      const ScalarType* __restrict__ invD, const ScalarType* __restrict__ vec,
                                      ScalarType* __restrict__ prod, bool quantized_mode) {
   if (blockIdx.x >= level_size) return;
@@ -781,11 +781,11 @@ __global__ void LU_SGS_ForwardKernel(const su2uint* __restrict__ level_idx, unsi
  * \brief Exact backward substitution for the rows of one level, x* = D^{-1}.(D.x* - U.x) = x* - D^{-1}.U.x
  * \note See notes in IluBackwardKernel for more details
  */
-template <class ScalarType, class QuantType>
+template <class ScalarType, class QuantType, class QuantScaleType>
 __global__ void LU_SGS_BackwardKernel(const su2uint* __restrict__ level_idx, unsigned long level_begin,
                                      unsigned long level_size, unsigned long nRows, unsigned long nVar,
                                      DeviceLDU<ScalarType> M, const QuantType* __restrict__ q_u,
-                                     const QuantType* __restrict__ q_scale_u, const ScalarType* __restrict__ invD,
+                                     const QuantScaleType* __restrict__ q_scale_u, const ScalarType* __restrict__ invD,
                                      ScalarType* __restrict__ prod, bool quantized_mode) {
   if (blockIdx.x >= level_size) return;
 
@@ -878,7 +878,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSForwardGPU(const CSysVector<ScalarType
       const auto begin = precond_level_ptr[level];
       const auto size = precond_level_ptr[level + 1] - begin;
       if (size == 0) continue;
-      LU_SGS_ForwardKernel<ScalarType, QuantType><<<size, threads, sharedForward, aux_stream>>>(d_precond_level_idx, begin, size, nVar, M, d_q_blocks.l, d_q_scale.l, d_invM, d_vec, d_prod, quantized_mode);
+      LU_SGS_ForwardKernel<ScalarType, QuantType, QuantScaleType><<<size, threads, sharedForward, aux_stream>>>(d_precond_level_idx, begin, size, nVar, M, d_q_blocks.l, d_q_scale.l, d_invM, d_vec, d_prod, quantized_mode);
     }
 
     gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
@@ -935,7 +935,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSBackwardGPU(CSysVector<ScalarType>& pr
       const auto begin = precond_level_ptr[level];
       const auto size = precond_level_ptr[level + 1] - begin;
       if (size == 0) continue;
-      LU_SGS_BackwardKernel<ScalarType, QuantType><<<size, threads, sharedBackward, aux_stream>>>(d_precond_level_idx, begin, size, nPointDomain, nVar, M, d_q_blocks.u, d_q_scale.u, d_invM, d_prod, quantized_mode);
+      LU_SGS_BackwardKernel<ScalarType, QuantType, QuantScaleType><<<size, threads, sharedBackward, aux_stream>>>(d_precond_level_idx, begin, size, nPointDomain, nVar, M, d_q_blocks.u, d_q_scale.u, d_invM, d_prod, quantized_mode);
     }
 
     gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
