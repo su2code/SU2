@@ -6761,6 +6761,9 @@ void CPhysicalGeometry::SetControlVolume(CConfig* config, unsigned short action)
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS { /*--- The following is difficult to parallelize with threads. ---*/
 
+    /*--- Node coordinates changed, any cached LSQ gradient metrics are stale. ---*/
+    if (action != ALLOCATE) InvalidateLSQMetricCache();
+
     su2double my_DomainVolume = 0.0;
     for (auto iElem = 0ul; iElem < nElem; iElem++) {
       const auto nNodes = elem[iElem]->GetnNodes();

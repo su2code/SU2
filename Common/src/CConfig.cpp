@@ -3900,6 +3900,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       MUSCL_Flow = false;
     }
   }
+
   if (MUSCL_AdjFlow && (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) {
     if (OptionIsSet("MUSCL_ADJFLOW")) {
       SU2_MPI::Error("Centered schemes do not use MUSCL reconstruction (use MUSCL_ADJFLOW= NO).", CURRENT_FUNCTION);
