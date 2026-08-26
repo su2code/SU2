@@ -810,6 +810,12 @@ protected:
   void CheckHistoryOutput(unsigned short nZone);
 
   /*!
+   * \brief Check that the Full-MG startup has a criterion left to promote the active level on.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CheckFullMG_Startup(const CConfig *config) const;
+
+  /*!
    * \brief Open the history file and write the header.
    * \param[in] config - Definition of the particular problem.
    */

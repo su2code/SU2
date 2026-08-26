@@ -86,24 +86,7 @@ void CMultiGridIntegration::MonitorFullMG_Startup(const vector<pair<string, pass
 
   /*--- No residual to promote on, MG_STARTUP_ITER and MG_STARTUP_STAGNATION are all that is left. ---*/
 
-  if (convFields.empty()) {
-    const bool stagnation_on = (mgOpts.MG_Startup_Stagnation > 0.0) && (mgOpts.MG_Startup_Stagnation_Iter > 0);
-
-    if ((mgOpts.MG_Startup_Iter == 0) && !stagnation_on) {
-      SU2_MPI::Error("The Full-MG startup has no criterion left to promote on and would stay on the "
-                     "coarsest grid: MG_STARTUP_ITER is 0, MG_STARTUP_STAGNATION is off, and "
-                     "CONV_FIELD holds no residual field for MG_STARTUP_CONVERGENCE to use.",
-                     CURRENT_FUNCTION);
-    }
-
-    if (!mg_startup_no_residual_warned && (SU2_MPI::GetRank() == MASTER_NODE)) {
-      cout << "WARNING: no residual CONV_FIELD to monitor, the Full-MG startup advances on "
-           << (stagnation_on ? "MG_STARTUP_STAGNATION and MG_STARTUP_ITER" : "MG_STARTUP_ITER")
-           << " alone." << endl;
-      mg_startup_no_residual_warned = true;
-    }
-    return;
-  }
+  if (convFields.empty()) return;
 
   const auto nFields = convFields.size();
 

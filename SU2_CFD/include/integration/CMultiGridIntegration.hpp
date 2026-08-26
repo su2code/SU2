@@ -365,6 +365,5 @@ private:
   vector<passivedouble> mg_startup_conv_start; /*!< \brief Field values when the active level became active. */
   vector<passivedouble> mg_startup_conv_prev;  /*!< \brief Field values on the previous iteration. */
   unsigned long mg_startup_stall_count = 0;    /*!< \brief Consecutive iterations without useful reduction. */
-  bool mg_startup_no_residual_warned = false;  /*!< \brief Whether the "nothing to monitor" warning has been given. */
 
 };
