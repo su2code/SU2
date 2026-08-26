@@ -114,6 +114,24 @@ public:
                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
 
   /*!
+   * \brief Report the convergence fields on the active mesh level to a Full-MG startup.
+   * \param[in] convFields - Name and log10 value of each monitored residual field.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void MonitorFullMG_Startup(const vector<pair<string, passivedouble> >& convFields,
+                                     const CConfig *config) { };
+
+  /*!
+   * \brief Whether the Full-MG startup is still ramping the CFL of the finest grid.
+   */
+  virtual bool GetFullMG_CFLRamp() const { return false; }
+
+  /*!
+   * \brief InnerIter at which the currently active Full-MG level became active.
+   */
+  virtual unsigned long GetLevelStartIter() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
