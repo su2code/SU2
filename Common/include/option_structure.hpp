@@ -1134,11 +1134,14 @@ struct CMGOptions {
                                                   part of a stretched layer. Ends a line where the mesh stops being
                                                   stretched along it, and decides which boundaries carry a layer normal
                                                   to them. See CMultiGridGeometry::AgglomerateImplicitLines. */
-  unsigned long MG_Startup_Iter{100};     /*!< \brief Number of iterations on coarsest mesh during FMG startup phase. */
   unsigned long MG_Coarse_Prec_Freeze{1}; /*!< \brief On MG levels > 0, reuse the linear-solver preconditioner for this many consecutive solves. 1 = rebuild every solve. */
   su2double MG_Correction_Limit{0.0};     /*!< \brief Max relative change of any solution component from one prolongated FAS correction. 0 = no limit. */
-  su2double MG_Startup_Stagnation{0.0};   /*!< \brief FMG: promote when the residual ratio between successive iterations exceeds this. 0 = disabled. */
-  unsigned long MG_Startup_Stagnation_Iter{5}; /*!< \brief FMG: consecutive stalled iterations required before promoting. */
+  unsigned long MG_Startup_Iter{100};     /*!< \brief Iterations per mesh during FMG startup, and the length of each level's CFL ramp. 0 = no iteration budget. */
+  su2double MG_Startup_Convergence{-2.0}; /*!< \brief FMG: orders of magnitude (log10) that CONV_FIELD must drop on the
+                                                 active level before promoting to the next finer one. Negative is a
+                                                 drop, as for CONV_RESIDUAL_MINVAL. */
+  su2double MG_Startup_Stagnation{0.99};  /*!< \brief FMG: promote when the residual ratio between successive iterations exceeds this. 0 = disabled. */
+  unsigned long MG_Startup_Stagnation_Iter{5}; /*!< \brief FMG: consecutive stalled iterations required before promoting. 0 = disabled. */
 };
 
 /*!

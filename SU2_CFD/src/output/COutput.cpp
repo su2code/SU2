@@ -824,14 +824,14 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
   else if(cauchyTimeConverged){
     TimeConvergence = cauchyTimeConverged;
   }
-  
+
   // Handle max time delay for 2nd order time stepping
   // Delay stopping at max_time to ensure both timestep N and N-1 are written for proper restart
   if(config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND){
     const su2double cur_time = GetHistoryFieldValue("CUR_TIME");
     const su2double max_time = config->GetMax_Time();
     const bool final_time_reached = (cur_time >= max_time);
-    
+
     // If max_time is reached on first detection, delay the stop
     if(final_time_reached && !maxTimeDelayActive){
       maxTimeDelayActive = true;
@@ -842,7 +842,7 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
       maxTimeDelayActive = false;   // Reset for next run
     }
   }
-  
+
   return TimeConvergence;
 }
 
@@ -934,6 +934,11 @@ void COutput::PrintConvergenceSummary(){
 bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   convergence = true;
+
+  /*--- Count from wherever the history was last restarted. ---*/
+
+  if (Iteration >= convergenceStartIter) Iteration -= convergenceStartIter;
+  else Iteration = 0;
 
   for (auto iField_Conv = 0ul; iField_Conv < convFields.size(); iField_Conv++) {
 
@@ -1247,6 +1252,8 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
   CheckHistoryOutput(config->GetnZone());
 
+  CheckFullMG_Startup(config);
+
   if (rank == MASTER_NODE && !noWriting){
 
     /*--- Open history file and print the header ---*/
@@ -1312,6 +1319,31 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   }
 
+}
+
+void COutput::CheckFullMG_Startup(const CConfig *config) const {
+
+  if (config->GetMGCycle() != MG_CYCLE::FULL) return;
+
+  /*--- With a residual to monitor the startup always has MG_STARTUP_CONVERGENCE to promote on. ---*/
+
+  if (!GetResidualConvFields().empty()) return;
+
+  const auto& mgOpts = config->GetMGOptions();
+  const bool stagnation_on = (mgOpts.MG_Startup_Stagnation > 0.0) && (mgOpts.MG_Startup_Stagnation_Iter > 0);
+
+  if ((mgOpts.MG_Startup_Iter == 0) && !stagnation_on) {
+    SU2_MPI::Error("The Full-MG startup has no criterion left to promote on and would stay on the "
+                   "coarsest grid: MG_STARTUP_ITER is 0, MG_STARTUP_STAGNATION is off, and "
+                   "CONV_FIELD holds no residual field for MG_STARTUP_CONVERGENCE to use.",
+                   CURRENT_FUNCTION);
+  }
+
+  if (rank == MASTER_NODE) {
+    cout << "WARNING: no residual CONV_FIELD to monitor, the Full-MG startup advances on "
+         << (stagnation_on ? "MG_STARTUP_STAGNATION and MG_STARTUP_ITER" : "MG_STARTUP_ITER")
+         << " alone." << endl;
+  }
 }
 
 void COutput::PrepareHistoryFile(CConfig *config){

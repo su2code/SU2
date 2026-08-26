@@ -28,12 +28,8 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
-#include <cmath>
-#include <iostream>
 #include <algorithm>
-#include <map>
 
-using namespace std;
 
 namespace {
 
@@ -110,6 +106,172 @@ void CMultiGridIntegration::adaptDampingFactors(CConfig* config, passivedouble c
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
 
+void CMultiGridIntegration::MonitorFullMG_Startup(const vector<pair<string, passivedouble> >& convFields,
+                                                 const CConfig *config) {
+
+  const auto& mgOpts = config->GetMGOptions();
+
+  /*--- No residual to promote on, MG_STARTUP_ITER and MG_STARTUP_STAGNATION are all that is left. ---*/
+
+  if (convFields.empty()) return;
+
+  const auto nFields = convFields.size();
+
+  /*--- Fields are log10, so MG_STARTUP_CONVERGENCE is added to the level's starting value.
+   *    All of them have to have dropped. ---*/
+
+  if (mg_startup_conv_start.empty()) {
+    for (const auto& field : convFields) mg_startup_conv_start.push_back(field.second);
+  }
+  else {
+    const passivedouble drop = SU2_TYPE::GetValue(mgOpts.MG_Startup_Convergence);
+    bool converged = true;
+    for (auto iField = 0ul; iField < nFields; iField++)
+      converged = converged && (convFields[iField].second <= mg_startup_conv_start[iField] + drop);
+
+    if (converged && (mg_startup_promote_reason == MGStartupPromote::NONE))
+      mg_startup_promote_reason = MGStartupPromote::CONVERGENCE;
+  }
+
+  /*--- Ratio of successive residuals, so a difference in log10. One slow iteration
+   *    is not stagnation, and a field still coming down means the level is not stalled. ---*/
+
+  const passivedouble stall_tol = SU2_TYPE::GetValue(mgOpts.MG_Startup_Stagnation);
+  if (stall_tol > 0.0 && !mg_startup_conv_prev.empty()) {
+    bool stalled = true;
+    for (auto iField = 0ul; iField < nFields; iField++)
+      stalled = stalled && (convFields[iField].second - mg_startup_conv_prev[iField] >= log10(stall_tol));
+
+    if (stalled)
+      mg_startup_stall_count++;
+    else
+      mg_startup_stall_count = 0;
+
+    if ((mgOpts.MG_Startup_Stagnation_Iter > 0) &&
+        (mg_startup_stall_count >= mgOpts.MG_Startup_Stagnation_Iter) &&
+        (mg_startup_promote_reason == MGStartupPromote::NONE)) {
+      mg_startup_promote_reason = MGStartupPromote::STAGNATION;
+    }
+  }
+
+  mg_startup_conv_prev.clear();
+  for (const auto& field : convFields) mg_startup_conv_prev.push_back(field.second);
+}
+
+void CMultiGridIntegration::SetCoarseGridCFL(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+                                             unsigned short RunTime_EqSystem, unsigned short iZone,
+                                             unsigned short iInst, unsigned short FinestMesh, bool FullMG,
+                                             bool mesh0_ramp_window) {
+  SU2_ZONE_SCOPED
+
+  const unsigned short Solver_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+  const unsigned long startup_iter = config[iZone]->GetMGOptions().MG_Startup_Iter;
+  CSolver* sol_f = solver_container[iZone][iInst][MESH_0][Solver_Position];
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    /*--- The active level is ramped, MESH_0 included, until it reaches its target. ---*/
+
+    const bool ramping = FullMG && (FinestMesh <= nMGLevels) && (startup_iter > 0) &&
+                         ((FinestMesh > MESH_0) || mesh0_ramp_window);
+    const unsigned long iter_in_level = config[iZone]->GetInnerIter() - mg_ramp_level_start_iter;
+    passivedouble ramp_progress = 1.0;
+    if (ramping) {
+      ramp_progress = min(passivedouble{1.0}, passivedouble(iter_in_level) / passivedouble(startup_iter));
+    }
+
+    mg_ramp_mesh0_active = FullMG_Mesh0Ramping(config[iZone], FinestMesh, FullMG);
+
+    /*--- Coarse targets are derived from the level-0 CFL via MG_CFL_SCALING. ---*/
+    passivedouble cfl_base = mesh0_ramp_window ? passivedouble{0.0} : SU2_TYPE::GetValue(sol_f->GetAvg_CFL_Local());
+    if (cfl_base < EPS)
+      cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
+
+    const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
+
+    passivedouble CFL_target[MAX_MG_LEVELS+1];
+    passivedouble CFL_scale[MAX_MG_LEVELS+1];
+    CFL_target[0] = cfl_base;
+    CFL_scale[0] = 1.0;
+    for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
+      /*--- Entry lvl-1 is the transition lvl-1 -> lvl, clamped so a coarse level never runs
+       *    at a higher CFL than the grid above it. ---*/
+      const unsigned short iScale = lvl - 1;
+      const passivedouble scale =
+          max(passivedouble{1e-6}, min(passivedouble{1.0}, SU2_TYPE::GetValue(cflScaling[iScale])));
+      CFL_scale[lvl] = scale;
+      CFL_target[lvl] = CFL_target[lvl-1] * scale;
+    }
+
+    /*--- Ramp from the CFL the level below handed over at, which it may never have reached its
+     *    target. The coarsest level has none and starts from its own target scaled down once more. ---*/
+
+    const passivedouble CFL_handover =
+        (mg_ramp_cfl_start > 0.0) ? mg_ramp_cfl_start : CFL_target[nMGLevels] * CFL_scale[nMGLevels];
+
+    passivedouble CFL_mesh0 = CFL_target[MESH_0];
+
+    for (unsigned short lvl = 0; lvl <= nMGLevels; ++lvl) {
+      passivedouble CFL_local = CFL_target[lvl];
+      if (ramping && (lvl == FinestMesh)) {
+        CFL_local = (passivedouble(1.0) - ramp_progress) * CFL_handover + ramp_progress * CFL_target[lvl];
+      }
+      /*--- The configured level-0 CFL stays as the user wrote it, only the solver value is ramped. ---*/
+      if (lvl > MESH_0) config[iZone]->SetCFL(lvl, CFL_local);
+      else CFL_mesh0 = CFL_local;
+    }
+    /*--- Stashed in the solver's CFL stats for the point loop below to read back. ---*/
+    if (mesh0_ramp_window) sol_f->SetCFL_Local_Stats(CFL_mesh0);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  /*--- Propagate the ramped CFL to every point of the finest grid. ---*/
+  if (mesh0_ramp_window) {
+    CGeometry* geo_f = geometry[iZone][iInst][MESH_0];
+    const passivedouble cfl_mesh0 = SU2_TYPE::GetValue(sol_f->GetAvg_CFL_Local());
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_f->GetnPoint(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geo_f->GetnPoint(); iPoint++)
+      sol_f->GetNodes()->SetLocalCFL(iPoint, cfl_mesh0);
+    END_SU2_OMP_FOR
+  }
+
+  /*--- Propagate the updated CFL to every coarse-grid point. ---*/
+  for (unsigned short iMesh = 1; iMesh <= nMGLevels; ++iMesh) {
+    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
+    CGeometry* geo_c = geometry[iZone][iInst][iMesh];
+    CSolver* sol_c = solver_container[iZone][iInst][iMesh][Solver_Position];
+    SU2_OMP_SAFE_GLOBAL_ACCESS(sol_c->SetCFL_Local_Stats(CFL_coarse_new);)
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_c->GetnPoint(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
+      sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
+    END_SU2_OMP_FOR
+  }
+
+  /*--- These solvers scale the flow's time step by CFL_scalar/CFL_flow, so keep the two in step
+   *    on the active level for as long as the startup owns the flow's CFL. ---*/
+
+  if ((Solver_Position != FLOW_SOL) || !FullMG || ((FinestMesh == MESH_0) && !mesh0_ramp_window)) return;
+
+  CGeometry* geo_a = geometry[iZone][iInst][FinestMesh];
+  const passivedouble cfl_flow =
+      SU2_TYPE::GetValue(solver_container[iZone][iInst][FinestMesh][FLOW_SOL]->GetAvg_CFL_Local());
+
+  for (const auto Scalar_Position : {TURB_SOL, TRANS_SOL, SPECIES_SOL}) {
+    CSolver* sol_s = solver_container[iZone][iInst][FinestMesh][Scalar_Position];
+    if (sol_s == nullptr) continue;
+
+    const su2double cfl = cfl_flow * SU2_TYPE::GetValue((Scalar_Position == SPECIES_SOL)
+                                                        ? config[iZone]->GetCFLRedCoeff_Species()
+                                                        : config[iZone]->GetCFLRedCoeff_Turb());
+    SU2_OMP_SAFE_GLOBAL_ACCESS(sol_s->SetCFL_Local_Stats(cfl);)
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_a->GetnPoint(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geo_a->GetnPoint(); iPoint++)
+      sol_s->GetNodes()->SetLocalCFL(iPoint, cfl);
+    END_SU2_OMP_FOR
+  }
+}
+
 void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 CSolver *****solver_container,
                                                 CNumerics ******numerics_container,
@@ -123,6 +285,12 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   switch (config[iZone]->GetKind_Solver()) {
     case MAIN_SOLVER::EULER:
     case MAIN_SOLVER::NAVIER_STOKES:
+    case MAIN_SOLVER::INC_EULER:
+    case MAIN_SOLVER::INC_NAVIER_STOKES:
+    case MAIN_SOLVER::INC_RANS:
+    case MAIN_SOLVER::DISC_ADJ_INC_EULER:
+    case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_INC_RANS:
     case MAIN_SOLVER::NEMO_EULER:
     case MAIN_SOLVER::NEMO_NAVIER_STOKES:
     case MAIN_SOLVER::RANS:
@@ -182,32 +350,25 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       lastPreSmoothExitReason[i]  = ' ';
       lastPostSmoothExitReason[i] = ' ';
     }
+
+    /*--- InnerIter restarts at every time step, the active level does not; re-anchor so the
+     *    difference below cannot wrap around. ---*/
+
+    if (config[iZone]->GetInnerIter() < mg_ramp_level_start_iter)
+      mg_ramp_level_start_iter = config[iZone]->GetInnerIter();
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  /*--- Full MG: advance to the next finer grid after a fixed number of
-   *    outer iterations on the current coarsest active level, controlled by
-   *    MG_STARTUP_ITER, or as soon as the level's CONV_FIELD residual has already
-   *    dropped two orders of magnitude (mg_conv_field_early_exit, set below after
-   *    the cycle runs) - whichever happens first. A level that converges quickly
-   *    should not sit idle for the rest of its budget before being promoted.
-   *
-   *    Iterations spent on the currently active level are counted relative to
-   *    mg_ramp_level_start_iter (the InnerIter at which it became active, reset on
-   *    every promotion below) rather than a global InnerIter modulo. A global modulo
-   *    assumes every level consumes exactly MG_STARTUP_ITER iterations; once a level
-   *    is promoted early via mg_conv_field_early_exit, InnerIter falls out of phase
-   *    with that assumption and every subsequent level's fixed-iteration budget would
-   *    be truncated to whatever remains until the next global phase boundary instead
-   *    of getting its own full MG_STARTUP_ITER window. ---*/
+  /*--- Promote to the next finer grid on MG_STARTUP_ITER, MG_STARTUP_CONVERGENCE or
+   *    MG_STARTUP_STAGNATION, whichever comes first. ---*/
   const unsigned long startup_iter = config[iZone]->GetMGOptions().MG_Startup_Iter;
   const unsigned long iters_on_level = config[iZone]->GetInnerIter() - mg_ramp_level_start_iter;
-  const bool Convergence_FullMG =
-      FullMG && (FinestMesh != MESH_0) &&
-      ((iters_on_level >= startup_iter - 1) || mg_conv_field_early_exit);
+  MGStartupPromote promote_reason = mg_startup_promote_reason;
+  if ((promote_reason == MGStartupPromote::NONE) && (startup_iter > 0) && (iters_on_level >= startup_iter))
+    promote_reason = MGStartupPromote::BUDGET;
+  const bool Convergence_FullMG = FullMG && (FinestMesh != MESH_0) && (promote_reason != MGStartupPromote::NONE);
 
-  if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 )) &&
-      RunTime_EqSystem == RUNTIME_FLOW_SYS) {
+  if (Convergence_FullMG && direct && (RunTime_EqSystem == RUNTIME_FLOW_SYS)) {
 
     SetProlongated_Solution(RunTime_EqSystem,
                             solver_container[iZone][iInst][FinestMesh-1][Solver_Position],
@@ -216,20 +377,40 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             geometry[iZone][iInst][FinestMesh],
                             config[iZone]);
 
-    /*--- Report the promotion and why it happened now, before mg_ramp_level_start_iter
-     *    and mg_conv_field_early_exit are reset for the newly active level below. ---*/
+    /*--- The scalar equations only restrict downward, so hand the new level their solution too,
+     *    otherwise they restart from their initial condition at every promotion. ---*/
+
+    for (const auto Scalar_Position : {TURB_SOL, TRANS_SOL, SPECIES_SOL, HEAT_SOL, RAD_SOL}) {
+
+      CSolver* scalar_fine = solver_container[iZone][iInst][FinestMesh-1][Scalar_Position];
+      CSolver* scalar_coarse = solver_container[iZone][iInst][FinestMesh][Scalar_Position];
+      if ((scalar_fine == nullptr) || (scalar_coarse == nullptr)) continue;
+
+      SetProlongated_ScalarSolution(scalar_fine, scalar_coarse,
+                                    geometry[iZone][iInst][FinestMesh-1],
+                                    geometry[iZone][iInst][FinestMesh],
+                                    config[iZone], Scalar_Position == TURB_SOL);
+    }
+
+    /*--- Report the promotion before the startup state is reset below. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    if (SU2_MPI::GetRank() == MASTER_NODE) {
+    if (rank == MASTER_NODE) {
       cout << "Full-MG: mesh level " << FinestMesh << " -> " << FinestMesh - 1 << " after "
-           << (iters_on_level + 1) << " iteration(s) (";
-      if (mg_fmg_promoted_on_stall) {
-        cout << "residual stalled for " << config[iZone]->GetMGOptions().MG_Startup_Stagnation_Iter
-             << " iteration(s)";
-      } else if (mg_conv_field_early_exit) {
-        const string convField = (config[iZone]->GetnConv_Field() > 0) ? config[iZone]->GetConv_Field(0) : string("RMS_DENSITY");
-        cout << convField << " dropped 2 orders of magnitude";
-      } else
-        cout << "MG_STARTUP_ITER= " << startup_iter << " reached";
+           << iters_on_level << " iteration(s) (";
+      switch (promote_reason) {
+        case MGStartupPromote::STAGNATION:
+          cout << "residual stalled for " << config[iZone]->GetMGOptions().MG_Startup_Stagnation_Iter
+               << " iteration(s)";
+          break;
+        case MGStartupPromote::CONVERGENCE:
+          cout << "CONV_FIELD dropped "
+               << fabs(SU2_TYPE::GetValue(config[iZone]->GetMGOptions().MG_Startup_Convergence))
+               << " order(s) of magnitude";
+          break;
+        default:
+          cout << "MG_STARTUP_ITER= " << startup_iter << " reached";
+          break;
+      }
       cout << ")." << endl;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -241,163 +422,65 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   FinestMesh = config[iZone]->GetFinestMesh();
 
-  /*--- Rebuild coarse-grid CFL before the cycle so the currently active FMG
-   *    level uses the intended CFL in this iteration. ---*/
+  /*--- Rebuild the coarse-grid CFL before the cycle. ---*/
   const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-    /*--- Capture the configured damping factors once, before any adaptation has
-     *    modified them, so they can be restored at every FMG level change. ---*/
-    if (!mg_damp_initial_captured) {
+    /*--- Capture the configured damping factors, before adaptation has modified them. ---*/
+    if (mg_damp_restric_initial < 0.0) {
       mg_damp_restric_initial = config[iZone]->GetDamp_Res_Restric();
       mg_damp_prolong_initial = config[iZone]->GetDamp_Correc_Prolong();
-      mg_damp_initial_captured = true;
     }
 
-    /*--- Detect a change of active FMG level (promotion, restart, or a new
-     *    outer/time-step resetting FinestMesh) and (re)start the ramp window. ---*/
+    /*--- On a change of active level, restart the ramp window and the startup state. ---*/
     if (FinestMesh != mg_ramp_last_FinestMesh) {
+      /*--- Only a promotion has a level below to take the handover CFL from. ---*/
+      if (mg_ramp_last_FinestMesh == FinestMesh + 1)
+        mg_ramp_cfl_start = SU2_TYPE::GetValue(config[iZone]->GetCFL(mg_ramp_last_FinestMesh));
+
       mg_ramp_level_start_iter = config[iZone]->GetInnerIter();
       mg_ramp_last_FinestMesh = FinestMesh;
 
-      /*--- The cross-cycle EMA is only meaningful while the active level is fixed:
-       *    after a promotion the pre-smoothing RMS is measured on a different grid,
-       *    so the ratio reflects the change of level rather than the convergence
-       *    trend. Left alone, the lagging EMA drives both damping factors onto a
-       *    clamp within ~20-30 cycles - towards CLAMP_MIN, crippling the correction,
-       *    or towards CLAMP_MAX, making it maximally aggressive on a freshly
-       *    prolongated solution. Reseed the EMA and restore the configured factors. ---*/
+      /*--- The EMA is measured on a different grid after a promotion. ---*/
       mg_fine_rms_ema = 0.0;
       config[iZone]->SetDamp_Res_Restric(mg_damp_restric_initial);
       config[iZone]->SetDamp_Correc_Prolong(mg_damp_prolong_initial);
 
-      /*--- Restart the convergence-based early-exit window: the baseline is (re)captured
-       *    below, after this iteration's cycle has produced a fresh residual on the level. ---*/
-      mg_conv_field_start_rms = -1.0;
-      mg_conv_field_early_exit = false;
-      mg_fmg_prev_rms = -1.0;
-      mg_fmg_stall_count = 0;
-      mg_fmg_promoted_on_stall = false;
+      mg_startup_conv_start.clear();
+      mg_startup_conv_prev.clear();
+      mg_startup_stall_count = 0;
+      mg_startup_promote_reason = MGStartupPromote::NONE;
     }
 
-    /*--- Use the level-0 flow CFL as the base reference and derive the steady-state
-     *    scaled target for all coarse levels from it via
-     *    MG_CFL_SCALING[i] = CFL(i+1)/CFL(i). Fall back to config scalar when
-     *    local level-0 CFL is unavailable. ---*/
-    passivedouble cfl_base = SU2_TYPE::GetValue(
-      solver_container[iZone][iInst][MESH_0][Solver_Position]->GetAvg_CFL_Local());
-    if (cfl_base < EPS)
-      cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
-
-    const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
-
-    passivedouble CFL_target[MAX_MG_LEVELS+1];
-    passivedouble CFL_scale[MAX_MG_LEVELS+1];
-    CFL_target[0] = cfl_base;
-    CFL_scale[0] = 1.0;
-    for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
-      /*--- Index into cflScaling is (lvl-1): transition lvl-1 -> lvl. ---*/
-      const unsigned short iScale = lvl - 1;
-      const passivedouble scale = (iScale < cflScaling.size())
-          ? max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling[iScale]))
-          : passivedouble{0.25};
-      CFL_scale[lvl] = scale;
-      CFL_target[lvl] = CFL_target[lvl-1] * scale;
-    }
-
-    /*--- During FMG startup, linearly ramp the CFL of the currently active level up
-     *    to its own scaled target over MG_Startup_Iter iterations, starting from the
-     *    CFL the previously active (coarser) level was running at. The ramp is
-     *    therefore continuous across a promotion and, crucially, never exceeds the
-     *    level's own target: the sustainable CFL is a property of the mesh, so
-     *    carrying a finer level's target onto a coarser mesh destabilises it. The
-     *    reduced starting value also gives the freshly prolongated solution time to
-     *    relax before the level runs at full CFL. The coarsest level has no coarser
-     *    predecessor, so it extends the scaling one step further to soften the
-     *    initial transient away from the freestream state.
-     *
-     *    All non-active coarse levels keep their steady-state scaled target, and no
-     *    ramp is applied once FMG has reached MESH_0 (the final V-cycle-equivalent
-     *    stage behaves exactly like a plain V-cycle). ---*/
-    const bool ramping = FullMG && (FinestMesh > MESH_0) && (FinestMesh <= nMGLevels);
-    passivedouble ramp_progress = 1.0;
-    if (ramping && startup_iter > 0) {
-      const unsigned long iter_in_level = config[iZone]->GetInnerIter() - mg_ramp_level_start_iter;
-      ramp_progress = min(passivedouble{1.0}, passivedouble(iter_in_level) / passivedouble(startup_iter));
-    }
-
-    for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
-      passivedouble CFL_local = CFL_target[lvl];
-      if (ramping && lvl == FinestMesh) {
-        const passivedouble CFL_start = (lvl < nMGLevels) ? CFL_target[lvl+1]
-                                                          : CFL_target[lvl] * CFL_scale[lvl];
-        CFL_local = (passivedouble(1.0) - ramp_progress) * CFL_start + ramp_progress * CFL_target[lvl];
-      }
-      config[iZone]->SetCFL(lvl, CFL_local);
-    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  /*--- Propagate updated CFL to all coarse-grid points before the cycle. ---*/
-  for (unsigned short iMesh = 1; iMesh <= nMGLevels; ++iMesh) {
-    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
-    CGeometry* geo_c = geometry[iZone][iInst][iMesh];
-    CSolver* sol_c = solver_container[iZone][iInst][iMesh][Solver_Position];
-    SU2_OMP_SAFE_GLOBAL_ACCESS(sol_c->SetCFL_Local_Stats(CFL_coarse_new);)
-    SU2_OMP_FOR_STAT(roundUpDiv(geo_c->GetnPoint(), omp_get_num_threads()))
-    for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
-      sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
-    END_SU2_OMP_FOR
-  }
+
+  /*--- While the startup ramps a level, its CFL has to be written before the cycle, not after
+   *    it as in ordinary operation. ---*/
+
+  const bool fmg_warmup = FullMG && (FinestMesh != MESH_0);
+  const bool fmg_mesh0_ramp = FullMG_Mesh0RampWindow(config[iZone], FinestMesh, FullMG);
+
+  if (fmg_warmup || fmg_mesh0_ramp)
+    SetCoarseGridCFL(geometry, solver_container, config, RunTime_EqSystem, iZone, iInst, FinestMesh, FullMG,
+                     fmg_mesh0_ramp);
 
   /*--- Perform the Full Approximation Scheme multigrid ---*/
 
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
 
-  /*--- FMG startup convergence-based early exit: track the active level's aggregate flow
-   *    residual (RMS across all solution variables, the same solver-agnostic metric this
-   *    class already uses for the smoothing early-exit diagnostics) and flag promotion once
-   *    it has dropped two orders of magnitude, so a level that converges well inside its
-   *    MG_Startup_Iter budget is not held back. Reuses this same cycle's fresh residual, so
-   *    the very first iteration of a window only seeds the baseline (nothing to compare
-   *    against yet). ---*/
-  if (FullMG && direct && (FinestMesh != MESH_0) && RunTime_EqSystem == RUNTIME_FLOW_SYS) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      const passivedouble conv_now = ComputeLinSysResRMS(solver_container[iZone][iInst][FinestMesh][Solver_Position]);
+  if (!fmg_warmup && !fmg_mesh0_ramp)
+    SetCoarseGridCFL(geometry, solver_container, config, RunTime_EqSystem, iZone, iInst, FinestMesh, FullMG,
+                     fmg_mesh0_ramp);
 
-      if (mg_conv_field_start_rms < 0.0) {
-        mg_conv_field_start_rms = max(conv_now, passivedouble(EPS));
-      } else if (conv_now <= 1e-2 * mg_conv_field_start_rms) {
-        mg_conv_field_early_exit = true;
-      }
+  /*--- Coarse-level residuals are per-rank partial sums; reduce once so the promotion criterion
+   *    agrees on every rank. The smoothing early exit already reduces when it is on. ---*/
 
-      /*--- Stagnation promotion. The two criteria above are a fixed iteration budget and a fixed
-       *    residual drop, and neither scales with the mesh: MG_Startup_Iter that is well matched on
-       *    a medium grid leaves a fine grid grinding through a warmup that stopped paying off long
-       *    before the budget ran out. What actually matters in FMG is when the coarse level stops
-       *    reducing the error usefully - past that point only the finer level can make progress, so
-       *    promote as soon as the per-iteration reduction stalls.
-       *
-       *    A single slow iteration is not stagnation, so a run of them is required. Both the ratio
-       *    and the run length are configurable, and MG_Startup_Iter still caps the window. ---*/
-      const auto& mgOptsFMG = config[iZone]->GetMGOptions();
-      const passivedouble stall_tol = SU2_TYPE::GetValue(mgOptsFMG.MG_Startup_Stagnation);
-      if (stall_tol > 0.0 && mg_fmg_prev_rms > 0.0) {
-        if (conv_now >= stall_tol * mg_fmg_prev_rms)
-          mg_fmg_stall_count++;
-        else
-          mg_fmg_stall_count = 0;
-
-        if (mg_fmg_stall_count >= mgOptsFMG.MG_Startup_Stagnation_Iter) {
-          mg_conv_field_early_exit = true;
-          mg_fmg_promoted_on_stall = true;
-        }
-      }
-      mg_fmg_prev_rms = conv_now;
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  if (fmg_warmup && !config[iZone]->GetMGOptions().MG_Smooth_EarlyExit) {
+    solver_container[iZone][iInst][FinestMesh][Solver_Position]->SetResidual_RMS(
+        geometry[iZone][iInst][FinestMesh], config[iZone], true);
   }
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
@@ -413,9 +496,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             numerics_container[iZone][iInst], config[iZone],
                             FinestMesh, RunTime_EqSystem, &monitor);
 
-  /*--- Adapt restriction damping based on coarse-level pre-smoothing workload from this cycle.
-   *    Only effective when MG_SMOOTH_EARLY_EXIT= YES (otherwise all levels always run to completion
-   *    and the signal would always point to "scale down"). ---*/
+  /*--- Adapt the damping factors, only meaningful when MG_SMOOTH_EARLY_EXIT= YES. ---*/
   const auto& mgOptsZone = config[iZone]->GetMGOptions();
   if (mgOptsZone.MG_Smooth_EarlyExit) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -428,8 +509,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
         mg_fine_rms_ema = (1.0 - EMA_ALPHA) * mg_fine_rms_ema + EMA_ALPHA * fine_d0;
       const passivedouble crossCycleRatio = (mg_fine_rms_ema > EPS) ? fine_d0 / mg_fine_rms_ema : 1.0;
 
-      /*--- Adapt both damping factors from the same global-trend signal.
-       *    Skip on the first cycle while the EMA is still being seeded. ---*/
+      /*--- Skip on the first cycle while the EMA is still being seeded. ---*/
       if (ema_ready) adaptDampingFactors(config[iZone], crossCycleRatio);
       last_crossCycleRatio = crossCycleRatio;
     }
@@ -446,11 +526,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
             su2double d0, su2double d1,
             passivedouble worstStepRatio,
             unsigned short worstStep) -> std::string {
-        /*--- Show: steps taken / max + exit reason + initial defect scale + d1/d0 ratio.
-         *    r=d1/d0 < 1 means smoother reduced the defect (good).
-         *    r > 1 means smoother grew the defect.
-         *    Exit reason: T=threshold, S=clean stagnation, A=amplifying stagnation,
-         *                 ' '=ran to completion. ---*/
+        /*--- Steps taken/max, exit reason, initial defect and the d1/d0 ratio. ---*/
         std::ostringstream ss;
         ss << act << "/" << mx;
         if (act < mx) ss << reason;  /*--- only tag early exits ---*/
@@ -757,10 +833,8 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
     if (mg_early_exit_flag) break;
   }
 
-  /*--- Record d_{N-1} as the final pre-smooth defect (the last value captured inside the loop).
-   *    For non-coarsest levels MultiGrid_Cycle overwrites this with the exact d_N at zero
-   *    additional cost in the restriction block (Space_Integration already runs there).
-   *    Skip when nPreSmooth==0: lastPreSmoothDefect[iMesh] stays {0,0} (initialized). ---*/
+  /*--- Record the final pre-smooth defect; MultiGrid_Cycle overwrites it with the exact
+   *    d_N on non-coarsest levels. ---*/
   if (nPreSmooth > 0) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       lastPreSmoothRMS[iMesh][1] = mg_prev_smooth_rms;
@@ -833,8 +907,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
     if (mg_early_exit_flag) break;
   }
 
-  /*--- Record d_{N-1} as the final post-smooth defect (display only).
-   *    Skip when nPostSmooth==0: lastPostSmoothRMS[iMesh] stays {0,0} (initialized). ---*/
+  /*--- Record the final post-smooth defect, for display only. ---*/
   if (nPostSmooth > 0) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       lastPostSmoothRMS[iMesh][1] = mg_prev_smooth_rms;
@@ -1098,20 +1171,19 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool grid_movement = config->GetGrid_Movement();
 
-  /*--- Interpolate the coarse solution onto the fine grid. This is the initial
-   *    condition the newly activated Full-MG level starts from, so it uses the same
-   *    constant-injection operator as the FAS correction, applied directly to the
-   *    solution rather than to LinSysRes. ---*/
+  /*--- Constant injection: every fine child of a coarse CV takes its parent's value. ---*/
 
-  ProlongateField(geo_coarse,
-                  [&](unsigned long iPoint) { return sol_coarse->GetNodes()->GetSolution(iPoint); },
-                  [&](unsigned long Point_Fine, const su2double* value) {
-                    sol_fine->GetNodes()->SetSolution(Point_Fine, value);
-                  });
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+    const auto* Solution_Coarse = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      sol_fine->GetNodes()->SetSolution(Point_Fine, Solution_Coarse);
+    }
+  }
+  END_SU2_OMP_FOR
 
-  /*--- Update the solution at the no-slip walls, mirroring SetRestricted_Solution.
-   *    The prolongated values come from coarse-grid nodes and do not satisfy the
-   *    fine-grid wall conditions on their own. ---*/
+  /*--- The injected values do not satisfy the fine-grid wall conditions on their own. ---*/
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetViscous_Wall(iMarker)) {
@@ -1146,19 +1218,58 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
     }
   }
 
-  /*--- Enforce Euler wall BC by projecting velocity to the tangent plane. The coarse
-   *    velocity is tangent to the coarse wall normal, which is not the fine-grid wall
-   *    normal on curved surfaces; without this the smallest near-wall cells start with
-   *    a spurious normal velocity. ---*/
+  /*--- Project the velocity onto the fine-grid wall tangent plane. ---*/
 
   sol_fine->MultigridProjectEulerWall(geo_fine, config, false);
 
-  /*--- MPI the new interpolated solution. The loops above only write domain points,
-   *    while Preprocessing builds primitive variables over all points including halos,
-   *    so the halos must be synchronized before the level is iterated. ---*/
+  /*--- MPI the new interpolated solution. ---*/
 
   sol_fine->InitiateComms(geo_fine, config, MPI_QUANTITIES::SOLUTION);
   sol_fine->CompleteComms(geo_fine, config, MPI_QUANTITIES::SOLUTION);
+
+}
+
+void CMultiGridIntegration::SetProlongated_ScalarSolution(CSolver *sol_fine, CSolver *sol_coarse,
+                                                          CGeometry *geo_fine, CGeometry *geo_coarse,
+                                                          CConfig *config, bool eddy_viscosity) {
+  SU2_ZONE_SCOPED
+
+  /*--- Constant injection: every fine child of a coarse CV takes its parent's value. ---*/
+
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+
+    const auto* Solution_Coarse = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+    const su2double muT_Coarse = eddy_viscosity ? sol_coarse->GetNodes()->GetmuT(Point_Coarse) : su2double(0.0);
+
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      sol_fine->GetNodes()->SetSolution(Point_Fine, Solution_Coarse);
+      if (eddy_viscosity) sol_fine->GetNodes()->SetmuT(Point_Fine, muT_Coarse);
+    }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- The eddy viscosity is zero on a no-slip wall, the injected value is not. ---*/
+
+  if (eddy_viscosity) {
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (!config->GetViscous_Wall(iMarker)) continue;
+
+      SU2_OMP_FOR_STAT(32)
+      for (auto iVertex = 0ul; iVertex < geo_fine->nVertex[iMarker]; iVertex++) {
+        const auto Point_Fine = geo_fine->vertex[iMarker][iVertex]->GetNode();
+        sol_fine->GetNodes()->SetmuT(Point_Fine, 0.0);
+      }
+      END_SU2_OMP_FOR
+    }
+  }
+
+  /*--- MPI the new interpolated solution, and the eddy viscosity with it. ---*/
+
+  const auto commType = eddy_viscosity ? MPI_QUANTITIES::SOLUTION_EDDY : MPI_QUANTITIES::SOLUTION;
+  sol_fine->InitiateComms(geo_fine, config, commType);
+  sol_fine->CompleteComms(geo_fine, config, commType);
 
 }
 
