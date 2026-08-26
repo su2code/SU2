@@ -1405,6 +1405,10 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   }
 }
 
+void CFlowOutput::LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) {
+  LoadHistoryData(config, geometry, solver);
+}
+
 void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   /*--- Only place outputs of the "RESIDUAL" group here. ---*/
 
