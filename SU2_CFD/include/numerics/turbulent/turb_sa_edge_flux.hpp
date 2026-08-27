@@ -37,30 +37,29 @@
  *       because with stochastic backscatter active (nVar 4) the three Langevin equations are
  *       advected with a centered flux, unlike the plain upwind SA equation itself.
  */
-template <class Double, class FlowIndices, int nDim, size_t nVar, bool muscl>
-class CScalarFlux_SA : public CUpwScalarBase<Double, CScalarFlux_SA<Double, FlowIndices, nDim, nVar, muscl>,
-                                             FlowIndices, nDim, nVar, muscl> {
+template <class Double, class FlowIndices, int nDim, size_t nVar>
+class CScalarFlux_SA
+    : public CUpwScalarBase<Double, CScalarFlux_SA<Double, FlowIndices, nDim, nVar>, FlowIndices, nDim, nVar> {
  public:
   static constexpr bool Conservative = false;
   static constexpr bool DiagonalDiffusion = true;
 
-  using Base = CUpwScalarBase<Double, CScalarFlux_SA, FlowIndices, nDim, nVar, muscl>;
+  using Base = CUpwScalarBase<Double, CScalarFlux_SA, FlowIndices, nDim, nVar>;
   using Int = typename Base::Int;
   using Base::Base;
 
  private:
   static constexpr passivedouble sigma = 2.0 / 3.0; /*!< \brief Constant of the diffusion term. */
-  static constexpr passivedouble cb2 = 0.622;        /*!< \brief Constant of the diffusion term. */
+  static constexpr passivedouble cb2 = 0.622;       /*!< \brief Constant of the diffusion term. */
 
  public:
   /*!
    * \brief SA convection, plus the centered advection of the backscatter equations when nVar > 1.
    */
   template <class VariableType, size_t Size>
-  FORCEINLINE void finalizeFlux(const FlowIndices&, const ScalarFluxOptions&, Int, const EdgeSide<VariableType>&,
-                                Int, const EdgeSide<VariableType>&, const Double& a0, const Double& a1,
-                                const CPair<CScalarValues<Double, Size>>& phi,
-                                EdgeResidual<Double, nVar>& res) const {
+  FORCEINLINE void finalizeFlux(const FlowIndices&, const ScalarFluxOptions&, Int, const EdgeSide<VariableType>&, Int,
+                                const EdgeSide<VariableType>&, const Double& a0, const Double& a1,
+                                const CPair<CScalarValues<Double, Size>>& phi, EdgeResidual<Double, nVar>& res) const {
     const Double flux = a0 * phi.i.all(0) + a1 * phi.j.all(0);
 
     res.flux_i(0) += flux;

@@ -96,11 +96,13 @@ private:
   void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) final;
 
   /*!
-   * \brief Resolve the compile-time flow indices, dimension, backscatter equation count and
-   *        MUSCL setting, and run the interior edge loop with the matching CScalarFlux_SA
-   *        instantiation. Each overload resolves one more of those from CConfig/CGeometry and
-   *        recurses into the next, so the runtime-to-compile-time dispatch stays linear in the
-   *        number of axes instead of enumerating every combination by hand.
+   * \brief Resolve the compile-time flow indices, dimension and backscatter equation count, and
+   *        run the interior edge loop with the matching CScalarFlux_SA instantiation. Whether the
+   *        scheme reconstructs is a runtime flag carried in opt (see ScalarFluxOptions::muscl),
+   *        not an axis of this dispatch. Each overload resolves one more of the remaining axes
+   *        from CConfig/CGeometry and recurses into the next, so the runtime-to-compile-time
+   *        dispatch stays linear in the number of axes instead of enumerating every combination
+   *        by hand.
    */
   template <class Indices>
   void RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
@@ -112,8 +114,7 @@ private:
   void RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
 
   /*!
-   * \brief Same dispatch as RunSA, for a boundary's call into BoundaryFluxResidual; a boundary
-   *        always reconstructs nothing, so muscl is not one of the axes resolved here.
+   * \brief Same dispatch as RunSA, for a boundary's call into BoundaryFluxResidual.
    */
   template <class Indices>
   void RunSA_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
@@ -173,8 +174,7 @@ public:
 
   /*!
    * \brief Compute the spatial integration using the CScalarFlux_SA edge kernel, which computes
-   *        and writes both the convective and the diffusive term of every edge; this solver has
-   *        no Viscous_Residual of its own any more.
+   *        and writes both the convective and the diffusive term of every edge.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics_container - Unused, kept only for the boundary conditions.

@@ -358,11 +358,12 @@ void CTurbSASolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_contai
   const ScalarFluxOptions opt{
       dynamic_grid,                            /*--- dynamicGrid ---*/
       config->GetBounded_Turb(),                /*--- boundedScalar ---*/
-      true,                                      /*--- correctGradient, as CAvgGrad_TurbSA is built today ---*/
+      true,                                      /*--- correctGradient ---*/
       config->GetUse_Accurate_Turb_Jacobians(),  /*--- accurateJacobians ---*/
       true,                                       /*--- convective ---*/
       true,                                       /*--- viscous ---*/
       false,                                      /*--- oneSided, this is the interior loop ---*/
+      config->GetMUSCL(),                          /*--- muscl ---*/
   };
 
   if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
@@ -393,12 +394,7 @@ void CTurbSASolver::RunSA(CGeometry* geometry, CSolver** solver_container, CConf
 template <class Indices, int nDim, size_t nVarSA>
 void CTurbSASolver::RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                           const ScalarFluxOptions& opt) {
-  if (config->GetMUSCL()) {
-    EdgeFluxResidual<CScalarFlux_SA<su2double, Indices, nDim, nVarSA, true>>(geometry, solver_container, config, opt);
-  } else {
-    EdgeFluxResidual<CScalarFlux_SA<su2double, Indices, nDim, nVarSA, false>>(geometry, solver_container, config,
-                                                                              opt);
-  }
+  EdgeFluxResidual<CScalarFlux_SA<su2double, Indices, nDim, nVarSA>>(geometry, solver_container, config, opt);
 }
 
 void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*,
@@ -426,8 +422,8 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
       dynamic_grid, config->GetBounded_Turb(), false /*correctGradient*/, false /*accurateJacobians*/,
-      true /*convective*/,  false /*viscous, far field has no diffusive flux, matching the old numerics path*/,
-      true /*oneSided, the ghost point has no row*/,
+      true /*convective*/,  false /*viscous*/,
+      true /*oneSided, the ghost point has no row*/, false /*muscl, a boundary never reconstructs*/,
   };
 
   if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
@@ -459,9 +455,8 @@ void CTurbSASolver::RunSA_Boundary(CGeometry* geometry, CSolver** solver_contain
 template <class Indices, int nDim, size_t nVarSA>
 void CTurbSASolver::RunSA_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                    const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit) {
-  /*--- Boundaries never reconstruct: muscl is false here regardless of config->GetMUSCL(). ---*/
-  BoundaryFluxResidual<CScalarFlux_SA<su2double, Indices, nDim, nVarSA, false>>(geometry, solver_container, config,
-                                                                                opt, val_marker, implicit);
+  BoundaryFluxResidual<CScalarFlux_SA<su2double, Indices, nDim, nVarSA>>(geometry, solver_container, config, opt,
+                                                                         val_marker, implicit);
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -737,12 +732,11 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   }
   END_SU2_OMP_FOR
 
-  /*--- The diffusive term at the inlet is disabled: it caused serious convergence problems in
-   * the numerics this replaces, so opt.viscous stays false here too. ---*/
+  /*--- The diffusive term at the inlet causes serious convergence problems, so it stays off. ---*/
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
       dynamic_grid, config->GetBounded_Turb(), false /*correctGradient*/, false /*accurateJacobians*/,
-      true /*convective*/,  false /*viscous*/, true /*oneSided*/,
+      true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
 
   if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {

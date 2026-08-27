@@ -51,12 +51,14 @@ using SparseMatrixType = CSysMatrix<su2mixedfloat>;
 
 /*!
  * \brief Alignment of the static containers backing a flux value type.
- * \note Yields the type's own alignment for a SIMD array, and the container default (0)
- *       for a plain scalar, which has no alignment of its own.
+ * \note Yields the type's own alignment for a SIMD array, and the plain type's natural
+ *       alignment for a scalar; C2DContainer's AlignSize also accepts 0 to mean its own
+ *       default, but that reaches `alignas(0)` on the static specializations, which some
+ *       compilers warn about even though it is a no-op, so a real value is passed instead.
  */
 template <class Type>
 struct CAlignTraits {
-  enum : size_t { Align = 0 };
+  enum : size_t { Align = alignof(Type) };
 };
 
 template <class Scalar_t, size_t N>
@@ -247,7 +249,7 @@ FORCEINLINE Double squaredNorm(const Vector<Double, nDim>& vector) {
  */
 template <size_t nDim, class Double>
 FORCEINLINE Vector<Double, nDim> tangentProjection(const Matrix<Double, nDim, nDim>& tensor,
-                                                    const Vector<Double, nDim>& unitVector) {
+                                                   const Vector<Double, nDim>& unitVector) {
   Vector<Double, nDim> proj;
   for (size_t iDim = 0; iDim < nDim; ++iDim) proj(iDim) = dot(tensor[iDim], unitVector);
 
@@ -296,51 +298,37 @@ FORCEINLINE Matrix<Double, nRows, nCols> gatherVariables(Int iPoint, const Conta
 #else
 
 namespace {
-template <class Container, su2enable_if<Container::IsVector> = 0>
-FORCEINLINE const su2double& get(const Container& vars, unsigned long iPoint) {
-  return vars(iPoint);
-}
+/*--- Register every lane of one gathered scalar as a preaccumulation input: the value itself
+ * for a scalar Double, one call per lane for a simd::Array one. The gather already happened
+ * through the container's own get(), which packs SIMD lanes and flattens a 3D container's
+ * (row, column) offset the same way the direct-mode branch above does, so this only adds the
+ * bookkeeping reverse mode needs on top of that shared read. ---*/
+FORCEINLINE void registerPreaccIn(const su2double& value) { AD::SetPreaccIn(value); }
 
-/*--- When getting 1 variable from a matrix container, we assume it is the first. ---*/
-template <class Container, su2enable_if<!Container::IsVector> = 0>
-FORCEINLINE const su2double& get(const Container& vars, unsigned long iPoint, size_t iVar = 0) {
-  return vars(iPoint, iVar);
+template <class T, size_t N>
+FORCEINLINE void registerPreaccIn(const simd::Array<T, N>& value) {
+  for (size_t k = 0; k < N; ++k) AD::SetPreaccIn(value[k]);
 }
 }  // namespace
 
 template <class Int, class Container, class Double = typename CValueTraits<Int>::Double>
 FORCEINLINE Double gatherVariables(Int iPoint, const Container& vars, size_t iVar = 0) {
-  Double x;
-  for (size_t k = 0; k < CValueTraits<Int>::Size; ++k) {
-    AD::SetPreaccIn(get(vars, iPoint[k], iVar));
-    x[k] = get(vars, iPoint[k], iVar);
-  }
-  return x;
+  const auto x = vars.template get<Vector<Double, 1>>(iPoint, iVar);
+  registerPreaccIn(x(0));
+  return x(0);
 }
 
 template <size_t nVar, class Int, class Container, class Double = typename CValueTraits<Int>::Double>
 FORCEINLINE Vector<Double, nVar> gatherVariables(Int iPoint, const Container& vars, size_t iVar = 0) {
-  Vector<Double, nVar> x;
-  for (size_t i = 0; i < nVar; ++i) {
-    for (size_t k = 0; k < CValueTraits<Int>::Size; ++k) {
-      AD::SetPreaccIn(vars(iPoint[k], iVar + i));
-      x[i][k] = vars(iPoint[k], iVar + i);
-    }
-  }
+  auto x = vars.template get<Vector<Double, nVar>>(iPoint, iVar);
+  for (size_t i = 0; i < nVar; ++i) registerPreaccIn(x[i]);
   return x;
 }
 
 template <size_t nRows, size_t nCols, class Int, class Container, class Double = typename CValueTraits<Int>::Double>
 FORCEINLINE Matrix<Double, nRows, nCols> gatherVariables(Int iPoint, const Container& vars, size_t iRow = 0) {
-  Matrix<Double, nRows, nCols> x;
-  for (size_t i = 0; i < nRows; ++i) {
-    for (size_t j = 0; j < nCols; ++j) {
-      for (size_t k = 0; k < CValueTraits<Int>::Size; ++k) {
-        AD::SetPreaccIn(vars(iPoint[k], iRow + i, j));
-        x(i, j)[k] = vars(iPoint[k], iRow + i, j);
-      }
-    }
-  }
+  auto x = vars.template get<Matrix<Double, nRows, nCols>>(iPoint, iRow);
+  for (size_t i = 0; i < nRows * nCols; ++i) registerPreaccIn(x.data()[i]);
   return x;
 }
 #endif
@@ -403,12 +391,12 @@ FORCEINLINE Double umusclProjection(const Double& gradProj, const Double& delta,
 /*!
  * \brief MUSCL reconstruction of the specified variable.
  * \note The result should be halved when added to i (or subtracted from j).
- * \note Reads its own row of the gradient container (rather than being handed an already
- *       gathered nVarGrad x nDim block, as it once was) so that a caller reconstructing a
- *       single variable, e.g. a scalar with nVar 1, never gathers a Matrix<Double,1,nDim>: that
- *       shape is the same RowMajor, one-row degeneracy that forces EdgeResidual's Size floor
- *       (see numerics/util.hpp), and here it would silently turn a row into a lone scalar
- *       instead of failing to compile, since Matrix<Double,1,nDim> still satisfies IsVector.
+ * \note Reads its own row of the gradient container, rather than taking an already gathered
+ *       nVarGrad x nDim block, so that a caller reconstructing a single variable, e.g. a scalar
+ *       with nVar 1, never gathers a Matrix<Double,1,nDim>: that shape is the same RowMajor,
+ *       one-row degeneracy that forces EdgeResidual's Size floor above, and here it would
+ *       silently turn a row into a lone scalar instead of failing to compile, since
+ *       Matrix<Double,1,nDim> still satisfies IsVector.
  */
 template <size_t nDim, class Double, class Gradient_t, class Int = typename CLaneTraits<Double>::Int>
 FORCEINLINE Double musclReconstruction(Int iPoint, const Gradient_t& gradient, size_t iRow,
@@ -436,8 +424,10 @@ FORCEINLINE void musclUnlimited(typename CLaneTraits<Double>::Int iPoint, typena
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
 
     /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i = musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
-    const Double proj_j = musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
+    const Double proj_i =
+        musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
+    const Double proj_j =
+        musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
 
     /*--- Apply reconstruction: V_L = V_i + 0.5 * dV_ij^kap ---*/
     V.i.all(iVar) += 0.5 * proj_i;
@@ -449,11 +439,10 @@ FORCEINLINE void musclUnlimited(typename CLaneTraits<Double>::Int iPoint, typena
  * \brief Limited reconstruction with point-based limiter.
  */
 template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class Limiter_t, class Gradient_t>
-FORCEINLINE void musclPointLimited(typename CLaneTraits<Double>::Int iPoint,
-                                   typename CLaneTraits<Double>::Int jPoint, const Vector<Double, nDim>& vector_ij,
-                                   const Limiter_t& limiter, const Gradient_t& gradient, CPair<VarType>& V,
-                                   const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp,
-                                   size_t iRow = 0) {
+FORCEINLINE void musclPointLimited(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
+                                   const Vector<Double, nDim>& vector_ij, const Limiter_t& limiter,
+                                   const Gradient_t& gradient, CPair<VarType>& V, const CNonDeduced<Double>& kappa,
+                                   const CNonDeduced<Double>& umusclRamp, size_t iRow = 0) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
   auto lim_i = gatherVariables<nVarGrad>(iPoint, limiter, iRow);
@@ -464,8 +453,10 @@ FORCEINLINE void musclPointLimited(typename CLaneTraits<Double>::Int iPoint,
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
 
     /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i = musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
-    const Double proj_j = musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
+    const Double proj_i =
+        musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
+    const Double proj_j =
+        musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
 
     /*--- Apply reconstruction: V_L = V_i + 0.5 * lim * dV_ij^kap ---*/
     V.i.all(iVar) += 0.5 * lim_i(iVar) * proj_i;
@@ -477,10 +468,10 @@ FORCEINLINE void musclPointLimited(typename CLaneTraits<Double>::Int iPoint,
  * \brief Limited reconstruction with edge-based limiter.
  */
 template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class Gradient_t>
-FORCEINLINE void musclEdgeLimited(typename CLaneTraits<Double>::Int iPoint,
-                                  typename CLaneTraits<Double>::Int jPoint, const Vector<Double, nDim>& vector_ij,
-                                  const Gradient_t& gradient, CPair<VarType>& V, const CNonDeduced<Double>& kappa,
-                                  const CNonDeduced<Double>& umusclRamp, size_t iRow = 0) {
+FORCEINLINE void musclEdgeLimited(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
+                                  const Vector<Double, nDim>& vector_ij, const Gradient_t& gradient, CPair<VarType>& V,
+                                  const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp,
+                                  size_t iRow = 0) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
@@ -489,8 +480,10 @@ FORCEINLINE void musclEdgeLimited(typename CLaneTraits<Double>::Int iPoint,
     const Double delta_ij_2 = pow(delta_ij, 2) + 1e-6;
 
     /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i = musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
-    const Double proj_j = musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
+    const Double proj_i =
+        musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
+    const Double proj_j =
+        musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
 
     const Double lim_i = (delta_ij_2 + proj_i * delta_ij) / (pow(proj_i, 2) + delta_ij_2);
     const Double lim_j = (delta_ij_2 + proj_j * delta_ij) / (pow(proj_j, 2) + delta_ij_2);
@@ -503,8 +496,7 @@ FORCEINLINE void musclEdgeLimited(typename CLaneTraits<Double>::Int iPoint,
 
 /*!
  * \brief Reconstruct a slice of nVarGrad variables starting at column iRow, dispatching on the
- *        limiter type. This is the switch `reconstructPrimitives` used to perform inline; lifted
- *        here so both the flow and the scalar reconstructions call the same body.
+ *        limiter type; shared by the flow and the scalar reconstructions so both call one body.
  */
 template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class Limiter_t, class Gradient_t>
 FORCEINLINE void reconstruct(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
