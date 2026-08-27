@@ -26,8 +26,13 @@
  */
 
 #include "../../include/solvers/CTurbSASolver.hpp"
+#include "../../include/solvers/CScalarSolver.inl"
 #include "../../include/variables/CTurbSAVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
+#include "../../include/numerics/turbulent/turb_sa_edge_flux.hpp"
+#include "../../include/variables/CEulerVariable.hpp"
+#include "../../include/variables/CIncEulerVariable.hpp"
+#include "../../include/variables/CNEMOEulerVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/random_toolbox.hpp"
@@ -338,18 +343,54 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   AD::EndNoSharedReading();
 }
 
-void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                                     CNumerics* numerics, const CConfig* config) {
+void CTurbSASolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                                    CConfig* config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
-  /*--- Define an object to set solver specific numerics contribution. ---*/
-  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
-    /*--- Roughness heights. ---*/
-    numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
+  const ScalarFluxOptions opt{
+      dynamic_grid,                            /*--- dynamicGrid ---*/
+      config->GetBounded_Turb(),                /*--- boundedScalar ---*/
+      true,                                      /*--- correctGradient, as CAvgGrad_TurbSA is built today ---*/
+      config->GetUse_Accurate_Turb_Jacobians(),  /*--- accurateJacobians ---*/
+      true,                                       /*--- convective ---*/
+      true,                                       /*--- viscous ---*/
+      false,                                      /*--- oneSided, this is the interior loop ---*/
   };
 
-  /*--- Now instantiate the generic non-conservative implementation with the functor above. ---*/
-  Viscous_Residual_NonCons(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
+  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+    RunSA<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt);
+  } else if (config->GetNEMOProblem()) {
+    RunSA<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt);
+  } else {
+    RunSA<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt);
+  }
+}
 
+template <class Indices>
+void CTurbSASolver::RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                          const ScalarFluxOptions& opt) {
+  if (nDim == 2) RunSA<Indices, 2>(geometry, solver_container, config, opt);
+  else RunSA<Indices, 3>(geometry, solver_container, config, opt);
+}
+
+template <class Indices, int nDim>
+void CTurbSASolver::RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                          const ScalarFluxOptions& opt) {
+  /*--- nVar is 1, or 4 with the three Langevin equations of stochastic backscatter, see the
+   * solver constructor; either way it is fixed for the lifetime of the solver, not per call. ---*/
+  if (nVar == 1) RunSA<Indices, nDim, 1>(geometry, solver_container, config, opt);
+  else RunSA<Indices, nDim, 4>(geometry, solver_container, config, opt);
+}
+
+template <class Indices, int nDim, size_t nVarSA>
+void CTurbSASolver::RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                          const ScalarFluxOptions& opt) {
+  if (config->GetMUSCL()) {
+    EdgeFluxResidual<CScalarFlux_SA<su2double, Indices, nDim, nVarSA, true>>(geometry, solver_container, config, opt);
+  } else {
+    EdgeFluxResidual<CScalarFlux_SA<su2double, Indices, nDim, nVarSA, false>>(geometry, solver_container, config,
+                                                                              opt);
+  }
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,

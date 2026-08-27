@@ -403,12 +403,19 @@ FORCEINLINE Double umusclProjection(const Double& gradProj, const Double& delta,
 /*!
  * \brief MUSCL reconstruction of the specified variable.
  * \note The result should be halved when added to i (or subtracted from j).
+ * \note Reads its own row of the gradient container (rather than being handed an already
+ *       gathered nVarGrad x nDim block, as it once was) so that a caller reconstructing a
+ *       single variable, e.g. a scalar with nVar 1, never gathers a Matrix<Double,1,nDim>: that
+ *       shape is the same RowMajor, one-row degeneracy that forces EdgeResidual's Size floor
+ *       (see numerics/util.hpp), and here it would silently turn a row into a lone scalar
+ *       instead of failing to compile, since Matrix<Double,1,nDim> still satisfies IsVector.
  */
-template <class GradType, size_t nDim, class Double>
-FORCEINLINE Double musclReconstruction(const GradType& grad, const Vector<Double, nDim>& vector_ij,
-                                       const Double& delta, const size_t iVar, const CNonDeduced<Double>& kappa,
-                                       const CNonDeduced<Double>& umusclRamp) {
-  const Double proj = dot(grad[iVar], vector_ij);
+template <size_t nDim, class Double, class Gradient_t, class Int = typename CLaneTraits<Double>::Int>
+FORCEINLINE Double musclReconstruction(Int iPoint, const Gradient_t& gradient, size_t iRow,
+                                       const Vector<Double, nDim>& vector_ij, const Double& delta,
+                                       const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp) {
+  const auto grad = gatherVariables<nDim>(iPoint, gradient, iRow);
+  const Double proj = dot(grad, vector_ij);
   return umusclRamp * umusclProjection(proj, delta, kappa);
 }
 
@@ -424,16 +431,13 @@ FORCEINLINE void musclUnlimited(typename CLaneTraits<Double>::Int iPoint, typena
                                 size_t iRow = 0) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
-  auto grad_i = gatherVariables<nVarGrad, nDim>(iPoint, gradient, iRow);
-  auto grad_j = gatherVariables<nVarGrad, nDim>(jPoint, gradient, iRow);
-
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
     /*--- Centered difference, needed for U-MUSCL projection ---*/
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
 
     /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i = musclReconstruction(grad_i, vector_ij, delta_ij, iVar, kappa, umusclRamp);
-    const Double proj_j = musclReconstruction(grad_j, vector_ij, delta_ij, iVar, kappa, umusclRamp);
+    const Double proj_i = musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
+    const Double proj_j = musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
 
     /*--- Apply reconstruction: V_L = V_i + 0.5 * dV_ij^kap ---*/
     V.i.all(iVar) += 0.5 * proj_i;
@@ -455,16 +459,13 @@ FORCEINLINE void musclPointLimited(typename CLaneTraits<Double>::Int iPoint,
   auto lim_i = gatherVariables<nVarGrad>(iPoint, limiter, iRow);
   auto lim_j = gatherVariables<nVarGrad>(jPoint, limiter, iRow);
 
-  auto grad_i = gatherVariables<nVarGrad, nDim>(iPoint, gradient, iRow);
-  auto grad_j = gatherVariables<nVarGrad, nDim>(jPoint, gradient, iRow);
-
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
     /*--- Centered difference, needed for U-MUSCL projection ---*/
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
 
     /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i = musclReconstruction(grad_i, vector_ij, delta_ij, iVar, kappa, umusclRamp);
-    const Double proj_j = musclReconstruction(grad_j, vector_ij, delta_ij, iVar, kappa, umusclRamp);
+    const Double proj_i = musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
+    const Double proj_j = musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
 
     /*--- Apply reconstruction: V_L = V_i + 0.5 * lim * dV_ij^kap ---*/
     V.i.all(iVar) += 0.5 * lim_i(iVar) * proj_i;
@@ -482,17 +483,14 @@ FORCEINLINE void musclEdgeLimited(typename CLaneTraits<Double>::Int iPoint,
                                   const CNonDeduced<Double>& umusclRamp, size_t iRow = 0) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
-  auto grad_i = gatherVariables<nVarGrad, nDim>(iPoint, gradient, iRow);
-  auto grad_j = gatherVariables<nVarGrad, nDim>(jPoint, gradient, iRow);
-
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
     /*--- Centered difference, needed for U-MUSCL projection and limiter ---*/
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
     const Double delta_ij_2 = pow(delta_ij, 2) + 1e-6;
 
     /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i = musclReconstruction(grad_i, vector_ij, delta_ij, iVar, kappa, umusclRamp);
-    const Double proj_j = musclReconstruction(grad_j, vector_ij, delta_ij, iVar, kappa, umusclRamp);
+    const Double proj_i = musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
+    const Double proj_j = musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
 
     const Double lim_i = (delta_ij_2 + proj_i * delta_ij) / (pow(proj_i, 2) + delta_ij_2);
     const Double lim_j = (delta_ij_2 + proj_j * delta_ij) / (pow(proj_j, 2) + delta_ij_2);

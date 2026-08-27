@@ -95,6 +95,22 @@ private:
    */
   void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) final;
 
+  /*!
+   * \brief Resolve the compile-time flow indices, dimension, backscatter equation count and
+   *        MUSCL setting, and run the interior edge loop with the matching CScalarFlux_SA
+   *        instantiation. Each overload resolves one more of those from CConfig/CGeometry and
+   *        recurses into the next, so the runtime-to-compile-time dispatch stays linear in the
+   *        number of axes instead of enumerating every combination by hand.
+   */
+  template <class Indices>
+  void RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
+
+  template <class Indices, int nDim>
+  void RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
+
+  template <class Indices, int nDim, size_t nVarSA>
+  void RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
+
 public:
   /*!
    * \brief Constructor.
@@ -140,16 +156,17 @@ public:
                       unsigned short iMesh) override;
 
   /*!
-   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \brief Compute the spatial integration using the CScalarFlux_SA edge kernel, which computes
+   *        and writes both the convective and the diffusive term of every edge; this solver has
+   *        no Viscous_Residual of its own any more.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Unused, kept only for the boundary conditions.
    * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                        CNumerics* numerics, const CConfig* config) override;
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                       CConfig* config, unsigned short iMesh) override;
 
   /*!
    * \brief Source term computation.

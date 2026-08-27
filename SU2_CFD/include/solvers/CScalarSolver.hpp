@@ -30,6 +30,7 @@
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../numerics/scalar/scalar_edge_flux.hpp"
 #include "../variables/CScalarVariable.hpp"
 #include "../variables/CFlowVariable.hpp"
 #include "../variables/CPrimitiveIndices.hpp"
@@ -402,7 +403,18 @@ class CScalarSolver : public CSolver {
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void SumEdgeFluxes(CGeometry* geometry);
+  void SumEdgeFluxes(const CGeometry* geometry);
+
+  /*!
+   * \brief Generic interior edge loop for a scalar model expressed through the CUpwScalarBase
+   *        CRTP chain (numerics/scalar/scalar_edge_flux.hpp), driving both the convective and
+   *        the diffusive term of every edge with a single kernel, under either update strategy.
+   * \tparam Scheme - A model instantiated from CUpwScalarBase, e.g. CScalarFlux_SA<...>.
+   * \param[in] opt - Loop invariant flags built by the caller from the current CConfig state.
+   */
+  template <class Scheme>
+  void EdgeFluxResidual(const CGeometry* geometry, CSolver** solver_container, const CConfig* config,
+                        const ScalarFluxOptions& opt);
 
  private:
   /*!

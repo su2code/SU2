@@ -789,6 +789,7 @@ public:
    * \return Reference to gradient.
    */
   inline CVectorOfMatrix& GetGradient(void) { return Gradient; }
+  inline const CVectorOfMatrix& GetGradient(void) const { return Gradient; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -835,6 +836,7 @@ public:
    * \return Reference to the limiters vector.
    */
   inline MatrixType& GetLimiter(void) { return Limiter; }
+  inline const MatrixType& GetLimiter(void) const { return Limiter; }
 
   /*!
    * \brief Get the value of the slope limiter.

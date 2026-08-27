@@ -63,6 +63,7 @@ struct ScalarFluxOptions {
  */
 template <class Double, size_t Size>
 struct CScalarValues {
+  static constexpr size_t nVar = Size; /*!< \brief Only used as VarType::nVar when reconstruct's own nVarGrad_ default applies; every call site here passes an explicit nVarGrad_ instead. */
   Vector<Double, Size> all;
 };
 
@@ -188,10 +189,16 @@ class CUpwScalarFlux : public CAvgGradScalarBase<Double, Derived, FlowIndices, n
 
   explicit CUpwScalarFlux(const CConfig&) {}
 
-  template <class VariableType>
+  /*!
+   * \param[in] phi - Transported variable of both endpoints, reconstructed if the scheme is
+   *            instantiated with muscl; read from here rather than side_i/side_j.scalarNodes
+   *            directly so a model needs no reconstruction logic of its own.
+   */
+  template <class VariableType, size_t Size>
   FORCEINLINE void finalizeFlux(const FlowIndices& idx, const ScalarFluxOptions&, Int iPoint,
                                 const EdgeSide<VariableType>& side_i, Int jPoint,
                                 const EdgeSide<VariableType>& side_j, const Double& a0, const Double& a1,
+                                const CPair<CScalarValues<Double, Size>>& phi,
                                 EdgeResidual<Double, nVar>& res) const {
     Double w0 = a0, w1 = a1;
     if constexpr (Derived::Conservative) {
@@ -200,9 +207,7 @@ class CUpwScalarFlux : public CAvgGradScalarBase<Double, Derived, FlowIndices, n
     }
 
     for (size_t iVar = 0; iVar < res.nVar; ++iVar) {
-      const Double phi_i = gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), iVar);
-      const Double phi_j = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), iVar);
-      const Double flux = w0 * phi_i + w1 * phi_j;
+      const Double flux = w0 * phi.i.all(iVar) + w1 * phi.j.all(iVar);
 
       res.flux_i(iVar) += flux;
       res.flux_j(iVar) -= flux;
@@ -239,6 +244,16 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
   const FlowIndices idx;
   const size_t nEqn; /*!< \brief Equations of the model, which a dynamic one gives to its base. */
 
+  /*!
+   * \brief MUSCL reconstruction parameters, read from CConfig once per construction (i.e. once
+   *        per nonlinear iteration, see CScalarSolver::EdgeFluxResidual) instead of per edge;
+   *        this is also where limiter freezing (GetLimiterIter) is resolved, by collapsing the
+   *        limiter type to NONE once frozen or once the config disables it.
+   */
+  const su2double kappa, umusclRamp, kappaFlow;
+  const LIMITER limiterType, limiterTypeFlow;
+  const bool musclFlow;
+
  public:
   /*!
    * \brief Constructor, inherited by the model with `using Base::Base`.
@@ -247,7 +262,18 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
    *       to build it at all.
    */
   explicit CUpwScalarBase(const CConfig& config, size_t nEqn_ = nVar_)
-      : Base(config), idx(nDim, config.GetnSpecies()), nEqn(nEqn_) {}
+      : Base(config),
+        idx(nDim, config.GetnSpecies()),
+        nEqn(nEqn_),
+        kappa(config.GetMUSCL_Kappa()),
+        umusclRamp(config.GetMUSCLRampValue()),
+        kappaFlow(config.GetMUSCL_Kappa_Flow()),
+        limiterType(config.GetInnerIter() <= config.GetLimiterIter() ? config.GetKind_SlopeLimit() : LIMITER::NONE),
+        limiterTypeFlow((config.GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE &&
+                         config.GetInnerIter() <= config.GetLimiterIter())
+                            ? config.GetKind_SlopeLimit_Flow()
+                            : LIMITER::NONE),
+        musclFlow(config.GetMUSCL_Flow() && config.GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {}
 
   template <class VariableType>
   FORCEINLINE EdgeResidual<Double, nVar> ComputeFlux(const ScalarFluxOptions& opt, Int iPoint,
@@ -261,8 +287,7 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
 
     EdgeResidual<Double, nVar> res(nEqn);
 
-    /*--- Read once by the reconstruction (added alongside the first model that uses it) and
-     * by the diffusion. ---*/
+    /*--- Read once by the reconstruction and by the diffusion. ---*/
     Vector<Double, nDim> vector_ij;
     if (muscl || opt.viscous) {
       vector_ij = distanceVector<nDim>(iPoint, side_i.coord, jPoint, side_j.coord);
@@ -278,12 +303,23 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
         a0 = fmax(0.0, massFlux) / rho_i;
         a1 = fmin(0.0, massFlux) / rho_j;
       } else {
-        const auto u_i = gatherVariables<nDim>(iPoint, side_i.flowNodes->GetPrimitive(), idx.Velocity());
-        const auto u_j = gatherVariables<nDim>(jPoint, side_j.flowNodes->GetPrimitive(), idx.Velocity());
+        /*--- The mass-flux branch above reads the edge flux computed from unreconstructed flow
+         * primitives directly, so only this branch needs a reconstructed velocity. ---*/
+        CPair<CScalarValues<Double, nDim>> u;
+        u.i.all = gatherVariables<nDim>(iPoint, side_i.flowNodes->GetPrimitive(), idx.Velocity());
+        u.j.all = gatherVariables<nDim>(jPoint, side_j.flowNodes->GetPrimitive(), idx.Velocity());
+
+        if constexpr (muscl) {
+          if (musclFlow) {
+            reconstruct<nDim>(iPoint, jPoint, vector_ij, side_i.flowNodes->GetGradient_Reconstruction(),
+                              side_i.flowNodes->GetLimiter_Primitive(), limiterTypeFlow, idx.Velocity(), u, kappaFlow,
+                              umusclRamp);
+          }
+        }
 
         /*--- Face normal velocity of the mean of the two points, relative to the grid. ---*/
         Vector<Double, nDim> vel_ij;
-        for (int iDim = 0; iDim < nDim; ++iDim) vel_ij(iDim) = 0.5 * (u_i(iDim) + u_j(iDim));
+        for (int iDim = 0; iDim < nDim; ++iDim) vel_ij(iDim) = 0.5 * (u.i.all(iDim) + u.j.all(iDim));
 
         if (opt.dynamicGrid) {
           const auto ug_i = gatherVariables<nDim>(iPoint, side_i.gridVel);
@@ -296,7 +332,21 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
         a1 = fmin(0.0, q_ij);
       }
 
-      static_cast<const Derived*>(this)->finalizeFlux(idx, opt, iPoint, side_i, jPoint, side_j, a0, a1, res);
+      /*--- Transported variable of both endpoints, reconstructed if the scheme has muscl on.
+       * Gathered one variable at a time (like the diffusion gradients above) so a static model
+       * with nVar 1 never reads past the single column its solution container actually has. ---*/
+      CPair<CScalarValues<Double, Size>> phi;
+      for (size_t iVar = 0; iVar < res.nVar; ++iVar) {
+        phi.i.all(iVar) = gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), iVar);
+        phi.j.all(iVar) = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), iVar);
+      }
+
+      if constexpr (muscl && nVar != Dynamic) {
+        reconstruct<nVar>(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
+                          side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp);
+      }
+
+      static_cast<const Derived*>(this)->finalizeFlux(idx, opt, iPoint, side_i, jPoint, side_j, a0, a1, phi, res);
     }
 
     Base::diffusionTerms(idx, opt, iPoint, side_i, jPoint, side_j, normal, vector_ij, res);

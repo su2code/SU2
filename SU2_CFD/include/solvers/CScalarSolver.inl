@@ -351,7 +351,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 }
 
 template <class VariableType>
-void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
+void CScalarSolver<VariableType>::SumEdgeFluxes(const CGeometry* geometry) {
   SU2_ZONE_SCOPED
 
   /*--- EdgeFluxes and EdgeFluxesDiff hold the two row contributions of an edge directly,
@@ -369,6 +369,89 @@ void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
     }
   }
   END_SU2_OMP_FOR
+}
+
+template <class VariableType>
+template <class Scheme>
+void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CSolver** solver_container,
+                                                    const CConfig* config, const ScalarFluxOptions& opt) {
+  SU2_ZONE_SCOPED
+
+  using Double = typename Scheme::Double;
+  constexpr int nDim = Scheme::nDim;
+
+  const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+
+  const Scheme flux(*config);
+
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  const auto* edgeMassFluxes = solver_container[FLOW_SOL]->GetEdgeMassFluxes();
+
+  const EdgeSide<VariableType> side{*nodes, flowNodes, CMatrixView<const su2double>(geometry->nodes->GetCoord()),
+                                    dynamic_grid ? CMatrixView<const su2double>(geometry->nodes->GetGridVel())
+                                                 : CMatrixView<const su2double>()};
+
+  const auto updateType = ReducerStrategy ? UpdateType::REDUCTION : UpdateType::COLORING;
+  auto& target = ReducerStrategy ? EdgeFluxes : LinSysRes;
+
+  /*--- Under the reducer the edges of a thread are not disjoint in their points, so
+   * preaccumulation is paused; under coloring they are, and the faster adjoint evaluation
+   * mode applies. ---*/
+  bool pausePreacc = false;
+  if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
+  else AD::StartNoSharedReading();
+
+  for (auto color : EdgeColoring) {
+    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+    for (auto k = 0ul; k < color.size; ++k) {
+      const unsigned long iEdge = color.indices[k];
+      const auto iPoint = geometry->edges->GetNode(iEdge, 0);
+      const auto jPoint = geometry->edges->GetNode(iEdge, 1);
+      const auto normal = gatherVariables<nDim>(iEdge, geometry->edges->GetNormal());
+
+      const Double massFlux = opt.boundedScalar ? gatherVariables(iEdge, *edgeMassFluxes) : Double(0.0);
+
+      flux.ComputeFlux(opt, iEdge, iPoint, side, jPoint, side, normal, massFlux, implicit, updateType, 1.0, target,
+                       EdgeFluxesDiff, Jacobian);
+
+      /*--- Bounded scalar divergence correction, per edge; the ReducerStrategy equivalent runs
+       * in a per-point pass below, where the diagonal is not written from the edge loop. ---*/
+      if (opt.boundedScalar && !ReducerStrategy) {
+        LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -massFlux);
+        LinSysRes.AddBlock(jPoint, nodes->GetSolution(jPoint), massFlux);
+        if (implicit) {
+          Jacobian.AddVal2Diag(iPoint, -massFlux);
+          Jacobian.AddVal2Diag(jPoint, massFlux);
+        }
+      }
+    }
+    END_SU2_OMP_FOR
+  }
+
+  AD::ResumePreaccumulation(pausePreacc);
+  if (!ReducerStrategy) AD::EndNoSharedReading();
+
+  if (ReducerStrategy) {
+    SumEdgeFluxes(geometry);
+    if (implicit) Jacobian.SetDiagonalAsColumnSum();
+
+    if (opt.boundedScalar) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+        const auto* solution = nodes->GetSolution(iPoint);
+        su2double divergence = 0;
+
+        for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
+          const auto sign = (iPoint == geometry->edges->GetNode(iEdge, 0)) ? 1 : -1;
+          const su2double edgeMassFlux = sign * (*edgeMassFluxes)[iEdge];
+          divergence += edgeMassFlux;
+          LinSysRes.AddBlock(iPoint, solution, -edgeMassFlux);
+        }
+        if (implicit) Jacobian.AddVal2Diag(iPoint, -divergence);
+      }
+      END_SU2_OMP_FOR
+    }
+  }
 }
 
 template<class VariableType>
