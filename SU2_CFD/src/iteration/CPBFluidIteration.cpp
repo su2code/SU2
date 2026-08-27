@@ -91,7 +91,7 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   /*--- Pressure-based algorithm finished, now run auxiliary solvers ---*/
 
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
-  CommonSingleGridIterations(output, integration, geometry, solver, numerics, config, surface_movement, 
+  CommonAuxiliarySolvers(output, integration, geometry, solver, numerics, config, surface_movement, 
                              grid_movement, FFDBox, val_iZone, val_iInst, main_solver, frozen_visc);
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/

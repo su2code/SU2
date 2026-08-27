@@ -33,6 +33,7 @@
 
 CConservativeVarsInterface::CConservativeVarsInterface(unsigned short val_nVar, unsigned short val_nConst) :
   CInterface(val_nVar, val_nConst) {
+  InterfaceType = ENUM_TRANSFER::CONSERVATIVE_VARIABLES;
 }
 
 void CConservativeVarsInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,

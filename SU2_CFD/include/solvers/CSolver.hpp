@@ -59,6 +59,8 @@
 #include "../limiters/CLimiterDetails.hpp"
 #include "../variables/CVariable.hpp"
 
+#include "../output/CTurboOutput.hpp"
+
 #ifdef HAVE_LIBROM
 #include "librom.h"
 #endif
@@ -149,6 +151,8 @@ protected:
 
   vector<su2activematrix> VertexTraction;          /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
   vector<su2activematrix> VertexTractionAdjoint;   /*- Also temporary -*/
+
+  std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
 
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
 
@@ -314,9 +318,11 @@ public:
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] force - Reduce on a coarse level too, where it is skipped by default.
    */
-  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config);
+  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config, bool force = false);
 
   /*!
    * \brief Communicate the value of the max residual and RMS residual.
@@ -388,6 +394,16 @@ public:
    * \return Value of the average local CFL number.
    */
   inline su2double GetAvg_CFL_Local(void) const { return Avg_CFL_Local; }
+
+  /*!
+   * \brief Set min/max/avg local CFL summary statistics.
+   * \param[in] val_cfl - Uniform CFL value to report.
+   */
+  inline void SetCFL_Local_Stats(su2double val_cfl) {
+    Min_CFL_Local = val_cfl;
+    Max_CFL_Local = val_cfl;
+    Avg_CFL_Local = val_cfl;
+  }
 
   /*!
    * \brief Get the number of variables of the problem.
@@ -1121,6 +1137,8 @@ public:
                                CConfig *config,
                                unsigned short val_marker) { }
 
+  inline virtual std::shared_ptr<CTurboOutput> GetTurboBladePerformance() const { return std::shared_ptr<CTurboOutput>(nullptr); }
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1301,6 +1319,29 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) { }
+
+  /*!
+  * \brief Get a component of the donor-side averaged state at a mixing plane interface
+  * \param[in] val_marker - marker index
+  * \param[in] val_span - span index
+  * \param[in] val_state  - requested state component
+  */
+  inline virtual su2double GetMixingState(unsigned short val_marker,
+                                   unsigned long val_span,
+                                   unsigned short val_state) const { return 0; }
+
+  /*!
+   * \brief Set a component of the donor-side averaged state at a mixing plane interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_span   - span index
+   * \param[in] val_state    - state component to set
+   * \param[in] component    - value to set
+   */
+  inline virtual void SetMixingState(unsigned short val_marker,
+                              unsigned long val_span,
+                              unsigned short val_state,
+                              // unsigned long donor_span, // Do I care about where it comes from?
+                              su2double component) { }
 
  /*!
    * \brief Get the outer state for fluid interface nodes.
@@ -3806,7 +3847,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void InitTurboContainers(CGeometry *geometry, CConfig *config) { }
+  inline virtual void InitTurboContainers(CGeometry *geometry, CConfig **config, unsigned short iZone) { }
 
    /*!
    * \brief Get Primal variables for turbo performance computation
@@ -3845,6 +3886,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   inline virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry) { }
+
+  inline virtual void ComputeTurboBladePerformance(CGeometry* geometry, CConfig* config, unsigned short iBlade) { };
 
   /*!
    * \brief A virtual member.
@@ -3894,82 +3937,6 @@ public:
    * \return Value of the Average Omega on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetAverageOmega(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Nu on the surface <i>val_marker</i>.
-   */
-  inline virtual su2double GetExtAverageNu(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Kine on the surface <i>val_marker</i>.
-   */
-  inline virtual su2double GetExtAverageKine(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Omega on the surface <i>val_marker</i>.
-   */
-  inline virtual su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Density on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageDensity(unsigned short valMarker,
-                                           unsigned short valSpan,
-                                           su2double valDensity) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAveragePressure(unsigned short valMarker,
-                                            unsigned short valSpan,
-                                            su2double valPressure) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageTurboVelocity(unsigned short valMarker,
-                                                 unsigned short valSpan,
-                                                 unsigned short valIndex,
-                                                 su2double valTurboVelocity) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Nu on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageNu(unsigned short valMarker,
-                                      unsigned short valSpan,
-                                      su2double valNu) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Kine on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageKine(unsigned short valMarker,
-                                        unsigned short valSpan,
-                                        su2double valKine) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Omega on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageOmega(unsigned short valMarker,
-                                         unsigned short valSpan,
-                                         su2double valOmega) { }
 
   /*!
    * \brief A virtual member.

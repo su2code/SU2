@@ -73,7 +73,7 @@ class CFluidIteration : public CIteration {
                unsigned short val_iInst) override;
 
   /*!
-   * \brief Perform a single iteration of the fluid system.
+   * \brief Perform auxiliary solvers iterations after the main flow solver.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -85,8 +85,10 @@ class CFluidIteration : public CIteration {
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    * \param[in] val_iZone - Index of the zone.
    * \param[in] val_iInst - Index of the instance layer.
+   * \param[in] main_solver - Main solver.
+   * \param[in] frozen_visc - Flag for frozen viscosity.
    */
-  void CommonSingleGridIterations(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
+  void CommonAuxiliarySolvers(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                unsigned short val_iInst, MAIN_SOLVER main_solver, bool frozen_visc);
@@ -134,12 +136,7 @@ class CFluidIteration : public CIteration {
    * \param[in] iZone - The current zone
    * \param[in] ramp_flag - Flag indicating type of ramp (grid or boundary)
    */
-  void UpdateRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag);
-
-  /*!
-   * \brief Computes turboperformance.
-   */
-  void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter);
+  void UpdateRamps(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag);
 
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.
