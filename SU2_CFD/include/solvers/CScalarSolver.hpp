@@ -138,7 +138,9 @@ class CScalarSolver : public CSolver {
     auto residual = numerics->ComputeResidual(config);
 
     if (ReducerStrategy) {
+      /*--- Accumulates onto the convective contribution the interior loop already wrote. ---*/
       EdgeFluxes.SubtractBlock(iEdge, residual);
+      EdgeFluxesDiff.AddBlock(iEdge, residual);
       if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
     } else {
       LinSysRes.SubtractBlock(iPoint, residual);
@@ -194,8 +196,9 @@ class CScalarSolver : public CSolver {
       Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
     }
     if (ReducerStrategy) {
+      /*--- i's row takes its contribution from residual_ij alone, accumulated onto what the
+       * convective term already wrote; j's row is accumulated once residual_ji is known, below. ---*/
       EdgeFluxes.SubtractBlock(iEdge, residual_ij);
-      EdgeFluxesDiff.SetBlock(iEdge, residual_ij);
       if (implicit) {
         /*--- For the reducer strategy the Jacobians are averaged for simplicity. ---*/
         for (int iVar=0; iVar<nVar; iVar++)
@@ -221,7 +224,7 @@ class CScalarSolver : public CSolver {
 
     auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
     if (ReducerStrategy) {
-      EdgeFluxesDiff.AddBlock(iEdge, residual_ji);
+      EdgeFluxesDiff.SubtractBlock(iEdge, residual_ji);
       if (implicit) {
         for (int iVar=0; iVar<nVar; iVar++)
           for (int jVar=0; jVar<nVar; jVar++) {

@@ -286,7 +286,10 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       auto residual = numerics->ComputeResidual(config);
 
       if (ReducerStrategy) {
+        /*--- A conservative flux writes opposite contributions into the two containers; the
+         * viscous term, computed below on the same edge, accumulates onto them. ---*/
         EdgeFluxes.SetBlock(iEdge, residual);
+        EdgeFluxesDiff.SetBlock(iEdge, residual, -1);
         if (implicit) Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
       } else {
         LinSysRes.AddBlock(iPoint, residual);
@@ -351,8 +354,8 @@ template <class VariableType>
 void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
   SU2_ZONE_SCOPED
 
-  const bool nonConservative = EdgeFluxesDiff.GetLocSize() > 0;
-
+  /*--- EdgeFluxes and EdgeFluxesDiff hold the two row contributions of an edge directly,
+   * flux_i and flux_j, so each point simply accumulates its own side of every incident edge. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     LinSysRes.SetBlock_Zero(iPoint);
@@ -361,10 +364,7 @@ void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
       if (iPoint == geometry->edges->GetNode(iEdge, 0)) {
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       } else {
-        LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
-        if (nonConservative) {
-          LinSysRes.SubtractBlock(iPoint, EdgeFluxesDiff.GetBlock(iEdge));
-        }
+        LinSysRes.AddBlock(iPoint, EdgeFluxesDiff.GetBlock(iEdge));
       }
     }
   }

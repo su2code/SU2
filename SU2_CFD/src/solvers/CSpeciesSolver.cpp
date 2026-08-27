@@ -140,7 +140,10 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
 
-    if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+    if (ReducerStrategy) {
+      EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+      EdgeFluxesDiff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+    }
   }
 
   /*--- Initialize lower and upper limits---*/

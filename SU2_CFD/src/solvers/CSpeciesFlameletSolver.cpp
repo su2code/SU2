@@ -798,6 +798,7 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
 
     if (ReducerStrategy) {
       EdgeFluxes.SubtractBlock(iEdge, residual_PD);
+      EdgeFluxesDiff.AddBlock(iEdge, residual_PD);
 
       if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual_PD.jacobian_i, residual_PD.jacobian_j);
     } else {
@@ -845,6 +846,7 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
 
     if (ReducerStrategy) {
       EdgeFluxes.SubtractBlock(iEdge, residual_thermal);
+      EdgeFluxesDiff.AddBlock(iEdge, residual_thermal);
     } else {
       LinSysRes.SubtractBlock(iPoint, residual_thermal);
       LinSysRes.AddBlock(jPoint, residual_thermal);

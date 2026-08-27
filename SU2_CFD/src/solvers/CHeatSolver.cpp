@@ -66,7 +66,10 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+  if (ReducerStrategy) {
+    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+    EdgeFluxesDiff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+  }
 
   if (config->GetExtraOutput()) {
     if (nDim == 2) { nOutputVariables = 13; }
@@ -178,10 +181,14 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
   CommonPreprocessing(geometry, config, Output);
 
-  /*--- Need to clear EdgeFluxes and Jacobian when only the viscous part is called for solid heat transfer,
-   * for the weakly coupled energy equation the convection part does this by setting instead of incrementing. ---*/
+  /*--- Need to clear EdgeFluxes, EdgeFluxesDiff and Jacobian when only the viscous part is called for
+   * solid heat transfer, for the weakly coupled energy equation the convection part does this by
+   * setting instead of incrementing. ---*/
   if (!Output && !flow) {
-    if (ReducerStrategy) EdgeFluxes.SetValZero();
+    if (ReducerStrategy) {
+      EdgeFluxes.SetValZero();
+      EdgeFluxesDiff.SetValZero();
+    }
     if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) Jacobian.SetValZero();
 
     SU2_OMP_BARRIER
