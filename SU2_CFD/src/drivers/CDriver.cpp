@@ -1447,8 +1447,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_FEM              = 0,
-  nVar_Rad              = 0,
-  nVar_Poisson          = 0;
+  nVar_Rad              = 0;
 
   numerics = new CNumerics***[config->GetnMGLevels()+1] ();
 
@@ -1569,8 +1568,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   if (fem_ns)       nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
 
   if (fem)          nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
-
-  if (poisson)      nVar_Poisson = solver[MESH_0][POISSON_SOL]->GetnVar();
   
   if (config->AddRadiation()) nVar_Rad = solver[MESH_0][RAD_SOL]->GetnVar();
 

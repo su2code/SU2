@@ -49,7 +49,7 @@ protected:
   su2double **Jacobian_i = nullptr;
   su2double **Jacobian_j = nullptr;
 
-  su2double MeanDensity;
+  su2double MeanPressure, MeanDensity;
 
   /*!
    * \brief Function which defines the velocity that is advected

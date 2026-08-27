@@ -89,6 +89,15 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
   }
 
+  /*--- Compute gradient of the primitive variables ---*/
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetPrimitive_Gradient_GG(geometry, config);
+  }
+  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetPrimitive_Gradient_LS(geometry, config);
+  }
+
   /*--- Compute the limiters ---*/
 
   if (muscl && !center && limiter && !van_albada && !Output) {

@@ -52,7 +52,6 @@ protected:
    */
   inline void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                        CNumerics* numerics, const CConfig* config) override {
-    const CVariable* flow_nodes = solver_container[FLOW_SOL]->GetNodes();
 
     su2double mom_coeff_i{}, mom_coeff_j{};
 
@@ -168,11 +167,6 @@ public:
 
   /*!
    * \brief No time step as it is a stationary problem
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] Iteration - Index of the current iteration.
    */
   void SetTime_Step(CGeometry *geometry,
                     CSolver **solver_container,
@@ -182,27 +176,9 @@ public:
 
   /*!
    * \brief No dual time stepping as there is no time stepping at all.
-   * \param[in] geometry - Geometric definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iRKStep,
                             unsigned short iMesh, unsigned short RunTime_EqSystem) override {}
-
-  /*!
-   * \brief Set the initial condition for the FEM structural problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
-   */
-  void SetInitialCondition(CGeometry **geometry,
-                           CSolver ***solver_container,
-                           CConfig *config,
-                           unsigned long TimeIter) override {}
 
   /*!
    * \brief Compute the coefficients for the pressure correction equation based

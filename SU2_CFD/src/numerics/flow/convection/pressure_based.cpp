@@ -62,9 +62,10 @@ CPBConvection_Base::~CPBConvection_Base(void) {
 CNumerics::ResidualType<> CPBConvection_Base::ComputeResidual(const CConfig *config) {
 
   /*--- Primitive variables at point i and j ---*/
-
+  Pressure_i = V_i[0]; Pressure_j = V_j[0];
   DensityInc_i = V_i[nDim+2];  DensityInc_j = V_j[nDim+2];
-  MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
+  MeanPressure = 0.5 * (Pressure_i + Pressure_j);
+  MeanDensity = 0.5 * (DensityInc_i + DensityInc_j);
 
   /*--- Find projected velocity (note that edgevelocity itself already includes 
   grid movement trough the Rhie-Chow interpolation procedure.) ---*/
@@ -82,21 +83,20 @@ CNumerics::ResidualType<> CPBConvection_Base::ComputeResidual(const CConfig *con
 
   Flux[0] = MassFlux;
 
-  /*--- Set momentum (pressure) flux. ---*/
+  /*--- Set momentum flux. ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    Flux[iDim+1] = ProjVelocity * AdvectedVelocity[iDim];
+
+  /*--- Add pressure component to the flux. ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    Flux[iDim+1] = ProjVelocity * AdvectedVelocity[iDim];
+    Flux[iDim+1] += MeanPressure / MeanDensity * Normal[iDim];
   }
 
   /*--- Find Jacobian ---*/
 
   if (implicit) {
-
-    // for (iVar = 0; iVar < nVar; iVar++)
-    //   for (jVar = 0; jVar < nVar; jVar++) {
-    //     Jacobian_i[iVar][jVar] = 0.0;
-    //     Jacobian_j[iVar][jVar] = 0.0;
-    //   }
 
     ComputeJacobian();
 

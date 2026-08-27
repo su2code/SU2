@@ -40,20 +40,12 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   SU2_ZONE_SCOPED
   
-  const bool unsteady = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                        (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
                            (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
   const bool periodic = (config[val_iZone]->GetnMarker_Periodic() > 0);
 
   const unsigned short nCorrections = config[val_iZone]->GetPISO_corrections();
-
-  /*--- Setting up iteration values depending on if this is a
-   steady or an unsteady simulation */
-
-  const auto InnerIter = config[val_iZone]->GetInnerIter();
-  const auto TimeIter = config[val_iZone]->GetTimeIter();
 
   /*--- Solve the Euler, Navier-Stokes, RANS equations. ---*/
 

@@ -63,7 +63,7 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialization of the structure of the whole Jacobian ---*/
 
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (poisson equation) MG level: " << iMesh << "." << endl;
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy, false, false, true);
+  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy, false, config->GetKind_Poisson_Linear_Solver_Prec());
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
@@ -97,8 +97,6 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Add the solver name. ---*/
 
   SolverName = "POISSON";
-
-  // PseudoTimeCorr.resize(geometry->GetnEdge(),nDim) = su2double(0.0);
 
 }
 
@@ -182,7 +180,7 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
       su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
       /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
-      su2double Mom_Coeff = A_p - Mom_Coeff_nb - config->GetTransient_Term_Removal_Factor() * (Vol / delT);
+      su2double Mom_Coeff = A_p - Mom_Coeff_nb - config->GetSIMPLE_Options().Transient_Term_Removal_Factor * (Vol / delT);
 
       su2double Density = flow_nodes->GetDensity(iPoint);
 
@@ -217,14 +215,11 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
 
 void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-  unsigned short iVar, jVar, iDim, jDim;
+  unsigned short iDim;
   unsigned long iPoint, jPoint, iNeigh;
-  su2double Mom_Coeff, Mom_Coeff_nb, Vol, delT;
-  bool simplec = (config->GetKind_PBIter() == ENUM_PBITER::SIMPLEC);
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   const CSolver* flow_solution = solver_container[FLOW_SOL];
-  const CVariable* flow_nodes = flow_solution->GetNodes();
 
   /*--- First exchange momentum correction which is required to compute H. ---*/
   InitiateComms(geometry, config, MPI_QUANTITIES::VEL_CORRECTION);
@@ -332,7 +327,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   /*--- Now add corrections to the previously computed mass fluxes for boundary conditions which alter the mass flux ---*/
   unsigned short iDim, KindBC;
-  unsigned long  iMarker, iVertex, iPoint, jPoint;
+  unsigned long  iMarker, iVertex, iPoint;
   string Marker_Tag;
   su2double ProjVelocity_corr = 0.0, Normal[MAXNDIM];
 
@@ -458,8 +453,6 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
    * consistent with the rest of the code. The time step is set to zero and no under-relaxation is applied to the
    * jacobian matrix. ---*/
   
-  unsigned long total_index;
-
   /*--- Local residual variables for current thread ---*/
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
   unsigned long idxMax[MAXNVAR] = {0};
@@ -524,7 +517,6 @@ void CPoissonSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iVertex, iPoint;
-  unsigned short iDim, iVar;
   su2double pressureDeviation = 0.0;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -551,7 +543,6 @@ void CPoissonSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
 void CPoissonSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iVertex, iPoint;
-  unsigned short iDim, iVar;
   su2double pressureDeviation = 0.0;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
