@@ -454,6 +454,68 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
   }
 }
 
+template <class VariableType>
+void CScalarSolver<VariableType>::EnsureGhostFlowContainers(CSolver** solver_container, const CConfig* config) {
+  if (ghostFlowNodes) return;
+
+  SU2_OMP_SAFE_GLOBAL_ACCESS(
+    if (!ghostFlowNodes) {
+      unsigned long maxMarkerVertices = 0;
+      for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) maxMarkerVertices = max(maxMarkerVertices, nVertex[iMarker]);
+
+      auto* flowSolver = solver_container[FLOW_SOL];
+      ghostFlowNodes = make_unique<CGhostFlowVariable>(maxMarkerVertices, nDim, flowSolver->GetnVar(),
+                                                       flowSolver->GetnPrimVar(), flowSolver->GetnPrimVarGrad(),
+                                                       config);
+
+      ghostNormal.resize(maxMarkerVertices, nDim);
+      ghostCoord.resize(maxMarkerVertices, nDim);
+      ghostSkip.resize(maxMarkerVertices);
+    }
+  )
+}
+
+template <class VariableType>
+template <class Scheme>
+void CScalarSolver<VariableType>::BoundaryFluxResidual(const CGeometry* geometry, CSolver** solver_container,
+                                                       const CConfig* config, const ScalarFluxOptions& opt,
+                                                       unsigned short val_marker, bool implicit) {
+  using Double = typename Scheme::Double;
+  constexpr int nDim = Scheme::nDim;
+
+  const Scheme flux(*config);
+
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+  const EdgeSide<VariableType> side_i{*nodes, flowNodes, CMatrixView<const su2double>(geometry->nodes->GetCoord()),
+                                      dynamic_grid ? CMatrixView<const su2double>(geometry->nodes->GetGridVel())
+                                                   : CMatrixView<const su2double>()};
+
+  const EdgeSide<VariableType> side_j{*ghostNodes, ghostFlowNodes.get(), CMatrixView<const su2double>(ghostCoord),
+                                      side_i.gridVel};
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    if (!geometry->nodes->GetDomain(iPoint) || ghostSkip[iVertex]) continue;
+
+    const auto normal = gatherVariables<nDim>(iVertex, ghostNormal);
+
+    Double massFlux = 0.0;
+    if (opt.boundedScalar) {
+      massFlux = BoundedScalarBCFlux(iPoint, implicit, flowNodes->GetDensity(iPoint),
+                                     &ghostFlowNodes->GetPrimitive(iVertex)[prim_idx.Velocity()], normal.data());
+    }
+
+    const auto res = flux.ComputeFlux(opt, iPoint, side_i, iVertex, side_j, normal, massFlux);
+
+    /*--- The ghost point has no row, only the contribution to i is assembled. ---*/
+    for (auto iVar = 0ul; iVar < res.nVar; ++iVar) LinSysRes(iPoint, iVar) += res.flux_i(iVar);
+    if (implicit) Jacobian.AddBlock2Diag(iPoint, res.jac_ii);
+  }
+  END_SU2_OMP_FOR
+}
+
 template<class VariableType>
 void CScalarSolver<VariableType>::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED

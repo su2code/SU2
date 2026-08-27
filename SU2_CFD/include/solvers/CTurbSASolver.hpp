@@ -111,6 +111,22 @@ private:
   template <class Indices, int nDim, size_t nVarSA>
   void RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
 
+  /*!
+   * \brief Same dispatch as RunSA, for a boundary's call into BoundaryFluxResidual; a boundary
+   *        always reconstructs nothing, so muscl is not one of the axes resolved here.
+   */
+  template <class Indices>
+  void RunSA_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                      const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+
+  template <class Indices, int nDim>
+  void RunSA_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                      const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+
+  template <class Indices, int nDim, size_t nVarSA>
+  void RunSA_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                      const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+
 public:
   /*!
    * \brief Constructor.
@@ -167,6 +183,18 @@ public:
    */
   void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
                        CConfig* config, unsigned short iMesh) override;
+
+  /*!
+   * \brief Impose the Far Field boundary condition, via the CScalarFlux_SA edge kernel.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
    * \brief Source term computation.

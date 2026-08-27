@@ -33,6 +33,7 @@
 #include "../numerics/scalar/scalar_edge_flux.hpp"
 #include "../variables/CScalarVariable.hpp"
 #include "../variables/CFlowVariable.hpp"
+#include "../variables/CGhostFlowVariable.hpp"
 #include "../variables/CPrimitiveIndices.hpp"
 #include "CSolver.hpp"
 
@@ -80,6 +81,17 @@ class CScalarSolver : public CSolver {
   /*--- Edge fluxes for reducer strategy (see the notes in CEulerSolver.hpp). ---*/
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
   CSysVector<su2double> EdgeFluxesDiff; /*!< \brief Flux difference between ij and ji for non-conservative discretisation. */
+
+  /*--- Ghost states of the marker currently being processed by a boundary, indexed by vertex
+   * and sized to the largest marker; same container types as the interior ones, so the flux
+   * kernels read a boundary through the same accessors as an interior edge. Boundary loops run
+   * one marker at a time, parallel over its vertices, so the buffers are written and consumed
+   * before the next marker reaches them (see BoundaryFluxResidual). ---*/
+  unique_ptr<VariableType> ghostNodes;         /*!< \brief Allocated by the derived solver, whose VariableType constructor it alone knows how to call. */
+  unique_ptr<CGhostFlowVariable> ghostFlowNodes; /*!< \brief Allocated once here, sizes coming from the flow solver. */
+  su2activematrix ghostNormal; /*!< \brief Outward normals, sign flipped from the vertex normals. */
+  su2activematrix ghostCoord;  /*!< \brief Reflected coordinates, read by the diffusion sites. */
+  su2vector<uint8_t> ghostSkip; /*!< \brief Whether a vertex contributes no flux, set by the fill pass. */
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
@@ -416,6 +428,38 @@ class CScalarSolver : public CSolver {
   void EdgeFluxResidual(const CGeometry* geometry, CSolver** solver_container, const CConfig* config,
                         const ScalarFluxOptions& opt);
 
+  /*!
+   * \brief Allocate the ghost flow container and the per-vertex buffers boundaries share, the
+   *        first time a boundary needs them; a no-op on every call after the first.
+   * \note Sizes come from the flow solver, so this cannot run at construction time the way
+   *       ghostNodes does: the derived solver's constructor is not handed solver_container.
+   */
+  void EnsureGhostFlowContainers(CSolver** solver_container, const CConfig* config);
+
+  /*!
+   * \brief Write the four flow primitives the flux kernels read into one row of ghostFlowNodes.
+   * \param[in] iVertex - Vertex of the marker currently being processed.
+   * \param[in] V - Row of flow primitives to copy from (e.g. GetCharacPrimVar's or a sliding state's).
+   */
+  inline void SetGhostPrimitives(unsigned long iVertex, const su2double* V) {
+    auto* ghostV = ghostFlowNodes->GetPrimitive(iVertex);
+    ghostV[prim_idx.Density()] = V[prim_idx.Density()];
+    for (auto iDim = 0u; iDim < nDim; ++iDim) ghostV[prim_idx.Velocity() + iDim] = V[prim_idx.Velocity() + iDim];
+    ghostV[prim_idx.LaminarViscosity()] = V[prim_idx.LaminarViscosity()];
+    ghostV[prim_idx.EddyViscosity()] = V[prim_idx.EddyViscosity()];
+  }
+
+  /*!
+   * \brief Generic boundary flux pass, run after a boundary's fill pass has written the ghost
+   *        row, the outward normal and (for the diffusion sites) the ghost gradient of every
+   *        vertex of the marker. The ghost point has no row, so only the contribution to the
+   *        interior point is assembled.
+   * \tparam Scheme - Same model the interior loop uses, instantiated with muscl false.
+   */
+  template <class Scheme>
+  void BoundaryFluxResidual(const CGeometry* geometry, CSolver** solver_container, const CConfig* config,
+                            const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+
  private:
   /*!
    * \brief Compute the viscous flux for the scalar equation at a particular edge.
@@ -479,7 +523,7 @@ class CScalarSolver : public CSolver {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final;
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
