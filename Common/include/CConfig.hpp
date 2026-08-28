@@ -2936,7 +2936,8 @@ public:
    */
   void SetMGLevels(unsigned short val_nMGLevels) {
     nMGLevels = val_nMGLevels;
-    if (Kind_MGCycle == MG_CYCLE::FULL) {
+    /*--- Clamp so FinestMesh can never point past the last level that still exists. ---*/
+    if ((Kind_MGCycle == MG_CYCLE::FULL) || (FinestMesh > val_nMGLevels)) {
       SetFinestMesh(val_nMGLevels);
     }
   }
