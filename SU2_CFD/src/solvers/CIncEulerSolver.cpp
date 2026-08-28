@@ -217,35 +217,28 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   CommunicateInitialState(geometry, config);
 
   /*--- Sizing edge mass flux array ---*/
-  if (config->GetBounded_Scalar())
+  if (config->GetBounded_Scalar() || pressure_based)
     EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
   
+  /*--- Pressure based solver specific allocations ---*/
   if (pressure_based) {
 
-    /*--- Sizing edge velocity arrays ---*/
+    /*--- Initialize the edge mass flux array ---*/
 
-    EdgeVelocity.resize(geometry->GetnEdge(), nDim) = su2double(0.0);
-    for (auto color : EdgeColoring) {
-      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-      for(auto k = 0ul; k < color.size; ++k) {
-        auto iEdge = color.indices[k];
-        for (unsigned short iDim = 0; iDim < nDim; ++iDim) 
-          EdgeVelocity[iEdge][iDim] = Velocity_Inf[iDim];
-      }
-      END_SU2_OMP_FOR
-    } // end color loop
+    for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      EdgeMassFluxes[iEdge] = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        EdgeMassFluxes[iEdge] += Density_Inf * Velocity_Inf[iDim] * geometry->edges->GetNormal(iEdge)[iDim];
+    }
     
     /*--- Allocate corrections and relaxation ---*/
 
-    pressureCorrection.resize(nPointDomain);
-    velocityCorrection.resize(nPointDomain,nDim);
-    velocityEdgeCorrection.resize(geometry->GetnEdge(),nDim);
-    alpha_p.resize(nPointDomain);
+    pressureCorrection.resize(nPointDomain) = su2double(0.0);
+    velocityCorrection.resize(nPointDomain,nDim) = su2double(0.0);
+    EdgeMassFluxCorrection.resize(geometry->GetnEdge()) =  su2double(0.0);
+    alpha_p.resize(nPointDomain)  = su2double(1.0);
 
   }
-
-
 
   /*--- Add the solver name. ---*/
   SolverName = "INC.FLOW";
@@ -1294,10 +1287,9 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
       numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
     }
 
-    /*--- Set the edge velocity ---*/
+    /*--- Set the edge mass flux ---*/
 
-    if (pressure_based)
-      numerics->SetEdgeVelocity(EdgeVelocity[iEdge]);
+    if (pressure_based) numerics->SetMassFlux(EdgeMassFluxes[iEdge]);
 
     /*--- Compute residuals, and Jacobians ---*/
 
@@ -1472,10 +1464,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     }
 
-    /*--- Set the edge velocity ---*/
+    /*--- Set the edge mass flux ---*/
 
-    if (pressure_based)
-      numerics->SetEdgeVelocity(EdgeVelocity[iEdge]);
+    if (pressure_based) numerics->SetMassFlux(EdgeMassFluxes[iEdge]);
 
     /*--- Compute the residual ---*/
 
@@ -2424,13 +2415,13 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       } else {
 
+        /*--- Set the edge mass flux ---*/
+
+        conv_numerics->SetMassFlux(Face_Flux);
+
         /*--- Compute the residual using an upwind scheme ---*/
 
         conv_numerics->SetPrimitive(V_domain, V_domain);
-        
-        /*--- Set the edge velocity ---*/
-
-        conv_numerics->SetEdgeVelocity(&V_domain[1]);
 
         auto residual = conv_numerics->ComputeResidual(config);
 
@@ -2929,7 +2920,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Beta coefficient from the config file ---*/
 
-    V_outlet[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
+    if (!pressure_based) V_outlet[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
 
     /*--- Cp is needed for Temperature equation. ---*/
 
@@ -2946,10 +2937,20 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
 
-    /*--- Set the edge velocity ---*/
+    /*--- Set the edge mass flux ---*/
 
-    if (pressure_based)
-      conv_numerics->SetEdgeVelocity(&V_domain[1]);
+    if (pressure_based) {
+      su2double ProjVelocity = 0.0;
+      if (dynamic_grid)
+        for (iDim = 0; iDim < nDim; iDim++) 
+          ProjVelocity += (V_domain[iDim+prim_idx.Velocity()] - geometry->nodes->GetGridVel(iPoint)[iDim]) * Normal[iDim];
+      else
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjVelocity += V_domain[iDim+prim_idx.Velocity()] * Normal[iDim];
+      su2double MeanDensity = 0.5 * (V_domain[prim_idx.Density()] + V_outlet[prim_idx.Density()]);
+      su2double MassFlux = MeanDensity * ProjVelocity;
+      conv_numerics->SetMassFlux(MassFlux);
+    }
 
     /*--- Compute the residual using an upwind scheme ---*/
 
@@ -3575,7 +3576,7 @@ void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **s
   unsigned short iDim;
   unsigned long iPoint, jPoint;
   su2double Edge_Vector[MAXNDIM], dist_ij_2, Grad_Avg;
-  su2double *Coord_i, *Coord_j, *GridVel_i,*GridVel_j;
+  const su2double *Normal = nullptr, *Coord_i, *Coord_j, *GridVel_i,*GridVel_j;
   su2double GradP_f[MAXNDIM], GradP_in[MAXNDIM], GradP_proj, Coeff_Mom;
 
   CSolver* poisson_solver = solver_container[POISSON_SOL];
@@ -3585,6 +3586,8 @@ void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **s
   for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+
+    Normal = geometry->edges->GetNormal(iEdge);
     
     if (dynamic_grid) {
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
@@ -3621,6 +3624,11 @@ void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **s
 
     Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(iPoint) + poisson_nodes->GetMomCoeff(jPoint));
 
+    /*--- Initialize projected velocity and density ---*/
+
+    su2double ProjVelocityCorr = 0.0;
+    su2double MeanDensity = 0.5*(nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
+
     for (iDim = 0; iDim < nDim; iDim++) {
 
       /*--- Face average velocity. ---*/
@@ -3637,10 +3645,15 @@ void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **s
 
       su2double CorrectedEdgeVelocity = meanVelocity - RhieChowCorrection;
 
-      /*--- Update edge velocity. ---*/
+      /*--- Update edge velocity ---*/
 
-      SetEdgeVelocity(iEdge, iDim, CorrectedEdgeVelocity);
+      ProjVelocityCorr += CorrectedEdgeVelocity * Normal[iDim];
+
     }
+
+    /*--- Update edge mass flux. ---*/
+
+    EdgeMassFluxes[iEdge] = ProjVelocityCorr * MeanDensity;
   }
 }
 
@@ -3653,6 +3666,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   unsigned short iDim, KindBC;
   su2double Current_Pressure, factor, PCorr_Ref, Vol, delT;
   string Marker_Tag;
+  const su2double *Normal = nullptr;
 
   bool AutomaticURF = config->GetSIMPLE_Options().AutomaticRelaxationFactors;
 
@@ -3712,6 +3726,8 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
 
+    Normal = geometry->edges->GetNormal(iEdge);
+
     Coord_i = geometry->nodes->GetCoord(iPoint);
     Coord_j = geometry->nodes->GetCoord(jPoint);
     su2double dist_ij_2 = 0.0;
@@ -3736,17 +3752,30 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
         GradP_f[iDim] = GradP_in[iDim] - (GradP_proj - (poisson_nodes->GetSolution(jPoint,0) - poisson_nodes->GetSolution(iPoint,0)))*(Coord_j[iDim]-Coord_i[iDim])/ dist_ij_2;
       }
     }
+
+    /*--- Initialize projected velocity and density ---*/
+
+    su2double ProjVelocityCorr = 0.0;
+    su2double MeanDensity = 0.5*(nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
     
     for (iDim = 0; iDim < nDim; iDim++) {
 
-      velocityEdgeCorrection[iEdge][iDim] = -0.5 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint))
+      su2double EdgeVelocityCorrection = -0.5 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint))
                                                   * GradP_f[iDim];
 
       /*--- 2nd piso correction term (HbyA') --- (TODO: this is zero for the first correction and can thus also be skipped) ---*/
 
-      velocityEdgeCorrection[iEdge][iDim] += 0.5*(poisson_nodes->GetHbyACorrection(iPoint, iDim)
+      EdgeVelocityCorrection += 0.5*(poisson_nodes->GetHbyACorrection(iPoint, iDim)
                                                   +poisson_nodes->GetHbyACorrection(jPoint, iDim));
+
+      /*--- Accumulate into the projected velocity correction at the edge ---*/
+
+      ProjVelocityCorr += EdgeVelocityCorrection * Normal[iDim];
     }
+
+    /*--- Set the mass flux correction ---*/
+
+    EdgeMassFluxCorrection[iEdge] = MeanDensity * ProjVelocityCorr;
   }
 
   /*--- Reassign strong boundary conditions ---*/
@@ -3852,11 +3881,8 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
 
   /*--- Add corrections to the edge velocities ---*/
 
-  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
-    for (iDim = 0; iDim < nDim; iDim++) 
-      AddEdgeVelocity(iEdge, iDim, velocityEdgeCorrection[iEdge][iDim]);
-  }
+  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++)
+    EdgeMassFluxes[iEdge] += EdgeMassFluxCorrection[iEdge];
 
   /*--- Reset HbyA for next iteration ---*/
 

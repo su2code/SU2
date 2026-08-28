@@ -42,32 +42,10 @@ protected:
   StreamwisePeriodicValues SPvals, SPvalsUpdated;
 
   bool pressure_based;
-  su2activematrix EdgeVelocity; /*!< \brief The edge velocity used in the solver and updated by through Rhie-Chow and pressure correction. */
   su2activevector alpha_p;
   su2activevector pressureCorrection;
   su2activematrix velocityCorrection;
-  su2activematrix velocityEdgeCorrection;
-
-  /*!
-   * \brief Get the velocities across the edges.
-   */
-  inline const su2activematrix* GetEdgeVelocity() const final { return &EdgeVelocity; }
-
-  /*!
-   * \brief Set the velocity across an edge.
-   * \param[in] iEdge - The edge of interest
-   * \param[in] iDim - The dimension
-   * \param[in] val_velocity - The velocity at the edge
-   */
-  inline void SetEdgeVelocity(unsigned short iEdge, unsigned short iDim, su2double val_velocity) { EdgeVelocity[iEdge][iDim] = val_velocity; }
-
-  /*!
-   * \brief Add a velocity across an edge (currently only relevant for pressure-based solver).
-   * \param[in] iEdge - The edge of interest
-   * \param[in] iDim - The dimension
-   * \param[in] val_velocity - The velocity at the edge
-   */
-  inline void AddEdgeVelocity(unsigned short iEdge, unsigned short iDim, su2double val_velocity) { EdgeVelocity[iEdge][iDim] += val_velocity; }
+  su2activevector EdgeMassFluxCorrection;
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.

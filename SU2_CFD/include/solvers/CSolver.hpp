@@ -3096,11 +3096,6 @@ public:
   inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
-   * \brief Get the velocities across the edges (currently only relevant for pressure-based solver).
-   */
-  inline virtual const su2activematrix* GetEdgeVelocity() const { return nullptr; }
-
-  /*!
    * \brief A virtual member
    * \return The mass fluxes (from flow solvers) across the edges.
    */

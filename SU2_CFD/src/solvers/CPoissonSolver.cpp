@@ -289,7 +289,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   const CSolver* flow_solver = solver_container[FLOW_SOL];
   const CVariable* flow_nodes = flow_solver->GetNodes();
 
-  const auto& edgeVelocities = *(flow_solver->GetEdgeVelocity());
+  const auto& edgeMassFluxes = *(flow_solver->GetEdgeMassFluxes());
 
   /*--- flux is computed over all edges ---*/
   for (auto color : EdgeColoring) {
@@ -301,9 +301,10 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       su2double Normal[MAXNDIM] = {0.0};
       geometry->edges->GetNormal(iEdge, Normal);
 
-      su2double ProjVelocity = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; ++iDim) 
-        ProjVelocity += edgeVelocities[iEdge][iDim] * Normal[iDim];
+      /*--- Find the projected velocity at the edge ---*/
+
+      su2double MeanDensity = 0.5*(flow_nodes->GetDensity(iPoint) + flow_nodes->GetDensity(jPoint));
+      su2double ProjVelocity = edgeMassFluxes[iEdge] / MeanDensity;
 
       /*--- Add the mass flux to the source term for the poisson equation ---*/
       auto residual = CNumerics::ResidualType<>(&ProjVelocity, nullptr, nullptr);
@@ -527,7 +528,7 @@ void CPoissonSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
     /*--- The farfield boundary is considered as an inlet-outlet boundary, where flow 
       * can either enter or leave. For pressure, it is treated as a fully developed flow
       * and a dirichlet BC is applied. For velocity, based on the sign of massflux, either 
-      * a dirichlet or a neumann BC is applied (in source routine). ---*/		
+      * a dirichlet or a neumann BC is applied (in correction routine). ---*/		
 
     LinSysRes.SetBlock_Zero(iPoint);
 

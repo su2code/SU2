@@ -67,13 +67,9 @@ CNumerics::ResidualType<> CPBConvection_Base::ComputeResidual(const CConfig *con
   MeanPressure = 0.5 * (Pressure_i + Pressure_j);
   MeanDensity = 0.5 * (DensityInc_i + DensityInc_j);
 
-  /*--- Find projected velocity (note that edgevelocity itself already includes 
-  grid movement trough the Rhie-Chow interpolation procedure.) ---*/
+  /*--- Find projected velocity (note that the massflux itself already should include grid movement) ---*/
 
-  su2double ProjVelocity = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    ProjVelocity += EdgeVelocity[iDim] * Normal[iDim];
-  MassFlux = MeanDensity * ProjVelocity;
+  su2double ProjVelocity = MassFlux / MeanDensity;
 
   /*--- Find the velocity that is advected ---*/
 
@@ -97,6 +93,12 @@ CNumerics::ResidualType<> CPBConvection_Base::ComputeResidual(const CConfig *con
   /*--- Find Jacobian ---*/
 
   if (implicit) {
+
+    for (jVar = 0; jVar < nVar; jVar++)
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0;
+      }
 
     ComputeJacobian();
 
