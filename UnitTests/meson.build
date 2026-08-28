@@ -19,7 +19,8 @@ su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
                        'SU2_CFD/windowing.cpp',
                        'Common/toolboxes/random_toolbox_tests.cpp',
                        'Common/linear_algebra/quantization_tests.cpp',
-                       'Common/linear_algebra/edge_residual_blocks_tests.cpp'])
+                       'Common/linear_algebra/edge_residual_blocks_tests.cpp',
+                       'Common/linear_algebra/edge_residual_blocks_simd_tests.cpp'])
 
 # Reverse-mode (algorithmic differentiation) tests:
 su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp',

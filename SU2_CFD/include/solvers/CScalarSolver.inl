@@ -378,7 +378,19 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
   SU2_ZONE_SCOPED
 
   using Double = typename Scheme::Double;
+  using Int = typename CLaneTraits<Double>::Int;
   constexpr int nDim = Scheme::nDim;
+  constexpr size_t Width = CLaneTraits<Double>::Size;
+
+  /*--- Scheme::Double picks the binding: su2double (Width 1) degenerates the loop below to the
+   * plain scalar form, a simd::Array Double drives it several edges at a time. One loop body
+   * serves both, matching the flow solver's own masked edge loop. ---*/
+  if constexpr (Width > 1) {
+    if (!ReducerStrategy && (omp_get_max_threads() > 1) && (config->GetEdgeColoringGroupSize() % Width != 0)) {
+      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
+                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
+    }
+  }
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
 
@@ -403,25 +415,52 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
 
   for (auto color : EdgeColoring) {
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-    for (auto k = 0ul; k < color.size; ++k) {
-      const unsigned long iEdge = color.indices[k];
+    for (auto k = 0ul; k < color.size; k += Width) {
+      Int iEdge;
+      Double mask;
+      if constexpr (Width == 1) {
+        iEdge = color.indices[k];
+        mask = 1.0;
+      } else {
+        for (auto j = 0ul; j < Width; ++j) {
+          const bool in = (k + j < color.size);
+          mask[j] = in;
+          iEdge[j] = color.indices[k + j * in];
+        }
+      }
+
       const auto iPoint = geometry->edges->GetNode(iEdge, 0);
       const auto jPoint = geometry->edges->GetNode(iEdge, 1);
       const auto normal = gatherVariables<nDim>(iEdge, geometry->edges->GetNormal());
 
       const Double massFlux = opt.boundedScalar ? gatherVariables(iEdge, *edgeMassFluxes) : Double(0.0);
 
-      flux.ComputeFlux(opt, iEdge, iPoint, side, jPoint, side, normal, massFlux, implicit, updateType, 1.0, target,
+      flux.ComputeFlux(opt, iEdge, iPoint, side, jPoint, side, normal, massFlux, implicit, updateType, mask, target,
                        EdgeFluxesDiff, Jacobian);
 
       /*--- Bounded scalar divergence correction, per edge; the ReducerStrategy equivalent runs
        * in a per-point pass below, where the diagonal is not written from the edge loop. ---*/
       if (opt.boundedScalar && !ReducerStrategy) {
-        LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -massFlux);
-        LinSysRes.AddBlock(jPoint, nodes->GetSolution(jPoint), massFlux);
-        if (implicit) {
-          Jacobian.AddVal2Diag(iPoint, -massFlux);
-          Jacobian.AddVal2Diag(jPoint, massFlux);
+        if constexpr (Width == 1) {
+          LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -massFlux);
+          LinSysRes.AddBlock(jPoint, nodes->GetSolution(jPoint), massFlux);
+          if (implicit) {
+            Jacobian.AddVal2Diag(iPoint, -massFlux);
+            Jacobian.AddVal2Diag(jPoint, massFlux);
+          }
+        } else {
+          for (auto j = 0ul; j < Width; ++j) {
+            if (mask[j] == 0) continue;
+            const auto i = iPoint[j];
+            const auto jp = jPoint[j];
+            const su2double mf = massFlux[j];
+            LinSysRes.AddBlock(i, nodes->GetSolution(i), -mf);
+            LinSysRes.AddBlock(jp, nodes->GetSolution(jp), mf);
+            if (implicit) {
+              Jacobian.AddVal2Diag(i, -mf);
+              Jacobian.AddVal2Diag(jp, mf);
+            }
+          }
         }
       }
     }
