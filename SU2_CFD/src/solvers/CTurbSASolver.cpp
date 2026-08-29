@@ -351,6 +351,17 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   AD::EndNoSharedReading();
 }
 
+template <class F>
+void CTurbSASolver::DispatchRegime(const CConfig* config, F&& f) {
+  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+    f(CIndicesTag<CIncEulerVariable::CIndices<unsigned short>>{});
+  } else if (config->GetNEMOProblem()) {
+    f(CIndicesTag<CNEMOEulerVariable::CIndices<unsigned short>>{});
+  } else {
+    f(CIndicesTag<CEulerVariable::CIndices<unsigned short>>{});
+  }
+}
+
 void CTurbSASolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
                                     CConfig* config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
@@ -366,13 +377,9 @@ void CTurbSASolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_contai
       config->GetMUSCL(),                          /*--- muscl ---*/
   };
 
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    RunSA<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt);
-  } else if (config->GetNEMOProblem()) {
-    RunSA<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt);
-  } else {
-    RunSA<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt);
-  }
+  DispatchRegime(config, [&](auto tag) {
+    RunSA<typename decltype(tag)::type>(geometry, solver_container, config, opt);
+  });
 }
 
 template <class Indices>
@@ -426,16 +433,9 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       true /*oneSided, the ghost point has no row*/, false /*muscl, a boundary never reconstructs*/,
   };
 
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    RunSA_Boundary<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                implicit);
-  } else if (config->GetNEMOProblem()) {
-    RunSA_Boundary<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                  implicit);
-  } else {
-    RunSA_Boundary<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                              implicit);
-  }
+  DispatchRegime(config, [&](auto tag) {
+    RunSA_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
+  });
 }
 
 template <class Indices>
@@ -739,16 +739,9 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
 
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    RunSA_Boundary<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                implicit);
-  } else if (config->GetNEMOProblem()) {
-    RunSA_Boundary<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                  implicit);
-  } else {
-    RunSA_Boundary<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                              implicit);
-  }
+  DispatchRegime(config, [&](auto tag) {
+    RunSA_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
+  });
 }
 
 void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*,
@@ -782,16 +775,9 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
 
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    RunSA_Boundary<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                implicit);
-  } else if (config->GetNEMOProblem()) {
-    RunSA_Boundary<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                  implicit);
-  } else {
-    RunSA_Boundary<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                              implicit);
-  }
+  DispatchRegime(config, [&](auto tag) {
+    RunSA_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
+  });
 }
 
 void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics*,
@@ -825,16 +811,9 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
       true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
 
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    RunSA_Boundary<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                implicit);
-  } else if (config->GetNEMOProblem()) {
-    RunSA_Boundary<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                  implicit);
-  } else {
-    RunSA_Boundary<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                              implicit);
-  }
+  DispatchRegime(config, [&](auto tag) {
+    RunSA_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
+  });
 }
 
 void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics*,
@@ -866,16 +845,9 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
       true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
 
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    RunSA_Boundary<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                implicit);
-  } else if (config->GetNEMOProblem()) {
-    RunSA_Boundary<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                  implicit);
-  } else {
-    RunSA_Boundary<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                              implicit);
-  }
+  DispatchRegime(config, [&](auto tag) {
+    RunSA_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
+  });
 }
 
 void CTurbSASolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -968,16 +940,9 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container,
       true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
 
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    RunSA_Boundary<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                implicit);
-  } else if (config->GetNEMOProblem()) {
-    RunSA_Boundary<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                  implicit);
-  } else {
-    RunSA_Boundary<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                              implicit);
-  }
+  DispatchRegime(config, [&](auto tag) {
+    RunSA_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
+  });
 }
 
 void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics*,
@@ -1042,16 +1007,9 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
       true /*convective*/,  true /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
 
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    RunSA_Boundary<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                implicit);
-  } else if (config->GetNEMOProblem()) {
-    RunSA_Boundary<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                  implicit);
-  } else {
-    RunSA_Boundary<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                              implicit);
-  }
+  DispatchRegime(config, [&](auto tag) {
+    RunSA_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
+  });
 }
 
 void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics*,
@@ -1128,16 +1086,9 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
       true /*convective*/,  true /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
 
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    RunSA_Boundary<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                implicit);
-  } else if (config->GetNEMOProblem()) {
-    RunSA_Boundary<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                                  implicit);
-  } else {
-    RunSA_Boundary<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, opt, val_marker,
-                                                              implicit);
-  }
+  DispatchRegime(config, [&](auto tag) {
+    RunSA_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
+  });
 }
 
 void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics*,
@@ -1159,16 +1110,10 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
       false /*convective*/, true /*viscous*/, true /*oneSided*/, false /*muscl*/,
   };
 
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    RunSA_FluidInterface<CIncEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, optConv,
-                                                                      optVisc, implicit);
-  } else if (config->GetNEMOProblem()) {
-    RunSA_FluidInterface<CNEMOEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, optConv,
-                                                                       optVisc, implicit);
-  } else {
-    RunSA_FluidInterface<CEulerVariable::CIndices<unsigned short>>(geometry, solver_container, config, optConv,
-                                                                    optVisc, implicit);
-  }
+  DispatchRegime(config, [&](auto tag) {
+    RunSA_FluidInterface<typename decltype(tag)::type>(geometry, solver_container, config, optConv, optVisc,
+                                                        implicit);
+  });
 }
 
 template <class Indices>
