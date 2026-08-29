@@ -65,7 +65,7 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
 
   /*--- Compute the velocities at the cell edges based on Rhie-Chow interpolation ---*/
 
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeRhieChowVelocities(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeEdgeMassFluxesRhieChow(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
   /*--- Solve the pressure poisson (correction) equation ---*/
 

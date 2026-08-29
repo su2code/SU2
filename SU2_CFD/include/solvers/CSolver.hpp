@@ -782,7 +782,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    */
-  inline virtual void ComputeRhieChowVelocities(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+  inline virtual void ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
   /*!
    * \brief A virtual member.

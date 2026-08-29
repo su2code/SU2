@@ -459,11 +459,27 @@ public:
   void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) final;
 
   /*!
+   * \brief Apply a correction to the pressure or pressure deviation gradient to align with the edges
+   * \param[in] corrected_grad_pressure - The corrected gradient at the edge
+   * \param[in] avg_grad_pressure - The average gradient at the edge
+   * \param[in] val_pressure_i - variable at point i
+   * \param[in] val_pressure_j - variable at point j
+   * \param[in] val_edge_vector - The vector between points i and j
+   * \param[in] val_dist_ij_2 - The distance between points i and j, squared
+   */
+  void CorrectPressureGradient(su2double* corrected_grad_pressure,
+                               const su2double* avg_grad_pressure,
+                               const su2double val_pressure_i,
+                               const su2double val_pressure_j,
+                               const su2double* val_edge_vector,
+                               const su2double val_dist_ij_2);
+
+  /*!
    * \brief Compute the spatial integration using a centered scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    */
-  void ComputeRhieChowVelocities(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.

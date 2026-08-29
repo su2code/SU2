@@ -3615,8 +3615,25 @@ void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, con
   }
 }
 
+void CIncEulerSolver::CorrectPressureGradient(su2double* corrected_grad_pressure,
+                                              const su2double* avg_grad_pressure,
+                                              const su2double val_pressure_i,
+                                              const su2double val_pressure_j,
+                                              const su2double* val_edge_vector,
+                                              const su2double val_dist_ij_2) {
 
-void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  /*--- Eq 15.62 F Moukalled, L Mangani M. Darwish OpenFOAM and uFVM book. ---*/
+  su2double Proj_Mean_Grad_Pressure_Edge = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Proj_Mean_Grad_Pressure_Edge += avg_grad_pressure[iDim]*val_edge_vector[iDim];
+  }
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    corrected_grad_pressure[iDim] = avg_grad_pressure[iDim] - (Proj_Mean_Grad_Pressure_Edge -
+                                (val_pressure_j-val_pressure_i))*val_edge_vector[iDim] / val_dist_ij_2;
+  }
+}
+
+void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   SU2_ZONE_SCOPED
 
   /*--- Compute gradients to be used in Rhie Chow interpolation ---*/
@@ -3630,14 +3647,14 @@ void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **s
 
   unsigned short iDim;
   unsigned long iPoint, jPoint;
-  su2double Edge_Vector[MAXNDIM], dist_ij_2, Grad_Avg;
   const su2double *Normal = nullptr, *Coord_i, *Coord_j, *GridVel_i,*GridVel_j;
-  su2double GradP_f[MAXNDIM], GradP_in[MAXNDIM], GradP_proj, Coeff_Mom;
+  su2double GradPressure_f[MAXNDIM], GradPressure_avg[MAXNDIM], Edge_Vector[MAXNDIM], dist_ij_2, Coeff_Mom;
 
   CSolver* poisson_solver = solver_container[POISSON_SOL];
   CVariable* poisson_nodes = poisson_solver->GetNodes();
 
   /*--- Mass flux is computed over all edges ---*/
+
   for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
@@ -3649,7 +3666,8 @@ void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **s
       GridVel_j = geometry->nodes->GetGridVel(jPoint);
     }
 
-    /*--- Rhie Chow interpolation ---*/
+    /*--- Correct pressure gradient ---*/
+
     Coord_i = geometry->nodes->GetCoord(iPoint);
     Coord_j = geometry->nodes->GetCoord(jPoint);
     dist_ij_2 = 0.0;
@@ -3657,24 +3675,16 @@ void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **s
       Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
       dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     }
+
     /*--- 1. Interpolate the pressure gradient based on node values ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Grad_Avg = 0.5*(nodes->GetGradient_Primitive(iPoint,prim_idx.Pressure(),iDim) + nodes->GetGradient_Primitive(jPoint,prim_idx.Pressure(),iDim));
-      GradP_in[iDim] = Grad_Avg;
-    }
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      GradPressure_avg[iDim] = 0.5*(poisson_nodes->GetGradient_Primitive(iPoint,prim_idx.Pressure(),iDim) + nodes->GetGradient_Primitive(jPoint,prim_idx.Pressure(),iDim));
 
     /*--- 2. Compute pressure gradient at the face ---*/
-    /*--- Eq 15.62 F Moukalled, L Mangani M. Darwish OpenFOAM and uFVM book. ---*/
-    GradP_proj = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      GradP_proj += GradP_in[iDim]*Edge_Vector[iDim];
-    }
-    if (dist_ij_2 != 0.0) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        GradP_f[iDim] = GradP_in[iDim] - (GradP_proj - (nodes->GetPressure(jPoint) - nodes->GetPressure(iPoint)))*Edge_Vector[iDim]/ dist_ij_2;
-      }
-    }
 
+    CorrectPressureGradient(GradPressure_f, GradPressure_avg, nodes->GetPressure(iPoint), nodes->GetPressure(jPoint), Edge_Vector, dist_ij_2);
+    
     /*--- Linearly interpolated coefficient. ---*/
 
     Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(iPoint) + poisson_nodes->GetMomCoeff(jPoint));
@@ -3696,7 +3706,7 @@ void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **s
 
       /*--- Correction based on Rhie-Chow. ---*/
 
-      su2double RhieChowCorrection = Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim]);
+      su2double RhieChowCorrection = Coeff_Mom * (GradPressure_f[iDim] - GradPressure_avg[iDim]);
 
       su2double CorrectedEdgeVelocity = meanVelocity - RhieChowCorrection;
 
@@ -3776,38 +3786,32 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   
   /*--- Compute the edge corrections based on the average of the momentum coefficients and the average of the p' gradient. ---*/
   su2double* Coord_i,* Coord_j;
-  su2double GradP_f[MAXNDIM], GradP_in[MAXNDIM];
+  su2double GradPressure_f[MAXNDIM], GradPressure_avg[MAXNDIM], Edge_Vector[MAXNDIM], dist_ij_2;
   for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
 
     Normal = geometry->edges->GetNormal(iEdge);
 
+    /*--- Correct pressure deviation (p') gradient ---*/
+
     Coord_i = geometry->nodes->GetCoord(iPoint);
     Coord_j = geometry->nodes->GetCoord(jPoint);
-    su2double dist_ij_2 = 0.0;
+    dist_ij_2 = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      su2double dist = Coord_j[iDim]-Coord_i[iDim];
-      dist_ij_2 += dist*dist;
-    }
-    /*--- 1. Interpolate the pressure gradient based on node values ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      su2double Grad_Avg = 0.5*(poisson_nodes->GetGradient(iPoint,0,iDim) + poisson_nodes->GetGradient(jPoint,0,iDim));
-      GradP_in[iDim] = Grad_Avg;
+      Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+      dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     }
 
-    /*--- 2. Compute pressure gradient at the face ---*/
-    /*--- Eq 15.62 F Moukalled, L Mangani M. Darwish OpenFOAM and uFVM book. ---*/
-    su2double GradP_proj = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      GradP_proj += GradP_in[iDim]*(Coord_j[iDim]-Coord_i[iDim]);
-    }
-    if (dist_ij_2 != 0.0) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        GradP_f[iDim] = GradP_in[iDim] - (GradP_proj - (poisson_nodes->GetSolution(jPoint,0) - poisson_nodes->GetSolution(iPoint,0)))*(Coord_j[iDim]-Coord_i[iDim])/ dist_ij_2;
-      }
-    }
+    /*--- 1. Interpolate the p' gradient based on node values ---*/
 
+    for (iDim = 0; iDim < nDim; iDim++)
+      GradPressure_avg[iDim] = 0.5*(poisson_nodes->GetGradient_Primitive(iPoint,0,iDim) + poisson_nodes->GetGradient_Primitive(jPoint,0,iDim));
+
+    /*--- 2. Compute p' at the face ---*/
+
+    CorrectPressureGradient(GradPressure_f, GradPressure_avg, poisson_nodes->GetSolution(iPoint, 0), poisson_nodes->GetSolution(jPoint, 0), Edge_Vector, dist_ij_2);
+    
     /*--- Initialize projected velocity and density ---*/
 
     su2double ProjVelocityCorr = 0.0;
@@ -3815,8 +3819,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     
     for (iDim = 0; iDim < nDim; iDim++) {
 
-      su2double EdgeVelocityCorrection = -0.5 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint))
-                                                  * GradP_f[iDim];
+      su2double EdgeVelocityCorrection = -0.5 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint)) * GradPressure_f[iDim];
 
       /*--- 2nd piso correction term (HbyA') --- (TODO: this is zero for the first correction and can thus also be skipped) ---*/
 
