@@ -157,8 +157,12 @@ class CAvgGradScalarBase {
     }
 
     if (opt.accurateJacobians) {
-      /*--- Coefficients that depend on the transported variables contribute here. ---*/
-      self->coefficientJacobians(projGrad, res);
+      /*--- Coefficients that depend on the transported variables contribute here. A model whose
+       * correction is a per-edge constant (e.g. SA's) can ignore the side/point arguments; one
+       * whose correction depends on point values (e.g. SST's, on the transported variable at
+       * either endpoint) needs them, so every model is handed the same full context diffusionTerms
+       * itself has, matching extraDiffusionTerms's signature below. ---*/
+      self->coefficientJacobians(idx, iPoint, side_i, jPoint, side_j, projGrad, res);
     }
 
     self->extraDiffusionTerms(idx, iPoint, side_i, jPoint, side_j, normal, vector_ij, res);

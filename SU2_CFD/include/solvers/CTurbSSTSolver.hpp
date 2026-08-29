@@ -61,6 +61,39 @@ private:
    */
   void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) override;
 
+  /*!
+   * \brief Resolve the compile-time flow indices and dimension, and run the interior edge loop
+   *        with the matching CScalarFlux_SST instantiation. nVar is fixed at 2 (k and omega), so
+   *        unlike SA's RunSA this dispatch has one axis fewer to resolve.
+   */
+  template <class Indices>
+  void RunSST(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
+
+  template <class Indices, int nDim>
+  void RunSST(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
+
+  /*!
+   * \brief Same dispatch as RunSST, for a boundary's call into BoundaryFluxResidual.
+   */
+  template <class Indices>
+  void RunSST_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                       const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+
+  template <class Indices, int nDim>
+  void RunSST_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                       const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+
+  /*!
+   * \brief Same dispatch as RunSST, for BC_Fluid_Interface's combined fill-and-flux donor loop.
+   */
+  template <class Indices>
+  void RunSST_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                             const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
+
+  template <class Indices, int nDim>
+  void RunSST_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                             const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
+
 public:
   /*!
    * \brief Constructor.
@@ -106,16 +139,16 @@ public:
                       unsigned short iMesh) override;
 
   /*!
-   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \brief Compute the spatial integration using the CScalarFlux_SST edge kernel, which computes
+   *        and writes both the convective and the diffusive term of every edge.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Unused, kept only for the boundary conditions.
    * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                        CNumerics* numerics, const CConfig* config) override;
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                       CConfig* config, unsigned short iMesh) override;
 
   /*!
    * \brief Source term computation.
@@ -240,24 +273,18 @@ public:
                  unsigned short val_marker) override;
 
   /*!
-   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \brief Impose the fluid interface (sliding mesh) boundary condition, via the CScalarFlux_SST
+   *        edge kernel. The convective term is a per-donor weighted average, computed in the same
+   *        pass that fills the ghost row of each donor; the diffusive term is computed once per
+   *        vertex, after the donor loop, from the ghost state the last donor left behind.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Fluid_Interface(CGeometry *geometry,
-                          CSolver **solver_container,
-                          CNumerics *conv_numerics,
-                          CNumerics *visc_numerics,
-                          CConfig *config) final {
-    BC_Fluid_Interface_impl(
-      [&](unsigned long iPoint) {
-        visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
-      },
-      geometry, solver_container, conv_numerics, visc_numerics, config);
-  }
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                          CNumerics *visc_numerics, CConfig *config) override;
 
   /*!
    * \brief Get the constants for the SST model.

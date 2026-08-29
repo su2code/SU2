@@ -118,9 +118,13 @@ class CScalarFlux_SA
 
   /*!
    * \brief Extra Jacobian terms from the dependence of the diffusion coefficient on nu_tilde.
+   * \note The two derivatives below are per-edge constants (cb2/sigma only), so the point/side
+   *       context diffusionTerms hands every model's coefficientJacobians is unused here.
    */
-  template <size_t Size>
-  FORCEINLINE void coefficientJacobians(const Vector<Double, Size>& projGrad, EdgeResidual<Double, nVar>& res) const {
+  template <class VariableType, size_t Size>
+  FORCEINLINE void coefficientJacobians(const FlowIndices&, Int, const EdgeSide<VariableType>&, Int,
+                                        const EdgeSide<VariableType>&, const Vector<Double, Size>& projGrad,
+                                        EdgeResidual<Double, nVar>& res) const {
     /*--- d(diffusion coefficient of i)/d(nu_tilde_i), and its counterpart w.r.t. nu_tilde_j;
      * the coefficient of j is the same expression with i and j swapped, so the same two
      * derivatives apply to both orientations. ---*/

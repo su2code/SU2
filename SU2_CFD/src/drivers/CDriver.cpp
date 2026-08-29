@@ -76,8 +76,6 @@
 #include "../../include/numerics/scalar/scalar_convection.hpp"
 #include "../../include/numerics/scalar/scalar_diffusion.hpp"
 #include "../../include/numerics/scalar/scalar_sources.hpp"
-#include "../../include/numerics/turbulent/turb_convection.hpp"
-#include "../../include/numerics/turbulent/turb_diffusion.hpp"
 #include "../../include/numerics/turbulent/turb_sources.hpp"
 #include "../../include/numerics/turbulent/transition/trans_convection.hpp"
 #include "../../include/numerics/turbulent/transition/trans_diffusion.hpp"
@@ -1193,14 +1191,8 @@ void CDriver::FinalizeIntegration(CIntegration ***integration, CGeometry **geome
 template <class Indices>
 void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset, const CConfig *config,
                                            const CSolver* turb_solver, CNumerics ****&numerics) const {
-  const int conv_term = CONV_TERM + offset;
-  const int visc_term = VISC_TERM + offset;
-
   const int source_first_term = SOURCE_FIRST_TERM + offset;
   const int source_second_term = SOURCE_SECOND_TERM + offset;
-
-  const int conv_bound_term = CONV_BOUND_TERM + offset;
-  const int visc_bound_term = VISC_BOUND_TERM + offset;
 
   /*--- Assign turbulence model booleans ---*/
 
@@ -1230,28 +1222,20 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     omega_Inf = turb_solver->GetOmega_Inf();
   }
 
-  /*--- Definition of the convective scheme for each equation and mesh level ---*/
+  /*--- Definition of the convective scheme for each equation and mesh level. Both SA and SST now
+   * drive their interior loop through their own CScalarFlux_* edge kernel (see CTurbSASolver,
+   * CTurbSSTSolver), so conv_term is never set here; the switch stays only for the
+   * NO_CONVECTIVE error check. ---*/
 
   switch (config->GetKind_ConvNumScheme_Turb()) {
     case NO_CONVECTIVE:
       SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
       break;
     case SPACE_UPWIND :
-      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        if (menter_sst)
-          numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSST<Indices>(nDim, nVar_Turb, config);
-      }
       break;
     default:
       SU2_MPI::Error("Invalid convective scheme for the turbulence equations.", CURRENT_FUNCTION);
       break;
-  }
-
-  /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
-  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (menter_sst)
-      numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSST<Indices>(nDim, nVar_Turb, constants, true, config);
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1268,17 +1252,9 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     numerics[iMGlevel][TURB_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Turb, config);
   }
 
-  /*--- Definition of the boundary condition method. SA drives its own boundaries through the
-   * CScalarFlux_SA edge kernel (see CTurbSASolver), so it needs no conv_bound_term/visc_bound_term
-   * here; menter_sst is unchanged, still on the CNumerics path. ---*/
-
-  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (menter_sst) {
-      numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CUpwSca_TurbSST<Indices>(nDim, nVar_Turb, config);
-      numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSST<Indices>(nDim, nVar_Turb, constants, true,
-                                                                                    config);
-    }
-  }
+  /*--- Definition of the boundary condition method. Both SA and SST drive their boundaries
+   * through their own CScalarFlux_* edge kernel, so neither needs conv_bound_term/visc_bound_term
+   * here. ---*/
 }
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp.
  * NEMO has no explicit instantiation: NEMO with a turbulence model is rejected at configuration. ---*/
