@@ -226,9 +226,11 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     /*--- Initialize the edge mass flux array ---*/
 
     for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
       EdgeMassFluxes[iEdge] = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         EdgeMassFluxes[iEdge] += Density_Inf * Velocity_Inf[iDim] * geometry->edges->GetNormal(iEdge)[iDim];
+
     }
     
     /*--- Allocate corrections and relaxation ---*/
@@ -3520,6 +3522,31 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   LoadRestart_impl(geometry, solver, config, val_iter, val_update_geo, Solution, nVar_Restart);
 
+  if (pressure_based) {
+
+    /*--- Initialize the edge mass flux array ---*/
+
+    unsigned long iEdge, iPoint, jPoint;
+    su2double MeanVelocity[MAXNDIM], MeanDensity;
+
+    for (iEdge = 0; iEdge < geometry[MESH_0]->GetnEdge(); iEdge++) {
+
+      iPoint = geometry[MESH_0]->edges->GetNode(iEdge,0); jPoint = geometry[MESH_0]->edges->GetNode(iEdge,1);
+
+      /*--- Compute average velocities and density between two nodes ---*/
+
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        MeanVelocity[iDim] = 0.5 * (nodes->GetVelocity(iPoint, iDim) + nodes->GetVelocity(jPoint, iDim));
+
+      MeanDensity = 0.5 * (nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
+
+      /*--- Initialize the edge mass flux ---*/
+
+      EdgeMassFluxes[iEdge] = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        EdgeMassFluxes[iEdge] += MeanDensity * MeanVelocity[iDim] * geometry[MESH_0]->edges->GetNormal(iEdge)[iDim];
+    }
+  }
 }
 
 void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
