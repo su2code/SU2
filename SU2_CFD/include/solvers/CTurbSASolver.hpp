@@ -31,17 +31,6 @@
 #include "CTurbSolver.hpp"
 
 /*!
- * \brief Carries a type through a value, so a runtime branch can hand a compile-time type to a
- *        generic lambda (its parameter deduces as CIndicesTag<T>, and the lambda recovers T as
- *        decltype(tag)::type). Standing in for a C++20 template lambda, which this project's
- *        C++17 baseline does not have.
- */
-template <class T>
-struct CIndicesTag {
-  using type = T;
-};
-
-/*!
  * \class CTurbSASolver
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
@@ -105,16 +94,6 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) final;
-
-  /*!
-   * \brief Resolve the compile-time flow indices from the regime/NEMO flags of config, and call f
-   *        with a CIndicesTag of the result: f is a generic lambda, `[&](auto tag){ using Indices
-   *        = typename decltype(tag)::type; ... }`, so one dispatcher serves RunSA, RunSA_Boundary
-   *        and RunSA_FluidInterface alike despite their differing trailing arguments, instead of
-   *        every boundary site repeating this same three-way branch.
-   */
-  template <class F>
-  static void DispatchRegime(const CConfig* config, F&& f);
 
   /*!
    * \brief Resolve the compile-time flow indices, dimension and backscatter equation count, and

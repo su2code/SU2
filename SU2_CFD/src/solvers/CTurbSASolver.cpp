@@ -30,9 +30,6 @@
 #include "../../include/variables/CTurbSAVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
 #include "../../include/numerics/turbulent/turb_sa_edge_flux.hpp"
-#include "../../include/variables/CEulerVariable.hpp"
-#include "../../include/variables/CIncEulerVariable.hpp"
-#include "../../include/variables/CNEMOEulerVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/random_toolbox.hpp"
@@ -349,17 +346,6 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   }
 
   AD::EndNoSharedReading();
-}
-
-template <class F>
-void CTurbSASolver::DispatchRegime(const CConfig* config, F&& f) {
-  if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-    f(CIndicesTag<CIncEulerVariable::CIndices<unsigned short>>{});
-  } else if (config->GetNEMOProblem()) {
-    f(CIndicesTag<CNEMOEulerVariable::CIndices<unsigned short>>{});
-  } else {
-    f(CIndicesTag<CEulerVariable::CIndices<unsigned short>>{});
-  }
 }
 
 void CTurbSASolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,

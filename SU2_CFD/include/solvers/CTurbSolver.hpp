@@ -29,7 +29,21 @@
 
 #include "CScalarSolver.hpp"
 #include "../variables/CTurbVariable.hpp"
+#include "../variables/CEulerVariable.hpp"
+#include "../variables/CIncEulerVariable.hpp"
+#include "../variables/CNEMOEulerVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
+
+/*!
+ * \brief Carries a type through a value, so a runtime branch can hand a compile-time type to a
+ *        generic lambda (its parameter deduces as CIndicesTag<T>, and the lambda recovers T as
+ *        decltype(tag)::type). Standing in for a C++20 template lambda, which this project's
+ *        C++17 baseline does not have.
+ */
+template <class T>
+struct CIndicesTag {
+  using type = T;
+};
 
 /*!
  * \class CTurbSolver
@@ -41,6 +55,26 @@ class CTurbSolver : public CScalarSolver<CTurbVariable> {
 protected:
 
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
+
+  /*!
+   * \brief Resolve the compile-time flow indices from the regime/NEMO flags of config, and call f
+   *        with a CIndicesTag of the result: f is a generic lambda, `[&](auto tag){ using Indices
+   *        = typename decltype(tag)::type; ... }`. Shared by every turbulence model's boundary
+   *        dispatch (RunSA/RunSA_Boundary/RunSA_FluidInterface and their SST counterparts), which
+   *        would otherwise each repeat this same three-way branch. Header-defined (not just
+   *        declared) because it is a template with a deduced, unnameable lambda type, called from
+   *        more than one translation unit (CTurbSASolver.cpp, CTurbSSTSolver.cpp).
+   */
+  template <class F>
+  static void DispatchRegime(const CConfig* config, F&& f) {
+    if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+      f(CIndicesTag<CIncEulerVariable::CIndices<unsigned short>>{});
+    } else if (config->GetNEMOProblem()) {
+      f(CIndicesTag<CNEMOEulerVariable::CIndices<unsigned short>>{});
+    } else {
+      f(CIndicesTag<CEulerVariable::CIndices<unsigned short>>{});
+    }
+  }
 
 public:
   /*!
