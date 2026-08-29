@@ -1003,7 +1003,8 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
-      dynamic_grid, config->GetBounded_Turb(), true /*correctGradient*/, false /*accurateJacobians*/,
+      dynamic_grid, false /*boundedScalar, this site never applied the mass-flux correction*/,
+      true /*correctGradient*/, false /*accurateJacobians*/,
       true /*convective*/,  true /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
 
@@ -1082,7 +1083,8 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
-      dynamic_grid, config->GetBounded_Turb(), true /*correctGradient*/, false /*accurateJacobians*/,
+      dynamic_grid, false /*boundedScalar, this site never applied the mass-flux correction*/,
+      true /*correctGradient*/, false /*accurateJacobians*/,
       true /*convective*/,  true /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
 
