@@ -394,12 +394,7 @@ void CTurbSASolver::RunSA(CGeometry* geometry, CSolver** solver_container, CConf
 template <class Indices, int nDim, size_t nVarSA>
 void CTurbSASolver::RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                           const ScalarFluxOptions& opt) {
-  /*--- simd::Array<su2double> is its preferred SIMD width in primal mode, and width 1 (i.e. the
-   * scalar loop, unchanged) under reverse AD (see preferredLen<su2double> in vectorization.hpp),
-   * so this one binding covers both without a branch here. Boundaries stay on the su2double
-   * binding, see RunSA_Boundary: their loops are over vertices, not the hot edge loop. ---*/
-  EdgeFluxResidual<CScalarFlux_SA<simd::Array<su2double>, Indices, nDim, nVarSA>>(geometry, solver_container, config,
-                                                                                  opt);
+  EdgeFluxResidual<CScalarFlux_SA<su2double, Indices, nDim, nVarSA>>(geometry, solver_container, config, opt);
 }
 
 void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*,

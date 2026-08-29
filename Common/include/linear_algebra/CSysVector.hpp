@@ -225,21 +225,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* val,
                   bool valIsArray, bool errorIfParallel = true);
 
-  enum : size_t { MAXNVAR = 20 }; /*!< \brief Upper bound for the block buffers below, matches CSysMatrix's. */
-
   /*!
    * \brief Helper to unpack (transpose) a SIMD input block.
-   * \note "nVar" is a runtime argument, not deduced from VecTypeSIMD: an EdgeResidual's flux_i/
-   *       flux_j are floored to a minimum static size of 2 (see its own comment), so a static
-   *       nVar 1 model still hands in a size-2 Vector here, and this vector's own (runtime) nVar
-   *       is the one that must bound the transpose and the later read/write.
    */
-  template <size_t N, class VecTypeSIMD, class F>
-  FORCEINLINE static void UnpackBlock(const VecTypeSIMD& in, simd::Array<F, N> mask, unsigned long nVar,
-                                      ScalarType out[][MAXNVAR]) {
+  template <size_t N, size_t nVar, class VecTypeSIMD, class F>
+  FORCEINLINE static void UnpackBlock(const VecTypeSIMD& in, simd::Array<F, N> mask, ScalarType out[][nVar]) {
     static_assert(VecTypeSIMD::StaticSize, "This method requires static size vectors.");
-    assert(nVar <= MAXNVAR && nVar <= VecTypeSIMD::StaticSize);
-    for (auto i = 0ul; i < nVar; ++i) {
+    for (size_t i = 0; i < nVar; ++i) {
       SU2_OMP_SIMD_IF_NOT_AD
       for (size_t k = 0; k < N; ++k) out[k][i] = mask[k] * in[i][k];
     }
@@ -668,32 +660,16 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   template <size_t N, class T, class VecTypeSIMD, class F = ScalarType>
   FORCEINLINE void SetBlock(simd::Array<T, N> iPoint, const VecTypeSIMD& vector, simd::Array<F, N> mask = 1) {
     /*--- "Transpose" and scale input vector. ---*/
-    ScalarType vec[N][MAXNVAR];
-    UnpackBlock(vector, mask, nVar, vec);
+    constexpr size_t nVar = VecTypeSIMD::StaticSize;
+    assert(nVar == this->nVar);
+    ScalarType vec[N][nVar];
+    UnpackBlock(vector, mask, vec);
 
     /*--- Update one by one skipping if mask is 0. ---*/
     for (size_t k = 0; k < N; ++k) {
       if (mask[k] == 0) continue;
       SU2_OMP_SIMD
-      for (auto i = 0ul; i < nVar; ++i) vec_val[iPoint[k] * nVar + i] = vec[k][i];
-    }
-  }
-
-  /*!
-   * \brief Vectorized version of AddBlock, adds to multiple iPoint's.
-   * \note Unlike UpdateBlocks, "vector" is independent at every iPoint (e.g. flux_i and flux_j
-   *       of an EdgeResidual), so this takes one iPoint and one vector, called once per side.
-   */
-  template <size_t N, class T, class VecTypeSIMD, class F = ScalarType>
-  FORCEINLINE void AddBlock(simd::Array<T, N> iPoint, const VecTypeSIMD& vector, simd::Array<F, N> mask = 1) {
-    ScalarType vec[N][MAXNVAR];
-    UnpackBlock(vector, mask, nVar, vec);
-
-    /*--- Update one by one skipping if mask is 0. ---*/
-    for (size_t k = 0; k < N; ++k) {
-      if (mask[k] == 0) continue;
-      SU2_OMP_SIMD
-      for (auto i = 0ul; i < nVar; ++i) vec_val[iPoint[k] * nVar + i] += vec[k][i];
+      for (size_t i = 0; i < nVar; ++i) vec_val[iPoint[k] * nVar + i] = vec[k][i];
     }
   }
 
@@ -705,14 +681,16 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   FORCEINLINE void UpdateBlocks(simd::Array<T, N> iPoint, simd::Array<T, N> jPoint, const VecTypeSIMD& vector,
                                 simd::Array<F, N> mask = 1) {
     /*--- "Transpose" and scale input vector. ---*/
-    ScalarType vec[N][MAXNVAR];
-    UnpackBlock(vector, mask, nVar, vec);
+    constexpr size_t nVar = VecTypeSIMD::StaticSize;
+    assert(nVar == this->nVar);
+    ScalarType vec[N][nVar];
+    UnpackBlock(vector, mask, vec);
 
     /*--- Update one by one skipping if mask is 0. ---*/
     for (size_t k = 0; k < N; ++k) {
       if (mask[k] == 0) continue;
       SU2_OMP_SIMD
-      for (auto i = 0ul; i < nVar; ++i) {
+      for (size_t i = 0; i < nVar; ++i) {
         vec_val[iPoint[k] * nVar + i] += vec[k][i];
         vec_val[jPoint[k] * nVar + i] -= vec[k][i];
       }
