@@ -84,12 +84,6 @@ CNumerics::ResidualType<> CPBConvection_Base::ComputeResidual(const CConfig *con
   for (iDim = 0; iDim < nDim; iDim++)
     Flux[iDim+1] = ProjVelocity * AdvectedVelocity[iDim];
 
-  /*--- Add pressure component to the flux. ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Flux[iDim+1] += MeanPressure / MeanDensity * Normal[iDim];
-  }
-
   /*--- Find Jacobian ---*/
 
   if (implicit) {

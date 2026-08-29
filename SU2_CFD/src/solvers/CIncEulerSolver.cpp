@@ -1534,6 +1534,34 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   AD::StartNoSharedReading();
 
+  if (pressure_based) {
+
+    /*--- Add pressure source term ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+      su2double Density = nodes->GetDensity(iPoint);
+
+      su2double *pressureGradientSource = new su2double[nVar];
+      pressureGradientSource[0] = 0.0;
+      pressureGradientSource[nDim+1]=0.0;
+
+      /*--- Compute the residual (V / rho * gradp) based on the pressure gradient. ---*/
+
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        pressureGradientSource[iDim+1] = geometry->nodes->GetVolume(iPoint) / Density * nodes->GetGradient_Primitive(iPoint,prim_idx.Pressure(),iDim);
+
+      auto residual = CNumerics::ResidualType<>(pressureGradientSource, nullptr, nullptr);
+
+      /*--- Add Residual to the total ---*/
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+    }
+    END_SU2_OMP_FOR
+  }
+
   if (body_force) {
 
     /*--- Loop over all points ---*/
