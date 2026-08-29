@@ -2129,16 +2129,16 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
 
   PrepareImplicitIteration_impl(precond, geometry, config);
 
-  // /*--- Delete pressure rows for segregated solver type. ---*/
-  // if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
-  //   SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
-  //   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-  //     Jacobian.DeleteValsRowi(iPoint, 0);
-  //     LinSysRes(iPoint,0) = 0.0;
-  //     LinSysSol(iPoint,0) = 0.0;
-  //   }
-  //   END_SU2_OMP_FOR
-  // }
+  /*--- Delete pressure rows for segregated solver type. ---*/
+  if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
+    SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      Jacobian.DeleteValsRowi(iPoint, 0);
+      LinSysRes(iPoint,0) = 0.0;
+      LinSysSol(iPoint,0) = 0.0;
+    }
+    END_SU2_OMP_FOR
+  }
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
