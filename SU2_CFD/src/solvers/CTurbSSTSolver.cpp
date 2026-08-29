@@ -676,7 +676,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
   }
   END_SU2_OMP_FOR
 
-  /*--- The diffusive term causes serious convergence problems, so it stays off, as it did before. ---*/
+  /*--- The diffusive term causes serious convergence problems, so it stays off. ---*/
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
       dynamic_grid, config->GetBounded_Turb(), false /*correctGradient*/, false /*accurateJacobians*/,
@@ -712,7 +712,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
   }
   END_SU2_OMP_FOR
 
-  /*--- The diffusive term causes serious convergence problems, so it stays off, as it did before. ---*/
+  /*--- The diffusive term causes serious convergence problems, so it stays off. ---*/
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
       dynamic_grid, config->GetBounded_Turb(), false /*correctGradient*/, false /*accurateJacobians*/,
@@ -799,7 +799,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
-      dynamic_grid, false /*boundedScalar, this site never applied the mass-flux correction*/,
+      dynamic_grid, false /*boundedScalar, the mass-flux correction does not apply at this boundary*/,
       true /*correctGradient*/, false /*accurateJacobians*/,
       true /*convective*/,  true /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
@@ -888,7 +888,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
-      dynamic_grid, false /*boundedScalar, this site never applied the mass-flux correction*/,
+      dynamic_grid, false /*boundedScalar, the mass-flux correction does not apply at this boundary*/,
       true /*correctGradient*/, false /*accurateJacobians*/,
       true /*convective*/,  true /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };

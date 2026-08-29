@@ -754,7 +754,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
   }
   END_SU2_OMP_FOR
 
-  /*--- The diffusive term causes serious convergence problems, so it stays off, as it did before. ---*/
+  /*--- The diffusive term causes serious convergence problems, so it stays off. ---*/
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
       dynamic_grid, config->GetBounded_Turb(), false /*correctGradient*/, false /*accurateJacobians*/,
@@ -790,7 +790,7 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
   }
   END_SU2_OMP_FOR
 
-  /*--- The diffusive term causes serious convergence problems, so it stays off, as it did before. ---*/
+  /*--- The diffusive term causes serious convergence problems, so it stays off. ---*/
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
       dynamic_grid, config->GetBounded_Turb(), false /*correctGradient*/, false /*accurateJacobians*/,
@@ -824,7 +824,7 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
   }
   END_SU2_OMP_FOR
 
-  /*--- The diffusive term causes serious convergence problems, so it stays off, as it did before. ---*/
+  /*--- The diffusive term causes serious convergence problems, so it stays off. ---*/
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
       dynamic_grid, config->GetBounded_Turb(), false /*correctGradient*/, false /*accurateJacobians*/,
@@ -919,7 +919,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container,
   }
   END_SU2_OMP_FOR
 
-  /*--- The diffusive term causes serious convergence problems, so it stays off, as it did before. ---*/
+  /*--- The diffusive term causes serious convergence problems, so it stays off. ---*/
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
       dynamic_grid, config->GetBounded_Turb(), false /*correctGradient*/, false /*accurateJacobians*/,
@@ -989,7 +989,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
-      dynamic_grid, false /*boundedScalar, this site never applied the mass-flux correction*/,
+      dynamic_grid, false /*boundedScalar, the mass-flux correction does not apply at this boundary*/,
       true /*correctGradient*/, false /*accurateJacobians*/,
       true /*convective*/,  true /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
@@ -1069,7 +1069,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const ScalarFluxOptions opt{
-      dynamic_grid, false /*boundedScalar, this site never applied the mass-flux correction*/,
+      dynamic_grid, false /*boundedScalar, the mass-flux correction does not apply at this boundary*/,
       true /*correctGradient*/, false /*accurateJacobians*/,
       true /*convective*/,  true /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
   };
@@ -1123,9 +1123,9 @@ void CTurbSASolver::RunSA_FluidInterface(CGeometry* geometry, CSolver** solver_c
 /*!
  * \brief The convective term is a per-donor weighted average, computed in the same pass that
  *        fills the ghost row of each donor; the diffusive term is computed once per vertex, after
- *        the donor loop, from the ghost state the last donor left behind -- the discretization the
- *        solver had before this migration. This does not fit the fill-pass-then-BoundaryFluxResidual
- *        shape the other boundaries use, so it drives the CScalarFlux_SA kernel directly.
+ *        the donor loop, from the ghost state the last donor left behind. This does not fit the
+ *        fill-pass-then-BoundaryFluxResidual shape the other boundaries use, so it drives the
+ *        CScalarFlux_SA kernel directly.
  */
 template <class Indices, int nDim, size_t nVarSA>
 void CTurbSASolver::RunSA_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,

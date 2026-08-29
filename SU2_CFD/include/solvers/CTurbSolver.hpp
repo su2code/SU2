@@ -31,7 +31,6 @@
 #include "../variables/CTurbVariable.hpp"
 #include "../variables/CEulerVariable.hpp"
 #include "../variables/CIncEulerVariable.hpp"
-#include "../variables/CNEMOEulerVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
 /*!
@@ -57,20 +56,19 @@ protected:
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
 
   /*!
-   * \brief Resolve the compile-time flow indices from the regime/NEMO flags of config, and call f
-   *        with a CIndicesTag of the result: f is a generic lambda, `[&](auto tag){ using Indices
-   *        = typename decltype(tag)::type; ... }`. Shared by every turbulence model's boundary
+   * \brief Resolve the compile-time flow indices from the regime flag of config, and call f with
+   *        a CIndicesTag of the result: f is a generic lambda, `[&](auto tag){ using Indices =
+   *        typename decltype(tag)::type; ... }`. Shared by every turbulence model's boundary
    *        dispatch (RunSA/RunSA_Boundary/RunSA_FluidInterface and their SST counterparts), which
-   *        would otherwise each repeat this same three-way branch. Header-defined (not just
-   *        declared) because it is a template with a deduced, unnameable lambda type, called from
-   *        more than one translation unit (CTurbSASolver.cpp, CTurbSSTSolver.cpp).
+   *        would otherwise each repeat this same branch. Header-defined (not just declared)
+   *        because it is a template with a deduced, unnameable lambda type, called from more than
+   *        one translation unit (CTurbSASolver.cpp, CTurbSSTSolver.cpp). NEMO is not one of the
+   *        branches: a turbulence model is rejected for it at configuration.
    */
   template <class F>
   static void DispatchRegime(const CConfig* config, F&& f) {
     if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
       f(CIndicesTag<CIncEulerVariable::CIndices<unsigned short>>{});
-    } else if (config->GetNEMOProblem()) {
-      f(CIndicesTag<CNEMOEulerVariable::CIndices<unsigned short>>{});
     } else {
       f(CIndicesTag<CEulerVariable::CIndices<unsigned short>>{});
     }

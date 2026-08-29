@@ -31,11 +31,12 @@
 
 /*!
  * \class CScalarFlux_SST
+ * \ingroup ViscDiscr
  * \brief Convection and diffusion of the Menter SST model, conservative with a coupled (but
  *        neither symmetric nor diagonal) 2x2 diffusion matrix.
  * \note SST writes no finalizeFlux of its own: the inherited CUpwScalarFlux one is exactly
  *       flux(iVar) = a0*rho_i*phi_i(iVar) + a1*rho_j*phi_j(iVar), Conservative weighting by
- *       density, which is the whole of the model's old convective term.
+ *       density, which is the model's whole convective term.
  */
 template <class Double, class FlowIndices, int nDim, size_t nVar = 2>
 class CScalarFlux_SST
@@ -58,13 +59,11 @@ class CScalarFlux_SST
 
  public:
   /*!
-   * \brief Diffusion coefficients of both orientations of the edge, see CAvgGrad_TurbSST.
-   * \note The old discretization evaluates the diffusion numerics twice per edge, once with i
-   *       first and once with j first (CScalarSolver::Viscous_Residual_NonCons), because the
-   *       cross term below reads the transported omega of whichever point was passed first. That
-   *       is exactly what returning two different matrices here reproduces: D.i, read by i's row,
-   *       uses omega at i; D.j, read by j's row, uses omega at j. Every other entry is symmetric
-   *       (an i/j average), so it is the same in both matrices.
+   * \brief Diffusion coefficients of both orientations of the edge.
+   * \note The cross term below reads the transported omega of whichever point its row is being
+   *       written for, so it is not symmetric: D.i, read by i's row, uses omega at i; D.j, read
+   *       by j's row, uses omega at j. Every other entry is an i/j average, so it is the same in
+   *       both matrices.
    */
   template <class VariableType>
   FORCEINLINE CPair<Matrix<Double, nVar, nVar>> coefficients(const FlowIndices& idx, Int iPoint,
@@ -77,8 +76,8 @@ class CScalarFlux_SST
     const Double muT_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.EddyViscosity());
     const Double muT_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.EddyViscosity());
 
-    const Double F1_i = side_i.scalarNodes.GetF1blending(iPoint);
-    const Double F1_j = side_j.scalarNodes.GetF1blending(jPoint);
+    const Double F1_i = gatherVariables(iPoint, side_i.scalarNodes.GetF1blending());
+    const Double F1_j = gatherVariables(jPoint, side_j.scalarNodes.GetF1blending());
     const Double omega_i = gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), 1);
     const Double omega_j = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), 1);
 
@@ -95,13 +94,17 @@ class CScalarFlux_SST
     const Double lambda_ij = 0.5 * (lambda_i + lambda_j);
     const Double w_ij = 0.5 * (omega_i + omega_j);
 
-    /*--- Same two terms as CAvgGrad_TurbSST's old diff_omega_T2/diff_omega_T3, kept as the exact
-     * same two additions (not algebraically simplified) so this rounds identically. ---*/
+    /*--- Cross-diffusion coefficient: a divergence-theorem term (diff_omega_T2) plus a cell
+     * centre correction (diff_omega_T3) that reads the transported omega of the row's own point. ---*/
     const Double diff_omega_T2 = lambda_ij;
     const Double diff_omega_T3_i = -omega_i * lambda_ij / w_ij;
     const Double diff_omega_T3_j = -omega_j * lambda_ij / w_ij;
 
-    Matrix<Double, nVar, nVar> D_i = Double(0.0), D_j = Double(0.0);
+    /*--- D_i(0,1) and D_j(0,1) are left zero: there is no diffusive coupling from omega into
+     * the k row. ---*/
+    Matrix<Double, nVar, nVar> D_i, D_j;
+    D_i = Double(0.0);
+    D_j = Double(0.0);
     D_i(0, 0) = diff_kine;
     D_i(1, 1) = diff_omega;
     D_i(1, 0) = diff_omega_T2 + diff_omega_T3_i;
@@ -115,12 +118,12 @@ class CScalarFlux_SST
 
   /*!
    * \brief Extra Jacobian terms from the dependence of the cross-diffusion coefficient on omega.
-   * \note Unlike SA's, this correction is not a per-edge constant: it comes out of the same
-   *       twice-per-edge evaluation coefficients() reproduces, so it lands on all four Jacobian
-   *       blocks rather than mirroring the D.i/D.j split (jac_ii and jac_ji share one term, jac_ij
-   *       and jac_jj the other) -- worked out by hand against the old i->j / j->i pair of
-   *       Viscous_Residual_NonCons calls, not read off the single-evaluation shape most other
-   *       models have.
+   * \note diff_omega_T3_i and diff_omega_T3_j both depend on omega_i and omega_j through w_ij, so
+   *       each of the four blocks needs a correction beyond the one diffusionTerms already applies
+   *       through projGrad. The correction only depends on which point's omega is being
+   *       differentiated against, not on which row it lands in: differentiating against omega_i
+   *       gives +E_j in both jac_ii and jac_ji, differentiating against omega_j gives -E_i in both
+   *       jac_ij and jac_jj.
    */
   template <class VariableType, size_t Size>
   FORCEINLINE void coefficientJacobians(const FlowIndices& idx, Int iPoint, const EdgeSide<VariableType>& side_i,
@@ -128,8 +131,8 @@ class CScalarFlux_SST
                                         const Vector<Double, Size>& projGrad, EdgeResidual<Double, nVar>& res) const {
     const Double rho_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.Density());
     const Double rho_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.Density());
-    const Double F1_i = side_i.scalarNodes.GetF1blending(iPoint);
-    const Double F1_j = side_j.scalarNodes.GetF1blending(jPoint);
+    const Double F1_i = gatherVariables(iPoint, side_i.scalarNodes.GetF1blending());
+    const Double F1_j = gatherVariables(jPoint, side_j.scalarNodes.GetF1blending());
     const Double omega_i = gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), 1);
     const Double omega_j = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), 1);
 

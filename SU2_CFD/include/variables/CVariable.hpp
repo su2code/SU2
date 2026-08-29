@@ -1718,6 +1718,16 @@ public:
   inline virtual void SetF1blending(unsigned long iPoint, su2double val) {}
 
   /*!
+   * \brief Container backing GetF1blending/SetF1blending, for the edge-flux kernels to read
+   *        through gatherVariables the way they do GetSolution and GetGradient, rather than one
+   *        virtual call per point.
+   */
+  inline virtual const VectorType& GetF1blending() const {
+    static const VectorType empty;
+    return empty;
+  }
+
+  /*!
    * \brief Get the second blending function of the SST model.
    */
   inline virtual su2double GetF2blending(unsigned long iPoint) const { return 0.0; }

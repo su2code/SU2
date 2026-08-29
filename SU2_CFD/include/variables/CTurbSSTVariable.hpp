@@ -84,6 +84,11 @@ public:
   inline void SetF1blending(unsigned long iPoint, su2double val) override { F1(iPoint) = val; }
 
   /*!
+   * \brief Container backing GetF1blending/SetF1blending (see CVariable's note).
+   */
+  inline const VectorType& GetF1blending() const override { return F1; }
+
+  /*!
    * \brief Get the second blending function.
    */
   inline su2double GetF2blending(unsigned long iPoint) const override { return F2(iPoint); }

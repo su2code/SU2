@@ -31,6 +31,8 @@
 
 /*!
  * \class CScalarFlux_SA
+ * \ingroup ConvDiscr
+ * \ingroup ViscDiscr
  * \brief Convection and diffusion of the Spalart-Allmaras model, non-conservative and with a
  *        diagonal (but asymmetric) diffusion coefficient.
  * \note SA writes its own convective term rather than using the inherited CUpwScalarFlux one,

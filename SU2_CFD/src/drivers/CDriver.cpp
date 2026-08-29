@@ -1222,10 +1222,9 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     omega_Inf = turb_solver->GetOmega_Inf();
   }
 
-  /*--- Definition of the convective scheme for each equation and mesh level. Both SA and SST now
-   * drive their interior loop through their own CScalarFlux_* edge kernel (see CTurbSASolver,
-   * CTurbSSTSolver), so conv_term is never set here; the switch stays only for the
-   * NO_CONVECTIVE error check. ---*/
+  /*--- Both SA and SST drive their interior loop through their own CScalarFlux_* edge kernel
+   * (see CTurbSASolver, CTurbSSTSolver), so conv_term is never set here; this switch only checks
+   * the config value. ---*/
 
   switch (config->GetKind_ConvNumScheme_Turb()) {
     case NO_CONVECTIVE:
@@ -1252,9 +1251,8 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     numerics[iMGlevel][TURB_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Turb, config);
   }
 
-  /*--- Definition of the boundary condition method. Both SA and SST drive their boundaries
-   * through their own CScalarFlux_* edge kernel, so neither needs conv_bound_term/visc_bound_term
-   * here. ---*/
+  /*--- Both SA and SST drive their boundaries through their own CScalarFlux_* edge kernel, so
+   * neither needs conv_bound_term/visc_bound_term here. ---*/
 }
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp.
  * NEMO has no explicit instantiation: NEMO with a turbulence model is rejected at configuration. ---*/
