@@ -44,15 +44,6 @@ public:
   explicit CPBFluidIteration(const CConfig* config) : CFluidIteration(config) {}
 
   /*!
-   * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
-   */
-  void Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                  CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                  CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                  unsigned short val_iInst) override;
-
-  /*!
    * \brief Perform a single iteration of the fluid system.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration - Container vector with all the integration methods.

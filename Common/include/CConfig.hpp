@@ -433,7 +433,6 @@ private:
   su2double *WeightsIntegrationADER_DG;     /*!< \brief The weights of the ADER-DG time integration points on the interval [-1,1]. */
   unsigned short nRKStep;                   /*!< \brief Number of steps of the explicit Runge-Kutta method. */
   su2double *RK_Alpha_Step;                 /*!< \brief Runge-Kutta beta coefficients. */
-  unsigned short nCorrections_PISO;         /*!< \brief Number of corrections used in PISO algorithm. */
 
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
@@ -591,10 +590,8 @@ private:
   Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
-  ENUM_PBITER
-  Kind_PBIter;             /*< \brief Kind of pressure-based algorithm that is used. */
-  ENUM_INCOMP_SYSTEM
-  Kind_Incomp_System;      /*< \brief Kind of incompressible solver. */
+  PBITER Kind_PBIter;                    /*< \brief Kind of pressure-based algorithm that is used. */
+  INCOMP_SYSTEM Kind_Incomp_System;      /*< \brief Kind of incompressible solver. */
 
   bool MUSCL,              /*!< \brief MUSCL scheme (for the runtime eq. system). */
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
@@ -671,6 +668,7 @@ private:
     su2double Transient_Term_Removal_Factor; /*!< \brief Coefficient for removing the transient term from the momentum coefficient. */
     su2double Relaxation_Factor_Pressure;    /*!< \brief Relaxation coefficient of the pressure corrections in the SIMPLE solver. */
     bool AutomaticRelaxationFactors;         /*!< \brief option for automatically computing relaxation factors for flow corrections in SIMPLE. */
+    unsigned short nCorrections_PISO;        /*!< \brief Number of corrections used in PISO algorithm. */
   } SIMPLE_Options;
 
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
@@ -4028,19 +4026,13 @@ public:
    * \brief Kind of incompressible solver formulation.
    * \return Kind of incompressible solver.
    */
-  ENUM_INCOMP_SYSTEM GetKind_Incomp_System(void) const { return Kind_Incomp_System; }
+  INCOMP_SYSTEM GetKind_Incomp_System(void) const { return Kind_Incomp_System; }
 
   /*!
    * \brief Kind of iteration used for pressure based iterations.
    * \return Kind of iteration used for pressure based iterations.
    */
-  ENUM_PBITER GetKind_PBIter(void) const { return Kind_PBIter; }
-
-  /*!
-   * \brief Number of (pressure) corrections used by PISO algorithm.
-   * \return Number of corrections used by PISO algorithm.
-   */
-  unsigned short GetPISO_corrections(void) const { return nCorrections_PISO; }
+  PBITER GetKind_PBIter(void) const { return Kind_PBIter; }
 
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).

@@ -40,7 +40,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
   flamelet = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
 
-  pressure_based = (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED);
+  pressure_based = (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED);
 
   streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();

@@ -1456,8 +1456,8 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   bool compressible = false;
   bool incompressible = false;
   bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) || (config->GetKind_FluidModel() == IDEAL_GAS);
-  bool pressure_based = (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED);
-  bool poisson = (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED);
+  bool pressure_based = (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED);
+  bool poisson = (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED);
   bool roe_low_dissipation = (config->GetKind_RoeLowDiss() != NO_ROELOWDISS);
 
   /*--- Initialize some useful booleans ---*/
@@ -1570,7 +1570,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   if (fem_ns)       nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
 
   if (fem)          nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
-  
   if (config->AddRadiation()) nVar_Rad = solver[MESH_0][RAD_SOL]->GetnVar();
 
   /*--- Number of variables for adjoint problem ---*/

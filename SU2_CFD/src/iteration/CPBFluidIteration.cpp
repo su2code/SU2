@@ -29,11 +29,6 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/integration/CIntegration.hpp"
 
-void CPBFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                 CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                 CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                 CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) { }
-
 void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                               CSolver***** solver, CNumerics****** numerics, CConfig** config,
                               CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
@@ -45,7 +40,7 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
   const bool periodic = (config[val_iZone]->GetnMarker_Periodic() > 0);
 
-  const unsigned short nCorrections = config[val_iZone]->GetPISO_corrections();
+  const unsigned short nCorrections = config[val_iZone]->GetSIMPLE_Options().nCorrections_PISO;
 
   /*--- Solve the Euler, Navier-Stokes, RANS equations. ---*/
 

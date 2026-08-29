@@ -153,7 +153,7 @@ void CPoissonSolver::Postprocessing(CGeometry *geometry,
 
 void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) {
 
-  bool simplec = (config->GetKind_PBIter() == ENUM_PBITER::SIMPLEC);
+  bool simplec = (config->GetKind_PBIter() == PBITER::SIMPLEC);
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   const CSolver* flow_solution = solver_container[FLOW_SOL];

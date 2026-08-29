@@ -343,26 +343,26 @@ static const MapType<std::string, STRUCT_COMPRESS> MatComp_Map = {
 /*!
  * \brief Type of incompressible solver
  */
-enum class ENUM_INCOMP_SYSTEM {
+enum class INCOMP_SYSTEM {
   DENSITY_BASED,        /*!< \brief Density-based. */
   PRESSURE_BASED,       /*!< \brief Pressure-based. */
 };
-static const MapType<std::string, ENUM_INCOMP_SYSTEM> Incomp_Map = {
- MakePair("DENSITY_BASED", ENUM_INCOMP_SYSTEM::DENSITY_BASED)
- MakePair("PRESSURE_BASED", ENUM_INCOMP_SYSTEM::PRESSURE_BASED)
+static const MapType<std::string, INCOMP_SYSTEM> Incomp_Map = {
+ MakePair("DENSITY_BASED", INCOMP_SYSTEM::DENSITY_BASED)
+ MakePair("PRESSURE_BASED", INCOMP_SYSTEM::PRESSURE_BASED)
 };
 
 /*!
  * \brief Type of iteration
  */
-enum class ENUM_PBITER {
+enum class PBITER {
   SIMPLE,       /*!< \brief SIMPLE algorithm. */
   SIMPLEC,      /*!< \brief SIMPLEC algorithm. */
 };
 
-static const MapType<std::string, ENUM_PBITER> PBIter_Map = {
- MakePair("SIMPLE", ENUM_PBITER::SIMPLE)
- MakePair("SIMPLEC", ENUM_PBITER::SIMPLEC)
+static const MapType<std::string, PBITER> PBIter_Map = {
+ MakePair("SIMPLE", PBITER::SIMPLE)
+ MakePair("SIMPLEC", PBITER::SIMPLEC)
 };
 
 /*!
@@ -2815,7 +2815,7 @@ enum class MPI_QUANTITIES {
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
   MOM_COEFF            ,  /*!< \brief Momentum coefficient for the Rhie-Chow scheme. */
-  VEL_CORRECTION       ,  /*!< \brief Velocity correction for the pressure-based poisson solver (HbyA). */
+  VEL_CORRECTION       ,  /*!< \brief Velocity correction for the pressure-based poisson solver (used when computing HbyA). */
   HBYA_CORRECTION      ,  /*!< \brief HbyA correction for the pressure-based poisson solver. */
 };
 

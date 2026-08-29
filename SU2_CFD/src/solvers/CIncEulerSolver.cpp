@@ -40,7 +40,7 @@
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
                                  const bool navier_stokes) :
   CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>(*geometry, *config),
-  pressure_based(config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED) {
+  pressure_based(config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
   SU2_ZONE_SCOPED
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
@@ -1039,9 +1039,12 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   }
 
   /*--- Reset flag for strong BCs. ---*/
-  if (pressure_based)
+  if (pressure_based) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
       nodes->ResetStrongBC(iPoint);
+    END_SU2_OMP_FOR
+  }
 
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
@@ -1190,11 +1193,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     this makes no sense. However to be able to reuse the time step routine we artificially define the speed of sound
     to be zero such that a regular advective time step is computed */
     struct SoundSpeed {
-      FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
-        return 0.0;
-      }
-
-      FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
+      FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint = 0) const {
         return 0.0;
       }
 
@@ -1543,20 +1542,10 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       su2double Density = nodes->GetDensity(iPoint);
 
-      su2double *pressureGradientSource = new su2double[nVar];
-      pressureGradientSource[0] = 0.0;
-      pressureGradientSource[nDim+1]=0.0;
-
       /*--- Compute the residual (V / rho * gradp) based on the pressure gradient. ---*/
 
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        pressureGradientSource[iDim+1] = geometry->nodes->GetVolume(iPoint) / Density * nodes->GetGradient_Primitive(iPoint,prim_idx.Pressure(),iDim);
-
-      auto residual = CNumerics::ResidualType<>(pressureGradientSource, nullptr, nullptr);
-
-      /*--- Add Residual to the total ---*/
-
-      LinSysRes.AddBlock(iPoint, residual);
+        LinSysRes(iPoint, iDim + 1) += geometry->nodes->GetVolume(iPoint) / Density * nodes->GetGradient_Primitive(iPoint,prim_idx.Pressure(),iDim);
 
     }
     END_SU2_OMP_FOR
@@ -2139,6 +2128,17 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
   } precond(this, nVar);
 
   PrepareImplicitIteration_impl(precond, geometry, config);
+
+  // /*--- Delete pressure rows for segregated solver type. ---*/
+  // if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
+  //   SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+  //   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+  //     Jacobian.DeleteValsRowi(iPoint, 0);
+  //     LinSysRes(iPoint,0) = 0.0;
+  //     LinSysSol(iPoint,0) = 0.0;
+  //   }
+  //   END_SU2_OMP_FOR
+  // }
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
@@ -3679,7 +3679,7 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
     /*--- 1. Interpolate the pressure gradient based on node values ---*/
     
     for (iDim = 0; iDim < nDim; iDim++)
-      GradPressure_avg[iDim] = 0.5*(poisson_nodes->GetGradient_Primitive(iPoint,prim_idx.Pressure(),iDim) + nodes->GetGradient_Primitive(jPoint,prim_idx.Pressure(),iDim));
+      GradPressure_avg[iDim] = 0.5*(nodes->GetGradient_Primitive(iPoint,prim_idx.Pressure(),iDim) + nodes->GetGradient_Primitive(jPoint,prim_idx.Pressure(),iDim));
 
     /*--- 2. Compute pressure gradient at the face ---*/
 

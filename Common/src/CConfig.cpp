@@ -1203,9 +1203,9 @@ void CConfig::SetConfig_Options() {
   addEnumListOption("SA_OPTIONS", nSA_Options, SA_Options, SA_Options_Map);
 
   /*!\brief KIND_INCOMP_SYSTEM \n DESCRIPTION: Incomp type \n OPTIONS: see \link Incomp_Map \endlink DEFAULT: NONE \ingroup Config*/
-  addEnumOption("KIND_INCOMP_SYSTEM", Kind_Incomp_System, Incomp_Map, ENUM_INCOMP_SYSTEM::DENSITY_BASED);
+  addEnumOption("KIND_INCOMP_SYSTEM", Kind_Incomp_System, Incomp_Map, INCOMP_SYSTEM::DENSITY_BASED);
   /*!\brief KIND_PB_ITER \n  DESCRIPTION: Kind_PBIter \n OPTIONS: see \link PBIter_Map \endlink \ingroup Config*/
-  addEnumOption("KIND_PB_ITER", Kind_PBIter, PBIter_Map, ENUM_PBITER::SIMPLE);
+  addEnumOption("KIND_PB_ITER", Kind_PBIter, PBIter_Map, PBITER::SIMPLE);
 
   /*!\brief ROUGHSST_OPTIONS \n DESCRIPTION: Specify type of boundary condition for rough walls for SST turbulence model. \n Options: see \link ROUGHSST_Options_Map \endlink \n DEFAULT: wilcox1998 \ingroup Config*/
   addEnumOption("KIND_ROUGHSST_MODEL", Kind_RoughSST_Model, RoughSST_Model_Map, ROUGHSST_MODEL::WILCOX1998);
@@ -1959,8 +1959,6 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
-  /* DESCRIPTION: Number of corrections in the PISO algorithm (pressure based). */
-  addUnsignedShortOption("PISO_CORRECTIONS", nCorrections_PISO, 1);
 
   /*!\par CONFIG_CATEGORY: Linear solver definition \ingroup Config*/
   /*--- Options related to the linear solvers ---*/
@@ -2007,6 +2005,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("TRANSIENT_TERM_REMOVAL_FACTOR", SIMPLE_Options.Transient_Term_Removal_Factor, 0.0);
   /*!\DESCRIPTION: Automatically compute relaxation factors for flow corrections in the SIMPLE algorithm */
   addBoolOption("USE_AUTOMATIC_RELAXATION_FACTORS", SIMPLE_Options.AutomaticRelaxationFactors, false);
+  /* DESCRIPTION: Number of corrections in the PISO algorithm (pressure based). */
+  addUnsignedShortOption("PISO_CORRECTIONS", SIMPLE_Options.nCorrections_PISO, 1);
   /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
   addDoubleOption("RELAXATION_FACTOR_ADJOINT", Relaxation_Factor_Adjoint, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
