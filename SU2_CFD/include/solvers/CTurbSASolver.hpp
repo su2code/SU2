@@ -128,6 +128,21 @@ private:
   void RunSA_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                       const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
 
+  /*!
+   * \brief Same dispatch as RunSA, for BC_Fluid_Interface's combined fill-and-flux donor loop.
+   */
+  template <class Indices>
+  void RunSA_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                            const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
+
+  template <class Indices, int nDim>
+  void RunSA_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                            const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
+
+  template <class Indices, int nDim, size_t nVarSA>
+  void RunSA_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                            const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
+
 public:
   /*!
    * \brief Constructor.
@@ -401,6 +416,20 @@ public:
                   CConfig *config,
                   unsigned short val_marker,
                   bool val_inlet_surface) override;
+
+  /*!
+   * \brief Impose the fluid interface (sliding mesh) boundary condition, via the CScalarFlux_SA
+   *        edge kernel. The convective term is a per-donor weighted average, computed in the same
+   *        pass that fills the ghost row of each donor; the diffusive term is computed once per
+   *        vertex, after the donor loop, from the ghost state the last donor left behind.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                          CNumerics *visc_numerics, CConfig *config) override;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.

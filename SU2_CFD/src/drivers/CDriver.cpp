@@ -1238,10 +1238,7 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
       break;
     case SPACE_UPWIND :
       for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        if (spalart_allmaras) {
-          numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSA<Indices>(nDim, nVar_Turb, config);
-        }
-        else if (menter_sst)
+        if (menter_sst)
           numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSST<Indices>(nDim, nVar_Turb, config);
       }
       break;
@@ -1253,14 +1250,7 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
   /*--- Definition of the viscous scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (spalart_allmaras) {
-      if (config->GetSAParsedOptions().version == SA_OPTIONS::NEG) {
-        numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSA_Neg<Indices>(nDim, nVar_Turb, true, config);
-      } else {
-        numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSA<Indices>(nDim, nVar_Turb, true, config);
-      }
-    }
-    else if (menter_sst)
+    if (menter_sst)
       numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSST<Indices>(nDim, nVar_Turb, constants, true, config);
   }
 
@@ -1278,33 +1268,24 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     numerics[iMGlevel][TURB_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Turb, config);
   }
 
-  /*--- Definition of the boundary condition method ---*/
+  /*--- Definition of the boundary condition method. SA drives its own boundaries through the
+   * CScalarFlux_SA edge kernel (see CTurbSASolver), so it needs no conv_bound_term/visc_bound_term
+   * here; menter_sst is unchanged, still on the CNumerics path. ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (spalart_allmaras) {
-      numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CUpwSca_TurbSA<Indices>(nDim, nVar_Turb, config);
-
-      if (config->GetSAParsedOptions().version == SA_OPTIONS::NEG) {
-        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSA_Neg<Indices>(nDim, nVar_Turb, true, config);
-      } else {
-        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSA<Indices>(nDim, nVar_Turb, true, config);
-      }
-    }
-    else if (menter_sst) {
+    if (menter_sst) {
       numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CUpwSca_TurbSST<Indices>(nDim, nVar_Turb, config);
       numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSST<Indices>(nDim, nVar_Turb, constants, true,
                                                                                     config);
     }
   }
 }
-/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
+/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp.
+ * NEMO has no explicit instantiation: NEMO with a turbulence model is rejected at configuration. ---*/
 template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
-
-template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template <class Indices>
@@ -2038,9 +2019,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
     if (incompressible)
       InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
                                                                                  solver[MESH_0][TURB_SOL], numerics);
-    else if (NEMO_ns)
-      InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
-                                                                                  solver[MESH_0][TURB_SOL], numerics);
     else
       InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
                                                                               solver[MESH_0][TURB_SOL], numerics);

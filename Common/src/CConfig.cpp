@@ -4338,6 +4338,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     /* --- Check for NEMO compatibility issues ---*/
+    if (nemo && Kind_Turb_Model != TURB_MODEL::NONE) {
+      SU2_MPI::Error("A turbulence model is not yet available for the NEMO solver.", CURRENT_FUNCTION);
+    }
+
     if (Kind_FluidModel == SU2_NONEQ && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::SUTHERLAND && Kind_TransCoeffModel != TRANSCOEFFMODEL::GUPTAYOS) ) {
       SU2_MPI::Error("Transport model not available for NEMO solver using SU2TCLIB. Please use the WILKE, SUTHERLAND or GUPTAYOS transport model instead.", CURRENT_FUNCTION);
     }

@@ -31,62 +31,6 @@
 #include "../scalar/scalar_convection.hpp"
 
 /*!
- * \class CUpwSca_TurbSA
- * \brief Class for doing a scalar upwind solver for the Spalar-Allmaras turbulence model equations.
- * \ingroup ConvDiscr
- * \author A. Bueno.
- */
-template <class FlowIndices>
-class CUpwSca_TurbSA final : public CUpwScalar<FlowIndices> {
-private:
-  using Base = CUpwScalar<FlowIndices>;
-  using Base::a0;
-  using Base::a1;
-  using Base::Flux;
-  using Base::Jacobian_i;
-  using Base::Jacobian_j;
-  using Base::ScalarVar_i;
-  using Base::ScalarVar_j;
-  using Base::bounded_scalar;
-  using Base::V_i;
-  using Base::V_j;
-  using Base::idx;
-  using Base::nVar;
-
-  /*!
-   * \brief Adds any extra variables to AD.
-   */
-  void ExtraADPreaccIn() override {}
-
-  /*!
-   * \brief SA specific steps in the ComputeResidual method
-   * \param[in] config - Definition of the particular problem.
-   */
-  void FinishResidualCalc(const CConfig* config) override {
-    if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
-      for (unsigned short iVar = 1; iVar < nVar; iVar++) {
-        Flux[iVar] = (a0 + a1) * 0.5 * (ScalarVar_i[iVar] + ScalarVar_j[iVar]);
-        Jacobian_i[iVar][iVar] = 0.5 * (a0+a1);
-        Jacobian_j[iVar][iVar] = 0.5 * (a0+a1);
-      }
-    }
-    Flux[0] = a0*ScalarVar_i[0] + a1*ScalarVar_j[0];
-    Jacobian_i[0][0] = a0;
-    Jacobian_j[0][0] = a1;
-  }
-
-public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
-    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) { bounded_scalar = config->GetBounded_Turb(); }
-};
-
-/*!
  * \class CUpwSca_TurbSST
  * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
  * \ingroup ConvDiscr
