@@ -2780,7 +2780,6 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
-  PERIODIC_PRESSURE   ,  /*!< \brief Corrected pressure communication. */
 };
 
 /*!

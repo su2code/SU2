@@ -281,11 +281,6 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nVar;
       break;
-    case PERIODIC_PRESSURE:
-      COUNT_PER_POINT  = 1;
-      MPI_TYPE         = COMM_TYPE::DOUBLE;
-      ICOUNT           = 1;
-      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                      CURRENT_FUNCTION);
@@ -978,14 +973,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             break;
-          
-          case PERIODIC_PRESSURE:
-
-            /*--- Load the pressure. ---*/
-
-            bufDSend[buf_offset] = base_nodes->GetPressure(iPoint);
-
-            break;
 
           default:
             SU2_MPI::Error("Unrecognized quantity for periodic communication.",
@@ -1314,15 +1301,6 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 limiter(iPoint, iVar) = min(limiter(iPoint, iVar), bufDRecv[buf_offset+iVar]);
 
               break;
-
-            case PERIODIC_PRESSURE:
-
-               if (iPeriodic == val_periodic_index + nPeriodic/2) {
-                 base_nodes->SetPrimitive(iPoint, 0, bufDRecv[buf_offset]);
-               }
-
-              break;
-
 
             default:
 

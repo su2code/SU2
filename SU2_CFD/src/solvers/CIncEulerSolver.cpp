@@ -3810,7 +3810,6 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     /*--- Initialize projected velocity and density ---*/
 
     su2double ProjMassFluxCorrection = 0.0;
-    su2double MeanDensity = 0.5*(nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
     
     for (iDim = 0; iDim < nDim; iDim++) {
 
@@ -3952,9 +3951,6 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-
-   InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRESSURE);
-   CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRESSURE);
   }
 
   /*--- Communicate updated velocities and pressure ---*/

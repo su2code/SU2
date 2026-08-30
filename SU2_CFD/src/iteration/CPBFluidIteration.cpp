@@ -56,9 +56,10 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   at the start of the corrections. These coefficients make up the entirety of the coefficient
   matrix (Jacobian) used by the Poisson solver. Currently the matrix is redefined each correction 
   but as the coefficients are frozen this doesnt/shouldnt change the matrix at all. ---*/
+  
   solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
 
-  /*--- Compute the velocities at the cell edges based on Rhie-Chow interpolation ---*/
+  /*--- Compute the mass fluxes at the cell edges based on Rhie-Chow interpolation ---*/
 
   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeEdgeMassFluxesRhieChow(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
@@ -72,12 +73,12 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
     
     if (iCorrection > 0) solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->ComputeHbyA(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
 
-    /*--- Solve the pressure Poisson equation to find p' i.e. div(V/A_p * grad(p')) = div u*} ---*/
+    /*--- Solve the pressure Poisson equation to find p' i.e. div(V/A_p * grad(p')) = div rhou*} ---*/
 
     integration[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS,
                                                                    val_iZone, val_iInst);
 
-    /*--- The velocity and pressure are corrected based on the solution to the Poisson problem i.e. p* = p + p' and u** = u* - V/Ap * p' ---*/
+    /*--- The velocity and pressure are corrected based on the solution to the Poisson problem i.e. p* = p + p' and rhou** = rhou* - V/Ap * p' ---*/
     
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ApplyPressureVelocityCorrection(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 

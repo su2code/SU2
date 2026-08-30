@@ -1570,6 +1570,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   if (fem_ns)       nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
 
   if (fem)          nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
+  
   if (config->AddRadiation()) nVar_Rad = solver[MESH_0][RAD_SOL]->GetnVar();
 
   /*--- Number of variables for adjoint problem ---*/
@@ -2068,7 +2069,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   if (turbulent) {
     if (incompressible)
       InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
-                                                                                   solver[MESH_0][TURB_SOL], numerics);
+                                                                                 solver[MESH_0][TURB_SOL], numerics);
     else if (NEMO_ns)
       InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
                                                                                   solver[MESH_0][TURB_SOL], numerics);

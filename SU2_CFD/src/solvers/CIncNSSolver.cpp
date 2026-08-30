@@ -278,7 +278,6 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 CNumerics::ResidualType<> CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry,
                                                          CSolver **solver_container, CNumerics *numerics,
                                                          CConfig *config) {
-
   const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
 
   /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
@@ -396,6 +395,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     }
 
     /*--- Incompressible flow, primitive variables --- */
+
     bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
 
     /* Check for non-realizable states for reporting. */
@@ -451,7 +451,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       break;
     case HEAT_TRANSFER:
       Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref() /
-                            config->GetHeat_Flux_Ref();
+                             config->GetHeat_Flux_Ref();
       Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag) / config->GetTemperature_Ref();
       break;
     default:

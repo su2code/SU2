@@ -117,6 +117,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the enthalpy.
   if (heat) AddHistoryOutput("RMS_ENTHALPY", "rms[h]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the enthalpy.", HistoryFieldType::RESIDUAL);
+  
   AddHistoryOutputFields_ScalarRMS_RES(config);
 
   /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
@@ -377,7 +378,6 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_VELOCITY-Y", "Residual_Velocity_y", "RESIDUAL", "Residual of the y-velocity component");
   if (nDim == 3)
     AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
-
   if (heat){
     AddVolumeOutput("RES_ENTHALPY", "Residual_Enthalpy", "RESIDUAL", "Residual of the enthalpy");
   }
@@ -479,7 +479,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
   if (nDim == 3)
     SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
-
   if (config->GetEnergy_Equation()) {
     SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nDim+1));
   }
