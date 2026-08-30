@@ -29,6 +29,9 @@
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../variables/CSpeciesVariable.hpp"
+#include "../variables/CEulerVariable.hpp"
+#include "../variables/CIncEulerVariable.hpp"
+#include "../variables/CNEMOEulerVariable.hpp"
 #include "CScalarSolver.hpp"
 
 /*!
@@ -42,6 +45,56 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
   vector<su2activematrix> Wall_SpeciesVars; /*!< \brief Species variables at  profiles. */
   vector<su2matrix<su2double>> CustomBoundaryScalar;
+
+  /*!
+   * \brief Resolve the compile-time flow indices from the regime flag of config, and call f with
+   *        a CIndicesTag of the result: f is a generic lambda, `[&](auto tag){ using Indices =
+   *        typename decltype(tag)::type; ... }`. Unlike CTurbSolver::DispatchRegime, species
+   *        transport is supported for NEMO, so this has a third branch.
+   */
+  template <class F>
+  static void DispatchRegime(const CConfig* config, F&& f) {
+    if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+      f(CIndicesTag<CIncEulerVariable::CIndices<unsigned short>>{});
+    } else if (config->GetNEMOProblem()) {
+      f(CIndicesTag<CNEMOEulerVariable::CIndices<unsigned short>>{});
+    } else {
+      f(CIndicesTag<CEulerVariable::CIndices<unsigned short>>{});
+    }
+  }
+
+  /*!
+   * \brief Resolve the compile-time flow indices and dimension, and run the interior edge loop
+   *        with the matching CScalarFlux_Species instantiation. The equation count is set at
+   *        runtime (one per species), so unlike SST's/LM's RunXxx this dispatch never resolves it.
+   */
+  template <class Indices>
+  void RunSpecies(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
+
+  template <class Indices, int nDim>
+  void RunSpecies(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
+
+  /*!
+   * \brief Same dispatch as RunSpecies, for a boundary's call into BoundaryFluxResidual.
+   */
+  template <class Indices>
+  void RunSpecies_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                           const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+
+  template <class Indices, int nDim>
+  void RunSpecies_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                           const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+
+  /*!
+   * \brief Same dispatch as RunSpecies, for BC_Fluid_Interface's combined fill-and-flux donor loop.
+   */
+  template <class Indices>
+  void RunSpecies_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                                 const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
+
+  template <class Indices, int nDim>
+  void RunSpecies_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                                 const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
 
  public:
   /*!
@@ -83,16 +136,16 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                      unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
-   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \brief Compute the spatial integration using the CScalarFlux_Species edge kernel, which
+   *        computes and writes both the convective and the diffusive term of every edge.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Unused, kept only for the boundary conditions.
    * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                        const CConfig* config) override;
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                       CConfig* config, unsigned short iMesh) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -214,24 +267,20 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                            unsigned long TimeIter) override;
 
   /*!
-   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \brief Impose the fluid interface (sliding mesh) boundary condition, via the
+   *        CScalarFlux_Species edge kernel. The convective term is a per-donor weighted average,
+   *        computed in the same pass that fills the ghost row of each donor; the diffusive term is
+   *        computed once per vertex, after the donor loop, from the interior point's own
+   *        diffusivity mirrored into the ghost row (matching the pre-migration behavior, which
+   *        likewise read the same point's diffusivity for both sides of the edge).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Fluid_Interface(CGeometry *geometry,
-                          CSolver **solver_container,
-                          CNumerics *conv_numerics,
-                          CNumerics *visc_numerics,
-                          CConfig *config) final {
-    BC_Fluid_Interface_impl(
-      [&](unsigned long iPoint) {
-        visc_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nodes->GetDiffusivity(iPoint));
-      },
-      geometry, solver_container, conv_numerics, visc_numerics, config);
-  }
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                          CNumerics *visc_numerics, CConfig *config) final;
 
   /*!
    * \brief Set custom boundary scalar values from Python.

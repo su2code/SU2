@@ -38,6 +38,18 @@
 #include "CSolver.hpp"
 
 /*!
+ * \brief Carries a type through a value, so a runtime branch can hand a compile-time type to a
+ *        generic lambda (its parameter deduces as CIndicesTag<T>, and the lambda recovers T as
+ *        decltype(tag)::type). Standing in for a C++20 template lambda, which this project's
+ *        C++17 baseline does not have. Shared by every scalar solver's own regime-dispatch helper
+ *        (see CTurbSolver::DispatchRegime, CSpeciesSolver::DispatchRegime).
+ */
+template <class T>
+struct CIndicesTag {
+  using type = T;
+};
+
+/*!
  * \brief Main class for defining a scalar solver.
  * \tparam VariableType - Class of variable used by the solver inheriting from this template.
  * \ingroup Scalar_Transport

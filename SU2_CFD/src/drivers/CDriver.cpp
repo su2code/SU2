@@ -78,8 +78,6 @@
 #include "../../include/numerics/scalar/scalar_sources.hpp"
 #include "../../include/numerics/turbulent/turb_sources.hpp"
 #include "../../include/numerics/turbulent/transition/trans_sources.hpp"
-#include "../../include/numerics/species/species_convection.hpp"
-#include "../../include/numerics/species/species_diffusion.hpp"
 #include "../../include/numerics/species/species_sources.hpp"
 #include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
@@ -1306,36 +1304,22 @@ template void CDriver::InstantiateTransitionNumerics<CNEMOEulerVariable::CIndice
 template <class Indices>
 void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig *config,
                                          const CSolver* species_solver, CNumerics ****&numerics) const {
-  const int conv_term = CONV_TERM + offset;
-  const int visc_term = VISC_TERM + offset;
-
   const int source_first_term = SOURCE_FIRST_TERM + offset;
   const int source_second_term = SOURCE_SECOND_TERM + offset;
 
-  const int conv_bound_term = CONV_BOUND_TERM + offset;
-  const int visc_bound_term = VISC_BOUND_TERM + offset;
-
-  /*--- Definition of the convective scheme for each equation and mesh level. Also for boundary conditions. ---*/
+  /*--- Species transport drives its interior loop and boundaries through its own
+   * CScalarFlux_Species edge kernel (see CSpeciesSolver), so conv_term/visc_term/
+   * conv_bound_term/visc_bound_term are never set here; this switch only checks the config
+   * value. ---*/
 
   switch (config->GetKind_ConvNumScheme_Species()) {
     case NONE :
       break;
     case SPACE_UPWIND :
-      for (auto iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        numerics[iMGlevel][SPECIES_SOL][conv_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
-        numerics[iMGlevel][SPECIES_SOL][conv_bound_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
-      }
       break;
     default :
       SU2_MPI::Error("Invalid convective scheme for the species transport equations. Use SCALAR_UPWIND.", CURRENT_FUNCTION);
       break;
-  }
-
-  /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
-  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    numerics[iMGlevel][SPECIES_SOL][visc_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, true, config);
-    numerics[iMGlevel][SPECIES_SOL][visc_bound_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, false, config);
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/

@@ -411,13 +411,15 @@ FORCEINLINE Double musclReconstruction(Int iPoint, const Gradient_t& gradient, s
  * \brief Unlimited reconstruction.
  * \param[in] iRow - Starting row of gradient to read, for reconstructing a slice of a
  *            larger set of gradients (e.g. only the velocity out of the primitives).
+ * \param[in] nVarGradRuntime - Equation count of a Dynamic model, known only at runtime; ignored
+ *            (falling back to nVarGrad_ or VarType::nVar) when left at its default of 0.
  */
 template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class Gradient_t>
 FORCEINLINE void musclUnlimited(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
                                 const Vector<Double, nDim>& vector_ij, const Gradient_t& gradient, CPair<VarType>& V,
                                 const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp,
-                                size_t iRow = 0) {
-  constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
+                                size_t iRow = 0, size_t nVarGradRuntime = 0) {
+  const size_t nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : (nVarGradRuntime > 0 ? nVarGradRuntime : VarType::nVar);
 
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
     /*--- Centered difference, needed for U-MUSCL projection ---*/
@@ -442,13 +444,17 @@ template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class 
 FORCEINLINE void musclPointLimited(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
                                    const Vector<Double, nDim>& vector_ij, const Limiter_t& limiter,
                                    const Gradient_t& gradient, CPair<VarType>& V, const CNonDeduced<Double>& kappa,
-                                   const CNonDeduced<Double>& umusclRamp, size_t iRow = 0) {
-  constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
+                                   const CNonDeduced<Double>& umusclRamp, size_t iRow = 0,
+                                   size_t nVarGradRuntime = 0) {
+  const size_t nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : (nVarGradRuntime > 0 ? nVarGradRuntime : VarType::nVar);
 
-  auto lim_i = gatherVariables<nVarGrad>(iPoint, limiter, iRow);
-  auto lim_j = gatherVariables<nVarGrad>(jPoint, limiter, iRow);
-
+  /*--- Gathered one variable at a time rather than as a Vector<Double,nVarGrad>: nVarGrad is only
+   * a compile-time constant when nVarGrad_ itself is one, and a Dynamic model's is runtime-only,
+   * so it can never be a gatherVariables template argument. ---*/
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
+    const Double lim_i = gatherVariables(iPoint, limiter, iRow + iVar);
+    const Double lim_j = gatherVariables(jPoint, limiter, iRow + iVar);
+
     /*--- Centered difference, needed for U-MUSCL projection ---*/
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
 
@@ -459,8 +465,8 @@ FORCEINLINE void musclPointLimited(typename CLaneTraits<Double>::Int iPoint, typ
         musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
 
     /*--- Apply reconstruction: V_L = V_i + 0.5 * lim * dV_ij^kap ---*/
-    V.i.all(iVar) += 0.5 * lim_i(iVar) * proj_i;
-    V.j.all(iVar) -= 0.5 * lim_j(iVar) * proj_j;
+    V.i.all(iVar) += 0.5 * lim_i * proj_i;
+    V.j.all(iVar) -= 0.5 * lim_j * proj_j;
   }
 }
 
@@ -471,8 +477,8 @@ template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class 
 FORCEINLINE void musclEdgeLimited(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
                                   const Vector<Double, nDim>& vector_ij, const Gradient_t& gradient, CPair<VarType>& V,
                                   const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp,
-                                  size_t iRow = 0) {
-  constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
+                                  size_t iRow = 0, size_t nVarGradRuntime = 0) {
+  const size_t nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : (nVarGradRuntime > 0 ? nVarGradRuntime : VarType::nVar);
 
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
     /*--- Centered difference, needed for U-MUSCL projection and limiter ---*/
@@ -502,16 +508,18 @@ template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class 
 FORCEINLINE void reconstruct(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
                              const Vector<Double, nDim>& vector_ij, const Gradient_t& gradient,
                              const Limiter_t& limiter, LIMITER limiterType, size_t iRow, CPair<VarType>& V,
-                             const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp) {
+                             const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp,
+                             size_t nVarGradRuntime = 0) {
   switch (limiterType) {
     case LIMITER::NONE:
-      musclUnlimited<nVarGrad_>(iPoint, jPoint, vector_ij, gradient, V, kappa, umusclRamp, iRow);
+      musclUnlimited<nVarGrad_>(iPoint, jPoint, vector_ij, gradient, V, kappa, umusclRamp, iRow, nVarGradRuntime);
       break;
     case LIMITER::VAN_ALBADA_EDGE:
-      musclEdgeLimited<nVarGrad_>(iPoint, jPoint, vector_ij, gradient, V, kappa, umusclRamp, iRow);
+      musclEdgeLimited<nVarGrad_>(iPoint, jPoint, vector_ij, gradient, V, kappa, umusclRamp, iRow, nVarGradRuntime);
       break;
     default:
-      musclPointLimited<nVarGrad_>(iPoint, jPoint, vector_ij, limiter, gradient, V, kappa, umusclRamp, iRow);
+      musclPointLimited<nVarGrad_>(iPoint, jPoint, vector_ij, limiter, gradient, V, kappa, umusclRamp, iRow,
+                                   nVarGradRuntime);
       break;
   }
 }

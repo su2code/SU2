@@ -34,17 +34,6 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
 /*!
- * \brief Carries a type through a value, so a runtime branch can hand a compile-time type to a
- *        generic lambda (its parameter deduces as CIndicesTag<T>, and the lambda recovers T as
- *        decltype(tag)::type). Standing in for a C++20 template lambda, which this project's
- *        C++17 baseline does not have.
- */
-template <class T>
-struct CIndicesTag {
-  using type = T;
-};
-
-/*!
  * \class CTurbSolver
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model

@@ -344,10 +344,15 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
         phi.j.all(iVar) = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), iVar);
       }
 
-      if constexpr (nVar != Dynamic) {
-        if (opt.muscl) {
+      if (opt.muscl) {
+        if constexpr (nVar != Dynamic) {
           reconstruct<nVar>(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
                             side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp);
+        } else {
+          /*--- A dynamic model's equation count is only known at runtime, so the reconstructed
+           * width is passed as an argument instead of a template parameter. ---*/
+          reconstruct(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
+                     side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp, res.nVar);
         }
       }
 
