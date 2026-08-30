@@ -45,6 +45,28 @@ private:
 
   TransLMCorrelations TransCorrelations;
 
+  /*!
+   * \brief Resolve the compile-time flow indices and dimension, and run the interior edge loop
+   *        with the matching CScalarFlux_TransLM instantiation. nVar is fixed at 2 (gamma and
+   *        Re_theta), so unlike SA's RunSA this dispatch has one axis fewer to resolve.
+   */
+  template <class Indices>
+  void RunLM(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
+
+  template <class Indices, int nDim>
+  void RunLM(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
+
+  /*!
+   * \brief Same dispatch as RunLM, for a boundary's call into BoundaryFluxResidual.
+   */
+  template <class Indices>
+  void RunLM_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                      const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+
+  template <class Indices, int nDim>
+  void RunLM_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                      const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+
 public:
   /*!
    * \overload
@@ -90,16 +112,16 @@ public:
                       unsigned short iMesh) override;
 
   /*!
-   * \brief Compute the viscous flux for the LM equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \brief Compute the spatial integration using the CScalarFlux_TransLM edge kernel, which
+   *        computes and writes both the convective and the diffusive term of every edge.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Unused, kept only for the boundary conditions.
    * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                        CNumerics* numerics, const CConfig* config) override;
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                       CConfig* config, unsigned short iMesh) override;
 
   /*!
    * \brief Source term computation.
@@ -192,6 +214,24 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose the far-field boundary condition, via the CScalarFlux_TransLM edge kernel. Also
+   *        used by BC_Outlet, matching this solver's pre-migration behavior of imposing the
+   *        far-field state at both MARKER_FAR and MARKER_OUTLET.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CNumerics *conv_numerics,
+                    CNumerics *visc_numerics,
+                    CConfig *config,
+                    unsigned short val_marker) override;
 
   /*!
    * \brief Get the value of the intermittency.

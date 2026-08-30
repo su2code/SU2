@@ -77,8 +77,6 @@
 #include "../../include/numerics/scalar/scalar_diffusion.hpp"
 #include "../../include/numerics/scalar/scalar_sources.hpp"
 #include "../../include/numerics/turbulent/turb_sources.hpp"
-#include "../../include/numerics/turbulent/transition/trans_convection.hpp"
-#include "../../include/numerics/turbulent/transition/trans_diffusion.hpp"
 #include "../../include/numerics/turbulent/transition/trans_sources.hpp"
 #include "../../include/numerics/species/species_convection.hpp"
 #include "../../include/numerics/species/species_diffusion.hpp"
@@ -1265,37 +1263,24 @@ template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<
 template <class Indices>
 void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offset, const CConfig *config,
                                            const CSolver* trans_solver, CNumerics ****&numerics) const {
-  const int conv_term = CONV_TERM + offset;
-  const int visc_term = VISC_TERM + offset;
-
   const int source_first_term = SOURCE_FIRST_TERM + offset;
   const int source_second_term = SOURCE_SECOND_TERM + offset;
 
-  const int conv_bound_term = CONV_BOUND_TERM + offset;
-  const int visc_bound_term = VISC_BOUND_TERM + offset;
-
   const bool LM = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM;
 
-  /*--- Definition of the convective scheme for each equation and mesh level ---*/
+  /*--- LM drives its interior loop and boundaries through its own CScalarFlux_TransLM edge kernel
+   * (see CTransLMSolver), so conv_term/visc_term/conv_bound_term/visc_bound_term are never set
+   * here; this switch only checks the config value. ---*/
 
   switch (config->GetKind_ConvNumScheme_Turb()) {
     case NONE:
       SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
       break;
     case SPACE_UPWIND :
-      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        if (LM) numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
-      }
       break;
     default:
       SU2_MPI::Error("Invalid convective scheme for the transition equations.", CURRENT_FUNCTION);
       break;
-  }
-
-  /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
-  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (LM) numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, true, config);
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1306,15 +1291,6 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
     if (LM) trans_source_first_term = new CSourcePieceWise_TransLM<Indices>(nDim, nVar_Trans, config);
 
     numerics[iMGlevel][TRANS_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Trans, config);
-  }
-
-  /*--- Definition of the boundary condition method ---*/
-
-  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (LM) {
-      numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
-      numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, false, config);
-    }
   }
 }
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
