@@ -109,13 +109,13 @@ struct CLaneTraits;
 template <>
 struct CLaneTraits<su2double> {
   using Int = unsigned long;
-  static constexpr size_t Size = 1;
+  static constexpr bool IsArray = false;
 };
 
 template <class Scalar_t, size_t N>
 struct CLaneTraits<simd::Array<Scalar_t, N>> {
   using Int = simd::Array<unsigned long, N>;
-  static constexpr size_t Size = N;
+  static constexpr bool IsArray = true;
 };
 
 /*!
@@ -341,10 +341,10 @@ FORCEINLINE Matrix<Double, nRows, nCols> gatherVariables(Int iPoint, const Conta
  */
 template <class Double, size_t Size>
 FORCEINLINE void setPreaccOut(Vector<Double, Size>& x, size_t nVar) {
-  if constexpr (CLaneTraits<Double>::Size == 1) {
+  if constexpr (!CLaneTraits<Double>::IsArray) {
     AD::SetPreaccOut(x, static_cast<int>(nVar));
   } else {
-    AD::SetPreaccOut(x, static_cast<int>(nVar), CLaneTraits<Double>::Size);
+    AD::SetPreaccOut(x, static_cast<int>(nVar), Double::Size);
   }
 }
 
