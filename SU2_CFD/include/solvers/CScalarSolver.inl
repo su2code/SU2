@@ -380,8 +380,6 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
   using Double = typename Scheme::Double;
   constexpr int nDim = Scheme::nDim;
 
-  const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-
   const Scheme flux(*config);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
@@ -411,7 +409,7 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
 
       const Double massFlux = opt.boundedScalar ? gatherVariables(iEdge, *edgeMassFluxes) : Double(0.0);
 
-      flux.ComputeFlux(opt, iEdge, iPoint, side, jPoint, side, normal, massFlux, implicit, updateType, 1.0, target,
+      flux.ComputeFlux(opt, iEdge, iPoint, side, jPoint, side, normal, massFlux, updateType, 1.0, target,
                        EdgeFluxesDiff, Jacobian);
 
       /*--- Bounded scalar divergence correction, per edge; the ReducerStrategy equivalent runs
@@ -419,7 +417,7 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
       if (opt.boundedScalar && !ReducerStrategy) {
         LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -massFlux);
         LinSysRes.AddBlock(jPoint, nodes->GetSolution(jPoint), massFlux);
-        if (implicit) {
+        if (opt.implicit) {
           Jacobian.AddVal2Diag(iPoint, -massFlux);
           Jacobian.AddVal2Diag(jPoint, massFlux);
         }
@@ -433,7 +431,7 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
-    if (implicit) Jacobian.SetDiagonalAsColumnSum();
+    if (opt.implicit) Jacobian.SetDiagonalAsColumnSum();
 
     if (opt.boundedScalar) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -447,7 +445,7 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
           divergence += edgeMassFlux;
           LinSysRes.AddBlock(iPoint, solution, -edgeMassFlux);
         }
-        if (implicit) Jacobian.AddVal2Diag(iPoint, -divergence);
+        if (opt.implicit) Jacobian.AddVal2Diag(iPoint, -divergence);
       }
       END_SU2_OMP_FOR
     }
@@ -456,8 +454,9 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
 
 template <class VariableType>
 void CScalarSolver<VariableType>::EnsureGhostFlowContainers(CSolver** solver_container, const CConfig* config) {
-  if (ghostFlowNodes) return;
-
+  /*--- Every thread of the team must reach the barrier at the end of the construct below, so the
+   * test for work already done is inside it and not around it. Called from each solver's
+   * Preprocessing, so the boundaries find the containers in place. ---*/
   SU2_OMP_SAFE_GLOBAL_ACCESS(
     if (!ghostFlowNodes) {
       unsigned long maxMarkerVertices = 0;
@@ -479,7 +478,7 @@ template <class VariableType>
 template <class Scheme>
 void CScalarSolver<VariableType>::BoundaryFluxResidual(const CGeometry* geometry, CSolver** solver_container,
                                                        const CConfig* config, const ScalarFluxOptions& opt,
-                                                       unsigned short val_marker, bool implicit) {
+                                                       unsigned short val_marker) {
   using Double = typename Scheme::Double;
   constexpr int nDim = Scheme::nDim;
 
@@ -503,7 +502,7 @@ void CScalarSolver<VariableType>::BoundaryFluxResidual(const CGeometry* geometry
 
     Double massFlux = 0.0;
     if (opt.boundedScalar) {
-      massFlux = BoundedScalarBCFlux(iPoint, implicit, flowNodes->GetDensity(iPoint),
+      massFlux = BoundedScalarBCFlux(iPoint, opt.implicit, flowNodes->GetDensity(iPoint),
                                      &ghostFlowNodes->GetPrimitive(iVertex)[prim_idx.Velocity()], normal.data());
     }
 
@@ -511,9 +510,82 @@ void CScalarSolver<VariableType>::BoundaryFluxResidual(const CGeometry* geometry
 
     /*--- The ghost point has no row, only the contribution to i is assembled. ---*/
     for (auto iVar = 0ul; iVar < res.nVar; ++iVar) LinSysRes(iPoint, iVar) += res.flux_i(iVar);
-    if (implicit) Jacobian.AddBlock2Diag(iPoint, res.jac_ii);
+    if (opt.implicit) Jacobian.AddBlock2Diag(iPoint, res.jac_ii);
   }
   END_SU2_OMP_FOR
+}
+
+template <class VariableType>
+template <class Scheme, class GhostFunc>
+void CScalarSolver<VariableType>::FluidInterfaceFluxResidual(const CGeometry* geometry, CSolver** solver_container,
+                                                             const CConfig* config, const ScalarFluxOptions& optConv,
+                                                             const ScalarFluxOptions& optVisc,
+                                                             const GhostFunc& fillGhostExtras) {
+  constexpr int nDim = Scheme::nDim;
+
+  const Scheme flux(*config);
+
+  auto* flowSolver = solver_container[FLOW_SOL];
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(flowSolver->GetNodes());
+  const auto nPrimVar = flowSolver->GetnPrimVar();
+
+  const EdgeSide<VariableType> side_i{*nodes, flowNodes, CMatrixView<const su2double>(geometry->nodes->GetCoord()),
+                                      dynamic_grid ? CMatrixView<const su2double>(geometry->nodes->GetGridVel())
+                                                   : CMatrixView<const su2double>()};
+  const EdgeSide<VariableType> side_j{*ghostNodes, ghostFlowNodes.get(), CMatrixView<const su2double>(ghostCoord),
+                                      side_i.gridVel};
+
+  su2activevector PrimVar_j(nPrimVar);
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != FLUID_INTERFACE) continue;
+
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+    for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+      const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+      const auto nDonorVertex = GetnSlidingStates(iMarker, iVertex);
+
+      SetGhostGeometry(geometry, iMarker, iVertex);
+      const auto normal = gatherVariables<nDim>(iVertex, ghostNormal);
+
+      /*--- Loop over the donors and accumulate the weighted-average convective residual. ---*/
+      for (auto jVertex = 0; jVertex < nDonorVertex; jVertex++) {
+        for (auto iVar = 0u; iVar < nPrimVar; iVar++)
+          PrimVar_j[iVar] = flowSolver->GetSlidingState(iMarker, iVertex, iVar, jVertex);
+
+        /*--- Weight computed by the interpolator for this donor vertex. ---*/
+        const su2double weight = flowSolver->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          ghostNodes->SetSolution(iVertex, iVar, GetSlidingState(iMarker, iVertex, iVar, jVertex));
+
+        SetGhostPrimitives(iVertex, PrimVar_j.data());
+
+        su2double massFlux = 0.0;
+        if (optConv.boundedScalar) {
+          massFlux = BoundedScalarBCFlux(iPoint, optConv.implicit, flowNodes->GetDensity(iPoint),
+                                         &PrimVar_j[prim_idx.Velocity()], normal.data());
+        }
+
+        const auto res = flux.ComputeFlux(optConv, iPoint, side_i, iVertex, side_j, normal, massFlux);
+
+        for (auto iVar = 0ul; iVar < res.nVar; ++iVar) LinSysRes(iPoint, iVar) += weight * res.flux_i(iVar);
+        if (optConv.implicit) Jacobian.AddBlock2Diag(iPoint, res.jac_ii, weight);
+      }
+
+      /*--- Diffusive term, computed once from the ghost state the last donor left behind. ---*/
+      SetGhostDiffusionState(geometry, iVertex, iPoint, Point_Normal);
+      fillGhostExtras(iVertex, iPoint);
+
+      const auto res = flux.ComputeFlux(optVisc, iPoint, side_i, iVertex, side_j, normal, su2double(0.0));
+      for (auto iVar = 0ul; iVar < res.nVar; ++iVar) LinSysRes(iPoint, iVar) += res.flux_i(iVar);
+      if (optVisc.implicit) Jacobian.AddBlock2Diag(iPoint, res.jac_ii);
+    }
+    END_SU2_OMP_FOR
+  }
 }
 
 template<class VariableType>

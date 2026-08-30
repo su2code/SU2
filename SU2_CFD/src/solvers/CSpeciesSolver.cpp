@@ -344,44 +344,30 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   EnsureGhostFlowContainers(solver_container, config);
 }
 
-void CSpeciesSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+void CSpeciesSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics**,
                                      CConfig* config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
-  const ScalarFluxOptions opt{
-      dynamic_grid,              /*--- dynamicGrid ---*/
-      config->GetBounded_Species(), /*--- boundedScalar ---*/
-      true,                       /*--- correctGradient ---*/
-      false, /*--- accurateJacobians, the diffusion coefficient does not depend on the species mass fraction ---*/
-      true,  /*--- convective ---*/
-      true,  /*--- viscous ---*/
-      false, /*--- oneSided, this is the interior loop ---*/
-      config->GetMUSCL(), /*--- muscl ---*/
-  };
+  /*--- The diffusion coefficient does not depend on the species mass fractions, so there is no
+   * accurate-Jacobian correction to apply. ---*/
+  const auto opt = ScalarFluxOptions::Interior(*config, config->GetBounded_Species());
 
-  DispatchRegime(config, [&](auto tag) {
-    RunSpecies<typename decltype(tag)::type>(geometry, solver_container, config, opt);
+  DispatchScheme<CScalarFlux_Species, Dynamic>(config, [&](auto tag) {
+    EdgeFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt);
   });
 }
 
-template <class Indices>
-void CSpeciesSolver::RunSpecies(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                const ScalarFluxOptions& opt) {
-  if (nDim == 2) RunSpecies<Indices, 2>(geometry, solver_container, config, opt);
-  else RunSpecies<Indices, 3>(geometry, solver_container, config, opt);
-}
-
-template <class Indices, int nDim>
-void CSpeciesSolver::RunSpecies(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                const ScalarFluxOptions& opt) {
-  EdgeFluxResidual<CScalarFlux_Species<su2double, Indices, nDim>>(geometry, solver_container, config, opt);
+void CSpeciesSolver::BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                                  const ScalarFluxOptions& opt, unsigned short val_marker) {
+  DispatchScheme<CScalarFlux_Species, Dynamic>(config, [&](auto tag) {
+    BoundaryFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker);
+  });
 }
 
 void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics*, CNumerics*, CConfig* config,
                               unsigned short val_marker) {
   SU2_ZONE_SCOPED
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   if (config->GetMarker_StrongBC(Marker_Tag)) {
@@ -405,9 +391,7 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
   }
 
   /*--- Weak BC: fill the ghost row from the inlet species state, then let the edge kernel
-   * compute the (purely convective, see the note this replaces below) flux. ---*/
-
-  EnsureGhostFlowContainers(solver_container, config);
+   * compute the purely convective flux. ---*/
 
   auto* flowSolver = solver_container[FLOW_SOL];
 
@@ -418,22 +402,13 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
     SetGhostPrimitives(iVertex, flowSolver->GetCharacPrimVar(val_marker, iVertex));
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      ghostNormal(iVertex, iDim) = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
-    ghostSkip[iVertex] = false;
+    SetGhostGeometry(geometry, val_marker, iVertex);
   }
   END_SU2_OMP_FOR
 
-  // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
-  const ScalarFluxOptions opt{
-      dynamic_grid, config->GetBounded_Species(), false /*correctGradient*/, false /*accurateJacobians*/,
-      true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
-  };
-
-  DispatchRegime(config, [&](auto tag) {
-    RunSpecies_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
-  });
+  /*--- This site imposes a convective flux alone; a diffusive one has not been validated. ---*/
+  BoundaryFlux(geometry, solver_container, config,
+               ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Species()), val_marker);
 }
 
 
@@ -555,7 +530,6 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
                                CConfig* config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   if (config->GetMarker_StrongBC(Marker_Tag)) {
@@ -582,10 +556,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
   }
 
   /*--- Weak BC: Neumann, the species variable is copied from the interior of the domain to the
-   * ghost row before the edge kernel computes the (purely convective, see the note this replaces
-   * below) flux. ---*/
-
-  EnsureGhostFlowContainers(solver_container, config);
+   * ghost row before the edge kernel computes the purely convective flux. ---*/
 
   auto* flowSolver = solver_container[FLOW_SOL];
 
@@ -597,36 +568,18 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
     SetGhostPrimitives(iVertex, flowSolver->GetCharacPrimVar(val_marker, iVertex));
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      ghostNormal(iVertex, iDim) = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
-    ghostSkip[iVertex] = false;
+    SetGhostGeometry(geometry, val_marker, iVertex);
   }
   END_SU2_OMP_FOR
 
-  // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
-  const ScalarFluxOptions opt{
-      dynamic_grid, config->GetBounded_Species(), false /*correctGradient*/, false /*accurateJacobians*/,
-      true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
-  };
-
-  DispatchRegime(config, [&](auto tag) {
-    RunSpecies_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
-  });
-}
-
-template <class Indices>
-void CSpeciesSolver::RunSpecies_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                         const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit) {
-  if (nDim == 2) RunSpecies_Boundary<Indices, 2>(geometry, solver_container, config, opt, val_marker, implicit);
-  else RunSpecies_Boundary<Indices, 3>(geometry, solver_container, config, opt, val_marker, implicit);
+  /*--- This site imposes a convective flux alone; a diffusive one has not been validated. ---*/
+  BoundaryFlux(geometry, solver_container, config,
+               ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Species()), val_marker);
 }
 
 void CSpeciesSolver::BC_Far_Field(CGeometry* geometry, CSolver** solver_container, CNumerics*, CNumerics*,
                                   CConfig* config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
-
-  EnsureGhostFlowContainers(solver_container, config);
 
   auto* flowSolver = solver_container[FLOW_SOL];
 
@@ -636,30 +589,12 @@ void CSpeciesSolver::BC_Far_Field(CGeometry* geometry, CSolver** solver_containe
 
     SetGhostPrimitives(iVertex, flowSolver->GetCharacPrimVar(val_marker, iVertex));
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      ghostNormal(iVertex, iDim) = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
-    ghostSkip[iVertex] = false;
+    SetGhostGeometry(geometry, val_marker, iVertex);
   }
   END_SU2_OMP_FOR
 
-  const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-  const ScalarFluxOptions opt{
-      dynamic_grid, config->GetBounded_Species(), false /*correctGradient*/, false /*accurateJacobians*/,
-      true /*convective*/,  false /*viscous*/,
-      true /*oneSided, the ghost point has no row*/, false /*muscl, a boundary never reconstructs*/,
-  };
-
-  DispatchRegime(config, [&](auto tag) {
-    RunSpecies_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
-  });
-}
-
-template <class Indices, int nDim>
-void CSpeciesSolver::RunSpecies_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                         const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit) {
-  BoundaryFluxResidual<CScalarFlux_Species<su2double, Indices, nDim>>(geometry, solver_container, config, opt,
-                                                                      val_marker, implicit);
+  BoundaryFlux(geometry, solver_container, config,
+               ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Species()), val_marker);
 }
 
 void CSpeciesSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics*,
@@ -668,123 +603,20 @@ void CSpeciesSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
   if (solver_container[FLOW_SOL] == nullptr) return;
 
-  EnsureGhostFlowContainers(solver_container, config);
+  const auto optConv = ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Species());
+  const auto optVisc = ScalarFluxOptions::BoundaryDiffusive(*config, false);
 
-  const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-  const ScalarFluxOptions optConv{
-      dynamic_grid, config->GetBounded_Species(), false /*correctGradient*/, false /*accurateJacobians*/,
-      true /*convective*/, false /*viscous*/, true /*oneSided*/, false /*muscl*/,
-  };
-  const ScalarFluxOptions optVisc{
-      dynamic_grid, false /*boundedScalar, the mass-flux correction only applies with the convective term*/,
-      true /*correctGradient*/, false /*accurateJacobians*/,
-      false /*convective*/, true /*viscous*/, true /*oneSided*/, false /*muscl*/,
+  /*--- The diffusion coefficients read the interior point's own diffusivity on both sides of the
+   * edge, so the ghost row takes it too. ---*/
+  const auto fillGhostExtras = [&](unsigned long iVertex, unsigned long iPoint) {
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      ghostNodes->SetDiffusivity(iVertex, nodes->GetDiffusivity(iPoint, iVar), iVar);
   };
 
-  DispatchRegime(config, [&](auto tag) {
-    RunSpecies_FluidInterface<typename decltype(tag)::type>(geometry, solver_container, config, optConv, optVisc,
-                                                             implicit);
+  DispatchScheme<CScalarFlux_Species, Dynamic>(config, [&](auto tag) {
+    FluidInterfaceFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, optConv, optVisc,
+                                                             fillGhostExtras);
   });
-}
-
-template <class Indices>
-void CSpeciesSolver::RunSpecies_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                               const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc,
-                                               bool implicit) {
-  if (nDim == 2) RunSpecies_FluidInterface<Indices, 2>(geometry, solver_container, config, optConv, optVisc, implicit);
-  else RunSpecies_FluidInterface<Indices, 3>(geometry, solver_container, config, optConv, optVisc, implicit);
-}
-
-/*!
- * \brief See RunSA_FluidInterface's note (CTurbSASolver.cpp): the convective term is a per-donor
- *        weighted average, computed in the same pass that fills the ghost row of each donor; the
- *        diffusive term is computed once per vertex, after the donor loop, from the interior
- *        point's own diffusivity mirrored into the ghost row (the pre-migration
- *        SolverSpecificNumerics functor likewise read the same point's diffusivity for both sides
- *        of the edge, rather than the donor's). This does not fit the fill-pass-then-
- *        BoundaryFluxResidual shape the other boundaries use, so it drives the
- *        CScalarFlux_Species kernel directly.
- */
-template <class Indices, int nDim>
-void CSpeciesSolver::RunSpecies_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                               const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc,
-                                               bool implicit) {
-  using Scheme = CScalarFlux_Species<su2double, Indices, nDim>;
-  const Scheme flux(*config);
-
-  auto* flowSolver = solver_container[FLOW_SOL];
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(flowSolver->GetNodes());
-  const auto nPrimVar = flowSolver->GetnPrimVar();
-
-  const EdgeSide<CSpeciesVariable> side_i{*nodes, flowNodes, CMatrixView<const su2double>(geometry->nodes->GetCoord()),
-                                          dynamic_grid ? CMatrixView<const su2double>(geometry->nodes->GetGridVel())
-                                                       : CMatrixView<const su2double>()};
-  const EdgeSide<CSpeciesVariable> side_j{*ghostNodes, ghostFlowNodes.get(), CMatrixView<const su2double>(ghostCoord),
-                                          side_i.gridVel};
-
-  su2activevector PrimVar_j(nPrimVar);
-
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != FLUID_INTERFACE) continue;
-
-    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-    for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      if (!geometry->nodes->GetDomain(iPoint)) continue;
-
-      const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-      const auto nDonorVertex = GetnSlidingStates(iMarker, iVertex);
-
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        ghostNormal(iVertex, iDim) = -geometry->vertex[iMarker][iVertex]->GetNormal(iDim);
-      const auto normal = gatherVariables<nDim>(iVertex, ghostNormal);
-
-      /*--- Loop over the donors and accumulate the weighted-average convective residual. ---*/
-      for (auto jVertex = 0; jVertex < nDonorVertex; jVertex++) {
-        for (auto iVar = 0u; iVar < nPrimVar; iVar++)
-          PrimVar_j[iVar] = flowSolver->GetSlidingState(iMarker, iVertex, iVar, jVertex);
-
-        const su2double weight = flowSolver->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
-
-        for (auto iVar = 0u; iVar < nVar; iVar++)
-          ghostNodes->SetSolution(iVertex, iVar, GetSlidingState(iMarker, iVertex, iVar, jVertex));
-
-        SetGhostPrimitives(iVertex, PrimVar_j.data());
-
-        su2double massFlux = 0.0;
-        if (optConv.boundedScalar) {
-          massFlux = BoundedScalarBCFlux(iPoint, true, flowNodes->GetDensity(iPoint),
-                                         &PrimVar_j[prim_idx.Velocity()], normal.data());
-        }
-
-        const auto res = flux.ComputeFlux(optConv, iPoint, side_i, iVertex, side_j, normal, massFlux);
-
-        for (auto iVar = 0ul; iVar < res.nVar; ++iVar) LinSysRes(iPoint, iVar) += weight * res.flux_i(iVar);
-        if (implicit) Jacobian.AddBlock2Diag(iPoint, res.jac_ii, weight);
-      }
-
-      /*--- Diffusive term, computed once from the interior point's own diffusivity mirrored into
-       * the ghost row (matching the pre-migration functor, see the note above), and from the
-       * ghost state the last donor left behind. ---*/
-      su2double Coord_Reflected[MAXNDIM];
-      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                         geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      for (auto iDim = 0u; iDim < nDim; iDim++) ghostCoord(iVertex, iDim) = Coord_Reflected[iDim];
-
-      for (auto iVar = 0u; iVar < nVar; iVar++)
-        ghostNodes->SetDiffusivity(iVertex, nodes->GetDiffusivity(iPoint, iVar), iVar);
-
-      auto ghostGrad = ghostNodes->GetGradient(iVertex);
-      const auto interiorGrad = nodes->GetGradient(iPoint);
-      for (auto iVar = 0u; iVar < nVar; iVar++)
-        for (auto iDim = 0u; iDim < nDim; iDim++) ghostGrad(iVar, iDim) = interiorGrad(iVar, iDim);
-
-      const auto res = flux.ComputeFlux(optVisc, iPoint, side_i, iVertex, side_j, normal, su2double(0.0));
-      for (auto iVar = 0ul; iVar < res.nVar; ++iVar) LinSysRes(iPoint, iVar) += res.flux_i(iVar);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, res.jac_ii);
-    }
-    END_SU2_OMP_FOR
-  }
 }
 
 void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,

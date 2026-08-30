@@ -182,7 +182,7 @@ struct EdgeResidual {
    * \note A static model zeroes its whole storage with constant trip counts; a dynamic one
    *       zeroes the leading nVar rows and columns and leaves the rest of the backing untouched.
    */
-  FORCEINLINE explicit EdgeResidual(size_t nEqn = Size) : nVar(nEqn) {
+  FORCEINLINE explicit EdgeResidual(size_t nEqn) : nVar(nEqn) {
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
       flux_i(iVar) = 0.0;
       flux_j(iVar) = 0.0;
@@ -334,11 +334,26 @@ FORCEINLINE Matrix<Double, nRows, nCols> gatherVariables(Int iPoint, const Conta
 #endif
 
 /*!
+ * \brief Register the leading nVar entries of a static vector as preaccumulation outputs.
+ * \note A lane vector is registered one lane at a time, a scalar in one call; a kernel therefore
+ *       reaches this rather than AD::SetPreaccOut directly, and reads the same whichever value
+ *       type it is bound to.
+ */
+template <class Double, size_t Size>
+FORCEINLINE void setPreaccOut(Vector<Double, Size>& x, size_t nVar) {
+  if constexpr (CLaneTraits<Double>::Size == 1) {
+    AD::SetPreaccOut(x, static_cast<int>(nVar));
+  } else {
+    AD::SetPreaccOut(x, static_cast<int>(nVar), CLaneTraits<Double>::Size);
+  }
+}
+
+/*!
  * \brief Stop the AD preaccumulation.
  */
 template <class Double, size_t nVar>
 FORCEINLINE void stopPreacc(Vector<Double, nVar>& x) {
-  AD::SetPreaccOut(x, nVar, CLaneTraits<Double>::Size);
+  setPreaccOut(x, nVar);
   AD::EndPreacc();
 }
 
@@ -389,110 +404,96 @@ FORCEINLINE Double umusclProjection(const Double& gradProj, const Double& delta,
 }
 
 /*!
- * \brief MUSCL reconstruction of the specified variable.
- * \note The result should be halved when added to i (or subtracted from j).
- * \note Reads its own row of the gradient container, rather than taking an already gathered
- *       nVarGrad x nDim block, so that a caller reconstructing a single variable, e.g. a scalar
- *       with nVar 1, never gathers a Matrix<Double,1,nDim>: that shape is the same RowMajor,
- *       one-row degeneracy that forces EdgeResidual's Size floor above, and here it would
- *       silently turn a row into a lone scalar instead of failing to compile, since
- *       Matrix<Double,1,nDim> still satisfies IsVector.
+ * \brief Reads the gradient rows of one point as one block, gathered up front.
+ * \note This is what a kernel whose variable count is a compile-time constant above one wants:
+ *       one gather of the whole nVarGrad x nDim block instead of nVarGrad of them.
  */
-template <size_t nDim, class Double, class Gradient_t, class Int = typename CLaneTraits<Double>::Int>
-FORCEINLINE Double musclReconstruction(Int iPoint, const Gradient_t& gradient, size_t iRow,
-                                       const Vector<Double, nDim>& vector_ij, const Double& delta,
-                                       const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp) {
-  const auto grad = gatherVariables<nDim>(iPoint, gradient, iRow);
-  const Double proj = dot(grad, vector_ij);
-  return umusclRamp * umusclProjection(proj, delta, kappa);
+template <size_t nVarGrad, size_t nDim, class Double, class Gradient_t>
+struct CGradientBlock {
+  using Int = typename CLaneTraits<Double>::Int;
+  Matrix<Double, nVarGrad, nDim> rows;
+
+  FORCEINLINE CGradientBlock(Int iPoint, const Gradient_t& gradient, size_t iRow)
+      : rows(gatherVariables<nVarGrad, nDim>(iPoint, gradient, iRow)) {}
+
+  FORCEINLINE Double project(size_t iVar, const Vector<Double, nDim>& vector_ij) const {
+    return dot<nDim>(rows[iVar], vector_ij);
+  }
+};
+
+/*!
+ * \brief Reads the gradient rows of one point one row at a time.
+ * \note This is what a runtime variable count forces, since the block shape would not be a
+ *       compile-time constant, and what a single variable forces, since its block would be a
+ *       Matrix<Double,1,nDim>: that shape satisfies IsVector and would silently degenerate into
+ *       a lone scalar instead of failing to compile.
+ */
+template <size_t nDim, class Double, class Gradient_t>
+struct CGradientRows {
+  using Int = typename CLaneTraits<Double>::Int;
+  const Int iPoint;
+  const Gradient_t& gradient;
+  const size_t iRow;
+
+  FORCEINLINE Double project(size_t iVar, const Vector<Double, nDim>& vector_ij) const {
+    return dot(gatherVariables<nDim>(iPoint, gradient, iRow + iVar), vector_ij);
+  }
+};
+
+/*!
+ * \brief Gradient reader of one point, blocked or row by row according to nVarGrad_.
+ */
+template <size_t nVarGrad_, size_t nDim, class Double, class Gradient_t>
+FORCEINLINE auto gradientReader(typename CLaneTraits<Double>::Int iPoint, const Gradient_t& gradient, size_t iRow) {
+  if constexpr (nVarGrad_ > 1) {
+    return CGradientBlock<nVarGrad_, nDim, Double, Gradient_t>(iPoint, gradient, iRow);
+  } else {
+    return CGradientRows<nDim, Double, Gradient_t>{iPoint, gradient, iRow};
+  }
 }
 
 /*!
- * \brief Unlimited reconstruction.
- * \param[in] iRow - Starting row of gradient to read, for reconstructing a slice of a
- *            larger set of gradients (e.g. only the velocity out of the primitives).
- * \param[in] nVarGradRuntime - Equation count of a Dynamic model, known only at runtime; ignored
+ * \brief How the reconstructed differences are limited.
+ */
+enum class MusclLimiter { NONE, EDGE, POINT };
+
+/*!
+ * \brief U-MUSCL reconstruction of nVarGrad variables, from the gradient rows starting at iRow.
+ * \note The limiter kind is a template parameter so that the choice is made once, outside the
+ *       loop, by the dispatching overload below.
+ * \param[in] iRow - Starting row of gradient (and column of limiter) to read, for reconstructing
+ *            a slice of a larger set of gradients (e.g. only the velocity out of the primitives).
+ * \param[in] nVarGradRuntime - Variable count of a Dynamic model, known only at runtime; ignored
  *            (falling back to nVarGrad_ or VarType::nVar) when left at its default of 0.
  */
-template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class Gradient_t>
-FORCEINLINE void musclUnlimited(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
-                                const Vector<Double, nDim>& vector_ij, const Gradient_t& gradient, CPair<VarType>& V,
-                                const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp,
-                                size_t iRow = 0, size_t nVarGradRuntime = 0) {
+template <MusclLimiter limiterKind, size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class Limiter_t,
+          class Gradient_t>
+FORCEINLINE void muscl(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
+                       const Vector<Double, nDim>& vector_ij, const Gradient_t& gradient, const Limiter_t& limiter,
+                       size_t iRow, CPair<VarType>& V, const CNonDeduced<Double>& kappa,
+                       const CNonDeduced<Double>& umusclRamp, size_t nVarGradRuntime) {
   const size_t nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : (nVarGradRuntime > 0 ? nVarGradRuntime : VarType::nVar);
 
-  for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
-    /*--- Centered difference, needed for U-MUSCL projection ---*/
-    const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
-
-    /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i =
-        musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
-    const Double proj_j =
-        musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
-
-    /*--- Apply reconstruction: V_L = V_i + 0.5 * dV_ij^kap ---*/
-    V.i.all(iVar) += 0.5 * proj_i;
-    V.j.all(iVar) -= 0.5 * proj_j;
-  }
-}
-
-/*!
- * \brief Limited reconstruction with point-based limiter.
- */
-template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class Limiter_t, class Gradient_t>
-FORCEINLINE void musclPointLimited(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
-                                   const Vector<Double, nDim>& vector_ij, const Limiter_t& limiter,
-                                   const Gradient_t& gradient, CPair<VarType>& V, const CNonDeduced<Double>& kappa,
-                                   const CNonDeduced<Double>& umusclRamp, size_t iRow = 0,
-                                   size_t nVarGradRuntime = 0) {
-  const size_t nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : (nVarGradRuntime > 0 ? nVarGradRuntime : VarType::nVar);
-
-  /*--- Gathered one variable at a time rather than as a Vector<Double,nVarGrad>: nVarGrad is only
-   * a compile-time constant when nVarGrad_ itself is one, and a Dynamic model's is runtime-only,
-   * so it can never be a gatherVariables template argument. ---*/
-  for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
-    const Double lim_i = gatherVariables(iPoint, limiter, iRow + iVar);
-    const Double lim_j = gatherVariables(jPoint, limiter, iRow + iVar);
-
-    /*--- Centered difference, needed for U-MUSCL projection ---*/
-    const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
-
-    /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i =
-        musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
-    const Double proj_j =
-        musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
-
-    /*--- Apply reconstruction: V_L = V_i + 0.5 * lim * dV_ij^kap ---*/
-    V.i.all(iVar) += 0.5 * lim_i * proj_i;
-    V.j.all(iVar) -= 0.5 * lim_j * proj_j;
-  }
-}
-
-/*!
- * \brief Limited reconstruction with edge-based limiter.
- */
-template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class Gradient_t>
-FORCEINLINE void musclEdgeLimited(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
-                                  const Vector<Double, nDim>& vector_ij, const Gradient_t& gradient, CPair<VarType>& V,
-                                  const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp,
-                                  size_t iRow = 0, size_t nVarGradRuntime = 0) {
-  const size_t nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : (nVarGradRuntime > 0 ? nVarGradRuntime : VarType::nVar);
+  const auto grad_i = gradientReader<nVarGrad_, nDim, Double>(iPoint, gradient, iRow);
+  const auto grad_j = gradientReader<nVarGrad_, nDim, Double>(jPoint, gradient, iRow);
 
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
-    /*--- Centered difference, needed for U-MUSCL projection and limiter ---*/
+    /*--- Centered difference, needed for the U-MUSCL projection and the edge limiter. ---*/
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
-    const Double delta_ij_2 = pow(delta_ij, 2) + 1e-6;
 
-    /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i =
-        musclReconstruction<nDim>(iPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
-    const Double proj_j =
-        musclReconstruction<nDim>(jPoint, gradient, iRow + iVar, vector_ij, delta_ij, kappa, umusclRamp);
+    /*--- U-MUSCL reconstructed differences, to be halved when applied. ---*/
+    const Double proj_i = umusclRamp * umusclProjection(grad_i.project(iVar, vector_ij), delta_ij, kappa);
+    const Double proj_j = umusclRamp * umusclProjection(grad_j.project(iVar, vector_ij), delta_ij, kappa);
 
-    const Double lim_i = (delta_ij_2 + proj_i * delta_ij) / (pow(proj_i, 2) + delta_ij_2);
-    const Double lim_j = (delta_ij_2 + proj_j * delta_ij) / (pow(proj_j, 2) + delta_ij_2);
+    Double lim_i = 1.0, lim_j = 1.0;
+    if constexpr (limiterKind == MusclLimiter::EDGE) {
+      const Double delta_ij_2 = pow(delta_ij, 2) + 1e-6;
+      lim_i = (delta_ij_2 + proj_i * delta_ij) / (pow(proj_i, 2) + delta_ij_2);
+      lim_j = (delta_ij_2 + proj_j * delta_ij) / (pow(proj_j, 2) + delta_ij_2);
+    } else if constexpr (limiterKind == MusclLimiter::POINT) {
+      lim_i = gatherVariables(iPoint, limiter, iRow + iVar);
+      lim_j = gatherVariables(jPoint, limiter, iRow + iVar);
+    }
 
     /*--- Apply reconstruction: V_L = V_i + 0.5 * lim * dV_ij^kap ---*/
     V.i.all(iVar) += 0.5 * lim_i * proj_i;
@@ -512,14 +513,16 @@ FORCEINLINE void reconstruct(typename CLaneTraits<Double>::Int iPoint, typename 
                              size_t nVarGradRuntime = 0) {
   switch (limiterType) {
     case LIMITER::NONE:
-      musclUnlimited<nVarGrad_>(iPoint, jPoint, vector_ij, gradient, V, kappa, umusclRamp, iRow, nVarGradRuntime);
+      muscl<MusclLimiter::NONE, nVarGrad_>(iPoint, jPoint, vector_ij, gradient, limiter, iRow, V, kappa, umusclRamp,
+                                           nVarGradRuntime);
       break;
     case LIMITER::VAN_ALBADA_EDGE:
-      musclEdgeLimited<nVarGrad_>(iPoint, jPoint, vector_ij, gradient, V, kappa, umusclRamp, iRow, nVarGradRuntime);
+      muscl<MusclLimiter::EDGE, nVarGrad_>(iPoint, jPoint, vector_ij, gradient, limiter, iRow, V, kappa, umusclRamp,
+                                           nVarGradRuntime);
       break;
     default:
-      musclPointLimited<nVarGrad_>(iPoint, jPoint, vector_ij, limiter, gradient, V, kappa, umusclRamp, iRow,
-                                   nVarGradRuntime);
+      muscl<MusclLimiter::POINT, nVarGrad_>(iPoint, jPoint, vector_ij, gradient, limiter, iRow, V, kappa, umusclRamp,
+                                            nVarGradRuntime);
       break;
   }
 }
@@ -554,6 +557,13 @@ FORCEINLINE void updateLinearSystem(Int iEdge, Int iPoint, Int jPoint, bool impl
  *        contributions and four independent Jacobian blocks.
  * \note It carries a second CSysVector, the target of flux_j under UpdateType::REDUCTION and
  *       unused under COLORING, where both rows are written directly.
+ * \note The residual is the same under both update types, the Jacobian is not: REDUCTION writes
+ *       the off-diagonal blocks only and CSysMatrix::SetDiagonalAsColumnSum then derives each
+ *       diagonal block as minus the sum of its column, which equals the jac_ii and jac_jj computed
+ *       here only where the flux is conservative (jac_ii == -jac_ji). A model whose diffusion
+ *       coefficients differ between the two orientations of an edge, i.e. one that evaluates a
+ *       non-conservative term at the point whose row it is writing, therefore converges along a
+ *       slightly different path under the reducer, to the same solution.
  */
 template <size_t nVar, class Double, class Int = typename CLaneTraits<Double>::Int>
 FORCEINLINE void updateLinearSystem(Int iEdge, Int iPoint, Int jPoint, bool implicit, UpdateType updateType,

@@ -29,8 +29,6 @@
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../variables/CSpeciesVariable.hpp"
-#include "../variables/CEulerVariable.hpp"
-#include "../variables/CIncEulerVariable.hpp"
 #include "CScalarSolver.hpp"
 
 /*!
@@ -46,52 +44,12 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   vector<su2matrix<su2double>> CustomBoundaryScalar;
 
   /*!
-   * \brief Resolve the compile-time flow indices from the regime flag of config, and call f with
-   *        a CIndicesTag of the result: f is a generic lambda, `[&](auto tag){ using Indices =
-   *        typename decltype(tag)::type; ... }`. NEMO is not one of the branches: CDriver rejects
-   *        species transport for it before any numerics are built.
+   * \brief Resolve the compile-time parameters of CScalarFlux_Species and run one of this solver's
+   *        boundaries through the shared boundary flux pass.
+   * \param[in] opt - Flags of the boundary, from one of ScalarFluxOptions' named constructors.
    */
-  template <class F>
-  static void DispatchRegime(const CConfig* config, F&& f) {
-    if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
-      f(CIndicesTag<CIncEulerVariable::CIndices<unsigned short>>{});
-    } else {
-      f(CIndicesTag<CEulerVariable::CIndices<unsigned short>>{});
-    }
-  }
-
-  /*!
-   * \brief Resolve the compile-time flow indices and dimension, and run the interior edge loop
-   *        with the matching CScalarFlux_Species instantiation. The equation count is set at
-   *        runtime (one per species), so unlike SST's/LM's RunXxx this dispatch never resolves it.
-   */
-  template <class Indices>
-  void RunSpecies(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
-
-  template <class Indices, int nDim>
-  void RunSpecies(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
-
-  /*!
-   * \brief Same dispatch as RunSpecies, for a boundary's call into BoundaryFluxResidual.
-   */
-  template <class Indices>
-  void RunSpecies_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                           const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
-
-  template <class Indices, int nDim>
-  void RunSpecies_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                           const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
-
-  /*!
-   * \brief Same dispatch as RunSpecies, for BC_Fluid_Interface's combined fill-and-flux donor loop.
-   */
-  template <class Indices>
-  void RunSpecies_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                 const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
-
-  template <class Indices, int nDim>
-  void RunSpecies_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                 const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
+  void BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt,
+                    unsigned short val_marker);
 
  public:
   /*!
@@ -280,8 +238,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    *        CScalarFlux_Species edge kernel. The convective term is a per-donor weighted average,
    *        computed in the same pass that fills the ghost row of each donor; the diffusive term is
    *        computed once per vertex, after the donor loop, from the interior point's own
-   *        diffusivity mirrored into the ghost row (matching the pre-migration behavior, which
-   *        likewise read the same point's diffusivity for both sides of the edge).
+   *        diffusivity mirrored into the ghost row, so both sides of the edge diffuse with it.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.

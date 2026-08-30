@@ -107,3 +107,61 @@ TEST_CASE("SetBlocks and SetOffDiagBlocks assemble four independent blocks", "[L
     CheckBlock(matrix, jPoint, iPoint, nVar, jac_ji_new, 1e-6);
   }
 }
+
+TEST_CASE("SetBlocks and SetOffDiagBlocks with quantized off-diagonal storage", "[LinearAlgebra]") {
+  cout.rdbuf(nullptr);
+
+  UnitQuadTestCase testCase;
+  /*--- Q_JACOBI keeps the off-diagonal blocks in int8 storage, which the block writers encode on
+   * the fly instead of storing full precision values. ---*/
+  testCase.AddOption("LINEAR_SOLVER_PREC= Q_JACOBI");
+  testCase.InitConfig();
+  testCase.InitGeometry();
+  testCase.InitSolver();
+
+  cout.rdbuf(testCase.orig_buf);
+
+  auto* solver = testCase.solver[FLOW_SOL];
+  auto& matrix = solver->Jacobian;
+  const auto nVar = solver->GetnVar();
+  REQUIRE(testCase.geometry->GetnEdge() > 0);
+
+  const auto iEdge = 0ul;
+  const auto iPoint = testCase.geometry->edges->GetNode(iEdge, 0);
+  const auto jPoint = testCase.geometry->edges->GetNode(iEdge, 1);
+
+  su2double jac_ii[8][8], jac_ij[8][8], jac_ji[8][8], jac_jj[8][8];
+  FillBlock(jac_ii, nVar, 1.0);
+  FillBlock(jac_ij, nVar, 2.0);
+  FillBlock(jac_ji, nVar, 3.0);
+  FillBlock(jac_jj, nVar, 4.0);
+
+  /*--- Int8 with a per-row exponent scale, so the off-diagonal blocks come back to within about
+   * one part in a hundred of the largest entry of their row; the diagonal is full precision. ---*/
+  const double quantTol = 0.05;
+
+  SECTION("SetBlocks") {
+    matrix.SetValZero();
+    matrix.SetBlocks(iEdge, iPoint, jPoint, jac_ii, jac_ij, jac_ji, jac_jj);
+
+    CheckBlock(matrix, iPoint, iPoint, nVar, jac_ii, 1e-6);
+    CheckBlock(matrix, jPoint, jPoint, nVar, jac_jj, 1e-6);
+    CheckBlock(matrix, iPoint, jPoint, nVar, jac_ij, quantTol);
+    CheckBlock(matrix, jPoint, iPoint, nVar, jac_ji, quantTol);
+  }
+
+  SECTION("SetOffDiagBlocks") {
+    matrix.SetValZero();
+    matrix.SetBlocks(iEdge, iPoint, jPoint, jac_ii, jac_ij, jac_ji, jac_jj);
+
+    su2double jac_ij_new[8][8], jac_ji_new[8][8];
+    FillBlock(jac_ij_new, nVar, 5.0);
+    FillBlock(jac_ji_new, nVar, 6.0);
+    matrix.SetOffDiagBlocks(iEdge, jac_ij_new, jac_ji_new);
+
+    CheckBlock(matrix, iPoint, iPoint, nVar, jac_ii, 1e-6);
+    CheckBlock(matrix, jPoint, jPoint, nVar, jac_jj, 1e-6);
+    CheckBlock(matrix, iPoint, jPoint, nVar, jac_ij_new, quantTol);
+    CheckBlock(matrix, jPoint, iPoint, nVar, jac_ji_new, quantTol);
+  }
+}

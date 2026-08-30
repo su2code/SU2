@@ -111,6 +111,10 @@ protected:
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
   unsigned long nAuxVar = 0; /*!< \brief Number of auxiliary variables. */
 
+  /*!< \brief Handed out by the base implementations of the container accessors of fields only
+   * some models have, e.g. GetF1blending; a solver that has no such field never reads it. */
+  inline static const VectorType EmptyVector{};
+
   /*--- Only allow default construction by derived classes. ---*/
   CVariable() = default;
 
@@ -679,6 +683,7 @@ public:
    * \return Reference to gradient.
    */
   inline CVectorOfMatrix& GetAuxVarGradient(void) { return Grad_AuxVar; }
+  inline const CVectorOfMatrix& GetAuxVarGradient(void) const { return Grad_AuxVar; }
 
   /*!
    * \brief Get the value of the auxilliary gradient.
@@ -1722,10 +1727,7 @@ public:
    *        through gatherVariables the way they do GetSolution and GetGradient, rather than one
    *        virtual call per point.
    */
-  inline virtual const VectorType& GetF1blending() const {
-    static const VectorType empty;
-    return empty;
-  }
+  inline virtual const VectorType& GetF1blending() const { return EmptyVector; }
 
   /*!
    * \brief Get the second blending function of the SST model.

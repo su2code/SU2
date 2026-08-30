@@ -46,26 +46,12 @@ private:
   TransLMCorrelations TransCorrelations;
 
   /*!
-   * \brief Resolve the compile-time flow indices and dimension, and run the interior edge loop
-   *        with the matching CScalarFlux_TransLM instantiation. nVar is fixed at 2 (gamma and
-   *        Re_theta), so unlike SA's RunSA this dispatch has one axis fewer to resolve.
+   * \brief Resolve the compile-time parameters of CScalarFlux_TransLM and run one of this solver's
+   *        boundaries through the shared boundary flux pass.
+   * \param[in] opt - Flags of the boundary, from one of ScalarFluxOptions' named constructors.
    */
-  template <class Indices>
-  void RunLM(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
-
-  template <class Indices, int nDim>
-  void RunLM(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
-
-  /*!
-   * \brief Same dispatch as RunLM, for a boundary's call into BoundaryFluxResidual.
-   */
-  template <class Indices>
-  void RunLM_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                      const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
-
-  template <class Indices, int nDim>
-  void RunLM_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                      const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+  void BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt,
+                    unsigned short val_marker);
 
 public:
   /*!
@@ -216,9 +202,9 @@ public:
                  unsigned short val_marker) override;
 
   /*!
-   * \brief Impose the far-field boundary condition, via the CScalarFlux_TransLM edge kernel. Also
-   *        used by BC_Outlet, matching this solver's pre-migration behavior of imposing the
-   *        far-field state at both MARKER_FAR and MARKER_OUTLET.
+   * \brief Impose the far-field boundary condition, via the CScalarFlux_TransLM edge kernel.
+   * \note BC_Outlet forwards to this, so the far-field state is imposed at both MARKER_FAR and
+   *       MARKER_OUTLET.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.

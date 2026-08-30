@@ -45,6 +45,7 @@ class CScalarFlux_SA
  public:
   static constexpr bool Conservative = false;
   static constexpr bool DiagonalDiffusion = true;
+  static constexpr bool DiffusionReadsDensity = true; /*!< \brief The kinematic viscosities below. */
 
   using Base = CUpwScalarBase<Double, CScalarFlux_SA, FlowIndices, nDim, nVar>;
   using Int = typename Base::Int;
@@ -59,18 +60,23 @@ class CScalarFlux_SA
    * \brief SA convection, plus the centered advection of the backscatter equations when nVar > 1.
    */
   template <class VariableType, size_t Size>
-  FORCEINLINE void finalizeFlux(const FlowIndices&, const ScalarFluxOptions&, Int, const EdgeSide<VariableType>&, Int,
-                                const EdgeSide<VariableType>&, const Double& a0, const Double& a1,
-                                const CPair<CScalarValues<Double, Size>>& phi, EdgeResidual<Double, nVar>& res) const {
+  FORCEINLINE void finalizeFlux(const FlowIndices&, const ScalarFluxOptions& opt, Int, const EdgeSide<VariableType>&,
+                                Int, const EdgeSide<VariableType>&, const Double& a0, const Double& a1,
+                                const CPair<Double>&, const CPair<CScalarValues<Double, Size>>& phi,
+                                EdgeResidual<Double, nVar>& res) const {
     const Double flux = a0 * phi.i.all(0) + a1 * phi.j.all(0);
 
     res.flux_i(0) += flux;
-    res.flux_j(0) -= flux;
+    if (!opt.oneSided) res.flux_j(0) -= flux;
 
-    res.jac_ii(0, 0) += a0;
-    res.jac_ij(0, 0) += a1;
-    res.jac_ji(0, 0) -= a0;
-    res.jac_jj(0, 0) -= a1;
+    if (opt.implicit) {
+      res.jac_ii(0, 0) += a0;
+      if (!opt.oneSided) {
+        res.jac_ij(0, 0) += a1;
+        res.jac_ji(0, 0) -= a0;
+        res.jac_jj(0, 0) -= a1;
+      }
+    }
 
     /*--- Stochastic backscatter: three Langevin equations, advected with the mean of the two
      * upwinding weights and with no diffusion. ---*/
@@ -79,17 +85,21 @@ class CScalarFlux_SA
       const Double flux_bs = avg * (phi.i.all(iVar) + phi.j.all(iVar));
 
       res.flux_i(iVar) += flux_bs;
-      res.flux_j(iVar) -= flux_bs;
+      if (!opt.oneSided) res.flux_j(iVar) -= flux_bs;
 
-      res.jac_ii(iVar, iVar) += avg;
-      res.jac_ij(iVar, iVar) += avg;
-      res.jac_ji(iVar, iVar) -= avg;
-      res.jac_jj(iVar, iVar) -= avg;
+      if (opt.implicit) {
+        res.jac_ii(iVar, iVar) += avg;
+        if (!opt.oneSided) {
+          res.jac_ij(iVar, iVar) += avg;
+          res.jac_ji(iVar, iVar) -= avg;
+          res.jac_jj(iVar, iVar) -= avg;
+        }
+      }
     }
   }
 
   /*!
-   * \brief Diffusion coefficients of both orientations of the edge, see CAvgGrad_TurbSA.
+   * \brief Diffusion coefficients of both orientations of the edge.
    * \note The coefficient is not symmetric: it uses the transported variable of the row it is
    *       going to be used for (the quadratic, non-conservative part of the diffusion term).
    *       Coefficients past index 0 are left at zero, the backscatter equations have no diffusion.
@@ -97,11 +107,10 @@ class CScalarFlux_SA
   template <class VariableType>
   FORCEINLINE CPair<Vector<Double, nVar>> coefficients(const FlowIndices& idx, Int iPoint,
                                                        const EdgeSide<VariableType>& side_i, Int jPoint,
-                                                       const EdgeSide<VariableType>& side_j) const {
-    const Double nu_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.LaminarViscosity()) /
-                        gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.Density());
-    const Double nu_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.LaminarViscosity()) /
-                        gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.Density());
+                                                       const EdgeSide<VariableType>& side_j,
+                                                       const CPair<Double>& rho) const {
+    const Double nu_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.LaminarViscosity()) / rho.i;
+    const Double nu_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.LaminarViscosity()) / rho.j;
 
     const Double nuTilde_i = gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), 0);
     const Double nuTilde_j = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), 0);
@@ -120,20 +129,20 @@ class CScalarFlux_SA
 
   /*!
    * \brief Extra Jacobian terms from the dependence of the diffusion coefficient on nu_tilde.
-   * \note The two derivatives below are per-edge constants (cb2/sigma only), so the point/side
-   *       context diffusionTerms hands every model's coefficientJacobians is unused here.
    */
-  template <class VariableType, size_t Size>
-  FORCEINLINE void coefficientJacobians(const FlowIndices&, Int, const EdgeSide<VariableType>&, Int,
-                                        const EdgeSide<VariableType>&, const Vector<Double, Size>& projGrad,
-                                        EdgeResidual<Double, nVar>& res) const {
+  template <class Coefficients, size_t Size>
+  FORCEINLINE void coefficientJacobians(const ScalarFluxOptions& opt, const Coefficients&,
+                                        const Vector<Double, Size>& projGrad, EdgeResidual<Double, nVar>& res) const {
     /*--- d(diffusion coefficient of i)/d(nu_tilde_i), and its counterpart w.r.t. nu_tilde_j;
      * the coefficient of j is the same expression with i and j swapped, so the same two
-     * derivatives apply to both orientations. ---*/
+     * derivatives apply to both orientations. Both are per-edge constants, so the coefficients
+     * themselves are not read here. ---*/
     const Double dDC_dNuTilde_i = ((1.0 + cb2) * 0.5 - cb2) / sigma;
     const Double dDC_dNuTilde_j = (1.0 + cb2) * 0.5 / sigma;
 
     res.jac_ii(0, 0) -= dDC_dNuTilde_i * projGrad(0);
+    if (opt.oneSided) return;
+
     res.jac_ij(0, 0) -= dDC_dNuTilde_j * projGrad(0);
     res.jac_ji(0, 0) += dDC_dNuTilde_j * projGrad(0);
     res.jac_jj(0, 0) += dDC_dNuTilde_i * projGrad(0);

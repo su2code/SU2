@@ -96,52 +96,12 @@ private:
   void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) final;
 
   /*!
-   * \brief Resolve the compile-time flow indices, dimension and backscatter equation count, and
-   *        run the interior edge loop with the matching CScalarFlux_SA instantiation. Whether the
-   *        scheme reconstructs is a runtime flag carried in opt (see ScalarFluxOptions::muscl),
-   *        not an axis of this dispatch. Each overload resolves one more of the remaining axes
-   *        from CConfig/CGeometry and recurses into the next, so the runtime-to-compile-time
-   *        dispatch stays linear in the number of axes instead of enumerating every combination
-   *        by hand.
+   * \brief Resolve the compile-time parameters of CScalarFlux_SA and run one of this solver's
+   *        boundaries through the shared boundary flux pass.
+   * \param[in] opt - Flags of the boundary, from one of ScalarFluxOptions' named constructors.
    */
-  template <class Indices>
-  void RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
-
-  template <class Indices, int nDim>
-  void RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
-
-  template <class Indices, int nDim, size_t nVarSA>
-  void RunSA(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt);
-
-  /*!
-   * \brief Same dispatch as RunSA, for a boundary's call into BoundaryFluxResidual.
-   */
-  template <class Indices>
-  void RunSA_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                      const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
-
-  template <class Indices, int nDim>
-  void RunSA_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                      const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
-
-  template <class Indices, int nDim, size_t nVarSA>
-  void RunSA_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                      const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
-
-  /*!
-   * \brief Same dispatch as RunSA, for BC_Fluid_Interface's combined fill-and-flux donor loop.
-   */
-  template <class Indices>
-  void RunSA_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                            const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
-
-  template <class Indices, int nDim>
-  void RunSA_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                            const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
-
-  template <class Indices, int nDim, size_t nVarSA>
-  void RunSA_FluidInterface(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                            const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc, bool implicit);
+  void BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt,
+                    unsigned short val_marker);
 
 public:
   /*!

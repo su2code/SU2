@@ -58,7 +58,8 @@ class CScalarFlux_TransLM
   template <class VariableType>
   FORCEINLINE CPair<Vector<Double, nVar>> coefficients(const FlowIndices& idx, Int iPoint,
                                                        const EdgeSide<VariableType>& side_i, Int jPoint,
-                                                       const EdgeSide<VariableType>& side_j) const {
+                                                       const EdgeSide<VariableType>& side_j,
+                                                       const CPair<Double>&) const {
     const Double mu_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.LaminarViscosity());
     const Double mu_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.LaminarViscosity());
     const Double muT_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.EddyViscosity());

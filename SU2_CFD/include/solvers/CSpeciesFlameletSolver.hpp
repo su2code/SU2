@@ -201,14 +201,13 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
                                   unsigned short val_marker) override;
 
   /*!
-   * \brief Compute the fluxes due to viscous and preferential diffusion effects of the flamelet species at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \brief Compute the spatial integration using the CScalarFlux_Flamelet edge kernel, which adds
+   *        the preferential diffusion terms to the species convection and diffusion.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                        const CConfig* config) final;
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                       CConfig* config, unsigned short iMesh) final;
 };

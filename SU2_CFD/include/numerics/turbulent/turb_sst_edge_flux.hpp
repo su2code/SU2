@@ -59,18 +59,22 @@ class CScalarFlux_SST
 
  public:
   /*!
-   * \brief Diffusion coefficients of both orientations of the edge.
-   * \note The cross term below reads the transported omega of whichever point its row is being
-   *       written for, so it is not symmetric: D.i, read by i's row, uses omega at i; D.j, read
-   *       by j's row, uses omega at j. Every other entry is an i/j average, so it is the same in
-   *       both matrices.
+   * \brief Diffusion coefficients of both orientations of the edge, and the terms of the cross
+   *        diffusion that the Jacobian correction below needs, so that neither the gathers nor
+   *        the blending are repeated for it.
+   * \note The cross term reads the transported omega of whichever point its row is being written
+   *       for, so it is not symmetric: i, read by i's row, uses omega at i; j, read by j's row,
+   *       uses omega at j. Every other entry is an i/j average, so it is the same in both.
    */
+  struct CCoefficients {
+    Matrix<Double, nVar, nVar> i, j;
+    Double lambda_ij, omega_i, omega_j;
+  };
+
   template <class VariableType>
-  FORCEINLINE CPair<Matrix<Double, nVar, nVar>> coefficients(const FlowIndices& idx, Int iPoint,
-                                                             const EdgeSide<VariableType>& side_i, Int jPoint,
-                                                             const EdgeSide<VariableType>& side_j) const {
-    const Double rho_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.Density());
-    const Double rho_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.Density());
+  FORCEINLINE CCoefficients coefficients(const FlowIndices& idx, Int iPoint, const EdgeSide<VariableType>& side_i,
+                                         Int jPoint, const EdgeSide<VariableType>& side_j,
+                                         const CPair<Double>& rho) const {
     const Double mu_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.LaminarViscosity());
     const Double mu_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.LaminarViscosity());
     const Double muT_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.EddyViscosity());
@@ -78,8 +82,10 @@ class CScalarFlux_SST
 
     const Double F1_i = gatherVariables(iPoint, side_i.scalarNodes.GetF1blending());
     const Double F1_j = gatherVariables(jPoint, side_j.scalarNodes.GetF1blending());
-    const Double omega_i = gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), 1);
-    const Double omega_j = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), 1);
+
+    CCoefficients D;
+    D.omega_i = gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), 1);
+    D.omega_j = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), 1);
 
     const Double sigma_kine_i = F1_i * sigma_k1 + (1.0 - F1_i) * sigma_k2;
     const Double sigma_kine_j = F1_j * sigma_k1 + (1.0 - F1_j) * sigma_k2;
@@ -89,31 +95,30 @@ class CScalarFlux_SST
     const Double diff_kine = 0.5 * ((mu_i + sigma_kine_i * muT_i) + (mu_j + sigma_kine_j * muT_j));
     const Double diff_omega = 0.5 * ((mu_i + sigma_omega_i * muT_i) + (mu_j + sigma_omega_j * muT_j));
 
-    const Double lambda_i = 2.0 * (1.0 - F1_i) * rho_i * sigma_omega_i;
-    const Double lambda_j = 2.0 * (1.0 - F1_j) * rho_j * sigma_omega_j;
-    const Double lambda_ij = 0.5 * (lambda_i + lambda_j);
-    const Double w_ij = 0.5 * (omega_i + omega_j);
+    const Double lambda_i = 2.0 * (1.0 - F1_i) * rho.i * sigma_omega_i;
+    const Double lambda_j = 2.0 * (1.0 - F1_j) * rho.j * sigma_omega_j;
+    D.lambda_ij = 0.5 * (lambda_i + lambda_j);
+    const Double w_ij = 0.5 * (D.omega_i + D.omega_j);
 
     /*--- Cross-diffusion coefficient: a divergence-theorem term (diff_omega_T2) plus a cell
      * centre correction (diff_omega_T3) that reads the transported omega of the row's own point. ---*/
-    const Double diff_omega_T2 = lambda_ij;
-    const Double diff_omega_T3_i = -omega_i * lambda_ij / w_ij;
-    const Double diff_omega_T3_j = -omega_j * lambda_ij / w_ij;
+    const Double diff_omega_T2 = D.lambda_ij;
+    const Double diff_omega_T3_i = -D.omega_i * D.lambda_ij / w_ij;
+    const Double diff_omega_T3_j = -D.omega_j * D.lambda_ij / w_ij;
 
-    /*--- D_i(0,1) and D_j(0,1) are left zero: there is no diffusive coupling from omega into
+    /*--- D.i(0,1) and D.j(0,1) are left zero: there is no diffusive coupling from omega into
      * the k row. ---*/
-    Matrix<Double, nVar, nVar> D_i, D_j;
-    D_i = Double(0.0);
-    D_j = Double(0.0);
-    D_i(0, 0) = diff_kine;
-    D_i(1, 1) = diff_omega;
-    D_i(1, 0) = diff_omega_T2 + diff_omega_T3_i;
+    D.i = Double(0.0);
+    D.j = Double(0.0);
+    D.i(0, 0) = diff_kine;
+    D.i(1, 1) = diff_omega;
+    D.i(1, 0) = diff_omega_T2 + diff_omega_T3_i;
 
-    D_j(0, 0) = diff_kine;
-    D_j(1, 1) = diff_omega;
-    D_j(1, 0) = diff_omega_T2 + diff_omega_T3_j;
+    D.j(0, 0) = diff_kine;
+    D.j(1, 1) = diff_omega;
+    D.j(1, 0) = diff_omega_T2 + diff_omega_T3_j;
 
-    return {D_i, D_j};
+    return D;
   }
 
   /*!
@@ -125,28 +130,16 @@ class CScalarFlux_SST
    *       gives +E_j in both jac_ii and jac_ji, differentiating against omega_j gives -E_i in both
    *       jac_ij and jac_jj.
    */
-  template <class VariableType, size_t Size>
-  FORCEINLINE void coefficientJacobians(const FlowIndices& idx, Int iPoint, const EdgeSide<VariableType>& side_i,
-                                        Int jPoint, const EdgeSide<VariableType>& side_j,
+  template <size_t Size>
+  FORCEINLINE void coefficientJacobians(const ScalarFluxOptions& opt, const CCoefficients& D,
                                         const Vector<Double, Size>& projGrad, EdgeResidual<Double, nVar>& res) const {
-    const Double rho_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.Density());
-    const Double rho_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.Density());
-    const Double F1_i = gatherVariables(iPoint, side_i.scalarNodes.GetF1blending());
-    const Double F1_j = gatherVariables(jPoint, side_j.scalarNodes.GetF1blending());
-    const Double omega_i = gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), 1);
-    const Double omega_j = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), 1);
-
-    const Double sigma_omega_i = F1_i * sigma_om1 + (1.0 - F1_i) * sigma_om2;
-    const Double sigma_omega_j = F1_j * sigma_om1 + (1.0 - F1_j) * sigma_om2;
-    const Double lambda_i = 2.0 * (1.0 - F1_i) * rho_i * sigma_omega_i;
-    const Double lambda_j = 2.0 * (1.0 - F1_j) * rho_j * sigma_omega_j;
-    const Double lambda_ij = 0.5 * (lambda_i + lambda_j);
-
-    const Double denom = pow(omega_i + omega_j, 2.0);
-    const Double E_i = 2.0 * lambda_ij * omega_i / denom * projGrad(0);
-    const Double E_j = 2.0 * lambda_ij * omega_j / denom * projGrad(0);
+    const Double denom = pow(D.omega_i + D.omega_j, 2.0);
+    const Double E_i = 2.0 * D.lambda_ij * D.omega_i / denom * projGrad(0);
+    const Double E_j = 2.0 * D.lambda_ij * D.omega_j / denom * projGrad(0);
 
     res.jac_ii(1, 1) += E_j;
+    if (opt.oneSided) return;
+
     res.jac_ij(1, 1) -= E_i;
     res.jac_ji(1, 1) += E_j;
     res.jac_jj(1, 1) -= E_i;

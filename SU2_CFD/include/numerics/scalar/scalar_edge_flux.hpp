@@ -49,13 +49,80 @@ struct EdgeSide {
 /*!
  * \brief Loop invariant flags for a scalar edge flux, built once outside the edge loop so the
  *        compiler can unswitch the branches they guard.
+ * \note Built through the named constructors below: the flags are too many and too alike to be
+ *       given positionally, where one transposed pair would change the discretization silently.
  */
 struct ScalarFluxOptions {
-  bool dynamicGrid, boundedScalar, correctGradient, accurateJacobians;
-  bool convective; /*!< \brief Whether the convective scheme contributes. */
-  bool viscous;    /*!< \brief Whether the diffusion term contributes. */
-  bool oneSided;   /*!< \brief Whether only the row of i is assembled. */
-  bool muscl;      /*!< \brief Whether the convective scheme reconstructs. A boundary clears it. */
+  bool dynamicGrid = false;
+  bool boundedScalar = false;
+  bool correctGradient = false;
+  bool accurateJacobians = false;
+  bool implicit = false;  /*!< \brief Whether the Jacobians are assembled, and so computed. */
+  bool convective = true; /*!< \brief Whether the convective scheme contributes. */
+  bool viscous = false;   /*!< \brief Whether the diffusion term contributes. */
+  bool oneSided = false;  /*!< \brief Whether only the row of i is assembled. */
+  bool muscl = false;     /*!< \brief Whether the convective scheme reconstructs. */
+
+  /*!
+   * \brief Options of the interior edge loop: both terms, both rows, and reconstruction and
+   *        gradient correction as the configuration asks for them.
+   */
+  static ScalarFluxOptions Interior(const CConfig& config, bool bounded, bool accurateJacobians = false) {
+    auto opt = common(config);
+    opt.boundedScalar = bounded;
+    opt.accurateJacobians = accurateJacobians;
+    opt.correctGradient = true;
+    opt.viscous = true;
+    opt.muscl = config.GetMUSCL();
+    return opt;
+  }
+
+  /*!
+   * \brief Options of a boundary that imposes a convective flux alone, which is most of them:
+   *        the diffusive term at an inlet or an outlet causes serious convergence problems.
+   */
+  static ScalarFluxOptions BoundaryConvective(const CConfig& config, bool bounded) {
+    auto opt = common(config);
+    opt.boundedScalar = bounded;
+    opt.oneSided = true;
+    return opt;
+  }
+
+  /*!
+   * \brief Options of a boundary that imposes both terms, which is the turbomachinery sites.
+   * \note They impose no mass flux, so the bounded scheme contributes nothing here whatever the
+   *       configuration says.
+   */
+  static ScalarFluxOptions BoundaryFull(const CConfig& config) {
+    auto opt = common(config);
+    opt.correctGradient = true;
+    opt.viscous = true;
+    opt.oneSided = true;
+    return opt;
+  }
+
+  /*!
+   * \brief Options of the diffusive pass of a fluid interface, which follows a convective pass
+   *        over the donor vertices.
+   * \param[in] correctGrad - Whether the projected gradient is corrected for skewness, which the
+   *            models do not agree on at this boundary.
+   */
+  static ScalarFluxOptions BoundaryDiffusive(const CConfig& config, bool correctGrad) {
+    auto opt = common(config);
+    opt.correctGradient = correctGrad;
+    opt.convective = false;
+    opt.viscous = true;
+    opt.oneSided = true;
+    return opt;
+  }
+
+ private:
+  static ScalarFluxOptions common(const CConfig& config) {
+    ScalarFluxOptions opt;
+    opt.dynamicGrid = config.GetDynamic_Grid();
+    opt.implicit = config.GetKind_TimeIntScheme() == EULER_IMPLICIT;
+    return opt;
+  }
 };
 
 /*!
@@ -81,11 +148,15 @@ class CAvgGradScalarBase {
  protected:
   using Int = typename CLaneTraits<Double>::Int;
 
+  /*!
+   * \param[in] rho - Density of both endpoints, read once by ComputeFlux.
+   */
   template <class VariableType>
   FORCEINLINE void diffusionTerms(const FlowIndices& idx, const ScalarFluxOptions& opt, Int iPoint,
                                   const EdgeSide<VariableType>& side_i, Int jPoint,
-                                  const EdgeSide<VariableType>& side_j, const Vector<Double, nDim>& normal,
-                                  const Vector<Double, nDim>& vector_ij, EdgeResidual<Double, nVar>& res) const {
+                                  const EdgeSide<VariableType>& side_j, const CPair<Double>& rho,
+                                  const Vector<Double, nDim>& normal, const Vector<Double, nDim>& vector_ij,
+                                  EdgeResidual<Double, nVar>& res) const {
     if (!opt.viscous) return;
 
     constexpr size_t Size = EdgeResidual<Double, nVar>::Size;
@@ -100,8 +171,8 @@ class CAvgGradScalarBase {
      *       actual width of the gradient container in either case. ---*/
     Matrix<Double, Size, nDim> avgGrad;
     for (size_t iVar = 0; iVar < res.nVar; ++iVar) {
-      const auto grad_i = gatherVariables<1, nDim>(iPoint, side_i.scalarNodes.GetGradient(), iVar);
-      const auto grad_j = gatherVariables<1, nDim>(jPoint, side_j.scalarNodes.GetGradient(), iVar);
+      const auto grad_i = gatherVariables<nDim>(iPoint, side_i.scalarNodes.GetGradient(), iVar);
+      const auto grad_j = gatherVariables<nDim>(jPoint, side_j.scalarNodes.GetGradient(), iVar);
       for (int iDim = 0; iDim < nDim; ++iDim) avgGrad(iVar, iDim) = 0.5 * (grad_i(iDim) + grad_j(iDim));
     }
 
@@ -119,67 +190,68 @@ class CAvgGradScalarBase {
 
     /*--- The Jacobians of a conservative model are w.r.t. the conserved (density-weighted)
      * variable, which divides the geometric projection by the density of the row being written. ---*/
-    Double w_i = 1.0, w_j = 1.0;
+    Double proj_on_w_i = proj_vector_ij, proj_on_w_j = proj_vector_ij;
     if constexpr (Derived::Conservative) {
-      w_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.Density());
-      w_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.Density());
+      proj_on_w_i = proj_vector_ij / rho.i;
+      proj_on_w_j = proj_vector_ij / rho.j;
     }
-    const Double proj_on_w_i = proj_vector_ij / w_i;
-    const Double proj_on_w_j = proj_vector_ij / w_j;
 
     const auto* self = static_cast<const Derived*>(this);
-    const auto D = self->coefficients(idx, iPoint, side_i, jPoint, side_j);
+    const auto D = self->coefficients(idx, iPoint, side_i, jPoint, side_j, rho);
 
     for (size_t iVar = 0; iVar < res.nVar; ++iVar) {
       if constexpr (Derived::DiagonalDiffusion) {
         res.flux_i(iVar) -= D.i(iVar) * projGrad(iVar);
-        res.jac_ii(iVar, iVar) += D.i(iVar) * proj_on_w_i;
-        res.jac_ij(iVar, iVar) -= D.i(iVar) * proj_on_w_j;
-
+        if (opt.implicit) {
+          res.jac_ii(iVar, iVar) += D.i(iVar) * proj_on_w_i;
+          if (!opt.oneSided) res.jac_ij(iVar, iVar) -= D.i(iVar) * proj_on_w_j;
+        }
         if (!opt.oneSided) {
           res.flux_j(iVar) += D.j(iVar) * projGrad(iVar);
-          res.jac_ji(iVar, iVar) -= D.j(iVar) * proj_on_w_i;
-          res.jac_jj(iVar, iVar) += D.j(iVar) * proj_on_w_j;
+          if (opt.implicit) {
+            res.jac_ji(iVar, iVar) -= D.j(iVar) * proj_on_w_i;
+            res.jac_jj(iVar, iVar) += D.j(iVar) * proj_on_w_j;
+          }
         }
       } else {
         for (size_t jVar = 0; jVar < res.nVar; ++jVar) {
           res.flux_i(iVar) -= D.i(iVar, jVar) * projGrad(jVar);
-          res.jac_ii(iVar, jVar) += D.i(iVar, jVar) * proj_on_w_i;
-          res.jac_ij(iVar, jVar) -= D.i(iVar, jVar) * proj_on_w_j;
-
+          if (opt.implicit) {
+            res.jac_ii(iVar, jVar) += D.i(iVar, jVar) * proj_on_w_i;
+            if (!opt.oneSided) res.jac_ij(iVar, jVar) -= D.i(iVar, jVar) * proj_on_w_j;
+          }
           if (!opt.oneSided) {
             res.flux_j(iVar) += D.j(iVar, jVar) * projGrad(jVar);
-            res.jac_ji(iVar, jVar) -= D.j(iVar, jVar) * proj_on_w_i;
-            res.jac_jj(iVar, jVar) += D.j(iVar, jVar) * proj_on_w_j;
+            if (opt.implicit) {
+              res.jac_ji(iVar, jVar) -= D.j(iVar, jVar) * proj_on_w_i;
+              res.jac_jj(iVar, jVar) += D.j(iVar, jVar) * proj_on_w_j;
+            }
           }
         }
       }
     }
 
-    if (opt.accurateJacobians) {
-      /*--- Coefficients that depend on the transported variables contribute here. A model whose
-       * correction is a per-edge constant (e.g. SA's) can ignore the side/point arguments; one
-       * whose correction depends on point values (e.g. SST's, on the transported variable at
-       * either endpoint) needs them, so every model is handed the same full context diffusionTerms
-       * itself has, matching extraDiffusionTerms's signature below. ---*/
-      self->coefficientJacobians(idx, iPoint, side_i, jPoint, side_j, projGrad, res);
+    if (opt.implicit && opt.accurateJacobians) {
+      /*--- Coefficients that depend on the transported variables contribute here, from whatever
+       * the model chose to carry in the object it returned from coefficients. ---*/
+      self->coefficientJacobians(opt, D, projGrad, res);
     }
 
-    self->extraDiffusionTerms(idx, iPoint, side_i, jPoint, side_j, normal, vector_ij, res);
+    self->extraDiffusionTerms(idx, opt, iPoint, side_i, jPoint, side_j, rho, normal, vector_ij, res);
   }
 
   /*!
    * \brief Contribution of the derivatives of the coefficients themselves.
    */
   template <class... Ts>
-  FORCEINLINE void coefficientJacobians(Ts&...) const {}
+  FORCEINLINE void coefficientJacobians(Ts&&...) const {}
 
   /*!
    * \brief Diffusion of a model that transports more than one gradient, of states it
    *        synthesises from its own containers.
    */
   template <class... Ts>
-  FORCEINLINE void extraDiffusionTerms(Ts&...) const {}
+  FORCEINLINE void extraDiffusionTerms(Ts&&...) const {}
 };
 
 /*!
@@ -196,31 +268,42 @@ class CUpwScalarFlux : public CAvgGradScalarBase<Double, Derived, FlowIndices, n
   explicit CUpwScalarFlux(const CConfig&) {}
 
   /*!
+   * \brief Upwind convection of the transported variable, weighted by the density for a
+   *        conservative model.
    * \param[in] phi - Transported variable of both endpoints, reconstructed if opt.muscl is set;
    *            read from here rather than side_i/side_j.scalarNodes directly so a model needs
    *            no reconstruction logic of its own.
+   * \param[in] rho - Density of both endpoints, reconstructed alongside the velocity when the
+   *            convective scheme reconstructs, so it weights the flux as the velocity does.
+   * \note The flux is written in terms of the transported variable but the Jacobians are w.r.t.
+   *       the conserved one, which for a conservative model is the density-weighted variable;
+   *       the density therefore multiplies the flux and not the Jacobian.
    */
   template <class VariableType, size_t Size>
-  FORCEINLINE void finalizeFlux(const FlowIndices& idx, const ScalarFluxOptions&, Int iPoint,
-                                const EdgeSide<VariableType>& side_i, Int jPoint, const EdgeSide<VariableType>& side_j,
-                                const Double& a0, const Double& a1, const CPair<CScalarValues<Double, Size>>& phi,
+  FORCEINLINE void finalizeFlux(const FlowIndices&, const ScalarFluxOptions& opt, Int, const EdgeSide<VariableType>&,
+                                Int, const EdgeSide<VariableType>&, const Double& a0, const Double& a1,
+                                const CPair<Double>& rho, const CPair<CScalarValues<Double, Size>>& phi,
                                 EdgeResidual<Double, nVar>& res) const {
     Double w0 = a0, w1 = a1;
     if constexpr (Derived::Conservative) {
-      w0 *= gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.Density());
-      w1 *= gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.Density());
+      w0 *= rho.i;
+      w1 *= rho.j;
     }
 
     for (size_t iVar = 0; iVar < res.nVar; ++iVar) {
       const Double flux = w0 * phi.i.all(iVar) + w1 * phi.j.all(iVar);
 
       res.flux_i(iVar) += flux;
-      res.flux_j(iVar) -= flux;
+      if (!opt.oneSided) res.flux_j(iVar) -= flux;
 
-      res.jac_ii(iVar, iVar) += w0;
-      res.jac_ij(iVar, iVar) += w1;
-      res.jac_ji(iVar, iVar) -= w0;
-      res.jac_jj(iVar, iVar) -= w1;
+      if (opt.implicit) {
+        res.jac_ii(iVar, iVar) += a0;
+        if (!opt.oneSided) {
+          res.jac_ij(iVar, iVar) += a1;
+          res.jac_ji(iVar, iVar) -= a0;
+          res.jac_jj(iVar, iVar) -= a1;
+        }
+      }
     }
   }
 };
@@ -242,6 +325,12 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
    *        nVar itself is Dynamic for a runtime model and never usable as a container size.
    */
   static constexpr size_t Size = EdgeResidual<Double_, nVar_>::Size;
+
+  /*!
+   * \brief Whether the model's diffusion coefficients read the density, beyond the reading that
+   *        Conservative already implies. A model that declares neither never gathers it.
+   */
+  static constexpr bool DiffusionReadsDensity = false;
 
  protected:
   using Base = CUpwScalarFlux<Double_, Derived, FlowIndices, nDim_, nVar_>;
@@ -300,18 +389,26 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
       vector_ij = distanceVector<nDim>(iPoint, side_i.coord, jPoint, side_j.coord);
     }
 
+    /*--- Density of both endpoints, gathered once: the conservative weighting of the convective
+     * term, the bounded scheme's division of the mass flux, and some models' diffusion
+     * coefficients all want it, and in reverse mode every gather is a preaccumulation input. ---*/
+    CPair<Double> rho{Double(1.0), Double(1.0)};
+    if (Derived::Conservative || Derived::DiffusionReadsDensity || opt.boundedScalar) {
+      rho.i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.Density());
+      rho.j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.Density());
+    }
+
     if (opt.convective) {
-      /*--- Upwinding weights of the face normal mass or volume flux. ---*/
+      /*--- Upwinding weights of the face normal mass or volume flux, and the density that weights
+       * a conservative flux, which follows the velocity in being reconstructed or not. ---*/
       Double a0, a1;
+      CPair<Double> rhoConv = rho;
+
       if (opt.boundedScalar) {
         AD::SetPreaccIn(massFlux);
-        const Double rho_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.Density());
-        const Double rho_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.Density());
-        a0 = fmax(0.0, massFlux) / rho_i;
-        a1 = fmin(0.0, massFlux) / rho_j;
+        a0 = fmax(0.0, massFlux) / rho.i;
+        a1 = fmin(0.0, massFlux) / rho.j;
       } else {
-        /*--- The mass-flux branch above reads the edge flux computed from unreconstructed flow
-         * primitives directly, so only this branch needs a reconstructed velocity. ---*/
         CPair<CScalarValues<Double, nDim>> u;
         u.i.all = gatherVariables<nDim>(iPoint, side_i.flowNodes->GetPrimitive(), idx.Velocity());
         u.j.all = gatherVariables<nDim>(jPoint, side_j.flowNodes->GetPrimitive(), idx.Velocity());
@@ -320,6 +417,19 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
           reconstruct<nDim>(iPoint, jPoint, vector_ij, side_i.flowNodes->GetGradient_Reconstruction(),
                             side_i.flowNodes->GetLimiter_Primitive(), limiterTypeFlow, idx.Velocity(), u, kappaFlow,
                             umusclRamp);
+
+          if constexpr (Derived::Conservative) {
+            /*--- Density is not adjacent to the velocity in the primitive row, so it is a second
+             * reconstruction of one variable rather than a wider slice of the first. ---*/
+            CPair<CScalarValues<Double, 1>> r;
+            r.i.all(0) = rho.i;
+            r.j.all(0) = rho.j;
+            reconstruct<1>(iPoint, jPoint, vector_ij, side_i.flowNodes->GetGradient_Reconstruction(),
+                           side_i.flowNodes->GetLimiter_Primitive(), limiterTypeFlow, idx.Density(), r, kappaFlow,
+                           umusclRamp);
+            rhoConv.i = r.i.all(0);
+            rhoConv.j = r.j.all(0);
+          }
         }
 
         /*--- Face normal velocity of the mean of the two points, relative to the grid. ---*/
@@ -356,17 +466,18 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
           /*--- A dynamic model's equation count is only known at runtime, so the reconstructed
            * width is passed as an argument instead of a template parameter. ---*/
           reconstruct(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
-                     side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp, res.nVar);
+                      side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp, res.nVar);
         }
       }
 
-      static_cast<const Derived*>(this)->finalizeFlux(idx, opt, iPoint, side_i, jPoint, side_j, a0, a1, phi, res);
+      static_cast<const Derived*>(this)->finalizeFlux(idx, opt, iPoint, side_i, jPoint, side_j, a0, a1, rhoConv, phi,
+                                                      res);
     }
 
-    Base::diffusionTerms(idx, opt, iPoint, side_i, jPoint, side_j, normal, vector_ij, res);
+    Base::diffusionTerms(idx, opt, iPoint, side_i, jPoint, side_j, rho, normal, vector_ij, res);
 
-    AD::SetPreaccOut(res.flux_i, res.nVar);
-    if (!opt.oneSided) AD::SetPreaccOut(res.flux_j, res.nVar);
+    setPreaccOut(res.flux_i, res.nVar);
+    if (!opt.oneSided) setPreaccOut(res.flux_j, res.nVar);
     AD::EndPreacc();
 
     return res;
@@ -378,11 +489,11 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
   template <class VariableType>
   FORCEINLINE void ComputeFlux(const ScalarFluxOptions& opt, Int iEdge, Int iPoint,
                                const EdgeSide<VariableType>& side_i, Int jPoint, const EdgeSide<VariableType>& side_j,
-                               const Vector<Double, nDim>& normal, const Double& massFlux, bool implicit,
-                               UpdateType updateType, Double updateMask, CSysVector<su2double>& vector,
-                               CSysVector<su2double>& vectorDiff, SparseMatrixType& matrix) const {
+                               const Vector<Double, nDim>& normal, const Double& massFlux, UpdateType updateType,
+                               Double updateMask, CSysVector<su2double>& vector, CSysVector<su2double>& vectorDiff,
+                               SparseMatrixType& matrix) const {
     const auto res = ComputeFlux(opt, iPoint, side_i, jPoint, side_j, normal, massFlux);
 
-    updateLinearSystem(iEdge, iPoint, jPoint, implicit, updateType, updateMask, res, vector, vectorDiff, matrix);
+    updateLinearSystem(iEdge, iPoint, jPoint, opt.implicit, updateType, updateMask, res, vector, vectorDiff, matrix);
   }
 };

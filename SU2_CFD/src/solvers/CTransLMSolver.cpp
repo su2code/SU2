@@ -279,39 +279,25 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 }
 
 
-void CTransLMSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+void CTransLMSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics**,
                                      CConfig* config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
-  const ScalarFluxOptions opt{
-      dynamic_grid,                /*--- dynamicGrid ---*/
-      config->GetBounded_Turb(),   /*--- boundedScalar ---*/
-      true,                        /*--- correctGradient ---*/
-      false, /*--- accurateJacobians, LM's diffusion coefficient does not depend on gamma/Re_theta ---*/
-      true,  /*--- convective ---*/
-      true,  /*--- viscous ---*/
-      false, /*--- oneSided, this is the interior loop ---*/
-      config->GetMUSCL(), /*--- muscl ---*/
-  };
+  /*--- LM's diffusion coefficients depend on the flow's mu and mu_t, not on gamma or Re_theta,
+   * so there is no accurate-Jacobian correction to apply. ---*/
+  const auto opt = ScalarFluxOptions::Interior(*config, config->GetBounded_Turb());
 
-  DispatchRegime(config, [&](auto tag) {
-    RunLM<typename decltype(tag)::type>(geometry, solver_container, config, opt);
+  DispatchScheme<CScalarFlux_TransLM, 2>(config, [&](auto tag) {
+    EdgeFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt);
   });
 }
 
-template <class Indices>
-void CTransLMSolver::RunLM(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                           const ScalarFluxOptions& opt) {
-  if (nDim == 2) RunLM<Indices, 2>(geometry, solver_container, config, opt);
-  else RunLM<Indices, 3>(geometry, solver_container, config, opt);
+void CTransLMSolver::BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                                  const ScalarFluxOptions& opt, unsigned short val_marker) {
+  DispatchScheme<CScalarFlux_TransLM, 2>(config, [&](auto tag) {
+    BoundaryFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker);
+  });
 }
-
-template <class Indices, int nDim>
-void CTransLMSolver::RunLM(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                           const ScalarFluxOptions& opt) {
-  EdgeFluxResidual<CScalarFlux_TransLM<su2double, Indices, nDim>>(geometry, solver_container, config, opt);
-}
-
 
 void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
@@ -405,8 +391,6 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
 
-  EnsureGhostFlowContainers(solver_container, config);
-
   auto* flowSolver = solver_container[FLOW_SOL];
 
   /*--- The ghost row is the far-field state; wall-normal zero flux, convective only. ---*/
@@ -418,23 +402,12 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
     SetGhostPrimitives(iVertex, V_infty);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      ghostNormal(iVertex, iDim) = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
-    ghostSkip[iVertex] = false;
+    SetGhostGeometry(geometry, val_marker, iVertex);
   }
   END_SU2_OMP_FOR
 
-  const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-  const ScalarFluxOptions opt{
-      dynamic_grid, false /*boundedScalar, this site never applied the mass-flux correction*/,
-      false /*correctGradient*/, false /*accurateJacobians*/,
-      true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
-  };
-
-  DispatchRegime(config, [&](auto tag) {
-    RunLM_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
-  });
+  BoundaryFlux(geometry, solver_container, config, ScalarFluxOptions::BoundaryConvective(*config, false),
+               val_marker);
 }
 
 void CTransLMSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -448,8 +421,6 @@ void CTransLMSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*, CConfig *config,
                                 unsigned short val_marker) {
   SU2_ZONE_SCOPED
-
-  EnsureGhostFlowContainers(solver_container, config);
 
   auto* flowSolver = solver_container[FLOW_SOL];
 
@@ -470,23 +441,12 @@ void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
     SetGhostPrimitives(iVertex, V_inlet);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      ghostNormal(iVertex, iDim) = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
-    ghostSkip[iVertex] = false;
+    SetGhostGeometry(geometry, val_marker, iVertex);
   }
   END_SU2_OMP_FOR
 
-  const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-  const ScalarFluxOptions opt{
-      dynamic_grid, false /*boundedScalar, this site never applied the mass-flux correction*/,
-      false /*correctGradient*/, false /*accurateJacobians*/,
-      true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
-  };
-
-  DispatchRegime(config, [&](auto tag) {
-    RunLM_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
-  });
+  BoundaryFlux(geometry, solver_container, config, ScalarFluxOptions::BoundaryConvective(*config, false),
+               val_marker);
 }
 
 void CTransLMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -499,12 +459,10 @@ void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
                                   CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
 
-  EnsureGhostFlowContainers(solver_container, config);
-
   auto* flowSolver = solver_container[FLOW_SOL];
 
-  /*--- Ghost row is the far-field state; this base method also applied the mass-flux correction,
-   * unlike this solver's own hand-rolled BC_HeatFlux_Wall/BC_Inlet, so this one keeps it. ---*/
+  /*--- Ghost row is the far-field state. Unlike the wall and inlet sites of this solver, this
+   * one applies the bounded scheme's mass-flux correction. ---*/
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto* V_infty = flowSolver->GetCharacPrimVar(val_marker, iVertex);
@@ -513,37 +471,14 @@ void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
     SetGhostPrimitives(iVertex, V_infty);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      ghostNormal(iVertex, iDim) = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
-    ghostSkip[iVertex] = false;
+    SetGhostGeometry(geometry, val_marker, iVertex);
   }
   END_SU2_OMP_FOR
 
-  const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-  const ScalarFluxOptions opt{
-      dynamic_grid, config->GetBounded_Turb(), false /*correctGradient*/, false /*accurateJacobians*/,
-      true /*convective*/,  false /*viscous*/, true /*oneSided*/, false /*muscl, a boundary never reconstructs*/,
-  };
-
-  DispatchRegime(config, [&](auto tag) {
-    RunLM_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
-  });
+  BoundaryFlux(geometry, solver_container, config,
+               ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Turb()), val_marker);
 }
 
-template <class Indices>
-void CTransLMSolver::RunLM_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                    const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit) {
-  if (nDim == 2) RunLM_Boundary<Indices, 2>(geometry, solver_container, config, opt, val_marker, implicit);
-  else RunLM_Boundary<Indices, 3>(geometry, solver_container, config, opt, val_marker, implicit);
-}
-
-template <class Indices, int nDim>
-void CTransLMSolver::RunLM_Boundary(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                    const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit) {
-  BoundaryFluxResidual<CScalarFlux_TransLM<su2double, Indices, nDim>>(geometry, solver_container, config, opt,
-                                                                      val_marker, implicit);
-}
 
 void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                   bool val_update_geo) {

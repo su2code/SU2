@@ -32,20 +32,21 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../numerics/scalar/scalar_edge_flux.hpp"
 #include "../variables/CScalarVariable.hpp"
+#include "../variables/CEulerVariable.hpp"
 #include "../variables/CFlowVariable.hpp"
 #include "../variables/CGhostFlowVariable.hpp"
+#include "../variables/CIncEulerVariable.hpp"
 #include "../variables/CPrimitiveIndices.hpp"
 #include "CSolver.hpp"
 
 /*!
  * \brief Carries a type through a value, so a runtime branch can hand a compile-time type to a
- *        generic lambda (its parameter deduces as CIndicesTag<T>, and the lambda recovers T as
+ *        generic lambda (its parameter deduces as CTypeTag<T>, and the lambda recovers T as
  *        decltype(tag)::type). Standing in for a C++20 template lambda, which this project's
- *        C++17 baseline does not have. Shared by every scalar solver's own regime-dispatch helper
- *        (see CTurbSolver::DispatchRegime, CSpeciesSolver::DispatchRegime).
+ *        C++17 baseline does not have.
  */
 template <class T>
-struct CIndicesTag {
+struct CTypeTag {
   using type = T;
 };
 
@@ -171,103 +172,6 @@ class CScalarSolver : public CSolver {
       LinSysRes.SubtractBlock(iPoint, residual);
       LinSysRes.AddBlock(jPoint, residual);
       if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-    }
-  }
-
-  /*!
-   * \brief Compute the viscous flux for the turbulence equations at a particular edge for a non-conservative discretisation.
-   * \tparam SolverSpecificNumericsTemp - lambda-function, to implement solver specific contributions to numerics.
-   * \note The functor has to implement (iPoint, jPoint)
-   * \param[in] iEdge - Edge for which we want to compute the flux
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  template<typename SolverSpecificNumericsFunc>
-  void Viscous_Residual_NonCons(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                                        CNumerics* numerics, const CConfig* config, SolverSpecificNumericsFunc&& SolverSpecificNumerics) {
-    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-      CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
-          su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
-
-    const auto iPoint = geometry->edges->GetNode(iEdge, 0);
-    const auto jPoint = geometry->edges->GetNode(iEdge, 1);
-
-    /*--- Lambda function to compute the flux ---*/
-    auto ComputeFlux = [&](unsigned long iPoint, unsigned long jPoint, const su2double* normal) {
-      numerics->SetCoord(geometry->nodes->GetCoord(iPoint),geometry->nodes->GetCoord(jPoint));
-      numerics->SetNormal(normal);
-
-      if (flowNodes) {
-        numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
-      }
-
-    /*--- Solver specific numerics contribution. ---*/
-      SolverSpecificNumerics(iPoint, jPoint);
-
-      numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
-      numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
-
-      return numerics->ComputeResidual(config);
-    };
-
-    /*--- Compute fluxes and jacobians i->j ---*/
-    const su2double* normal = geometry->edges->GetNormal(iEdge);
-    auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
-
-    su2mixedfloat *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
-    if (implicit) {
-      Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
-    }
-    if (ReducerStrategy) {
-      /*--- i's row takes its contribution from residual_ij alone, accumulated onto what the
-       * convective term already wrote; j's row is accumulated once residual_ji is known, below. ---*/
-      EdgeFluxes.SubtractBlock(iEdge, residual_ij);
-      if (implicit) {
-        /*--- For the reducer strategy the Jacobians are averaged for simplicity. ---*/
-        for (int iVar=0; iVar<nVar; iVar++)
-          for (int jVar=0; jVar<nVar; jVar++) {
-            Block_ij[iVar*nVar + jVar] -= 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
-            Block_ji[iVar*nVar + jVar] += 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
-          }
-      }
-    } else {
-      LinSysRes.SubtractBlock(iPoint, residual_ij);
-      if (implicit) {
-        for (int iVar=0; iVar<nVar; iVar++)
-          for (int jVar=0; jVar<nVar; jVar++) {
-            Block_ii[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
-            Block_ij[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
-          }
-      }
-    }
-
-    /*--- Compute fluxes and jacobians j->i ---*/
-    su2double flipped_normal[MAXNDIM];
-    for (auto iDim = 0u; iDim < nDim; iDim++) flipped_normal[iDim] = -normal[iDim];
-
-    auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
-    if (ReducerStrategy) {
-      EdgeFluxesDiff.SubtractBlock(iEdge, residual_ji);
-      if (implicit) {
-        for (int iVar=0; iVar<nVar; iVar++)
-          for (int jVar=0; jVar<nVar; jVar++) {
-            Block_ij[iVar*nVar + jVar] += 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
-            Block_ji[iVar*nVar + jVar] -= 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
-          }
-      }
-    } else {
-      LinSysRes.SubtractBlock(jPoint, residual_ji);
-      if (implicit) {
-        /*--- The order of arguments were flipped in the evaluation of residual_ji, the Jacobian
-        * associated with point i is stored in jacobian_j and point j in jacobian_i. ---*/
-        for (int iVar=0; iVar<nVar; iVar++)
-          for (int jVar=0; jVar<nVar; jVar++) {
-            Block_ji[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
-            Block_jj[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
-          }
-      }
     }
   }
 
@@ -470,9 +374,103 @@ class CScalarSolver : public CSolver {
    */
   template <class Scheme>
   void BoundaryFluxResidual(const CGeometry* geometry, CSolver** solver_container, const CConfig* config,
-                            const ScalarFluxOptions& opt, unsigned short val_marker, bool implicit);
+                            const ScalarFluxOptions& opt, unsigned short val_marker);
+
+  /*!
+   * \brief Generic fluid interface (sliding mesh) flux pass, shared by every model. The convective
+   *        term is a per-donor weighted average, computed in the same pass that fills the ghost row
+   *        of each donor; the diffusive term is computed once per vertex, after the donor loop,
+   *        from the ghost state the last donor left behind. This does not fit the
+   *        fill-pass-then-BoundaryFluxResidual shape the other boundaries use, so it drives the
+   *        kernel directly.
+   * \tparam Scheme - Same model the interior loop uses, instantiated with muscl false.
+   * \param[in] fillGhostExtras - Functor (iVertex, iPoint) writing the auxiliary ghost fields the
+   *            model's diffusion coefficients read, e.g. SST's blending function or the species
+   *            mass diffusivities. Called once per vertex, before the diffusive flux.
+   */
+  template <class Scheme, class GhostFunc>
+  void FluidInterfaceFluxResidual(const CGeometry* geometry, CSolver** solver_container, const CConfig* config,
+                                  const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc,
+                                  const GhostFunc& fillGhostExtras);
+
+  /*!
+   * \brief Write the outward normal of one vertex into the ghost row and mark the vertex as
+   *        contributing a flux.
+   * \note Vertex normals point into the domain, the flux convention needs them outward.
+   */
+  inline void SetGhostGeometry(const CGeometry* geometry, unsigned short val_marker, unsigned long iVertex) {
+    for (auto iDim = 0u; iDim < nDim; ++iDim)
+      ghostNormal(iVertex, iDim) = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+    ghostSkip[iVertex] = false;
+  }
+
+  /*!
+   * \brief Write what the diffusion term of a boundary reads beyond the ghost solution: the
+   *        coordinate of the interior point reflected about the boundary, and the interior
+   *        gradient mirrored into the ghost row.
+   * \param[in] iPoint - Interior point of the vertex.
+   * \param[in] jPoint - Point the interior one is reflected about, the vertex's normal neighbor.
+   */
+  inline void SetGhostDiffusionState(const CGeometry* geometry, unsigned long iVertex, unsigned long iPoint,
+                                     unsigned long jPoint) {
+    su2double Coord_Reflected[MAXNDIM];
+    GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(jPoint), geometry->nodes->GetCoord(iPoint),
+                                       Coord_Reflected);
+    for (auto iDim = 0u; iDim < nDim; ++iDim) ghostCoord(iVertex, iDim) = Coord_Reflected[iDim];
+
+    auto ghostGrad = ghostNodes->GetGradient(iVertex);
+    const auto interiorGrad = nodes->GetGradient(iPoint);
+    for (auto iVar = 0u; iVar < nVar; ++iVar)
+      for (auto iDim = 0u; iDim < nDim; ++iDim) ghostGrad(iVar, iDim) = interiorGrad(iVar, iDim);
+  }
+
+  /*!
+   * \brief Resolve the compile-time parameters of a scalar flux kernel, the flow indices, the
+   *        dimension and the equation count, from the runtime state, and call f with a CTypeTag of
+   *        the resulting scheme type: f is a generic lambda,
+   *        `[&](auto tag){ using Scheme = typename decltype(tag)::type; ... }`.
+   * \tparam Model - Model class template, e.g. CScalarFlux_SST, taking the four parameters of
+   *         CUpwScalarBase: value type, flow indices, dimension and equation count.
+   * \tparam nVarList - Equation counts to instantiate. Dynamic matches any count, a static one is
+   *         taken when it equals the solver's nVar; the counts are tried in the order given.
+   * \note NEMO is not one of the index branches: transported scalars are rejected for it at
+   *       configuration.
+   */
+  template <template <class, class, int, size_t> class Model, size_t... nVarList, class F>
+  void DispatchScheme(const CConfig* config, F&& f) {
+    if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+      DispatchDim<Model, CIncEulerVariable::CIndices<unsigned short>, nVarList...>(std::forward<F>(f));
+    } else {
+      DispatchDim<Model, CEulerVariable::CIndices<unsigned short>, nVarList...>(std::forward<F>(f));
+    }
+  }
 
  private:
+  template <template <class, class, int, size_t> class Model, class Indices, size_t... nVarList, class F>
+  void DispatchDim(F&& f) {
+    if (nDim == 2) {
+      DispatchEqnCount<Model, Indices, 2, nVarList...>(std::forward<F>(f));
+    } else {
+      DispatchEqnCount<Model, Indices, 3, nVarList...>(std::forward<F>(f));
+    }
+  }
+
+  /*--- Recursion over the candidate equation counts, ending on the empty list. ---*/
+  template <template <class, class, int, size_t> class Model, class Indices, int nDim_, class F>
+  void DispatchEqnCount(F&&) {
+    SU2_MPI::Error("The equation count of this model has no instantiation.", CURRENT_FUNCTION);
+  }
+
+  template <template <class, class, int, size_t> class Model, class Indices, int nDim_, size_t nVar_,
+            size_t... others, class F>
+  void DispatchEqnCount(F&& f) {
+    if (nVar_ == Dynamic || nVar_ == nVar) {
+      f(CTypeTag<Model<su2double, Indices, nDim_, nVar_>>{});
+    } else {
+      DispatchEqnCount<Model, Indices, nDim_, others...>(std::forward<F>(f));
+    }
+  }
+
   /*!
    * \brief Compute the viscous flux for the scalar equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
