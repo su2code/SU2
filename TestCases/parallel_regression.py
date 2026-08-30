@@ -762,6 +762,14 @@ def main():
     inc_turb_naca0012_sst_sust.test_vals = [-7.169837, 0.332730, -0.000001, 0.312131]
     test_list.append(inc_turb_naca0012_sst_sust)
 
+    # Flat plate, pressure-based
+    inc_flatplate_pb           = TestCase('inc_flatplate_pb')
+    inc_flatplate_pb.cfg_dir   = "incomp_rans/rough_flatplate"
+    inc_flatplate_pb.cfg_file  = "pb_rough_flatplate_incomp.cfg"
+    inc_flatplate_pb.test_iter = 20
+    inc_flatplate_pb.test_vals = [-4.675604, -10.071739, 0.000105, 0.026616]
+    test_list.append(inc_flatplate_pb)
+
     ####################
     ### DG-FEM Euler ###
     ####################

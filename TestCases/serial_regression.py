@@ -496,6 +496,14 @@ def main():
     inc_turb_naca0012_sst_sust.test_vals = [-7.169704, 0.332779, 0.000021, 0.312114]
     test_list.append(inc_turb_naca0012_sst_sust)
 
+    # Flat plate, pressure-based
+    inc_flatplate_pb           = TestCase('inc_flatplate_pb')
+    inc_flatplate_pb.cfg_dir   = "incomp_rans/rough_flatplate"
+    inc_flatplate_pb.cfg_file  = "pb_rough_flatplate_incomp.cfg"
+    inc_flatplate_pb.test_iter = 20
+    inc_flatplate_pb.test_vals = [ -4.675604, -10.071739, 0.000105, 0.026616]
+    test_list.append(inc_flatplate_pb)
+
     # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SST
     inc_turb_wallfunction_flatplate_sst           = TestCase('inc_turb_sst_wallfunction_flatplate')
     inc_turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/incompressible_SST"
