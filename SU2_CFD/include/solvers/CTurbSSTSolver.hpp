@@ -273,6 +273,22 @@ public:
                  unsigned short val_marker) override;
 
   /*!
+   * \brief Impose the far-field boundary condition, via the CScalarFlux_SST edge kernel.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CNumerics *conv_numerics,
+                    CNumerics *visc_numerics,
+                    CConfig *config,
+                    unsigned short val_marker) override;
+
+  /*!
    * \brief Impose the fluid interface (sliding mesh) boundary condition, via the CScalarFlux_SST
    *        edge kernel. The convective term is a per-donor weighted average, computed in the same
    *        pass that fills the ghost row of each donor; the diffusive term is computed once per

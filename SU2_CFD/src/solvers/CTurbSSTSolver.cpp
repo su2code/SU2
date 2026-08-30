@@ -739,6 +739,39 @@ void CTurbSSTSolver::RunSST_Boundary(CGeometry* geometry, CSolver** solver_conta
                                                                    val_marker, implicit);
 }
 
+void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*,
+                                  CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
+  EnsureGhostFlowContainers(solver_container, config);
+
+  auto* flowSolver = solver_container[FLOW_SOL];
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, Solution_Inf[iVar]);
+
+    SetGhostPrimitives(iVertex, flowSolver->GetCharacPrimVar(val_marker, iVertex));
+
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      ghostNormal(iVertex, iDim) = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+
+    ghostSkip[iVertex] = false;
+  }
+  END_SU2_OMP_FOR
+
+  const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+  const ScalarFluxOptions opt{
+      dynamic_grid, config->GetBounded_Turb(), false /*correctGradient*/, false /*accurateJacobians*/,
+      true /*convective*/,  false /*viscous*/,
+      true /*oneSided, the ghost point has no row*/, false /*muscl, a boundary never reconstructs*/,
+  };
+
+  DispatchRegime(config, [&](auto tag) {
+    RunSST_Boundary<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker, implicit);
+  });
+}
+
 void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics*,
                                           CNumerics*, CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED

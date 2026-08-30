@@ -202,6 +202,18 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                  CConfig* config, unsigned short val_marker) final;
 
   /*!
+   * \brief Impose the far-field boundary condition, via the CScalarFlux_Species edge kernel.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                    CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) final;
+
+  /*!
    * \brief Impose the isothermal wall Dirichlet boundary condition (value).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
