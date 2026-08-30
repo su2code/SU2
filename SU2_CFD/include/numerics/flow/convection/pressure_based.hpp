@@ -40,26 +40,36 @@
 class CPBConvection_Base : public CNumerics {
 protected:
 
-  bool implicit, dynamic_grid, energy;
+  bool implicit, dynamic_grid, energy, variable_density;
 
   unsigned short iDim, jDim, iVar, jVar;
   
-  su2double *AdvectedVelocity = nullptr;
+  su2double *AdvectedVelocity = nullptr, AdvectedEnthalpy;
   su2double *Flux = nullptr;
   su2double **Jacobian_i = nullptr;
   su2double **Jacobian_j = nullptr;
 
   su2double MeanPressure, MeanDensity;
+  su2double dRhodh_i, dRhodh_j, Temperature_i, Temperature_j;
+
+  su2double weight_jacobian_i, weight_jacobian_j;
 
   /*!
-   * \brief Function which defines the velocity that is advected
+   * \brief Function which defines the advected quantities
    */
-  void virtual ComputeAdvectedVelocity(void) = 0;
+  void virtual ComputeAdvectedQuantities(void) = 0;
 
-   /*!
+  /*!
+   * \brief Function which defines jacobian weights
+   */
+  void virtual ComputeJacobianWeights(void) = 0;
+
+  /*!
    * \brief Function which defines the Jacobian
    */
-  void virtual ComputeJacobian(void) = 0;
+  void ComputeJacobian(su2double val_density, const su2double *val_velocity,
+                       su2double val_enthalpy, su2double val_dRhodh,
+                       su2double val_scale, su2double **val_Proj_Jac_Tensor);
   
 public:
   
@@ -106,14 +116,14 @@ public:
     : CPBConvection_Base(val_nDim, val_nVar, config) {}
 
   /*!
-   * \brief Function which defines the velocity that is advected
+   * \brief Function which defines the advected quantities
    */
-  void ComputeAdvectedVelocity(void) final;
+  void ComputeAdvectedQuantities(void) final;
 
-   /*!
-   * \brief Function which defines the Jacobian
+  /*!
+   * \brief Function which defines jacobian weights
    */
-  void ComputeJacobian(void) final;
+  void ComputeJacobianWeights(void) final;
   
 };
 
@@ -138,13 +148,13 @@ public:
     : CPBConvection_Base(val_nDim, val_nVar, config) {}
 
   /*!
-   * \brief Function which defines the velocity that is advected
+   * \brief Function which defines the advected quantities
    */
-  void ComputeAdvectedVelocity(void) final;
+  void ComputeAdvectedQuantities(void) final;
 
-   /*!
-   * \brief Function which defines the Jacobian
+  /*!
+   * \brief Function which defines jacobian weights
    */
-  void ComputeJacobian(void) final;
+  void ComputeJacobianWeights(void) final;
   
 };

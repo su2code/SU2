@@ -86,7 +86,7 @@ public:
    * \param[in] iDim - Dimension index.
    * \param[in] val_mom - Momentum correction (rho*u)' value.
    */
-  inline void SetVelocityCorrection(unsigned long iPoint, unsigned short iDim, su2double val_mom) final { MomentumCorrection(iPoint, iDim) = val_mom; }
+  inline void SetMomentumCorrection(unsigned long iPoint, unsigned short iDim, su2double val_mom) final { MomentumCorrection(iPoint, iDim) = val_mom; }
   
   /*!
    * \brief Get (rho*u)' for the point
@@ -94,6 +94,6 @@ public:
    * \param[in] iDim - Dimension index.
    * \return The (rho*u)' for the point.
    */
-  inline su2double GetVelocityCorrection(unsigned long iPoint, unsigned short iDim) final { return MomentumCorrection(iPoint, iDim); }
+  inline su2double GetMomentumCorrection(unsigned long iPoint, unsigned short iDim) final { return MomentumCorrection(iPoint, iDim); }
 
 };

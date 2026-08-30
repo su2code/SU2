@@ -44,7 +44,7 @@ protected:
   bool pressure_based;
   su2activevector alpha_p;
   su2activevector pressureCorrection;
-  su2activematrix velocityCorrection;
+  su2activematrix momentumCorrection;
   su2activevector EdgeMassFluxCorrection;
 
   /*!

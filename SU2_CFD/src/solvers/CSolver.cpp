@@ -1425,7 +1425,7 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
-    case MPI_QUANTITIES::VEL_CORRECTION:
+    case MPI_QUANTITIES::MOM_CORRECTION:
       COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
@@ -1593,9 +1593,9 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case MPI_QUANTITIES::MOM_COEFF:
             bufDSend[buf_offset] = base_nodes->GetMomCoeff(iPoint);
             break;
-          case MPI_QUANTITIES::VEL_CORRECTION:
+          case MPI_QUANTITIES::MOM_CORRECTION:
             for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[buf_offset+iDim] = base_nodes->GetVelocityCorrection(iPoint, iDim);
+              bufDSend[buf_offset+iDim] = base_nodes->GetMomentumCorrection(iPoint, iDim);
             break; 
           case MPI_QUANTITIES::HBYA_CORRECTION:
             for (iDim = 0; iDim < nDim; iDim++)
@@ -1760,9 +1760,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case MPI_QUANTITIES::MOM_COEFF:
             base_nodes->SetMomCoeff(iPoint, bufDRecv[buf_offset]);
             break;
-          case MPI_QUANTITIES::VEL_CORRECTION:
+          case MPI_QUANTITIES::MOM_CORRECTION:
             for (iDim = 0; iDim < nDim; iDim++)
-              base_nodes->SetVelocityCorrection(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+              base_nodes->SetMomentumCorrection(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           case MPI_QUANTITIES::HBYA_CORRECTION:
             for (iDim = 0; iDim < nDim; iDim++)

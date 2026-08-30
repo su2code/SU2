@@ -2421,9 +2421,9 @@ public:
 
   inline virtual void SetMomCoeff(unsigned long iPoint, su2double val_Mom_Coeff) { }
 
-  inline virtual su2double GetVelocityCorrection(unsigned long iPoint, unsigned short iDim) { return 0.0; }
+  inline virtual su2double GetMomentumCorrection(unsigned long iPoint, unsigned short iDim) { return 0.0; }
 
-  inline virtual void SetVelocityCorrection(unsigned long iPoint, unsigned short iDim, su2double val_mom) { }
+  inline virtual void SetMomentumCorrection(unsigned long iPoint, unsigned short iDim, su2double val_mom) { }
 
   inline virtual su2double GetHbyACorrection(unsigned long iPoint, unsigned short iDim) { return 0.0; }
 

@@ -160,34 +160,40 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
   const CVariable* flow_nodes = flow_solution->GetNodes();
   
   if (implicit) {
-    /* First sum up the momentum coefficient using the jacobian from given point and it's neighbors. ---*/
+
+    /*--- First sum up the momentum coefficient using the jacobian from given point and it's neighbors. ---*/
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Self contribution of the coefficient a_p. Note that this coefficient should be the same for all variable directions. therefore just the x-momentum coefficient is taken. ---*/
-      su2double A_p = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1);
+      /*--- Self contribution of the coefficient A_p, defined as dR/d(rhou). The jacobian of the momentum 
+      equations is already defined as dR/du so it can be reused. Note that this coefficient should be the same for 
+      all variable directions, therefore just the x-momentum coefficient is taken. ---*/
+      
+      su2double A_p = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1) / flow_nodes->GetDensity(iPoint);
     
-      su2double Mom_Coeff_nb = 0.0;
+      /*--- Optionally alter the coefficient using SIMPLEC ---*/
+
+      su2double Sum_A_nb = 0.0;
 
       if (simplec) {
         for (unsigned long iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
           auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-          Mom_Coeff_nb += flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(1,1);
+          Sum_A_nb += flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(1,1) / flow_nodes->GetDensity(jPoint);
         }
       }
+
+      /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
 
       su2double Vol = geometry->nodes->GetVolume(iPoint); 
       su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
-      /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
-      su2double Mom_Coeff = A_p - Mom_Coeff_nb - config->GetSIMPLE_Options().Transient_Term_Removal_Factor * (Vol / delT);
-
-      su2double Density = flow_nodes->GetDensity(iPoint);
+      su2double CorrectedA_p = A_p - Sum_A_nb - config->GetSIMPLE_Options().Transient_Term_Removal_Factor * (Vol / delT);
 
       /*--- Invert the momentum coefficient to 1/a_p and scale by the volume and density so it can be used as diffusion coefficient in the poisson eq ---*/
-      Mom_Coeff = Vol / (Mom_Coeff*Density);
 
-      nodes->SetMomCoeff(iPoint, Mom_Coeff);
+      nodes->SetMomCoeff(iPoint, Vol / CorrectedA_p);
+
     }
     END_SU2_OMP_FOR
   }
@@ -195,16 +201,18 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
 
     SU2_MPI::Error("The definition of the momentum coefficient for an explicit solution is currently only an approximation and is not yet tested.", CURRENT_FUNCTION);
 
-    // SU2_OMP_FOR_STAT(omp_chunk_size)
-    // for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    /*
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    //   su2double delT = flow_nodes->GetDelta_Time(iPoint);
+      su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
-    //   su2double Mom_Coeff = delT;
+      su2double Mom_Coeff = delT;
 
-    //   nodes->SetMomCoeff(iPoint, Mom_Coeff);
-    // }
-    // END_SU2_OMP_FOR
+      nodes->SetMomCoeff(iPoint, Mom_Coeff);
+    }
+    END_SU2_OMP_FOR
+    */
   }
 
   /*--- Insert MPI call here. ---*/
@@ -217,25 +225,28 @@ void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container
 
   unsigned short iDim;
   unsigned long iPoint, jPoint, iNeigh;
+  su2double H, A_p, A_nb;
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  const CSolver* flow_solution = solver_container[FLOW_SOL];
+  const CSolver* flow_solver = solver_container[FLOW_SOL];
+  const CVariable* flow_nodes = flow_solver->GetNodes();
 
   /*--- First exchange momentum correction which is required to compute H. ---*/
-  InitiateComms(geometry, config, MPI_QUANTITIES::VEL_CORRECTION);
-  CompleteComms(geometry, config, MPI_QUANTITIES::VEL_CORRECTION); 
+  InitiateComms(geometry, config, MPI_QUANTITIES::MOM_CORRECTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::MOM_CORRECTION); 
   
   if (implicit) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iDim = 0; iDim < nDim; ++iDim) {
-        su2double H = 0.0;
-        su2double A_P = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1);
+        H = 0.0;
+        A_p = flow_solver->Jacobian.GetBlockView(iPoint, iPoint)(1,1) / flow_nodes->GetDensity(iPoint);
         for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
           jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-          H -= flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(1,1) * nodes->GetVelocityCorrection(jPoint, iDim);
+          A_nb = flow_solver->Jacobian.GetBlockView(iPoint, jPoint)(1,1) / flow_nodes->GetDensity(jPoint);
+          H -=  A_nb * nodes->GetMomentumCorrection(jPoint, iDim);
         }
-        nodes->SetHbyACorrection(iPoint, iDim, H/A_P);
+        nodes->SetHbyACorrection(iPoint, iDim, H/A_p);
       }
     }
     END_SU2_OMP_FOR
@@ -292,6 +303,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   const auto& edgeMassFluxes = *(flow_solver->GetEdgeMassFluxes());
 
   /*--- flux is computed over all edges ---*/
+
   for (auto color : EdgeColoring) {
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
     for (auto k = 0ul; k < color.size; ++k) {
@@ -301,13 +313,9 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       su2double Normal[MAXNDIM] = {0.0};
       geometry->edges->GetNormal(iEdge, Normal);
 
-      /*--- Find the projected velocity at the edge ---*/
-
-      su2double MeanDensity = 0.5*(flow_nodes->GetDensity(iPoint) + flow_nodes->GetDensity(jPoint));
-      su2double ProjVelocity = edgeMassFluxes[iEdge] / MeanDensity;
-
       /*--- Add the mass flux to the source term for the poisson equation ---*/
-      auto residual = CNumerics::ResidualType<>(&ProjVelocity, nullptr, nullptr);
+
+      auto residual = CNumerics::ResidualType<>(&edgeMassFluxes[iEdge], nullptr, nullptr);
 
       if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
       if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residual);
@@ -327,10 +335,11 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   }
 
   /*--- Now add corrections to the previously computed mass fluxes for boundary conditions which alter the mass flux ---*/
+
   unsigned short iDim, KindBC;
   unsigned long  iMarker, iVertex, iPoint;
   string Marker_Tag;
-  su2double ProjVelocity_corr = 0.0, Normal[MAXNDIM];
+  su2double MassFlux_corr = 0.0, Normal[MAXNDIM];
 
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -354,17 +363,17 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
           geometry->vertex[iMarker][iVertex]->GetNormal(Normal);            
               
-          ProjVelocity_corr = 0.0;
+          MassFlux_corr = 0.0;
           if (dynamic_grid) {
             GridVel_i = geometry->nodes->GetGridVel(iPoint);
             for (iDim = 0; iDim < nDim; iDim++)
-              ProjVelocity_corr -= (flow_nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
+              MassFlux_corr -= flow_nodes->GetDensity(iPoint) * (flow_nodes->GetVelocity(iPoint, iDim) - GridVel_i[iDim]) * Normal[iDim];
           } 
           else
             for (iDim = 0; iDim < nDim; iDim++)
-            ProjVelocity_corr -= flow_nodes->GetVelocity(iPoint, iDim)*Normal[iDim];
+            MassFlux_corr -= flow_nodes->GetDensity(iPoint) * flow_nodes->GetVelocity(iPoint, iDim) * Normal[iDim];
 
-          auto residual = CNumerics::ResidualType<>(&ProjVelocity_corr, nullptr, nullptr);
+          auto residual = CNumerics::ResidualType<>(&MassFlux_corr, nullptr, nullptr);
 
           if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
 
@@ -382,15 +391,15 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
             if (dynamic_grid)
               GridVel_i = geometry->nodes->GetGridVel(iPoint);
                 
-            ProjVelocity_corr = 0.0;
+            MassFlux_corr = 0.0;
             if (dynamic_grid)
               for (iDim = 0; iDim < nDim; iDim++)
-                ProjVelocity_corr -= (flow_nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
+                MassFlux_corr -= flow_nodes->GetDensity(iPoint) * (flow_nodes->GetVelocity(iPoint, iDim) - GridVel_i[iDim]) * Normal[iDim];
             else
              for (iDim = 0; iDim < nDim; iDim++)
-              ProjVelocity_corr -= flow_nodes->GetVelocity(iPoint, iDim)*Normal[iDim];
+              MassFlux_corr -= flow_nodes->GetDensity(iPoint) * flow_nodes->GetVelocity(iPoint, iDim) * Normal[iDim];
   
-            auto residual = CNumerics::ResidualType<>(&ProjVelocity_corr, nullptr, nullptr);
+            auto residual = CNumerics::ResidualType<>(&MassFlux_corr, nullptr, nullptr);
             LinSysRes.AddBlock(iPoint, residual);    
 
           }
@@ -416,15 +425,15 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
                 if (dynamic_grid)
                   GridVel_i = geometry->nodes->GetGridVel(iPoint);
                 
-                ProjVelocity_corr = 0.0;
+                MassFlux_corr = 0.0;
                 if (dynamic_grid)
                   for (iDim = 0; iDim < nDim; iDim++)
-                    ProjVelocity_corr -= (flow_nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
+                    MassFlux_corr -= flow_nodes->GetDensity(iPoint) * (flow_nodes->GetVelocity(iPoint, iDim) - GridVel_i[iDim]) * Normal[iDim];
                 else
                   for (iDim = 0; iDim < nDim; iDim++)
-                    ProjVelocity_corr -= (flow_nodes->GetVelocity(iPoint, iDim))*Normal[iDim];
+                    MassFlux_corr -= flow_nodes->GetDensity(iPoint) * (flow_nodes->GetVelocity(iPoint, iDim)) * Normal[iDim];
 
-                auto residual = CNumerics::ResidualType<>(&ProjVelocity_corr, nullptr, nullptr);
+                auto residual = CNumerics::ResidualType<>(&MassFlux_corr, nullptr, nullptr);
 
                 if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
               }
