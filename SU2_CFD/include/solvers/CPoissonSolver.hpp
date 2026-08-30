@@ -104,20 +104,6 @@ public:
                                      CSolver **solver_container,
                                      CConfig *config,
                                      unsigned short iMesh) final;
-  
-  /*!
-   * \brief Load a solution from a restart file (not applicable as poisson solver is only used as auxiliary solver to CPBInc...)
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iter - Current external iteration number.
-   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
-   */
-  void LoadRestart(CGeometry **geometry,
-                   CSolver ***solver,
-                   CConfig *config,
-                   int val_iter,
-                   bool val_update_geo) override {}
 
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
@@ -148,11 +134,6 @@ public:
 
   /*!
    * \brief No upwind residual for poisson equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
                        CConfig* config, unsigned short iMesh) override {}                   
