@@ -501,7 +501,7 @@ def main():
     inc_flatplate_pb.cfg_dir   = "incomp_rans/rough_flatplate"
     inc_flatplate_pb.cfg_file  = "pb_rough_flatplate_incomp.cfg"
     inc_flatplate_pb.test_iter = 10
-    inc_flatplate_pb.test_vals = [ -4.063342, -9.884401, 0.000011, 0.228472|]
+    inc_flatplate_pb.test_vals = [ -4.063342, -9.884401, 0.000011, 0.228472]
     test_list.append(inc_flatplate_pb)
 
     # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SST
