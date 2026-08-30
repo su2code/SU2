@@ -1134,6 +1134,11 @@ struct CMGOptions {
                                                   part of a stretched layer. Ends a line where the mesh stops being
                                                   stretched along it, and decides which boundaries carry a layer normal
                                                   to them. See CMultiGridGeometry::AgglomerateImplicitLines. */
+  su2double MG_Implicit_Lines_Iso_AR{0.0}; /*!< \brief Aspect ratio below which a stack switches from semi-coarsening
+                                                  (one fine layer per coarse CV, preserving the line) to full coarsening
+                                                  (two fine layers per coarse CV). 0 disables the switch, leaving
+                                                  MG_IMPLICIT_LINES_ISOTROPIC in charge for the whole stack.
+                                                  See CMultiGridGeometry::AgglomerateImplicitLines. */
   unsigned long MG_Coarse_Prec_Freeze{1}; /*!< \brief On MG levels > 0, reuse the linear-solver preconditioner for this many consecutive solves. 1 = rebuild every solve. */
   su2double MG_Correction_Limit{0.0};     /*!< \brief Max relative change of any solution component from one prolongated FAS correction. 0 = no limit. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Iterations per mesh during FMG startup, and the length of each level's CFL ramp. 0 = no iteration budget. */

@@ -2095,6 +2095,12 @@ void CConfig::SetConfig_Options() {
    * being stretched along it, instead of letting it run to the far field, and decides which boundaries carry a layer
    * normal to them and may therefore seed lines. 1.0 disables both tests. DEFAULT: 2.0 \ingroup Config*/
   addDoubleOption("MG_IMPLICIT_LINES_MIN_AR", MGOptions.MG_Implicit_Lines_Min_AR, 2.0);
+  /*!\brief MG_IMPLICIT_LINES_ISO_AR\n DESCRIPTION: Local cell aspect ratio at which a stack of coarse CVs switches from
+   * semi-coarsening to full coarsening. While the mesh at the current height is stretched by more than this, one fine
+   * layer goes into each coarse CV, so the coarse grid keeps the wall-normal line structure a line-implicit smoother
+   * relies on. Once the ratio drops below it the layers are taken two at a time and the coarsening becomes isotropic.
+   * 0.0 disables the switch and MG_IMPLICIT_LINES_ISOTROPIC decides for the whole stack. DEFAULT: 0.0 \ingroup Config*/
+  addDoubleOption("MG_IMPLICIT_LINES_ISO_AR", MGOptions.MG_Implicit_Lines_Iso_AR, 0.0);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
    * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);

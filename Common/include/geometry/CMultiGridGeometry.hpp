@@ -82,10 +82,54 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in,out] Index_CoarseCV - Current coarse CV index, incremented as new coarse CVs are created.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Configuration.
-   * \param[in,out] MGQueue_InnerCV - Queue for domain agglomeration; processed points are removed.
    */
-  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
-                                CMultiGridQueue& MGQueue_InnerCV);
+  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config);
+
+  /*!
+   * \brief Per-node dual-grid stiffness data used by the implicit-line agglomeration: the weakest and
+   *        strongest coupling at each node, and the neighbour the strongest one leads to. Their ratio is
+   *        the local cell aspect ratio, available on every multigrid level unlike CGeometry::Aspect_Ratio.
+   */
+  struct CNodeStiffness {
+    vector<su2double> wMin, wMax;   /*!< \brief Weakest and strongest edge coupling at each node. */
+    vector<unsigned long> jStiffest; /*!< \brief Neighbour across the strongest edge. */
+
+    /*!< \brief Local aspect ratio at a node, 1.0 where it could not be measured. */
+    su2double AspectRatio(unsigned long iPoint) const {
+      return (wMin[iPoint] > 0.0) ? wMax[iPoint] / wMin[iPoint] : su2double(1.0);
+    }
+  };
+
+  /*!
+   * \brief Measure the dual-grid coupling at every node of a grid.
+   * \param[in] fine_grid - Grid to measure.
+   * \return Weakest/strongest coupling per node, see CNodeStiffness.
+   */
+  CNodeStiffness ComputeNodeStiffness(const CGeometry* fine_grid) const;
+
+  /*!
+   * \brief PHASE A of the implicit-line agglomeration: grow wall-normal lines of nodes from the
+   *        boundaries that carry a stretched layer. Lines are node-disjoint.
+   * \param[in] fine_grid - Fine grid geometry.
+   * \param[in] config - Configuration.
+   * \param[in] stiff - Node coupling from ComputeNodeStiffness.
+   * \return One vector per line, each starting at its boundary node.
+   */
+  vector<vector<unsigned long>> BuildImplicitLines(const CGeometry* fine_grid, const CConfig* config,
+                                                  const CNodeStiffness& stiff) const;
+
+  /*!
+   * \brief PHASE B of the implicit-line agglomeration: partition the lines into compact bundles that
+   *        share a wall footprint, by repeated pairwise matching.
+   * \param[in] lines - Lines from BuildImplicitLines.
+   * \param[in] fine_grid - Fine grid geometry.
+   * \param[in] config - Configuration.
+   * \param[out] adj - Line adjacency inherited from the boundary nodes, reused by PHASE C.
+   * \return One vector of line indices per bundle.
+   */
+  vector<vector<unsigned long>> BundleImplicitLines(const vector<vector<unsigned long>>& lines,
+                                                    const CGeometry* fine_grid, const CConfig* config,
+                                                    vector<vector<unsigned long>>& adj) const;
 
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
