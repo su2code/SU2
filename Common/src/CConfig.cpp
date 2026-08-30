@@ -2071,6 +2071,20 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
   /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
+  /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
+   * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
+  addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
+  /*!\brief MG_STARTUP_CONVERGENCE\n DESCRIPTION: During the startup phase of Full-MG, leave the current level once
+   * CONV_FIELD has dropped by this many orders of magnitude relative to its value when the level became active.
+   * DEFAULT: -2 \ingroup Config*/
+  addDoubleOption("MG_STARTUP_CONVERGENCE", MGOptions.MG_Startup_Convergence, -2.0);
+  /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio
+   * between successive iterations exceeds this value for MG_STARTUP_STAGNATION_ITER consecutive iterations, promote to
+   * the next finer level without waiting out MG_STARTUP_ITER. 0 disables it. DEFAULT: 0.99 \ingroup Config*/
+  addDoubleOption("MG_STARTUP_STAGNATION", MGOptions.MG_Startup_Stagnation, 0.99);
+  /*!\brief MG_STARTUP_STAGNATION_ITER\n DESCRIPTION: Consecutive stalled iterations required before Full-MG promotes
+   * on stagnation. 0 disables it, as MG_STARTUP_STAGNATION= 0 does. DEFAULT: 5 \ingroup Config*/
+  addUnsignedLongOption("MG_STARTUP_STAGNATION_ITER", MGOptions.MG_Startup_Stagnation_Iter, 5);
   /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i). If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
 
@@ -4839,6 +4853,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  /*--- Only the direct problem promotes a Full-MG startup. Downgrade before FinestMesh is
+   *    derived from the cycle, or it stays on the coarsest level for the entire run. ---*/
+
+  if (Restart || ((Kind_MGCycle == MG_CYCLE::FULL) && ContinuousAdjoint)) Kind_MGCycle = MG_CYCLE::V;
+
   FinestMesh = MESH_0;
   if (Kind_MGCycle == MG_CYCLE::FULL) FinestMesh = nMGLevels;
 
@@ -4899,8 +4918,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   MGOptions.MG_PostSmooth[MESH_0] = 0;
   MGOptions.MG_PostSmooth[nMGLevels] = 0;
   MGOptions.MG_CorrecSmooth[nMGLevels] = 0;
-
-  if (Restart) Kind_MGCycle = MG_CYCLE::V;
 
   if (ContinuousAdjoint) {
     if (Kind_Solver == MAIN_SOLVER::EULER) Kind_Solver = MAIN_SOLVER::ADJ_EULER;
