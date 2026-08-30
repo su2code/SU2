@@ -653,7 +653,7 @@ def main():
     # NACA0012 Hydrofoil
     inc_euler_naca0012_pb           = TestCase('inc_euler_naca0012_pb')
     inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
-    inc_euler_naca0012_pb.cfg_file  = "incomp_NACA0012.cfg"
+    inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
     inc_euler_naca0012_pb.test_vals = [-4.154445, 4.919399, 0.468631, 0.010040]
     test_list.append(inc_euler_naca0012_pb)
