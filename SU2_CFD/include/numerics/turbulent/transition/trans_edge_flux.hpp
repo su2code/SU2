@@ -33,13 +33,12 @@
  * \class CScalarFlux_TransLM
  * \ingroup ViscDiscr
  * \brief Convection and diffusion of the Langtry-Menter transition model, conservative with a
- *        diagonal, i/j-symmetric diffusion matrix (unlike SST's, the coefficients only depend on
- *        the flow's mu/mu_t, not on the transported gamma/Re_theta, so no coefficientJacobians
- *        override is needed).
+ *        diagonal, i/j-symmetric diffusion matrix. The coefficients depend only on the flow's
+ *        mu/mu_t, not on the transported gamma/Re_theta, so no coefficientJacobians override
+ *        is needed.
  * \note LM writes no finalizeFlux of its own: the inherited CUpwScalarFlux one is exactly
  *       flux(iVar) = a0*rho_i*phi_i(iVar) + a1*rho_j*phi_j(iVar), Conservative weighting by
- *       density, which is the model's whole convective term (CUpwSca_TransLM was previously a
- *       type alias of CUpwSca_TurbSST for exactly this reason).
+ *       density, which is the model's whole convective term.
  */
 template <class Double, class FlowIndices, int nDim, size_t nVar = 2>
 class CScalarFlux_TransLM
@@ -55,9 +54,6 @@ class CScalarFlux_TransLM
   /*!
    * \brief Diffusion coefficients, an i/j average of (mu+mu_t) for intermittency and of
    *        2*(mu+mu_t) for the momentum-thickness Reynolds number; identical for both edge sides.
-   * \note The Re_theta coefficient is kept as an average of two separately-doubled terms, matching
-   *       the old CAvgGrad_TransLM::FinishResidualCalc's exact operation order, rather than the
-   *       algebraically-equivalent "2 * the gamma coefficient".
    */
   template <class VariableType>
   FORCEINLINE CPair<Vector<Double, nVar>> coefficients(const FlowIndices& idx, Int iPoint,

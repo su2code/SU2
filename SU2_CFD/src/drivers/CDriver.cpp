@@ -51,7 +51,6 @@
 
 #include "../../include/variables/CEulerVariable.hpp"
 #include "../../include/variables/CIncEulerVariable.hpp"
-#include "../../include/variables/CNEMOEulerVariable.hpp"
 
 #include "../../include/numerics/template.hpp"
 #include "../../include/numerics/radiation.hpp"
@@ -1291,14 +1290,13 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
     numerics[iMGlevel][TRANS_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Trans, config);
   }
 }
-/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
+/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp.
+ * NEMO has no explicit instantiation: transition requires a turbulence model, which is rejected
+ * for NEMO at configuration. ---*/
 template void CDriver::InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
-
-template void CDriver::InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template <class Indices>
@@ -1335,14 +1333,12 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
   }
 }
 
-/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
+/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp.
+ * NEMO has no explicit instantiation: the call site below errors before reaching NEMO indices. ---*/
 template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
-
-template void CDriver::InstantiateSpeciesNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
@@ -1963,9 +1959,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
     if (incompressible)
       InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
                                                                                  solver[MESH_0][TRANS_SOL], numerics);
-    else if (NEMO_ns)
-      InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
-                                                                                  solver[MESH_0][TRANS_SOL], numerics);
     else
       InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
                                                                               solver[MESH_0][TRANS_SOL], numerics);

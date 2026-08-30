@@ -31,7 +31,6 @@
 #include "../variables/CSpeciesVariable.hpp"
 #include "../variables/CEulerVariable.hpp"
 #include "../variables/CIncEulerVariable.hpp"
-#include "../variables/CNEMOEulerVariable.hpp"
 #include "CScalarSolver.hpp"
 
 /*!
@@ -49,15 +48,13 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   /*!
    * \brief Resolve the compile-time flow indices from the regime flag of config, and call f with
    *        a CIndicesTag of the result: f is a generic lambda, `[&](auto tag){ using Indices =
-   *        typename decltype(tag)::type; ... }`. Unlike CTurbSolver::DispatchRegime, species
-   *        transport is supported for NEMO, so this has a third branch.
+   *        typename decltype(tag)::type; ... }`. NEMO is not one of the branches: CDriver rejects
+   *        species transport for it before any numerics are built.
    */
   template <class F>
   static void DispatchRegime(const CConfig* config, F&& f) {
     if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
       f(CIndicesTag<CIncEulerVariable::CIndices<unsigned short>>{});
-    } else if (config->GetNEMOProblem()) {
-      f(CIndicesTag<CNEMOEulerVariable::CIndices<unsigned short>>{});
     } else {
       f(CIndicesTag<CEulerVariable::CIndices<unsigned short>>{});
     }

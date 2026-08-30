@@ -60,9 +60,6 @@ class CScalarFlux_Species
    * \brief Diffusion coefficients, an i/j average of (rho * mass diffusivity) per species, plus a
    *        turbulent (mu_t/Sc_t) contribution shared by every species, when a turbulence model is
    *        active; identical for both edge sides.
-   * \note The laminar and turbulent averages are kept as two separate 0.5*(...) terms summed at
-   *       the end, matching CAvgGrad_Species::FinishResidualCalc's exact operation order, rather
-   *       than folding the turbulent term into the same average as the laminar one.
    */
   template <class VariableType>
   FORCEINLINE CPair<Vector<Double, Base::Size>> coefficients(const FlowIndices& idx, Int iPoint,

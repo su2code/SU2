@@ -277,7 +277,11 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
         limiterType(config.GetInnerIter() <= config.GetLimiterIter() ? config.GetKind_SlopeLimit() : LIMITER::NONE),
         limiterTypeFlow(config.GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE ? config.GetKind_SlopeLimit_Flow()
                                                                                      : LIMITER::NONE),
-        musclFlow(config.GetMUSCL_Flow() && config.GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {}
+        musclFlow(config.GetMUSCL_Flow() && config.GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {
+    if (nEqn > Size) {
+      SU2_MPI::Error("Static arrays are too small for the requested equation count.", CURRENT_FUNCTION);
+    }
+  }
 
   template <class VariableType>
   FORCEINLINE EdgeResidual<Double, nVar> ComputeFlux(const ScalarFluxOptions& opt, Int iPoint,
