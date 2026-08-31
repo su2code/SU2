@@ -323,6 +323,7 @@ protected:
   bool convergence;              /*!< \brief To indicate if the solver has converged or not. */
   su2double initResidual;        /*!< \brief Initial value of the residual to evaluate the convergence level. */
   vector<string> convFields;     /*!< \brief Name of the field to be monitored for convergence. */
+  unsigned long convergenceStartIter = 0; /*!< \brief Iteration the convergence history is counted from. */
 
   /*----------------------------- Adaptive CFL ----------------------------*/
 
@@ -484,6 +485,28 @@ public:
     if (it != historyOutput_Map.end()) return it->second.value;
     SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     return 0;
+  }
+
+  /*!
+   * \brief Discard the convergence history and count it from the given iteration instead.
+   * \param[in] Iteration - Iteration the history restarts from.
+   */
+  void ResetConvergenceMonitoring(unsigned long Iteration) { convergenceStartIter = Iteration; }
+
+  /*!
+   * \brief Names and values of the fields convergence is monitored on that are residuals.
+   * \return Name and current value of every monitored residual field, in CONV_FIELD order.
+   */
+  vector<pair<string, passivedouble>> GetResidualConvFields() const {
+    vector<pair<string, passivedouble>> fields;
+    for (const auto& name : convFields) {
+      const auto it = historyOutput_Map.find(name);
+      if (it == historyOutput_Map.end()) continue;
+      if ((it->second.fieldType != HistoryFieldType::RESIDUAL) &&
+          (it->second.fieldType != HistoryFieldType::AUTO_RESIDUAL)) continue;
+      fields.emplace_back(name, SU2_TYPE::GetValue(it->second.value));
+    }
+    return fields;
   }
 
  /*!
@@ -785,6 +808,12 @@ protected:
    * \brief CheckHistoryOutput
    */
   void CheckHistoryOutput(unsigned short nZone);
+
+  /*!
+   * \brief Check that the Full-MG startup has a criterion left to promote the active level on.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CheckFullMG_Startup(const CConfig *config) const;
 
   /*!
    * \brief Open the history file and write the header.
