@@ -1009,11 +1009,10 @@ su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, 
   MyFlameThickness[0] = gradpv_local;
   MyFlameThickness[1] = pvmax_local;
   MyFlameThickness[2] = Tmax_local;
-  
-  SU2_MPI::Allreduce(MyFlameThickness, TotalFlameThickness, 3, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&pvmin_local, &pvmin_global, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    SU2_MPI::Allreduce(MyFlameThickness, TotalFlameThickness, 3, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&pvmin_local, &pvmin_global, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
     gradpv_global = TotalFlameThickness[0];
     pvmax_global = TotalFlameThickness[1];
     Tmax_global = TotalFlameThickness[2];
