@@ -34,8 +34,9 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
-CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
-    : CTurbSolver(geometry, config, true) {
+CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, const CSolver* flow_solver,
+                               unsigned short iMesh)
+    : CTurbSolver(geometry, config, flow_solver, true) {
   SU2_ZONE_SCOPED
   unsigned long iPoint;
   ifstream restart_file;
@@ -212,8 +213,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
-
-  EnsureGhostFlowContainers(solver_container, config);
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,

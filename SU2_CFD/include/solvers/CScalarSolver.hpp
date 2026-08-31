@@ -101,7 +101,7 @@ class CScalarSolver : public CSolver {
    * one marker at a time, parallel over its vertices, so the buffers are written and consumed
    * before the next marker reaches them (see BoundaryFluxResidual). ---*/
   unique_ptr<VariableType> ghostNodes;         /*!< \brief Allocated by the derived solver, whose VariableType constructor it alone knows how to call. */
-  unique_ptr<CGhostFlowVariable> ghostFlowNodes; /*!< \brief Allocated once here, sizes coming from the flow solver. */
+  unique_ptr<CGhostFlowVariable> ghostFlowNodes; /*!< \brief Sized from the flow solver, see the constructor. */
   su2activematrix ghostNormal; /*!< \brief Outward normals, sign flipped from the vertex normals. */
   su2activematrix ghostCoord;  /*!< \brief Reflected coordinates, read by the diffusion sites. */
   su2vector<uint8_t> ghostSkip; /*!< \brief Whether a vertex contributes no flux, set by the fill pass. */
@@ -345,14 +345,6 @@ class CScalarSolver : public CSolver {
                         const ScalarFluxOptions& opt);
 
   /*!
-   * \brief Allocate the ghost flow container and the per-vertex buffers boundaries share, the
-   *        first time a boundary needs them; a no-op on every call after the first.
-   * \note Sizes come from the flow solver, so this cannot run at construction time the way
-   *       ghostNodes does: the derived solver's constructor is not handed solver_container.
-   */
-  void EnsureGhostFlowContainers(CSolver** solver_container, const CConfig* config);
-
-  /*!
    * \brief Write the four flow primitives the flux kernels read into one row of ghostFlowNodes.
    * \param[in] iVertex - Vertex of the marker currently being processed.
    * \param[in] V - Row of flow primitives to copy from (e.g. GetCharacPrimVar's or a sliding state's).
@@ -509,8 +501,11 @@ class CScalarSolver : public CSolver {
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] flow_solver - Flow solver the boundary ghost states mirror, null for a solver that
+   *            has no flow to read (the heat equation on a solid zone).
    */
-  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative, bool bounded_scalar);
+  CScalarSolver(CGeometry* geometry, CConfig* config, const CSolver* flow_solver, bool conservative,
+                bool bounded_scalar);
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.

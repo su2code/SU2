@@ -60,7 +60,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  CTransLMSolver(CGeometry *geometry, CConfig *config, const CSolver* flow_solver, unsigned short iMesh);
 
   /*!
    * \brief Destructor of the class.

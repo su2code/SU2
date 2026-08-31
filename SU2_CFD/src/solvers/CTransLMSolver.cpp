@@ -40,8 +40,9 @@
 
 // Note: TransLM seems to use rho*gamma, rho*Re_sigma as Solution variables, thus Conservative=true
 
-CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
-    : CTurbSolver(geometry, config, true) {
+CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, const CSolver* flow_solver,
+                               unsigned short iMesh)
+    : CTurbSolver(geometry, config, flow_solver, true) {
   SU2_ZONE_SCOPED
   unsigned long iPoint;
   ifstream restart_file;
@@ -192,8 +193,6 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
-
-  EnsureGhostFlowContainers(solver_container, config);
 }
 
 void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {

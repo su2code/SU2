@@ -30,7 +30,8 @@
 #include "../../include/variables/CFlowVariable.hpp"
 
 template <class VariableType>
-CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative, bool bounded_scalar)
+CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, const CSolver* flow_solver,
+                                           bool conservative, bool bounded_scalar)
     : CSolver(), Conservative(conservative), BoundedScalar(bounded_scalar),
       prim_idx(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
                config->GetNEMOProblem(), geometry->GetnDim(), config->GetnSpecies()) {
@@ -81,6 +82,25 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
   for (unsigned int iVar = 0; iVar < MAXNVAR; iVar++) {
     lowerlimit[iVar] = std::numeric_limits<su2double>::lowest();
     upperlimit[iVar] = std::numeric_limits<su2double>::max();
+  }
+
+  /*--- Ghost flow states and the per-vertex buffers the boundaries share, sized to the largest
+   * marker (see BoundaryFluxResidual) and to the primitive layout of the flow solver. Built here,
+   * where only one thread is running: the boundaries are reached inside a parallel region, and
+   * allocating there would mean a master region, which a CVariable constructor may not run in
+   * (CFlowVariable seeds the BGS solution with an OpenMP work-sharing loop, whose barrier would
+   * take an arrival of the team barrier the other threads are waiting on). ---*/
+  if (flow_solver != nullptr) {
+    const auto nDim_ = geometry->GetnDim();
+    unsigned long maxMarkerVertices = 0;
+    for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) maxMarkerVertices = max(maxMarkerVertices, nVertex[iMarker]);
+
+    ghostFlowNodes = make_unique<CGhostFlowVariable>(maxMarkerVertices, nDim_, flow_solver->GetnVar(),
+                                                     flow_solver->GetnPrimVar(), flow_solver->GetnPrimVarGrad(),
+                                                     config);
+    ghostNormal.resize(maxMarkerVertices, nDim_);
+    ghostCoord.resize(maxMarkerVertices, nDim_);
+    ghostSkip.resize(maxMarkerVertices);
   }
 }
 
@@ -450,28 +470,6 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
       END_SU2_OMP_FOR
     }
   }
-}
-
-template <class VariableType>
-void CScalarSolver<VariableType>::EnsureGhostFlowContainers(CSolver** solver_container, const CConfig* config) {
-  /*--- Every thread of the team must reach the barrier at the end of the construct below, so the
-   * test for work already done is inside it and not around it. Called from each solver's
-   * Preprocessing, so the boundaries find the containers in place. ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(
-    if (!ghostFlowNodes) {
-      unsigned long maxMarkerVertices = 0;
-      for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) maxMarkerVertices = max(maxMarkerVertices, nVertex[iMarker]);
-
-      auto* flowSolver = solver_container[FLOW_SOL];
-      ghostFlowNodes = make_unique<CGhostFlowVariable>(maxMarkerVertices, nDim, flowSolver->GetnVar(),
-                                                       flowSolver->GetnPrimVar(), flowSolver->GetnPrimVarGrad(),
-                                                       config);
-
-      ghostNormal.resize(maxMarkerVertices, nDim);
-      ghostCoord.resize(maxMarkerVertices, nDim);
-      ghostSkip.resize(maxMarkerVertices);
-    }
-  )
 }
 
 template <class VariableType>

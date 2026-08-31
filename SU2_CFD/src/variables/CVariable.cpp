@@ -30,6 +30,15 @@
 
 CVariable::CVariable(unsigned long npoint, unsigned long nvar, const CConfig *config) {
 
+  /*--- Variable containers are allocated once, by one thread. Some constructors down the
+   * hierarchy use OpenMP work-sharing loops (e.g. CFlowVariable seeds the BGS solution of a
+   * multizone problem), whose barrier, if this ran in a master or single region, would take an
+   * arrival of the team barrier the other threads are waiting on and leave them out of step. ---*/
+  if (omp_in_parallel()) {
+    assert(false);
+    SU2_MPI::Error("Variables cannot be constructed inside a parallel region.", CURRENT_FUNCTION);
+  }
+
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
    restart files into solution files (SU2_SOL). ---*/
@@ -46,6 +55,15 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, const CConfig *co
 
 CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar,
                      const CConfig *config, bool adjoint) {
+
+  /*--- Variable containers are allocated once, by one thread. Some constructors down the
+   * hierarchy use OpenMP work-sharing loops (e.g. CFlowVariable seeds the BGS solution of a
+   * multizone problem), whose barrier, if this ran in a master or single region, would take an
+   * arrival of the team barrier the other threads are waiting on and leave them out of step. ---*/
+  if (omp_in_parallel()) {
+    assert(false);
+    SU2_MPI::Error("Variables cannot be constructed inside a parallel region.", CURRENT_FUNCTION);
+  }
 
   /*--- Initializate the number of dimension and number of variables ---*/
   nPoint = npoint;

@@ -36,8 +36,9 @@
 #include "../../include/variables/CSpeciesFlameletVariable.hpp"
 #include "../../include/numerics/species/flamelet_edge_flux.hpp"
 
-CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
-    : CSpeciesSolver(geometry, config, true) {
+CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* config, const CSolver* flow_solver,
+                                               unsigned short iMesh)
+    : CSpeciesSolver(geometry, config, flow_solver, true) {
   SU2_ZONE_SCOPED
 
   /*--- Retrieve options from config. ---*/
@@ -161,8 +162,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   }
   /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
-
-  EnsureGhostFlowContainers(solver_container, config);
 }
 
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,

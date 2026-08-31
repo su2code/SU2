@@ -34,7 +34,7 @@
 template class CScalarSolver<CHeatVariable>;
 
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
-  : CScalarSolver<CHeatVariable>(geometry, config, false, false),
+  : CScalarSolver<CHeatVariable>(geometry, config, nullptr, false, false),
     flow(config->GetFluidProblem()) {
   SU2_ZONE_SCOPED
 

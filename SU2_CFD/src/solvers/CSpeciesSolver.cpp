@@ -36,8 +36,9 @@
 /*--- Explicit instantiation of the parent class of CSpeciesSolver. ---*/
 template class CScalarSolver<CSpeciesVariable>;
 
-CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
-    : CScalarSolver<CSpeciesVariable>(geometry, config, true, config->GetBounded_Species()) {
+CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, const CSolver* flow_solver,
+                               unsigned short iMesh)
+    : CScalarSolver<CSpeciesVariable>(geometry, config, flow_solver, true, config->GetBounded_Species()) {
   SU2_ZONE_SCOPED
 
   /*--- Dimension of the problem. ---*/
@@ -340,8 +341,6 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
 
   /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients. ---*/
   CommonPreprocessing(geometry, config, Output);
-
-  EnsureGhostFlowContainers(solver_container, config);
 }
 
 void CSpeciesSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics**,

@@ -35,8 +35,9 @@
 #include "../../../Common/include/toolboxes/random_toolbox.hpp"
 
 
-CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
-             : CTurbSolver(geometry, config, false) {
+CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver* flow_solver, unsigned short iMesh,
+                             CFluidModel* FluidModel)
+             : CTurbSolver(geometry, config, flow_solver, false) {
   SU2_ZONE_SCOPED
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
@@ -216,8 +217,6 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
-
-  EnsureGhostFlowContainers(solver_container, config);
 
   if (kind_hybridRANSLES != NO_HYBRIDRANSLES) {
 

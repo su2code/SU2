@@ -63,7 +63,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh);
+  CSpeciesSolver(CGeometry* geometry, CConfig* config, const CSolver* flow_solver, unsigned short iMesh);
 
   /*!
    * \brief Load a solution from a restart file.
