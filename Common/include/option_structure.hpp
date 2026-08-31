@@ -1126,6 +1126,12 @@ struct CMGOptions {
   su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
   unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
+  unsigned long MG_Startup_Iter{100};     /*!< \brief Iterations per mesh during FMG startup, and the length of each level's CFL ramp. 0 = no iteration budget. */
+  su2double MG_Startup_Convergence{-2.0}; /*!< \brief FMG: orders of magnitude (log10) that CONV_FIELD must drop on the
+                                                 active level before promoting to the next finer one. Negative is a
+                                                 drop, as for CONV_RESIDUAL_MINVAL. */
+  su2double MG_Startup_Stagnation{0.99};  /*!< \brief FMG: promote when the residual ratio between successive iterations exceeds this. 0 = disabled. */
+  unsigned long MG_Startup_Stagnation_Iter{5}; /*!< \brief FMG: consecutive stalled iterations required before promoting. 0 = disabled. */
 };
 
 /*!
@@ -2148,6 +2154,9 @@ enum ENUM_OBJECTIVE {
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
   TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
   STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
+  ENTROPY_GENERATION = 80,      /*!< \brief Entropy generation turbomachinery objective function. */
+  TOTAL_PRESSURE_LOSS = 81,     /*!< \brief Total pressure loss turbomachinery objective function. */
+  KINETIC_ENERGY_LOSS = 82      /*!< \breif Kinetic energy loss coefficient turbomachinery objective function. */
 };
 static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
@@ -2190,6 +2199,9 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
+  MakePair("ENTROPY_GENERATION", ENTROPY_GENERATION)
+  MakePair("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
+  MakePair("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 };
 
 /*!
@@ -2530,17 +2542,24 @@ enum ENUM_LINEAR_SOLVER_PREC {
   LINELET,        /*!< \brief Line implicit preconditioner. */
   ILU,            /*!< \brief ILU(k) preconditioner. */
   Q_LU_SGS,       /*!< \brief LU-SGS with quantized (int8) off-diagonal storage; L/U are never allocated as ScalarType. */
+  Q_JACOBI,       /*!< \brief Jacobi with quantized (int8) off-diagonal storage; same matvec quantization as Q_LU_SGS,
+                       the diagonal inverse is still computed and applied at full precision. */
+  Q_IDENTITY,     /*!< \brief No preconditioner, but the matrix-vector product still uses quantized (int8)
+                       off-diagonal storage, same matvec quantization as Q_LU_SGS/Q_JACOBI. */
   PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
   PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
   PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
 };
 static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
   MakePair("NONE", IDENTITY)
+  MakePair("IDENTITY", IDENTITY)
   MakePair("JACOBI", JACOBI)
   MakePair("LU_SGS", LU_SGS)
   MakePair("LINELET", LINELET)
   MakePair("ILU", ILU)
   MakePair("Q_LU_SGS", Q_LU_SGS)
+  MakePair("Q_JACOBI", Q_JACOBI)
+  MakePair("Q_IDENTITY", Q_IDENTITY)
   MakePair("PASTIX_ILU", PASTIX_ILU)
   MakePair("PASTIX_LU", PASTIX_LU_P)
   MakePair("PASTIX_LDLT", PASTIX_LDLT_P)
@@ -2675,7 +2694,7 @@ enum class CHECK_TAPE_VARIABLES {
 };
 static const MapType<std::string, CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
     MakePair("SOLVER_VARIABLES", CHECK_TAPE_VARIABLES::SOLVER_VARIABLES)
-    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
+    MakePair("MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
 };
 
 enum class RECORDING {

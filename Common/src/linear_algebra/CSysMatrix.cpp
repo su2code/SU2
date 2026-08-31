@@ -28,6 +28,7 @@
 #include "../../include/linear_algebra/CSysMatrix.inl"
 
 #include "../../include/geometry/CGeometry.hpp"
+#include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 #include <cmath>
@@ -46,6 +47,19 @@ FORCEINLINE void RegularizePivot(ScalarType& pivot, unsigned long row, unsigned 
     std::cout << context << ": Regularized small pivot A(" << row << "," << col << ") to " << pivot << std::endl;
 #endif
   }
+}
+
+/*--- Common failure path for a device dispatch that is not available in this build/scalar type
+ * combination, called with CURRENT_FUNCTION so the error names the right caller. ---*/
+void GPUNotAvailable(const char* caller) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+  SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", caller);
+#else
+  SU2_MPI::Error(
+      "ENABLE_CUDA is set to YES but SU2 was not compiled with CUDA support; "
+      "recompile with CUDA enabled in Meson to use GPU functions.",
+      caller);
+#endif
 }
 }  // namespace
 
@@ -85,12 +99,8 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   ilu.d = nullptr;
   ilu.u = nullptr;
 
-  q_scale_l = nullptr;
-  q_blocks_l = nullptr;
-  q_scale_u = nullptr;
-  q_blocks_u = nullptr;
-  q_scale_d = nullptr;
-  q_blocks_d = nullptr;
+  q_scale = {};
+  q_blocks = {};
 
   invM = nullptr;
   d_invM = nullptr;
@@ -108,29 +118,54 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   SU2_ZONE_SCOPED
 
   delete[] omp_partitions;
-  MemoryAllocation::aligned_free(ilu.l);
-  MemoryAllocation::aligned_free(ilu.d);
-  MemoryAllocation::aligned_free(ilu.u);
-  MemoryAllocation::aligned_free(mat.d);
-  MemoryAllocation::aligned_free(mat.l);
-  MemoryAllocation::aligned_free(mat.u);
+  auto freeHostLDU = [](auto& m) {
+    MemoryAllocation::aligned_free(m.d);
+    MemoryAllocation::aligned_free(m.l);
+    MemoryAllocation::aligned_free(m.u);
+  };
+  freeHostLDU(mat);
+  freeHostLDU(ilu);
   MemoryAllocation::aligned_free(invM);
-  MemoryAllocation::aligned_free(q_scale_l);
-  MemoryAllocation::aligned_free(q_blocks_l);
-  MemoryAllocation::aligned_free(q_scale_u);
-  MemoryAllocation::aligned_free(q_blocks_u);
-  MemoryAllocation::aligned_free(q_scale_d);
-  MemoryAllocation::aligned_free(q_blocks_d);
+
+  /*--- q_scale/q_blocks' .l/.u are pinned (cudaMallocHost) rather than aligned_alloc when
+   * useCuda, .d never is; see the comment in Initialize(). Free each with its matching
+   * deallocator. ---*/
+  auto freeQuantLDU = [this](auto& m) {
+    MemoryAllocation::aligned_free(m.d);
+    if (useCuda) {
+      GPUMemoryAllocation::pinned_free(m.l);
+      GPUMemoryAllocation::pinned_free(m.u);
+    } else {
+      MemoryAllocation::aligned_free(m.l);
+      MemoryAllocation::aligned_free(m.u);
+    }
+  };
+  freeQuantLDU(q_scale);
+  freeQuantLDU(q_blocks);
 
   if (useCuda) {
-    GPUMemoryAllocation::gpu_free(gpu.d);
-    GPUMemoryAllocation::gpu_free(gpu.l);
-    GPUMemoryAllocation::gpu_free(gpu.u);
-    GPUMemoryAllocation::gpu_free(gpu.row_ptr_l);
-    GPUMemoryAllocation::gpu_free(gpu.col_ind_l);
-    GPUMemoryAllocation::gpu_free(gpu.row_ptr_u);
-    GPUMemoryAllocation::gpu_free(gpu.col_ind_u);
+    auto freeLDU = [](auto& m) {
+      GPUMemoryAllocation::gpu_free(m.d);
+      GPUMemoryAllocation::gpu_free(m.l);
+      GPUMemoryAllocation::gpu_free(m.u);
+      GPUMemoryAllocation::gpu_free(m.row_ptr_l);
+      GPUMemoryAllocation::gpu_free(m.col_ind_l);
+      GPUMemoryAllocation::gpu_free(m.row_ptr_u);
+      GPUMemoryAllocation::gpu_free(m.col_ind_u);
+    };
+    freeLDU(gpu);
+    freeLDU(gpu_ilu);
+    freeLDU(d_q_scale);
+    freeLDU(d_q_blocks);
     GPUMemoryAllocation::gpu_free(d_invM);
+    GPUMemoryAllocation::gpu_free(d_ilu_color_idx);
+    GPUMemoryAllocation::gpu_free(d_ilu_level_idx);
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
+    if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
+    if (aux_stream != nullptr) cudaStreamDestroy(aux_stream);
+    if (htd_event != nullptr) cudaEventDestroy(htd_event);
+#endif
   }
 
 #ifdef USE_MKL
@@ -181,12 +216,18 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   useCuda = config->GetCUDA();
 
   const bool ilu_needed = (prec == ILU);
-  const bool diag_needed = (prec == JACOBI) || (prec == LINELET);
+  const bool diag_needed = (prec == JACOBI) || (prec == Q_JACOBI) || (prec == LINELET);
+
+  /*--- Linelet also builds the Jacobi preconditioner but reads the inverse diagonal blocks on
+   * the host, so only plain (or quantized) Jacobi can keep them exclusively on the device. ---*/
+  jacobi_on_device = useCuda && (prec == JACOBI || prec == Q_JACOBI);
 #ifndef CODI_REVERSE_TYPE
-  const bool q_lus_needed = allow_quant && !useCuda && (prec == Q_LU_SGS);
+  /*--- Q_LU_SGS is still host-only. ---*/
+  const bool quantized_offdiag_needed =
+      allow_quant && (prec == Q_JACOBI || prec == Q_IDENTITY || (prec == Q_LU_SGS && !useCuda));
 #else
   /*--- No quantization in adjoint mode for now because TransposeInPlace would get complicated. ---*/
-  const bool q_lus_needed = false;
+  const bool quantized_offdiag_needed = false;
 #endif
 
   /*--- Basic dimensions. ---*/
@@ -212,40 +253,72 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
   allocAndInit(mat.d, nPoint * nVar * nEqn);
 
-  if (q_lus_needed) {
-    /*--- Q_LU_SGS: no full-precision L/U; off-diagonal blocks live in quantized storage.
-     *    L/U are quantized on-the-fly during assembly; diagonal is quantized in Build step. ---*/
+  if (quantized_offdiag_needed) {
+    /*--- Q_LU_SGS / Q_JACOBI / Q_IDENTITY: no full-precision L/U; off-diagonal blocks live in quantized storage.
+     *    L/U are quantized on-the-fly during assembly; diagonal is quantized in the Build step. ---*/
 #ifndef CODI_REVERSE_TYPE
     quantized_mode = true;
 #endif
-    auto allocQ = [](QuantType*& ptr, unsigned long n) {
-      ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
+    /*--- .l/.u are pinned (page-locked) when useCuda because HtDTransfer() uploads them with
+     * cudaMemcpyAsync, which is only genuinely asynchronous from pinned host memory. ---*/
+    auto allocQ = [](auto*& ptr, unsigned long n) {
+      using T = std::remove_reference_t<decltype(*ptr)>;
+      ptr = MemoryAllocation::aligned_alloc<T, true>(64, n * sizeof(T));
     };
-    allocQ(q_scale_l, mat.nnz_l * nVar);
-    allocQ(q_blocks_l, mat.nnz_l * nVar * nEqn);
-    allocQ(q_scale_u, mat.nnz_u * nVar);
-    allocQ(q_blocks_u, mat.nnz_u * nVar * nEqn);
-    allocQ(q_scale_d, nPoint * nVar);
-    allocQ(q_blocks_d, nPoint * nVar * nEqn);
+    auto allocPinnedIfCuda = [useCuda = this->useCuda](auto*& ptr, unsigned long n) {
+      using T = std::remove_reference_t<decltype(*ptr)>;
+      if (useCuda) {
+        ptr = GPUMemoryAllocation::pinned_alloc<T, true>(n * sizeof(T));
+      } else {
+        ptr = MemoryAllocation::aligned_alloc<T, true>(64, n * sizeof(T));
+      }
+    };
+    allocPinnedIfCuda(q_scale.l, mat.nnz_l * nVar);
+    allocPinnedIfCuda(q_blocks.l, mat.nnz_l * nVar * nEqn);
+    allocPinnedIfCuda(q_scale.u, mat.nnz_u * nVar);
+    allocPinnedIfCuda(q_blocks.u, mat.nnz_u * nVar * nEqn);
+    allocQ(q_scale.d, nPoint * nVar);
+    allocQ(q_blocks.d, nPoint * nVar * nEqn);
   } else {
     allocAndInit(mat.l, mat.nnz_l * nVar * nEqn);
     allocAndInit(mat.u, mat.nnz_u * nVar * nEqn);
   }
 
+  auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
+    ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
+  };
+  auto GPUAllocAndCopy = [](const su2uint*& ptr, const su2uint* src_ptr, unsigned long num) {
+    ptr = GPUMemoryAllocation::gpu_alloc_cpy<su2uint>(src_ptr, num * sizeof(su2uint));
+  };
+
   if (useCuda) {
-    auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
-      ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
-    };
-    auto GPUAllocAndCopy = [](const su2uint*& ptr, const su2uint* src_ptr, unsigned long num) {
-      ptr = GPUMemoryAllocation::gpu_alloc_cpy<su2uint>(src_ptr, num * sizeof(su2uint));
-    };
+    if (nVar != nEqn) {
+      SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
+    }
     GPUAllocAndInit(gpu.d, nPoint * nVar * nEqn);
-    GPUAllocAndInit(gpu.l, mat.nnz_l * nVar * nEqn);
-    GPUAllocAndInit(gpu.u, mat.nnz_u * nVar * nEqn);
     GPUAllocAndCopy(gpu.row_ptr_l, mat.row_ptr_l, nPointDomain + 1);
     GPUAllocAndCopy(gpu.col_ind_l, mat.col_ind_l, mat.nnz_l);
     GPUAllocAndCopy(gpu.row_ptr_u, mat.row_ptr_u, nPointDomain + 1);
     GPUAllocAndCopy(gpu.col_ind_u, mat.col_ind_u, mat.nnz_u);
+
+    if (quantized_mode) {
+      /*--- Device mirrors of the host quantized storage; gpu.l/gpu.u are not allocated (nothing
+       * would ever read them). d_q_scale.d/d_q_blocks.d are uploaded from the host result once
+       * QuantizeDiagonalBlocks() has computed it, see the comment on those members. ---*/
+      auto GPUAllocQ = [](auto*& ptr, unsigned long n) {
+        using T = std::remove_reference_t<decltype(*ptr)>;
+        ptr = GPUMemoryAllocation::gpu_alloc<T, true>(n * sizeof(T));
+      };
+      GPUAllocQ(d_q_scale.l, mat.nnz_l * nVar);
+      GPUAllocQ(d_q_blocks.l, mat.nnz_l * nVar * nEqn);
+      GPUAllocQ(d_q_scale.u, mat.nnz_u * nVar);
+      GPUAllocQ(d_q_blocks.u, mat.nnz_u * nVar * nEqn);
+      GPUAllocQ(d_q_scale.d, nPoint * nVar);
+      GPUAllocQ(d_q_blocks.d, nPoint * nVar * nEqn);
+    } else {
+      GPUAllocAndInit(gpu.l, mat.nnz_l * nVar * nEqn);
+      GPUAllocAndInit(gpu.u, mat.nnz_u * nVar * nEqn);
+    }
   }
 
   if (type == ConnectivityType::FiniteVolume) {
@@ -259,7 +332,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
 
   if (ilu_needed) {
-    ilu_fill_in = config->GetLinear_Solver_ILU_n();
+    ilu_fill_in = config->GetIluOptions().FillIn;
+    ilu_gpu_sweeps = config->GetIluOptions().GPUSweeps;
 
     const auto& pat_ilu = geometry->GetSparsePattern(type, ilu_fill_in);
     ilu.row_ptr_l = pat_ilu.l.outerPtr();
@@ -269,8 +343,58 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ilu.col_ind_u = pat_ilu.u.innerIdx();
     ilu.nnz_u = pat_ilu.u.getNumNonZeros();
 
-    if (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels()) {
+    /*--- The GPU triangular solves are level-scheduled (exact, one pass per level), so they need
+     * levels_ilu unconditionally; the host/OMP path only needs it when both multi-threaded and
+     * requested via config. ---*/
+    if (useCuda || (omp_get_max_threads() > 1 && config->GetIluOptions().LevelScheduling)) {
       levels_ilu = computeLevels(pat_ilu.l);
+    }
+
+    /*--- Coloring for the GPU iterative factorization, see IluFactorColorKernel. Colors are
+     * true independent sets of the (domain-only, symmetric) dependency graph, computed the same
+     * way SU2 already colors edges/elements for OMP loops, just applied to the ILU pattern
+     * instead. This does not change the elimination order/pattern (nothing here affects L/U
+     * membership), only how the build is scheduled on the device. ---*/
+    if (useCuda) {
+      std::vector<su2uint> adjPtr(nPointDomain + 1, 0);
+      std::vector<su2uint> adjIdx;
+      adjIdx.reserve(ilu.nnz_l + ilu.nnz_u);
+      for (auto i = 0ul; i < nPointDomain; ++i) {
+        adjPtr[i] = static_cast<su2uint>(adjIdx.size());
+        for (auto k = ilu.row_ptr_l[i]; k < ilu.row_ptr_l[i + 1]; ++k) adjIdx.push_back(ilu.col_ind_l[k]);
+        for (auto k = ilu.row_ptr_u[i]; k < ilu.row_ptr_u[i + 1]; ++k) {
+          const auto j = ilu.col_ind_u[k];
+          if (j < nPointDomain) adjIdx.push_back(static_cast<su2uint>(j));
+        }
+      }
+      adjPtr[nPointDomain] = static_cast<su2uint>(adjIdx.size());
+      color_ilu = colorSparsePattern(CCompressedSparsePatternUL(adjPtr, adjIdx), 1, true, false);
+
+      /*--- Report, across ranks, how many colors/levels the GPU ILU ends up scheduled over and how
+       * wide those groups are on average. Few, wide colors/levels use the GPU efficiently; many
+       * narrow ones (small average size) serialize into many small kernel launches instead. ---*/
+      const auto nColorsLocal = static_cast<unsigned long>(color_ilu.getOuterSize());
+      const auto nLevelsLocal = static_cast<unsigned long>(levels_ilu.getOuterSize());
+      unsigned long nColorsMax = 0, nLevelsMax = 0;
+      SU2_MPI::Reduce(&nColorsLocal, &nColorsMax, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Reduce(&nLevelsLocal, &nLevelsMax, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+
+      const auto avgColorSizeLocal = static_cast<unsigned long>(std::lround(double(nPointDomain) / nColorsLocal));
+      const auto avgLevelSizeLocal = static_cast<unsigned long>(std::lround(double(nPointDomain) / nLevelsLocal));
+      unsigned long minAvgColorSize = 0, minAvgLevelSize = 0;
+      SU2_MPI::Reduce(&avgColorSizeLocal, &minAvgColorSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE,
+                      SU2_MPI::GetComm());
+      SU2_MPI::Reduce(&avgLevelSizeLocal, &minAvgLevelSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE,
+                      SU2_MPI::GetComm());
+
+      static bool printed = false;
+      if (rank == MASTER_NODE && !printed) {
+        cout << "GPU ILU scheduling (worst rank):\n      " << nColorsMax << " colors for the factorization (~"
+             << minAvgColorSize << " points/color on average),\n"
+             << "      " << nLevelsMax << " levels for the triangular solves (~" << minAvgLevelSize
+             << " points/level on average)." << endl;
+        printed = true;
+      }
     }
   }
 
@@ -284,8 +408,62 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   if (diag_needed) allocAndInit(invM, nPointDomain * nVar * nEqn);
 
-  if (useCuda && diag_needed) {
+  if (jacobi_on_device) {
+    if (nVar != nEqn) {
+      SU2_MPI::Error("CUDA Jacobi preconditioner requires square blocks.", CURRENT_FUNCTION);
+    }
+    if (nVar * nVar > 1024) {
+      SU2_MPI::Error("CUDA Jacobi preconditioner uses one thread per block entry, nVar is too large.",
+                     CURRENT_FUNCTION);
+    }
     d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+  }
+
+  if (useCuda && ilu_needed) {
+    if (nVar != nEqn) {
+      SU2_MPI::Error("CUDA ILU factorization requires square blocks.", CURRENT_FUNCTION);
+    }
+    if (nVar * nVar > 1024) {
+      SU2_MPI::Error("CUDA ILU factorization uses one thread per block entry, nVar is too large.", CURRENT_FUNCTION);
+    }
+    /*--- The factors are built and used on the device, only the pattern and the level table
+     * are uploaded (once, here) because they do not change. ---*/
+    gpu_ilu.nnz_l = ilu.nnz_l;
+    gpu_ilu.nnz_u = ilu.nnz_u;
+    GPUAllocAndInit(gpu_ilu.d, nPointDomain * nVar * nEqn);
+    GPUAllocAndInit(gpu_ilu.l, ilu.nnz_l * nVar * nEqn);
+    GPUAllocAndInit(gpu_ilu.u, ilu.nnz_u * nVar * nEqn);
+    GPUAllocAndCopy(gpu_ilu.row_ptr_l, ilu.row_ptr_l, nPointDomain + 1);
+    GPUAllocAndCopy(gpu_ilu.col_ind_l, ilu.col_ind_l, ilu.nnz_l);
+    GPUAllocAndCopy(gpu_ilu.row_ptr_u, ilu.row_ptr_u, nPointDomain + 1);
+    GPUAllocAndCopy(gpu_ilu.col_ind_u, ilu.col_ind_u, ilu.nnz_u);
+
+    /*--- Flatten the coloring, the index type differs from the one of the pattern. It drives
+     * the factorization on the device. ---*/
+    std::vector<su2uint> color_idx;
+    color_idx.reserve(nPointDomain);
+    ilu_color_ptr.clear();
+    ilu_color_ptr.push_back(0);
+    for (auto color = 0ul; color < color_ilu.getOuterSize(); ++color) {
+      for (auto k = 0ul; k < color_ilu.getNumNonZeros(color); ++k) {
+        color_idx.push_back(static_cast<su2uint>(color_ilu.getInnerIdx(color, k)));
+      }
+      ilu_color_ptr.push_back(static_cast<su2uint>(color_idx.size()));
+    }
+    d_ilu_color_idx = GPUMemoryAllocation::gpu_alloc_cpy(color_idx.data(), color_idx.size() * sizeof(su2uint));
+
+    /*--- Flatten levels_ilu the same way. It drives both triangular solves on the device. ---*/
+    std::vector<su2uint> level_idx;
+    level_idx.reserve(nPointDomain);
+    ilu_level_ptr.clear();
+    ilu_level_ptr.push_back(0);
+    for (auto level = 0ul; level < levels_ilu.getOuterSize(); ++level) {
+      for (auto k = 0ul; k < levels_ilu.getNumNonZeros(level); ++k) {
+        level_idx.push_back(static_cast<su2uint>(levels_ilu.getInnerIdx(level, k)));
+      }
+      ilu_level_ptr.push_back(static_cast<su2uint>(level_idx.size()));
+    }
+    d_ilu_level_idx = GPUMemoryAllocation::gpu_alloc_cpy(level_idx.data(), level_idx.size() * sizeof(su2uint));
   }
 
   /*--- Thread parallel initialization. ---*/
@@ -584,21 +762,34 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::QuantizeBlock(const ScalarType* blk, QuantType* qs, QuantType* qv) const {
-  EncodeQuantBlock([&](unsigned long r, unsigned long c) { return blk[r * nVar + c]; }, qs, qv, nVar);
-}
-
-template <class ScalarType>
 void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
   SU2_ZONE_SCOPED
 
-  if (quantized_mode) {
-    /*--- Q_LU_SGS: L/U were quantized during assembly; only the diagonal needs quantization now. ---*/
-    SU2_OMP_FOR_DYN(omp_heavy_size)
-    for (auto i = 0ul; i < nPointDomain; ++i)
-      QuantizeBlock(&mat.d[i * nVar * nVar], &q_scale_d[i * nVar], &q_blocks_d[i * nVar * nVar]);
-    END_SU2_OMP_FOR
+  if (!quantized_mode) return;
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      /*--- gpu.d is already on the device - HtDTransfer() uploads it unconditionally, since
+       * Jacobi's own build needs the full precision diagonal regardless of quantization - so
+       * quantize straight from it here instead of quantizing on the host and uploading the
+       * result. ---*/
+      SU2_DEVICE_REGION(QuantizeDiagonalBlocksGPU();)
+      return;
+    } else {
+      GPUNotAvailable(CURRENT_FUNCTION);
+    }
+#else
+    GPUNotAvailable(CURRENT_FUNCTION);
+#endif
   }
+
+  /*--- Q_LU_SGS / Q_JACOBI / Q_IDENTITY: L/U were quantized during assembly; only the diagonal needs quantization
+   * now. ---*/
+  SU2_OMP_FOR_DYN(omp_heavy_size)
+  for (auto i = 0ul; i < nPointDomain; ++i)
+    QuantizeBlock(&mat.d[i * nVar * nVar], &q_scale.d[i * nVar], &q_blocks.d[i * nVar * nVar]);
+  END_SU2_OMP_FOR
 }
 
 template <class ScalarType>
@@ -619,10 +810,10 @@ void CSysMatrix<ScalarType>::SetValZero() {
     zeroChunk(mat.l, mat.nnz_l * nVar * nEqn);
     zeroChunk(mat.u, mat.nnz_u * nVar * nEqn);
   } else {
-    zeroChunk(q_scale_l, mat.nnz_l * nVar);
-    zeroChunk(q_scale_u, mat.nnz_l * nVar);
-    zeroChunk(q_blocks_l, mat.nnz_l * nVar * nEqn);
-    zeroChunk(q_blocks_u, mat.nnz_u * nVar * nEqn);
+    zeroChunk(q_scale.l, mat.nnz_l * nVar);
+    zeroChunk(q_scale.u, mat.nnz_l * nVar);
+    zeroChunk(q_blocks.l, mat.nnz_l * nVar * nEqn);
+    zeroChunk(q_blocks.u, mat.nnz_u * nVar * nEqn);
   }
   SU2_OMP_BARRIER
 }
@@ -688,15 +879,16 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 
   assert((matrix != inverse) && "Output cannot be the same as the input.");
 
-#define M(I, J) inverse[(I)*nVar + (J)]
-
-  /*--- Initialize the inverse with the identity. ---*/
-  for (auto iVar = 0ul; iVar < nVar; iVar++)
-    for (auto jVar = 0ul; jVar < nVar; jVar++) M(iVar, jVar) = ScalarType(iVar == jVar);
-
-      /*--- Inversion ---*/
+  /*--- Inversion ---*/
 #ifdef USE_MKL_LAPACK
   // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+#define M(I, J) inverse[(I)*nVar + (J)]
+
+  /*--- Initialize the inverse with the identity, LAPACKE_?getrs solves for it as the rhs. ---*/
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    for (auto jVar = 0ul; jVar < nVar; jVar++) M(iVar, jVar) = ScalarType(iVar == jVar);
+#undef M
+
   lapack_int ipiv[MAXNVAR];
   if constexpr (std::is_same_v<ScalarType, double>) {
     LAPACKE_dgetrf(LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
@@ -707,38 +899,9 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
     LAPACKE_sgetrs(LAPACK_ROW_MAJOR, 'N', nVar, nVar, matrix, nVar, ipiv, inverse, nVar);
   }
 #else
-#define A(I, J) matrix[(I)*nVar + (J)]
-
-  /*--- Transform system in Upper Matrix ---*/
-  for (auto iVar = 1ul; iVar < nVar; iVar++) {
-    for (auto jVar = 0ul; jVar < iVar; jVar++) {
-      /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
-      RegularizePivot(A(jVar, jVar), jVar, jVar, "MatrixInverse");
-
-      ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
-      for (auto kVar = jVar; kVar < nVar; kVar++) A(iVar, kVar) -= weight * A(jVar, kVar);
-
-      /*--- at this stage M is lower triangular so not all cols need updating ---*/
-      for (auto kVar = 0ul; kVar <= jVar; kVar++) M(iVar, kVar) -= weight * M(jVar, kVar);
-    }
-  }
-
-  /*--- Backwards substitution ---*/
-  for (auto iVar = nVar; iVar > 0ul;) {
-    iVar--;  // unsigned type
-    for (auto jVar = iVar + 1; jVar < nVar; jVar++)
-      for (auto kVar = 0ul; kVar < nVar; kVar++) M(iVar, kVar) -= A(iVar, jVar) * M(jVar, kVar);
-
-    /*--- Regularize diagonal if too small ---*/
-    RegularizePivot(A(iVar, iVar), iVar, iVar, "DEBUG MatrixInverse backsubst");
-
-    for (auto kVar = 0ul; kVar < nVar; kVar++) {
-      M(iVar, kVar) /= A(iVar, iVar);
-    }
-  }
-#undef A
+  /*--- Shared with the device implementation, see CMatrixInverse.hpp. ---*/
+  SU2_LinAlg::MatrixInverse(nVar, matrix, inverse);
 #endif
-#undef M
 }
 
 template <class ScalarType>
@@ -752,10 +915,10 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long
 
   if (quantized_mode) {
     for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k) {
-      for (auto iVar = 0u; iVar < nEqn; iVar++) q_blocks_l[k * blkSz + row * nEqn + iVar] = 0;
+      for (auto iVar = 0u; iVar < nEqn; iVar++) q_blocks.l[k * blkSz + row * nEqn + iVar] = 0;
     }
     for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k) {
-      for (auto iVar = 0u; iVar < nEqn; iVar++) q_blocks_u[k * blkSz + row * nEqn + iVar] = 0;
+      for (auto iVar = 0u; iVar < nEqn; iVar++) q_blocks.u[k * blkSz + row * nEqn + iVar] = 0;
     }
   } else {
     for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k) {
@@ -771,6 +934,22 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                  CGeometry* geometry, const CConfig* config) const {
   SU2_ZONE_SCOPED
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      BEGIN_SU2_DEVICE_REGION
+      MatrixVectorProductGPU(vec, prod, geometry, config);
+      END_SU2_DEVICE_REGION
+      return;
+    } else {
+      GPUNotAvailable(CURRENT_FUNCTION);
+    }
+#else
+    GPUNotAvailable(CURRENT_FUNCTION);
+#endif
+  }
+
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
 #ifndef NDEBUG
   if ((nEqn != vec.GetNVar()) || (nVar != prod.GetNVar())) {
@@ -811,28 +990,29 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
   SU2_ZONE_SCOPED
 
+  /*--- Independent of invM (reads/quantizes mat.d, a no-op unless quantized_mode); done first,
+   * unconditionally, so it runs whichever branch below builds invM (in particular the
+   * jacobi_on_device one, which returns early). ---*/
+  QuantizeDiagonalBlocks();
+
+  if (jacobi_on_device) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      SU2_DEVICE_REGION(BuildJacobiPreconditionerGPU();)
+      return;
+    } else {
+      GPUNotAvailable(CURRENT_FUNCTION);
+    }
+#else
+    GPUNotAvailable(CURRENT_FUNCTION);
+#endif
+  }
+
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint * nVar * nVar]));
   END_SU2_OMP_FOR
-
-  if (useCuda) {
-#ifdef SU2_ENABLE_CUDA_KERNELS
-    if constexpr (su2_gpu_capable_v<ScalarType>) {
-      BEGIN_SU2_DEVICE_REGION
-      gpuErrChk(cudaMemcpy(d_invM, invM, nPointDomain * nVar * nVar * sizeof(ScalarType), cudaMemcpyHostToDevice));
-      END_SU2_DEVICE_REGION
-    } else {
-      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
-    }
-#else
-    SU2_MPI::Error(
-        "\nError in building Jacobi preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
-        "enabled in Meson to access GPU Functions",
-        CURRENT_FUNCTION);
-#endif
-  }
 }
 
 template <class ScalarType>
@@ -847,13 +1027,10 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
       SU2_DEVICE_REGION(ComputeJacobiPreconditionerGPU(vec, prod, geometry, config);)
       return;
     } else {
-      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+      GPUNotAvailable(CURRENT_FUNCTION);
     }
 #else
-    SU2_MPI::Error(
-        "\nError in applying Jacobi preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
-        "enabled in Meson to access GPU Functions",
-        CURRENT_FUNCTION);
+    GPUNotAvailable(CURRENT_FUNCTION);
 #endif
   }
 
@@ -872,6 +1049,20 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
   SU2_ZONE_SCOPED
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      SU2_DEVICE_REGION(BuildILUPreconditionerGPU();)
+      return;
+    } else {
+      GPUNotAvailable(CURRENT_FUNCTION);
+    }
+#else
+    GPUNotAvailable(CURRENT_FUNCTION);
+#endif
+  }
+
   const auto blockSize = nVar * nVar;
   ScalarType Lij[MAXNVAR * MAXNVAR], Lij_Ujk[MAXNVAR * MAXNVAR];
 
@@ -1002,6 +1193,20 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                       CGeometry* geometry, const CConfig* config) const {
   SU2_ZONE_SCOPED
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      SU2_DEVICE_REGION(ComputeILUPreconditionerGPU(vec, prod);)
+      return;
+    } else {
+      GPUNotAvailable(CURRENT_FUNCTION);
+    }
+#else
+    GPUNotAvailable(CURRENT_FUNCTION);
+#endif
+  }
+
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
@@ -1407,15 +1612,15 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
       for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
         MatrixSubtraction(d_i, &mat.l[u_to_l_transp[k_u] * blkSz], d_i);
     } else {
-      auto subtractTransp = [&](su2uint k_transp, const QuantType* qs, const QuantType* qv) {
+      auto subtractTransp = [&](su2uint k_transp, const QuantScaleType* qs, const QuantType* qv) {
         const CBlockView<const ScalarType> view{nullptr, &qs[k_transp * nVar], &qv[k_transp * blkSz], nVar};
         for (auto i = 0ul; i < nVar; ++i)
           for (auto j = 0ul; j < nEqn; ++j) d_i[i * nEqn + j] -= view(i, j);
       };
       for (auto k_l = mat.row_ptr_l[iPoint]; k_l < mat.row_ptr_l[iPoint + 1]; ++k_l)
-        subtractTransp(l_to_u_transp[k_l], q_scale_u, q_blocks_u);
+        subtractTransp(l_to_u_transp[k_l], q_scale.u, q_blocks.u);
       for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
-        subtractTransp(u_to_l_transp[k_u], q_scale_l, q_blocks_l);
+        subtractTransp(u_to_l_transp[k_u], q_scale.l, q_blocks.l);
     }
   }
   END_SU2_OMP_FOR

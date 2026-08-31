@@ -1136,10 +1136,9 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
   /*--- Loop over all the vertices on this boundary marker ---*/
-  for (auto iSpan = 0u; iSpan < nSpanWiseSections ; iSpan++){
-
+  for (auto iSpan = 0u; iSpan < nSpanWiseSections; iSpan++){
     su2double extAverageNu[MAXNVAR] = {0.0};
-    extAverageNu[0] = solver_container[FLOW_SOL]->GetExtAverageNu(val_marker, iSpan);
+    extAverageNu[0] = solver_container[FLOW_SOL]->GetMixingState(val_marker, iSpan, 5);
 
     /*--- Loop over all the vertices on this boundary marker ---*/
 

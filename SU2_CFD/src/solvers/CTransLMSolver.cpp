@@ -66,9 +66,10 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   TransCorrelations.SetOptions(options);
   TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
 
-  /*--- Single grid simulation ---*/
+  /*--- Single grid simulation, and every level of a Full-MG startup, which solves the transition
+   *    equations on whichever grid the flow solver is currently on. ---*/
 
-  if (iMesh == MESH_0) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == MG_CYCLE::FULL) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
