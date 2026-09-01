@@ -293,8 +293,7 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   /*--- Only reached for the weakly coupled energy equation on a fluid zone: solid conduction has
    * no CONV_NUM_METHOD_HEAT scheme configured, so CIntegration::Space_Integration's switch never
    * calls this. Convection and diffusion are both handled together here in that case. ---*/
-  auto opt = ScalarFluxOptions::Interior(*config, false);
-  opt.convective = true;
+  const auto opt = ScalarFluxOptions::Interior(*config, false);
 
   DispatchScheme<CScalarFlux_Heat, 1>(config, [&](auto tag) {
     EdgeFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt);
@@ -490,6 +489,43 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   END_SU2_OMP_FOR
 
   BoundaryFlux(geometry, solver_container, config, ScalarFluxOptions::BoundaryConvective(*config, false), val_marker);
+}
+
+void CHeatSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+  if (!flow) return;
+
+  auto* flowSolver = solver_container[FLOW_SOL];
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    ghostNodes->SetSolution(iVertex, 0, Solution_Inf[0]);
+    SetGhostPrimitives(iVertex, flowSolver->GetCharacPrimVar(val_marker, iVertex));
+    SetGhostGeometry(geometry, val_marker, iVertex);
+  }
+  END_SU2_OMP_FOR
+
+  BoundaryFlux(geometry, solver_container, config, ScalarFluxOptions::BoundaryConvective(*config, false), val_marker);
+}
+
+void CHeatSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics*,
+                                     CNumerics*, CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  if (solver_container[FLOW_SOL] == nullptr) return;
+
+  const auto optConv = ScalarFluxOptions::BoundaryConvective(*config, false);
+  const auto optVisc = ScalarFluxOptions::BoundaryDiffusive(*config, true);
+
+  /*--- The diffusion coefficients read the ghost row's own thermal conductivity, specific heat
+   * and eddy viscosity, already part of what SetGhostPrimitives copies from the donor state. ---*/
+  const auto fillGhostExtras = [](unsigned long, unsigned long) {};
+
+  DispatchScheme<CScalarFlux_Heat, 1>(config, [&](auto tag) {
+    FluidInterfaceFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, optConv, optVisc,
+                                                             fillGhostExtras);
+  });
 }
 
 void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {

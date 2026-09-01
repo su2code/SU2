@@ -101,13 +101,15 @@ class CScalarFlux_Flamelet final
       const Double projGrad = projectedGradient(opt, grad_i, grad_j, phi_i, phi_j, normal, vector_ij, dist2_ij);
 
       res.flux_i(iScalar) -= D * projGrad;
-      res.flux_j(iScalar) += D * projGrad;
+      if (!opt.oneSided) res.flux_j(iScalar) += D * projGrad;
 
       if (opt.implicit) {
         res.jac_ii(iScalar, iScalar) += D * proj_on_rho_i;
-        res.jac_ij(iScalar, iScalar) -= D * proj_on_rho_j;
-        res.jac_ji(iScalar, iScalar) -= D * proj_on_rho_i;
-        res.jac_jj(iScalar, iScalar) += D * proj_on_rho_j;
+        if (!opt.oneSided) {
+          res.jac_ij(iScalar, iScalar) -= D * proj_on_rho_j;
+          res.jac_ji(iScalar, iScalar) -= D * proj_on_rho_i;
+          res.jac_jj(iScalar, iScalar) += D * proj_on_rho_j;
+        }
       }
     }
 
@@ -129,7 +131,7 @@ class CScalarFlux_Flamelet final
     const Double projGradT = projectedGradient(opt, gradT_i, gradT_j, T_i, T_j, normal, vector_ij, dist2_ij);
 
     res.flux_i(I_ENTH) -= Dth * projGradT;
-    res.flux_j(I_ENTH) += Dth * projGradT;
+    if (!opt.oneSided) res.flux_j(I_ENTH) += Dth * projGradT;
   }
 
  private:

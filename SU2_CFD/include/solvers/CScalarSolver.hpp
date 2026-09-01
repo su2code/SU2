@@ -296,6 +296,13 @@ class CScalarSolver : public CSolver {
     for (auto iDim = 0u; iDim < nDim; ++iDim) ghostV[prim_idx.Velocity() + iDim] = V[prim_idx.Velocity() + iDim];
     ghostV[prim_idx.LaminarViscosity()] = V[prim_idx.LaminarViscosity()];
     ghostV[prim_idx.EddyViscosity()] = V[prim_idx.EddyViscosity()];
+    /*--- NEMO's primitive layout has no single thermal conductivity or specific heat, so its
+     * CIndices returns a sentinel for these two; only heat reads them, and NEMO rejects any
+     * scalar transport at configuration. ---*/
+    if (prim_idx.ThermalConductivity() != std::numeric_limits<unsigned short>::max()) {
+      ghostV[prim_idx.ThermalConductivity()] = V[prim_idx.ThermalConductivity()];
+      ghostV[prim_idx.CpTotal()] = V[prim_idx.CpTotal()];
+    }
   }
 
   /*!

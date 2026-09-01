@@ -63,17 +63,19 @@ class CScalarFlux_Heat final
    * \brief Thermal diffusivity, an i/j average, identical for both edge sides (TSL Jacobian).
    */
   template <class VariableType>
-  FORCEINLINE CPair<Vector<Double, nVar>> coefficients(const FlowIndices&, Int iPoint,
+  FORCEINLINE CPair<Vector<Double, nVar>> coefficients(const FlowIndices& idx, Int iPoint,
                                                        const EdgeSide<VariableType>& side_i, Int jPoint,
                                                        const EdgeSide<VariableType>& side_j,
                                                        const CPair<Double>&) const {
     Vector<Double, nVar> D;
     if (flow) {
-      const Double diff_i = side_i.flowNodes->GetThermalConductivity(iPoint) / side_i.flowNodes->GetSpecificHeatCp(iPoint) +
-                            side_i.flowNodes->GetEddyViscosity(iPoint) / prandtlTurb;
-      const Double diff_j = side_j.flowNodes->GetThermalConductivity(jPoint) / side_j.flowNodes->GetSpecificHeatCp(jPoint) +
-                            side_j.flowNodes->GetEddyViscosity(jPoint) / prandtlTurb;
-      D(0) = 0.5 * (diff_i + diff_j);
+      const Double k_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.ThermalConductivity());
+      const Double cp_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.CpTotal());
+      const Double muT_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.EddyViscosity());
+      const Double k_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.ThermalConductivity());
+      const Double cp_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.CpTotal());
+      const Double muT_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.EddyViscosity());
+      D(0) = 0.5 * (k_i / cp_i + muT_i / prandtlTurb + k_j / cp_j + muT_j / prandtlTurb);
     } else {
       D(0) = constDiffusivity;
     }
