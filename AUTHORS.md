@@ -69,6 +69,7 @@ Christian Bauer
 Clark Pederson
 Daumantas Kavolis
 Dave Taflin
+Davide Di Giusto
 Eduardo Molina
 Edwin van der Weide
 Eitan Aberman
