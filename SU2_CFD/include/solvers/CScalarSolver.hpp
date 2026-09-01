@@ -441,7 +441,7 @@ class CScalarSolver : public CSolver {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative, bool bounded_scalar);
+  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative, bool bounded_scalar, LINEAR_SOLVER_MODE linear_solver_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -464,7 +464,7 @@ class CScalarSolver : public CSolver {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final;
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
@@ -602,7 +602,7 @@ class CScalarSolver : public CSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
+  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) override;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
@@ -625,7 +625,7 @@ class CScalarSolver : public CSolver {
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
-                           bool val_update_geo) override = 0;
+                           bool val_update_geo) override {}
 
   /*!
    * \brief Scalar solvers support OpenMP+MPI.

@@ -40,6 +40,8 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
   flamelet = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
 
+  pressure_based = (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED);
+
   streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
@@ -91,8 +93,12 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   restartFilename = config->GetRestart_FileName();
 
   /*--- Set the default convergence field --- */
+  /*--- The default field for the pressure-based solver is velocity, as the pressure is only 
+  solved as a correction and it is thus possible to run the pb solver without corrections. to 
+  ensure the default residual is always defined we use velocity instead ---*/
 
-  if (convFields.empty()) convFields.emplace_back("RMS_PRESSURE");
+  if (convFields.empty() && !pressure_based) convFields.emplace_back("RMS_PRESSURE");
+  if (convFields.empty() && pressure_based) convFields.emplace_back("RMS_VELOCITY-X");
 
 }
 
@@ -111,7 +117,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the enthalpy.
   if (heat) AddHistoryOutput("RMS_ENTHALPY", "rms[h]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the enthalpy.", HistoryFieldType::RESIDUAL);
-
+  
   AddHistoryOutputFields_ScalarRMS_RES(config);
 
   /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
@@ -168,6 +174,10 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+  if (pressure_based) {
+    AddHistoryOutput("LINSOL_POISSON_ITER", "PoissonSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the poisson solver.");
+    AddHistoryOutput("LINSOL_POISSON_RESIDUAL", "PoissonSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the poisson solver.");
+  }
   AddHistoryOutputFieldsScalarLinsol(config);
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
@@ -209,8 +219,13 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* heat_solver = solver[HEAT_SOL];
   CSolver* rad_solver  = solver[RAD_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
+  CSolver* poisson_solver = solver[POISSON_SOL];
 
-  SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
+  if (pressure_based) {
+    SetHistoryOutputValue("RMS_PRESSURE", log10(poisson_solver->GetRes_RMS(0)));
+  } else {
+    SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
+  }
   SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
   if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
@@ -218,7 +233,11 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   if (config->AddRadiation())
     SetHistoryOutputValue("RMS_RAD_ENERGY", log10(rad_solver->GetRes_RMS(0)));
 
-  SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
+  if (pressure_based) {
+    SetHistoryOutputValue("MAX_PRESSURE", log10(poisson_solver->GetRes_Max(0)));
+  } else {
+    SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
+  }
   SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
   if (nDim == 3) SetHistoryOutputValue("MAX_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
@@ -251,6 +270,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
+  if (pressure_based) {
+    SetHistoryOutputValue("LINSOL_POISSON_ITER",poisson_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_POISSON_RESIDUAL",log10(poisson_solver->GetResLinSolver()));
+  }
 
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
@@ -447,7 +470,11 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
   }
 
-  SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
+  if (pressure_based) {
+    SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[POISSON_SOL]->LinSysRes(iPoint, 0));
+  } else {
+    SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
+  }
   SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
   SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
   if (nDim == 3)

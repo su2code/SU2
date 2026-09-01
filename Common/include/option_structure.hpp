@@ -77,7 +77,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 400;     /*!< \brief Maximum size of a generic string. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 14};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
@@ -264,6 +264,7 @@ enum class MAIN_SOLVER {
   FEM_RANS,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
   FEM_LES,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS,
+  POISSON_EQUATION,            /*!< \brief Definition of the Poisson equation solver. */
   NEMO_EULER,                  /*!< \brief Definition of the NEMO Euler solver. */
   NEMO_NAVIER_STOKES,          /*!< \brief Definition of the NEMO NS solver. */
 };
@@ -337,6 +338,31 @@ enum class STRUCT_COMPRESS {
 static const MapType<std::string, STRUCT_COMPRESS> MatComp_Map = {
   MakePair("COMPRESSIBLE", STRUCT_COMPRESS::COMPRESSIBLE)
   MakePair("NEARLY_INCOMPRESSIBLE", STRUCT_COMPRESS::NEARLY_INCOMP)
+};
+
+/*!
+ * \brief Type of incompressible solver
+ */
+enum class INCOMP_SYSTEM {
+  DENSITY_BASED,        /*!< \brief Density-based. */
+  PRESSURE_BASED,       /*!< \brief Pressure-based. */
+};
+static const MapType<std::string, INCOMP_SYSTEM> Incomp_Map = {
+ MakePair("DENSITY_BASED", INCOMP_SYSTEM::DENSITY_BASED)
+ MakePair("PRESSURE_BASED", INCOMP_SYSTEM::PRESSURE_BASED)
+};
+
+/*!
+ * \brief Type of iteration
+ */
+enum class PBITER {
+  SIMPLE,       /*!< \brief SIMPLE algorithm. */
+  SIMPLEC,      /*!< \brief SIMPLEC algorithm. */
+};
+
+static const MapType<std::string, PBITER> PBIter_Map = {
+ MakePair("SIMPLE", PBITER::SIMPLE)
+ MakePair("SIMPLEC", PBITER::SIMPLEC)
 };
 
 /*!
@@ -479,6 +505,7 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
   RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
   RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
+  RUNTIME_POISSON_SYS = 27,   /*!< \brief One-physics case, the code is solving the poisson equation. */
 };
 
  enum SOLVER_TYPE : const int {
@@ -497,6 +524,7 @@ enum RUNTIME_TYPE {
    ADJSPECIES_SOL=12, /*!< \brief Position of the adjoint of the species solver. */
    FEA_SOL=0,        /*!< \brief Position of the Finite Element flow solution in the solver container array. */
    ADJFEA_SOL=1,     /*!< \brief Position of the continuous adjoint Finite Element flow solution in the solver container array. */
+   POISSON_SOL=13,   /*!< \brief Position of the poisson solution in the solver container array */
    TEMPLATE_SOL=0,   /*!< \brief Position of the template solution. */
  };
 
@@ -828,7 +856,8 @@ enum class CENTERED {
   LAX,            /*!< \brief Lax-Friedrich centered numerical method. */
   JST_MAT,        /*!< \brief JST with matrix dissipation. */
   JST_KE,         /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
-  LD2             /*!< \brief Low-Dissipation Low-Dispersion (LD2) centered scheme. */
+  LD2,            /*!< \brief Low-Dissipation Low-Dispersion (LD2) centered scheme. */
+  CDS             /*!< \brief Central Difference Scheme used for pressure based solver. */
 };
 static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("NONE", CENTERED::NONE)
@@ -837,6 +866,7 @@ static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("JST_MAT", CENTERED::JST_MAT)
   MakePair("LAX-FRIEDRICH", CENTERED::LAX)
   MakePair("LD2", CENTERED::LD2)
+  MakePair("CDS", CENTERED::CDS)
 };
 
 
@@ -863,7 +893,8 @@ enum class UPWIND {
   AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
   AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
   AUSMPLUSM,              /*!< \breif AUSM+M numerical method. (NEMO Only)*/
-  BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
+  BOUNDED_SCALAR,         /*!< \brief Scalar advection numerical method. */
+  UDS                     /*!< \brief Upwind Difference Scheme used for pressure based solver. */
 };
 static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("NONE", UPWIND::NONE)
@@ -885,6 +916,7 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("SLAU2", UPWIND::SLAU2)
   MakePair("FDS", UPWIND::FDS)
   MakePair("LAX-FRIEDRICH", UPWIND::LAX_FRIEDRICH)
+  MakePair("UDS", UPWIND::UDS)
 };
 
 /*!
@@ -2781,6 +2813,9 @@ enum class MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  MOM_COEFF            ,  /*!< \brief Momentum coefficient for the Rhie-Chow scheme. */
+  MOM_CORRECTION       ,  /*!< \brief Momentum correction for the pressure-based poisson solver (used when computing HbyA). */
+  HBYA_CORRECTION      ,  /*!< \brief HbyA correction for the pressure-based poisson solver. */
 };
 
 /*!
@@ -2908,6 +2943,7 @@ enum class LINEAR_SOLVER_MODE {
   STANDARD,        /*!< \brief Operate in standard mode. */
   MESH_DEFORM,     /*!< \brief Operate in mesh deformation mode. */
   GRADIENT_MODE,   /*!< \brief Operate in gradient smoothing mode. */
+  POISSON,         /*!< \brief Operate in poisson solver mode. */
 };
 
 /*!

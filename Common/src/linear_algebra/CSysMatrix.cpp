@@ -180,7 +180,8 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar,
                                         unsigned short neqn, bool EdgeConnect, CGeometry* geometry,
-                                        const CConfig* config, bool needTranspPtr, bool grad_mode, bool allow_quant) {
+                                        const CConfig* config, bool needTranspPtr, bool allow_quant,
+                                        std::optional<unsigned short> override_prec) {
   SU2_ZONE_SCOPED
   assert(omp_get_thread_num() == 0 && "Only the master thread is allowed to initialize the matrix.");
 
@@ -210,8 +211,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
 
   /*--- No else if, but separate if case! ---*/
-  if (config->GetSmoothGradient() && grad_mode) {
-    prec = config->GetKind_Grad_Linear_Solver_Prec();
+  if (override_prec) {
+    prec = *override_prec;
   }
 
   useCuda = config->GetCUDA();

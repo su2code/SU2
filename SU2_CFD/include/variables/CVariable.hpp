@@ -2416,4 +2416,16 @@ public:
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
+
+  inline virtual su2double GetMomCoeff(unsigned long iPoint) { return 0.0; }
+
+  inline virtual void SetMomCoeff(unsigned long iPoint, su2double val_Mom_Coeff) { }
+
+  inline virtual su2double GetMomentumCorrection(unsigned long iPoint, unsigned short iDim) { return 0.0; }
+
+  inline virtual void SetMomentumCorrection(unsigned long iPoint, unsigned short iDim, su2double val_mom) { }
+
+  inline virtual su2double GetHbyACorrection(unsigned long iPoint, unsigned short iDim) { return 0.0; }
+
+  inline virtual void SetHbyACorrection(unsigned long iPoint, unsigned short iDim, su2double val_HbyAcorrection) { }
 };

@@ -135,7 +135,8 @@ private:
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
   Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
-  Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Pressure_Based;           /*!< \brief Flag to check if we are using a pressure-based system.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
@@ -525,6 +526,8 @@ private:
   Kind_Gradient_Method_Recon,      /*!< \brief Numerical method for computation of spatial gradients used for upwind reconstruction. */
   Kind_Deform_Linear_Solver,             /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
+  Kind_Poisson_Linear_Solver,             /*!< \brief Numerical solver for the poisson equation. */
+  Kind_Poisson_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver of the poisson equation. */
   Kind_Linear_Solver,                    /*!< \brief Numerical solver for the implicit scheme. */
   Kind_Linear_Solver_Prec,               /*!< \brief Preconditioner of the linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
@@ -587,6 +590,9 @@ private:
   Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
+  PBITER Kind_PBIter;                    /*< \brief Kind of pressure-based algorithm that is used. */
+  INCOMP_SYSTEM Kind_Incomp_System;      /*< \brief Kind of incompressible solver. */
+
   bool MUSCL,              /*!< \brief MUSCL scheme (for the runtime eq. system). */
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,              /*!< \brief MUSCL scheme for the turbulence equations.*/
@@ -638,8 +644,10 @@ private:
   bool InletUseNormal;             /*!< \brief Flag for whether to use the local normal as the flow direction for a pressure inlet. */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Poisson_Linear_Solver_Error;         /*!< \brief Min error of the linear solver for the poisson equation. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Poisson_Linear_Solver_Iter;      /*!< \brief Max iterations of the linear solver for the poisson solver*/
   unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Deflation; /*!< \brief Number of vectors used for deflated restarts. */
@@ -655,6 +663,14 @@ private:
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
+
+  struct CSIMPLE_Options {
+    su2double Transient_Term_Removal_Factor; /*!< \brief Coefficient for removing the transient term from the momentum coefficient. */
+    su2double Relaxation_Factor_Pressure;    /*!< \brief Relaxation coefficient of the pressure corrections in the SIMPLE solver. */
+    bool AutomaticRelaxationFactors;         /*!< \brief option for automatically computing relaxation factors for flow corrections in SIMPLE. */
+    unsigned short nCorrections_PISO;        /*!< \brief Number of corrections used in PISO algorithm. */
+  } SIMPLE_Options;
+
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
@@ -4007,6 +4023,18 @@ public:
   ENUM_REGIME GetKind_Regime(void) const { return Kind_Regime; }
 
   /*!
+   * \brief Kind of incompressible solver formulation.
+   * \return Kind of incompressible solver.
+   */
+  INCOMP_SYSTEM GetKind_Incomp_System(void) const { return Kind_Incomp_System; }
+
+  /*!
+   * \brief Kind of iteration used for pressure based iterations.
+   * \return Kind of iteration used for pressure based iterations.
+   */
+  PBITER GetKind_PBIter(void) const { return Kind_PBIter; }
+
+  /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
    * \param[in] val_zone - Zone where the soler is applied.
    * \return Governing equation that we are solving.
@@ -4357,10 +4385,22 @@ public:
   unsigned short GetKind_Linear_Solver_Prec(void) const { return Kind_Linear_Solver_Prec; }
 
   /*!
+   * \brief Get the kind of preconditioner for the linear solver of the poisson problem.
+   * \return Numerical preconditioner for poisson equation (solving the linear system).
+   */
+  unsigned short GetKind_Poisson_Linear_Solver_Prec(void) const { return Kind_Poisson_Linear_Solver_Prec; }
+
+  /*!
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_Deform_Linear_Solver(void) const { return Kind_Deform_Linear_Solver; }
+
+  /*!
+   * \brief Get the kind of solver for the poisson equation.
+   * \return Numerical solver for poisson equation (solving the linear system).
+   */
+  unsigned short GetKind_Poisson_Linear_Solver(void) const { return Kind_Poisson_Linear_Solver; }
 
   /*!
    * \brief Get min error of the linear solver for the implicit formulation.
@@ -4375,10 +4415,22 @@ public:
   su2double GetDeform_Linear_Solver_Error(void) const { return Deform_Linear_Solver_Error; }
 
   /*!
+   * \brief Get min error of the linear solver for the poisson equation.
+   * \return Min error of the linear solver for the poisson equation.
+   */
+  su2double GetPoisson_Linear_Solver_Error(void) const { return Poisson_Linear_Solver_Error; }
+
+  /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Iter(void) const { return Linear_Solver_Iter; }
+
+  /*!
+   * \brief Get max number of iterations of the linear solver for the poisson equation.
+   * \return Max number of iterations of the linear solver for the poisson equation.
+   */
+  unsigned long GetPoisson_Linear_Solver_Iter(void) const { return Poisson_Linear_Solver_Iter; }
 
   /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.
@@ -4391,6 +4443,11 @@ public:
    *        sweeps), see CIluOptions.
    */
   const CIluOptions& GetIluOptions(void) const { return IluOptions; }
+
+  /*!
+   * \brief Get the SIMPLE (and PISO) algorithm options, see CSIMPLE_Options.
+   */
+  const CSIMPLE_Options& GetSIMPLE_Options(void) const { return SIMPLE_Options; }
 
   /*!
    * \brief Get restart frequency of the linear solver for the implicit formulation.

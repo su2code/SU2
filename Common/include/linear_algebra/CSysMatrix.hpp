@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cassert>
+#include <optional>
 
 /*--- In forward mode the matrix is not of a built-in type. ---*/
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
@@ -706,15 +707,15 @@ class CSysMatrix {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] needTranspPtr - If the L/U transpose maps should be built, used for "SetDiagonalAsColumnSum".
-   * \param[in] grad_mode - Gradient smoothing mode, only used to detect the right preconditioner type.
    * \param[in] allow_quant - Quantization is only possible with solvers that "set and forget" the off-diagonal
    *            blocks of the matrix. Solvers that perform multiple updates would lose too much information, so
    *            that pattern is not supported with quantization (the code will hit null pointers). It is up to
    *            the solver to declare whether it will "set and forget".
+   * \param[in] override_prec - Decide if, and with what argument to override the preconditioner.
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
-                  bool grad_mode = false, bool allow_quant = false);
+                  bool allow_quant = false, std::optional<unsigned short> override_prec = std::nullopt);
 
   /*!
    * \brief Compresses off-diagonal blocks into quantized form for use with USE_QUANTIZATION.

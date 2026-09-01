@@ -402,6 +402,14 @@ def main():
     inc_euler_naca0012.test_vals = [-5.988713, -5.020635, 0.522968, 0.008854]
     test_list.append(inc_euler_naca0012)
 
+    # NACA0012 Hydrofoil, pressure-based
+    inc_euler_naca0012_pb           = TestCase('inc_euler_naca0012_pb')
+    inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
+    inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
+    inc_euler_naca0012_pb.test_iter = 20
+    inc_euler_naca0012_pb.test_vals = [-4.154445, -4.919400, 0.468630, 0.010040]
+    test_list.append(inc_euler_naca0012_pb)
+
     # C-D nozzle with pressure inlet and mass flow outlet
     inc_nozzle           = TestCase('inc_nozzle')
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
@@ -428,6 +436,14 @@ def main():
     inc_lam_cylinder.test_iter = 10
     inc_lam_cylinder.test_vals = [-4.161215, -3.573002, 0.019888, 4.945923]
     test_list.append(inc_lam_cylinder)
+
+    # Laminar cylinder, pressure-based
+    inc_lam_cylinder_pb          = TestCase('inc_lam_cylinder_pb')
+    inc_lam_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder_pb.cfg_file  = "incomp_pb_cylinder.cfg"
+    inc_lam_cylinder_pb.test_iter = 10
+    inc_lam_cylinder_pb.test_vals = [-3.484442, -3.775560, 0.012341, 6.190300]
+    test_list.append(inc_lam_cylinder_pb)
 
     # Buoyancy-driven cavity
     inc_buoyancy          = TestCase('inc_buoyancy')
@@ -479,6 +495,14 @@ def main():
     inc_turb_naca0012_sst_sust.test_iter = 20
     inc_turb_naca0012_sst_sust.test_vals = [-7.169704, 0.332779, 0.000021, 0.312114]
     test_list.append(inc_turb_naca0012_sst_sust)
+
+    # Flat plate, pressure-based
+    inc_flatplate_pb           = TestCase('inc_flatplate_pb')
+    inc_flatplate_pb.cfg_dir   = "incomp_rans/rough_flatplate"
+    inc_flatplate_pb.cfg_file  = "pb_rough_flatplate_incomp.cfg"
+    inc_flatplate_pb.test_iter = 10
+    inc_flatplate_pb.test_vals = [ -4.063342, -9.884401, 0.000011, 0.228472]
+    test_list.append(inc_flatplate_pb)
 
     # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SST
     inc_turb_wallfunction_flatplate_sst           = TestCase('inc_turb_sst_wallfunction_flatplate')

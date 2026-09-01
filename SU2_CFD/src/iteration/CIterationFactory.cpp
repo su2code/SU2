@@ -32,6 +32,7 @@
 #include "../../include/iteration/CDiscAdjFluidIteration.hpp"
 #include "../../include/iteration/CDiscAdjHeatIteration.hpp"
 #include "../../include/iteration/CFluidIteration.hpp"
+#include "../../include/iteration/CPBFluidIteration.hpp"
 #include "../../include/iteration/CFEMFluidIteration.hpp"
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../include/iteration/CHeatIteration.hpp"
@@ -56,6 +57,11 @@ CIteration* CIterationFactory::CreateIteration(MAIN_SOLVER kindSolver, const CCo
           cout << "Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
         iteration = new CTurboIteration(config);
 
+      }
+      else if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
+        if (rank == MASTER_NODE)
+          cout << "Pressure based Euler/Navier-Stokes/RANS fluid iteration." << endl;
+        iteration = new CPBFluidIteration(config);
       }
       else{
         if (rank == MASTER_NODE)
@@ -113,7 +119,7 @@ CIteration* CIterationFactory::CreateIteration(MAIN_SOLVER kindSolver, const CCo
       iteration = new CDiscAdjHeatIteration(config);
       break;
 
-    case MAIN_SOLVER::NONE: case MAIN_SOLVER::TEMPLATE_SOLVER: case MAIN_SOLVER::MULTIPHYSICS:
+    case MAIN_SOLVER::NONE: case MAIN_SOLVER::TEMPLATE_SOLVER: case MAIN_SOLVER::MULTIPHYSICS: case MAIN_SOLVER::POISSON_EQUATION:
       SU2_MPI::Error("No iteration found for specified solver.", CURRENT_FUNCTION);
       break;
   }
