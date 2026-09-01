@@ -1716,20 +1716,6 @@ public:
   inline virtual su2double GetF1blending(unsigned long iPoint) const { return 0.0; }
 
   /*!
-   * \brief Write the first blending function of the SST model, for a ghost row: SetBlendingFunc
-   *        derives F1 from the wall distance and viscous state, neither of which a ghost point
-   *        has, so its ghost row is written directly with the interior point's own F1 instead.
-   */
-  inline virtual void SetF1blending(unsigned long iPoint, su2double val) {}
-
-  /*!
-   * \brief Container backing GetF1blending/SetF1blending, for the edge-flux kernels to read
-   *        through gatherVariables the way they do GetSolution and GetGradient, rather than one
-   *        virtual call per point.
-   */
-  inline virtual const VectorType& GetF1blending() const { return EmptyVector; }
-
-  /*!
    * \brief Get the second blending function of the SST model.
    */
   inline virtual su2double GetF2blending(unsigned long iPoint) const { return 0.0; }

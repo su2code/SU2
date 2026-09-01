@@ -60,10 +60,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, const CSolv
 
   nVarGrad = nVar;
 
-  /*--- Define geometry constants in the solver structure ---*/
-
-  nDim = geometry->GetnDim();
-
   /*--- Define variables needed for transition from config file */
   options = config->GetLMParsedOptions();
   TransCorrelations.SetOptions(options);

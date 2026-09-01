@@ -37,6 +37,7 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
                config->GetNEMOProblem(), geometry->GetnDim(), config->GetnSpecies()) {
   SU2_ZONE_SCOPED
 
+  nDim = geometry->GetnDim();
   nMarker = config->GetnMarker_All();
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
@@ -91,15 +92,14 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
    * (CFlowVariable seeds the BGS solution with an OpenMP work-sharing loop, whose barrier would
    * take an arrival of the team barrier the other threads are waiting on). ---*/
   if (flow_solver != nullptr) {
-    const auto nDim_ = geometry->GetnDim();
     unsigned long maxMarkerVertices = 0;
     for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) maxMarkerVertices = max(maxMarkerVertices, nVertex[iMarker]);
 
-    ghostFlowNodes = make_unique<CGhostFlowVariable>(maxMarkerVertices, nDim_, flow_solver->GetnVar(),
+    ghostFlowNodes = make_unique<CGhostFlowVariable>(maxMarkerVertices, nDim, flow_solver->GetnVar(),
                                                      flow_solver->GetnPrimVar(), flow_solver->GetnPrimVarGrad(),
                                                      config);
-    ghostNormal.resize(maxMarkerVertices, nDim_);
-    ghostCoord.resize(maxMarkerVertices, nDim_);
+    ghostNormal.resize(maxMarkerVertices, nDim);
+    ghostCoord.resize(maxMarkerVertices, nDim);
     ghostSkip.resize(maxMarkerVertices);
   }
 }
