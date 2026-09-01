@@ -479,6 +479,24 @@ void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
                ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Turb()), val_marker);
 }
 
+void CTransLMSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics*,
+                                        CNumerics*, CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  if (solver_container[FLOW_SOL] == nullptr) return;
+
+  const auto optConv = ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Turb());
+  const auto optVisc = ScalarFluxOptions::BoundaryDiffusive(*config, true);
+
+  /*--- LM's diffusion coefficients read no auxiliary ghost field. ---*/
+  const auto fillGhostExtras = [](unsigned long, unsigned long) {};
+
+  DispatchScheme<CScalarFlux_TransLM, 2>(config, [&](auto tag) {
+    FluidInterfaceFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, optConv, optVisc,
+                                                             fillGhostExtras);
+  });
+}
+
 
 void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                   bool val_update_geo) {

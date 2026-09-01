@@ -432,7 +432,7 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
       }
     }
     else {
-      heatSolver = new CHeatSolver(geometry, config, iMGLevel);
+      heatSolver = new CHeatSolver(geometry, config, solver[FLOW_SOL], iMGLevel);
     }
   }
 

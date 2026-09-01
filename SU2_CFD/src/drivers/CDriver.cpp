@@ -54,7 +54,6 @@
 
 #include "../../include/numerics/template.hpp"
 #include "../../include/numerics/radiation.hpp"
-#include "../../include/numerics/heat.hpp"
 #include "../../include/numerics/flow/convection/roe.hpp"
 #include "../../include/numerics/flow/convection/fds.hpp"
 #include "../../include/numerics/flow/convection/fvs.hpp"
@@ -72,8 +71,6 @@
 #include "../../include/numerics/continuous_adjoint/adj_convection.hpp"
 #include "../../include/numerics/continuous_adjoint/adj_diffusion.hpp"
 #include "../../include/numerics/continuous_adjoint/adj_sources.hpp"
-#include "../../include/numerics/scalar/scalar_convection.hpp"
-#include "../../include/numerics/scalar/scalar_diffusion.hpp"
 #include "../../include/numerics/scalar/scalar_sources.hpp"
 #include "../../include/numerics/turbulent/turb_sources.hpp"
 #include "../../include/numerics/turbulent/transition/trans_sources.hpp"
@@ -1979,24 +1976,16 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
   /*--- Solver definition of the finite volume heat solver  ---*/
   if (heat) {
+    /*--- Heat drives its interior loop and boundaries through its own CScalarFlux_Heat edge
+     * kernel (see CHeatSolver), so conv_term/visc_term/conv_bound_term/visc_bound_term are never
+     * set here; this switch only checks the config value. ---*/
 
-    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
-      numerics[iMGlevel][HEAT_SOL][visc_term] = new CAvgGrad_Heat(nDim, config, true);
-      numerics[iMGlevel][HEAT_SOL][visc_bound_term] = new CAvgGrad_Heat(nDim, config, false);
-
-      switch (config->GetKind_ConvNumScheme_Heat()) {
-
-        case SPACE_UPWIND :
-          numerics[iMGlevel][HEAT_SOL][conv_term] = new CUpwSca_Heat(nDim, config);
-          numerics[iMGlevel][HEAT_SOL][conv_bound_term] = new CUpwSca_Heat(nDim, config);
-          break;
-
-        default:
-          SU2_MPI::Error("Invalid convective scheme for the heat transfer equations.", CURRENT_FUNCTION);
-          break;
-      }
+    switch (config->GetKind_ConvNumScheme_Heat()) {
+      case SPACE_UPWIND:
+        break;
+      default:
+        SU2_MPI::Error("Invalid convective scheme for the heat transfer equations.", CURRENT_FUNCTION);
+        break;
     }
   }
 
