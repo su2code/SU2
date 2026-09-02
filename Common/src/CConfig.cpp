@@ -2082,25 +2082,30 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
-  /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
-  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
-  /*!\brief MG_IMPLICIT_LINES_ISOTROPIC\n DESCRIPTION: Use isotropic agglomeration along implicit lines (4 cells per coarse CV) instead of anisotropic (2 cells per coarse CV). DEFAULT: NO \ingroup Config*/
-  addBoolOption("MG_IMPLICIT_LINES_ISOTROPIC", MGOptions.MG_Implicit_Lines_Isotropic, false);
+  /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Safety cap on how many layers deep a paving front
+   * may go. A front is meant to run until it reaches a boundary or the mesh stops offering a layer
+   * topologically identical to the one below it, so this is off by default. DEFAULT: 0 (no cap) \ingroup Config*/
+  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 0);
   /*!\brief MG_IMPLICIT_LINES_MAX_GROUP\n DESCRIPTION: Maximum number of parallel implicit lines merged tangential to
    * the wall into one coarse CV (2D: always 2; 3D: e.g. 4 for a wall quad/hex corner, 3 for a triangular prism apex).
    * 0 uses the dimension-appropriate default (2 in 2D, 4 in 3D). DEFAULT: 0 \ingroup Config*/
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_GROUP", MGOptions.MG_Implicit_Lines_Max_Group, 0);
-  /*!\brief MG_IMPLICIT_LINES_MIN_AR\n DESCRIPTION: Smallest local cell aspect ratio for which a node still counts as part
-   * of a stretched layer, measured from the ratio of dual-grid edge weights. Ends an implicit line where the mesh stops
-   * being stretched along it, instead of letting it run to the far field, and decides which boundaries carry a layer
-   * normal to them and may therefore seed lines. 1.0 disables both tests. DEFAULT: 2.0 \ingroup Config*/
+  /*!\brief MG_IMPLICIT_LINES_MIN_AR\n DESCRIPTION: Smallest local cell aspect ratio for which a node still counts as
+   * part of a stretched layer, measured from the ratio of dual-grid edge weights. Decides which non-wall boundaries
+   * carry a layer normal to them and may therefore seed paving fronts; viscous walls always seed. This is a seeding
+   * gate only and never stops a front that has started. 1.0 lets every boundary seed. DEFAULT: 2.0 \ingroup Config*/
   addDoubleOption("MG_IMPLICIT_LINES_MIN_AR", MGOptions.MG_Implicit_Lines_Min_AR, 2.0);
-  /*!\brief MG_IMPLICIT_LINES_ISO_AR\n DESCRIPTION: Local cell aspect ratio at which a stack of coarse CVs switches from
-   * semi-coarsening to full coarsening. While the mesh at the current height is stretched by more than this, one fine
-   * layer goes into each coarse CV, so the coarse grid keeps the wall-normal line structure a line-implicit smoother
-   * relies on. Once the ratio drops below it the layers are taken two at a time and the coarsening becomes isotropic.
-   * 0.0 disables the switch and MG_IMPLICIT_LINES_ISOTROPIC decides for the whole stack. DEFAULT: 0.0 \ingroup Config*/
-  addDoubleOption("MG_IMPLICIT_LINES_ISO_AR", MGOptions.MG_Implicit_Lines_Iso_AR, 0.0);
+  /*!\brief MG_BOUNDARY_THICKEN_AR\n DESCRIPTION: Grow boundary coarse CVs into the interior instead of leaving them as
+   * surface patches one fine cell thick. The boundary agglomeration can only ever merge points that lie on the boundary
+   * themselves, so a boundary coarse CV comes out flat: 2x2 nodes on a surface, 2 on a ridge, never the 2x2x2 block the
+   * interior pass builds. Those CVs are a large share of the coarse grid by count while holding very few nodes each.
+   * Thickening keeps the surface footprint the boundary agglomeration chose and only adds the layer underneath it, so
+   * the CV still never straddles two boundary conditions. It is skipped where the mesh carries a stretched layer normal
+   * to the boundary, i.e. where the local aspect ratio measured along the boundary normal reaches this value, since
+   * there the flat CV is deliberate semi-coarsening that preserves the wall-normal resolution of a boundary layer.
+   * Raising it thickens more boundaries, lowering it fewer. 0.0 disables thickening entirely. DEFAULT: 0.0
+   * \ingroup Config*/
+  addDoubleOption("MG_BOUNDARY_THICKEN_AR", MGOptions.MG_Boundary_Thicken_AR, 0.0);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
    * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
@@ -3091,6 +3096,13 @@ void CConfig::SetConfig_Options() {
    * weights come out uniform, and the partitioning is the same as with no weights at all. 0 disables the weights.
    * DEFAULT: 0 */
   addDoubleOption("PARMETIS_ANISO_WEIGHT", ParMETIS_anisoWgt, 0.0);
+  /*!\brief PARMETIS_COLUMN_PARTITION\n DESCRIPTION: Contract each wall-normal column of stretched cells into a single
+   * graph vertex before partitioning, and give every node of a column the colour of its column. A partition boundary
+   * can then never cross a column, which is what the implicit-line agglomeration and line-implicit smoothing need, and
+   * the graph ParMETIS actually cuts is the wall surface. Columns are found as connected components of the edges that
+   * are short at both of their ends, so an isotropic mesh contracts to itself and partitions exactly as before.
+   * DEFAULT: NO \ingroup Config*/
+  addBoolOption("PARMETIS_COLUMN_PARTITION", ParMETIS_columnPart, false);
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/

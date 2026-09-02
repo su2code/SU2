@@ -1125,20 +1125,21 @@ struct CMGOptions {
   bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
   su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
-  unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
-  bool MG_Implicit_Lines_Isotropic{false}; /*!< \brief Use isotropic (vs anisotropic) agglomeration along implicit lines. */
+  unsigned long MG_Implicit_Lines_MaxLength{0}; /*!< \brief Safety cap on paving stack depth in layers, 0 for none. */
   unsigned long MG_Implicit_Lines_Max_Group{0}; /*!< \brief Max number of parallel implicit lines merged into one coarse
                                                       CV tangential to the wall. 0 = dimension-appropriate default
                                                       (2 in 2D, 4 in 3D). See CMultiGridGeometry::AgglomerateImplicitLines. */
-  su2double MG_Implicit_Lines_Min_AR{2.0}; /*!< \brief Smallest local cell aspect ratio for which a node still counts as
-                                                  part of a stretched layer. Ends a line where the mesh stops being
-                                                  stretched along it, and decides which boundaries carry a layer normal
-                                                  to them. See CMultiGridGeometry::AgglomerateImplicitLines. */
-  su2double MG_Implicit_Lines_Iso_AR{0.0}; /*!< \brief Aspect ratio below which a stack switches from semi-coarsening
-                                                  (one fine layer per coarse CV, preserving the line) to full coarsening
-                                                  (two fine layers per coarse CV). 0 disables the switch, leaving
-                                                  MG_IMPLICIT_LINES_ISOTROPIC in charge for the whole stack.
-                                                  See CMultiGridGeometry::AgglomerateImplicitLines. */
+  su2double MG_Implicit_Lines_Min_AR{2.0}; /*!< \brief Smallest local cell aspect ratio for which a node still counts
+                                                  as part of a stretched layer. Decides which non-wall boundaries carry
+                                                  a layer normal to them and may therefore seed paving fronts. It is a
+                                                  SEEDING gate only and never stops a front that has started.
+                                                  See CMultiGridGeometry::SeedFrontNodes. */
+  su2double MG_Boundary_Thicken_AR{0.0}; /*!< \brief Local aspect ratio, measured along the boundary normal, at or above
+                                                which a boundary coarse CV is left as a flat surface patch instead of
+                                                being thickened into the interior. Below it the boundary sits in mesh
+                                                that is not stretched normal to itself and the CV is grown inwards to
+                                                the full agglomeration size. 0 disables thickening altogether, which is
+                                                the historical behaviour. See CMultiGridGeometry::CMultiGridGeometry. */
   unsigned long MG_Coarse_Prec_Freeze{1}; /*!< \brief On MG levels > 0, reuse the linear-solver preconditioner for this many consecutive solves. 1 = rebuild every solve. */
   su2double MG_Correction_Limit{0.0};     /*!< \brief Max relative change of any solution component from one prolongated FAS correction. 0 = no limit. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Iterations per mesh during FMG startup, and the length of each level's CFL ramp. 0 = no iteration budget. */

@@ -228,6 +228,12 @@ class CGeometry {
 
     std::vector<std::vector<unsigned long>> linelets; /*!< \brief Point indices for each linelet. */
 
+    /*!< \brief Whether the structure has been built. Not the same as having any linelets: a rank whose
+     *    part of the mesh holds no solid wall builds an empty set, and inferring "not built yet" from
+     *    that emptiness makes it rebuild - and re-run the collectives at the end of the construction -
+     *    on every call, while every other rank answers from its cache and never calls them again. */
+    bool built = false;
+
     /*!< \brief Index of the linelet of each point ("linelets" transfered to points). */
     std::vector<unsigned> lineletIdx;
 

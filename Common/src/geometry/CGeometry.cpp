@@ -4340,7 +4340,8 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
 
 const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) const {
   auto& li = lineletInfo;
-  if (!li.linelets.empty() || nPoint == 0) return li;
+  if (li.built || nPoint == 0) return li;
+  li.built = true;
 
   li.lineletIdx.resize(nPoint, CLineletInfo::NO_LINELET);
 
