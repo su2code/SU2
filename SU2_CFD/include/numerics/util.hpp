@@ -298,37 +298,109 @@ FORCEINLINE Matrix<Double, nRows, nCols> gatherVariables(Int iPoint, const Conta
 #else
 
 namespace {
-/*--- Register every lane of one gathered scalar as a preaccumulation input: the value itself
- * for a scalar Double, one call per lane for a simd::Array one. The gather already happened
- * through the container's own get(), which packs SIMD lanes and flattens a 3D container's
- * (row, column) offset the same way the direct-mode branch above does, so this only adds the
- * bookkeeping reverse mode needs on top of that shared read. ---*/
-FORCEINLINE void registerPreaccIn(const su2double& value) { AD::SetPreaccIn(value); }
+/*--- A container's own get() copies its data by value, which is all the direct-mode branch
+ * above needs; reverse mode instead has to register each element as a preaccumulation input
+ * while it still refers to the container's own storage, before any copy gives it a fresh
+ * identifier of its own, so these read one element at a time through the container's element
+ * accessor instead. A container of one column supports only the one-argument form and a wider
+ * one only the two-argument form, never both, so which overload is well-formed for a given
+ * Container selects the right one; there is never a choice to make between them. ---*/
+template <class Container, class Int>
+FORCEINLINE auto element(const Container& vars, Int iPoint, size_t) -> decltype(vars(iPoint)) {
+  return vars(iPoint);
+}
+template <class Container, class Int>
+FORCEINLINE auto element(const Container& vars, Int iPoint, size_t iVar) -> decltype(vars(iPoint, iVar)) {
+  return vars(iPoint, iVar);
+}
+template <class Container, class Int>
+FORCEINLINE auto element(const Container& vars, Int iPoint, size_t iRow, size_t iCol)
+    -> decltype(vars(iPoint, iRow, iCol)) {
+  return vars(iPoint, iRow, iCol);
+}
 
-template <class T, size_t N>
-FORCEINLINE void registerPreaccIn(const simd::Array<T, N>& value) {
-  for (size_t k = 0; k < N; ++k) AD::SetPreaccIn(value[k]);
+/*--- Element d of a run of consecutive variables starting at iVar. A 3D container's own
+ * two-argument operator() is a sub-matrix view, not a scalar (its element accessor takes three
+ * indices, the run varying the last one at fixed iVar), so it is tried first and preferred
+ * whenever it is well-formed; only a 2D container's two-argument operator() falls through to
+ * the second overload, where the run instead varies the column itself. ---*/
+template <class Container, class Int>
+FORCEINLINE auto elementOfRun(int, const Container& vars, Int iPoint, size_t iVar, size_t d)
+    -> decltype(vars(iPoint, iVar, d)) {
+  return vars(iPoint, iVar, d);
+}
+template <class Container, class Int>
+FORCEINLINE auto elementOfRun(long, const Container& vars, Int iPoint, size_t iVar, size_t d)
+    -> decltype(vars(iPoint, iVar + d)) {
+  return vars(iPoint, iVar + d);
+}
+template <class Container, class Int>
+FORCEINLINE auto elementOfRun(const Container& vars, Int iPoint, size_t iVar, size_t d)
+    -> decltype(elementOfRun(0, vars, iPoint, iVar, d)) {
+  return elementOfRun(0, vars, iPoint, iVar, d);
 }
 }  // namespace
 
 template <class Int, class Container, class Double = typename CValueTraits<Int>::Double>
 FORCEINLINE Double gatherVariables(Int iPoint, const Container& vars, size_t iVar = 0) {
-  const auto x = vars.template get<Vector<Double, 1>>(iPoint, iVar);
-  registerPreaccIn(x(0));
-  return x(0);
+  Double x;
+  if constexpr (CLaneTraits<Double>::IsArray) {
+    for (size_t k = 0; k < Double::Size; ++k) {
+      const auto& v = element(vars, iPoint[k], iVar);
+      AD::SetPreaccIn(v);
+      x[k] = v;
+    }
+  } else {
+    const auto& v = element(vars, iPoint, iVar);
+    AD::SetPreaccIn(v);
+    x = v;
+  }
+  return x;
 }
 
 template <size_t nVar, class Int, class Container, class Double = typename CValueTraits<Int>::Double>
 FORCEINLINE Vector<Double, nVar> gatherVariables(Int iPoint, const Container& vars, size_t iVar = 0) {
-  auto x = vars.template get<Vector<Double, nVar>>(iPoint, iVar);
-  for (size_t i = 0; i < nVar; ++i) registerPreaccIn(x[i]);
+  Vector<Double, nVar> x;
+  if constexpr (CLaneTraits<Double>::IsArray) {
+    for (size_t i = 0; i < nVar; ++i) {
+      for (size_t k = 0; k < Double::Size; ++k) {
+        const auto& v = elementOfRun(vars, iPoint[k], iVar, i);
+        AD::SetPreaccIn(v);
+        x[i][k] = v;
+      }
+    }
+  } else {
+    for (size_t i = 0; i < nVar; ++i) {
+      const auto& v = elementOfRun(vars, iPoint, iVar, i);
+      AD::SetPreaccIn(v);
+      x[i] = v;
+    }
+  }
   return x;
 }
 
 template <size_t nRows, size_t nCols, class Int, class Container, class Double = typename CValueTraits<Int>::Double>
 FORCEINLINE Matrix<Double, nRows, nCols> gatherVariables(Int iPoint, const Container& vars, size_t iRow = 0) {
-  auto x = vars.template get<Matrix<Double, nRows, nCols>>(iPoint, iRow);
-  for (size_t i = 0; i < nRows * nCols; ++i) registerPreaccIn(x.data()[i]);
+  Matrix<Double, nRows, nCols> x;
+  if constexpr (CLaneTraits<Double>::IsArray) {
+    for (size_t i = 0; i < nRows; ++i) {
+      for (size_t j = 0; j < nCols; ++j) {
+        for (size_t k = 0; k < Double::Size; ++k) {
+          const auto& v = element(vars, iPoint[k], iRow + i, j);
+          AD::SetPreaccIn(v);
+          x(i, j)[k] = v;
+        }
+      }
+    }
+  } else {
+    for (size_t i = 0; i < nRows; ++i) {
+      for (size_t j = 0; j < nCols; ++j) {
+        const auto& v = element(vars, iPoint, iRow + i, j);
+        AD::SetPreaccIn(v);
+        x(i, j) = v;
+      }
+    }
+  }
   return x;
 }
 #endif
