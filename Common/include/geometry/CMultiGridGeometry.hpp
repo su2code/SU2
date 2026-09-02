@@ -48,20 +48,7 @@ class CMultiGridGeometry final : public CGeometry {
    * \return <code>TRUE</code> or <code>FALSE</code> depending if the control volume can be agglomerated.
    */
   bool SetBoundAgglomeration(unsigned long CVPoint, vector<short> marker_seed, const CGeometry* fine_grid,
-                             const CConfig* config, const vector<char>& mixedBC) const;
-
-  /*!
-   * \brief Nodes carrying two or more physical boundary conditions of DIFFERENT type, e.g. the point
-   *        where a wall ends against an outlet. Nishikawa's rules never agglomerate these: merging one
-   *        into a coarse control volume averages two conditions that the fine grid applies separately,
-   *        and neither ends up applied where it belongs. Two markers of the SAME type meeting - two
-   *        wall patches, say - are not affected, nor is a node whose only second marker is
-   *        SEND_RECEIVE, which records a partition and not a boundary condition.
-   * \param[in] fine_grid - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \return One flag per fine grid point, set where that point must stay on its own.
-   */
-  vector<char> FindMixedBoundaryNodes(const CGeometry* fine_grid, const CConfig* config) const;
+                             const CConfig* config) const;
 
   /*!
    * \brief Determine if a Point can be agglomerated using geometrical criteria.
@@ -168,11 +155,10 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] seeds - Seed nodes from SeedFrontNodes.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] mixedBC - Nodes that must stay on their own, from FindMixedBoundaryNodes.
    * \return One vector of indices into seeds.node per patch.
    */
   vector<vector<unsigned long>> BuildFrontPatches(const CFrontSeeds& seeds, const CGeometry* fine_grid,
-                                                  const CConfig* config, const vector<char>& mixedBC) const;
+                                                  const CConfig* config) const;
 
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/

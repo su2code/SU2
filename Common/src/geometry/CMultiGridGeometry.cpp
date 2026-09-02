@@ -109,13 +109,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++)
       onPhysBoundary[fine_grid->vertex[iMarker][iVertex]->GetNode()] = 1;
   }
-  /*--- Nodes where two different boundary conditions meet. Nishikawa's rules never agglomerate
-   *    these, and the rule has to hold for every phase or the same node is treated one way by the
-   *    paving and another here. In 2D the corner test below already refused them; in 3D a ridge of
-   *    such nodes carries one identical marker PAIR all along it and would otherwise pair up with
-   *    itself quite happily. ---*/
-  const auto mixedBC = FindMixedBoundaryNodes(fine_grid, config);
-
   vector<unsigned long> bmembers;
   vector<unsigned long> nThicken_DBG(fine_grid->GetnMarker(), 0), nFlat_DBG(fine_grid->GetnMarker(), 0);
 
@@ -289,11 +282,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         if (counter > 2) agglomerate_seed = false;
 
-        /*--- ...and so is a node where two markers of DIFFERENT type meet, whatever the count and
-         *    whatever the dimension. A coarse CV holding such a node would average two conditions the
-         *    fine grid applies separately. ---*/
-        if (mixedBC[iPoint]) agglomerate_seed = false;
-
         /*--- If the seed (parent) can be agglomerated, we try to agglomerate connected childs to the parent ---*/
         /*--- Note that in 2D we allow a maximum of 4 nodes to be agglomerated ---*/
 
@@ -303,7 +291,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           for (auto CVPoint : fine_grid->nodes->GetPoints(iPoint)) {
             /*--- The new point can be agglomerated ---*/
 
-            if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config, mixedBC)) {
+            if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
               /*--- We set the value of the parent ---*/
 
               fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
@@ -338,7 +326,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
             for (auto CVPoint : Suitable_Indirect_Neighbors) {
               /*--- The new point can be agglomerated ---*/
 
-              if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config, mixedBC)) {
+              if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
                 /*--- We set the value of the parent ---*/
 
                 fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
@@ -775,21 +763,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    Note this deliberately keeps the conservative outcome the sentinel used to produce by accident,
    but only for the CVs that really do border another rank rather than for every CV near one. ---*/
 
-  /*--- Coarse CVs that must be left exactly as the agglomeration made them: those holding a node
-   *    where two different boundary conditions meet. Both repair passes below exist to get rid of
-   *    one-child control volumes, and a deliberately isolated junction IS a one-child control volume,
-   *    so without this they undo the isolation - the wall/symmetry node of a flat plate came out
-   *    correctly alone and was then merged straight back into the CV above it. They have to be
-   *    protected as a TARGET as well as a source: pass two merges a singleton into its smallest
-   *    neighbour, and a one-child junction CV is by construction the smallest neighbour there is. ---*/
-  vector<bool> mustStayAlone(nPointDomain, false);
-  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++)
-    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++)
-      if (mixedBC[nodes->GetChildren_CV(iCoarsePoint, iChildren)]) {
-        mustStayAlone[iCoarsePoint] = true;
-        break;
-      }
-
   vector<bool> touchesPartition(nPointDomain, false);
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
     for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
@@ -805,12 +778,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
 
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
-    if (mustStayAlone[iCoarsePoint]) continue;
     if ((nodes->GetnPoint(iCoarsePoint) == 1) && !touchesPartition[iCoarsePoint]) {
       /*--- Find the neighbor of the isolated point. This neighbor is the right control volume ---*/
 
       const auto iCoarsePoint_Complete = nodes->GetPoint(iCoarsePoint, 0);
-      if (mustStayAlone[iCoarsePoint_Complete]) continue;
 
       /*--- Check if merging would exceed the maximum agglomeration size ---*/
       auto nChildren_Target = nodes->GetnChildren_CV(iCoarsePoint_Complete);
@@ -824,7 +795,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         for (auto jCoarsePoint : nodes->GetPoints(iCoarsePoint_Complete)) {
           if (nChildrenToRedistribute == 0) break;
-          if (mustStayAlone[jCoarsePoint]) continue;
 
           auto nChildren_Neighbor = nodes->GetnChildren_CV(jCoarsePoint);
           if (nChildren_Neighbor < maxAgglomSize) {
@@ -903,7 +873,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
     if (nodes->GetnChildren_CV(iCoarsePoint) != 1) continue;
-    if (mustStayAlone[iCoarsePoint]) continue;
     if (nodes->GetnPoint(iCoarsePoint) <= 1) continue; /*--- Already handled above, or truly islanded. ---*/
 
     /*--- The smallest neighbour is the one most likely to be an under-filled block, and taking the
@@ -915,7 +884,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     unsigned long best_neighbor = std::numeric_limits<unsigned long>::max();
     unsigned short best_nChildren = 0;
     for (auto jCoarsePoint : nodes->GetPoints(iCoarsePoint)) {
-      if (mustStayAlone[jCoarsePoint]) continue;
       const auto nChildren_Neighbor = nodes->GetnChildren_CV(jCoarsePoint);
       /*--- Skip neighbors already emptied by an earlier merge in this same pass. ---*/
       if (nChildren_Neighbor == 0) continue;
@@ -1247,35 +1215,8 @@ bool CMultiGridGeometry::GeometricalCheck(unsigned long iPoint, const CGeometry*
   return (Volume);
 }
 
-vector<char> CMultiGridGeometry::FindMixedBoundaryNodes(const CGeometry* fine_grid, const CConfig* config) const {
-  vector<char> mixed(fine_grid->GetnPoint(), 0);
-
-  /*--- The first physical condition seen at each node, -1 until one is. A second one of a different
-   *    KIND is what makes the node mixed. A second marker of the same kind - two wall patches meeting
-   *    - is not, and neither is SEND_RECEIVE, which records where the partition runs and says nothing
-   *    about the boundary condition. ---*/
-  vector<short> firstBC(fine_grid->GetnPoint(), -1);
-
-  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
-    const auto bc = static_cast<short>(config->GetMarker_All_KindBC(iMarker));
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
-    for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
-      const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
-      if (firstBC[iPoint] < 0)
-        firstBC[iPoint] = bc;
-      else if (firstBC[iPoint] != bc)
-        mixed[iPoint] = 1;
-    }
-  }
-  return mixed;
-}
-
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<short> marker_seed,
-                                               const CGeometry* fine_grid, const CConfig* config,
-                                               const vector<char>& mixedBC) const {
-  /*--- A node where two boundary conditions of different type meet is never merged with anything. ---*/
-  if (mixedBC[CVPoint]) return false;
-
+                                               const CGeometry* fine_grid, const CConfig* config) const {
   bool agglomerate_CV = false;
 
   /*--- Basic condition, the point has not been previously agglomerated, it belongs to the domain,
@@ -1993,8 +1934,8 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
 }
 
 vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFrontSeeds& seeds,
-                                                                    const CGeometry* fine_grid, const CConfig* config,
-                                                                    const vector<char>& mixedBC) const {
+                                                                    const CGeometry* fine_grid,
+                                                                    const CConfig* config) const {
   /*--- Every seed must end up in exactly one patch, and a patch must be compact: in 3D the four nodes
    *    of one boundary quadrilateral, in 2D the two ends of one boundary edge. Choosing, for each seed
    *    independently, a set of neighbours to merge with does not do this - the relation is not
@@ -2061,26 +2002,6 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
   vector<unsigned long> groupOf(nSeeds);
   groups.reserve(nSeeds);
 
-  /*--- Seeds that sit next to an isolated junction node. A run of seeds between two junctions has
-   *    whatever length the geometry gives it, and when that length is odd one seed cannot pair. Left
-   *    to the plain index order the odd one out always lands at the END of the run, because that is
-   *    where the sweep runs out - and the end of a run IS a junction. The result is a one-wide stack
-   *    rising the full height of the mesh immediately beside the junction, so the coarse grid reads
-   *    [4][4][2][1] on one side of it and [1][4][4] on the other. On a flat plate that puts the
-   *    defect against the leading edge, which is the last place it should be.
-   *
-   *    Pairing these first pushes the odd one out into the interior of the run, where a slightly
-   *    narrower stack costs nothing, and leaves both sides of every junction matching. ---*/
-  vector<char> nextToMixed(nSeeds, 0);
-  for (unsigned long si = 0; si < nSeeds; ++si) {
-    if (mixedBC[seeds.node[si]]) continue;
-    for (auto jPoint : fine_grid->nodes->GetPoints(seeds.node[si]))
-      if (mixedBC[jPoint]) {
-        nextToMixed[si] = 1;
-        break;
-      }
-  }
-
   /*--- Every seed starts as its own group; the rounds below merge them. ---*/
   for (unsigned long si = 0; si < nSeeds; ++si) {
     groupOf[si] = si;
@@ -2108,12 +2029,6 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
   for (unsigned round = 0; round < nRounds; ++round) {
     const auto nGroups = groups.size();
 
-    auto groupNextToMixed = [&](unsigned long g) {
-      for (auto si : groups[g])
-        if (nextToMixed[si]) return true;
-      return false;
-    };
-
     /*--- Sort key of each group: the smallest global point index it holds. ---*/
     gkey.assign(nGroups, std::numeric_limits<unsigned long>::max());
     for (unsigned long g = 0; g < nGroups; ++g)
@@ -2123,17 +2038,11 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
      *    so the count from g's side equals the count from h's, and taking only h > g avoids both. ---*/
     merges.clear();
     for (unsigned long g = 0; g < nGroups; ++g) {
-      /*--- A node where two different boundary conditions meet stays a patch of its own, so the front
-       *    rising from it is one node wide and its coarse CVs never reach across the junction. Both
-       *    sides of the merge are tested: skipping only the mixed group would still let an ordinary
-       *    group reach out and take it. ---*/
-      if (mixedBC[seeds.node[groups[g].front()]]) continue;
       shared.clear();
       for (auto si : groups[g])
         for (auto sj : adj[si]) {
           const auto h = groupOf[sj];
           if (h <= g) continue;
-          if (mixedBC[seeds.node[groups[h].front()]]) continue;
           if (groups[g].size() + groups[h].size() > max_group) continue;
           if (!sameSig(groups[h].front(), groups[g].front())) continue;
 
@@ -2146,13 +2055,7 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
             }
           if (!seen) shared.emplace_back(h, 1);
         }
-      /*--- Shared adjacency is doubled so a junction-adjacent merge can be ranked above another of
-       *    the same shape without ever outranking a better shape: a square scores 4 or 5 and a strip
-       *    2 or 3, so squares still come first and the junction only breaks ties among equals. ---*/
-      const unsigned long boostG = groupNextToMixed(g);
-      for (const auto& t : shared)
-        merges.push_back(
-            {g, t.first, 2 * t.second + (boostG || groupNextToMixed(t.first) ? 1u : 0u), gkey[g], gkey[t.first]});
+      for (const auto& t : shared) merges.push_back({g, t.first, t.second, gkey[g], gkey[t.first]});
     }
 
     /*--- Best first, over ALL groups at once. Sweeping the groups in index order instead and letting
@@ -2269,8 +2172,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   /*--- PHASE 1. SeedFrontNodes must be reached by every rank, including one that owns no boundary:
    *    it takes a collective to agree on which markers carry a layer. ---*/
   const auto seeds = SeedFrontNodes(fine_grid, config, stiff);
-  const auto mixedBC = FindMixedBoundaryNodes(fine_grid, config);
-  const auto patches = BuildFrontPatches(seeds, fine_grid, config, mixedBC);
+  const auto patches = BuildFrontPatches(seeds, fine_grid, config);
 
   /*--- Nodes on a boundary that carries a boundary condition. A front must not grow into one: those
    *    nodes belong to the boundary agglomeration and a stack absorbing one would straddle two
@@ -2473,12 +2375,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
 
     pending[f] = front[f];
     pendingLayers[f] = 1;
-    /*--- A front rooted on a node where two different boundary conditions meet emits that node as a
-     *    coarse CV of its own, one fine node deep, so the junction is never averaged into a control
-     *    volume with anything else. Only the FIRST CV of the stack is treated this way: emit() then
-     *    asks blockFor again for what is by then an ordinary interior layer, and the rest of the
-     *    stack rises two nodes at a time like any other. ---*/
-    nBlock[f] = mixedBC[front[f].front()] ? 1 : blockFor(front[f]);
+    nBlock[f] = blockFor(front[f]);
     if (pendingLayers[f] >= nBlock[f]) emit(f);
   }
 
@@ -2756,7 +2653,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
          << " layers, front depth " << depthMin << " to " << depthMax;
     if (total[4] + total[5] > 0)
       cout << "\n  Coarse CVs by depth: " << total[5] << " two layers deep, " << total[4]
-           << " one layer (isolated junction, or top of a stack)";
+           << " one layer (top of a stack)";
     /*--- Why each front stopped. Reaching a boundary is the one correct stop; everything else is the
      *    mesh failing to offer a layer topologically identical to the current one, broken down by how
      *    it failed. COLLISION and PINCH are two fronts, or two nodes of one front, reaching for the
