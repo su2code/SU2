@@ -298,13 +298,11 @@ FORCEINLINE Matrix<Double, nRows, nCols> gatherVariables(Int iPoint, const Conta
 #else
 
 namespace {
-/*--- A container's own get() copies its data by value, which is all the direct-mode branch
- * above needs; reverse mode instead has to register each element as a preaccumulation input
- * while it still refers to the container's own storage, before any copy gives it a fresh
- * identifier of its own, so these read one element at a time through the container's element
- * accessor instead. A container of one column supports only the one-argument form and a wider
- * one only the two-argument form, never both, so which overload is well-formed for a given
- * Container selects the right one; there is never a choice to make between them. ---*/
+/*--- A container's own get() copies its data by value; reverse mode needs references into the
+ * container's own storage (see gatherOne below), so these read one element at a time through
+ * the element accessor. A container of one column supports only the one-argument form and a
+ * wider one only the two-argument form, never both, so which overload is well-formed for a
+ * given Container selects the right one; there is never a choice to make between them. ---*/
 template <class Container, class Int>
 FORCEINLINE auto element(const Container& vars, Int iPoint, size_t) -> decltype(vars(iPoint)) {
   return vars(iPoint);
@@ -339,42 +337,39 @@ FORCEINLINE auto elementOfRun(const Container& vars, Int iPoint, size_t iVar, si
     -> decltype(elementOfRun(0, vars, iPoint, iVar, d)) {
   return elementOfRun(0, vars, iPoint, iVar, d);
 }
+
+/*--- Register the source element of each lane as a preaccumulation input, then copy it into x,
+ * the whole gathered value for a scalar Double and a lane vector for a simd::Array one. elem
+ * maps one point index to a reference into the container's storage; the registration has to
+ * happen on that reference, before the copy gives the value an identifier of its own. ---*/
+template <class Double, class Int, class F>
+FORCEINLINE void gatherOne(Double& x, Int iPoint, const F& elem) {
+  if constexpr (CLaneTraits<Double>::IsArray) {
+    for (size_t k = 0; k < Double::Size; ++k) {
+      const su2double& v = elem(iPoint[k]);
+      AD::SetPreaccIn(v);
+      x[k] = v;
+    }
+  } else {
+    const su2double& v = elem(iPoint);
+    AD::SetPreaccIn(v);
+    x = v;
+  }
+}
 }  // namespace
 
 template <class Int, class Container, class Double = typename CValueTraits<Int>::Double>
 FORCEINLINE Double gatherVariables(Int iPoint, const Container& vars, size_t iVar = 0) {
   Double x;
-  if constexpr (CLaneTraits<Double>::IsArray) {
-    for (size_t k = 0; k < Double::Size; ++k) {
-      const auto& v = element(vars, iPoint[k], iVar);
-      AD::SetPreaccIn(v);
-      x[k] = v;
-    }
-  } else {
-    const auto& v = element(vars, iPoint, iVar);
-    AD::SetPreaccIn(v);
-    x = v;
-  }
+  gatherOne(x, iPoint, [&](unsigned long iPt) -> const su2double& { return element(vars, iPt, iVar); });
   return x;
 }
 
 template <size_t nVar, class Int, class Container, class Double = typename CValueTraits<Int>::Double>
 FORCEINLINE Vector<Double, nVar> gatherVariables(Int iPoint, const Container& vars, size_t iVar = 0) {
   Vector<Double, nVar> x;
-  if constexpr (CLaneTraits<Double>::IsArray) {
-    for (size_t i = 0; i < nVar; ++i) {
-      for (size_t k = 0; k < Double::Size; ++k) {
-        const auto& v = elementOfRun(vars, iPoint[k], iVar, i);
-        AD::SetPreaccIn(v);
-        x[i][k] = v;
-      }
-    }
-  } else {
-    for (size_t i = 0; i < nVar; ++i) {
-      const auto& v = elementOfRun(vars, iPoint, iVar, i);
-      AD::SetPreaccIn(v);
-      x[i] = v;
-    }
+  for (size_t i = 0; i < nVar; ++i) {
+    gatherOne(x(i), iPoint, [&](unsigned long iPt) -> const su2double& { return elementOfRun(vars, iPt, iVar, i); });
   }
   return x;
 }
@@ -382,23 +377,10 @@ FORCEINLINE Vector<Double, nVar> gatherVariables(Int iPoint, const Container& va
 template <size_t nRows, size_t nCols, class Int, class Container, class Double = typename CValueTraits<Int>::Double>
 FORCEINLINE Matrix<Double, nRows, nCols> gatherVariables(Int iPoint, const Container& vars, size_t iRow = 0) {
   Matrix<Double, nRows, nCols> x;
-  if constexpr (CLaneTraits<Double>::IsArray) {
-    for (size_t i = 0; i < nRows; ++i) {
-      for (size_t j = 0; j < nCols; ++j) {
-        for (size_t k = 0; k < Double::Size; ++k) {
-          const auto& v = element(vars, iPoint[k], iRow + i, j);
-          AD::SetPreaccIn(v);
-          x(i, j)[k] = v;
-        }
-      }
-    }
-  } else {
-    for (size_t i = 0; i < nRows; ++i) {
-      for (size_t j = 0; j < nCols; ++j) {
-        const auto& v = element(vars, iPoint, iRow + i, j);
-        AD::SetPreaccIn(v);
-        x(i, j) = v;
-      }
+  for (size_t i = 0; i < nRows; ++i) {
+    for (size_t j = 0; j < nCols; ++j) {
+      gatherOne(x(i, j), iPoint,
+                [&](unsigned long iPt) -> const su2double& { return element(vars, iPt, iRow + i, j); });
     }
   }
   return x;
