@@ -138,6 +138,16 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, const CSolver* fl
 
   SetBaseClassPointerToNodes();
 
+  /*--- Ghost states for boundary conditions, sized to the largest marker (see BoundaryFluxResidual).
+   * Only the weakly-coupled fluid case reaches a boundary that reads them; solid conduction's
+   * BC_Inlet/BC_Outlet/BC_Far_Field/BC_Fluid_Interface all return before touching ghostNodes. ---*/
+  if (flow) {
+    unsigned long maxMarkerVertices = 0;
+    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
+      maxMarkerVertices = max(maxMarkerVertices, nVertex[iMarker]);
+    ghostNodes = make_unique<CHeatVariable>(Solution_Inf[0], maxMarkerVertices, nDim, nVar, config);
+  }
+
   /*--- Communicate and store volume and the number of neighbors for any dual CVs that lie on on periodic markers. ---*/
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
