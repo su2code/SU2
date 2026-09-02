@@ -298,70 +298,47 @@ FORCEINLINE Matrix<Double, nRows, nCols> gatherVariables(Int iPoint, const Conta
 #else
 
 namespace {
-/*--- A container's own get() copies its data by value; reverse mode needs references into the
- * container's own storage (see gatherOne below), so these read one element at a time through
- * the element accessor. A container of one column supports only the one-argument form and a
- * wider one only the two-argument form, never both, so which overload is well-formed for a
- * given Container selects the right one; there is never a choice to make between them. ---*/
-template <class Container, class Int>
-FORCEINLINE auto element(const Container& vars, Int iPoint, size_t) -> decltype(vars(iPoint)) {
-  return vars(iPoint);
-}
-template <class Container, class Int>
-FORCEINLINE auto element(const Container& vars, Int iPoint, size_t iVar) -> decltype(vars(iPoint, iVar)) {
-  return vars(iPoint, iVar);
-}
-template <class Container, class Int>
-FORCEINLINE auto element(const Container& vars, Int iPoint, size_t iRow, size_t iCol)
-    -> decltype(vars(iPoint, iRow, iCol)) {
-  return vars(iPoint, iRow, iCol);
-}
+/*--- Rank of a container, from the element accessors it offers: a 1D container is indexed by
+ * point alone, a 3D one by (point, row, column). A 3D container also answers a two-argument
+ * call, but with an offset sub-matrix view rather than a scalar, which is why the rank is
+ * detected up front instead of trying the access forms in turn. ---*/
+template <class Container, class = void>
+struct Is1D : std::false_type {};
+template <class Container>
+struct Is1D<Container, std::void_t<decltype(std::declval<const Container&>()(0ul))>> : std::true_type {};
 
-/*--- Element d of a run of consecutive variables starting at iVar. A 3D container's own
- * two-argument operator() is a sub-matrix view, not a scalar (its element accessor takes three
- * indices, the run varying the last one at fixed iVar), so it is tried first and preferred
- * whenever it is well-formed; only a 2D container's two-argument operator() falls through to
- * the second overload, where the run instead varies the column itself. ---*/
-template <class Container, class Int>
-FORCEINLINE auto elementOfRun(int, const Container& vars, Int iPoint, size_t iVar, size_t d)
-    -> decltype(vars(iPoint, iVar, d)) {
-  return vars(iPoint, iVar, d);
-}
-template <class Container, class Int>
-FORCEINLINE auto elementOfRun(long, const Container& vars, Int iPoint, size_t iVar, size_t d)
-    -> decltype(vars(iPoint, iVar + d)) {
-  return vars(iPoint, iVar + d);
-}
-template <class Container, class Int>
-FORCEINLINE auto elementOfRun(const Container& vars, Int iPoint, size_t iVar, size_t d)
-    -> decltype(elementOfRun(0, vars, iPoint, iVar, d)) {
-  return elementOfRun(0, vars, iPoint, iVar, d);
-}
+template <class Container, class = void>
+struct Is3D : std::false_type {};
+template <class Container>
+struct Is3D<Container, std::void_t<decltype(std::declval<const Container&>()(0ul, 0ul, 0ul))>> : std::true_type {};
 
-/*--- Register the source element of each lane as a preaccumulation input, then copy it into x,
- * the whole gathered value for a scalar Double and a lane vector for a simd::Array one. elem
- * maps one point index to a reference into the container's storage; the registration has to
- * happen on that reference, before the copy gives the value an identifier of its own. ---*/
-template <class Double, class Int, class F>
-FORCEINLINE void gatherOne(Double& x, Int iPoint, const F& elem) {
-  if constexpr (CLaneTraits<Double>::IsArray) {
-    for (size_t k = 0; k < Double::Size; ++k) {
-      const su2double& v = elem(iPoint[k]);
-      AD::SetPreaccIn(v);
-      x[k] = v;
-    }
-  } else {
-    const su2double& v = elem(iPoint);
-    AD::SetPreaccIn(v);
-    x = v;
-  }
+/*--- One lane of an index or of a gathered value, the whole thing when there are no lanes. ---*/
+FORCEINLINE unsigned long lane(unsigned long iPoint, size_t) { return iPoint; }
+template <size_t N>
+FORCEINLINE unsigned long lane(const simd::Array<unsigned long, N>& iPoint, size_t k) { return iPoint[k]; }
+FORCEINLINE su2double& lane(su2double& x, size_t) { return x; }
+template <class T, size_t N>
+FORCEINLINE T& lane(simd::Array<T, N>& x, size_t k) { return x[k]; }
+
+/*--- Register one source element as a preaccumulation input, passing it through for the copy.
+ * The registration has to happen here, on the reference into the container's own storage: a
+ * copy has a fresh identifier of its own, and registering that instead would sever the source
+ * from the statement EndPreacc() stores. ---*/
+FORCEINLINE const su2double& preaccIn(const su2double& value) {
+  AD::SetPreaccIn(value);
+  return value;
 }
 }  // namespace
 
 template <class Int, class Container, class Double = typename CValueTraits<Int>::Double>
 FORCEINLINE Double gatherVariables(Int iPoint, const Container& vars, size_t iVar = 0) {
   Double x;
-  gatherOne(x, iPoint, [&](unsigned long iPt) -> const su2double& { return element(vars, iPt, iVar); });
+  for (size_t k = 0; k < CValueTraits<Int>::Size; ++k) {
+    if constexpr (Is1D<Container>::value)
+      lane(x, k) = preaccIn(vars(lane(iPoint, k)));
+    else
+      lane(x, k) = preaccIn(vars(lane(iPoint, k), iVar));
+  }
   return x;
 }
 
@@ -369,7 +346,12 @@ template <size_t nVar, class Int, class Container, class Double = typename CValu
 FORCEINLINE Vector<Double, nVar> gatherVariables(Int iPoint, const Container& vars, size_t iVar = 0) {
   Vector<Double, nVar> x;
   for (size_t i = 0; i < nVar; ++i) {
-    gatherOne(x(i), iPoint, [&](unsigned long iPt) -> const su2double& { return elementOfRun(vars, iPt, iVar, i); });
+    for (size_t k = 0; k < CValueTraits<Int>::Size; ++k) {
+      if constexpr (Is3D<Container>::value)
+        lane(x(i), k) = preaccIn(vars(lane(iPoint, k), iVar, i));
+      else
+        lane(x(i), k) = preaccIn(vars(lane(iPoint, k), iVar + i));
+    }
   }
   return x;
 }
@@ -379,8 +361,9 @@ FORCEINLINE Matrix<Double, nRows, nCols> gatherVariables(Int iPoint, const Conta
   Matrix<Double, nRows, nCols> x;
   for (size_t i = 0; i < nRows; ++i) {
     for (size_t j = 0; j < nCols; ++j) {
-      gatherOne(x(i, j), iPoint,
-                [&](unsigned long iPt) -> const su2double& { return element(vars, iPt, iRow + i, j); });
+      for (size_t k = 0; k < CValueTraits<Int>::Size; ++k) {
+        lane(x(i, j), k) = preaccIn(vars(lane(iPoint, k), iRow + i, j));
+      }
     }
   }
   return x;
