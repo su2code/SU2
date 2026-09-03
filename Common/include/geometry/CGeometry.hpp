@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,6 +73,19 @@ using namespace std;
  * \author F. Palacios
  */
 class CGeometry {
+ public:
+  /*!
+   * \brief Aggregates the full symmetric CSR and its LDU split (L strictly-lower, U strictly-upper).
+   *        Built together lazily via GetSparsePattern; all three are always valid once non-empty.
+   */
+  struct LDUSparsePattern {
+    CCompressedSparsePatternUL csr; /*!< Full symmetric pattern (with diagonal pointer). */
+    CCompressedSparsePatternUL l;   /*!< Strictly-lower part. */
+    CCompressedSparsePatternUL u;   /*!< Strictly-upper part. */
+
+    bool empty() const { return csr.empty(); }
+  };
+
  protected:
   enum : size_t { OMP_MIN_SIZE = 32 }; /*!< \brief Chunk size for small loops. */
   enum : size_t { MAXNDIM = 3 };
@@ -187,12 +200,15 @@ class CGeometry {
 
   /*--- Sparsity patterns associated with the geometry. ---*/
 
-  CCompressedSparsePatternUL finiteVolumeCSRFill0, /*!< \brief 0-fill FVM sparsity. */
-      finiteVolumeCSRFillN,                        /*!< \brief N-fill FVM sparsity (e.g. for ILUn preconditioner). */
-      finiteElementCSRFill0,                       /*!< \brief 0-fill FEM sparsity. */
-      finiteElementCSRFillN;                       /*!< \brief N-fill FEM sparsity (e.g. for ILUn preconditioner). */
+  LDUSparsePattern finiteVolumePatternFill0;  /*!< \brief FVM sparsity with 0-fill (structural pattern). */
+  LDUSparsePattern finiteVolumePatternFillN;  /*!< \brief FVM sparsity with N-fill (e.g. for ILU-N). */
+  LDUSparsePattern finiteElementPatternFill0; /*!< \brief FEM sparsity with 0-fill (structural pattern). */
+  LDUSparsePattern finiteElementPatternFillN; /*!< \brief FEM sparsity with N-fill (e.g. for ILU-N). */
 
-  CEdgeToNonZeroMapUL edgeToCSRMap; /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
+  su2vector<su2uint> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
+  su2vector<su2uint> finiteVolumeUToLTranspMap;  /*!< \brief FVM U-entry -> L-entry of its transpose. */
+  su2vector<su2uint> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
+  su2vector<su2uint> finiteElementUToLTranspMap; /*!< \brief FEM U-entry -> L-entry of its transpose. */
 
   /*--- Edge and element colorings. ---*/
 
@@ -284,10 +300,22 @@ class CGeometry {
                                         in point-to-point comms. */
   su2double* bufD_P2PRecv{nullptr};  /*!< \brief Data structure for su2double point-to-point receive. */
   su2double* bufD_P2PSend{nullptr};  /*!< \brief Data structure for su2double point-to-point send. */
+#ifdef CODI_REVERSE_TYPE
+  passivedouble* bufPD_P2PRecv{nullptr}; /*!< \brief Data structure for passivedouble point-to-point receive. */
+  passivedouble* bufPD_P2PSend{nullptr}; /*!< \brief Data structure for passivedouble point-to-point send. */
+#endif
+#ifdef USE_MIXED_PRECISION
+  su2mixedfloat* bufF_P2PRecv{nullptr}; /*!< \brief Data structure for su2mixedfloat point-to-point receive. */
+  su2mixedfloat* bufF_P2PSend{nullptr}; /*!< \brief Data structure for su2mixedfloat point-to-point send. */
+#endif
   unsigned short* bufS_P2PRecv{nullptr};  /*!< \brief Data structure for unsigned long point-to-point receive. */
   unsigned short* bufS_P2PSend{nullptr};  /*!< \brief Data structure for unsigned long point-to-point send. */
   SU2_MPI::Request* req_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
   SU2_MPI::Request* req_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
+
+  using PassiveRequest = typename SelectMPIWrapper<passivedouble>::W::Request;
+  PassiveRequest* reqP_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
+  PassiveRequest* reqP_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
 
   /*--- Data structures for periodic communications. ---*/
 
@@ -370,7 +398,7 @@ class CGeometry {
    * \param[in] countPerPoint - Number of variables per point.
    * \param[in] val_reverse - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType, unsigned short countPerPoint,
+  void PostP2PRecvs(CGeometry* geometry, const CConfig* config, COMM_TYPE commType, unsigned short countPerPoint,
                     bool val_reverse) const;
 
   /*!
@@ -383,8 +411,97 @@ class CGeometry {
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PSends(CGeometry* geometry, const CConfig* config, unsigned short commType, unsigned short countPerPoint,
+  void PostP2PSends(CGeometry* geometry, const CConfig* config, COMM_TYPE commType, unsigned short countPerPoint,
                     int val_iMessage, bool val_reverse) const;
+
+  /*!
+   * \brief Returns the COMM_TYPE enum for a given data type.
+   */
+  template <class T>
+  COMM_TYPE GetCommType() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return COMM_TYPE::DOUBLE;
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return COMM_TYPE::PASSIVE_DOUBLE;
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return COMM_TYPE::FLOAT;
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return COMM_TYPE::UNSIGNED_SHORT;
+    }
+  }
+
+  /*!
+   * \brief Returns the send buffer for a given data type.
+   */
+  template <class T>
+  auto* GetP2PSendBuf() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return bufD_P2PSend;
+#ifdef CODI_REVERSE_TYPE
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return bufPD_P2PSend;
+#endif
+#ifdef USE_MIXED_PRECISION
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return bufF_P2PSend;
+#endif
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return bufS_P2PSend;
+    }
+  }
+
+  /*!
+   * \brief Returns the receive buffer for a given data type.
+   */
+  template <class T>
+  auto* GetP2PRecvBuf() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return bufD_P2PRecv;
+#ifdef CODI_REVERSE_TYPE
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return bufPD_P2PRecv;
+#endif
+#ifdef USE_MIXED_PRECISION
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return bufF_P2PRecv;
+#endif
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return bufS_P2PRecv;
+    }
+  }
+
+  /*!
+   * \brief Returns the send requests for a given data type.
+   */
+  template <class T>
+  auto* GetP2PSendReq() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return req_P2PSend;
+    } else if constexpr (std::is_same_v<T, passivedouble> || std::is_same_v<T, su2mixedfloat>) {
+      return reqP_P2PSend;
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return req_P2PSend;
+    }
+  }
+
+  /*!
+   * \brief Returns the receive requests for a given data type.
+   */
+  template <class T>
+  auto* GetP2PRecvReq() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return req_P2PRecv;
+    } else if constexpr (std::is_same_v<T, passivedouble> || std::is_same_v<T, su2mixedfloat>) {
+      return reqP_P2PRecv;
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return req_P2PRecv;
+    }
+  }
 
   /*!
    * \brief Routine to set up persistent data structures for periodic communications.
@@ -408,7 +525,7 @@ class CGeometry {
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    * \param[in] countPerPeriodicPoint - Number of variables per point.
    */
-  void PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType,
+  void PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                          unsigned short countPerPeriodicPoint);
 
   /*!
@@ -420,7 +537,7 @@ class CGeometry {
    * \param[in] countPerPeriodicPoint - Number of variables per point.
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    */
-  void PostPeriodicSends(CGeometry* geometry, const CConfig* config, unsigned short commType,
+  void PostPeriodicSends(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                          unsigned short countPerPeriodicPoint, int val_iMessage) const;
 
   /*!
@@ -431,7 +548,7 @@ class CGeometry {
    * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
    */
   void GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
-                           unsigned short& MPI_TYPE) const;
+                           COMM_TYPE& MPI_TYPE) const;
 
   /*!
    * \brief Routine to load a geometric quantity into the data structures for MPI point-to-point communication and to
@@ -777,7 +894,7 @@ class CGeometry {
   inline virtual void GatherInOutAverageValues(CConfig* config, bool allocate) {}
 
   /*!
-   * \brief Store all the turboperformance in the solver in ZONE_0.
+   * \brief Store all the turboperformance in the solver in final zone.
    * \param[in] donor_geometry  - Solution from the donor mesh.
    * \param[in] target_geometry - Solution from the target mesh.
    * \param[in] donorZone       - counter of the donor solution
@@ -811,10 +928,13 @@ class CGeometry {
   inline virtual void MatchActuator_Disk(const CConfig* config) {}
 
   /*!
-   * \brief A virtual member.
+   * \brief Match periodic boundary points using coordinate-based matching.
+   * \details Gathers coordinates from all ranks via MPI, applies the rotation/translation
+   * for the periodic pair, and finds the nearest neighbor. Works on both fine and coarse grids.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic - Index of the periodic marker pair.
    */
-  inline virtual void MatchPeriodic(const CConfig* config, unsigned short val_periodic) {}
+  virtual void MatchPeriodic(const CConfig* config, unsigned short val_periodic);
 
   /*!
    * \brief A virtual member.
@@ -1610,12 +1730,6 @@ class CGeometry {
   }
 
   /*!
-   * \brief A virtual member.
-   * \param config - Config
-   */
-  inline virtual void Check_Periodicity(CConfig* config) {}
-
-  /*!
    * \brief Get the value of the customized temperature at a specified vertex on a specified marker.
    * \param[in] val_marker - Marker value
    * \param[in] val_vertex - Boundary vertex value
@@ -1770,21 +1884,23 @@ class CGeometry {
    * \param[in] fillLvl - Level of fill of the pattern.
    * \return Reference to the sparse pattern.
    */
-  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
+  const LDUSparsePattern& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
 
   /*!
-   * \brief Get the edge to sparse pattern map.
-   * \note This method builds the map and required pattern (0-fill FVM) if that has not been done yet.
-   * \return Reference to the map.
-   */
-  const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap();
-
-  /*!
-   * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).
+   * \brief Get the bijective map from L-entry indices to U-entry indices of their transposes.
+   * \note Requires symmetric pattern. Builds both LU transpose maps if not already built.
    * \param[in] type - Finite volume or finite element.
-   * \return Reference to the map.
+   * \return Reference to the l_to_u map.
    */
-  const su2vector<unsigned long>& GetTransposeSparsePatternMap(ConnectivityType type);
+  const su2vector<su2uint>& GetLToUTransposeSparsePatternMap(ConnectivityType type);
+
+  /*!
+   * \brief Get the bijective map from U-entry indices to L-entry indices of their transposes.
+   * \note Requires symmetric pattern. Builds both LU transpose maps if not already built.
+   * \param[in] type - Finite volume or finite element.
+   * \return Reference to the u_to_l map.
+   */
+  const su2vector<su2uint>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
    * \brief Get the edge coloring.
@@ -1862,7 +1978,8 @@ class CGeometry {
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] geometry_container - Geometrical definition of the problem.
    */
-  static void ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container);
+  static void ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container,
+                                  const int record_zone = -1);
 
   /*!
    * \brief Set the amount of nonconvex elements in the mesh.

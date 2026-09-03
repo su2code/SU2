@@ -3,14 +3,14 @@
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in scalar problems.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,7 +64,7 @@ class CAvgGrad_Scalar : public CNumerics {
   const FlowIndices idx;                      /*!< \brief Object to manage the access to the flow primitives. */
   su2double Proj_Mean_GradScalarVar[MAXNVAR]; /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */
   su2double proj_vector_ij = 0.0;             /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-  su2double Flux[MAXNVAR];                    /*!< \brief Final result, diffusive flux/residual. */
+  su2double Flux[MAXNVAR] = {0.0};            /*!< \brief Final result, diffusive flux/residual. */
   su2double* Jacobian_i[MAXNVAR];             /*!< \brief Flux Jacobian w.r.t. node i. */
   su2double* Jacobian_j[MAXNVAR];             /*!< \brief Flux Jacobian w.r.t. node j. */
   su2double JacobianBuffer[2*MAXNVAR*MAXNVAR];/*!< \brief Static storage for the two Jacobians. */

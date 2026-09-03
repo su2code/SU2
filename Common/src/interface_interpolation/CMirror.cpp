@@ -2,14 +2,14 @@
  * \file CMirror.cpp
  * \brief Implementation of mirror interpolation (conservative approach in FSI problems).
  * \author P. Gomes
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,10 +40,10 @@ CMirror::CMirror(CGeometry**** geometry_container, const CConfig* const* config,
                        to_string(iZone) + string(" and ") + to_string(jZone) + string("."),
                    CURRENT_FUNCTION);
   }
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
-void CMirror::SetTransferCoeff(const CConfig* const* config) {
+void CMirror::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
   const int nProcessor = size;
 
   vector<unsigned long> allNumVertexTarget(nProcessor);

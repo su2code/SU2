@@ -2,14 +2,14 @@
  * \file CIntegration.hpp
  * \brief Declaration of the main routines to orchestrate space and time integration.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -112,6 +112,24 @@ public:
   virtual void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                    CNumerics ******numerics_container, CConfig **config,
                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
+
+  /*!
+   * \brief Report the convergence fields on the active mesh level to a Full-MG startup.
+   * \param[in] convFields - Name and log10 value of each monitored residual field.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void MonitorFullMG_Startup(const vector<pair<string, passivedouble> >& convFields,
+                                     const CConfig *config) { };
+
+  /*!
+   * \brief Whether the Full-MG startup is still ramping the CFL of the finest grid.
+   */
+  virtual bool GetFullMG_CFLRamp() const { return false; }
+
+  /*!
+   * \brief InnerIter at which the currently active Full-MG level became active.
+   */
+  virtual unsigned long GetLevelStartIter() const { return 0; }
 
   /*!
    * \brief A virtual member.

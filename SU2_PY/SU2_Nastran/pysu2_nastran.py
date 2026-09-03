@@ -3,14 +3,14 @@
 ## \file pysu2_nastran.py
 #  \brief Structural solver using Nastran models
 #  \authors Nicola Fonzi, Vittorio Cavalieri, based on the work of David Thomas
-#  \version 8.3.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,30 @@
 import numpy as np
 import scipy.linalg as linalg
 from math import *
+
+# ----------------------------------------------------------------------
+#  Bulk data field parsing
+# ----------------------------------------------------------------------
+
+
+def nastran_float(s):
+    """
+    This method converts one small field of a bulk data entry into a float.
+
+    Fields 2 through 9 do not need to be either right or left justified, and
+    the exponent may be written with an "E", with a "D", or with no letter at
+    all: "7.0", ".7E1", "0.7+1", ".70+1", "7.E+0" and "70.-1" all mean seven.
+    """
+
+    s = s.strip().upper().replace("D", "E")
+    if "E" not in s:
+        # The exponent letter is omitted, so the exponent starts at the first
+        # sign which is not the sign of the mantissa.
+        signs = [i for i in (s.find("+", 1), s.find("-", 1)) if i > 0]
+        if signs:
+            s = s[: min(signs)] + "E" + s[min(signs) :]
+    return float(s)
+
 
 # ----------------------------------------------------------------------
 #  Config class
@@ -426,14 +450,6 @@ class Solver:
         This method reads the nastran 3D mesh.
         """
 
-        def nastran_float(s):
-            if s.find("E") == -1:
-                s = s.replace("-", "e-")
-                s = s.replace("+", "e+")
-                if s[0] == "e":
-                    s = s[1:]
-            return float(s)
-
         self.nMarker = 0
         self.nPoint = 0
         self.nRefSys = 0
@@ -573,7 +589,8 @@ class Solver:
         This method considers that Nastran apply 0 when the reference system is not specified
         """
 
-        if string == " " * 8:
+        string = string.strip()
+        if not string:
             return int(0)
         return int(string)
 

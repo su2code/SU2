@@ -2,14 +2,14 @@
  * \file CIncEulerVariable.hpp
  * \brief Class for defining the variables of the incompressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -71,6 +71,8 @@ public:
 
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
+  VectorType Density_time_n,                           /*!< \brief Density at time n for dual-time stepping. */
+             Density_time_n1;                          /*!< \brief Density at time n-1 for dual-time stepping. */
   su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
  public:
   /*!
@@ -290,5 +292,37 @@ public:
   inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = val_vector[iDim];
   }
+
+  /*!
+   * \brief Get the density at time level n for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n.
+   */
+  inline su2double GetDensity_time_n(unsigned long iPoint) const final {
+    return Density_time_n.size() > 0 ? Density_time_n(iPoint) : GetDensity(iPoint);
+  }
+
+  /*!
+   * \brief Get the density at time level n-1 for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n-1.
+   */
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const final {
+    return Density_time_n1.size() > 0 ? Density_time_n1(iPoint) : GetDensity(iPoint);
+  }
+
+  /*!
+   * \brief Set the density at time level n for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_density - Density value.
+   */
+  inline void SetDensity_time_n(unsigned long iPoint, su2double val_density) { Density_time_n(iPoint) = val_density; }
+
+  /*!
+   * \brief Set the density at time level n-1 for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_density - Density value.
+   */
+  inline void SetDensity_time_n1(unsigned long iPoint, su2double val_density) { Density_time_n1(iPoint) = val_density; }
 
 };

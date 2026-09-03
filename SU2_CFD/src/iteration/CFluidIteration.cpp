@@ -2,14 +2,14 @@
  * \file CFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,8 @@ void CFluidIteration::Preprocess(COutput* output, CIntegration**** integration, 
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
+
   unsigned long TimeIter = config[val_iZone]->GetTimeIter();
 
   bool fsi = config[val_iZone]->GetFSI_Simulation();
@@ -56,6 +58,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                               CSolver***** solver, CNumerics****** numerics, CConfig** config,
                               CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   const bool unsteady = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                         (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -78,6 +81,10 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
+
+  /*--- Whether the Full-MG startup is still ramping the finest grid's CFL. ---*/
+
+  const bool fmg_cfl_ramp = integration[val_iZone][val_iInst][FLOW_SOL]->GetFullMG_CFLRamp();
 
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
 
@@ -127,14 +134,15 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
 
-  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
-
-  if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!disc_adj)) {
-    SU2_OMP_PARALLEL
+  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
+        The Full-MG startup owns the CFL while it ramps, so leave it alone until then. ---*/
+  SU2_OMP_PARALLEL
+  if (!disc_adj && config[val_iZone]->GetFinestMesh() == MESH_0 && !fmg_cfl_ramp) {
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
-    END_SU2_OMP_PARALLEL
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->IdentifySolutionOutliers(config[val_iZone], InnerIter);
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
 
@@ -155,7 +163,7 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
                              CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                              CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                              unsigned short val_iInst) {
-  unsigned short iMesh;
+  SU2_ZONE_SCOPED
 
   /*--- Dual time stepping strategy ---*/
 
@@ -163,7 +171,7 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
       (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     /*--- Update dual time solver on all mesh levels ---*/
 
-    for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh],
                                                                       solver[val_iZone][val_iInst][iMesh][FLOW_SOL],
                                                                       config[val_iZone], iMesh);
@@ -216,39 +224,59 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
                               CSolver***** solver, CNumerics****** numerics, CConfig** config,
                               CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  bool StopCalc = false;
+  SU2_ZONE_SCOPED
 
   StopTime = SU2_MPI::Wtime();
-
   UsedTime = StopTime - StartTime;
 
-
-    /*--- Turbomachinery Specific Montior ---*/
+  /*--- Turbomachinery Specific Montior ---*/
   if (config[ZONE_0]->GetBoolTurbomachinery()){
     if (val_iZone == config[ZONE_0]->GetnZone()-1) {
-      ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetnInner_Iter());
+      ComputeTurboPerformance(solver, geometry, config);
+      auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, config[val_iZone]->GetnZone());
 
-      output->SetHistoryOutput(geometry, solver,
-                           config, TurbomachineryStagePerformance, TurbomachineryPerformance, val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
-                           config[val_iZone]->GetInnerIter(), val_iInst);
+      output->SetHistoryOutput(geometry, solver, config, TurbomachineryStagePerformance, TurbomachineryBladePerformances,
+            val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
+            config[val_iZone]->GetInnerIter(), val_iInst);
     }
     /*--- Update ramps, grid first then outlet boundary ---*/
     if (config[val_iZone]->GetRampMotionFrame())
-      UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::GRID);
+      UpdateRamps(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::GRID);
   }
 
   // Outside turbo scope as Riemann boundaries can be ramped (pressure only)
   if (config[val_iZone]->GetRampOutflow())
-      UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::BOUNDARY);
+      UpdateRamps(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::BOUNDARY);
 
   if (config[val_iZone]->GetMUSCLRamp())
-    UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::MUSCL);
+    UpdateRamps(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::MUSCL);
 
-  output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
+  /*--- During Full-MG startup FinestMesh > 0: read residuals from the active (coarse) level. ---*/
+  const unsigned short finestMesh = config[val_iZone]->GetFinestMesh();
+
+  /*--- The startup has just handed over to the finest grid, so restart the convergence history:
+   *    everything in it up to now was measured on a coarser mesh. ---*/
+
+  if ((config[val_iZone]->GetMGCycle() == MG_CYCLE::FULL) && (finestMesh == MESH_0) &&
+      (config[val_iZone]->GetInnerIter() ==
+       integration[val_iZone][val_iInst][FLOW_SOL]->GetLevelStartIter())) {
+    output->ResetConvergenceMonitoring(config[val_iZone]->GetInnerIter());
+  }
+
+  output->SetHistoryOutput(geometry[val_iZone][val_iInst][finestMesh], solver[val_iZone][val_iInst][finestMesh],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
 
-  StopCalc = output->GetConvergence();
+  auto StopCalc = output->GetConvergence();
+
+  /*--- Never stop before the fine mesh is active. ---*/
+  if (finestMesh != MESH_0) StopCalc = false;
+
+  /*--- The history fields were just written from the active level, feed them to the startup. ---*/
+  if (config[val_iZone]->GetMGCycle() == MG_CYCLE::FULL && finestMesh != MESH_0) {
+    integration[val_iZone][val_iInst][FLOW_SOL]->MonitorFullMG_Startup(output->GetResidualConvFields(),
+                                                                      config[val_iZone]);
+  }
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
@@ -260,7 +288,8 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   return StopCalc;
 }
 
-void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag) {
+void CFluidIteration::UpdateRamps(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag) {
+  SU2_ZONE_SCOPED
   /*--- Generic function for handling ramps ---*/
   // Grid updates (i.e. rotation/translation) handled seperately to boundary (i.e. pressure/mass flow) updates
   auto* config = config_container[iZone];
@@ -293,10 +322,6 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
       geometry->SetAvgTurboValue(config, iZone, INFLOW, false);
       geometry->SetAvgTurboValue(config, iZone, OUTFLOW, false);
       geometry->GatherInOutAverageValues(config, false);
-
-      if (iZone < nZone - 1) {
-        geometry_container[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config ,geometry_container[iZone][INST_0][MESH_0], iZone);
-      }
     }
   }
 
@@ -340,8 +365,11 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
     const long unsigned updateFreq = RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::UPDATE_FREQ];
     const long unsigned rampLength = RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::FINAL_ITER];
     auto iterFrac = (static_cast<double>(iter - startIter)/static_cast<double>((rampLength + startIter) - startIter));
-    if (iter < startIter) return;
-    if ((iter == startIter) && (rank == MASTER_NODE)) cout << "Beginning to ramp MUSCL scheme..." << endl;
+    if (iter < startIter) {
+      config->SetMUSCLRampValue(0);
+      return;
+    }
+    if (iter == startIter && rank == MASTER_NODE) cout << "Beginning to ramp MUSCL scheme..." << endl;
     if ((iter % updateFreq == 0 && iter < (rampLength + startIter)) || (iter == (rampLength + startIter))) {
       switch (RampMUSCLParam.Kind_MUSCLRamp) {
         case MUSCL_RAMP_TYPE::ITERATION:
@@ -358,43 +386,11 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
   }
 }
 
-void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {
-  unsigned short nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
-  unsigned short nBladesRow = config_container[ZONE_0]->GetnMarker_Turbomachinery();
-  unsigned short iBlade=0, iSpan;
-  vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
-  std::vector<std::vector<CTurbomachineryCombinedPrimitiveStates>> bladesPrimitives;
-
-  if (rank == MASTER_NODE) {
-      for (iBlade = 0; iBlade < nBladesRow; iBlade++){
-      /* Blade Primitive initialized per blade */
-      std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
-      auto nSpan = config_container[iBlade]->GetnSpanWiseSections();
-      for (iSpan = 0; iSpan < nSpan + 1; iSpan++) {
-        TurboPrimitiveIn= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, true);
-        TurboPrimitiveOut= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, false);
-        auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelIn(iBlade, iSpan));
-        auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelOut(iBlade, iSpan));
-        auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
-        bladePrimitives.push_back(spanCombinedPrimitive);
-      }
-      bladesPrimitives.push_back(bladePrimitives);
-    }
-    TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
-
-    auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
-    auto InState = TurbomachineryPerformance->GetBladesPerformances().at(ZONE_0).at(nSpan)->GetInletState();
-    nSpan = config_container[nZone-1]->GetnSpanWiseSections();
-    auto OutState =  TurbomachineryPerformance->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();
-
-    TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
-  }
-}
-
 void CFluidIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                   CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   /*--- Temporary: enable only for single-zone driver. This should be removed eventually when generalized. ---*/
   if (!config[val_iZone]->GetMultizone_Problem()) {
@@ -409,6 +405,8 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
                             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                             unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
+
   /*--- Boolean to determine if we are running a static or dynamic case ---*/
   bool steady = !config[val_iZone]->GetTime_Domain();
 
@@ -434,6 +432,9 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
     Iterate(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone,
             INST_0);
 
+    /*--- Postprocessing Step ---*/
+    Postprocess(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, val_iInst);
+
     /*--- Monitor the pseudo-time ---*/
     StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox,
                        val_iZone, INST_0);
@@ -454,6 +455,8 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
 }
 
 void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, CSolver*** solver) {
+  SU2_ZONE_SCOPED
+
   // The gust is imposed on the flow field via the grid velocities. This method called the Field Velocity Method is
   // described in the NASA TM–2012-217771 - Development, Verification and Use of Gust Modeling in the NASA Computational
   // Fluid Dynamics Code FUN3D the desired gust is prescribed as the negative of the grid velocity.
@@ -601,6 +604,8 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
 
 void CFluidIteration::InitializeVortexDistribution(unsigned long& nVortex, vector<su2double>& x0, vector<su2double>& y0,
                                                    vector<su2double>& vort_strength, vector<su2double>& r_core) {
+  SU2_ZONE_SCOPED
+
   /*--- Read in Vortex Distribution ---*/
   std::string line;
   std::ifstream file;
@@ -634,6 +639,7 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long& nVortex, vecto
 }
 
 bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   CSolver* flow_solver= solver[FLOW_SOL];
 
@@ -658,6 +664,7 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
 }
 
 void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
+  SU2_ZONE_SCOPED
 
   /*--- Store old aeroelastic solutions ---*/
 

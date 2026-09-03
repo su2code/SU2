@@ -2,14 +2,14 @@
  * \file CGeometry_tests.cpp
  * \brief Unit tests for CGeometry.
  * \author T. Albring
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -122,9 +122,9 @@ TEST_CASE("Set control volume", "[Geometry]") {
 
   CHECK(TestCase->geometry->nodes->GetVolume(42) == Approx(0.015625));
 
-  CHECK(TestCase->geometry->edges->GetNormal(32)[0] == 0.03125);
+  CHECK(TestCase->geometry->edges->GetNormal(31)[0] == 0.03125);
   CHECK(TestCase->geometry->edges->GetNormal(5)[1] == 0.0);
-  CHECK(TestCase->geometry->edges->GetNormal(10)[2] == 0.03125);
+  CHECK(TestCase->geometry->edges->GetNormal(11)[2] == 0.03125);
 
   CHECK(TestCase->config->GetDomainVolume() == Approx(1.0));
 }

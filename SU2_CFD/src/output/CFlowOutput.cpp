@@ -2,14 +2,14 @@
  * \file CFlowOutput.cpp
  * \brief Common functions for flow output.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 #include "../../include/output/CFlowOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
 #include "../../include/variables/CPrimitiveIndices.hpp"
@@ -819,6 +820,56 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
   const bool axisymmetric = config->GetAxisymmetric();
   const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
+  /*--- Prepares the functor that maps symbol indices to values at a given point
+   * (see ConvertVariableSymbolsToIndices). ---*/
+  auto MakeFunctor = [&](const auto& output, unsigned long iPoint) {
+    return [&, iPoint](unsigned long i) {
+      if (i < CustomOutput::NOT_A_VARIABLE) {
+        const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
+        const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
+        if (solIdx == FLOW_SOL) {
+          return flowNodes->GetPrimitive(iPoint, varIdx);
+        }
+        return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
+      }
+      return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+    };
+  };
+
+  /*--- Count probes that need processing and use heuristic to decide ADT vs linear search.
+        ADT overhead is only worth it for larger numbers of probes. ---*/
+  unsigned long nProbes = 0;
+  for (const auto& output : customOutputs) {
+    if (!output.skip && output.type == OperationType::PROBE) {
+      ++nProbes;
+    }
+  }
+
+  /*--- Heuristic: Build ADT if we have more than 10 probes. For small numbers of probes,
+        the overhead of building the ADT may not be worth it compared to linear search.
+        Note: If this threshold is increased, the regression test (probe_performance_11)
+        must be updated to ensure the ADT path is still tested. ---*/
+  const unsigned long ADT_THRESHOLD = 10;
+  const bool useADT = (nProbes > ADT_THRESHOLD);
+
+  /*--- Build ADT for probe nearest neighbor search if heuristic suggests it. ---*/
+  std::unique_ptr<CADTPointsOnlyClass> probeADT;
+  auto BuildADT = [&]() {
+    const unsigned long nPointDomain = geometry->GetnPointDomain();
+    vector<su2double> coords(nDim * nPointDomain);
+    vector<unsigned long> pointIDs(nPointDomain);
+
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+      pointIDs[iPoint] = iPoint;
+      for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+        coords[iPoint * nDim + iDim] = geometry->nodes->GetCoord(iPoint, iDim);
+      }
+    }
+
+    /*--- Build global ADT to find nearest nodes across all ranks. ---*/
+    probeADT = std::make_unique<CADTPointsOnlyClass>(nDim, nPointDomain, coords.data(), pointIDs.data(), true);
+  };
+
   for (auto& output : customOutputs) {
     if (output.skip) continue;
 
@@ -849,19 +900,36 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         }
         su2double coord[3] = {};
         for (auto iDim = 0u; iDim < nDim; ++iDim) coord[iDim] = std::stod(output.markers[iDim]);
+        /*--- Use ADT for efficient nearest neighbor search instead of brute force. ---*/
         su2double minDist = std::numeric_limits<su2double>::max();
         unsigned long minPoint = 0;
-        for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
-          const su2double dist = GeometryToolbox::SquaredDistance(nDim, coord, geometry->nodes->GetCoord(iPoint));
-          if (dist < minDist) {
-            minDist = dist;
-            minPoint = iPoint;
+        int rankID = -1;
+        int rank;
+        SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+
+        if (useADT && !probeADT) BuildADT();
+
+        if (useADT && probeADT && !probeADT->IsEmpty()) {
+          /*--- Use ADT to find the nearest node efficiently (O(log n) instead of O(n)). ---*/
+          probeADT->DetermineNearestNode(coord, minDist, minPoint, rankID);
+          minDist = pow(minDist, 2);
+
+          /*--- Check if this rank owns the nearest point. ---*/
+          output.iPoint = (rankID == rank) ? minPoint : CustomOutput::PROBE_NOT_OWNED;
+        } else {
+          /*--- Use linear search for small numbers of probes or when ADT is not available. ---*/
+          for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
+            const su2double dist = GeometryToolbox::SquaredDistance(nDim, coord, geometry->nodes->GetCoord(iPoint));
+            if (dist < minDist) {
+              minDist = dist;
+              minPoint = iPoint;
+            }
           }
+          /*--- Decide which rank owns the probe using Allreduce. ---*/
+          su2double globMinDist;
+          SU2_MPI::Allreduce(&minDist, &globMinDist, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+          output.iPoint = fabs(minDist - globMinDist) < EPS ? minPoint : CustomOutput::PROBE_NOT_OWNED;
         }
-        /*--- Decide which rank owns the probe. ---*/
-        su2double globMinDist;
-        SU2_MPI::Allreduce(&minDist, &globMinDist, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-        output.iPoint = fabs(minDist - globMinDist) < EPS ? minPoint : CustomOutput::PROBE_NOT_OWNED;
         if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
           std::cout << "Probe " << output.name << " is using global point "
                     << geometry->nodes->GetGlobalIndex(output.iPoint)
@@ -879,33 +947,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       continue;
     }
 
-    /*--- Prepares the functor that maps symbol indices to values at a given point
-     * (see ConvertVariableSymbolsToIndices). ---*/
-
-    auto MakeFunctor = [&](unsigned long iPoint) {
-      /*--- This returns another lambda that captures iPoint by value. ---*/
-      return [&, iPoint](unsigned long i) {
-        if (i < CustomOutput::NOT_A_VARIABLE) {
-          const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
-          const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
-          if (solIdx == FLOW_SOL) {
-            return flowNodes->GetPrimitive(iPoint, varIdx);
-          }
-          return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-        } else {
-          return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
-        }
-      };
-    };
-
     if (output.type == OperationType::PROBE) {
-      su2double value = std::numeric_limits<su2double>::max();
-      if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
-        value = output.Eval(MakeFunctor(output.iPoint));
-      }
-      su2double tmp = value;
-      SU2_MPI::Allreduce(&tmp, &value, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-      SetHistoryOutputValue(output.name, value);
+      /*--- Probe evaluation will be done after all outputs are processed, with batched AllReduce. ---*/
       continue;
     }
 
@@ -934,16 +977,12 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           }
           weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
           local_integral[1] += weight;
-          local_integral[0] += weight * output.Eval(MakeFunctor(iPoint));
+          local_integral[0] += weight * output.Eval(MakeFunctor(output, iPoint));
         }
         END_SU2_OMP_FOR
       }
-
-      SU2_OMP_CRITICAL {
-        integral[0] += local_integral[0];
-        integral[1] += local_integral[1];
-      }
-      END_SU2_OMP_CRITICAL
+      atomicAdd(local_integral[0], integral[0]);
+      atomicAdd(local_integral[1], integral[1]);
     }
     END_SU2_OMP_PARALLEL
 
@@ -953,6 +992,33 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       integral[0] /= integral[1];
     }
     SetHistoryOutputValue(output.name, integral[0]);
+  }
+
+  /*--- Batch AllReduce for all probe values to reduce MPI communication overhead. ---*/
+  if (nProbes > 0) {
+    /*--- Evaluate all probe values locally first. ---*/
+    vector<su2double> probeValues;
+    probeValues.reserve(nProbes);
+    for (auto& output : customOutputs) {
+      if (output.skip || output.type != OperationType::PROBE) continue;
+      su2double value = std::numeric_limits<su2double>::max();
+      if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
+        value = output.Eval(MakeFunctor(output, output.iPoint));
+      }
+      probeValues.push_back(value);
+    }
+
+    /*--- Single AllReduce for all probe values. ---*/
+    unsigned long nProbesActual = probeValues.size();
+    vector<su2double> probeValuesGlobal(nProbesActual);
+    SU2_MPI::Allreduce(probeValues.data(), probeValuesGlobal.data(), nProbesActual, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+
+    /*--- Set history output values for all probes. ---*/
+    unsigned long iProbe = 0;
+    for (auto& output : customOutputs) {
+      if (output.skip || output.type != OperationType::PROBE) continue;
+      SetHistoryOutputValue(output.name, probeValuesGlobal[iProbe++]);
+    }
   }
 }
 
@@ -964,6 +1030,14 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
       AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        /// DESCRIPTION: Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).
+        AddHistoryOutput("RMS_STOCH_VAR-X", "rms[stoch_x]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Root-mean square residual of stochastic vector y-component (Stochastic Backscatter Model).
+        AddHistoryOutput("RMS_STOCH_VAR-Y", "rms[stoch_y]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Root-mean square residual of stochastic vector z-component (Stochastic Backscatter Model).
+        AddHistoryOutput("RMS_STOCH_VAR-Z", "rms[stoch_z]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1019,6 +1093,14 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
       AddHistoryOutput("MAX_NU_TILDE", "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        /// DESCRIPTION: Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).
+        AddHistoryOutput("MAX_STOCH_VAR-X", "max[stoch_x]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).
+        AddHistoryOutput("MAX_STOCH_VAR-Y", "max[stoch_y]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).
+        AddHistoryOutput("MAX_STOCH_VAR-Z", "max[stoch_z]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1078,6 +1160,14 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
       AddHistoryOutput("BGS_NU_TILDE", "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        /// DESCRIPTION: Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).
+        AddHistoryOutput("BGS_STOCH_VAR-X", "bgs[stoch_x]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).
+        AddHistoryOutput("BGS_STOCH_VAR-Y", "bgs[stoch_y]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).
+        AddHistoryOutput("BGS_STOCH_VAR-Z", "bgs[stoch_z]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1160,8 +1250,21 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
     case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[TURB_SOL]->GetRes_Max(0)));
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        SetHistoryOutputValue("RMS_STOCH_VAR-X", log10(solver[TURB_SOL]->GetRes_RMS(1)));
+        SetHistoryOutputValue("RMS_STOCH_VAR-Y", log10(solver[TURB_SOL]->GetRes_RMS(2)));
+        SetHistoryOutputValue("RMS_STOCH_VAR-Z", log10(solver[TURB_SOL]->GetRes_RMS(3)));
+        SetHistoryOutputValue("MAX_STOCH_VAR-X", log10(solver[TURB_SOL]->GetRes_Max(1)));
+        SetHistoryOutputValue("MAX_STOCH_VAR-Y", log10(solver[TURB_SOL]->GetRes_Max(2)));
+        SetHistoryOutputValue("MAX_STOCH_VAR-Z", log10(solver[TURB_SOL]->GetRes_Max(3)));
+      }
       if (multiZone) {
         SetHistoryOutputValue("BGS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_BGS(0)));
+        if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+          SetHistoryOutputValue("BGS_STOCH_VAR-X", log10(solver[TURB_SOL]->GetRes_BGS(1)));
+          SetHistoryOutputValue("BGS_STOCH_VAR-Y", log10(solver[TURB_SOL]->GetRes_BGS(2)));
+          SetHistoryOutputValue("BGS_STOCH_VAR-Z", log10(solver[TURB_SOL]->GetRes_BGS(3)));
+        }
       }
       break;
 
@@ -1251,6 +1354,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        AddVolumeOutput("STOCHVAR_X", "StochVar_x", "SOLUTION", "x-component of the stochastic vector potential");
+        AddVolumeOutput("STOCHVAR_Y", "StochVar_y", "SOLUTION", "y-component of the stochastic vector potential");
+        AddVolumeOutput("STOCHVAR_Z", "StochVar_z", "SOLUTION", "z-component of the stochastic vector potential");
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1303,6 +1411,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   switch (TurbModelFamily(config->GetKind_Turb_Model())){
     case TURB_FAMILY::SA:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        AddVolumeOutput("RES_STOCHVAR_X", "Residual_StochVar_X", "RESIDUAL", "Residual of the x-component of the stochastic vector potential");
+        AddVolumeOutput("RES_STOCHVAR_Y", "Residual_StochVar_Y", "RESIDUAL", "Residual of the y-component of the stochastic vector potential");
+        AddVolumeOutput("RES_STOCHVAR_Z", "Residual_StochVar_Z", "RESIDUAL", "Residual of the z-component of the stochastic vector potential");
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1483,6 +1596,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
+    AddVolumeOutput("LES_SENSOR","LES_Sensor","DDES","LES sensor value");
+    if (config->GetSBSParam().StochasticBackscatter) {
+      AddVolumeOutput("STOCHSOURCE_X", "StochSource_x", "BACKSCATTER", "x-component of the stochastic source vector");
+      AddVolumeOutput("STOCHSOURCE_Y", "StochSource_y", "BACKSCATTER", "y-component of the stochastic source vector");
+      AddVolumeOutput("STOCHSOURCE_Z", "StochSource_z", "BACKSCATTER", "z-component of the stochastic source vector");
+      AddVolumeOutput("ENERGY_BACKSCATTER_RATIO", "Energy_Backscatter_Ratio", "BACKSCATTER", "Energy backscatter from unresolved to resolved scales (divided by the turbulent dissipation of resolved kinetic energy)");
+    }
   }
 
   if (config->GetViscous()) {
@@ -1582,6 +1702,21 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+    SetVolumeOutputValue("LES_SENSOR", iPoint, Node_Flow->GetLES_Mode(iPoint));
+    if (config->GetSBSParam().StochasticBackscatter) {
+      if (config->GetSBSParam().SBS_Ctau > 0.0) {
+        SetVolumeOutputValue("STOCHVAR_X", iPoint, Node_Turb->GetSolution(iPoint, 1));
+        SetVolumeOutputValue("STOCHVAR_Y", iPoint, Node_Turb->GetSolution(iPoint, 2));
+        SetVolumeOutputValue("STOCHVAR_Z", iPoint, Node_Turb->GetSolution(iPoint, 3));
+        SetVolumeOutputValue("RES_STOCHVAR_X", iPoint, turb_solver->LinSysRes(iPoint, 1));
+        SetVolumeOutputValue("RES_STOCHVAR_Y", iPoint, turb_solver->LinSysRes(iPoint, 2));
+        SetVolumeOutputValue("RES_STOCHVAR_Z", iPoint, turb_solver->LinSysRes(iPoint, 3));
+      }
+      SetVolumeOutputValue("STOCHSOURCE_X", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 0));
+      SetVolumeOutputValue("STOCHSOURCE_Y", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 1));
+      SetVolumeOutputValue("STOCHSOURCE_Z", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 2));
+      SetVolumeOutputValue("ENERGY_BACKSCATTER_RATIO", iPoint, GetEnergyBackscatterRatio(iPoint, config, Node_Flow, Node_Turb));
+    }
   }
 
   switch (config->GetKind_Species_Model()) {
@@ -1661,6 +1796,13 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
     SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
   SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[heat_sol]->GetHeatFlux(iMarker, iVertex));
   SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
+
+  if (config->GetTime_Domain()) {
+    SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
+    SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
+    if (nDim == 3)
+      SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
+  }
 }
 
 void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
@@ -1721,6 +1863,9 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
   AddHistoryOutput("AOA", "AoA", ScreenOutputFormat::FIXED, "AOA", "Angle of attack");
 
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
+  // CUSTOM_OBJFUNC is added here so historyMap.py knows how to get its
+  // value, the actual output is COMBO.
+  if (false) AddHistoryOutput("CUSTOM_OBJFUNC", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Custom obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
 void CFlowOutput::SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver){
@@ -2615,7 +2760,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "\n";
   file << "-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 8.3.0 \"Harrier\"                           |\n";
+  file << "|   / __| | | |_  )   Release 8.5.0 \"Harrier\"                           |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
@@ -2625,7 +2770,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
   file << "| (http://su2foundation.org)                                            |\n";
   file << "-------------------------------------------------------------------------\n";
-  file << "| Copyright 2012-2025, SU2 Contributors                                 |\n";
+  file << "| Copyright 2012-2026, SU2 Contributors                                 |\n";
   file << "|                                                                       |\n";
   file << "| SU2 is free software; you can redistribute it and/or                  |\n";
   file << "| modify it under the terms of the GNU Lesser General Public            |\n";
@@ -3960,7 +4105,7 @@ bool CFlowOutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool fo
   return force_writing;
 }
 
-void CFlowOutput::SetTimeAveragedFields() {
+void CFlowOutput::SetTimeAveragedFields(const CConfig *config) {
   AddVolumeOutput("MEAN_DENSITY", "MeanDensity", "TIME_AVERAGE", "Mean density");
   AddVolumeOutput("MEAN_VELOCITY-X", "MeanVelocity_x", "TIME_AVERAGE", "Mean velocity x-component");
   AddVolumeOutput("MEAN_VELOCITY-Y", "MeanVelocity_y", "TIME_AVERAGE", "Mean velocity y-component");
@@ -3968,6 +4113,11 @@ void CFlowOutput::SetTimeAveragedFields() {
     AddVolumeOutput("MEAN_VELOCITY-Z", "MeanVelocity_z", "TIME_AVERAGE", "Mean velocity z-component");
 
   AddVolumeOutput("MEAN_PRESSURE", "MeanPressure", "TIME_AVERAGE", "Mean pressure");
+  AddVolumeOutput("MEAN_SKIN_FRICTION-X", "MeanSkinFriction_x", "TIME_AVERAGE", "Mean skin friction x-component");
+  AddVolumeOutput("MEAN_SKIN_FRICTION-Y", "MeanSkinFriction_y", "TIME_AVERAGE", "Mean skin friction y-component");
+  if (nDim==3)
+    AddVolumeOutput("MEAN_SKIN_FRICTION-Z", "MeanSkinFriction_z", "TIME_AVERAGE", "Mean skin friction z-component");
+
   AddVolumeOutput("RMS_U",   "RMS[u]", "TIME_AVERAGE", "RMS u");
   AddVolumeOutput("RMS_V",   "RMS[v]", "TIME_AVERAGE", "RMS v");
   AddVolumeOutput("RMS_UV",  "RMS[uv]", "TIME_AVERAGE", "RMS uv");
@@ -3984,9 +4134,26 @@ void CFlowOutput::SetTimeAveragedFields() {
     AddVolumeOutput("UWPRIME", "w'u'", "TIME_AVERAGE", "Mean Reynolds-stress component w'u'");
     AddVolumeOutput("VWPRIME", "w'v'", "TIME_AVERAGE", "Mean Reynolds-stress component w'v'");
   }
+
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_XX", "ModeledReynoldsStress_XX", "TIME_AVERAGE", "Modeled Reynolds stress xx-component");
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_YY", "ModeledReynoldsStress_YY", "TIME_AVERAGE", "Modeled Reynolds stress yy-component");
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_XY", "ModeledReynoldsStress_XY", "TIME_AVERAGE", "Modeled Reynolds stress xy-component");
+    if (nDim == 3){
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_ZZ", "ModeledReynoldsStress_ZZ", "TIME_AVERAGE", "Modeled Reynolds stress zz-component");
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_XZ", "ModeledReynoldsStress_XZ", "TIME_AVERAGE", "Modeled Reynolds stress xz-component");
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_YZ", "ModeledReynoldsStress_YZ", "TIME_AVERAGE", "Modeled Reynolds stress yz-component");
+    }
+
+    if (config->GetSBSParam().StochasticBackscatter) {
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_XY", "StochasticReynoldsStress_XY", "TIME_AVERAGE", "Stochastic Reynolds stress xy-component");
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_XZ", "StochasticReynoldsStress_XZ", "TIME_AVERAGE", "Stochastic Reynolds stress xz-component");
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_YZ", "StochasticReynoldsStress_YZ", "TIME_AVERAGE", "Stochastic Reynolds stress yz-component");
+    }
+  }
 }
 
-void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *Node_Flow){
+void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *Node_Flow, const CVariable *Node_Turb, const CConfig *config){
   SetAvgVolumeOutputValue("MEAN_DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
   SetAvgVolumeOutputValue("MEAN_VELOCITY-X", iPoint, Node_Flow->GetVelocity(iPoint,0));
   SetAvgVolumeOutputValue("MEAN_VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint,1));
@@ -3994,7 +4161,6 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
     SetAvgVolumeOutputValue("MEAN_VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint,2));
 
   SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
-
   SetAvgVolumeOutputValue("RMS_U", iPoint, pow(Node_Flow->GetVelocity(iPoint,0),2));
   SetAvgVolumeOutputValue("RMS_V", iPoint, pow(Node_Flow->GetVelocity(iPoint,1),2));
   SetAvgVolumeOutputValue("RMS_UV", iPoint, Node_Flow->GetVelocity(iPoint,0) * Node_Flow->GetVelocity(iPoint,1));
@@ -4025,6 +4191,45 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
     SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
     SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
     SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
+  }
+
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    const su2double rho = Node_Flow->GetDensity(iPoint);
+    const su2double nu_t = Node_Flow->GetEddyViscosity(iPoint) / rho;
+    const auto vel_grad = Node_Flow->GetVelocityGradient(iPoint);
+    const su2double vel_div = vel_grad(0,0) + vel_grad(1,1) + (nDim ==3 ? vel_grad(2,2) : 0.0);
+    const su2double tau_xx = nu_t * (2*vel_grad(0,0) - (2.0/3.0)*vel_div);
+    const su2double tau_yy = nu_t * (2*vel_grad(1,1) - (2.0/3.0)*vel_div);
+    const su2double tau_xy = nu_t * (vel_grad(0,1) + vel_grad(1,0));
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_XX", iPoint, -tau_xx);
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_YY", iPoint, -tau_yy);
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_XY", iPoint, -tau_xy);
+    if (nDim == 3){
+      const su2double tau_zz = nu_t * (2*vel_grad(2,2) - (2.0/3.0)*vel_div);
+      const su2double tau_xz = nu_t * (vel_grad(0,2) + vel_grad(2,0));
+      const su2double tau_yz = nu_t * (vel_grad(1,2) + vel_grad(2,1));
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_ZZ", iPoint, -tau_zz);
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_XZ", iPoint, -tau_xz);
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_YZ", iPoint, -tau_yz);
+    }
+
+    if (config->GetSBSParam().StochasticBackscatter) {
+      const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1e-10);
+      const su2double lesSensor = Node_Flow->GetLES_Mode(iPoint);
+      const su2double mag = config->GetSBSParam().SBS_Cmag;
+      const su2double threshold = config->GetSBSParam().stochFdThreshold;
+      su2double tke_estim = 0.0;
+      if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2);
+      const su2double csi_x = Node_Turb->GetSolution(iPoint, 1);
+      const su2double csi_y = Node_Turb->GetSolution(iPoint, 2);
+      const su2double csi_z = Node_Turb->GetSolution(iPoint, 3);
+      const su2double R_xy = - mag * tke_estim * csi_z;
+      const su2double R_xz = + mag * tke_estim * csi_y;
+      const su2double R_yz = - mag * tke_estim * csi_x;
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_XY", iPoint, -R_xy);
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_XY", iPoint, -R_xz);
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_YZ", iPoint, -R_yz);
+    }
   }
 }
 
@@ -4096,6 +4301,8 @@ void CFlowOutput::AddTurboOutput(unsigned short nZone){
     AddHistoryOutput("MachOut_" + tag, "MachOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("AbsFlowAngleIn_" + tag, "AbsFlowAngleIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("AbsFlowAngleOut_" + tag, "AbsFlowAngleOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("RelFlowAngleIn_" + tag, "RelFlowAngleIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Relative flow angle in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("RelFlowAngleOut_" + tag, "RelFlowAngleOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Relative flow angle out " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("KineticEnergyLoss_" + tag, "KELC_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Blade Kinetic Energy Loss Coefficient", HistoryFieldType::DEFAULT);
     AddHistoryOutput("TotPressureLoss_" + tag, "TPLC_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Blade Pressure Loss Coefficient", HistoryFieldType::DEFAULT);
   }

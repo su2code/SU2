@@ -2,14 +2,14 @@
  * \file CFlowCompOutput.hpp
  * \brief  Headers of the compressible flow output.
  * \author R. Sanchez, T. Albring.
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,6 +53,8 @@ public:
    */
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
 
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short iZone);
+
   /*!
    * \brief Set the available volume output fields
    * \param[in] config - Definition of the particular problem.
@@ -73,6 +75,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetHistoryOutputFields(CConfig *config) override;
+
+  void SetTurbomachineryObjectiveFunctions(CSolver *solver, CConfig *config);
 
   /*!
    * \brief Check whether the base values for relative residuals should be initialized
@@ -101,7 +105,7 @@ public:
    * \param[in] OuterIter - Index of current outer iteration
    * \param[in] InnerIter - Index of current inner iteration
    */
-  void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) override;
+  void SetTurboPerformance_Output(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) override;
 
   /*!
    * \brief Sets the multizone turboperformacne screen output
@@ -109,7 +113,7 @@ public:
    * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) override;
+  void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config) override;
   
   /*!
    * \brief Loads the turboperformacne history data
@@ -117,7 +121,7 @@ public:
    * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) override;
+  void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config) override;
 
   /*!
    * \brief Write the kinematic and thermodynamic variables at each spanwise division
@@ -126,6 +130,6 @@ public:
    * \param[in] config - Descripiton of the particular problem
    * \param[in] val_iZone - Idientifier of current zone
   */
-  void WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
+  void WriteTurboSpanwisePerformance(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CGeometry *geometry, CConfig **config,
                                        unsigned short val_iZone) override;
 };

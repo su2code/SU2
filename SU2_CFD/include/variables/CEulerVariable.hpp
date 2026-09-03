@@ -2,14 +2,14 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -96,6 +96,20 @@ class CEulerVariable : public CFlowVariable {
    */
   CEulerVariable(su2double density, const su2double *velocity, su2double energy,
                  unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
+
+  /*!
+   * \brief Get the density at time level n for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n.
+   */
+  inline su2double GetDensity_time_n(unsigned long iPoint) const final { return GetSolution_time_n(iPoint, 0); }
+
+  /*!
+   * \brief Get the density at time level n-1 for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n-1.
+   */
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const final { return GetSolution_time_n1(iPoint, 0); }
 
   /*!
    * \brief A virtual member.
@@ -344,5 +358,15 @@ class CEulerVariable : public CFlowVariable {
    * \return Number of iterations evaluated by the Newton solver
    */
   inline unsigned long GetNewtonSolverIterations(unsigned long iPoint) const final { return NIterNewtonsolver[iPoint]; }
+
+  /*!
+   * \brief Maximum value that OutlierMitigation can have.
+   */
+  static constexpr auto MAX_OUTLIER_MITIGATION = std::numeric_limits<uint8_t>::max();
+
+  /*!
+   * \brief Marks outliers (0 ok, MAX_OUTLIER_MITIGATION maximum mitigation).
+   */
+  su2vector<uint8_t> OutlierMitigation;
 
 };

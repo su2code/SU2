@@ -2,14 +2,14 @@
  * \file CDriverBase.hpp
  * \brief Base class for all drivers.
  * \author H. Patel, A. Gastaldi
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,8 +60,7 @@ class CDriverBase {
       nZone,             /*!< \brief Total number of zones in the problem. */
       nDim,              /*!< \brief Number of dimensions. */
       iInst,             /*!< \brief Iterator on instance levels. */
-      *nInst,            /*!< \brief Total number of instances in the problem (per zone). */
-      **interface_types; /*!< \brief Type of coupling between the distinct (physical) zones. */
+      *nInst;            /*!< \brief Total number of instances in the problem (per zone). */
 
   CConfig* driver_config = nullptr; /*!< \brief Definition of the driver configuration. */
   COutput* driver_output = nullptr; /*!< \brief Definition of the driver output. */

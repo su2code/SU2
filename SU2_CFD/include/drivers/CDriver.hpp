@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,6 +77,7 @@ class CDriver : public CDriverBase {
       interpolator_container; /*!< \brief Definition of the interpolation method between non-matching discretizations of
                                  the interface. */
   CInterface*** interface_container; /*!< \brief Definition of the interface of information and physics. */
+  unsigned short** interface_types;  /*!< \brief Type of coupling between the distinct (physical) zones. */
   bool dry_run;                      /*!< \brief Flag if SU2_CFD was started as dry-run via "SU2_CFD -d <config>.cfg" */
 
  public:
@@ -203,8 +204,8 @@ class CDriver : public CDriverBase {
    * \param[in] interpolation -  Object defining the interpolation.
    */
   void InitializeInterface(CConfig** config, CSolver***** solver, CGeometry**** geometry,
-                               unsigned short** interface_types, CInterface*** interface,
-                               vector<vector<unique_ptr<CInterpolator>>>& interpolation);
+                              unsigned short** interface_types, CInterface*** interface,
+                              vector<vector<unique_ptr<CInterpolator>>>& interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -290,17 +291,14 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] interface - Class defining the physical transfer of information.
+   * \param[in] iteration - Class defining the iteration strcuture.
    * \param[in] dummy - Definition of dummy driver
    */
   void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
-                                    CInterface*** interface, bool dummy);
+                                    CInterface*** interface, CIteration*** iteration, bool dummy);
 
-  /*!
-   * \brief Ramp some simulation settings for turbomachinery problems.
-   * \param[in] iter - Iteration for the ramp (can be outer or time depending on type of simulation).
-   * \note TODO This is not compatible with inner iterations because they are delegated to the iteration class.
-   */
-  void RampTurbomachineryValues(unsigned long iter);
+  void PreprocessTurboVertex(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+                                    CInterface*** interface, CIteration*** iteration, bool dummy);
 
   /*!
    * \brief A virtual member.
@@ -352,6 +350,7 @@ class CDriver : public CDriverBase {
    */
   void PrintDirectResidual(RECORDING kind_recording);
 
+ public:
   /*!
    * \brief Set the solution of all solvers (adjoint or primal) in a zone.
    * \param[in] iZone - Index of the zone.
@@ -364,7 +363,7 @@ class CDriver : public CDriverBase {
     const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
     for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      if (!solver || solver->GetAdjoint() != adjoint) continue;
       for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
         for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
           if (!Old) {
@@ -395,7 +394,7 @@ class CDriver : public CDriverBase {
     const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
     for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      if (!solver || solver->GetAdjoint() != adjoint) continue;
       const auto& sol = solver->GetNodes()->GetSolution();
       for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
         for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
@@ -419,7 +418,6 @@ class CDriver : public CDriverBase {
     return nVar;
   }
 
- public:
   /*!
    * \brief Launch the computation for all zones and all physics.
    */

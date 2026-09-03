@@ -2,14 +2,14 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,6 +49,7 @@
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
+#include "../../include/output/filewriter/CSU2MeshBinaryFileWriter.hpp"
 
 namespace {
 volatile sig_atomic_t STOP;
@@ -70,6 +71,8 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   us_units(config->GetSystemMeasurements() == US) {
 
   cauchyTimeConverged = false;
+  maxTimeDelayActive = false;
+  PrevStopTime = 0.0;
 
   convergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
   multiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
@@ -228,7 +231,7 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
 
 }
 
-void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CConfig **config, std::shared_ptr<CTurbomachineryStagePerformance>(TurboStagePerf), std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst){
+void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CConfig **config, std::shared_ptr<CTurbomachineryStagePerformance>(TurboStagePerf), su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, unsigned short val_iZone, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst){
 
   unsigned long Iter= InnerIter;
 
@@ -237,19 +240,19 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
 
   /*--- Turbomachinery Performance Screen summary output---*/
   if (Iter%100 == 0 && rank == MASTER_NODE) {
-    SetTurboPerformance_Output(TurboPerf, config[val_iZone], TimeIter, OuterIter, InnerIter);
-    SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboPerf, config[val_iZone]);
+    SetTurboPerformance_Output(TurboBladePerfs, config[val_iZone], TimeIter, OuterIter, InnerIter); //Blade-row index scree
+    SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboBladePerfs, config[val_iZone]); //Stage performance screen
   }
 
   for (int iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone ++){
     if (rank == MASTER_NODE) {
-      WriteTurboSpanwisePerformance(TurboPerf, geometry[iZone][val_iInst][MESH_0], config, iZone);
+      WriteTurboSpanwisePerformance(TurboBladePerfs, geometry[iZone][val_iInst][MESH_0], config, iZone); //Spanwise files
     }
   }
 
   /*--- Update turboperformance history file*/
   if (rank == MASTER_NODE){
-    LoadTurboHistoryData(TurboStagePerf, TurboPerf, config[val_iZone]);
+    LoadTurboHistoryData(TurboStagePerf, TurboBladePerfs, config[val_iZone]); //History files
   }
 
 }
@@ -470,6 +473,25 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       LogOutputFiles("SU2 mesh");
       fileWriter = new CSU2MeshFileWriter(volumeDataSorter, config->GetiZone(), config->GetnZone());
+
+      break;
+
+    case OUTPUT_TYPE::MESH_BINARY:
+
+      extension = CSU2MeshBinaryFileWriter::fileExt;
+
+      if (fileName.empty())
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+
+      if (!config->GetWrt_Volume_Overwrite())
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+
+      LogOutputFiles("SU2 binary mesh");
+      fileWriter = new CSU2MeshBinaryFileWriter(volumeDataSorter, config->GetiZone(), config->GetnZone());
 
       break;
 
@@ -793,6 +815,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 }
 
 bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
+  // Handle Cauchy convergence delay for 2nd order time stepping
   if(!cauchyTimeConverged && TimeConvergence && config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND){
     // Change flags for 2nd order Time stepping: In case of convergence, this iter and next iter gets written out. then solver stops
     cauchyTimeConverged = TimeConvergence;
@@ -801,6 +824,25 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
   else if(cauchyTimeConverged){
     TimeConvergence = cauchyTimeConverged;
   }
+
+  // Handle max time delay for 2nd order time stepping
+  // Delay stopping at max_time to ensure both timestep N and N-1 are written for proper restart
+  if(config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND){
+    const su2double cur_time = GetHistoryFieldValue("CUR_TIME");
+    const su2double max_time = config->GetMax_Time();
+    const bool final_time_reached = (cur_time >= max_time);
+
+    // If max_time is reached on first detection, delay the stop
+    if(final_time_reached && !maxTimeDelayActive){
+      maxTimeDelayActive = true;
+      TimeConvergence = false;  // Delay stop to run one more iteration
+    }
+    else if(maxTimeDelayActive){
+      TimeConvergence = true;   // Now allow stop
+      maxTimeDelayActive = false;   // Reset for next run
+    }
+  }
+
   return TimeConvergence;
 }
 
@@ -892,6 +934,11 @@ void COutput::PrintConvergenceSummary(){
 bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   convergence = true;
+
+  /*--- Count from wherever the history was last restarted. ---*/
+
+  if (Iteration >= convergenceStartIter) Iteration -= convergenceStartIter;
+  else Iteration = 0;
 
   for (auto iField_Conv = 0ul; iField_Conv < convFields.size(); iField_Conv++) {
 
@@ -1205,6 +1252,8 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
   CheckHistoryOutput(config->GetnZone());
 
+  CheckFullMG_Startup(config);
+
   if (rank == MASTER_NODE && !noWriting){
 
     /*--- Open history file and print the header ---*/
@@ -1270,6 +1319,31 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   }
 
+}
+
+void COutput::CheckFullMG_Startup(const CConfig *config) const {
+
+  if (config->GetMGCycle() != MG_CYCLE::FULL) return;
+
+  /*--- With a residual to monitor the startup always has MG_STARTUP_CONVERGENCE to promote on. ---*/
+
+  if (!GetResidualConvFields().empty()) return;
+
+  const auto& mgOpts = config->GetMGOptions();
+  const bool stagnation_on = (mgOpts.MG_Startup_Stagnation > 0.0) && (mgOpts.MG_Startup_Stagnation_Iter > 0);
+
+  if ((mgOpts.MG_Startup_Iter == 0) && !stagnation_on) {
+    SU2_MPI::Error("The Full-MG startup has no criterion left to promote on and would stay on the "
+                   "coarsest grid: MG_STARTUP_ITER is 0, MG_STARTUP_STAGNATION is off, and "
+                   "CONV_FIELD holds no residual field for MG_STARTUP_CONVERGENCE to use.",
+                   CURRENT_FUNCTION);
+  }
+
+  if (rank == MASTER_NODE) {
+    cout << "WARNING: no residual CONV_FIELD to monitor, the Full-MG startup advances on "
+         << (stagnation_on ? "MG_STARTUP_STAGNATION and MG_STARTUP_ITER" : "MG_STARTUP_ITER")
+         << " alone." << endl;
+  }
 }
 
 void COutput::PrepareHistoryFile(CConfig *config){
@@ -2074,8 +2148,12 @@ void COutput::SetCommonHistoryFields() {
   /// Description: The current time step
   AddHistoryOutput("TIME_STEP", "Time_Step", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
 
+  /// BEGIN_GROUP: WALL_TIME, DESCRIPTION: Wall-clock timing information.
+  /// DESCRIPTION: The current iteration wall-clock time.
+  AddHistoryOutput("ITER_TIME", "Time(sec)", ScreenOutputFormat::FIXED, "WALL_TIME", "Time per iteration (s)");
   /// DESCRIPTION: Currently used wall-clock time.
   AddHistoryOutput("WALL_TIME", "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time since the start of inner iterations.");
+  /// END_GROUP
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
 
@@ -2267,13 +2345,21 @@ void COutput::LoadCommonHistoryData(const CConfig *config) {
   SetHistoryOutputValue("INNER_ITER", curInnerIter);
   SetHistoryOutputValue("OUTER_ITER", curOuterIter);
 
-  su2double StopTime, UsedTime;
+  su2double StopTime, UsedTime, IterTime;
 
   StopTime = SU2_MPI::Wtime();
 
   UsedTime = (StopTime - config->Get_StartTime())/(curInnerIter+1);
 
+  if (curInnerIter == 0) {
+    IterTime = StopTime - config->Get_StartTime(); // First iteration measured from start
+  } else {
+    IterTime = StopTime - PrevStopTime;
+  }
+  PrevStopTime = StopTime;
+
   SetHistoryOutputValue("WALL_TIME", UsedTime);
+  SetHistoryOutputValue("ITER_TIME", IterTime);
 
   SetHistoryOutputValue("NONPHYSICAL_POINTS", config->GetNonphysical_Points());
 }
