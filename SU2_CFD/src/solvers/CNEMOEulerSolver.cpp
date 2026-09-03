@@ -968,12 +968,14 @@ void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
           }
         }
 
-        /*--- Energy ---*/
-        if (iVar == (nVar-2)){
-          su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
-          if (ratio > allowableRatio) {
-            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-          }
+      }
+
+      /*--- Total energy. This check must be independent of the species block:
+       * nVar-2 is nSpecies+nDim and can never satisfy iVar < nSpecies. ---*/
+      if (iVar == (nVar-2)){
+        su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
       }
     }

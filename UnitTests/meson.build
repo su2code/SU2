@@ -16,6 +16,7 @@ su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
                        'SU2_CFD/numerics/CNumerics_tests.cpp',
                        'SU2_CFD/fluid/CFluidModel_tests.cpp',
                        'SU2_CFD/gradients.cpp',
+                       'SU2_CFD/solvers/CNEMOEulerSolver_tests.cpp',
                        'SU2_CFD/windowing.cpp',
                        'Common/toolboxes/random_toolbox_tests.cpp',
                        'Common/linear_algebra/quantization_tests.cpp'])
