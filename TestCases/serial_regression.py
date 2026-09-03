@@ -75,7 +75,7 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.215230, -5.739367, -20.560781, -20.516922, -20.406516, 1.262782, -3.205476, -0.015696, 0.093206, 32641]
+    visc_cone.test_vals = [-5.298535, -5.823020, -20.330692, -20.368713, -20.310533, 1.067483, -3.250989, -0.015487, 0.095136, 24939]
     visc_cone.test_vals_aarch64 = [-5.215250, -5.739384, -20.560917, -20.517096, -20.406630, 1.262772, -3.205492, -0.015695, 0.093205, 32641.000000]
     test_list.append(visc_cone)
 
