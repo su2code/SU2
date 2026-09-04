@@ -42,6 +42,27 @@ def main():
     test_list = []
     file_diff_list = []
 
+    #######################
+    ### Flamelet solver ###
+    #######################
+
+    # 2D planar laminar premixed methane flame on isothermal burner (restart)
+    cfd_flamelet_ch4 = TestCase('cfd_flamelet_ch4')
+    cfd_flamelet_ch4.cfg_dir = "flamelet/01_laminar_premixed_ch4_flame_cfd"
+    cfd_flamelet_ch4.cfg_file = "lam_prem_ch4_cfd.cfg"
+    cfd_flamelet_ch4.test_iter = 10
+    cfd_flamelet_ch4.test_vals = [-10.540768, -12.636252, -5.648494, -13.455936, -17.235451, 95.802000]
+    cfd_flamelet_ch4.new_output = True
+    test_list.append(cfd_flamelet_ch4)
+
+    # 2D laminar premixed hydrogen flame with preferential diffusion (MLP manifold, restart)
+    cfd_flamelet_h2 = TestCase('cfd_flamelet_h2')
+    cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
+    cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
+    cfd_flamelet_h2.test_iter = 5
+    cfd_flamelet_h2.test_vals = [-8.036794, -8.372667, -1.842794, -9.388418]
+    test_list.append(cfd_flamelet_h2)
+
     ##########################
     ### Compressible Euler ###
     ##########################
