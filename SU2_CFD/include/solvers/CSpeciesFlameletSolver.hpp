@@ -39,6 +39,9 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
   FluidFlamelet_ParsedOptions flamelet_config_options;
   bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
+  /*!< \brief Number of points outside the manifold domain, shared across OpenMP threads so it can be
+   *          accumulated atomically and reduced by the master thread alone in Preprocessing. */
+  unsigned long n_not_in_domain_local = 0;
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
    * \param[in] geometry - Geometrical definition of the problem.

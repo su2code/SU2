@@ -75,7 +75,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short iMesh, unsigned short iRKStep,
                                            unsigned short RunTime_EqSystem, bool Output) {
   SU2_ZONE_SCOPED
-  unsigned long n_not_in_domain_local = 0, n_not_in_domain_global = 0;
+  unsigned long n_not_in_domain_global = 0;
   vector<su2double> scalars_vector(nVar);
   unsigned long spark_iter_start, spark_duration;
   bool ignition = false;
@@ -95,7 +95,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
   }
 
-  SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
+  SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
+                            n_not_in_domain_local = 0;)
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
@@ -122,6 +123,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     }
 
     nodes->SetTableMisses(i_point, misses);
+    SU2_OMP_ATOMIC
     n_not_in_domain_local += misses;
     /*--- Obtain passive look-up scalars. ---*/
     SetScalarLookUps(fluid_model_local, i_point, scalars_vector);
@@ -142,10 +144,11 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   }
   END_SU2_OMP_FOR
   /* --- Sum up some global counters over processes. --- */
-  SU2_MPI::Reduce(&n_not_in_domain_local, &n_not_in_domain_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE,
-                  SU2_MPI::GetComm());
-  if ((rank == MASTER_NODE) && (n_not_in_domain_global > 0))
-    cout << "Number of points outside manifold domain: " << n_not_in_domain_global << endl;
+  SU2_OMP_SAFE_GLOBAL_ACCESS(
+      SU2_MPI::Reduce(&n_not_in_domain_local, &n_not_in_domain_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE,
+                      SU2_MPI::GetComm());
+      if ((rank == MASTER_NODE) && (n_not_in_domain_global > 0))
+        cout << "Number of points outside manifold domain: " << n_not_in_domain_global << endl;)
 
   /*--- Compute preferential diffusion scalar gradients. ---*/
   if (flamelet_config_options.preferential_diffusion) {
