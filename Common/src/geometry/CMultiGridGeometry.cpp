@@ -835,6 +835,56 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       if (onPhysBoundary[iFinePoint]) cvOnBoundary[iCoarsePoint] = true;
     }
 
+  /*--- Which physical boundaries each coarse CV sits on, one bit per marker. cvOnBoundary above only
+   *    records THAT a CV touches a boundary, and the repair passes below compare nothing else, so a
+   *    one-child CV on boundary A is free to be merged into a neighbour that lies on boundary B. That
+   *    hands the target CV a marker none of its own children carried: SetVertex gives a coarse CV
+   *    every marker of every child, so the merged CV becomes a vertex of A while its centroid sits
+   *    wherever the B stack put it, and the boundary condition for A is then applied to a control
+   *    volume that is mostly not on A. Comparing the marker SETS - a strictly stronger test than the
+   *    boolean, since an interior CV has an empty set - keeps a merge inside one boundary. ---*/
+  vector<unsigned long long> cvMarkerMask(nPointDomain, 0);
+  {
+    vector<int> bitOfMarker(fine_grid->GetnMarker(), -1);
+    int nBits = 0;
+    for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+      if (nBits < 64) bitOfMarker[iMarker] = nBits;
+      nBits++;
+    }
+    if (nBits <= 64) {
+      for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++)
+        for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+          const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+          for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+            if (bitOfMarker[iMarker] < 0) continue;
+            if (fine_grid->nodes->GetVertex(iFinePoint, iMarker) >= 0)
+              cvMarkerMask[iCoarsePoint] |= 1ULL << bitOfMarker[iMarker];
+          }
+        }
+    } else {
+      /*--- More markers than bits: fall back to the boolean test. ---*/
+      for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++)
+        cvMarkerMask[iCoarsePoint] = cvOnBoundary[iCoarsePoint] ? 1ULL : 0ULL;
+    }
+  }
+
+  /*--- A boundary CV built by the paving is the BASE of a stack, and the paving's whole guarantee is
+   *    that every layer above it was given that same footprint. The repair passes must not take the
+   *    footprint away: merging a stack base into the neighbouring stack leaves the column above it
+   *    headless and the merged base wider than either column, so base and first layer no longer line
+   *    up. On the next level that misalignment is fatal rather than cosmetic - the stiffest neighbour
+   *    of the widened base is then a LATERAL one, SeedFrontNodes' hasLayerNormalTo rejects it, the CV
+   *    does not seed a front, and it is swallowed mid-stack by an interior front instead. The coarse
+   *    CV that results carries the boundary marker with its body off the boundary, and the boundary
+   *    condition is applied to it. A one-node patch marching as a one-wide stack is a deliberate
+   *    choice in AgglomerateImplicitLines, not damage for these passes to repair; what they are for
+   *    is the INTERIOR singleton left where a line narrows, and that is untouched by this. ---*/
+  auto isStackBase = [&](unsigned long iCoarsePoint) {
+    return cvOnBoundary[iCoarsePoint] && (iCoarsePoint >= starting_idx_lines_DBG) &&
+           (iCoarsePoint < idx_after_lines_DBG);
+  };
+
   vector<bool> touchesPartition(nPointDomain, false);
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
     for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
@@ -856,7 +906,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
       const auto iCoarsePoint_Complete = nodes->GetPoint(iCoarsePoint, 0);
       if (mustStayAlone[iCoarsePoint_Complete]) continue;
-      if (cvOnBoundary[iCoarsePoint] != cvOnBoundary[iCoarsePoint_Complete]) continue;
+      if (isStackBase(iCoarsePoint) || isStackBase(iCoarsePoint_Complete)) continue;
+      if (cvMarkerMask[iCoarsePoint] != cvMarkerMask[iCoarsePoint_Complete]) continue;
 
       /*--- Check if merging would exceed the maximum agglomeration size ---*/
       auto nChildren_Target = nodes->GetnChildren_CV(iCoarsePoint_Complete);
@@ -871,7 +922,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         for (auto jCoarsePoint : nodes->GetPoints(iCoarsePoint_Complete)) {
           if (nChildrenToRedistribute == 0) break;
           if (mustStayAlone[jCoarsePoint]) continue;
-          if (cvOnBoundary[jCoarsePoint] != cvOnBoundary[iCoarsePoint_Complete]) continue;
+          if (isStackBase(jCoarsePoint)) continue;
+          if (cvMarkerMask[jCoarsePoint] != cvMarkerMask[iCoarsePoint_Complete]) continue;
 
           auto nChildren_Neighbor = nodes->GetnChildren_CV(jCoarsePoint);
           if (nChildren_Neighbor < maxAgglomSize) {
@@ -951,6 +1003,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
     if (nodes->GetnChildren_CV(iCoarsePoint) != 1) continue;
     if (mustStayAlone[iCoarsePoint]) continue;
+    if (isStackBase(iCoarsePoint)) continue;
     if (nodes->GetnPoint(iCoarsePoint) <= 1) continue; /*--- Already handled above, or truly islanded. ---*/
 
     /*--- The smallest neighbour is the one most likely to be an under-filled block, and taking the
@@ -963,7 +1016,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     unsigned short best_nChildren = 0;
     for (auto jCoarsePoint : nodes->GetPoints(iCoarsePoint)) {
       if (mustStayAlone[jCoarsePoint]) continue;
-      if (cvOnBoundary[jCoarsePoint] != cvOnBoundary[iCoarsePoint]) continue;
+      if (isStackBase(jCoarsePoint)) continue;
+      if (cvMarkerMask[jCoarsePoint] != cvMarkerMask[iCoarsePoint]) continue;
       const auto nChildren_Neighbor = nodes->GetnChildren_CV(jCoarsePoint);
       /*--- Skip neighbors already emptied by an earlier merge in this same pass. ---*/
       if (nChildren_Neighbor == 0) continue;
