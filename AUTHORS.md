@@ -60,6 +60,7 @@ Arne Voß
 Ayush Kumar
 Beckett Y. Zhou
 Benjamin S. Kirk
+BlueChips
 Brendan Tracey
 Brian Munguía
 Carsten Othmer
@@ -91,7 +92,6 @@ J. Sinsay
 JSmith36
 Jacob Needels
 Jairo Paes Cavalcante Filho
-Jared Bellon
 Jason Howison
 Jayant Mukhopadhaya
 Jeffrey van Oostrom
