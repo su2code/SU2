@@ -321,6 +321,7 @@ protected:
   vector<su2double> oldFunc,     /*!< \brief Old value of the coefficient. */
   newFunc;                       /*!< \brief Current value of the coefficient. */
   bool convergence;              /*!< \brief To indicate if the solver has converged or not. */
+  bool convergenceInterrupted;   /*!< \brief To indicate that the exit was forced by an interrupt signal instead of the convergence criteria. */
   su2double initResidual;        /*!< \brief Initial value of the residual to evaluate the convergence level. */
   vector<string> convFields;     /*!< \brief Name of the field to be monitored for convergence. */
   unsigned long convergenceStartIter = 0; /*!< \brief Iteration the convergence history is counted from. */
@@ -587,6 +588,12 @@ public:
    * \return Boolean indicating whether the problem is converged.
    */
   bool GetConvergence() const {return convergence;}
+
+  /*!
+   * \brief Get whether the exit was forced by an interrupt signal (e.g. SIGTERM) instead of the convergence criteria.
+   * \return Boolean indicating whether an interrupt signal forced the exit.
+   */
+  bool GetConvergenceInterrupted() const {return convergenceInterrupted;}
 
   /*!
    * \brief Set the value of the convergence flag.
