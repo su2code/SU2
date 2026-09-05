@@ -26,14 +26,17 @@
  */
 
 #include "../../include/solvers/CTurbSSTSolver.hpp"
+#include "../../include/solvers/CScalarSolver.inl"
 #include "../../include/variables/CTurbSSTVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
+#include "../../include/numerics/turbulent/turb_sst_edge_flux.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
-CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
-    : CTurbSolver(geometry, config, true) {
+CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, const CSolver* flow_solver,
+                               unsigned short iMesh)
+    : CTurbSolver(geometry, config, flow_solver, true) {
   SU2_ZONE_SCOPED
   unsigned long iPoint;
   ifstream restart_file;
@@ -52,10 +55,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialize nVarGrad for deallocation ---*/
 
   nVarGrad = nVar;
-
-  /*--- Define geometry constants in the solver structure ---*/
-
-  nDim = geometry->GetnDim();
 
   /*--- Single grid simulation ---*/
 
@@ -151,6 +150,13 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   nodes = new CTurbSSTVariable(kine_Inf, omega_Inf, muT_Inf, nPoint, nDim, nVar, constants, config);
   SetBaseClassPointerToNodes();
+
+  /*--- Ghost states for boundary conditions, sized to the largest marker (see BoundaryFluxResidual). ---*/
+  unsigned long maxMarkerVertices = 0;
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
+    maxMarkerVertices = max(maxMarkerVertices, nVertex[iMarker]);
+  ghostNodes = make_unique<CTurbSSTVariable>(kine_Inf, omega_Inf, muT_Inf, maxMarkerVertices, nDim, nVar, constants,
+                                             config);
 
   /*--- MPI solution ---*/
 
@@ -290,18 +296,23 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   AD::EndNoSharedReading();
 }
 
-void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                                     CNumerics* numerics, const CConfig* config) {
+void CTurbSSTSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics**,
+                                     CConfig* config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
-  /*--- Define an object to set solver specific numerics contribution. ---*/
-  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
-    /*--- Menter's first blending function (only SST)---*/
-    numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
-  };
+  const auto opt = ScalarFluxOptions::Interior(*config, config->GetBounded_Turb(),
+                                               config->GetUse_Accurate_Turb_Jacobians());
 
-  /*--- Now instantiate the generic non-conservative implementation with the functor above. ---*/
-  Viscous_Residual_NonCons(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
+  DispatchScheme<CScalarFlux_SST, 2>(config, [&](auto tag) {
+    EdgeFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt);
+  });
+}
 
+void CTurbSSTSolver::BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                                  const ScalarFluxOptions& opt, unsigned short val_marker) {
+  DispatchScheme<CScalarFlux_SST, 2>(config, [&](auto tag) {
+    BoundaryFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker);
+  });
 }
 
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -589,255 +600,126 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                              CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*,
+                              CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  auto* flowSolver = solver_container[FLOW_SOL];
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto* V_inlet = flowSolver->GetCharacPrimVar(val_marker, iVertex);
 
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    su2double Inlet_Vars[MAXNVAR];
+    if (config->GetInlet_Profile_From_File()) {
+      /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
+      Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0] / pow(config->GetVelocity_Ref(), 2);
+      Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1] * config->GetViscosity_Ref() /
+                      (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
+    } else {
+      /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+      CFluidModel* FluidModel = flowSolver->GetFluidModel();
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+      /*--- Obtain flow velocity vector at inlet boundary node ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
-
-      /*--- Allocate the value at the inlet ---*/
-
-      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      /*--- Set various quantities in the solver class ---*/
-
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
-
-      su2double Inlet_Vars[MAXNVAR];
-      if (config->GetInlet_Profile_From_File()) {
-        /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
-        Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0] / pow(config->GetVelocity_Ref(), 2);
-        Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1] * config->GetViscosity_Ref() /
-                        (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
+      const su2double* Velocity_Inlet = &V_inlet[prim_idx.Velocity()];
+      su2double Density_Inlet;
+      if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+        Density_Inlet = V_inlet[prim_idx.Density()];
+        FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
       } else {
-        /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
-        CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
-
-        /*--- Obtain flow velocity vector at inlet boundary node ---*/
-
-        const su2double* Velocity_Inlet = &V_inlet[prim_idx.Velocity()];
-        su2double Density_Inlet;
-        if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-          Density_Inlet = V_inlet[prim_idx.Density()];
-          FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
-        } else {
-          const su2double* Scalar_Inlet = nullptr;
-          if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-            Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
-          }
-          FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
-          Density_Inlet = FluidModel->GetDensity();
+        const su2double* Scalar_Inlet = nullptr;
+        if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+          Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
         }
-        const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
-        const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
-        const su2double Intensity = Turb_Properties[0];
-        const su2double viscRatio = Turb_Properties[1];
-        const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
-
-        Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
-        Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
+        FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
+        Density_Inlet = FluidModel->GetDensity();
       }
+      const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
+      const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+      const su2double Intensity = Turb_Properties[0];
+      const su2double viscRatio = Turb_Properties[1];
+      const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
 
-      /*--- Set the turbulent variable states. Use free-stream SST
-       values for the turbulent state at the inflow. ---*/
-      /*--- Load the inlet turbulence variables (uniform by default). ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_Vars);
-
-      /*--- Set various other quantities in the solver class ---*/
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      if (conv_numerics->GetBoundedScalar()) {
-        const su2double* velocity = &V_inlet[prim_idx.Velocity()];
-        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
-      }
-
-      /*--- Compute the residual using an upwind scheme ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-      //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-      //
-      //      su2double Coord_Reflected[MAXNDIM];
-      //      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-      //                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      //      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      //      visc_numerics->SetNormal(Normal);
-      //
-      //      /*--- Conservative variables w/o reconstruction ---*/
-      //
-      //      visc_numerics->SetPrimitive(V_domain, V_inlet);
-      //
-      //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      //
-      //     visc_numerics->SetScalarVar(Solution_i, Solution_j);
-      //     visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      //
-      //      /*--- Menter's first blending function ---*/
-      //
-      //      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-      //
-      //      /*--- Compute residual, and Jacobians ---*/
-      //
-      //      auto residual = visc_numerics->ComputeResidual(config);
-      //
-      //      /*--- Subtract residual, and update Jacobians ---*/
-      //
-      //      LinSysRes.SubtractBlock(iPoint, residual);
-      //      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-
+      Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
+      Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
     }
+    for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, Inlet_Vars[iVar]);
 
+    SetGhostPrimitives(iVertex, V_inlet);
+
+    SetGhostGeometry(geometry, val_marker, iVertex);
   }
   END_SU2_OMP_FOR
+
+  /*--- The diffusive term at this boundary causes serious convergence problems. ---*/
+  BoundaryFlux(geometry, solver_container, config,
+               ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Turb()), val_marker);
 }
 
-void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*,
+                               CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  auto* flowSolver = solver_container[FLOW_SOL];
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    /*--- Neumann: the turbulent variable is copied from the interior before computing the flux. ---*/
+    for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, nodes->GetSolution(iPoint, iVar));
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    SetGhostPrimitives(iVertex, flowSolver->GetCharacPrimVar(val_marker, iVertex));
 
-      /*--- Allocate the value at the outlet ---*/
-
-      auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      /*--- Set various quantities in the solver class ---*/
-
-      conv_numerics->SetPrimitive(V_domain, V_outlet);
-
-      /*--- Set the turbulent variables. Here we use a Neumann BC such
-       that the turbulent variable is copied from the interior of the
-       domain to the outlet before computing the residual. ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint),
-                                nodes->GetSolution(iPoint));
-
-      /*--- Set Normal (negate for outward convention) ---*/
-
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
-
-      if (dynamic_grid)
-      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                geometry->nodes->GetGridVel(iPoint));
-
-      if (conv_numerics->GetBoundedScalar()) {
-        const su2double* velocity = &V_outlet[prim_idx.Velocity()];
-        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
-      }
-
-      /*--- Compute the residual using an upwind scheme ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-//
-//      su2double Coord_Reflected[MAXNDIM];
-//      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-//                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//      visc_numerics->SetNormal(Normal);
-//
-//      /*--- Conservative variables w/o reconstruction ---*/
-//
-//      visc_numerics->SetPrimitive(V_domain, V_outlet);
-//
-//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-//
-//      visc_numerics->SetScalarVar(Solution_i, Solution_j);
-//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-//
-//      /*--- Menter's first blending function ---*/
-//
-//      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-//
-//      /*--- Compute residual, and Jacobians ---*/
-//
-//      auto residual = visc_numerics->ComputeResidual(config);
-//
-//      /*--- Subtract residual, and update Jacobians ---*/
-//
-//      LinSysRes.SubtractBlock(iPoint, residual);
-//      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-
-    }
+    SetGhostGeometry(geometry, val_marker, iVertex);
   }
   END_SU2_OMP_FOR
+
+  /*--- The diffusive term at this boundary causes serious convergence problems. ---*/
+  BoundaryFlux(geometry, solver_container, config,
+               ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Turb()), val_marker);
 }
 
 
-void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                          CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*,
+                                  CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  auto* flowSolver = solver_container[FLOW_SOL];
 
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, Solution_Inf[iVar]);
+
+    SetGhostPrimitives(iVertex, flowSolver->GetCharacPrimVar(val_marker, iVertex));
+
+    SetGhostGeometry(geometry, val_marker, iVertex);
+  }
+  END_SU2_OMP_FOR
+
+  BoundaryFlux(geometry, solver_container, config,
+               ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Turb()), val_marker);
+}
+
+void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics*,
+                                          CNumerics*, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
+  auto* flowSolver = solver_container[FLOW_SOL];
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  /*--- The span loop below reaches a vertex of val_marker through GetOldVertex, which need not
+   * cover every one of them, so every vertex starts skipped and only the ones actually filled
+   * are cleared. ---*/
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) ghostSkip[iVertex] = true;
+  END_SU2_OMP_FOR
 
-  for (auto iSpan = 0u; iSpan < nSpanWiseSections ; iSpan++){
-
-    const auto extAverageKine = solver_container[FLOW_SOL]->GetMixingState(val_marker, iSpan, 6);
-    const auto extAverageOmega = solver_container[FLOW_SOL]->GetMixingState(val_marker, iSpan, 7);
-    su2double solution_j[] = {extAverageKine, extAverageOmega};
-
-    /*--- Loop over all the vertices on this boundary marker ---*/
+  for (auto iSpan = 0u; iSpan < nSpanWiseSections; iSpan++){
+    const auto extAverageKine = flowSolver->GetMixingState(val_marker, iSpan, 6);
+    const auto extAverageOmega = flowSolver->GetMixingState(val_marker, iSpan, 7);
+    const su2double solution_j[] = {extAverageKine, extAverageOmega};
 
     SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
     for (auto iVertex = 0u; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
@@ -851,103 +733,61 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       /*--- Index of the closest interior node ---*/
       const auto Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
 
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(oldVertex, iVar, solution_j[iVar]);
 
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][oldVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
+      SetGhostPrimitives(oldVertex, flowSolver->GetCharacPrimVar(val_marker, oldVertex));
 
-      /*--- Allocate the value at the inlet ---*/
-      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, oldVertex);
+      SetGhostGeometry(geometry, val_marker, oldVertex);
 
-      /*--- Retrieve solution at the farfield boundary node ---*/
+      SetGhostDiffusionState(geometry, oldVertex, iPoint, Point_Normal);
 
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      /*--- Set various quantities in the solver class ---*/
-
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
-
-      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute the residual using an upwind scheme ---*/
-      auto conv_residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-      LinSysRes.AddBlock(iPoint, conv_residual);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, conv_residual.jacobian_i);
-
-      /*--- Viscous contribution ---*/
-      su2double Coord_Reflected[MAXNDIM];
-      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      visc_numerics->SetNormal(Normal);
-
-      /*--- Conservative variables w/o reconstruction ---*/
-      visc_numerics->SetPrimitive(V_domain, V_inlet);
-
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
-      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
-
-      /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
-
-      /*--- Compute residual, and Jacobians ---*/
-      auto visc_residual = visc_numerics->ComputeResidual(config);
-
-      /*--- Subtract residual, and update Jacobians ---*/
-      LinSysRes.SubtractBlock(iPoint, visc_residual);
-      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-
+      /*--- SetBlendingFunc derives F1 from the wall distance and the viscous state, neither of
+       * which a ghost point has, so its row takes the interior point's own value. ---*/
+      ghostNodes->SetF1blending(oldVertex, nodes->GetF1blending(iPoint));
     }
     END_SU2_OMP_FOR
   }
 
+  BoundaryFlux(geometry, solver_container, config, ScalarFluxOptions::BoundaryFull(*config), val_marker);
 }
 
-void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics*,
+                                    CNumerics*, CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
+  auto* flowSolver = solver_container[FLOW_SOL];
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
   /*--- Quantities for computing the  kine and omega to impose at the inlet boundary. ---*/
-  CFluidModel *FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+  CFluidModel *FluidModel = flowSolver->GetFluidModel();
 
   su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
   su2double viscRatio = config->GetTurb2LamViscRatio_FreeStream();
 
-  for (auto iSpan = 0u; iSpan < nSpanWiseSections ; iSpan++){
+  /*--- The span loop below reaches a vertex of val_marker through GetOldVertex, which need not
+   * cover every one of them, so every vertex starts skipped and only the ones actually filled
+   * are cleared. ---*/
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) ghostSkip[iVertex] = true;
+  END_SU2_OMP_FOR
+
+  for (auto iSpan = 0u; iSpan < nSpanWiseSections; iSpan++){
 
     /*--- Compute the inflow kine and omega using the span wise averge quntities---*/
 
-    su2double rho       = solver_container[FLOW_SOL]->GetAverageDensity(val_marker, iSpan);
-    su2double pressure  = solver_container[FLOW_SOL]->GetAveragePressure(val_marker, iSpan);
-    su2double kine      = solver_container[FLOW_SOL]->GetAverageKine(val_marker, iSpan);
+    su2double rho       = flowSolver->GetAverageDensity(val_marker, iSpan);
+    su2double pressure  = flowSolver->GetAveragePressure(val_marker, iSpan);
+    su2double kine      = flowSolver->GetAverageKine(val_marker, iSpan);
 
     FluidModel->SetTDState_Prho(pressure, rho);
     su2double muLam = FluidModel->GetLaminarViscosity();
 
-    su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim,
-                          solver_container[FLOW_SOL]->GetAverageTurboVelocity(val_marker, iSpan));
+    su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, flowSolver->GetAverageTurboVelocity(val_marker, iSpan));
 
     su2double kine_b  = 3.0/2.0*(VelMag2*Intensity*Intensity);
     su2double omega_b = rho*kine/(muLam*viscRatio);
 
-    su2double solution_j[] = {kine_b, omega_b};
-
-    /*--- Loop over all the vertices on this boundary marker ---*/
+    const su2double solution_j[] = {kine_b, omega_b};
 
     SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
     for (auto iVertex = 0u; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
@@ -961,69 +801,43 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       /*--- Index of the closest interior node ---*/
       const auto Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
 
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(oldVertex, iVar, solution_j[iVar]);
 
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][oldVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
+      SetGhostPrimitives(oldVertex, flowSolver->GetCharacPrimVar(val_marker, oldVertex));
 
-      /*--- Allocate the value at the inlet ---*/
-      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, oldVertex);
+      SetGhostGeometry(geometry, val_marker, oldVertex);
 
-      /*--- Retrieve solution at the farfield boundary node ---*/
+      SetGhostDiffusionState(geometry, oldVertex, iPoint, Point_Normal);
 
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      /*--- Set various quantities in the solver class ---*/
-
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
-
-      /*--- Set the turbulent variable states. Use average span-wise values
-             values for the turbulent state at the inflow. ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute the residual using an upwind scheme ---*/
-      auto conv_residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-      LinSysRes.AddBlock(iPoint, conv_residual);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, conv_residual.jacobian_i);
-
-      /*--- Viscous contribution ---*/
-      su2double Coord_Reflected[MAXNDIM];
-      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      visc_numerics->SetNormal(Normal);
-
-      /*--- Conservative variables w/o reconstruction ---*/
-      visc_numerics->SetPrimitive(V_domain, V_inlet);
-
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
-
-      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
-
-      /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
-
-      /*--- Compute residual, and Jacobians ---*/
-      auto visc_residual = visc_numerics->ComputeResidual(config);
-
-      /*--- Subtract residual, and update Jacobians ---*/
-      LinSysRes.SubtractBlock(iPoint, visc_residual);
-      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-
+      /*--- SetBlendingFunc derives F1 from the wall distance and the viscous state, neither of
+       * which a ghost point has, so its row takes the interior point's own value. ---*/
+      ghostNodes->SetF1blending(oldVertex, nodes->GetF1blending(iPoint));
     }
     END_SU2_OMP_FOR
   }
 
+  BoundaryFlux(geometry, solver_container, config, ScalarFluxOptions::BoundaryFull(*config), val_marker);
+}
+
+void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics*,
+                                        CNumerics*, CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  if (solver_container[FLOW_SOL] == nullptr) return;
+
+  const auto optConv = ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Turb());
+  const auto optVisc = ScalarFluxOptions::BoundaryDiffusive(*config, true);
+
+  /*--- SetBlendingFunc derives F1 from the wall distance and the viscous state, neither of which
+   * a ghost point has, so its row takes the interior point's own value. ---*/
+  const auto fillGhostExtras = [&](unsigned long iVertex, unsigned long iPoint) {
+    ghostNodes->SetF1blending(iVertex, nodes->GetF1blending(iPoint));
+  };
+
+  DispatchScheme<CScalarFlux_SST, 2>(config, [&](auto tag) {
+    FluidInterfaceFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, optConv, optVisc,
+                                                             fillGhostExtras);
+  });
 }
 
 void CTurbSSTSolver::SetInletAtVertex(const su2double *val_inlet,

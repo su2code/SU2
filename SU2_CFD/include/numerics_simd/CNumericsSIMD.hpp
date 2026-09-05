@@ -28,15 +28,7 @@
 #pragma once
 
 #include "../../../Common/include/parallelization/vectorization.hpp"
-#include "../../../Common/include/containers/C2DContainer.hpp"
-
-/*!
- * \enum UpdateType
- * \brief Ways to update vectors and system matrices.
- * COLORING is the typical i/j update, whereas for REDUCTION
- * the fluxes are stored and the matrix diagonal is not modified.
- */
-enum class UpdateType {COLORING, REDUCTION};
+#include "../numerics/util.hpp"
 
 /*!
  * \brief Define Double and Int SIMD types.
@@ -45,17 +37,9 @@ using Double = simd::Array<su2double>;
 using Int = simd::Array<unsigned long, Double::Size>;
 
 /*--- Forward declare a few classes used in name only by the interface. ---*/
-template<class T> class CSysVector;
-template<class T> class CSysMatrix;
 class CConfig;
 class CGeometry;
 class CVariable;
-
-#ifdef CODI_FORWARD_TYPE
-using SparseMatrixType = CSysMatrix<su2double>;
-#else
-using SparseMatrixType = CSysMatrix<su2mixedfloat>;
-#endif
 
 /*!
  * \class CNumericsSIMD

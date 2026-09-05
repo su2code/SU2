@@ -1056,6 +1056,80 @@ class CSysMatrix {
   }
 
   /*!
+   * \brief Set the four blocks of an edge, for fluxes whose i and j contributions are independent.
+   * \note The diagonal blocks are accumulated, the off-diagonal blocks are set.
+   */
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void SetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& jac_ii,
+                        const MatrixType& jac_ij, const MatrixType& jac_ji, const MatrixType& jac_jj,
+                        OtherType mask = 1) {
+    const auto blkSz = nVar * nEqn;
+    auto* bii = &mat.d[iPoint * blkSz];
+    auto* bjj = &mat.d[jPoint * blkSz];
+    unsigned long iVar, jVar, offset = 0;
+
+    if (quantized_mode) {
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bii[offset] += PassiveAssign(jac_ii[iVar][jVar] * mask);
+          bjj[offset] += PassiveAssign(jac_jj[iVar][jVar] * mask);
+          bij_buf[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+          bji_buf[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        }
+      QuantizeBlock(bij_buf, &q_scale.u[iEdge * nVar], &q_blocks.u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+      return;
+    }
+
+    auto* bij = &mat.u[iEdge * blkSz];
+    auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bii[offset] += PassiveAssign(jac_ii[iVar][jVar] * mask);
+        bjj[offset] += PassiveAssign(jac_jj[iVar][jVar] * mask);
+        bij[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+        bji[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        ++offset;
+      }
+    }
+  }
+
+  /*!
+   * \brief Set the off-diagonal blocks of an edge, the diagonal being assembled elsewhere.
+   */
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void SetOffDiagBlocks(unsigned long iEdge, const MatrixType& jac_ij, const MatrixType& jac_ji,
+                               OtherType mask = 1) {
+    const auto blkSz = nVar * nEqn;
+    unsigned long iVar, jVar, offset = 0;
+
+    if (quantized_mode) {
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bij_buf[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+          bji_buf[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        }
+      QuantizeBlock(bij_buf, &q_scale.u[iEdge * nVar], &q_blocks.u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+      return;
+    }
+
+    auto* bij = &mat.u[iEdge * blkSz];
+    auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bij[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+        bji[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        ++offset;
+      }
+    }
+  }
+
+  /*!
    * \brief SIMD version, does the update for multiple edges.
    * \note Nothing is updated if the mask is 0.
    */

@@ -26,9 +26,11 @@
  */
 
 #include "../../include/solvers/CTransLMSolver.hpp"
+#include "../../include/solvers/CScalarSolver.inl"
 #include "../../include/variables/CTransLMVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
 #include "../../include/variables/CTurbSAVariable.hpp"
+#include "../../include/numerics/turbulent/transition/trans_edge_flux.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
@@ -38,8 +40,9 @@
 
 // Note: TransLM seems to use rho*gamma, rho*Re_sigma as Solution variables, thus Conservative=true
 
-CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
-    : CTurbSolver(geometry, config, true) {
+CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, const CSolver* flow_solver,
+                               unsigned short iMesh)
+    : CTurbSolver(geometry, config, flow_solver, true) {
   SU2_ZONE_SCOPED
   unsigned long iPoint;
   ifstream restart_file;
@@ -56,10 +59,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialize nVarGrad for deallocation ---*/
 
   nVarGrad = nVar;
-
-  /*--- Define geometry constants in the solver structure ---*/
-
-  nDim = geometry->GetnDim();
 
   /*--- Define variables needed for transition from config file */
   options = config->GetLMParsedOptions();
@@ -86,8 +85,10 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
 
-    if (ReducerStrategy)
+    if (ReducerStrategy) {
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+      EdgeFluxesDiff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+    }
 
     /*--- Initialize the BGS residuals in multizone problems. ---*/
     if (multizone){
@@ -131,6 +132,13 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialize the solution to the far-field state everywhere. ---*/
   nodes = new CTransLMVariable(Intermittency_Inf, ReThetaT_Inf, 1.0, 1.0, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
+
+  /*--- Ghost states for boundary conditions, sized to the largest marker (see BoundaryFluxResidual). ---*/
+  unsigned long maxMarkerVertices = 0;
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
+    maxMarkerVertices = max(maxMarkerVertices, nVertex[iMarker]);
+  ghostNodes = make_unique<CTransLMVariable>(Intermittency_Inf, ReThetaT_Inf, 1.0, 1.0, maxMarkerVertices, nDim, nVar,
+                                             config);
 
   /*--- MPI solution ---*/
 
@@ -267,18 +275,25 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 }
 
 
-void CTransLMSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                                     CNumerics* numerics, const CConfig* config) {
+void CTransLMSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics**,
+                                     CConfig* config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
-  /*--- Define an object to set solver specific numerics contribution. ---*/
+  /*--- LM's diffusion coefficients depend on the flow's mu and mu_t, not on gamma or Re_theta,
+   * so there is no accurate-Jacobian correction to apply. ---*/
+  const auto opt = ScalarFluxOptions::Interior(*config, config->GetBounded_Turb());
 
-  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {};
-
-  /*--- Now instantiate the generic implementation with the functor above. ---*/
-
-  Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+  DispatchScheme<CScalarFlux_TransLM, 2>(config, [&](auto tag) {
+    EdgeFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt);
+  });
 }
 
+void CTransLMSolver::BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                                  const ScalarFluxOptions& opt, unsigned short val_marker) {
+  DispatchScheme<CScalarFlux_TransLM, 2>(config, [&](auto tag) {
+    BoundaryFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker);
+  });
+}
 
 void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
@@ -372,57 +387,23 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  auto* flowSolver = solver_container[FLOW_SOL];
 
+  /*--- The ghost row is the far-field state; wall-normal zero flux, convective only. ---*/
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto* V_infty = flowSolver->GetCharacPrimVar(val_marker, iVertex);
 
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, Solution_Inf[iVar]);
 
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    SetGhostPrimitives(iVertex, V_infty);
 
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Allocate the value at the infinity ---*/
-
-      auto V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      conv_numerics->SetPrimitive(V_domain, V_infty);
-
-      /*--- Set turbulent variable at the wall, and at infinity ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Solution_Inf);
-
-      /*--- Set Normal (it is necessary to change the sign) ---*/
-      /*--- It's mean wall normal zero flux. */
-
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
-
-      /*--- Grid Movement ---*/
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute residuals and Jacobians ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Add residuals and Jacobians ---*/
-
-      LinSysRes.AddBlock(iPoint, residual);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-    }
+    SetGhostGeometry(geometry, val_marker, iVertex);
   }
   END_SU2_OMP_FOR
 
+  BoundaryFlux(geometry, solver_container, config, ScalarFluxOptions::BoundaryConvective(*config, false),
+               val_marker);
 }
 
 void CTransLMSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -433,73 +414,35 @@ void CTransLMSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*, CConfig *config,
                                 unsigned short val_marker) {
   SU2_ZONE_SCOPED
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  auto* flowSolver = solver_container[FLOW_SOL];
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto* V_inlet = flowSolver->GetCharacPrimVar(val_marker, iVertex);
 
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
-
-      /*--- Allocate the value at the inlet ---*/
-
-      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the farfield boundary node ---*/
-
-      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-
-      /*--- Set various quantities in the solver class ---*/
-
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
-
-      /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
-      su2double Inlet_Vars[MAXNVAR];
-      Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
-      Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1];
-      if (config->GetInlet_Profile_From_File()) {
-        Inlet_Vars[0] /= pow(config->GetVelocity_Ref(), 2);
-        Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
-      }
-
-      /*--- Set the LM variable states. ---*/
-      /*--- Load the inlet transition LM model variables (uniform by default). ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_Vars);
-
-      /*--- Set various other quantities in the solver class ---*/
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute the residual using an upwind scheme ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
+    su2double Inlet_Vars[MAXNVAR];
+    Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
+    Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1];
+    if (config->GetInlet_Profile_From_File()) {
+      Inlet_Vars[0] /= pow(config->GetVelocity_Ref(), 2);
+      Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
     }
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, Inlet_Vars[iVar]);
+
+    SetGhostPrimitives(iVertex, V_inlet);
+
+    SetGhostGeometry(geometry, val_marker, iVertex);
   }
   END_SU2_OMP_FOR
 
+  BoundaryFlux(geometry, solver_container, config, ScalarFluxOptions::BoundaryConvective(*config, false),
+               val_marker);
 }
 
 void CTransLMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -507,6 +450,49 @@ void CTransLMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
   SU2_ZONE_SCOPED
   BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
+
+void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*,
+                                  CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
+  auto* flowSolver = solver_container[FLOW_SOL];
+
+  /*--- Ghost row is the far-field state. Unlike the wall and inlet sites of this solver, this
+   * one applies the bounded scheme's mass-flux correction. ---*/
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto* V_infty = flowSolver->GetCharacPrimVar(val_marker, iVertex);
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, Solution_Inf[iVar]);
+
+    SetGhostPrimitives(iVertex, V_infty);
+
+    SetGhostGeometry(geometry, val_marker, iVertex);
+  }
+  END_SU2_OMP_FOR
+
+  BoundaryFlux(geometry, solver_container, config,
+               ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Turb()), val_marker);
+}
+
+void CTransLMSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics*,
+                                        CNumerics*, CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  if (solver_container[FLOW_SOL] == nullptr) return;
+
+  const auto optConv = ScalarFluxOptions::BoundaryConvective(*config, config->GetBounded_Turb());
+  const auto optVisc = ScalarFluxOptions::BoundaryDiffusive(*config, true);
+
+  /*--- LM's diffusion coefficients read no auxiliary ghost field. ---*/
+  const auto fillGhostExtras = [](unsigned long, unsigned long) {};
+
+  DispatchScheme<CScalarFlux_TransLM, 2>(config, [&](auto tag) {
+    FluidInterfaceFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, optConv, optVisc,
+                                                             fillGhostExtras);
+  });
+}
+
 
 void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                   bool val_update_geo) {

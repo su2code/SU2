@@ -95,6 +95,14 @@ private:
    */
   void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) final;
 
+  /*!
+   * \brief Resolve the compile-time parameters of CScalarFlux_SA and run one of this solver's
+   *        boundaries through the shared boundary flux pass.
+   * \param[in] opt - Flags of the boundary, from one of ScalarFluxOptions' named constructors.
+   */
+  void BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt,
+                    unsigned short val_marker);
+
 public:
   /*!
    * \brief Constructor.
@@ -103,7 +111,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] FluidModel
    */
-  CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel);
+  CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver* flow_solver, unsigned short iMesh,
+                CFluidModel* FluidModel);
 
   /*!
    * \brief Destructor of the class.
@@ -140,16 +149,28 @@ public:
                       unsigned short iMesh) override;
 
   /*!
-   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \brief Compute the spatial integration using the CScalarFlux_SA edge kernel, which computes
+   *        and writes both the convective and the diffusive term of every edge.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Unused, kept only for the boundary conditions.
    * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                        CNumerics* numerics, const CConfig* config) override;
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                       CConfig* config, unsigned short iMesh) override;
+
+  /*!
+   * \brief Impose the Far Field boundary condition, via the CScalarFlux_SA edge kernel.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
    * \brief Source term computation.
@@ -356,6 +377,20 @@ public:
                   CConfig *config,
                   unsigned short val_marker,
                   bool val_inlet_surface) override;
+
+  /*!
+   * \brief Impose the fluid interface (sliding mesh) boundary condition, via the CScalarFlux_SA
+   *        edge kernel. The convective term is a per-donor weighted average, computed in the same
+   *        pass that fills the ghost row of each donor; the diffusive term is computed once per
+   *        vertex, after the donor loop, from the ghost state the last donor left behind.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                          CNumerics *visc_numerics, CConfig *config) override;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.

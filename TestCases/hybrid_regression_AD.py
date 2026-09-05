@@ -78,7 +78,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.987158, 0.533077, 0.000004, -0.000000, 5.000000, -2.939652, 5.000000, -5.503137]
+    discadj_rans_naca0012_sa.test_vals = [-2.987158, 0.533077, 0.000004, -0.000000, 5.000000, -2.939652, 5.000000, -5.503576]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -86,7 +86,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.201551, -0.175213, 3.045300, -0.041846]
+    discadj_rans_naca0012_sst.test_vals = [-2.201555, -0.175213, 3.045200, -0.041846]
     discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.201855, -0.172443, 3.043400, -0.041820]
     test_list.append(discadj_rans_naca0012_sst)
 
@@ -125,7 +125,7 @@ def main():
     discadj_incomp_turb_NACA0012_sa.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sa.cfg_file  = "turb_naca0012_sa.cfg"
     discadj_incomp_turb_NACA0012_sa.test_iter = 10
-    discadj_incomp_turb_NACA0012_sa.test_vals = [10.000000, -3.845989, -1.023526, 0.000000]
+    discadj_incomp_turb_NACA0012_sa.test_vals = [10.000000, -3.845989, -1.023525, 0.000000]
     test_list.append(discadj_incomp_turb_NACA0012_sa)
 
     # Adjoint Incompressible Turbulent NACA 0012 SST
@@ -133,7 +133,7 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.775320, -3.089107, -7.143663, 0.000000, -0.896754]
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.775264, -3.089115, -7.143643, 0.000000, -0.896768]
     test_list.append(discadj_incomp_turb_NACA0012_sst)
 
     #######################################################
