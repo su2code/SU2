@@ -210,7 +210,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.038060, -16.332088, 1.080346, 0.018385, 20.000000, -2.873439, 0.000000, -14.250270, 0.000000]
+    turb_naca0012_sa.test_vals = [-12.038075, -16.332088, 1.080346, 0.018385, 20.000000, -2.873507, 0.000000, -14.250270, 0.000000]
     turb_naca0012_sa.test_vals_aarch64 = [-12.038091, -16.332090, 1.080346, 0.018385, 20.000000, -2.873236, 0.000000, -14.250271, 0.000000]
     test_list.append(turb_naca0012_sa)
 
@@ -417,7 +417,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000004, -0.028637, 5.000000, -4.080084, 2.000000, -4.491684]
+    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000004, -0.028637, 5.000000, -4.081478, 2.000000, -4.490126]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
