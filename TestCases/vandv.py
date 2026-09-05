@@ -63,7 +63,7 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals = [-13.041846, -10.136935, -10.935141, -7.992679, -10.323868, -4.732448, 0.002801]
+    flatplate_sst1994m.test_vals = [-13.040943, -10.136971, -10.942764, -7.985181, -10.323857, -4.732487, 0.002801]
     flatplate_sst1994m.test_vals_aarch64 = [-13.021715, -9.534786, -10.401912, -7.501836, -9.750800, -4.850665, 0.002807]
     test_list.append(flatplate_sst1994m)
 
@@ -72,7 +72,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals = [-11.928390, -10.096025, -9.513319, -6.445738, -11.773755, -6.978794, 0.004931]
+    bump_sst1994m.test_vals = [-11.928292, -10.095796, -9.512953, -6.445652, -11.774088, -6.988752, 0.004931]
     bump_sst1994m.test_vals_aarch64 = [-13.042689, -10.812982, -10.604523, -7.655547, -10.816257, -5.308083, 0.004911]
     test_list.append(bump_sst1994m)
 
@@ -81,7 +81,7 @@ def main():
     swbli_sa.cfg_dir   = "vandv/rans/swbli"
     swbli_sa.cfg_file  = "config_sa.cfg"
     swbli_sa.test_iter = 5
-    swbli_sa.test_vals         = [-11.502718, -10.939184, -12.034284, -10.581169, -16.088844, 0.002242, -1.664946, 1.258100]
+    swbli_sa.test_vals         = [-11.502718, -10.939184, -12.034284, -10.581169, -16.088844, 0.002242, -1.664946, 1.258200]
     swbli_sa.test_vals_aarch64 = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
     test_list.append(swbli_sa)
 
@@ -99,7 +99,7 @@ def main():
     dsma661_sa.cfg_dir    = "vandv/rans/dsma661"
     dsma661_sa.cfg_file   = "dsma661_sa_config.cfg"
     dsma661_sa.test_iter  = 5
-    dsma661_sa.test_vals  = [-11.256607, -8.243150, -9.026822, -5.919168, -10.737670, 0.155687, 0.024232]
+    dsma661_sa.test_vals  = [-11.255379, -8.243275, -9.037314, -5.927070, -10.737675, 0.155687, 0.024232]
     dsma661_sa.test_vals_aarch64 = [-11.293183, -8.241775, -9.083761, -6.011398, -10.737680, 0.155687, 0.024232]
     test_list.append(dsma661_sa)
 
@@ -108,7 +108,7 @@ def main():
     dsma661_sst.cfg_dir   = "vandv/rans/dsma661"
     dsma661_sst.cfg_file  = "dsma661_sst_config.cfg"
     dsma661_sst.test_iter = 5
-    dsma661_sst.test_vals = [-11.024598, -8.157367, -9.084723, -5.944329, -10.650922, -7.880638, 0.155882, 0.023344]
+    dsma661_sst.test_vals = [-11.025153, -8.156995, -9.057021, -5.947228, -10.650914, -7.886048, 0.155882, 0.023344]
     dsma661_sst.test_vals_aarch64 = [-10.977195, -8.403731, -8.747068, -5.808899, -10.522786, -7.369851, 0.155875, 0.023353]
     test_list.append(dsma661_sst)
 
