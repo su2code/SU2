@@ -2048,6 +2048,14 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config, 
     }
   }
 
+  /*--- Floor the maximum residual like the RMS residual above, so an
+   *    exactly-zero residual (e.g. an inert species at a cold start)
+   *    cannot become a nonfinite log10 in screen or history output. ---*/
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Residual_Max[iVar] = max(EPS*EPS, Residual_Max[iVar]);
+  }
+
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -2089,6 +2097,14 @@ void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) 
         AddRes_Max_BGS(iVar, rbuf_residual(iProcessor,iVar), rbuf_point(iProcessor,iVar), rbuf_coord[iProcessor*nVar+iVar]);
       }
     }
+  }
+
+  /*--- Floor the maximum BGS residual like the BGS RMS residual above, so
+   *    an exactly-zero residual cannot become a nonfinite log10 in screen
+   *    or history output. ---*/
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Residual_Max_BGS[iVar] = max(EPS*EPS, Residual_Max_BGS[iVar]);
   }
 
   }
