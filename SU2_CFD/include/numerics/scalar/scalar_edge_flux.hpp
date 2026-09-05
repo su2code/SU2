@@ -420,15 +420,20 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
 
           if constexpr (Derived::Conservative) {
             /*--- Density is not adjacent to the velocity in the primitive row, so it is a second
-             * reconstruction of one variable rather than a wider slice of the first. ---*/
-            CPair<CScalarValues<Double, 1>> r;
-            r.i.all(0) = rho.i;
-            r.j.all(0) = rho.j;
-            reconstruct<1>(iPoint, jPoint, vector_ij, side_i.flowNodes->GetGradient_Reconstruction(),
-                           side_i.flowNodes->GetLimiter_Primitive(), limiterTypeFlow, idx.Density(), r, kappaFlow,
-                           umusclRamp);
-            rhoConv.i = r.i.all(0);
-            rhoConv.j = r.j.all(0);
+             * reconstruction of one variable rather than a wider slice of the first. Some upwind
+             * schemes (see EulerNPrimVarGrad) size the flow's gradient/limiter columns smaller
+             * than the full primitive count and leave density out of it entirely, so fall back to
+             * the cell-centered density instead. ---*/
+            if (idx.Density() < side_i.flowNodes->GetnPrimVarGrad()) {
+              CPair<CScalarValues<Double, 1>> r;
+              r.i.all(0) = rho.i;
+              r.j.all(0) = rho.j;
+              reconstruct<1>(iPoint, jPoint, vector_ij, side_i.flowNodes->GetGradient_Reconstruction(),
+                             side_i.flowNodes->GetLimiter_Primitive(), limiterTypeFlow, idx.Density(), r, kappaFlow,
+                             umusclRamp);
+              rhoConv.i = r.i.all(0);
+              rhoConv.j = r.j.all(0);
+            }
           }
         }
 
