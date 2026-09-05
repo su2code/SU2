@@ -2073,10 +2073,6 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
-  /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Safety cap on how many layers deep a paving front
-   * may go. A front is meant to run until it reaches a boundary or the mesh stops offering a layer
-   * topologically identical to the one below it, so this is off by default. DEFAULT: 0 (no cap) \ingroup Config*/
-  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 0);
   /*!\brief MG_IMPLICIT_LINES_MAX_GROUP\n DESCRIPTION: Maximum number of parallel implicit lines merged tangential to
    * the wall into one coarse CV (2D: always 2; 3D: e.g. 4 for a wall quad/hex corner, 3 for a triangular prism apex).
    * 0 uses the dimension-appropriate default (2 in 2D, 4 in 3D). DEFAULT: 0 \ingroup Config*/

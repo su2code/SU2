@@ -1455,8 +1455,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     unsigned long freeze = 1;
-    if (lin_sol_mode == LINEAR_SOLVER_MODE::STANDARD && geometry != nullptr &&
-        geometry->GetMGLevel() != MESH_0) {
+    if (lin_sol_mode == LINEAR_SOLVER_MODE::STANDARD && geometry != nullptr && geometry->GetMGLevel() != MESH_0) {
       freeze = std::max<unsigned long>(1, config->GetMGOptions().MG_Coarse_Prec_Freeze);
     }
     buildPrecThisSolve = (precSolveCount % freeze == 0);

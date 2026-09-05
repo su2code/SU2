@@ -138,7 +138,6 @@ class CMultiGridGeometry final : public CGeometry {
     STOP_NO_NEIGHBOR,       /*!< \brief A front node had no free neighbour left to step onto. */
     STOP_TOPOLOGY,          /*!< \brief The next layer was not isomorphic to the current one. */
     STOP_GEOMETRY,          /*!< \brief A node of the next layer failed GeometricalCheck. */
-    STOP_MAX_LENGTH,        /*!< \brief Hit the MG_IMPLICIT_LINES_MAX_LENGTH safety cap, off by default. */
     N_STOP_REASONS
   };
 

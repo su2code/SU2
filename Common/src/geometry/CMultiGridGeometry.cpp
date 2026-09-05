@@ -2103,7 +2103,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
 
   /*--- Safety cap on stack depth, 0 for none. A front is meant to run until it reaches a boundary or
    *    the mesh stops offering a clean extrusion, so this is off by default. ---*/
-  const unsigned long MAX_LINE_LENGTH = config->GetMGOptions().MG_Implicit_Lines_MaxLength;
   unsigned long max_group = config->GetMGOptions().MG_Implicit_Lines_Max_Group;
   if (max_group == 0) max_group = (nDim == 2) ? 2 : 4;
 
@@ -2427,11 +2426,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       if (!alive[f]) continue;
       prop[f].clear();
       handTo[f].clear();
-
-      if ((MAX_LINE_LENGTH > 0) && (depth[f] + 1 >= MAX_LINE_LENGTH)) {
-        markFail(f, STOP_MAX_LENGTH);
-        continue;
-      }
 
       for (auto n : front[f]) {
         auto best = NO_POINT;
@@ -2879,7 +2873,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
          << stopTotal[STOP_PARTITION] << ", front-collision " << stopTotal[STOP_COLLISION] << ", pinch "
          << stopTotal[STOP_PINCH] << ", already-agglomerated " << stopTotal[STOP_AGGLOMERATED] << ", dead-end "
          << stopTotal[STOP_NO_NEIGHBOR] << ", topology " << stopTotal[STOP_TOPOLOGY] << ", geometry "
-         << stopTotal[STOP_GEOMETRY] << ", max-length " << stopTotal[STOP_MAX_LENGTH];
+         << stopTotal[STOP_GEOMETRY];
     cout << endl;
   }
 }
