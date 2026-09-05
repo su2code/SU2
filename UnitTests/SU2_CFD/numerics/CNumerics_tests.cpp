@@ -26,8 +26,11 @@
  */
 
 #include "catch.hpp"
+#include <array>
 #include <sstream>
+#include <vector>
 #include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
+#include "../../../SU2_CFD/include/numerics/NEMO/NEMO_diffusion.hpp"
 
 TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
   std::stringstream config_options;
@@ -88,4 +91,180 @@ TEST_CASE("QCR2000 corrects only the turbulent stress", "[QCR]") {
   for (size_t iDim = 0; iDim < nDim; iDim++)
     for (size_t jDim = 0; jDim < nDim; jDim++)
       REQUIRE(tau_total[iDim][jDim] == Approx(tau_lam[iDim][jDim] + tau_turb[iDim][jDim]).margin(1e-12));
+}
+
+namespace {
+
+/*!
+ * \brief Fixture for the NEMO viscous numerics on a single 2-D AIR-5 edge.
+ *
+ * The edge runs from node i at (0, 0) to node j at (3, 4), so its length is 5 and its squared length
+ * is 25, and the unit face normal (0.6, 0.8) is the edge direction. Only the laminar viscosity (2)
+ * is non-zero among the transport coefficients, so the normal-projected momentum flux is a pure
+ * viscous stress. The analytic NEMO viscous Jacobian (CNEMONumerics::GetViscousProjJacs) builds its
+ * momentum block as mu / d * (theta I + n n^T / 3) with theta = |n|^2, so contracting it twice with
+ * the unit normal gives mu * (4 / 3) / d = 8 / 15 in magnitude on this edge: -8/15 on the i side
+ * and +8/15 on the j side. Passing the squared length 25 in place of the distance 5 gives 8/75
+ * instead, which is what CAvgGrad_NEMO returned before the square root was added.
+ */
+struct NEMOViscousFixture {
+  static constexpr unsigned short nDim = 2;
+  static constexpr unsigned short nSpecies = 5;
+  static constexpr unsigned short nVar = nSpecies + nDim + 2;
+  static constexpr unsigned short nPrimVar = nSpecies + nDim + 10;
+  static constexpr unsigned short nPrimVarGrad = nSpecies + nDim + 8;
+  static constexpr unsigned short T_INDEX = nSpecies;
+  static constexpr unsigned short TVE_INDEX = nSpecies + 1;
+  static constexpr unsigned short VEL_INDEX = nSpecies + 2;
+  static constexpr unsigned short P_INDEX = nSpecies + nDim + 2;
+  static constexpr unsigned short RHO_INDEX = nSpecies + nDim + 3;
+  static constexpr unsigned short H_INDEX = nSpecies + nDim + 4;
+  static constexpr unsigned short A_INDEX = nSpecies + nDim + 5;
+  static constexpr unsigned short RHOCVTR_INDEX = nSpecies + nDim + 6;
+  static constexpr unsigned short RHOCVVE_INDEX = nSpecies + nDim + 7;
+
+  std::stringstream options;
+  CConfig* config = nullptr;
+  std::vector<su2double> primitive_i = std::vector<su2double>(nPrimVar, 0.0);
+  std::vector<su2double> primitive_j = std::vector<su2double>(nPrimVar, 0.0);
+  su2activematrix gradient_i = su2activematrix(nPrimVarGrad, nDim);
+  su2activematrix gradient_j = su2activematrix(nPrimVarGrad, nDim);
+  std::array<su2double, nSpecies> diffusion_i{};
+  std::array<su2double, nSpecies> diffusion_j{};
+  std::array<su2double, nSpecies> eve_i{};
+  std::array<su2double, nSpecies> eve_j{};
+  std::array<su2double, nSpecies> cvve_i{};
+  std::array<su2double, nSpecies> cvve_j{};
+  std::array<su2double, nVar> dT_i{};
+  std::array<su2double, nVar> dT_j{};
+  std::array<su2double, nVar> dTve_i{};
+  std::array<su2double, nVar> dTve_j{};
+  const std::array<su2double, nDim> coord_i{0.0, 0.0};
+  const std::array<su2double, nDim> coord_j{3.0, 4.0};
+  const std::array<su2double, nDim> normal{0.6, 0.8};
+
+  NEMOViscousFixture() {
+    options << "SOLVER= NEMO_NAVIER_STOKES\n"
+            << "GAS_MODEL= AIR-5\n"
+            << "GAS_COMPOSITION= (0.77, 0.23, 0.0, 0.0, 0.0)\n"
+            << "FLUID_MODEL= SU2_NONEQ\n"
+            << "FROZEN_MIXTURE= YES\n"
+            << "TIME_DISCRE_FLOW= EULER_IMPLICIT\n"
+            << "CONV_NUM_METHOD_FLOW= AUSM\n";
+    config = new CConfig(options, SU2_COMPONENT::SU2_CFD, false);
+
+    primitive_i[0] = primitive_j[0] = 0.77;
+    primitive_i[1] = primitive_j[1] = 0.23;
+    primitive_i[T_INDEX] = primitive_j[T_INDEX] = 300.0;
+    primitive_i[TVE_INDEX] = primitive_j[TVE_INDEX] = 300.0;
+    primitive_i[P_INDEX] = primitive_j[P_INDEX] = 101325.0;
+    primitive_i[RHO_INDEX] = primitive_j[RHO_INDEX] = 1.0;
+    primitive_i[H_INDEX] = primitive_j[H_INDEX] = 3.0e5;
+    primitive_i[A_INDEX] = primitive_j[A_INDEX] = 340.0;
+    primitive_i[RHOCVTR_INDEX] = primitive_j[RHOCVTR_INDEX] = 700.0;
+    primitive_i[RHOCVVE_INDEX] = primitive_j[RHOCVVE_INDEX] = 1.0;
+    gradient_i = su2double(0.0);
+    gradient_j = su2double(0.0);
+  }
+
+  ~NEMOViscousFixture() { delete config; }
+
+  void set_common(CNumerics& numerics) {
+    numerics.SetCoord(coord_i.data(), coord_j.data());
+    numerics.SetNormal(normal.data());
+    numerics.SetPrimitive(primitive_i.data(), primitive_j.data());
+    numerics.SetPrimVarGradient(CMatrixView<const su2double>(gradient_i), CMatrixView<const su2double>(gradient_j));
+    numerics.SetDiffusionCoeff(diffusion_i.data(), diffusion_j.data());
+    numerics.SetLaminarViscosity(2.0, 2.0);
+    numerics.SetEddyViscosity(0.0, 0.0);
+    numerics.SetThermalConductivity(0.0, 0.0);
+    numerics.SetThermalConductivity_ve(0.0, 0.0);
+    numerics.SetEve(eve_i.data(), eve_j.data());
+    numerics.SetCvve(cvve_i.data(), cvve_j.data());
+    numerics.SetdTdU(dT_i.data(), dT_j.data());
+    numerics.SetdTvedU(dTve_i.data(), dTve_j.data());
+  }
+
+  /*!
+   * \brief Reconstruct the gradient of a velocity field that varies linearly along the edge, so the
+   * nodal jump and the averaged gradient that the numerics consume describe the same profile.
+   */
+  void set_edge_linear_velocity_gradient() {
+    gradient_i = su2double(0.0);
+    gradient_j = su2double(0.0);
+    constexpr su2double distance_squared = 25.0;
+    for (unsigned short component = 0; component < nDim; ++component) {
+      const su2double jump = primitive_j[VEL_INDEX + component] - primitive_i[VEL_INDEX + component];
+      for (unsigned short dimension = 0; dimension < nDim; ++dimension) {
+        const su2double edge_component = coord_j[dimension] - coord_i[dimension];
+        gradient_i(VEL_INDEX + component, dimension) = jump * edge_component / distance_squared;
+        gradient_j(VEL_INDEX + component, dimension) = jump * edge_component / distance_squared;
+      }
+    }
+  }
+
+  template <class Numerics>
+  su2double directional_flux(Numerics& numerics) {
+    set_common(numerics);
+    const auto residual = numerics.ComputeResidual(config);
+    su2double projected = 0.0;
+    for (unsigned short component = 0; component < nDim; ++component)
+      projected += normal[component] * residual.residual[nSpecies + component];
+    return projected;
+  }
+
+  static su2double directional_jacobian(const su2double* const* matrix, const std::array<su2double, nDim>& direction) {
+    su2double value = 0.0;
+    for (unsigned short row = 0; row < nDim; ++row)
+      for (unsigned short column = 0; column < nDim; ++column)
+        value += direction[row] * matrix[nSpecies + row][nSpecies + column] * direction[column];
+    return value;
+  }
+};
+
+}  // namespace
+
+/*!
+ * Compare the analytic jacobian_i and jacobian_j of CAvgGrad_NEMO, contracted with the unit normal,
+ * against a central finite difference of the normal-projected momentum flux with respect to the
+ * normal velocity at each node. The gradient is rebuilt after every perturbation so the flux sees
+ * the same linear profile that the Jacobian assumes. On the fixture edge (length 5, mu = 2) the
+ * exact values are -8/15 and +8/15; the un-rooted squared length gives 8/75 and fails both checks.
+ */
+TEST_CASE("NEMO coarse viscous Jacobian uses Euclidean edge length", "[NEMO][viscous][Jacobian]") {
+  NEMOViscousFixture fixture;
+  CAvgGrad_NEMO numerics(fixture.nDim, fixture.nVar, fixture.nPrimVar, fixture.nPrimVarGrad, fixture.config);
+  fixture.set_edge_linear_velocity_gradient();
+  fixture.set_common(numerics);
+  const auto base = numerics.ComputeResidual(fixture.config);
+  const su2double analytic_i = fixture.directional_jacobian(base.jacobian_i, fixture.normal);
+  const su2double analytic_j = fixture.directional_jacobian(base.jacobian_j, fixture.normal);
+
+  constexpr su2double step = 1.0e-6;
+  for (unsigned short component = 0; component < fixture.nDim; ++component)
+    fixture.primitive_i[fixture.VEL_INDEX + component] += step * fixture.normal[component];
+  fixture.set_edge_linear_velocity_gradient();
+  const su2double plus_i = fixture.directional_flux(numerics);
+  for (unsigned short component = 0; component < fixture.nDim; ++component)
+    fixture.primitive_i[fixture.VEL_INDEX + component] -= 2.0 * step * fixture.normal[component];
+  fixture.set_edge_linear_velocity_gradient();
+  const su2double minus_i = fixture.directional_flux(numerics);
+  for (unsigned short component = 0; component < fixture.nDim; ++component)
+    fixture.primitive_i[fixture.VEL_INDEX + component] += step * fixture.normal[component];
+
+  for (unsigned short component = 0; component < fixture.nDim; ++component)
+    fixture.primitive_j[fixture.VEL_INDEX + component] += step * fixture.normal[component];
+  fixture.set_edge_linear_velocity_gradient();
+  const su2double plus_j = fixture.directional_flux(numerics);
+  for (unsigned short component = 0; component < fixture.nDim; ++component)
+    fixture.primitive_j[fixture.VEL_INDEX + component] -= 2.0 * step * fixture.normal[component];
+  fixture.set_edge_linear_velocity_gradient();
+  const su2double minus_j = fixture.directional_flux(numerics);
+
+  const su2double fd_i = (plus_i - minus_i) / (2.0 * step);
+  const su2double fd_j = (plus_j - minus_j) / (2.0 * step);
+  REQUIRE(analytic_i == Approx(fd_i).epsilon(1.0e-8));
+  REQUIRE(analytic_j == Approx(fd_j).epsilon(1.0e-8));
+  REQUIRE(analytic_i == Approx(-8.0 / 15.0).epsilon(1.0e-12));
+  REQUIRE(analytic_j == Approx(8.0 / 15.0).epsilon(1.0e-12));
 }
