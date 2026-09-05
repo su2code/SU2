@@ -1468,6 +1468,13 @@ void CSysMatrix<ScalarType>::BuildLineletPreconditioner(const CGeometry* geometr
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
+  /*--- A rank whose part of the mesh holds no solid wall gets no linelets, and the working vectors
+   *    above were deliberately not allocated for it. It still reaches this function, because the
+   *    linear solver is collective, so it has to leave before indexing them. Partitioning a mesh
+   *    over enough ranks eventually gives one of them no wall, which is why this only ever showed up
+   *    beyond a couple of ranks. ---*/
+  if (LineletUpper.empty()) return;
+
   SU2_OMP_FOR_STAT(1)
   for (int iThread = 0; iThread < nThreads; ++iThread) {
     const auto size = CGeometry::CLineletInfo::MAX_LINELET_POINTS;

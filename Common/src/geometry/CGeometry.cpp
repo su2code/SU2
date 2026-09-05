@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <array>
 #include <unordered_set>
 
 #include "../../include/geometry/CGeometry.hpp"
@@ -4339,7 +4340,8 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
 
 const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) const {
   auto& li = lineletInfo;
-  if (!li.linelets.empty() || nPoint == 0) return li;
+  if (li.built || nPoint == 0) return li;
+  li.built = true;
 
   li.lineletIdx.resize(nPoint, CLineletInfo::NO_LINELET);
 
@@ -4355,6 +4357,19 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
   /*--- If the domain contains well defined Linelets ---*/
 
   unsigned long maxNPoints = 0, sumNPoints = 0;
+
+  /*--- Why each line stopped growing. A line that ends because the mesh has become isotropic is a
+   *    line that has done its job; one that ends because no neighbour was well enough aligned means
+   *    the walk lost the wall-normal direction and the line is short despite the mesh still being
+   *    stretched. The two call for opposite responses on coarse grids, so they are counted apart. ---*/
+  unsigned long nStopIsotropic = 0, nStopNoNeighbour = 0, nStopCap = 0;
+  /*--- "No neighbour" has two very different causes: every candidate was already taken by another
+   *    line (a competition/ordering problem), or candidates were free but none lay within 45 deg of
+   *    the current direction (a geometry problem). Only the second says the mesh lost its
+   *    wall-normal structure. For the latter, also accumulate the best alignment on offer, which
+   *    says whether the 45 deg threshold is merely too tight or the direction is truly lost. ---*/
+  unsigned long nStopAllTaken = 0, nStopMisaligned = 0;
+  su2double sumBestCos = 0.0;
 
   if (nLinelet != 0) {
     /*--- Define the basic linelets, starting from each vertex, preventing duplication of points. ---*/
@@ -4375,11 +4390,23 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
     }
     li.linelets.resize(nLinelet);
 
-    /*--- Create the linelet structure. ---*/
+    /*--- Grow the lines breadth first: each pass advances every still-growing line by one point.
+     *    Growing them depth first - running one line to completion before starting the next - lets an
+     *    early line exhaust its own column, turn sideways (the 45 deg test permits it) and consume the
+     *    points its neighbours needed, starving them into one- and two-point stubs. That is harmless on
+     *    the fine grid, where the boundary layer is deeper than MAX_LINELET_POINTS so no line ever runs
+     *    out of vertical room, but on agglomerated grids the layer is shallower than the cap and the
+     *    starvation is severe. Advancing in lockstep makes the lines compete on equal terms for the
+     *    layer they are all entitled to. ---*/
 
-    nLinelet = 0;
-    for (auto& linelet : li.linelets) {
-      while (linelet.size() < CLineletInfo::MAX_LINELET_POINTS) {
+    std::vector<char> growing(nLinelet, 1);
+
+    for (unsigned long step = 1; step < CLineletInfo::MAX_LINELET_POINTS; ++step) {
+      bool anyGrew = false;
+
+      for (auto iLine = 0ul; iLine < nLinelet; ++iLine) {
+        if (!growing[iLine]) continue;
+        auto& linelet = li.linelets[iLine];
         const auto iPoint = linelet.back();
 
         /*--- Compute the value of the max and min weights to detect if this region is isotropic. ---*/
@@ -4398,26 +4425,35 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
         }
 
         /*--- Isotropic, stop this linelet. ---*/
-        if (min_weight / max_weight > CLineletInfo::ALPHA_ISOTROPIC()) break;
+        if (min_weight / max_weight > CLineletInfo::ALPHA_ISOTROPIC()) {
+          growing[iLine] = 0;
+          ++nStopIsotropic;
+          continue;
+        }
 
         /*--- Otherwise, add the closest valid neighbor. ---*/
 
         su2double min_dist2 = std::numeric_limits<su2double>::max();
         auto next_Point = iPoint;
         const auto* iCoord = nodes->GetCoord(iPoint);
+        unsigned long nFreeCandidates = 0;
+        su2double bestCos = -1.0;
 
         for (const auto jPoint : nodes->GetPoints(iPoint)) {
           if (li.lineletIdx[jPoint] == CLineletInfo::NO_LINELET && nodes->GetDomain(jPoint)) {
+            ++nFreeCandidates;
             const auto* jCoord = nodes->GetCoord(jPoint);
             const su2double d2 = GeometryToolbox::SquaredDistance(nDim, iCoord, jCoord);
             su2double cosTheta = 1;
+            su2double dij[3] = {0.0};
+            GeometryToolbox::Distance(nDim, jCoord, iCoord, dij);
             if (linelet.size() > 1) {
               const auto* kCoord = nodes->GetCoord(linelet[linelet.size() - 2]);
-              su2double dij[3] = {0.0}, dki[3] = {0.0};
+              su2double dki[3] = {0.0};
               GeometryToolbox::Distance(nDim, iCoord, kCoord, dki);
-              GeometryToolbox::Distance(nDim, jCoord, iCoord, dij);
               cosTheta = GeometryToolbox::DotProduct(3, dki, dij) / sqrt(d2 * GeometryToolbox::SquaredNorm(nDim, dki));
             }
+            bestCos = max(bestCos, cosTheta);
             if (d2 < min_dist2 && cosTheta > 0.7071) {
               next_Point = jPoint;
               min_dist2 = d2;
@@ -4426,28 +4462,61 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
         }
 
         /*--- Did not find a suitable point. ---*/
-        if (next_Point == iPoint) break;
+        if (next_Point == iPoint) {
+          growing[iLine] = 0;
+          ++nStopNoNeighbour;
+          if (nFreeCandidates == 0) {
+            ++nStopAllTaken;
+          } else {
+            ++nStopMisaligned;
+            sumBestCos += bestCos;
+          }
+          continue;
+        }
 
         linelet.push_back(next_Point);
-        li.lineletIdx[next_Point] = nLinelet;
+        li.lineletIdx[next_Point] = iLine;
+        anyGrew = true;
       }
-      ++nLinelet;
 
-      maxNPoints = max<unsigned long>(maxNPoints, linelet.size());
-      sumNPoints += linelet.size();
+      if (!anyGrew) break;
+    }
+
+    /*--- A line that never stopped advancing ran into the length cap. ---*/
+    for (auto iLine = 0ul; iLine < nLinelet; ++iLine) {
+      if (growing[iLine]) ++nStopCap;
+      maxNPoints = max<unsigned long>(maxNPoints, li.linelets[iLine].size());
+      sumNPoints += li.linelets[iLine].size();
     }
   }
 
   /*--- Average linelet size over all ranks. ---*/
 
-  unsigned long globalNPoints, globalNLineLets;
+  unsigned long globalNPoints, globalNLineLets, globalMaxNPoints;
+  unsigned long stopCounts[5] = {nStopIsotropic, nStopNoNeighbour, nStopCap, nStopAllTaken, nStopMisaligned};
+  unsigned long globalStop[5] = {};
   SU2_MPI::Allreduce(&sumNPoints, &globalNPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLinelet, &globalNLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&maxNPoints, &globalMaxNPoints, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(stopCounts, globalStop, 5, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  su2double globalSumBestCos = 0.0;
+  SU2_MPI::Allreduce(&sumBestCos, &globalSumBestCos, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-  if (rank == MASTER_NODE) {
-    std::cout << "Computed linelet structure, "
+  if (rank == MASTER_NODE && globalNLineLets > 0) {
+    const auto pct = [&](unsigned long n) { return 100.0 * passivedouble(n) / globalNLineLets; };
+    std::cout << "Computed linelet structure on MG level " << MGLevel << ", "
               << static_cast<unsigned long>(passivedouble(globalNPoints) / globalNLineLets)
-              << " points in each line (average)." << std::endl;
+              << " points in each line (average), " << globalMaxNPoints << " longest, " << globalNLineLets
+              << " lines.\n"
+              << "  Line ends because: " << pct(globalStop[0]) << "% mesh became isotropic, " << pct(globalStop[1])
+              << "% no aligned neighbour, " << pct(globalStop[2]) << "% hit the " << CLineletInfo::MAX_LINELET_POINTS
+              << "-point cap.\n"
+              << "    of the 'no aligned neighbour': " << pct(globalStop[3])
+              << "% all candidates already claimed by another line, " << pct(globalStop[4])
+              << "% candidates free but misaligned";
+    if (globalStop[4] > 0)
+      std::cout << " (best cos on offer " << globalSumBestCos / globalStop[4] << ", need > 0.7071)";
+    std::cout << "." << std::endl;
   }
 
   /*--- Color the linelets for OpenMP parallelization and visualization. ---*/

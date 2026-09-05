@@ -1116,7 +1116,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 struct CMGOptions {
   su2double MG_Smooth_Res_Threshold{0.0}; /*!< \brief RMS reduction threshold for MG smoothing early exit. */
   su2double MG_Smooth_Coeff{0.0};         /*!< \brief Jacobi smoother coefficient for coarse-grid correction. */
-  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level. */
+  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level, per MPI rank. */
   std::vector<unsigned short> MG_PreSmooth;    /*!< \brief Multigrid pre-smoothing iterations per level. */
   std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
   std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
@@ -1125,7 +1125,16 @@ struct CMGOptions {
   bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
   su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
-  unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
+  unsigned long MG_Implicit_Lines_MaxLength{0}; /*!< \brief Safety cap on paving stack depth in layers, 0 for none. */
+  unsigned long MG_Implicit_Lines_Max_Group{0}; /*!< \brief Max number of parallel implicit lines merged into one coarse
+                                                      CV tangential to the wall. 0 = dimension-appropriate default
+                                                      (2 in 2D, 4 in 3D). See CMultiGridGeometry::AgglomerateImplicitLines. */
+  su2double MG_Implicit_Lines_Min_AR{2.0}; /*!< \brief Smallest local cell aspect ratio for which a node still counts
+                                                  as part of a stretched layer. Decides which non-wall boundaries carry
+                                                  a layer normal to them and may therefore seed paving fronts. It is a
+                                                  SEEDING gate only and never stops a front that has started.
+                                                  See CMultiGridGeometry::SeedFrontNodes. */
+  unsigned long MG_Coarse_Prec_Freeze{1}; /*!< \brief On MG levels > 0, reuse the linear-solver preconditioner for this many consecutive solves. 1 = rebuild every solve. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Iterations per mesh during FMG startup, and the length of each level's CFL ramp. 0 = no iteration budget. */
   su2double MG_Startup_Convergence{-2.0}; /*!< \brief FMG: orders of magnitude (log10) that CONV_FIELD must drop on the
                                                  active level before promoting to the next finer one. Negative is a

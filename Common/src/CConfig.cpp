@@ -2065,12 +2065,32 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MG_SMOOTH_STAGNATION_TOL", MGOptions.MG_Smooth_StagnationTol, 0.99);
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_COEFF", MGOptions.MG_Smooth_Coeff, 1.25);
-  /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level. Levels that would produce fewer CVs are not created. DEFAULT: 50 \ingroup Config*/
+  /*!\brief MG_COARSE_PREC_FREEZE\n DESCRIPTION: On multigrid levels above MESH_0, reuse the linear-solver preconditioner
+   * (e.g. the ILU factorization) for this many consecutive linear solves instead of rebuilding it every time.
+   * 1 reproduces the previous behaviour exactly. DEFAULT: 1 \ingroup Config*/
+  addUnsignedLongOption("MG_COARSE_PREC_FREEZE", MGOptions.MG_Coarse_Prec_Freeze, 1);
+  /*!\brief LINEAR_SOLVER_PREC_FREEZE\n DESCRIPTION: Reuse the linear-solver preconditioner (e.g. the ILU factorization)
+   * for this many consecutive solves on the finest grid, instead of rebuilding it every time. Applies to MESH_0 and to
+   * single-grid runs; MG_COARSE_PREC_FREEZE covers the coarse levels. The fine-grid preconditioner drives the outer
+   * nonlinear convergence, so raise this one with more care. 1 rebuilds every solve. DEFAULT: 1 \ingroup Config*/
+  addUnsignedLongOption("LINEAR_SOLVER_PREC_FREEZE", Linear_Solver_Prec_Freeze, 1);
+  /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level, checked per MPI rank (i.e. on the smallest partition). Levels that would produce fewer CVs on any rank are not created. DEFAULT: 50 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
-  /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
-  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
+  /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Safety cap on how many layers deep a paving front
+   * may go. A front is meant to run until it reaches a boundary or the mesh stops offering a layer
+   * topologically identical to the one below it, so this is off by default. DEFAULT: 0 (no cap) \ingroup Config*/
+  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 0);
+  /*!\brief MG_IMPLICIT_LINES_MAX_GROUP\n DESCRIPTION: Maximum number of parallel implicit lines merged tangential to
+   * the wall into one coarse CV (2D: always 2; 3D: e.g. 4 for a wall quad/hex corner, 3 for a triangular prism apex).
+   * 0 uses the dimension-appropriate default (2 in 2D, 4 in 3D). DEFAULT: 0 \ingroup Config*/
+  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_GROUP", MGOptions.MG_Implicit_Lines_Max_Group, 0);
+  /*!\brief MG_IMPLICIT_LINES_MIN_AR\n DESCRIPTION: Smallest local cell aspect ratio for which a node still counts as
+   * part of a stretched layer, measured from the ratio of dual-grid edge weights. Decides which non-wall boundaries
+   * carry a layer normal to them and may therefore seed paving fronts; viscous walls always seed. This is a seeding
+   * gate only and never stops a front that has started. 1.0 lets every boundary seed. DEFAULT: 2.0 \ingroup Config*/
+  addDoubleOption("MG_IMPLICIT_LINES_MIN_AR", MGOptions.MG_Implicit_Lines_Min_AR, 2.0);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
    * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
@@ -3053,6 +3073,21 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: ParMETIS load balancing weight for edges (equiv. to neighbors) */
   addLongOption("PARMETIS_EDGE_WEIGHT", ParMETIS_edgeWgt, 1);
+  /* DESCRIPTION: Strength of the anisotropy-aware ParMETIS edge weights. ParMETIS is otherwise given no edge weights at
+   * all, so every edge is equally cheap to cut and partition boundaries slice straight through the stretched cells of a
+   * boundary layer, splitting the wall-normal columns that implicit-line agglomeration and line-implicit smoothing rely
+   * on. Weighting an edge by the inverse of its length makes the short wall-normal edges expensive to cut and pushes the
+   * cuts into the tangential direction instead. On a mesh without stretching all edges are of similar length, the
+   * weights come out uniform, and the partitioning is the same as with no weights at all. 0 disables the weights.
+   * DEFAULT: 0 */
+  addDoubleOption("PARMETIS_ANISO_WEIGHT", ParMETIS_anisoWgt, 0.0);
+  /*!\brief PARMETIS_COLUMN_PARTITION\n DESCRIPTION: Contract each wall-normal column of stretched cells into a single
+   * graph vertex before partitioning, and give every node of a column the colour of its column. A partition boundary
+   * can then never cross a column, which is what the implicit-line agglomeration and line-implicit smoothing need, and
+   * the graph ParMETIS actually cuts is the wall surface. Columns are found as connected components of the edges that
+   * are short at both of their ends, so an isotropic mesh contracts to itself and partitions exactly as before.
+   * DEFAULT: NO \ingroup Config*/
+  addBoolOption("PARMETIS_COLUMN_PARTITION", ParMETIS_columnPart, false);
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/

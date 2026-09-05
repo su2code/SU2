@@ -7379,7 +7379,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
 
   /*--- Some recommended defaults for the various ParMETIS options. ---*/
 
-  idx_t wgtflag = 2;
+  idx_t wgtflag = 2; /*--- Weights on the vertices only, raised to 3 below if edge weights are built. ---*/
   idx_t numflag = 0;
   idx_t ncon = 1;
   real_t ubvec = 1.0 + config->GetParMETIS_Tolerance();
@@ -7412,20 +7412,552 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
     vwgt[iPoint] = wp + we * (xadj[iPoint + 1] - xadj[iPoint]);
   }
 
+  /*--- Cost of cutting each edge of the graph.
+   *
+   *    Without these ParMETIS is given no edge weights at all and every edge is equally cheap to
+   *    cut, so nothing stops a partition boundary from running straight through the stretched cells
+   *    of a boundary layer and splitting the wall-normal columns that implicit-line agglomeration
+   *    and line-implicit smoothing are built on.
+   *
+   *    In a stretched cell the wall-normal spacing is the small one, so the short edges are exactly
+   *    the ones that should stay inside a partition. Weighting an edge by the inverse of its length
+   *    therefore makes cutting across the layer expensive and leaves the long tangential edges as
+   *    the cheap place to cut. Length is used rather than the face area over volume ratio that
+   *    measures the same thing elsewhere, because the dual grid does not exist yet at this point of
+   *    the setup: this runs before SetControlVolume, and only the coordinates are available.
+   *
+   *    On a mesh with no stretching every edge is of similar length, so the weights come out
+   *    uniform and minimizing their sum is the same problem as minimizing the number of cut edges.
+   *    Such a mesh is therefore partitioned exactly as it is with no weights at all. ---*/
+
+  vector<idx_t> adjwgt;
+  const su2double anisoWgt = config->GetParMETIS_AnisoWeight();
+  const bool columnPart = config->GetParMETIS_ColumnPartition();
+
+  const auto firstIdx = pointPartitioner.GetFirstIndexOnRank(rank);
+  const auto lastIdx = pointPartitioner.GetLastIndexOnRank(rank);
+  auto isLocal = [&](unsigned long g) { return g >= firstIdx && g < lastIdx; };
+
+  /*--- Edge lengths and the longest edge at each point. Shared by the edge weights below and by the
+   *    column contraction, both of which need to know how a given edge compares with the ones around
+   *    it. Only the coordinates are available at this point of the setup, the dual grid is built much
+   *    later, so length stands in for the face area over volume ratio used elsewhere. ---*/
+  vector<su2double> edgeLen, maxLen, minLen;
+  vector<char> isColEdge;
+  vector<array<su2double, 3>> stiffDir;
+  vector<int> nSend(size, 0), nRecv(size, 0), sDisp(size + 1, 0), rDisp(size + 1, 0);
+  vector<unsigned long> sendIdx, recvIdx;
+  map<unsigned long, su2double> remoteMaxLen;
+
+  if ((anisoWgt > 0.0) || columnPart) {
+    /*--- The graph is split linearly and its entries are global indices, so an edge near a linear
+     *    partition boundary has one end that is not stored here. Those are few, of the order of a
+     *    percent of the entries, and each is asked for from the rank the linear partitioner says
+     *    owns it. The same request lists are reused for every later exchange. ---*/
+    vector<vector<unsigned long>> wanted(size);
+    for (auto gPoint : adjacency)
+      if (!isLocal(gPoint)) wanted[pointPartitioner.GetRankContainingIndex(gPoint)].push_back(gPoint);
+
+    for (int r = 0; r < size; ++r) {
+      auto& w = wanted[r];
+      sort(w.begin(), w.end());
+      w.erase(unique(w.begin(), w.end()), w.end());
+      nSend[r] = static_cast<int>(w.size());
+    }
+    SU2_MPI::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, comm);
+    for (int r = 0; r < size; ++r) {
+      sDisp[r + 1] = sDisp[r] + nSend[r];
+      rDisp[r + 1] = rDisp[r] + nRecv[r];
+    }
+
+    sendIdx.resize(sDisp[size]);
+    recvIdx.resize(rDisp[size]);
+    for (int r = 0; r < size; ++r) copy(wanted[r].begin(), wanted[r].end(), sendIdx.begin() + sDisp[r]);
+    SU2_MPI::Alltoallv(sendIdx.data(), nSend.data(), sDisp.data(), MPI_UNSIGNED_LONG, recvIdx.data(), nRecv.data(),
+                       rDisp.data(), MPI_UNSIGNED_LONG, comm);
+
+    /*--- Round one, the coordinates of the points that were asked for. ---*/
+    map<unsigned long, array<su2double, 3>> remoteCoord;
+    {
+      vector<su2double> sendBuf(static_cast<size_t>(rDisp[size]) * nDim),
+          recvBuf(static_cast<size_t>(sDisp[size]) * nDim);
+      for (size_t i = 0; i < recvIdx.size(); ++i)
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+          sendBuf[i * nDim + iDim] = nodes->GetCoord(recvIdx[i] - firstIdx, iDim);
+
+      vector<int> nS(size), nR(size), sD(size), rD(size);
+      for (int r = 0; r < size; ++r) {
+        nS[r] = nRecv[r] * nDim;
+        nR[r] = nSend[r] * nDim;
+        sD[r] = rDisp[r] * nDim;
+        rD[r] = sDisp[r] * nDim;
+      }
+      SU2_MPI::Alltoallv(sendBuf.data(), nS.data(), sD.data(), MPI_DOUBLE, recvBuf.data(), nR.data(), rD.data(),
+                         MPI_DOUBLE, comm);
+      for (size_t i = 0; i < sendIdx.size(); ++i) {
+        array<su2double, 3> c = {0.0, 0.0, 0.0};
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim) c[iDim] = recvBuf[i * nDim + iDim];
+        remoteCoord[sendIdx[i]] = c;
+      }
+    }
+
+    edgeLen.assign(adjacency.size(), 0.0);
+    maxLen.assign(nPoint, 0.0);
+    minLen.assign(nPoint, std::numeric_limits<su2double>::max());
+    stiffDir.assign(nPoint, {0.0, 0.0, 0.0});
+
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; ++k) {
+        const auto gPoint = adjacency[k];
+        array<su2double, 3> tmp = {0.0, 0.0, 0.0};
+        const su2double* coord_j = nullptr;
+        if (isLocal(gPoint)) {
+          coord_j = nodes->GetCoord(gPoint - firstIdx);
+        } else {
+          const auto it = remoteCoord.find(gPoint);
+          if (it == remoteCoord.end()) continue;
+          tmp = it->second;
+          coord_j = tmp.data();
+        }
+        edgeLen[k] = GeometryToolbox::Distance(nDim, nodes->GetCoord(iPoint), coord_j);
+        maxLen[iPoint] = max(maxLen[iPoint], edgeLen[k]);
+
+        /*--- The shortest edge at a node fixes the direction its column runs in. ---*/
+        if (edgeLen[k] < minLen[iPoint]) {
+          minLen[iPoint] = edgeLen[k];
+          for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+            stiffDir[iPoint][iDim] = (coord_j[iDim] - nodes->GetCoord(iPoint, iDim)) / edgeLen[k];
+        }
+      }
+      if (minLen[iPoint] == std::numeric_limits<su2double>::max()) minLen[iPoint] = 0.0;
+    }
+
+    /*--- Round two, the longest edge at each of the remote points. ---*/
+    {
+      vector<su2double> sendBuf(rDisp[size]), recvBuf(sDisp[size]);
+      for (size_t i = 0; i < recvIdx.size(); ++i) sendBuf[i] = maxLen[recvIdx[i] - firstIdx];
+      SU2_MPI::Alltoallv(sendBuf.data(), nRecv.data(), rDisp.data(), MPI_DOUBLE, recvBuf.data(), nSend.data(),
+                         sDisp.data(), MPI_DOUBLE, comm);
+      for (size_t i = 0; i < sendIdx.size(); ++i) remoteMaxLen[sendIdx[i]] = recvBuf[i];
+    }
+
+    /*--- Which edges make up the wall-normal columns.
+     *
+     *    An edge qualifies when it is short compared with the longest edge at both of its ends, so
+     *    the mesh is stretched there, AND it runs along the shortest edge at both of its ends. The
+     *    second test is what keeps a column one-dimensional: in a cell graded in two directions at
+     *    once, several directions are shorter than the longest one and testing only the length links
+     *    the columns sideways into sheets, which then contract into a handful of enormous vertices
+     *    instead of one per wall node. Requiring alignment with the stiffest direction of both ends
+     *    leaves exactly the chains that run through the layer. ---*/
+    if (columnPart) {
+      map<unsigned long, array<su2double, 3>> remoteDir;
+      {
+        vector<su2double> sendBuf(static_cast<size_t>(rDisp[size]) * nDim),
+            recvBuf(static_cast<size_t>(sDisp[size]) * nDim);
+        for (size_t i = 0; i < recvIdx.size(); ++i)
+          for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+            sendBuf[i * nDim + iDim] = stiffDir[recvIdx[i] - firstIdx][iDim];
+        vector<int> nS(size), nR(size), sD(size), rD(size);
+        for (int r = 0; r < size; ++r) {
+          nS[r] = nRecv[r] * nDim;
+          nR[r] = nSend[r] * nDim;
+          sD[r] = rDisp[r] * nDim;
+          rD[r] = sDisp[r] * nDim;
+        }
+        SU2_MPI::Alltoallv(sendBuf.data(), nS.data(), sD.data(), MPI_DOUBLE, recvBuf.data(), nR.data(), rD.data(),
+                           MPI_DOUBLE, comm);
+        for (size_t i = 0; i < sendIdx.size(); ++i) {
+          array<su2double, 3> d = {0.0, 0.0, 0.0};
+          for (unsigned short iDim = 0; iDim < nDim; ++iDim) d[iDim] = recvBuf[i * nDim + iDim];
+          remoteDir[sendIdx[i]] = d;
+        }
+      }
+
+      const su2double COLUMN_FRACTION = 0.5; /*!< Stretched enough for the edge to be part of a column. */
+      const su2double COLUMN_COS = 0.9;      /*!< Aligned enough with the stiffest direction at both ends. */
+
+      isColEdge.assign(adjacency.size(), 0);
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+        for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; ++k) {
+          if (edgeLen[k] <= 0.0) continue;
+          const auto gPoint = adjacency[k];
+
+          su2double maxLen_j = 0.0;
+          array<su2double, 3> dir_j = {0.0, 0.0, 0.0}, coord_j = {0.0, 0.0, 0.0};
+          if (isLocal(gPoint)) {
+            maxLen_j = maxLen[gPoint - firstIdx];
+            dir_j = stiffDir[gPoint - firstIdx];
+            for (unsigned short iDim = 0; iDim < nDim; ++iDim) coord_j[iDim] = nodes->GetCoord(gPoint - firstIdx, iDim);
+          } else {
+            const auto itM = remoteMaxLen.find(gPoint);
+            const auto itD = remoteDir.find(gPoint);
+            const auto itC = remoteCoord.find(gPoint);
+            if ((itM == remoteMaxLen.end()) || (itD == remoteDir.end()) || (itC == remoteCoord.end())) continue;
+            maxLen_j = itM->second;
+            dir_j = itD->second;
+            coord_j = itC->second;
+          }
+
+          if (edgeLen[k] > COLUMN_FRACTION * maxLen[iPoint]) continue;
+          if (edgeLen[k] > COLUMN_FRACTION * maxLen_j) continue;
+
+          su2double e[3] = {0.0, 0.0, 0.0}, di = 0.0, dj = 0.0;
+          for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+            e[iDim] = (coord_j[iDim] - nodes->GetCoord(iPoint, iDim)) / edgeLen[k];
+            di += e[iDim] * stiffDir[iPoint][iDim];
+            dj += e[iDim] * dir_j[iDim];
+          }
+          if ((fabs(di) < COLUMN_COS) || (fabs(dj) < COLUMN_COS)) continue;
+
+          isColEdge[k] = 1;
+        }
+      }
+    }
+  }
+
+  /*--- Cost of cutting each edge of the graph.
+   *
+   *    Without these ParMETIS is given no edge weights at all and every edge is equally cheap to
+   *    cut, so nothing stops a partition boundary from running straight through the stretched cells
+   *    of a boundary layer and splitting the wall-normal columns that implicit-line agglomeration
+   *    and line-implicit smoothing are built on.
+   *
+   *    An edge is expensive to cut when it is much shorter than the other edges meeting it, which
+   *    is the definition of the local cell aspect ratio and is exactly the situation inside a
+   *    boundary layer, where the short edges are the wall-normal ones. Comparing an edge only
+   *    against its own neighbourhood, rather than against a global length, is what keeps the
+   *    measure a ratio: scaling the whole mesh, or refining one region of it isotropically, leaves
+   *    every weight unchanged. Averaging the two ends keeps the weight of an edge symmetric, which
+   *    ParMETIS requires.
+   *
+   *    Note this only discourages such cuts, it cannot forbid them, and by making the wall-normal
+   *    direction expensive it pushes every cut into the wall surface instead, which splits the wall
+   *    faces that tangential bundling needs. PARMETIS_COLUMN_PARTITION below removes the choice
+   *    rather than reweighting it. ---*/
+
+  if (anisoWgt > 0.0) {
+    const idx_t MAX_EDGE_WEIGHT = 1000;
+    adjwgt.resize(adjacency.size(), 1);
+
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; ++k) {
+        if (edgeLen[k] <= 0.0) continue;
+        const auto gPoint = adjacency[k];
+        su2double maxLen_j = 0.0;
+        if (isLocal(gPoint)) {
+          maxLen_j = maxLen[gPoint - firstIdx];
+        } else {
+          const auto it = remoteMaxLen.find(gPoint);
+          if (it == remoteMaxLen.end()) continue;
+          maxLen_j = it->second;
+        }
+        const su2double ratio = 0.5 * (maxLen[iPoint] + maxLen_j) / edgeLen[k];
+        const su2double w = 1.0 + anisoWgt * (ratio - 1.0);
+        adjwgt[k] = static_cast<idx_t>(min<su2double>(max<su2double>(w, 1.0), MAX_EDGE_WEIGHT));
+      }
+    }
+    wgtflag = 3; /*--- Weights on both the vertices and the edges. ---*/
+  }
+
   /*--- Create some structures that ParMETIS needs to output the partitioning. ---*/
 
   idx_t edgecut;
   vector<idx_t> part(nPoint);
+  bool coloured = false;
+
+  /*==================================================================================================
+   *  Column-contracted partitioning.
+   *
+   *  Weighting edges can only make a cut across a boundary-layer column unattractive; the partitioner
+   *  is still free to make it, and by pricing the wall-normal direction out it takes its cuts through
+   *  the wall surface instead, which splits the wall faces that the tangential bundling of implicit
+   *  lines is built from. Contracting removes the choice: each column of stretched cells becomes one
+   *  vertex of the graph handed to ParMETIS, so no cut can pass through a column, and the graph that
+   *  is actually cut is the wall surface with the layer hanging off it.
+   *
+   *  A column is a connected component of the edges that are short at BOTH ends. At a wall node of a
+   *  stretched cell the wall-normal edge is a fraction of the tangential ones, so it qualifies while
+   *  the tangential ones do not, and the components come out as the wall-normal chains. Where the
+   *  mesh is isotropic every edge is about as long as its neighbours, nothing qualifies, each point
+   *  is its own column, and the contracted graph is the original one - such a mesh is partitioned
+   *  exactly as it would have been. Nothing here needs to know where the walls are.
+   *================================================================================================*/
+
+  if (columnPart) {
+    constexpr unsigned long MAX_SWEEPS = 500;
+
+    /*--- Label propagation: every point starts as its own column and repeatedly takes the smallest
+     *    label across a column edge, so a column ends up named after its lowest global index. The
+     *    number of sweeps needed is the length of the longest column, not the size of the mesh. ---*/
+    vector<unsigned long> label(nPoint);
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) label[iPoint] = firstIdx + iPoint;
+
+    map<unsigned long, unsigned long> remoteLabel;
+    for (auto g : sendIdx) remoteLabel[g] = g;
+
+    unsigned long nSweeps = 0;
+    for (int changed = 1; changed != 0;) {
+      changed = 0;
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+        for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; ++k) {
+          if (!isColEdge[k]) continue;
+          const auto gPoint = adjacency[k];
+          unsigned long lj;
+          if (isLocal(gPoint)) {
+            lj = label[gPoint - firstIdx];
+          } else {
+            const auto it = remoteLabel.find(gPoint);
+            if (it == remoteLabel.end()) continue;
+            lj = it->second;
+          }
+          if (lj < label[iPoint]) {
+            label[iPoint] = lj;
+            changed = 1;
+          }
+        }
+      }
+
+      /*--- Refresh the labels of the points that are not stored here. ---*/
+      {
+        vector<unsigned long> sendBuf(rDisp[size]), recvBuf(sDisp[size]);
+        for (size_t i = 0; i < recvIdx.size(); ++i) sendBuf[i] = label[recvIdx[i] - firstIdx];
+        SU2_MPI::Alltoallv(sendBuf.data(), nRecv.data(), rDisp.data(), MPI_UNSIGNED_LONG, recvBuf.data(), nSend.data(),
+                           sDisp.data(), MPI_UNSIGNED_LONG, comm);
+        for (size_t i = 0; i < sendIdx.size(); ++i) {
+          if (recvBuf[i] != remoteLabel[sendIdx[i]]) changed = 1;
+          remoteLabel[sendIdx[i]] = recvBuf[i];
+        }
+      }
+
+      int global_changed = 0;
+      SU2_MPI::Allreduce(&changed, &global_changed, 1, MPI_INT, MPI_MAX, comm);
+      changed = global_changed;
+
+      if (++nSweeps >= MAX_SWEEPS) break;
+    }
+
+    /*--- A column is owned by whichever rank the linear partitioner says holds the index it is named
+     *    after, which is one of its own points, so every column has exactly one owner. Number the
+     *    columns consecutively, owner by owner, to give ParMETIS the contiguous distribution it
+     *    expects. ---*/
+    unsigned long nColLocal = 0;
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+      if (label[iPoint] == firstIdx + iPoint) nColLocal++;
+
+    vector<unsigned long> colCount(size, 0);
+    SU2_MPI::Allgather(&nColLocal, 1, MPI_UNSIGNED_LONG, colCount.data(), 1, MPI_UNSIGNED_LONG, comm);
+
+    vector<idx_t> cvtxdist(size + 1, 0);
+    for (int r = 0; r < size; ++r) cvtxdist[r + 1] = cvtxdist[r] + static_cast<idx_t>(colCount[r]);
+    const auto nColGlobal = static_cast<unsigned long>(cvtxdist[size]);
+
+    map<unsigned long, unsigned long> colIndexOfRoot; /*!< Global point index of a root -> column index. */
+    {
+      unsigned long next = static_cast<unsigned long>(cvtxdist[rank]);
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+        if (label[iPoint] == firstIdx + iPoint) colIndexOfRoot[firstIdx + iPoint] = next++;
+    }
+
+    /*--- Ask the owner of each label for the column index it was given. ---*/
+    auto askOwners = [&](const vector<unsigned long>& keys, vector<unsigned long>& values) {
+      vector<vector<unsigned long>> want(size);
+      for (auto key : keys) want[pointPartitioner.GetRankContainingIndex(key)].push_back(key);
+      vector<int> nS(size, 0), nR(size, 0), sD(size + 1, 0), rD(size + 1, 0);
+      for (int r = 0; r < size; ++r) {
+        sort(want[r].begin(), want[r].end());
+        want[r].erase(unique(want[r].begin(), want[r].end()), want[r].end());
+        nS[r] = static_cast<int>(want[r].size());
+      }
+      SU2_MPI::Alltoall(nS.data(), 1, MPI_INT, nR.data(), 1, MPI_INT, comm);
+      for (int r = 0; r < size; ++r) {
+        sD[r + 1] = sD[r] + nS[r];
+        rD[r + 1] = rD[r] + nR[r];
+      }
+      vector<unsigned long> qs(sD[size]), qr(rD[size]);
+      for (int r = 0; r < size; ++r) copy(want[r].begin(), want[r].end(), qs.begin() + sD[r]);
+      SU2_MPI::Alltoallv(qs.data(), nS.data(), sD.data(), MPI_UNSIGNED_LONG, qr.data(), nR.data(), rD.data(),
+                         MPI_UNSIGNED_LONG, comm);
+
+      vector<unsigned long> as(rD[size]), ar(sD[size]);
+      for (size_t i = 0; i < qr.size(); ++i) {
+        const auto it = colIndexOfRoot.find(qr[i]);
+        as[i] = (it == colIndexOfRoot.end()) ? nColGlobal : it->second;
+      }
+      SU2_MPI::Alltoallv(as.data(), nR.data(), rD.data(), MPI_UNSIGNED_LONG, ar.data(), nS.data(), sD.data(),
+                         MPI_UNSIGNED_LONG, comm);
+
+      map<unsigned long, unsigned long> answer;
+      for (int r = 0; r < size; ++r)
+        for (int i = sD[r]; i < sD[r + 1]; ++i) answer[qs[i]] = ar[i];
+
+      values.resize(keys.size());
+      for (size_t i = 0; i < keys.size(); ++i) {
+        const auto it = answer.find(keys[i]);
+        values[i] = (it == answer.end()) ? nColGlobal : it->second;
+      }
+    };
+
+    /*--- Column index of every point stored here, and of every point across a linear boundary. ---*/
+    vector<unsigned long> myKeys(nPoint);
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) myKeys[iPoint] = label[iPoint];
+    vector<unsigned long> colOfPoint;
+    askOwners(myKeys, colOfPoint);
+
+    vector<unsigned long> remoteKeys;
+    remoteKeys.reserve(sendIdx.size());
+    for (auto g : sendIdx) remoteKeys.push_back(remoteLabel[g]);
+    vector<unsigned long> colOfRemoteVal;
+    askOwners(remoteKeys, colOfRemoteVal);
+    map<unsigned long, unsigned long> colOfRemote;
+    for (size_t i = 0; i < sendIdx.size(); ++i) colOfRemote[sendIdx[i]] = colOfRemoteVal[i];
+
+    /*--- Send every contracted edge, and every point's weight, to the rank owning the column. ---*/
+    vector<vector<unsigned long>> outEdge(size), outWeight(size);
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      const auto cA = colOfPoint[iPoint];
+      if (cA >= nColGlobal) continue;
+      int owner = 0;
+      while ((owner + 1 < size) && (static_cast<idx_t>(cA) >= cvtxdist[owner + 1])) owner++;
+      outWeight[owner].push_back(cA);
+
+      for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; ++k) {
+        const auto gPoint = adjacency[k];
+        unsigned long cB;
+        if (isLocal(gPoint)) {
+          cB = colOfPoint[gPoint - firstIdx];
+        } else {
+          const auto it = colOfRemote.find(gPoint);
+          if (it == colOfRemote.end()) continue;
+          cB = it->second;
+        }
+        if ((cB >= nColGlobal) || (cB == cA)) continue;
+        outEdge[owner].push_back(cA);
+        outEdge[owner].push_back(cB);
+      }
+    }
+
+    auto shipPairs = [&](vector<vector<unsigned long>>& out, vector<unsigned long>& in) {
+      vector<int> nS(size, 0), nR(size, 0), sD(size + 1, 0), rD(size + 1, 0);
+      for (int r = 0; r < size; ++r) nS[r] = static_cast<int>(out[r].size());
+      SU2_MPI::Alltoall(nS.data(), 1, MPI_INT, nR.data(), 1, MPI_INT, comm);
+      for (int r = 0; r < size; ++r) {
+        sD[r + 1] = sD[r] + nS[r];
+        rD[r + 1] = rD[r] + nR[r];
+      }
+      vector<unsigned long> sb(sD[size]);
+      in.resize(rD[size]);
+      for (int r = 0; r < size; ++r) copy(out[r].begin(), out[r].end(), sb.begin() + sD[r]);
+      SU2_MPI::Alltoallv(sb.data(), nS.data(), sD.data(), MPI_UNSIGNED_LONG, in.data(), nR.data(), rD.data(),
+                         MPI_UNSIGNED_LONG, comm);
+    };
+
+    vector<unsigned long> inEdge, inWeight;
+    shipPairs(outEdge, inEdge);
+    shipPairs(outWeight, inWeight);
+
+    /*--- Assemble the contracted graph for the columns owned here. ---*/
+    const auto myFirstCol = static_cast<unsigned long>(cvtxdist[rank]);
+    const auto nColMine = static_cast<unsigned long>(cvtxdist[rank + 1] - cvtxdist[rank]);
+
+    vector<vector<unsigned long>> cadj(nColMine);
+    for (size_t i = 0; i + 1 < inEdge.size(); i += 2) {
+      const auto a = inEdge[i] - myFirstCol;
+      if (a < nColMine) cadj[a].push_back(inEdge[i + 1]);
+    }
+    for (auto& v : cadj) {
+      sort(v.begin(), v.end());
+      v.erase(unique(v.begin(), v.end()), v.end());
+    }
+
+    vector<idx_t> cvwgt(nColMine, 0);
+    for (auto c : inWeight)
+      if (c - myFirstCol < nColMine) cvwgt[c - myFirstCol]++;
+    for (auto& w : cvwgt) w = max<idx_t>(w, 1);
+
+    vector<idx_t> cxadj(nColMine + 1, 0), cadjncy;
+    for (unsigned long c = 0; c < nColMine; ++c) cxadj[c + 1] = cxadj[c] + static_cast<idx_t>(cadj[c].size());
+    cadjncy.reserve(cxadj[nColMine]);
+    for (auto& v : cadj)
+      for (auto b : v) cadjncy.push_back(static_cast<idx_t>(b));
+
+    /*--- A column with no neighbours at all would make ParMETIS fail; that only happens on a mesh of
+     *    one point per rank, but check rather than risk it. ---*/
+    unsigned long nEdgeLocal = cadjncy.size(), nEdgeGlobal = 0;
+    SU2_MPI::Allreduce(&nEdgeLocal, &nEdgeGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+
+    if (nEdgeGlobal > 0) {
+      idx_t cwgtflag = 2, cedgecut = 0;
+      vector<idx_t> cpart(max<unsigned long>(nColMine, 1));
+
+      if (rank == MASTER_NODE) {
+        cout << "Calling ParMETIS on " << nColGlobal << " contracted columns (" << Global_nPointDomain << " points, "
+             << nSweeps << " sweeps)...";
+      }
+      auto cerr_ = ParMETIS_V3_PartKway(cvtxdist.data(), cxadj.data(), cadjncy.data(), cvwgt.data(), nullptr,
+                                        &cwgtflag, &numflag, &ncon, &nparts, tpwgts.data(), &ubvec, options, &cedgecut,
+                                        cpart.data(), &comm);
+      if (cerr_ != METIS_OK) SU2_MPI::Error("Column partitioning failed.", CURRENT_FUNCTION);
+      if (rank == MASTER_NODE) cout << " complete (" << cedgecut << " column cuts)." << endl;
+
+      /*--- Give every point the colour of its column. ---*/
+      map<unsigned long, unsigned long> myColColour;
+      for (unsigned long c = 0; c < nColMine; ++c) myColColour[myFirstCol + c] = static_cast<unsigned long>(cpart[c]);
+
+      vector<vector<unsigned long>> want(size);
+      for (auto c : colOfPoint) {
+        if (c >= nColGlobal) continue;
+        int owner = 0;
+        while ((owner + 1 < size) && (static_cast<idx_t>(c) >= cvtxdist[owner + 1])) owner++;
+        want[owner].push_back(c);
+      }
+      vector<int> nS(size, 0), nR(size, 0), sD(size + 1, 0), rD(size + 1, 0);
+      for (int r = 0; r < size; ++r) {
+        sort(want[r].begin(), want[r].end());
+        want[r].erase(unique(want[r].begin(), want[r].end()), want[r].end());
+        nS[r] = static_cast<int>(want[r].size());
+      }
+      SU2_MPI::Alltoall(nS.data(), 1, MPI_INT, nR.data(), 1, MPI_INT, comm);
+      for (int r = 0; r < size; ++r) {
+        sD[r + 1] = sD[r] + nS[r];
+        rD[r + 1] = rD[r] + nR[r];
+      }
+      vector<unsigned long> qs(sD[size]), qr(rD[size]);
+      for (int r = 0; r < size; ++r) copy(want[r].begin(), want[r].end(), qs.begin() + sD[r]);
+      SU2_MPI::Alltoallv(qs.data(), nS.data(), sD.data(), MPI_UNSIGNED_LONG, qr.data(), nR.data(), rD.data(),
+                         MPI_UNSIGNED_LONG, comm);
+      vector<unsigned long> as(rD[size]), ar(sD[size]);
+      for (size_t i = 0; i < qr.size(); ++i) {
+        const auto it = myColColour.find(qr[i]);
+        as[i] = (it == myColColour.end()) ? 0 : it->second;
+      }
+      SU2_MPI::Alltoallv(as.data(), nR.data(), rD.data(), MPI_UNSIGNED_LONG, ar.data(), nS.data(), sD.data(),
+                         MPI_UNSIGNED_LONG, comm);
+      map<unsigned long, unsigned long> colour;
+      for (int r = 0; r < size; ++r)
+        for (int i = sD[r]; i < sD[r + 1]; ++i) colour[qs[i]] = ar[i];
+
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+        const auto it = colour.find(colOfPoint[iPoint]);
+        part[iPoint] = (it == colour.end()) ? 0 : static_cast<idx_t>(it->second);
+      }
+      coloured = true;
+    } else if (rank == MASTER_NODE) {
+      cout << "Column partitioning found no graph to cut, falling back to point partitioning." << endl;
+    }
+  }
 
   /*--- Calling ParMETIS ---*/
 
-  if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-  auto err =
-      ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(), nullptr, &wgtflag, &numflag,
-                           &ncon, &nparts, tpwgts.data(), &ubvec, options, &edgecut, part.data(), &comm);
-  if (err != METIS_OK) SU2_MPI::Error("Partitioning failed.", CURRENT_FUNCTION);
-  if (rank == MASTER_NODE) {
-    cout << " graph partitioning complete (" << edgecut << " edge cuts)." << endl;
+  if (!coloured) {
+    if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
+    auto err = ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(),
+                                    adjwgt.empty() ? nullptr : adjwgt.data(), &wgtflag, &numflag, &ncon, &nparts,
+                                    tpwgts.data(), &ubvec, options, &edgecut, part.data(), &comm);
+    if (err != METIS_OK) SU2_MPI::Error("Partitioning failed.", CURRENT_FUNCTION);
+    if (rank == MASTER_NODE) {
+      cout << " graph partitioning complete (" << edgecut << " edge cuts)." << endl;
+    }
   }
 
   /*--- Store the results of the partitioning (note that this is local

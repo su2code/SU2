@@ -1435,6 +1435,36 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
   const bool nested = SetupInnerSolver(KindSolver, config);
 
+  /*--- Decide whether to rebuild the preconditioner for this solve.
+   *
+   *    On coarse multigrid levels the Jacobian changes little between smoothing sweeps, yet the
+   *    factorization is rebuilt from scratch on every one of them. Profiling a V-cycle shows the
+   *    ILU build is the single most expensive zone in the cycle, so MG_COARSE_PREC_FREEZE lets a
+   *    factorization be reused for several consecutive solves. The factorization itself lives in
+   *    the CSysMatrix, which outlives the CPreconditioner object created below, so not calling
+   *    Build() is all that is needed to reuse it.
+   *
+   *    Restricted to the standard solver mode (mesh deformation and gradient smoothing are left
+   *    alone). Coarse levels and the finest grid have separate periods because the finest-grid
+   *    preconditioner drives the outer nonlinear convergence and so carries more risk. The first
+   *    solve on this instance always builds (count 0), which matters because the factorization is
+   *    otherwise uninitialized.
+   *
+   *    The decision is taken by one thread and read by all of them, because Build() is internally
+   *    OpenMP-parallel and every thread must make the same choice. ---*/
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    unsigned long freeze = 1;
+    if (lin_sol_mode == LINEAR_SOLVER_MODE::STANDARD && geometry != nullptr) {
+      freeze = (geometry->GetMGLevel() != MESH_0) ? config->GetMGOptions().MG_Coarse_Prec_Freeze
+                                                  : config->GetLinear_Solver_Prec_Freeze();
+      freeze = std::max<unsigned long>(1, freeze);
+    }
+    buildPrecThisSolve = (precSolveCount % freeze == 0);
+    precSolveCount++;
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
   /*--- Stop the recording for the linear solver ---*/
   bool TapeActive = NO;
 
@@ -1472,7 +1502,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
     const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
     auto* normal_prec = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
-    normal_prec->Build();
+    if (buildPrecThisSolve) normal_prec->Build();
 
     CPreconditioner<ScalarType>* nested_prec = nullptr;
     if (nested) {

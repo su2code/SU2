@@ -48,7 +48,20 @@ class CMultiGridGeometry final : public CGeometry {
    * \return <code>TRUE</code> or <code>FALSE</code> depending if the control volume can be agglomerated.
    */
   bool SetBoundAgglomeration(unsigned long CVPoint, vector<short> marker_seed, const CGeometry* fine_grid,
-                             const CConfig* config) const;
+                             const CConfig* config, const vector<char>& mixedBC) const;
+
+  /*!
+   * \brief Nodes carrying two or more physical boundary conditions of DIFFERENT type, e.g. the point
+   *        where a wall ends against an outlet. Nishikawa's rules never agglomerate these: merging one
+   *        into a coarse control volume averages two conditions that the fine grid applies separately,
+   *        and neither ends up applied where it belongs. Two markers of the SAME type meeting - two
+   *        wall patches, say - are not affected, nor is a node whose only second marker is
+   *        SEND_RECEIVE, which records a partition and not a boundary condition.
+   * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \return One flag per fine grid point, set where that point must stay on its own.
+   */
+  vector<char> FindMixedBoundaryNodes(const CGeometry* fine_grid, const CConfig* config) const;
 
   /*!
    * \brief Determine if a Point can be agglomerated using geometrical criteria.
@@ -82,10 +95,84 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in,out] Index_CoarseCV - Current coarse CV index, incremented as new coarse CVs are created.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Configuration.
-   * \param[in,out] MGQueue_InnerCV - Queue for domain agglomeration; processed points are removed.
    */
-  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
-                                CMultiGridQueue& MGQueue_InnerCV);
+  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config);
+
+  /*!
+   * \brief Per-node dual-grid stiffness data used by the implicit-line agglomeration: the weakest and
+   *        strongest coupling at each node, and the neighbour the strongest one leads to. Their ratio is
+   *        the local cell aspect ratio, available on every multigrid level unlike CGeometry::Aspect_Ratio.
+   */
+  struct CNodeStiffness {
+    vector<su2double> wMin, wMax;    /*!< \brief Weakest and strongest edge coupling at each node. */
+    vector<unsigned long> jStiffest; /*!< \brief Neighbour across the strongest edge. */
+
+    /*!< \brief Local aspect ratio at a node, 1.0 where it could not be measured. */
+    su2double AspectRatio(unsigned long iPoint) const {
+      return (wMin[iPoint] > 0.0) ? wMax[iPoint] / wMin[iPoint] : su2double(1.0);
+    }
+  };
+
+  /*!
+   * \brief Measure the dual-grid coupling at every node of a grid.
+   * \param[in] fine_grid - Grid to measure.
+   * \return Weakest/strongest coupling per node, see CNodeStiffness.
+   */
+  CNodeStiffness ComputeNodeStiffness(const CGeometry* fine_grid) const;
+
+  /*!
+   * \brief Diagnostic tally of why each front stopped advancing, indexed by the STOP_* constants
+   *        below.
+   *
+   * A front is stopped by exactly two things: reaching a boundary, or failing to lay a next layer
+   * that is topologically identical to the one it is standing on. Every reason below is one of those
+   * two. There is deliberately no criterion on direction or on how stretched the mesh is - a front
+   * runs until the mesh itself stops offering a clean extrusion.
+   */
+  enum {
+    STOP_PHYS_BOUNDARY = 0, /*!< \brief Reached a boundary. The one expected, correct stop. */
+    STOP_PARTITION,         /*!< \brief Reached a partition interface, where the layer cannot be claimed. */
+    STOP_COLLISION,         /*!< \brief Lost a candidate to another front, i.e. the fronts met. */
+    STOP_PINCH,             /*!< \brief Two nodes of this front wanted the same successor. */
+    STOP_AGGLOMERATED,      /*!< \brief Ran into nodes an earlier phase had already taken. */
+    STOP_NO_NEIGHBOR,       /*!< \brief A front node had no free neighbour left to step onto. */
+    STOP_TOPOLOGY,          /*!< \brief The next layer was not isomorphic to the current one. */
+    STOP_GEOMETRY,          /*!< \brief A node of the next layer failed GeometricalCheck. */
+    STOP_MAX_LENGTH,        /*!< \brief Hit the MG_IMPLICIT_LINES_MAX_LENGTH safety cap, off by default. */
+    N_STOP_REASONS
+  };
+
+  /*!
+   * \brief Boundary nodes that seed an advancing front, with the direction each starts marching in.
+   */
+  struct CFrontSeeds {
+    vector<unsigned long> node;                    /*!< \brief Seed node on the boundary. */
+    vector<std::array<su2double, MAXNDIM>> normal; /*!< \brief Unit normal there, pointing into the domain. */
+  };
+
+  /*!
+   * \brief PHASE 1a of the paving agglomeration: collect the boundary nodes that seed an advancing
+   *        front, i.e. those on a viscous wall, or on another boundary that carries a stretched
+   *        layer normal to itself.
+   * \param[in] fine_grid - Fine grid geometry.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] stiff - Node coupling from ComputeNodeStiffness.
+   * \return Seed nodes and their inward boundary normals.
+   */
+  CFrontSeeds SeedFrontNodes(const CGeometry* fine_grid, const CConfig* config, const CNodeStiffness& stiff) const;
+
+  /*!
+   * \brief PHASE 1b of the paving agglomeration: partition the seed nodes into compact surface
+   *        patches by repeated pairwise matching. Each patch is the footprint of one front, and is
+   *        the only thing that decides the shape of the whole stack above it.
+   * \param[in] seeds - Seed nodes from SeedFrontNodes.
+   * \param[in] fine_grid - Fine grid geometry.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] mixedBC - Nodes that must stay on their own, from FindMixedBoundaryNodes.
+   * \return One vector of indices into seeds.node per patch.
+   */
+  vector<vector<unsigned long>> BuildFrontPatches(const CFrontSeeds& seeds, const CGeometry* fine_grid,
+                                                  const CConfig* config, const vector<char>& mixedBC) const;
 
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
