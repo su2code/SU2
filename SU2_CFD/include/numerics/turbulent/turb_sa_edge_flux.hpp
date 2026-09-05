@@ -49,11 +49,21 @@ class CScalarFlux_SA
 
   using Base = CUpwScalarBase<Double, CScalarFlux_SA, FlowIndices, nDim, nVar>;
   using Int = typename Base::Int;
-  using Base::Base;
+
+  explicit CScalarFlux_SA(const CConfig& config)
+      : Base(config),
+        negativeSA(config.GetSAParsedOptions().version == SA_OPTIONS::NEG),
+        accurateJacobians(config.GetUse_Accurate_Turb_Jacobians()) {}
 
  private:
   static constexpr passivedouble sigma = 2.0 / 3.0; /*!< \brief Constant of the diffusion term. */
   static constexpr passivedouble cb2 = 0.622;       /*!< \brief Constant of the diffusion term. */
+  static constexpr passivedouble cn1 = 16.0;        /*!< \brief Constant of the SA-neg diffusion correction. */
+
+  /*!< \brief Whether nu_tilde may go negative (SA_OPTIONS= NEGATIVE), which needs the fn-corrected
+   *          diffusion coefficient below to keep the diffusion term from turning anti-diffusive. */
+  const bool negativeSA;
+  const bool accurateJacobians;
 
  public:
   /*!
@@ -99,6 +109,16 @@ class CScalarFlux_SA
   }
 
   /*!
+   * \brief fn, the positivity-preserving correction to the SA-neg diffusion coefficient
+   *        (Allmaras, Johnson & Spalart), 1 when nu_tilde is not negative enough to need it.
+   */
+  FORCEINLINE Double fn(const Double& zeta) const {
+    if (!negativeSA || zeta >= 0.0) return 1.0;
+    const Double zeta3 = zeta * zeta * zeta;
+    return (cn1 + zeta3) / (cn1 - zeta3);
+  }
+
+  /*!
    * \brief Diffusion coefficients of both orientations of the edge.
    * \note The coefficient is not symmetric: it uses the transported variable of the row it is
    *       going to be used for (the quadratic, non-conservative part of the diffusion term).
@@ -115,11 +135,18 @@ class CScalarFlux_SA
     const Double nuTilde_i = gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), 0);
     const Double nuTilde_j = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), 0);
 
-    const Double nu_e = 0.5 * (nu_i + nu_j + (1.0 + cb2) * (nuTilde_i + nuTilde_j));
+    const Double nu_ij = 0.5 * (nu_i + nu_j);
+    const Double nuTilde_ij = 0.5 * (nuTilde_i + nuTilde_j);
+
+    /*--- fn is only ever != 1 under SA_OPTIONS= NEGATIVE, and then only where the row's own
+     * nu_tilde pulls the coefficient negative; without it (nu + nu_tilde going anti-diffusive)
+     * the equation diverges, see Allmaras, Johnson & Spalart's negative SA modification. ---*/
+    const Double fn_i = fn(((1.0 + cb2) * nuTilde_ij - cb2 * nuTilde_i) / nu_ij);
+    const Double fn_j = fn(((1.0 + cb2) * nuTilde_ij - cb2 * nuTilde_j) / nu_ij);
 
     Vector<Double, nVar> D_i, D_j;
-    D_i(0) = (nu_e - cb2 * nuTilde_i) / sigma;
-    D_j(0) = (nu_e - cb2 * nuTilde_j) / sigma;
+    D_i(0) = (nu_ij + (1.0 + cb2) * nuTilde_ij * fn_i - cb2 * nuTilde_i * fn_i) / sigma;
+    D_j(0) = (nu_ij + (1.0 + cb2) * nuTilde_ij * fn_j - cb2 * nuTilde_j * fn_j) / sigma;
     for (size_t iVar = 1; iVar < nVar; ++iVar) {
       D_i(iVar) = 0.0;
       D_j(iVar) = 0.0;
@@ -129,10 +156,16 @@ class CScalarFlux_SA
 
   /*!
    * \brief Extra Jacobian terms from the dependence of the diffusion coefficient on nu_tilde.
+   * \note Skipped for SA-neg, whose fn-corrected coefficient was found (upstream, pre-migration)
+   *       to diverge with exact Jacobians; frozen (TSL-only) Jacobians are used there instead.
+   *       Skipped for standard SA too unless USE_ACCURATE_TURB_JACOBIANS is set, matching the
+   *       pre-migration default of using frozen Jacobians there as well.
    */
   template <class Coefficients, size_t Size>
   FORCEINLINE void coefficientJacobians(const ScalarFluxOptions& opt, const Coefficients&,
                                         const Vector<Double, Size>& projGrad, EdgeResidual<Double, nVar>& res) const {
+    if (negativeSA || !accurateJacobians) return;
+
     /*--- d(diffusion coefficient of i)/d(nu_tilde_i), and its counterpart w.r.t. nu_tilde_j;
      * the coefficient of j is the same expression with i and j swapped, so the same two
      * derivatives apply to both orientations. Both are per-edge constants, so the coefficients
