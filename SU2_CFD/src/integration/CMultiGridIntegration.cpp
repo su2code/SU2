@@ -1112,48 +1112,19 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   /*--- Use the adaptive damping factor uniformly across all prolongation levels. ---*/
   const su2double factor = config->GetDamp_Correc_Prolong();
 
-  /*--- Optional cap on how much one coarse-grid correction may move the solution at a point.
-   *    Without it the only guard below is the NaN check, and a correction can drive a cell
-   *    non-physical in a single application - measured on the turbulent flat plate, a W-cycle
-   *    correction cuts wall-adjacent density by 25%, from which the energy equation never
-   *    recovers. The cap is relative and per point, and the whole correction vector is scaled by
-   *    one factor so its direction is preserved (scaling components independently would rotate
-   *    the correction and break the coupling between the equations).
-   *
-   *    Components that are negligible against the largest one at that point (transverse momentum
-   *    in a freestream cell, say) carry no meaningful relative bound and are skipped, otherwise
-   *    they would veto every correction. ---*/
-  const su2double limit = config->GetMGOptions().MG_Correction_Limit;
-  const bool limiting = (limit > 0.0);
-
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
     auto* Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
     auto* Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
-
-    /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
     for (auto iVar = 0u; iVar < nVar; iVar++) {
+      /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
       if (Residual_Fine[iVar] != Residual_Fine[iVar])
         Residual_Fine[iVar] = 0.0;
+
+      su2double correction = factor * Residual_Fine[iVar];
+
+      Solution_Fine[iVar] += correction;
     }
-
-    su2double omega = 1.0;
-    if (limiting) {
-      su2double ref = 0.0;
-      for (auto iVar = 0u; iVar < nVar; iVar++)
-        ref = max(ref, fabs(Solution_Fine[iVar]));
-
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        const su2double scale = fabs(Solution_Fine[iVar]);
-        if (scale < 1e-6 * ref) continue;
-        const su2double correction = fabs(factor * Residual_Fine[iVar]);
-        if (correction > limit * scale)
-          omega = min(omega, limit * scale / correction);
-      }
-    }
-
-    for (auto iVar = 0u; iVar < nVar; iVar++)
-      Solution_Fine[iVar] += omega * factor * Residual_Fine[iVar];
   }
   END_SU2_OMP_FOR
 

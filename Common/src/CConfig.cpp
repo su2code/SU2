@@ -2074,10 +2074,6 @@ void CConfig::SetConfig_Options() {
    * single-grid runs; MG_COARSE_PREC_FREEZE covers the coarse levels. The fine-grid preconditioner drives the outer
    * nonlinear convergence, so raise this one with more care. 1 rebuilds every solve. DEFAULT: 1 \ingroup Config*/
   addUnsignedLongOption("LINEAR_SOLVER_PREC_FREEZE", Linear_Solver_Prec_Freeze, 1);
-  /*!\brief MG_CORRECTION_LIMIT\n DESCRIPTION: Largest relative change any solution component may undergo from a single
-   * prolongated multigrid correction, e.g. 0.1 caps it at 10%. The whole correction vector at a point is scaled by one
-   * factor so its direction is preserved. 0 disables the limiter (previous behaviour). DEFAULT: 0 \ingroup Config*/
-  addDoubleOption("MG_CORRECTION_LIMIT", MGOptions.MG_Correction_Limit, 0.0);
   /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level, checked per MPI rank (i.e. on the smallest partition). Levels that would produce fewer CVs on any rank are not created. DEFAULT: 50 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
@@ -2095,17 +2091,6 @@ void CConfig::SetConfig_Options() {
    * carry a layer normal to them and may therefore seed paving fronts; viscous walls always seed. This is a seeding
    * gate only and never stops a front that has started. 1.0 lets every boundary seed. DEFAULT: 2.0 \ingroup Config*/
   addDoubleOption("MG_IMPLICIT_LINES_MIN_AR", MGOptions.MG_Implicit_Lines_Min_AR, 2.0);
-  /*!\brief MG_BOUNDARY_THICKEN_AR\n DESCRIPTION: Grow boundary coarse CVs into the interior instead of leaving them as
-   * surface patches one fine cell thick. The boundary agglomeration can only ever merge points that lie on the boundary
-   * themselves, so a boundary coarse CV comes out flat: 2x2 nodes on a surface, 2 on a ridge, never the 2x2x2 block the
-   * interior pass builds. Those CVs are a large share of the coarse grid by count while holding very few nodes each.
-   * Thickening keeps the surface footprint the boundary agglomeration chose and only adds the layer underneath it, so
-   * the CV still never straddles two boundary conditions. It is skipped where the mesh carries a stretched layer normal
-   * to the boundary, i.e. where the local aspect ratio measured along the boundary normal reaches this value, since
-   * there the flat CV is deliberate semi-coarsening that preserves the wall-normal resolution of a boundary layer.
-   * Raising it thickens more boundaries, lowering it fewer. 0.0 disables thickening entirely. DEFAULT: 0.0
-   * \ingroup Config*/
-  addDoubleOption("MG_BOUNDARY_THICKEN_AR", MGOptions.MG_Boundary_Thicken_AR, 0.0);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
    * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);

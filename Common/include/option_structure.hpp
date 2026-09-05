@@ -1134,14 +1134,7 @@ struct CMGOptions {
                                                   a layer normal to them and may therefore seed paving fronts. It is a
                                                   SEEDING gate only and never stops a front that has started.
                                                   See CMultiGridGeometry::SeedFrontNodes. */
-  su2double MG_Boundary_Thicken_AR{0.0}; /*!< \brief Local aspect ratio, measured along the boundary normal, at or above
-                                                which a boundary coarse CV is left as a flat surface patch instead of
-                                                being thickened into the interior. Below it the boundary sits in mesh
-                                                that is not stretched normal to itself and the CV is grown inwards to
-                                                the full agglomeration size. 0 disables thickening altogether, which is
-                                                the historical behaviour. See CMultiGridGeometry::CMultiGridGeometry. */
   unsigned long MG_Coarse_Prec_Freeze{1}; /*!< \brief On MG levels > 0, reuse the linear-solver preconditioner for this many consecutive solves. 1 = rebuild every solve. */
-  su2double MG_Correction_Limit{0.0};     /*!< \brief Max relative change of any solution component from one prolongated FAS correction. 0 = no limit. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Iterations per mesh during FMG startup, and the length of each level's CFL ramp. 0 = no iteration budget. */
   su2double MG_Startup_Convergence{-2.0}; /*!< \brief FMG: orders of magnitude (log10) that CONV_FIELD must drop on the
                                                  active level before promoting to the next finer one. Negative is a
