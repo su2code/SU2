@@ -1445,20 +1445,19 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
    *    Build() is all that is needed to reuse it.
    *
    *    Restricted to the standard solver mode (mesh deformation and gradient smoothing are left
-   *    alone). Coarse levels and the finest grid have separate periods because the finest-grid
-   *    preconditioner drives the outer nonlinear convergence and so carries more risk. The first
-   *    solve on this instance always builds (count 0), which matters because the factorization is
-   *    otherwise uninitialized.
+   *    alone), and to the coarse levels: the finest grid always rebuilds, because its preconditioner
+   *    drives the outer nonlinear convergence and freezing it measured worth far less than freezing
+   *    the coarse levels. The first solve on this instance always builds (count 0), which matters
+   *    because the factorization is otherwise uninitialized.
    *
    *    The decision is taken by one thread and read by all of them, because Build() is internally
    *    OpenMP-parallel and every thread must make the same choice. ---*/
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     unsigned long freeze = 1;
-    if (lin_sol_mode == LINEAR_SOLVER_MODE::STANDARD && geometry != nullptr) {
-      freeze = (geometry->GetMGLevel() != MESH_0) ? config->GetMGOptions().MG_Coarse_Prec_Freeze
-                                                  : config->GetLinear_Solver_Prec_Freeze();
-      freeze = std::max<unsigned long>(1, freeze);
+    if (lin_sol_mode == LINEAR_SOLVER_MODE::STANDARD && geometry != nullptr &&
+        geometry->GetMGLevel() != MESH_0) {
+      freeze = std::max<unsigned long>(1, config->GetMGOptions().MG_Coarse_Prec_Freeze);
     }
     buildPrecThisSolve = (precSolveCount % freeze == 0);
     precSolveCount++;

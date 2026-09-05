@@ -2069,11 +2069,6 @@ void CConfig::SetConfig_Options() {
    * (e.g. the ILU factorization) for this many consecutive linear solves instead of rebuilding it every time.
    * 1 reproduces the previous behaviour exactly. DEFAULT: 1 \ingroup Config*/
   addUnsignedLongOption("MG_COARSE_PREC_FREEZE", MGOptions.MG_Coarse_Prec_Freeze, 1);
-  /*!\brief LINEAR_SOLVER_PREC_FREEZE\n DESCRIPTION: Reuse the linear-solver preconditioner (e.g. the ILU factorization)
-   * for this many consecutive solves on the finest grid, instead of rebuilding it every time. Applies to MESH_0 and to
-   * single-grid runs; MG_COARSE_PREC_FREEZE covers the coarse levels. The fine-grid preconditioner drives the outer
-   * nonlinear convergence, so raise this one with more care. 1 rebuilds every solve. DEFAULT: 1 \ingroup Config*/
-  addUnsignedLongOption("LINEAR_SOLVER_PREC_FREEZE", Linear_Solver_Prec_Freeze, 1);
   /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level, checked per MPI rank (i.e. on the smallest partition). Levels that would produce fewer CVs on any rank are not created. DEFAULT: 50 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
@@ -3073,21 +3068,6 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: ParMETIS load balancing weight for edges (equiv. to neighbors) */
   addLongOption("PARMETIS_EDGE_WEIGHT", ParMETIS_edgeWgt, 1);
-  /* DESCRIPTION: Strength of the anisotropy-aware ParMETIS edge weights. ParMETIS is otherwise given no edge weights at
-   * all, so every edge is equally cheap to cut and partition boundaries slice straight through the stretched cells of a
-   * boundary layer, splitting the wall-normal columns that implicit-line agglomeration and line-implicit smoothing rely
-   * on. Weighting an edge by the inverse of its length makes the short wall-normal edges expensive to cut and pushes the
-   * cuts into the tangential direction instead. On a mesh without stretching all edges are of similar length, the
-   * weights come out uniform, and the partitioning is the same as with no weights at all. 0 disables the weights.
-   * DEFAULT: 0 */
-  addDoubleOption("PARMETIS_ANISO_WEIGHT", ParMETIS_anisoWgt, 0.0);
-  /*!\brief PARMETIS_COLUMN_PARTITION\n DESCRIPTION: Contract each wall-normal column of stretched cells into a single
-   * graph vertex before partitioning, and give every node of a column the colour of its column. A partition boundary
-   * can then never cross a column, which is what the implicit-line agglomeration and line-implicit smoothing need, and
-   * the graph ParMETIS actually cuts is the wall surface. Columns are found as connected components of the edges that
-   * are short at both of their ends, so an isotropic mesh contracts to itself and partitions exactly as before.
-   * DEFAULT: NO \ingroup Config*/
-  addBoolOption("PARMETIS_COLUMN_PARTITION", ParMETIS_columnPart, false);
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
