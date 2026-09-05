@@ -231,6 +231,10 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
 
 }
 
+void COutput::SetObjectiveFunctionValues(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  LoadCustomAndComboObjectiveFunctions(config, geometry, solver_container);
+}
+
 void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CConfig **config, std::shared_ptr<CTurbomachineryStagePerformance>(TurboStagePerf), su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, unsigned short val_iZone, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst){
 
   unsigned long Iter= InnerIter;

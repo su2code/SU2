@@ -5641,14 +5641,14 @@ public:
   unsigned short GetnVar(void);
 
   /*!
-   * \brief Provides the number of variables.
-   * \return Number of variables.
+   * \brief Provides the total number of zones.
+   * \return Total number of zones.
    */
   unsigned short GetnZone(void) const { return nZone; }
 
   /*!
-   * \brief Provides the number of variables.
-   * \return Number of variables.
+   * \brief Provides the zone index the configuration belongs to.
+   * \return Zone index.
    */
   unsigned short GetiZone(void) const { return iZone; }
 

@@ -118,16 +118,6 @@ public:
   void StartSolver() override;
 
   /*!
-   * \brief [Overload] Launch the tape test mode for the discrete adjoint multizone solver.
-   */
-  void TapeTest ();
-
-  /*!
-   * \brief [Overload] Get error numbers after a tape test run of the discrete adjoint multizone solver.
-   */
-  int TapeTestGatherErrors(AD::ErrorReport& error_report) const;
-
-  /*!
    * \brief Preprocess the multizone iteration
    */
   void Preprocess(unsigned long TimeIter) override;
@@ -279,4 +269,15 @@ protected:
     }
   }
 
+  /*!
+   * \brief Launch the tape test run of the discrete adjoint multizone solver.
+   */
+  void TapeTest ();
+
+  /*!
+   * \brief Get the total error count after a tape test run of the discrete adjoint multizone solver.
+   * \param[in] debug_control - DebugControl from which this rank's contribution to the total error count is read.
+   * \return The total error count across all ranks.
+   */
+  int TapeTestGatherErrors(AD::DebugControl& debug_control) const;
 };
