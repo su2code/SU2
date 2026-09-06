@@ -224,9 +224,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
    * the host, so only plain (or quantized) Jacobi can keep them exclusively on the device. ---*/
   jacobi_on_device = useCuda && (prec == JACOBI || prec == Q_JACOBI);
 #ifndef CODI_REVERSE_TYPE
-  /*--- Q_LU_SGS is still host-only. ---*/
-  const bool quantized_offdiag_needed =
-      allow_quant && (prec == Q_JACOBI || prec == Q_IDENTITY || (prec == Q_LU_SGS && !useCuda));
+  const bool quantized_offdiag_needed = allow_quant && (prec == Q_JACOBI || prec == Q_IDENTITY || prec == Q_LU_SGS);
 #else
   /*--- No quantization in adjoint mode for now because TransposeInPlace would get complicated. ---*/
   const bool quantized_offdiag_needed = false;
