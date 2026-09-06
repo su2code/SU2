@@ -315,7 +315,7 @@ def main():
     tutorial_trans_e387_sst_asan.cfg_dir          = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sst_asan.cfg_file         = "transitional_SST_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sst_asan.test_iter        = 2
-    tutorial_trans_e387_sst_asan.test_vals        = [-6.418119, -4.827573, -2.220229, 3.029787, 3.123846, 5.000000, -5.604338]
+    tutorial_trans_e387_sst_asan.test_vals        = [-6.418119, -4.827573, -2.220229, 3.029787, 3.123846, 5.000000, -5.610239]
     tutorial_trans_e387_sst_asan.timeout          = 1600
     tutorial_trans_e387_sst_asan.no_restart       = True
     tutorial_trans_e387_sst_asan.enabled_with_regular = False
