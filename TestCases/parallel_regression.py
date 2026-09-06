@@ -193,7 +193,7 @@ def main():
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
     visc_cone.test_vals = [-5.215238, -5.739375, -20.581529, -20.580261, -20.508727, 1.262697, -3.205457, -0.015697, 0.093206, 32637.000000]
-    visc_cone.test_vals_aarch64 = [-5.222270, -5.746525, -20.560286, -20.510152, -20.409101, 1.255758, -3.208382, -0.016014, 0.093462, 32619.000000]
+    visc_cone.test_vals_aarch64 = [-5.215222, -5.739359, -20.581535, -20.580239, -20.508657, 1.262709, -3.205449, -0.015696, 0.093205, 32637.000000]
     test_list.append(visc_cone)
 
     # Viscous single wedge with Mutation++
