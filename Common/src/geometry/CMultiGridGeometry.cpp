@@ -1747,8 +1747,8 @@ bool VertexUnitNormal(const CGeometry* grid, unsigned short nDim, unsigned long 
 CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeometry* fine_grid, const CConfig* config,
                                                                    const CNodeStiffness& stiff) const {
   /*--- Fraction of a marker's nodes that must sit in a layer before the whole marker may seed. ---*/
-  constexpr su2double QUALIFIED_FRACTION = 0.5;
-  constexpr su2double ANGLE_THRESHOLD_DEG = 30.0;
+  constexpr passivedouble QUALIFIED_FRACTION = 0.5;
+  constexpr passivedouble ANGLE_THRESHOLD_DEG = 30.0;
   const su2double cos_threshold = cos(ANGLE_THRESHOLD_DEG * PI_NUMBER / 180.0);
 
   const su2double MIN_AR = config->GetMGOptions().MG_Implicit_Lines_Min_AR;
@@ -2095,14 +2095,14 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   /*--- How nearly parallel a step must be to a boundary's normal to count as running INTO that
    *    boundary rather than along it. This is not a limit on where a front may go - it is only how
    *    "the front has reached a boundary" is recognised. ---*/
-  constexpr su2double BOUNDARY_ALIGN_DEG = 30.0;
+  constexpr passivedouble BOUNDARY_ALIGN_DEG = 30.0;
   const su2double cos_boundary = cos(BOUNDARY_ALIGN_DEG * PI_NUMBER / 180.0);
   /*--- Weight of the new step direction when the front's marching direction is updated. The direction
    *    only ever RANKS candidates, it never rejects one, so this is a preference and not a limit. ---*/
-  constexpr su2double DIR_BLEND = 0.5;
+  constexpr passivedouble DIR_BLEND = 0.5;
 
-  /*--- Safety cap on stack depth, 0 for none. A front is meant to run until it reaches a boundary or
-   *    the mesh stops offering a clean extrusion, so this is off by default. ---*/
+  /*--- How many parallel implicit lines may be merged tangential to the wall into one coarse CV.
+   *    0 selects the dimension-appropriate default: 2 in 2D, 4 in 3D (a wall quad/hex corner). ---*/
   unsigned long max_group = config->GetMGOptions().MG_Implicit_Lines_Max_Group;
   if (max_group == 0) max_group = (nDim == 2) ? 2 : 4;
 
