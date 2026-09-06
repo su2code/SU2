@@ -2045,10 +2045,8 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   vector<char> claimed(nPointFine, 0);
   /*--- Confirmed owner of a claimed node, -1 while free. Only ever written when a layer is accepted,
    *    so a bid that is still being contested never appears here. ---*/
-  vector<int> frontOf(nPointFine, -1);
 
   vector<char> failed;
-  vector<unsigned short> failReason;
 
   /*--- Set when a front hands only PART of its footprint over and goes on marching here with what is
    *    left of it, so the retirement pass at the end of the round knows not to kill it. ---*/
@@ -2092,11 +2090,9 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
     P_SPLIT,
     P_SPLITLOC,
     P_SPLITHAND,
-    P_NOHALO,
     P_SPLITDROP,
-    P_HIST,              /*!< \brief Start of nine patch-size bins. */
-    P_STOP = P_HIST + 9, /*!< \brief Start of N_STOP_REASONS bins. */
-    P_COUNT = P_STOP + N_STOP_REASONS
+    P_HIST, /*!< \brief Start of nine patch-size bins. */
+    P_COUNT = P_HIST + 9
   };
   unsigned long ct[P_COUNT] = {0};
 
@@ -2123,12 +2119,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
     }
   }
 
-  auto markFail = [&](unsigned long f, unsigned short why) {
-    if (!failed[f]) {
-      failed[f] = 1;
-      failReason[f] = why;
-    }
-  };
+  auto markFail = [&](unsigned long f) { failed[f] = 1; };
 
   /*--- How many fine layers the next coarse CV of this front holds: always two, so the stack coarsens
    *    by the same factor along the marching direction as the footprint does across it. The only
@@ -2245,7 +2236,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
     const auto f = addFront(layer0, n0, frontTag + 1, 1);
     for (auto p : layer0) {
       claimed[p] = 1;
-      frontOf[p] = static_cast<int>(f);
     }
     ct[P_HIST + std::min<size_t>(layer0.size(), 8)]++;
     ct[P_STACKS]++;
@@ -2265,7 +2255,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
     if (aliveGlobal == 0) break;
 
     failed.assign(front.size(), 0);
-    failReason.assign(front.size(), 0);
     keepLocal.assign(front.size(), 0);
     handTag.assign(front.size(), 0);
     for (const auto& b : bids) bidIdx[b.node] = NOBID;
@@ -2287,8 +2276,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
          *    here, but it is where the stack would go next, so it is what gets handed over. ---*/
         auto bestHalo = NO_POINT;
         su2double bestHalo_dot = -2.0;
-        bool sawCollision = false, sawBoundary = false, sawAgglom = false, sawPartition = false;
-        bool sawGeom = false;
 
         for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(n); ++iNeigh) {
           const auto jPoint = fine_grid->nodes->GetPoint(n, iNeigh);
@@ -2310,7 +2297,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
            *    own, rather than being skipped silently and leaving some other candidate to explain a
            *    stop that was really the partitioning. ---*/
           if (!fine_grid->nodes->GetDomain(jPoint)) {
-            sawPartition = true;
             /*--- Held as a handover candidate, subject to the same admissibility the owner would
              *    apply anyway; whether it is still free is the owner's to decide. ---*/
             if (dot > bestHalo_dot && !(onPhysicalBoundary[jPoint] && entersBoundary(jPoint, vec)) &&
@@ -2320,28 +2306,13 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
             }
             continue;
           }
-          if (fine_grid->nodes->GetAgglomerate(jPoint)) {
-            /*--- A node another front has already turned into a coarse CV also reads as agglomerated,
-             *    so ask frontOf first: that is the fronts meeting, not an earlier phase. ---*/
-            if ((frontOf[jPoint] >= 0) && (frontOf[jPoint] != static_cast<int>(f)))
-              sawCollision = true;
-            else if (frontOf[jPoint] < 0)
-              sawAgglom = true;
-            continue;
-          }
-          if (claimed[jPoint]) {
-            if (frontOf[jPoint] != static_cast<int>(f)) sawCollision = true;
-            continue;
-          }
-
-          if (onPhysicalBoundary[jPoint] && entersBoundary(jPoint, vec)) {
-            sawBoundary = true;
-            continue;
-          }
-          if (!GeometricalCheck(jPoint, fine_grid, config)) {
-            sawGeom = true;
-            continue;
-          }
+          /*--- Taken by an earlier phase or by another front's coarse CV. ---*/
+          if (fine_grid->nodes->GetAgglomerate(jPoint)) continue;
+          /*--- Already bid for this round. ---*/
+          if (claimed[jPoint]) continue;
+          /*--- The step runs into a boundary, or the node would make an unusable coarse cell. ---*/
+          if (onPhysicalBoundary[jPoint] && entersBoundary(jPoint, vec)) continue;
+          if (!GeometricalCheck(jPoint, fine_grid, config)) continue;
 
           if (dot > best_dot) {
             best_dot = dot;
@@ -2359,17 +2330,9 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
           continue;
         }
 
+        /*--- No admissible successor: a boundary, a partition, another front, or unusable mesh. ---*/
         if (best == NO_POINT) {
-          /*--- Priority order picks the cleanest explanation first: reaching a physical boundary is a
-           *    correct, expected stop and takes priority even if some other, non-viable candidate also
-           *    happened to be claimed. Only report a collision when no boundary was involved. ---*/
-          const std::pair<bool, unsigned short> why[] = {
-              {sawBoundary, STOP_PHYS_BOUNDARY}, {sawPartition, STOP_PARTITION}, {sawCollision, STOP_COLLISION},
-              {sawAgglom, STOP_AGGLOMERATED},    {sawGeom, STOP_GEOMETRY},       {true, STOP_NO_NEIGHBOR}};
-          const auto* hit = why;
-          while (!hit->first) ++hit;
-          if (hit->second == STOP_PARTITION) ct[P_NOHALO]++;
-          markFail(f, hit->second);
+          markFail(f);
           break;
         }
 
@@ -2446,14 +2409,12 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
         const auto g = bidOwner[k];
         /*--- Two nodes of the SAME front reaching for one successor is a pinch: the layer would come
          *    out narrower than the front, which all-or-nothing does not allow. ---*/
-        const unsigned short why = (g == f) ? STOP_PINCH : STOP_COLLISION;
-
         if (better(s, bids[k])) {
-          markFail(g, why);
+          markFail(g);
           bids[k] = s;
           bidOwner[k] = f;
         } else {
-          markFail(f, why);
+          markFail(f);
         }
 
         /*--- A head-on meeting stops BOTH fronts. Letting the winner carry on through the seam would
@@ -2461,8 +2422,8 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
          *    shows up in the coarse grid as one stack overshooting the other. A glancing contact
          *    (directions not opposed) is not a meeting and only costs the loser. ---*/
         if ((g != f) && (GeometryToolbox::DotProduct(nDim, dirNow[f].data(), dirNow[g].data()) < 0.0)) {
-          markFail(f, STOP_COLLISION);
-          markFail(g, STOP_COLLISION);
+          markFail(f);
+          markFail(g);
         }
       }
     }
@@ -2482,16 +2443,12 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
           if ((k != NOBID) && (bidOwner[k] == f)) newLayer.push_back(s.node);
         }
         /*--- Every bid of a front that was not marked failed must have been granted. ---*/
-        if (newLayer.size() != front[f].size())
-          markFail(f, STOP_COLLISION);
-        else if (!layerIsIsomorphic(front[f], newLayer))
-          markFail(f, STOP_TOPOLOGY);
+        if ((newLayer.size() != front[f].size()) || !layerIsIsomorphic(front[f], newLayer)) markFail(f);
       }
 
       if (failed[f]) {
         /*--- Nothing to give back: a bid only becomes a claim on acceptance below. ---*/
         alive[f] = 0;
-        ct[P_STOP + failReason[f]]++;
         /*--- One layer short of a full block at the top: take what is buffered as its own coarse CV
          *    rather than dropping it back to ordinary agglomeration. ---*/
         emit(f);
@@ -2518,7 +2475,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
 
       for (auto p : newLayer) {
         claimed[p] = 1;
-        frontOf[p] = static_cast<int>(f);
       }
       front[f] = std::move(newLayer);
       depth[f]++;
@@ -2584,7 +2540,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       ct[P_HANDOUT]++;
       if (keepLocal[f]) continue;
       alive[f] = 0;
-      ct[P_STOP + STOP_PARTITION]++;
       emit(f);
     }
 
@@ -2617,7 +2572,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
         const auto nf = addFront(layer0, d0, inherited[i].tag, blockFor(layer0));
         for (auto p : layer0) {
           claimed[p] = 1;
-          frontOf[p] = static_cast<int>(nf);
         }
         ct[P_LAYERS]++;
         ct[P_HANDIN]++;
@@ -2670,13 +2624,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   if (tot[P_SPLIT] > 0)
     cout << "\n  Footprints split at partitions: " << tot[P_SPLIT] << " cut by an interface (" << tot[P_SPLITLOC]
          << " nodes marching on here, " << tot[P_SPLITHAND] << " handed across)";
-  if (tot[P_NOHALO] + tot[P_SPLITDROP] > 0)
-    cout << "\n  Stacks lost at partitions: " << tot[P_NOHALO] << " blocked with nowhere to hand to, "
-         << tot[P_SPLITDROP] << " nodes in split pieces that came apart";
-
-  static const char* stopName[N_STOP_REASONS] = {"physical-boundary",    "partition", "front-collision", "pinch",
-                                                 "already-agglomerated", "dead-end",  "topology",        "geometry"};
-  cout << "\n  Front advance stopped due to:";
-  for (unsigned n = 0; n < N_STOP_REASONS; ++n) cout << (n ? ", " : " ") << stopName[n] << " " << tot[P_STOP + n];
+  if (tot[P_SPLITDROP] > 0) cout << "\n  Nodes lost in split pieces that came apart: " << tot[P_SPLITDROP];
   cout << endl;
 }

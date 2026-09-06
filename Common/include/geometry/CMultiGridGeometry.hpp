@@ -116,22 +116,6 @@ class CMultiGridGeometry final : public CGeometry {
   CNodeStiffness ComputeNodeStiffness(const CGeometry* fine_grid) const;
 
   /*!
-   * \brief Why a front stopped advancing. Either it reached a boundary, or it could not lay a layer
-   *        isomorphic to the current one; every reason below is one of those two.
-   */
-  enum {
-    STOP_PHYS_BOUNDARY = 0, /*!< \brief Reached a boundary, the expected stop. */
-    STOP_PARTITION,         /*!< \brief Reached a partition interface. */
-    STOP_COLLISION,         /*!< \brief Lost a candidate to another front. */
-    STOP_PINCH,             /*!< \brief Two nodes of this front wanted the same successor. */
-    STOP_AGGLOMERATED,      /*!< \brief Ran into nodes an earlier phase had taken. */
-    STOP_NO_NEIGHBOR,       /*!< \brief A front node had no free neighbour left. */
-    STOP_TOPOLOGY,          /*!< \brief The next layer was not isomorphic to the current one. */
-    STOP_GEOMETRY,          /*!< \brief A node of the next layer failed GeometricalCheck. */
-    N_STOP_REASONS
-  };
-
-  /*!
    * \brief Boundary nodes that seed a front, with the direction each starts marching in.
    */
   struct CFrontSeeds {
