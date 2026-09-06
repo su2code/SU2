@@ -2065,10 +2065,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MG_SMOOTH_STAGNATION_TOL", MGOptions.MG_Smooth_StagnationTol, 0.99);
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_COEFF", MGOptions.MG_Smooth_Coeff, 1.25);
-  /*!\brief MG_COARSE_PREC_FREEZE\n DESCRIPTION: On multigrid levels above MESH_0, reuse the linear-solver preconditioner
-   * (e.g. the ILU factorization) for this many consecutive linear solves instead of rebuilding it every time.
-   * 1 reproduces the previous behaviour exactly. DEFAULT: 1 \ingroup Config*/
-  addUnsignedLongOption("MG_COARSE_PREC_FREEZE", MGOptions.MG_Coarse_Prec_Freeze, 1);
   /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level, checked per MPI rank (i.e. on the smallest partition). Levels that would produce fewer CVs on any rank are not created. DEFAULT: 50 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
@@ -2077,11 +2073,6 @@ void CConfig::SetConfig_Options() {
    * the wall into one coarse CV (2D: always 2; 3D: e.g. 4 for a wall quad/hex corner, 3 for a triangular prism apex).
    * 0 uses the dimension-appropriate default (2 in 2D, 4 in 3D). DEFAULT: 0 \ingroup Config*/
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_GROUP", MGOptions.MG_Implicit_Lines_Max_Group, 0);
-  /*!\brief MG_IMPLICIT_LINES_MIN_AR\n DESCRIPTION: Smallest local cell aspect ratio for which a node still counts as
-   * part of a stretched layer, measured from the ratio of dual-grid edge weights. Decides which non-wall boundaries
-   * carry a layer normal to them and may therefore seed paving fronts; viscous walls always seed. This is a seeding
-   * gate only and never stops a front that has started. 1.0 lets every boundary seed. DEFAULT: 2.0 \ingroup Config*/
-  addDoubleOption("MG_IMPLICIT_LINES_MIN_AR", MGOptions.MG_Implicit_Lines_Min_AR, 2.0);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
    * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);

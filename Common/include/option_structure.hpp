@@ -1128,12 +1128,6 @@ struct CMGOptions {
   unsigned long MG_Implicit_Lines_Max_Group{0}; /*!< \brief Max number of parallel implicit lines merged into one coarse
                                                       CV tangential to the wall. 0 = dimension-appropriate default
                                                       (2 in 2D, 4 in 3D). See CMultiGridGeometry::AgglomerateImplicitLines. */
-  su2double MG_Implicit_Lines_Min_AR{2.0}; /*!< \brief Smallest local cell aspect ratio for which a node still counts
-                                                  as part of a stretched layer. Decides which non-wall boundaries carry
-                                                  a layer normal to them and may therefore seed paving fronts. It is a
-                                                  SEEDING gate only and never stops a front that has started.
-                                                  See CMultiGridGeometry::SeedFrontNodes. */
-  unsigned long MG_Coarse_Prec_Freeze{1}; /*!< \brief On MG levels > 0, reuse the linear-solver preconditioner for this many consecutive solves. 1 = rebuild every solve. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Iterations per mesh during FMG startup, and the length of each level's CFL ramp. 0 = no iteration budget. */
   su2double MG_Startup_Convergence{-2.0}; /*!< \brief FMG: orders of magnitude (log10) that CONV_FIELD must drop on the
                                                  active level before promoting to the next finer one. Negative is a
