@@ -2069,10 +2069,6 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
-  /*!\brief MG_IMPLICIT_LINES_MAX_GROUP\n DESCRIPTION: Maximum number of parallel implicit lines merged tangential to
-   * the wall into one coarse CV (2D: always 2; 3D: e.g. 4 for a wall quad/hex corner, 3 for a triangular prism apex).
-   * 0 uses the dimension-appropriate default (2 in 2D, 4 in 3D). DEFAULT: 0 \ingroup Config*/
-  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_GROUP", MGOptions.MG_Implicit_Lines_Max_Group, 0);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
    * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);

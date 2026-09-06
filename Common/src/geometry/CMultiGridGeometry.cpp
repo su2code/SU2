@@ -1799,8 +1799,7 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
    *    exclusive, which choosing neighbours per seed would not. It needs only point connectivity, so it
    *    works on every multigrid level. This patch alone fixes the footprint of the stack above it. ---*/
   const auto nSeeds = seeds.node.size();
-  unsigned long max_group = config->GetMGOptions().MG_Implicit_Lines_Max_Group;
-  if (max_group == 0) max_group = (nDim == 2) ? 2 : 4;
+  const unsigned long max_group = (nDim == 2) ? 2 : 4;
 
   /*--- Marker signature of each seed, as a bitmask over the physical markers. Seeds may only be
    *    matched when these agree, so a patch never straddles a change of boundary condition - the rule
@@ -1963,11 +1962,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
    *    only ever RANKS candidates, it never rejects one, so this is a preference and not a limit. ---*/
   constexpr passivedouble DIR_BLEND = 0.5;
 
-  /*--- How many parallel implicit lines may be merged tangential to the wall into one coarse CV.
-   *    0 selects the dimension-appropriate default: 2 in 2D, 4 in 3D (a wall quad/hex corner). ---*/
-  unsigned long max_group = config->GetMGOptions().MG_Implicit_Lines_Max_Group;
-  if (max_group == 0) max_group = (nDim == 2) ? 2 : 4;
-
   const auto stiff = ComputeNodeStiffness(fine_grid);
 
   /*--- PHASE 1. SeedFrontNodes must be reached by every rank, including one that owns no boundary:
@@ -2121,11 +2115,9 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
 
   auto markFail = [&](unsigned long f) { failed[f] = 1; };
 
-  /*--- How many fine layers the next coarse CV of this front holds: always two, so the stack coarsens
-   *    by the same factor along the marching direction as the footprint does across it. The only
-   *    exception is a footprint already so wide that a second layer would exceed the agglomeration
-   *    size limit, which can only happen if MG_IMPLICIT_LINES_MAX_GROUP was raised past the
-   *    dimension's default. ---*/
+  /*--- How many fine layers the next coarse CV of this front holds: two, so the stack coarsens by the
+   *    same factor along the marching direction as the footprint does across it. One only if a second
+   *    layer would exceed the agglomeration size limit. ---*/
   auto blockFor = [&](const vector<unsigned long>& layer) -> unsigned long {
     return (layer.size() * 2 > static_cast<size_t>(maxAgglomSize)) ? 1 : 2;
   };
