@@ -685,19 +685,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_IMPLICIT);)
     }
 
-    /*--- NOTE: the coarse-grid residual computed just above is evaluated at the restricted
-     *    solution, i.e. at exactly the state the first pre-smoothing sweep of the recursive call
-     *    below re-evaluates it at, so it looks like that sweep could reuse LinSysRes (and, if the
-     *    Jacobian were assembled here, the Jacobian too) and skip its own Preprocessing and
-     *    Space_Integration. It cannot, as things stand: Space_Integration is not a pure producer of
-     *    LinSysRes/Jacobian. BC_Sym_Plane (which serves both SYMMETRY_PLANE and EULER_WALL) also
-     *    projects Res_TruncError and Solution_Old onto the wall tangent plane, and in the current
-     *    ordering that projection is what makes the FAS forcing term written by SetForcing_Term
-     *    below, and the Solution_Old written by Set_OldSolution, wall-consistent before their first
-     *    use. Reusing the residual moves both projections to the wrong side of the writes.
-     *    Factoring those side effects out of Space_Integration would make the reuse safe and save
-     *    one full residual evaluation per coarse level per cycle. ---*/
-
     /*--- Recursive call to MultiGrid_Cycle (this routine). ---*/
     /*--- Execute multigrid cycles sequentially to ensure deterministic recursion order ---*/
     /*--- This prevents accumulation of floating-point variations across recursive calls ---*/
@@ -974,16 +961,13 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
     }
   }
 
-  /*--- MPI the set solution old. Required: the loop above only writes domain points, and
-   *    ProlongateField below injects from every coarse point including halos in order to fill the
-   *    fine-grid halo entries of the correction. ---*/
+  /*--- MPI the set solution old. ---*/
 
   sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_OLD);
   sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_OLD);
 
-  /*--- Interpolate the coarse-grid correction (held in Solution_Old) onto the fine
-   *    grid and store it in LinSysRes, which SetProlongated_Correction then damps
-   *    and adds to the fine-grid solution. ---*/
+  /*--- Interpolate the coarse-grid correction onto the fine
+   *    grid and store in LinSysRes. ---*/
 
   ProlongateField(geo_coarse,
                   [&](unsigned long iPoint) { return sol_coarse->GetNodes()->GetSolution_Old(iPoint); },
@@ -1003,10 +987,6 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   const unsigned short nVar = solver->GetnVar();
 
-  /*--- Seeded over all points, halos included: the restore loop below reads Residual_Old at the
-   *    vertices of the physical markers, and on a partitioned mesh some of those are halo points
-   *    owned by another rank. ---*/
-
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
     const auto* Residual_Old = solver->LinSysRes.GetBlock(iPoint);
@@ -1019,10 +999,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   for (auto iSmooth = 0u; iSmooth < val_nSmooth; iSmooth++) {
 
-    /*--- Loop over the domain points (sum the residuals of direct neighbors).
-     *    Halo points are deliberately not smoothed here: their own neighbor stencil is incomplete
-     *    on this rank, so the average would be meaningless, and the halo exchange at the end of
-     *    each sweep overwrites them with the value their owner computed anyway. ---*/
+    /*--- Loop over the domain points, exclude halo points ---*/
 
     SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
@@ -1053,17 +1030,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
     }
     END_SU2_OMP_FOR
 
-    /*--- Restore original residuals (without average) at physical boundary points.
-     *
-     *    SEND_RECEIVE is excluded: carrying such a marker does not put a point on a boundary, it
-     *    only records that the point is mirrored on another rank. Restoring those points froze the
-     *    correction on the whole send fringe, which is exactly the ring of domain points that have
-     *    a halo neighbour, so the smoothing this function applied depended on where the mesh
-     *    happened to be partitioned rather than on the geometry alone.
-     *
-     *    Note this removes one source of rank-dependence, not all of them: the coarse grids are
-     *    agglomerated per rank, so the multigrid operator itself still differs between partition
-     *    counts and a run on 1 and on N ranks is not expected to match bit for bit. ---*/
+    /*--- Restore original residuals at physical boundary points. ---*/
 
     for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
@@ -1366,7 +1333,6 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
 
-    /*--- Row-major scratch plus the row pointers SetGradient expects. ---*/
     su2double GradientData[MAXNVAR][MAXNDIM] = {{0.0}};
     su2double* Gradient[MAXNVAR];
     for (auto iVar = 0u; iVar < nVar; iVar++) Gradient[iVar] = GradientData[iVar];
