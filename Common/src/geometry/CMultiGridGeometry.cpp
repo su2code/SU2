@@ -98,19 +98,14 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
   const auto endLineCV = Index_CoarseCV;
 
-  /*--- Points carrying a physical boundary condition. SEND_RECEIVE is not one: it only records that
-   *    the point is mirrored on another rank. Used by the repair passes below to tell which coarse
-   *    CVs touch a boundary, see cvOnBoundary. ---*/
+  /*--- Points carrying a physical boundary condition. This does not include SEND_RECEIVE. ---*/
   vector<char> onPhysBoundary(fine_grid->GetnPoint(), 0);
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++)
       onPhysBoundary[fine_grid->vertex[iMarker][iVertex]->GetNode()] = 1;
   }
-  /*--- Nodes where two different boundary conditions meet. The rule has to hold for every phase or
-   *    the same node is treated one way by the paving and another here. In 2D the corner test below
-   *    already refused them; in 3D a ridge of such nodes carries one identical marker PAIR all along
-   *    it and would otherwise pair up with itself quite happily. ---*/
+  /*--- Nodes where two different boundary conditions meet.  ---*/
   const auto mixedBC = FindMixedBoundaryNodes(fine_grid, config);
 
   /*--- STEP 1: The first step is the boundary agglomeration. ---*/
@@ -148,10 +143,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         marker_seed.push_back(iMarker);
 
         /*--- For a particular point in the fine grid we save all the physical markers that are in
-         that point. SEND_RECEIVE markers are deliberately not counted: including them would make
-         an ordinary wall point look like a ridge, and a wall/symmetry ridge look like a corner
-         (which the counter > 2 rule below then refuses to agglomerate at all), so a point would be
-         classified differently depending only on where the partition happens to cut. ---*/
+         that point.  ---*/
 
         for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
           if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) continue;
@@ -205,12 +197,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
                 point merely split by a partition interface no longer reaches this branch: it counts
                 one physical marker and is handled above as the valley point it is. ---*/
           if (nDim == 2) agglomerate_seed = false;
-          /*--- In 3D, this is a ridge point (an edge feature where two surface markers meet).
-                Always allow it to attempt agglomeration here; SetBoundAgglomeration() enforces
-                the actual ridge-ridge rule downstream: it may only pair with a neighboring ridge
-                point that carries the identical physical marker pair. A mismatched marker pair
-                usually indicates a genuine sharp corner in the geometry and is correctly left
-                un-merged (falls through to the singleton leftover loop). ---*/
+          /*--- In 3D, this is a ridge point (an edge where two surface markers meet). ---*/
           if (nDim == 3) agglomerate_seed = true;
 
           /*--- Euler walls: check curvature-based agglomeration criterion for both markers ---*/
@@ -272,10 +259,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
             }
           }
 
-          /*--- Indirect neighbors only for 3D faces. The size test is needed on entry too: the sweep
-           *    above leaves the CV exactly full when it hit the limit, and without this the first
-           *    indirect candidate pushed it past the limit, after which the equality test never matched
-           *    and the CV grew unbounded. ---*/
+          /*--- Indirect neighbors only for 3D faces.  ---*/
           if ((nDim == 3) && (nChildren < maxAgglomSize)) {
             Suitable_Indirect_Neighbors.clear();
 
@@ -357,11 +341,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
 
   /*--- STEP 2: Agglomerate the domain points. A seed grows one node at a time, taking the candidate
-   *    that shares the most edges with the current members so the CV closes into a block rather than a
-   *    star. Ties break on distance to the centroid measured in cells, using a local frame built from
-   *    the seed's own edges, so a stretched cell does not pull the CV along the boundary layer. ---*/
-
-  /*--- Scratch shared by all seeds. The markers are cleared per CV, touching only what was used. ---*/
+   *    that shares the most edges with the current members. ---*/
   vector<char> inCV(fine_grid->GetnPoint(), 0);
   vector<char> isCandidate(fine_grid->GetnPoint(), 0);
   vector<unsigned long> members, candidates;
@@ -369,7 +349,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   /*--- A local frame at the seed: up to nDim of its incident edges, as mutually orthogonal as possible,
    *    each with its own length. An offset is resolved onto these and each component divided by that
-   *    direction's spacing, so the measure turns with the mesh and stays correct on a curved boundary. ---*/
+   *    direction's spacing. ---*/
   vector<std::array<su2double, MAXNDIM>> frameDir, edgeDir;
   vector<su2double> frameLen, edgeLen;
   vector<char> edgeUsed;

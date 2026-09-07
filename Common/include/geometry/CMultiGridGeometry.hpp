@@ -87,7 +87,7 @@ class CMultiGridGeometry final : public CGeometry {
   su2double ComputeLocalCurvature(const CGeometry* fine_grid, unsigned long iPoint, unsigned short iMarker) const;
 
   /*!
-   * \brief Pave the domain with advancing fronts rising from the boundary patches.
+   * \brief Pave the domain with advancing fronts extruded from the boundary patches.
    * \param[in,out] Index_CoarseCV - Current coarse CV index, incremented as new coarse CVs are created.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Configuration.
