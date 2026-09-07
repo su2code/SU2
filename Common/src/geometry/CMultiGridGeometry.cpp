@@ -1653,6 +1653,85 @@ bool VertexUnitNormal(const CGeometry* grid, unsigned short nDim, unsigned long 
   return true;
 }
 
+/*--- Are a and b neighbours in the fine grid? ---*/
+bool IsAdjacent(const CGeometry* grid, unsigned long a, unsigned long b) {
+  const auto& pts = grid->nodes->GetPoints(a);
+  return std::find(pts.begin(), pts.end(), b) != pts.end();
+}
+
+/*--- Is a footprint one connected patch? A set that falls into pieces is not the extrusion of
+ *    anything, so an arriving footprint and a piece left by a split both have to pass this. ---*/
+bool IsConnectedLayer(const CGeometry* grid, const vector<unsigned long>& layer) {
+  if (layer.size() < 2) return true;
+  vector<char> seen(layer.size(), 0);
+  vector<size_t> stk{0};
+  seen[0] = 1;
+  size_t nSeen = 1;
+  while (!stk.empty()) {
+    const auto cur = stk.back();
+    stk.pop_back();
+    for (size_t k = 0; k < layer.size(); ++k) {
+      if (seen[k] || !IsAdjacent(grid, layer[cur], layer[k])) continue;
+      seen[k] = 1;
+      nSeen++;
+      stk.push_back(k);
+    }
+  }
+  return nSeen == layer.size();
+}
+
+/*--- Is the new layer topologically identical to the old? They are index-aligned, so phi maps
+ *    old[k] to new[k], and the layer is valid when phi is an isomorphism of the induced subgraphs. ---*/
+bool LayerIsIsomorphic(const CGeometry* grid, const vector<unsigned long>& oldL, const vector<unsigned long>& newL) {
+  const auto n = oldL.size();
+  if (newL.size() != n) return false;
+
+  for (size_t k = 0; k < n; ++k) {
+    unsigned nOld = 0, nNew = 0;
+    for (size_t l = 0; l < n; ++l) {
+      nOld += IsAdjacent(grid, newL[k], oldL[l]);
+      nNew += IsAdjacent(grid, oldL[k], newL[l]);
+    }
+    /*--- Exactly one partner each way, and it has to be the one phi names. ---*/
+    if ((nOld != 1) || (nNew != 1)) return false;
+    if (!IsAdjacent(grid, oldL[k], newL[k])) return false;
+  }
+
+  for (size_t k = 0; k < n; ++k)
+    for (size_t l = k + 1; l < n; ++l)
+      if (IsAdjacent(grid, oldL[k], oldL[l]) != IsAdjacent(grid, newL[k], newL[l])) return false;
+
+  return true;
+}
+
+/*--- A boundary node ends a front only if the step runs INTO it, i.e. roughly along its normal. One
+ *    running ALONG a boundary is a legitimate interior node of the stack. ---*/
+bool EntersBoundary(const CGeometry* grid, const CConfig* config, unsigned short nDim, unsigned long jPoint,
+                    const su2double* stepDir, su2double cosBoundary) {
+  for (unsigned short iMarker = 0; iMarker < grid->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+    su2double n[3] = {0.0}; /*--- nDim is at most 3. ---*/
+    if (!VertexUnitNormal(grid, nDim, jPoint, iMarker, n)) continue;
+    if (fabs(GeometryToolbox::DotProduct(nDim, n, stepDir)) >= cosBoundary) return true;
+  }
+  return false;
+}
+
+/*--- Fine layers the next coarse CV of this front holds: two, so the stack coarsens by the same
+ *    factor along the marching direction as the footprint does across it. One only if a second
+ *    layer would exceed the agglomeration size limit. ---*/
+unsigned long BlockFor(short int maxAgglomSize, const vector<unsigned long>& layer) {
+  return (layer.size() * 2 > static_cast<size_t>(maxAgglomSize)) ? 1 : 2;
+}
+
+/*--- Rank-independent name for a set of nodes: the smallest global index in it, +1 so that 0 is
+ *    free to mean "nothing". A footprint is claimed by one front and no other, so it is unique. ---*/
+unsigned long TagOfSet(const CGeometry* grid, const vector<unsigned long>& set) {
+  unsigned long t = std::numeric_limits<unsigned long>::max();
+  for (auto p : set) t = std::min(t, grid->nodes->GetGlobalIndex(p));
+  return t + 1;
+}
+
 }  // namespace
 
 CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeometry* fine_grid, const CConfig* config,
@@ -1781,29 +1860,15 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
   const auto nSeeds = seeds.node.size();
   const unsigned long max_group = (nDim == 2) ? 2 : 4;
 
-  /*--- Marker signature of each seed, as a bitmask over the physical markers. Seeds may only be
-   *    matched when these agree, so a patch never straddles a change of boundary condition - the rule
-   *    ordinary agglomeration uses for ridges and valleys. ---*/
+  /*--- Physical markers each seed lies on, ascending. Seeds may only be matched when these agree, so
+   *    a patch never straddles a change of boundary condition. ---*/
   const auto nMarkerFine = fine_grid->GetnMarker();
-  vector<short> physBit(nMarkerFine, -1);
-  unsigned nPhys = 0;
-  for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) physBit[iMarker] = static_cast<short>(nPhys++);
-
-  const unsigned nWords = std::max(1u, (nPhys + 63u) / 64u);
-  vector<uint64_t> sig(nSeeds * nWords, 0);
+  vector<vector<unsigned short>> sig(nSeeds);
   for (unsigned long si = 0; si < nSeeds; ++si)
-    for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++) {
-      if (physBit[iMarker] < 0) continue;
-      if (fine_grid->nodes->GetVertex(seeds.node[si], iMarker) == -1) continue;
-      const auto b = static_cast<unsigned>(physBit[iMarker]);
-      sig[si * nWords + b / 64] |= (uint64_t(1) << (b % 64));
-    }
-  auto sameSig = [&](unsigned long sa, unsigned long sb) {
-    for (unsigned w = 0; w < nWords; ++w)
-      if (sig[sa * nWords + w] != sig[sb * nWords + w]) return false;
-    return true;
-  };
+    for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++)
+      if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+          (fine_grid->nodes->GetVertex(seeds.node[si], iMarker) != -1))
+        sig[si].push_back(iMarker);
 
   /*--- Seed-to-seed adjacency, inherited from the boundary nodes' mesh connectivity. ---*/
   vector<long> seedOfNode(fine_grid->GetnPoint(), -1);
@@ -1846,7 +1911,7 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
   };
 
   vector<CMerge> merges;
-  vector<std::pair<unsigned long, unsigned long>> shared;
+  vector<unsigned long> touched, nShared(nSeeds, 0);
   vector<unsigned long> gkey;
   vector<char> consumed;
 
@@ -1866,25 +1931,20 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
        *    rising from it is one node wide. Both sides of a merge are tested: skipping only the mixed
        *    group would still let an ordinary group reach out and take it. ---*/
       if (mixedBC[seeds.node[groups[g].front()]]) continue;
-      shared.clear();
+      touched.clear();
       for (auto si : groups[g])
         for (auto sj : adj[si]) {
           const auto h = groupOf[sj];
           if (h <= g) continue;
           if (mixedBC[seeds.node[groups[h].front()]]) continue;
           if (groups[g].size() + groups[h].size() > max_group) continue;
-          if (!sameSig(groups[h].front(), groups[g].front())) continue;
-
-          bool seen = false;
-          for (auto& t : shared)
-            if (t.first == h) {
-              t.second++;
-              seen = true;
-              break;
-            }
-          if (!seen) shared.emplace_back(h, 1);
+          if (sig[groups[h].front()] != sig[groups[g].front()]) continue;
+          if (nShared[h]++ == 0) touched.push_back(h);
         }
-      for (const auto& t : shared) merges.push_back({g, t.first, t.second, gkey[g], gkey[t.first]});
+      for (auto h : touched) {
+        merges.push_back({g, h, nShared[h], gkey[g], gkey[h]});
+        nShared[h] = 0;
+      }
     }
 
     /*--- Best merges first over all groups at once. Sweeping groups in index order lets one with no
@@ -1921,12 +1981,9 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
 
 string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
                                                     const CConfig* config, unsigned short iMesh) {
-  /*--- Paving by advancing fronts. Each boundary patch from PHASE 1 rises into the domain keeping its
-   *    footprint: every front node picks a successor and the front advances only if all succeed, so the
-   *    layers of a stack are congruent and a coarse CV never spans two patches. A front stops at a
-   *    boundary or when the next layer is not isomorphic to the current one. Each coarse CV is the
-   *    footprint two layers deep. The multigrid queue is not touched here; the sync loop after boundary
-   *    agglomeration already removes every point marked agglomerated. ---*/
+  /*--- Paving by advancing fronts. Each boundary patch rises into the domain keeping its footprint, so
+   *    a coarse CV never spans two patches. A front stops at a boundary or when the next layer is not
+   *    isomorphic to the current one. Each coarse CV is the footprint two layers deep. ---*/
   const auto starting_Index_CoarseCV = Index_CoarseCV;
   const auto nPointFine = fine_grid->GetnPoint();
   const auto nMarkerFine = fine_grid->GetnMarker();
@@ -1960,20 +2017,6 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       onPhysicalBoundary[fine_grid->vertex[iMarker][iVertex]->GetNode()] = 1;
   }
 
-  /*--- A boundary node ends a front only if the step runs INTO that boundary, i.e. roughly parallel to
-   *    its normal. A node running ALONG a boundary, such as a column on a spanwise symmetry plane, is a
-   *    legitimate interior node of the stack; onPhysicalBoundary records marker membership only and
-   *    cannot tell the two apart. ---*/
-  auto entersBoundary = [&](unsigned long jPoint, const su2double* stepDir) {
-    for (unsigned short iMarker = 0; iMarker < nMarkerFine; iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
-      su2double n[MAXNDIM] = {0.0};
-      if (!VertexUnitNormal(fine_grid, nDim, jPoint, iMarker, n)) continue;
-      if (fabs(GeometryToolbox::DotProduct(nDim, n, stepDir)) >= cos_boundary) return true;
-    }
-    return false;
-  };
-
   /*==================================================================================================
    *  PHASE 2 - advance every front, one layer per round.
    *================================================================================================*/
@@ -1988,62 +2031,89 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     su2double dir[MAXNDIM]; /*!< Unit step direction, reused to update the front's direction. */
   };
 
-  /*--- Fronts are not a fixed set: one handed over from a neighbouring rank is appended while the
-   *    rounds are running, so every per-front array grows and the loops below are bounded by
-   *    front.size() rather than by the number of patches. ---*/
-  vector<vector<unsigned long>> front, pending, handTo;
-  vector<std::array<su2double, MAXNDIM>> dirNow;
-  vector<char> alive;
-  vector<unsigned long> depth, nBlock, pendingLayers, tag;
-  vector<vector<CStep>> prop;
+  /*--- One advancing front. Fronts are not a fixed set: one handed over from a neighbouring rank is
+   *    appended while the rounds are running, so the loops below are bounded by fronts.size(). ---*/
+  struct CFront {
+    vector<unsigned long> nodes;          /*!< \brief Current footprint. */
+    vector<unsigned long> pending;        /*!< \brief Nodes buffered for the coarse CV being built. */
+    vector<unsigned long> handTo;         /*!< \brief Halo nodes the stack should continue onto. */
+    vector<CStep> prop;                   /*!< \brief This round's proposed successors. */
+    std::array<su2double, MAXNDIM> dir{}; /*!< \brief Marching direction. */
+    unsigned long tag = 0;                /*!< \brief Rank-independent name, see TagOfSet. */
+    unsigned long handTag = 0;            /*!< \brief Name the handed-over piece travels under. After a
+                                           *    split this is NOT tag: the pieces are separate stacks. */
+    unsigned long depth = 0;              /*!< \brief Layers laid. */
+    unsigned long nBlock = 0;             /*!< \brief Fine layers the next coarse CV holds. */
+    unsigned long pendingLayers = 0;      /*!< \brief Layers currently buffered. */
+    char alive = 1;
+    char failed = 0;
+    char keepLocal = 0; /*!< \brief Handed over only part of its footprint, so it marches on here. */
+  };
+  vector<CFront> fronts;
 
-  /*--- A name for a front that means the same thing on every rank, so a stack handed across a
-   *    partition can be recognised on the far side and so two ranks reaching for the same node can be
-   *    separated the same way by both. The smallest global point index of the patch it grew from is
-   *    unique, since a seed belongs to exactly one patch; the +1 leaves 0 free to mean "nothing". ---*/
   auto addFront = [&](const vector<unsigned long>& layer, const std::array<su2double, MAXNDIM>& dir,
                       unsigned long frontTag, unsigned long block) {
-    front.push_back(layer);
-    pending.push_back(layer);
-    handTo.emplace_back();
-    dirNow.push_back(dir);
-    alive.push_back(1);
-    depth.push_back(0);
-    nBlock.push_back(block);
-    pendingLayers.push_back(1);
-    tag.push_back(frontTag);
-    prop.emplace_back();
-    return front.size() - 1;
+    CFront F;
+    F.nodes = F.pending = layer;
+    F.dir = dir;
+    F.tag = frontTag;
+    F.nBlock = block;
+    F.pendingLayers = 1;
+    fronts.push_back(std::move(F));
+    return fronts.size() - 1;
   };
 
   vector<char> claimed(nPointFine, 0);
-  /*--- Confirmed owner of a claimed node, -1 while free. Only ever written when a layer is accepted,
-   *    so a bid that is still being contested never appears here. ---*/
 
-  vector<char> failed;
-
-  /*--- Set when a front hands only PART of its footprint over and goes on marching here with what is
-   *    left of it, so the retirement pass at the end of the round knows not to kill it. ---*/
-  vector<char> keepLocal;
-  /*--- The name the handed-over piece travels under. After a split this is NOT the name of the front
-   *    it came from: the two pieces are separate stacks from here on, and giving them one name would
-   *    let the far side group a piece of this stack with a piece of another one. ---*/
-  vector<unsigned long> handTag;
-
-  /*--- A name for a set of nodes that both ranks sharing them would compute identically. The nodes of
-   *    a footprint are claimed by one front and by no other, so the smallest global index in it is a
-   *    unique name for that front; the +1 leaves 0 free to mean "nothing". ---*/
-  auto tagOfSet = [&](const vector<unsigned long>& set) {
-    unsigned long t = std::numeric_limits<unsigned long>::max();
-    for (auto p : set) t = std::min(t, fine_grid->nodes->GetGlobalIndex(p));
-    return t + 1;
+  /*--- Best free neighbour of n to step onto, ranked by alignment with dir. Local and halo candidates
+   *    are ranked separately: a halo node cannot be claimed here, but it is where the stack would go
+   *    next, so it is what gets handed over. ---*/
+  struct CCandidate {
+    unsigned long node = std::numeric_limits<unsigned long>::max();
+    unsigned long halo = std::numeric_limits<unsigned long>::max();
+    su2double dot = -2.0, len = 0.0, dir[MAXNDIM] = {0.0};
   };
 
-  /*--- The bid table. Only the index is kept per mesh point, and the bids themselves live in a
-   *    compact vector holding one entry per candidate actually bid on this round - a few per front,
-   *    against one entry per point in the mesh. Storing a whole CStep per point instead costs about
-   *    sixty bytes times nPoint, which on the meshes this code is meant for is hundreds of megabytes
-   *    of table that is empty almost everywhere. ---*/
+  auto bestSuccessor = [&](unsigned long n, const su2double* marchDir) {
+    CCandidate c;
+    su2double haloDot = -2.0;
+
+    for (auto jPoint : fine_grid->nodes->GetPoints(n)) {
+      su2double vec[MAXNDIM] = {0.0};
+      GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(n), vec);
+      const su2double len = GeometryToolbox::Norm(nDim, vec);
+      if (len <= 0.0) continue;
+      for (unsigned short d = 0; d < nDim; ++d) vec[d] /= len;
+
+      /*--- The direction only RANKS candidates; a front is never stopped for turning. ---*/
+      const su2double dot = GeometryToolbox::DotProduct(nDim, vec, marchDir);
+      const bool admissible =
+          !(onPhysicalBoundary[jPoint] && EntersBoundary(fine_grid, config, nDim, jPoint, vec, cos_boundary)) &&
+          GeometricalCheck(jPoint, fine_grid, config);
+
+      /*--- Halo parents are assigned by the owning rank through the MPI relay, so claiming one here
+       *    would fight that assignment. Admissibility is still checked, as the owner would. ---*/
+      if (!fine_grid->nodes->GetDomain(jPoint)) {
+        if (dot > haloDot && admissible) {
+          haloDot = dot;
+          c.halo = jPoint;
+        }
+        continue;
+      }
+      if (fine_grid->nodes->GetAgglomerate(jPoint) || claimed[jPoint] || !admissible) continue;
+
+      if (dot > c.dot) {
+        c.dot = dot;
+        c.node = jPoint;
+        c.len = len;
+        for (unsigned short d = 0; d < nDim; ++d) c.dir[d] = vec[d];
+      }
+    }
+    return c;
+  };
+
+  /*--- Bid table: only an index per mesh point, the bids themselves in a compact vector. A whole
+   *    CStep per point would be hundreds of megabytes that is empty almost everywhere. ---*/
   constexpr unsigned NOBID = std::numeric_limits<unsigned>::max();
   vector<unsigned> bidIdx(nPointFine, NOBID);
   vector<CStep> bids;
@@ -2052,22 +2122,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
   /*--- Scratch for the layer under construction, hoisted so a front does not allocate per layer. ---*/
   vector<unsigned long> newLayer;
 
-  /*--- Paving diagnostics, summed over all ranks in one reduction at the end. ---*/
-  enum {
-    P_STACKS,
-    P_LAYERS,
-    P_COVERED,
-    P_SEMICV,
-    P_FULLCV,
-    P_HANDOUT,
-    P_HANDIN,
-    P_SPLIT,
-    P_SPLITLOC,
-    P_SPLITHAND,
-    P_SPLITDROP,
-    P_HIST, /*!< \brief Start of nine patch-size bins. */
-    P_COUNT = P_HIST + 9
-  };
+  /*--- Summed over all ranks for the one-line report at the end. ---*/
+  enum { P_STACKS, P_LAYERS, P_COVERED, P_COUNT };
   unsigned long ct[P_COUNT] = {0};
 
   /*--- One footprint node arriving from a neighbouring rank, to be regrouped by tag. ---*/
@@ -2093,85 +2149,27 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     }
   }
 
-  auto markFail = [&](unsigned long f) { failed[f] = 1; };
+  auto markFail = [&](unsigned long f) { fronts[f].failed = 1; };
 
   /*--- How many fine layers the next coarse CV of this front holds: two, so the stack coarsens by the
    *    same factor along the marching direction as the footprint does across it. One only if a second
    *    layer would exceed the agglomeration size limit. ---*/
-  auto blockFor = [&](const vector<unsigned long>& layer) -> unsigned long {
-    return (layer.size() * 2 > static_cast<size_t>(maxAgglomSize)) ? 1 : 2;
-  };
-
   /*--- Turn everything buffered for this front into one coarse control volume. ---*/
   auto emit = [&](unsigned long f) {
-    if (pending[f].empty()) return;
-    for (unsigned long c = 0; c < pending[f].size(); ++c) {
-      const auto p = pending[f][c];
+    if (fronts[f].pending.empty()) return;
+    for (unsigned long c = 0; c < fronts[f].pending.size(); ++c) {
+      const auto p = fronts[f].pending[c];
       fine_grid->nodes->SetParent_CV(p, Index_CoarseCV);
       nodes->SetChildren_CV(Index_CoarseCV, c, p);
       if (fine_grid->nodes->GetAgglomerate_Indirect(p)) nodes->SetAgglomerate_Indirect(Index_CoarseCV, true);
     }
-    nodes->SetnChildren_CV(Index_CoarseCV, static_cast<unsigned short>(pending[f].size()));
+    nodes->SetnChildren_CV(Index_CoarseCV, static_cast<unsigned short>(fronts[f].pending.size()));
     Index_CoarseCV++;
-    ct[P_COVERED] += pending[f].size();
-    ct[(pendingLayers[f] == 1) ? P_SEMICV : P_FULLCV]++;
+    ct[P_COVERED] += fronts[f].pending.size();
 
-    pending[f].clear();
-    pendingLayers[f] = 0;
-    nBlock[f] = blockFor(front[f]);
-  };
-
-  auto isAdjacent = [&](unsigned long a, unsigned long b) {
-    const auto& pts = fine_grid->nodes->GetPoints(a);
-    return std::find(pts.begin(), pts.end(), b) != pts.end();
-  };
-
-  /*--- Is a footprint one connected patch? A set that falls into pieces is not the extrusion of
-   *    anything, so a footprint arriving from a neighbour and a piece left behind by a split both
-   *    have to pass this before they are allowed to carry a stack. ---*/
-  auto isConnectedLayer = [&](const vector<unsigned long>& layer) {
-    if (layer.size() < 2) return true;
-    vector<char> seen(layer.size(), 0);
-    vector<size_t> stk{0};
-    seen[0] = 1;
-    size_t nSeen = 1;
-    while (!stk.empty()) {
-      const auto cur = stk.back();
-      stk.pop_back();
-      for (size_t k = 0; k < layer.size(); ++k) {
-        if (seen[k] || !isAdjacent(layer[cur], layer[k])) continue;
-        seen[k] = 1;
-        nSeen++;
-        stk.push_back(k);
-      }
-    }
-    return nSeen == layer.size();
-  };
-
-  /*--- Is the layer about to be laid topologically identical to the one below? "old" and "new" are
-   *    index-aligned, so phi maps old[k] to new[k]. The layer is valid when phi is an isomorphism of
-   *    the two induced subgraphs: each new cell adjacent to exactly its own preimage, each old cell to
-   *    exactly its own image, and old[k]-old[l] an edge if and only if new[k]-new[l] is. ---*/
-  auto layerIsIsomorphic = [&](const vector<unsigned long>& oldL, const vector<unsigned long>& newL) {
-    const auto n = oldL.size();
-    if (newL.size() != n) return false;
-
-    for (size_t k = 0; k < n; ++k) {
-      unsigned nOld = 0, nNew = 0;
-      for (size_t l = 0; l < n; ++l) {
-        nOld += isAdjacent(newL[k], oldL[l]);
-        nNew += isAdjacent(oldL[k], newL[l]);
-      }
-      /*--- Exactly one partner each way, and it has to be the one phi names. ---*/
-      if ((nOld != 1) || (nNew != 1)) return false;
-      if (!isAdjacent(oldL[k], newL[k])) return false;
-    }
-
-    for (size_t k = 0; k < n; ++k)
-      for (size_t l = k + 1; l < n; ++l)
-        if (isAdjacent(oldL[k], oldL[l]) != isAdjacent(newL[k], newL[l])) return false;
-
-    return true;
+    fronts[f].pending.clear();
+    fronts[f].pendingLayers = 0;
+    fronts[f].nBlock = BlockFor(maxAgglomSize, fronts[f].nodes);
   };
 
   /*--- The boundary layer of every front. Claiming it before ordinary boundary agglomeration runs is
@@ -2200,35 +2198,28 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     if (nrm <= 0.0) continue;
     for (unsigned short d = 0; d < nDim; ++d) n0[d] /= nrm;
 
-    /*--- The boundary layer becomes a coarse CV on its own: a boundary node is never merged with an
-     *    interior one, so the first advance of every front is a single layer. Only the first - emit()
-     *    then asks blockFor again for what is by then an ordinary interior layer, and the rest of the
-     *    stack rises two nodes at a time. This is also what isolates a junction node without needing
-     *    a rule of its own: such a node is a patch of one, so its first CV holds it and nothing else. ---*/
+    /*--- The boundary layer is a coarse CV on its own: a boundary node is never merged with an
+     *    interior one, so only the first advance is a single layer. This also isolates a junction
+     *    node without a rule of its own, since such a node is a patch of one. ---*/
     const auto f = addFront(layer0, n0, frontTag + 1, 1);
     for (auto p : layer0) {
       claimed[p] = 1;
     }
-    ct[P_HIST + std::min<size_t>(layer0.size(), 8)]++;
     ct[P_STACKS]++;
     ct[P_LAYERS]++;
     emit(f);
   }
 
   for (unsigned long layer = 1;; ++layer) {
-    /*--- Whether ANY rank still has a live front, not just this one. Every rank has to run the same
-     *    number of rounds because each round ends in a handover exchange that they all take part in:
-     *    a rank whose own fronts are long finished may still be about to receive a stack from a
-     *    neighbour, and a rank that dropped out of the loop early would hang the ones that did not. ---*/
+    /*--- Every rank runs the same number of rounds: each ends in a collective handover exchange, so
+     *    one dropping out early would hang the others. ---*/
     int aliveLocal = 0;
-    for (unsigned long f = 0; f < front.size(); ++f) aliveLocal |= alive[f];
+    for (unsigned long f = 0; f < fronts.size(); ++f) aliveLocal |= fronts[f].alive;
     int aliveGlobal = 0;
     SU2_MPI::Allreduce(&aliveLocal, &aliveGlobal, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
     if (aliveGlobal == 0) break;
 
-    failed.assign(front.size(), 0);
-    keepLocal.assign(front.size(), 0);
-    handTag.assign(front.size(), 0);
+    for (auto& F : fronts) F.failed = F.keepLocal = F.handTag = 0;
     for (const auto& b : bids) bidIdx[b.node] = NOBID;
     bids.clear();
     bidOwner.clear();
@@ -2236,118 +2227,62 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     /*--- (a) Every alive front proposes a successor for each of its nodes. A front that cannot fill a
      *    whole layer proposes NOTHING: it is retiring this round anyway, and letting its partial bids
      *    stand would let a dying front displace a healthy one out of nodes it can still use. ---*/
-    for (unsigned long f = 0; f < front.size(); ++f) {
-      if (!alive[f]) continue;
-      prop[f].clear();
-      handTo[f].clear();
+    for (unsigned long f = 0; f < fronts.size(); ++f) {
+      if (!fronts[f].alive) continue;
+      fronts[f].prop.clear();
+      fronts[f].handTo.clear();
 
-      for (auto n : front[f]) {
-        auto best = NO_POINT;
-        su2double best_dot = -2.0, best_len = 0.0, best_dir[MAXNDIM] = {0.0};
-        /*--- The best step onto a node this rank does NOT own, kept separately. It cannot be claimed
-         *    here, but it is where the stack would go next, so it is what gets handed over. ---*/
-        auto bestHalo = NO_POINT;
-        su2double bestHalo_dot = -2.0;
+      for (auto n : fronts[f].nodes) {
+        const auto c = bestSuccessor(n, fronts[f].dir.data());
 
-        for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(n); ++iNeigh) {
-          const auto jPoint = fine_grid->nodes->GetPoint(n, iNeigh);
-
-          su2double vec[MAXNDIM] = {0.0};
-          GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(n), vec);
-          const su2double len = GeometryToolbox::Norm(nDim, vec);
-          if (len <= 0.0) continue;
-          for (unsigned short d = 0; d < nDim; ++d) vec[d] /= len;
-
-          /*--- The marching direction RANKS the candidates and nothing more: whichever free neighbour
-           *    lies most nearly ahead is the one proposed. There is no cone, so a front is never
-           *    stopped for turning - only for running out of mesh to extrude into. ---*/
-          const su2double dot = GeometryToolbox::DotProduct(nDim, vec, dirNow[f].data());
-
-          /*--- Halo nodes stay out: their parent is dictated by the rank that owns them and arrives
-           *    through the MPI relay, so a front claiming one would fight that assignment. This is
-           *    what a front hits when it reaches a partition interface, and it needs a reason of its
-           *    own, rather than being skipped silently and leaving some other candidate to explain a
-           *    stop that was really the partitioning. ---*/
-          if (!fine_grid->nodes->GetDomain(jPoint)) {
-            /*--- Held as a handover candidate, subject to the same admissibility the owner would
-             *    apply anyway; whether it is still free is the owner's to decide. ---*/
-            if (dot > bestHalo_dot && !(onPhysicalBoundary[jPoint] && entersBoundary(jPoint, vec)) &&
-                GeometricalCheck(jPoint, fine_grid, config)) {
-              bestHalo_dot = dot;
-              bestHalo = jPoint;
-            }
-            continue;
-          }
-          /*--- Taken by an earlier phase or by another front's coarse CV. ---*/
-          if (fine_grid->nodes->GetAgglomerate(jPoint)) continue;
-          /*--- Already bid for this round. ---*/
-          if (claimed[jPoint]) continue;
-          /*--- The step runs into a boundary, or the node would make an unusable coarse cell. ---*/
-          if (onPhysicalBoundary[jPoint] && entersBoundary(jPoint, vec)) continue;
-          if (!GeometricalCheck(jPoint, fine_grid, config)) continue;
-
-          if (dot > best_dot) {
-            best_dot = dot;
-            best = jPoint;
-            best_len = len;
-            for (unsigned short d = 0; d < nDim; ++d) best_dir[d] = vec[d];
-          }
-        }
-
-        if ((best == NO_POINT) && (bestHalo != NO_POINT)) {
-          /*--- Nowhere left on this rank, but the stack does continue - just on someone else's side
-           *    of the interface. Remember where, and let the classification below decide whether the
-           *    whole layer goes over. ---*/
-          handTo[f].push_back(bestHalo);
+        /*--- Nothing free here but the stack continues across the interface; the split test below
+         *    decides whether the whole layer goes over. ---*/
+        if ((c.node == NO_POINT) && (c.halo != NO_POINT)) {
+          fronts[f].handTo.push_back(c.halo);
           continue;
         }
-
-        /*--- No admissible successor: a boundary, a partition, another front, or unusable mesh. ---*/
-        if (best == NO_POINT) {
+        /*--- No successor at all: a boundary, a partition, another front, or unusable mesh. ---*/
+        if (c.node == NO_POINT) {
           markFail(f);
           break;
         }
 
-        CStep s{best, n, fine_grid->nodes->GetGlobalIndex(n), best_dot, best_len, {}};
-        for (unsigned short d = 0; d < nDim; ++d) s.dir[d] = best_dir[d];
-        prop[f].push_back(s);
+        CStep s{c.node, n, fine_grid->nodes->GetGlobalIndex(n), c.dot, c.len, {}};
+        for (unsigned short d = 0; d < nDim; ++d) s.dir[d] = c.dir[d];
+        fronts[f].prop.push_back(s);
       }
 
       /*--- An interface can cut a footprint. If all of it crosses, the stack is handed over intact
        *    and this front is finished. If only part crosses, the footprint is SPLIT: the piece whose
        *    successors are local marches on here, the rest is handed across, and both are renamed. ---*/
-      if (failed[f]) {
-        prop[f].clear();
-        handTo[f].clear();
-      } else if (!handTo[f].empty()) {
-        /*--- prop[f] is built in the order of front[f], so this is the piece that stays, in the same
+      if (fronts[f].failed) {
+        fronts[f].prop.clear();
+        fronts[f].handTo.clear();
+      } else if (!fronts[f].handTo.empty()) {
+        /*--- fronts[f].prop is built in the order of fronts[f].nodes, so this is the piece that stays, in the same
          *    order, and phi still runs index for index between it and the layer it proposes. ---*/
         vector<unsigned long> narrow;
-        for (const auto& s : prop[f]) narrow.push_back(s.from);
+        for (const auto& s : fronts[f].prop) narrow.push_back(s.from);
 
         /*--- A cut can leave the local piece in two disconnected halves - a square footprint cut
          *    diagonally does exactly that - and that is not a layer. Drop it and hand over the rest;
          *    the stack still survives on the far side instead of ending here. ---*/
-        if (!narrow.empty() && !isConnectedLayer(narrow)) {
-          ct[P_SPLITDROP] += narrow.size();
+        if (!narrow.empty() && !IsConnectedLayer(fine_grid, narrow)) {
           narrow.clear();
         }
 
-        handTag[f] = tagOfSet(handTo[f]);
+        fronts[f].handTag = TagOfSet(fine_grid, fronts[f].handTo);
 
         if (narrow.empty()) {
-          prop[f].clear();
+          fronts[f].prop.clear();
         } else {
-          ct[P_SPLIT]++;
-          ct[P_SPLITLOC] += narrow.size();
-          ct[P_SPLITHAND] += handTo[f].size();
           /*--- Close the coarse CV that is open on the WIDE footprint before narrowing, so that no CV
            *    ever ends up holding two layers of different shape. ---*/
-          front[f] = narrow;
+          fronts[f].nodes = narrow;
           emit(f);
-          nBlock[f] = blockFor(front[f]);
-          tag[f] = tagOfSet(front[f]);
-          keepLocal[f] = 1;
+          fronts[f].nBlock = BlockFor(maxAgglomSize, fronts[f].nodes);
+          fronts[f].tag = TagOfSet(fine_grid, fronts[f].nodes);
+          fronts[f].keepLocal = 1;
         }
       }
     }
@@ -2361,14 +2296,12 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       return a.key < b.key;
     };
 
-    for (unsigned long f = 0; f < front.size(); ++f) {
-      if (!alive[f] || failed[f]) continue;
-      for (const auto& s : prop[f]) {
-        /*--- A front that has lost a bid is retiring and must not place the rest of its layer and
-         *    displace a healthy front. What it placed before losing stays, which can still cost another
-         *    front a candidate; the residual is conservative and retires a front near a seam one layer
-         *    early, and the seam goes to ordinary agglomeration either way. ---*/
-        if (failed[f]) break;
+    for (unsigned long f = 0; f < fronts.size(); ++f) {
+      if (!fronts[f].alive || fronts[f].failed) continue;
+      for (const auto& s : fronts[f].prop) {
+        /*--- A front that has lost a bid is retiring and must not displace a healthy one with the
+         *    rest of its layer. What it placed before losing stays, which is conservative. ---*/
+        if (fronts[f].failed) break;
 
         if (bidIdx[s.node] == NOBID) {
           bidIdx[s.node] = static_cast<unsigned>(bids.size());
@@ -2389,11 +2322,9 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
           markFail(f);
         }
 
-        /*--- A head-on meeting stops BOTH fronts. Letting the winner carry on through the seam would
-         *    push its stack into territory the other front had every right to, and the asymmetry
-         *    shows up in the coarse grid as one stack overshooting the other. A glancing contact
-         *    (directions not opposed) is not a meeting and only costs the loser. ---*/
-        if ((g != f) && (GeometryToolbox::DotProduct(nDim, dirNow[f].data(), dirNow[g].data()) < 0.0)) {
+        /*--- A head-on meeting stops BOTH fronts, or the winner overshoots into the other's
+         *    territory. A glancing contact is not a meeting and only costs the loser. ---*/
+        if ((g != f) && (GeometryToolbox::DotProduct(nDim, fronts[f].dir.data(), fronts[g].dir.data()) < 0.0)) {
           markFail(f);
           markFail(g);
         }
@@ -2403,58 +2334,52 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     /*--- (c) All-or-nothing acceptance: a front takes the whole layer or none of it and retires. A
      *    bid only becomes a claim here, so a retiring front never has to give anything back and the
      *    nodes it was reaching for stay available to ordinary agglomeration. ---*/
-    for (unsigned long f = 0; f < front.size(); ++f) {
-      if (!alive[f]) continue;
+    for (unsigned long f = 0; f < fronts.size(); ++f) {
+      if (!fronts[f].alive) continue;
 
       newLayer.clear();
-      if (!failed[f]) {
-        /*--- Built in the order prop[f] was, which is the order of front[f], so newLayer[k] is the
-         *    successor proposed by front[f][k] and the two vectors carry phi between them. ---*/
-        for (const auto& s : prop[f]) {
+      if (!fronts[f].failed) {
+        /*--- Built in proposal order, so newLayer[k] is the successor of nodes[k] and the two carry phi. ---*/
+        for (const auto& s : fronts[f].prop) {
           const auto k = bidIdx[s.node];
           if ((k != NOBID) && (bidOwner[k] == f)) newLayer.push_back(s.node);
         }
         /*--- Every bid of a front that was not marked failed must have been granted. ---*/
-        if ((newLayer.size() != front[f].size()) || !layerIsIsomorphic(front[f], newLayer)) markFail(f);
+        if ((newLayer.size() != fronts[f].nodes.size()) || !LayerIsIsomorphic(fine_grid, fronts[f].nodes, newLayer))
+          markFail(f);
       }
 
-      if (failed[f]) {
-        /*--- Nothing to give back: a bid only becomes a claim on acceptance below. ---*/
-        alive[f] = 0;
-        /*--- One layer short of a full block at the top: take what is buffered as its own coarse CV
-         *    rather than dropping it back to ordinary agglomeration. ---*/
+      if (fronts[f].failed) {
+        /*--- Nothing to give back: a bid only becomes a claim on acceptance. ---*/
+        fronts[f].alive = 0;
         emit(f);
         continue;
       }
 
-      /*--- (d) Hand stacks across partition interfaces. A front that runs into the halo cannot go on
-       *    here, so its footprint is sent to the owning rank, which picks the stack up and carries on.
-       *    What crosses is the footprint, not a coarse CV, so both halves keep the same shape. It travels
-       *    the reverse of the usual halo direction: packed against the RECEIVE marker and sent to the
-       *    rank that marker receives from. ---*/
+      /*--- Turn the marching direction towards the mean of the steps just taken. ---*/
       su2double mean[MAXNDIM] = {0.0};
-      for (const auto& s : prop[f])
+      for (const auto& s : fronts[f].prop)
         for (unsigned short d = 0; d < nDim; ++d) mean[d] += s.dir[d];
       const su2double meanNrm = GeometryToolbox::Norm(nDim, mean);
       if (meanNrm > 0.0) {
         su2double blended[MAXNDIM] = {0.0};
         for (unsigned short d = 0; d < nDim; ++d)
-          blended[d] = (1.0 - DIR_BLEND) * dirNow[f][d] + DIR_BLEND * mean[d] / meanNrm;
+          blended[d] = (1.0 - DIR_BLEND) * fronts[f].dir[d] + DIR_BLEND * mean[d] / meanNrm;
         const su2double bNrm = GeometryToolbox::Norm(nDim, blended);
         if (bNrm > 0.0)
-          for (unsigned short d = 0; d < nDim; ++d) dirNow[f][d] = blended[d] / bNrm;
+          for (unsigned short d = 0; d < nDim; ++d) fronts[f].dir[d] = blended[d] / bNrm;
       }
 
       for (auto p : newLayer) {
         claimed[p] = 1;
       }
-      front[f] = std::move(newLayer);
-      depth[f]++;
+      fronts[f].nodes = std::move(newLayer);
+      fronts[f].depth++;
       ct[P_LAYERS]++;
 
-      pending[f].insert(pending[f].end(), front[f].begin(), front[f].end());
-      pendingLayers[f]++;
-      if (pendingLayers[f] >= nBlock[f]) emit(f);
+      fronts[f].pending.insert(fronts[f].pending.end(), fronts[f].nodes.begin(), fronts[f].nodes.end());
+      fronts[f].pendingLayers++;
+      if (fronts[f].pendingLayers >= fronts[f].nBlock) emit(f);
     }
 
     /*--- (d) Hand stacks across partition interfaces. A front that runs into the halo cannot go on
@@ -2472,22 +2397,20 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       const auto nVertexS = fine_grid->nVertex[MarkerS];
       const auto nVertexR = fine_grid->nVertex[MarkerR];
 
-      /*--- Packed against the halo vertices, i.e. what this rank wants the neighbour to continue. ---*/
+      /*--- Packed against the halo vertices, i.e. what this rank wants the neighbour to continue.
+       *    Tag and direction go separately: the AD MPI wrapper has no byte type to send a struct. ---*/
       vector<unsigned long> tagOut(nVertexR, 0), tagIn(nVertexS, 0);
       vector<su2double> dirOut(nVertexR * nDim, 0.0), dirIn(nVertexS * nDim, 0.0);
 
-      for (unsigned long f = 0; f < front.size(); ++f) {
-        if (handTo[f].empty()) continue;
-        for (auto p : handTo[f]) {
+      for (auto& F : fronts)
+        for (auto p : F.handTo) {
           if (haloMarker[p] != static_cast<int>(MarkerR)) continue;
           const auto v = haloVertex[p];
-          /*--- Two fronts of this rank reaching for the same node: the lower tag takes it, which is
-           *    a decision both ranks would reach the same way. ---*/
-          if ((tagOut[v] != 0) && (tagOut[v] <= handTag[f])) continue;
-          tagOut[v] = handTag[f];
-          for (unsigned short d = 0; d < nDim; ++d) dirOut[v * nDim + d] = dirNow[f][d];
+          /*--- Two fronts reaching for one node: the lower tag takes it, the same way on both ranks. ---*/
+          if ((tagOut[v] != 0) && (tagOut[v] <= F.handTag)) continue;
+          tagOut[v] = F.handTag;
+          for (unsigned short d = 0; d < nDim; ++d) dirOut[v * nDim + d] = F.dir[d];
         }
-      }
 
       SU2_MPI::Sendrecv(tagOut.data(), nVertexR, MPI_UNSIGNED_LONG, receive_from, 2, tagIn.data(), nVertexS,
                         MPI_UNSIGNED_LONG, send_to, 2, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
@@ -2496,29 +2419,23 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
 
       for (auto iVertex = 0ul; iVertex < nVertexS; iVertex++) {
         if (tagIn[iVertex] == 0) continue;
-        CInherited h;
-        h.tag = tagIn[iVertex];
-        h.node = fine_grid->vertex[MarkerS][iVertex]->GetNode();
-        for (unsigned short d = 0; d < nDim; ++d) h.dir[d] = dirIn[iVertex * nDim + d];
-        inherited.push_back(h);
+        inherited.push_back({tagIn[iVertex], fine_grid->vertex[MarkerS][iVertex]->GetNode(), {}});
+        for (unsigned short d = 0; d < nDim; ++d) inherited.back().dir[d] = dirIn[iVertex * nDim + d];
       }
     }
 
     /*--- A front that handed its WHOLE footprint over is finished here; the neighbour owns the rest
      *    of the stack. One that handed over only a piece keeps marching on what was left of it. ---*/
-    for (unsigned long f = 0; f < front.size(); ++f) {
-      if (handTo[f].empty()) continue;
-      handTo[f].clear();
-      ct[P_HANDOUT]++;
-      if (keepLocal[f]) continue;
-      alive[f] = 0;
+    for (unsigned long f = 0; f < fronts.size(); ++f) {
+      if (fronts[f].handTo.empty()) continue;
+      fronts[f].handTo.clear();
+      if (fronts[f].keepLocal) continue;
+      fronts[f].alive = 0;
       emit(f);
     }
 
-    /*--- Adopt what the neighbours sent. Tags are processed in ascending order so that two ranks
-     *    handing stacks onto overlapping nodes are separated the same way whatever order the messages
-     *    happened to arrive in. A footprint whose nodes are not all still free is dropped: the stack
-     *    simply ends, exactly as it would have before. ---*/
+    /*--- Adopt what the neighbours sent, tags ascending so arrival order cannot change the outcome.
+     *    A footprint whose nodes are not all free is dropped and the stack simply ends. ---*/
     std::sort(inherited.begin(), inherited.end(),
               [](const CInherited& a, const CInherited& b) { return a.tag < b.tag; });
 
@@ -2534,20 +2451,19 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
         layer0.push_back(p);
       }
       /*--- The footprint has to arrive whole and connected, the same test any other layer passes. ---*/
-      if (ok && !isConnectedLayer(layer0)) ok = false;
+      if (ok && !IsConnectedLayer(fine_grid, layer0)) ok = false;
 
       if (ok) {
         std::array<su2double, MAXNDIM> d0{};
         for (unsigned short d = 0; d < nDim; ++d) d0[d] = inherited[i].dir[d];
         /*--- An inherited layer is an interior one, so it is NOT subject to the single-layer rule the
          *    boundary layer gets: it opens an ordinary two-deep coarse CV and waits for its partner. ---*/
-        const auto nf = addFront(layer0, d0, inherited[i].tag, blockFor(layer0));
+        const auto nf = addFront(layer0, d0, inherited[i].tag, BlockFor(maxAgglomSize, layer0));
         for (auto p : layer0) {
           claimed[p] = 1;
         }
         ct[P_LAYERS]++;
-        ct[P_HANDIN]++;
-        if (pendingLayers[nf] >= nBlock[nf]) emit(nf);
+        if (fronts[nf].pendingLayers >= fronts[nf].nBlock) emit(nf);
       }
       i = j;
     }
@@ -2556,49 +2472,30 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
 
   /*--- Nothing should be left buffered, but a front retired outside the loop would strand its nodes
    *    with a parent index that was never assigned. ---*/
-  for (unsigned long f = 0; f < front.size(); ++f) emit(f);
+  for (unsigned long f = 0; f < fronts.size(); ++f) emit(f);
 
-  /*--- How far each front got. Fronts reaching the same height leave a flat interface with ordinary
-   *    agglomeration; a spread here means that interface came out as a staircase. A rank with no fronts
-   *    leaves dmin at its sentinel so it stays out of the MPI_MIN below. ---*/
+  /*--- A rank with no fronts leaves dmin at its sentinel so it stays out of the MPI_MIN. ---*/
   unsigned long dmin = std::numeric_limits<unsigned long>::max(), dmax = 0;
-  for (unsigned long f = 0; f < front.size(); ++f) {
-    if (front[f].empty()) continue;
-    dmin = std::min(dmin, depth[f]);
-    dmax = std::max(dmax, depth[f]);
+  for (unsigned long f = 0; f < fronts.size(); ++f) {
+    if (fronts[f].nodes.empty()) continue;
+    dmin = std::min(dmin, fronts[f].depth);
+    dmax = std::max(dmax, fronts[f].depth);
   }
 
-  /*--- Summed over all ranks: rank 0's own fronts would make a partitioned run look like a fraction of
-   *    the mesh it is not. Every rank must reach these collectives. ---*/
-  unsigned long tot[P_COUNT] = {0};
+  /*--- Every rank must reach these. ---*/
+  unsigned long tot[P_COUNT] = {0}, pairTot[2] = {0}, depthMin = 0, depthMax = 0;
+  unsigned long pair[2] = {Index_CoarseCV - starting_Index_CoarseCV, seeds.node.size()};
   SU2_MPI::Allreduce(ct, tot, P_COUNT, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-
-  unsigned long pair[2] = {Index_CoarseCV - starting_Index_CoarseCV, seeds.node.size()}, pairTot[2] = {0};
   SU2_MPI::Allreduce(pair, pairTot, 2, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-
-  unsigned long depthMin = 0, depthMax = 0;
   SU2_MPI::Allreduce(&dmin, &depthMin, 1, MPI_UNSIGNED_LONG, MPI_MIN, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&dmax, &depthMax, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
-  if (depthMin == std::numeric_limits<unsigned long>::max()) depthMin = 0; /*--- No fronts anywhere. ---*/
+  if (depthMin == std::numeric_limits<unsigned long>::max()) depthMin = 0;
 
   if (rank != MASTER_NODE) return {};
 
   stringstream out;
-  out << "  MG level " << iMesh << " paving: " << tot[P_STACKS] << " fronts from " << pairTot[1]
-      << " seed nodes, patch sizes ";
-  for (unsigned n = 1; n <= 8; ++n)
-    if (tot[P_HIST + n] > 0) out << n << "x" << tot[P_HIST + n] << " ";
-  out << "\n  Coarse CVs from fronts: " << pairTot[0] << " covering " << tot[P_COVERED] << " nodes in " << tot[P_LAYERS]
-      << " layers, front depth " << depthMin << " to " << depthMax;
-  if (tot[P_SEMICV] + tot[P_FULLCV] > 0)
-    out << "\n  Coarse CVs by depth: " << tot[P_FULLCV] << " two layers deep, " << tot[P_SEMICV]
-        << " one layer (top of a stack)";
-  if (tot[P_HANDOUT] + tot[P_HANDIN] > 0)
-    out << "\n  Stacks handed across partitions: " << tot[P_HANDOUT] << " sent, " << tot[P_HANDIN] << " picked up";
-  if (tot[P_SPLIT] > 0)
-    out << "\n  Footprints split at partitions: " << tot[P_SPLIT] << " cut by an interface (" << tot[P_SPLITLOC]
-        << " nodes marching on here, " << tot[P_SPLITHAND] << " handed across)";
-  if (tot[P_SPLITDROP] > 0) out << "\n  Nodes lost in split pieces that came apart: " << tot[P_SPLITDROP];
-  out << "\n";
+  out << "  MG level " << iMesh << " paving: " << tot[P_STACKS] << " fronts from " << pairTot[1] << " seeds, "
+      << pairTot[0] << " CVs covering " << tot[P_COVERED] << " nodes in " << tot[P_LAYERS] << " layers, depth "
+      << depthMin << " to " << depthMax << "\n";
   return out.str();
 }

@@ -1040,13 +1040,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
     }
 
     /*--- Refresh the halo entries of the correction with the values their owner ranks just
-     *    computed. The next sweep averages LinSysRes over the neighbours of every domain point,
-     *    and across a partition boundary those neighbours are halo points, so this has to run
-     *    once per sweep rather than once at the end. It comes after the restore so that a halo
-     *    point sitting on a physical boundary mirrors its owner's restored value.
-     *
-     *    The barrier is required: the restore loop above only carries an implicit barrier for the
-     *    markers that pass the test, so if the last marker is skipped there is none. ---*/
+     *    computed. ---*/
 
     SU2_OMP_BARRIER
     CSysMatrixComms::Initiate(solver->LinSysRes, geometry, config);
