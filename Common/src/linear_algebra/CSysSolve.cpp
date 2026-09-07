@@ -1558,7 +1558,12 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
       /*--- Build preconditioner for the transposed Jacobian ---*/
 
-      if (RequiresTranspose) Jacobian.TransposeInPlace();
+      if (RequiresTranspose) {
+        Jacobian.TransposeInPlace();
+        /*--- The transpose is host side and the preconditioners below build from the
+         * device copy, which still holds the matrix as it was uploaded for the solve. ---*/
+        UploadMatrix(Jacobian, config->GetCUDA());
+      }
 
       switch (KindPrecond) {
         case ILU:
@@ -1572,7 +1577,10 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
           break;
         case LU_SGS:
         case Q_LU_SGS:
-          /*--- Nothing to build (transpose path not supported for Q_LU_SGS, see CSysMatrix::Initialize). ---*/
+          /*--- Nothing to build on the host, but the device keeps the inverted diagonal blocks
+           * and those have to follow the transpose (no-op without CUDA). Transpose path not
+           * supported for Q_LU_SGS, see CSysMatrix::Initialize. ---*/
+          if (RequiresTranspose) Jacobian.BuildLU_SGSPreconditioner();
           break;
         case PASTIX_ILU:
         case PASTIX_LU_P:
@@ -1656,8 +1664,15 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
   /*--- If there was no call to solve first the preconditioner needs to be built here. ---*/
   if (directCall) {
     Jacobian.TransposeInPlace();
+    /*--- The transpose is host side, the device copy has to follow it before anything is
+     * built from it (the product above uploaded the matrix as it was). ---*/
+    UploadMatrix(Jacobian, config->GetCUDA());
     normal_prec->Build();
   }
+
+  /*--- The vectors are already of the solver type here, but they still have to cross the
+   * bus: the matrix and preconditioner operations dispatch to the device on their own. ---*/
+  HandleTemporariesIn(LinSysRes, LinSysSol, config->GetCUDA());
 
   CPreconditioner<ScalarType>* nested_prec = nullptr;
   if (nested) {
@@ -1717,6 +1732,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
       SU2_MPI::Error("Unknown type of linear solver.", CURRENT_FUNCTION);
       break;
   }
+
+  HandleTemporariesOut(LinSysSol, config->GetCUDA());
 
   delete normal_prec;
   delete nested_prec;

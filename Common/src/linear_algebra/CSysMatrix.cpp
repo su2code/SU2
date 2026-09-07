@@ -1710,6 +1710,9 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
   SU2_ZONE_SCOPED
   assert(nVar == nEqn && "Cannot transpose with nVar != nEqn.");
 
+  /*--- The factors of one orientation are not a starting point for the other. ---*/
+  ilu_can_refine = false;
+
   auto swapAndTransp = [](unsigned long n, ScalarType* a, ScalarType* b) {
     assert(a != b);
     /*--- a=b', b=a' ---*/
