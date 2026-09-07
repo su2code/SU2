@@ -49,8 +49,8 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   CGeometry* geometry_fine = geometry[iZone][iInst][FinestMesh];
   CSolver** solvers_fine = solver_container[iZone][iInst][FinestMesh];
 
-  if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
-    /*--- CFL scaling of turbulence during the warmup phase if FMG. ---*/
+  /*--- CFL scaling of turbulence during the warmpup phase if FMG. ---*/
+  if ((RunTime_EqSystem == RUNTIME_TURB_SYS) && (FinestMesh != MESH_0)) {
     const su2double turbReduction = SU2_TYPE::GetValue(config[iZone]->GetCFLRedCoeff_Turb());
     const su2double turbCFL = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh)) * turbReduction;
     auto* turbSolver = solvers_fine[Solver_Position];
