@@ -52,8 +52,11 @@ FORCEINLINE void RegularizePivot(ScalarType& pivot, unsigned long row, unsigned 
 /*--- Common failure path for a device dispatch that is not available in this build/scalar type
  * combination, called with CURRENT_FUNCTION so the error names the right caller. ---*/
 void GPUNotAvailable(const char* caller) {
-#ifdef SU2_ENABLE_CUDA_KERNELS
+#if defined(SU2_ENABLE_CUDA_KERNELS)
   SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", caller);
+#elif defined(HAVE_CUDA)
+  /*--- AD build, the kernels are compiled out; normally rejected by CConfig::SetPostprocessing. ---*/
+  SU2_MPI::Error("GPU acceleration is not available in the AD and direct differentiation solvers.", caller);
 #else
   SU2_MPI::Error(
       "ENABLE_CUDA is set to YES but SU2 was not compiled with CUDA support; "
