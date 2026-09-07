@@ -27,7 +27,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <iostream>
 #include <type_traits>
 
 #include "../../include/linear_algebra/CMatrixInverse.hpp"
@@ -544,26 +543,6 @@ __global__ void QuantizedBlockLDU_SpMV_kernel(
 }
 
 /*!
- * \brief Report that a preconditioner CUDA graph had to be fully re-instantiated.
- * \note This is the expensive path (cudaGraphInstantiate allocates and builds the executable
- *       graph) and it should only ever happen on the first call, since the topology is fixed by
- *       the level structure. If it shows up repeatedly the level structure is changing behind our
- *       back and the graphs are costing more than they save. Only a few occurrences are printed,
- *       from the master rank, to avoid flooding the output.
- */
-inline void ReportGraphInstantiate(const char* what) {
-  constexpr int maxReports = 5;
-  static int nReports = 0;
-  if (nReports >= maxReports || SU2_MPI::GetRank() != MASTER_NODE) return;
-  ++nReports;
-
-  std::cout << "Warning: re-instantiating the " << what << " CUDA graph, its topology changed." << std::endl;
-  if (nReports == maxReports) {
-    std::cout << "Further CUDA graph re-instantiation messages will not be printed." << std::endl;
-  }
-}
-
-/*!
  * \brief Instantiate the freshly captured \p graph into \p exec, or, when \p exec already holds a
  *        graph with the same topology, push the new node parameters into it in place.
  * \note Re-capturing the topology is cheap, instantiating it is not: cudaGraphInstantiate
@@ -584,7 +563,6 @@ inline void InstantiateOrUpdateGraph(cudaGraphExec_t& exec, cudaGraph_t graph, c
     /*--- A failed update is recoverable (we just instantiate again), but the runtime holds on to
      * the error, so consume it before the next gpuErrChk mistakes it for a real failure. ---*/
     cudaGetLastError();
-    ReportGraphInstantiate(what);
     gpuErrChk(cudaGraphExecDestroy(exec));
     exec = nullptr;
   }
