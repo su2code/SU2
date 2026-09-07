@@ -3643,6 +3643,31 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Multizone_Problem = YES;
   }
 
+  /*--- The solver vectors stay on the device but the halo exchange is host-side, so more than
+   * one rank would use stale halos. Use OpenMP for the host parts instead. ---*/
+  if (Enable_Cuda && size > 1) {
+    SU2_MPI::Error("ENABLE_CUDA= YES is not supported with more than one MPI rank,\n"
+                   "       the halo exchange only happens on the host.\n"
+                   "       Use a single rank with OpenMP threads, e.g. 'SU2_CFD -t <threads> config.cfg'.",
+                   CURRENT_FUNCTION);
+  }
+
+  /*--- nvcc cannot compile the CoDiPack types, so the kernels are only built into the primal
+   * solver (see SU2_ENABLE_CUDA_KERNELS). Catch it here, not minutes into the run. ---*/
+  if (Enable_Cuda) {
+#ifndef SU2_ENABLE_CUDA_KERNELS
+#ifdef HAVE_CUDA
+    SU2_MPI::Error("ENABLE_CUDA= YES is not available in the AD and direct differentiation solvers,\n"
+                   "       the CUDA kernels are only built into SU2_CFD.",
+                   CURRENT_FUNCTION);
+#else
+    SU2_MPI::Error("ENABLE_CUDA= YES but SU2 was not compiled with CUDA support,\n"
+                   "       reconfigure the build with -Denable-cuda=true.",
+                   CURRENT_FUNCTION);
+#endif
+#endif
+  }
+
   /*--- Set the default output files ---*/
   if (!OptionIsSet("OUTPUT_FILES")){
     nVolumeOutputFiles = 3;

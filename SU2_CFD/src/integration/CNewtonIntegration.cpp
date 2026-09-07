@@ -211,7 +211,18 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   solvers[FLOW_SOL]->PrepareImplicitIteration(geometry, solvers, config);
 
-  if (preconditioner) preconditioner->Build();
+  if (preconditioner) {
+    /*--- The Jacobian is normally uploaded by CSysMatrixVectorProduct, but the outer product
+     * here is matrix free, so nothing else would upload it for Build(). ---*/
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<MixedScalar>) {
+      if (config->GetCUDA()) {
+        SU2_DEVICE_REGION(solvers[FLOW_SOL]->Jacobian.HtDTransfer();)
+      }
+    }
+#endif
+    preconditioner->Build();
+  }
 
   auto CopyLinSysRes = [&](int sign, auto& dst) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -307,12 +318,9 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   solvers[FLOW_SOL]->Postprocessing(geometry, solvers, config, MESH_0);
 
-  SU2_OMP_MASTER {
-    solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
-    solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
-    solvers[FLOW_SOL]->Friction_Forces(geometry, config);
-  }
-  END_SU2_OMP_MASTER
+  solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
+  solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
+  solvers[FLOW_SOL]->Friction_Forces(geometry, config);
 
   /*--- At the end of the startup period the CFL is reset to the initial value. ---*/
 
