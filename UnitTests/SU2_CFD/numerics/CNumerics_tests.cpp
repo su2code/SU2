@@ -27,6 +27,7 @@
 
 #include "catch.hpp"
 #include <array>
+#include <cmath>
 #include <sstream>
 #include <vector>
 #include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
@@ -173,20 +174,6 @@ struct NEMOViscousFixture {
     numerics.SetdTvedU(dTve_i.data(), dTve_j.data());
   }
 
-  void set_edge_linear_velocity_gradient() {
-    gradient_i = su2double(0.0);
-    gradient_j = su2double(0.0);
-    constexpr su2double distance_squared = 25.0;
-    for (unsigned short component = 0; component < nDim; ++component) {
-      const su2double jump = primitive_j[VEL_INDEX + component] - primitive_i[VEL_INDEX + component];
-      for (unsigned short dimension = 0; dimension < nDim; ++dimension) {
-        const su2double edge_component = coord_j[dimension] - coord_i[dimension];
-        gradient_i(VEL_INDEX + component, dimension) = jump * edge_component / distance_squared;
-        gradient_j(VEL_INDEX + component, dimension) = jump * edge_component / distance_squared;
-      }
-    }
-  }
-
   template <class Numerics>
   su2double directional_flux(Numerics& numerics) {
     set_common(numerics);
@@ -213,10 +200,46 @@ TEST_CASE("NEMO corrected viscous residual returns distinct i and j Jacobians", 
   CAvgGradCorrected_NEMO numerics(fixture.nDim, fixture.nVar, fixture.nPrimVar, fixture.nPrimVarGrad, fixture.config);
   fixture.set_common(numerics);
   const auto base = numerics.ComputeResidual(fixture.config);
+  /*--- Copy these values: later residual evaluations reuse the numerics'
+   * Jacobian storage. ---*/
   const su2double analytic_i = fixture.directional_jacobian(base.jacobian_i, fixture.normal);
   const su2double analytic_j = fixture.directional_jacobian(base.jacobian_j, fixture.normal);
 
+  /*--- Independent Newtonian-stress result for this longitudinal mode:
+   * tau_nn = (4/3) mu du_n/dn. The unit face normal is parallel to the
+   * length-5 edge, with mu = 2 and rho = 1, hence the momentum derivatives
+   * are -(4/3) mu/(rho d) = -8/15 at i and +8/15 at j. ---*/
   REQUIRE(analytic_i == Approx(-8.0 / 15.0).epsilon(1.0e-12));
   REQUIRE(analytic_j == Approx(8.0 / 15.0).epsilon(1.0e-12));
   REQUIRE(analytic_i != Approx(analytic_j));
+
+  /*--- Differentiate only the returned momentum flux, without using its
+   * Jacobians to construct the reference. Perturb each endpoint's momentum
+   * along the normal; density, thermodynamic inputs, transport and supplied
+   * zero gradients stay fixed. The corrected numerics reconstructs the
+   * edge gradient itself. This tests the controlled momentum mode, not the
+   * full thermochemical derivative of the approximate viscous Jacobian. ---*/
+  for (unsigned short endpoint = 0; endpoint < 2; ++endpoint) {
+    auto& primitive = endpoint == 0 ? fixture.primitive_i : fixture.primitive_j;
+    const auto original = primitive;
+    for (const auto step : {1.0e-4, 1.0e-6}) {
+      INFO("endpoint = " << endpoint << ", momentum step = " << step);
+      for (unsigned short component = 0; component < fixture.nDim; ++component)
+        primitive[fixture.VEL_INDEX + component] =
+            original[fixture.VEL_INDEX + component] + step * fixture.normal[component] / original[fixture.RHO_INDEX];
+      const su2double flux_plus = fixture.directional_flux(numerics);
+
+      for (unsigned short component = 0; component < fixture.nDim; ++component)
+        primitive[fixture.VEL_INDEX + component] =
+            original[fixture.VEL_INDEX + component] - step * fixture.normal[component] / original[fixture.RHO_INDEX];
+      const su2double flux_minus = fixture.directional_flux(numerics);
+      primitive = original;
+
+      REQUIRE(std::isfinite(SU2_TYPE::GetValue(flux_plus)));
+      REQUIRE(std::isfinite(SU2_TYPE::GetValue(flux_minus)));
+      const su2double finite_difference = (flux_plus - flux_minus) / (2.0 * step);
+      const su2double analytic = endpoint == 0 ? analytic_i : analytic_j;
+      CHECK(finite_difference == Approx(analytic).epsilon(1.0e-8).margin(1.0e-10));
+    }
+  }
 }

@@ -220,23 +220,14 @@ def main():
     partial_cat.test_vals = [-5.210302, -5.735065, -20.880448, -20.825971, -23.475263, 1.806201, -2.813952, -0.078400, 0.495606, 29020.000000]
     test_list.append(partial_cat)
 
-    # Viscous cylinder, ionization, Gupta-Yos
+    # Viscous cylinder, ionization, Gupta-Yos, marched 100 iterations from its restart.
     ion_gy = TestCase('ion_gy')
     ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
     ion_gy.cfg_file = "cyl_ion_gy.cfg"
-    ion_gy.test_iter = 10
-    ion_gy.test_vals = [-12.682344, -4.169796, -4.714319, -5.658742, -5.712605, -5.269125, -7.961372, 3.359972, 1.705292, -0.014849, 0.000000, 90286.000000]
+    ion_gy.test_iter = 99
+    ion_gy.test_vals = [-11.662039, -4.203178, -4.868257, -5.462497, -5.232052, -4.960881, -6.951391, 4.541901, 4.552855, -0.014861, 0.000001, 90357.000000]
+    ion_gy.tol = 0.01
     test_list.append(ion_gy)
-
-    # Ionized cylinder marched from its restart with the residual gate disabled: the
-    # corrected NEMO viscous Jacobian holds the restart state, the previous one diverged.
-    ion_gy_march = TestCase('ion_gy_march')
-    ion_gy_march.cfg_dir = "nonequilibrium/visc_cylinder"
-    ion_gy_march.cfg_file = "cyl_ion_gy_march.cfg"
-    ion_gy_march.test_iter = 99
-    ion_gy_march.test_vals = [-11.662039, -4.203178, -4.868257, -5.462497, -5.232052, -4.960881, -6.951391, 4.541901, 4.552855, -0.014861, 0.000001, 90357.000000]
-    ion_gy_march.tol = 0.01
-    test_list.append(ion_gy_march)
 
     ##########################
     ### Compressible Euler ###

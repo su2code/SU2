@@ -120,7 +120,7 @@ struct NEMOViscousAssemblyCase {
 
 }  // namespace
 
-TEST_CASE("NEMO viscous edge assembly is the derivative of the subtracted and added residual",
+TEST_CASE("NEMO viscous solver assembles edge fluxes and Jacobian blocks with the correct signs and placement",
           "[NEMO][viscous][Jacobian]") {
   NEMOViscousAssemblyCase testCase;
   auto* config = testCase.config.get();
@@ -154,12 +154,11 @@ TEST_CASE("NEMO viscous edge assembly is the derivative of the subtracted and ad
   CSolver& base = *solver;
   base.Viscous_Residual(geometry, solver_container, numerics_container, config, MESH_0, 0);
 
-  /*--- Replay every edge with an independent numerics object. The residual
-   * contribution F of an edge is subtracted at i and added at j, so the
-   * derivative of the assembled residual is -dF/dU in the i rows and +dF/dU
-   * in the j rows, with dF/dU_i and dF/dU_j the two blocks returned by the
-   * numerics. Accumulate that reference and compare it with what the solver
-   * assembled. ---*/
+  /*--- Replay every edge with a separate instance of the same numerics.
+   * This checks solver integration: each flux is subtracted at i and added
+   * at j, and the supplied i/j Jacobian blocks must have matching signs and
+   * positions. The reference reuses production numerics; it is not an
+   * independent derivative check of the full viscous Jacobian. ---*/
   CAvgGradCorrected_NEMO replay(nDim, nVar, nPrimVar, nPrimVarGrad, config);
   auto* nodes = dynamic_cast<CNEMONSVariable*>(solver->GetNodes());
   REQUIRE(nodes != nullptr);
@@ -197,12 +196,15 @@ TEST_CASE("NEMO viscous edge assembly is the derivative of the subtracted and ad
     REQUIRE(block_ji != nullptr);
 
     for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+      REQUIRE(std::isfinite(SU2_TYPE::GetValue(edge.residual[iVar])));
       residual_ref[iPoint * nVar + iVar] -= edge.residual[iVar];
       residual_ref[jPoint * nVar + iVar] += edge.residual[iVar];
 
       for (unsigned short jVar = 0; jVar < nVar; ++jVar) {
         const su2double dFdUi = edge.jacobian_i[iVar][jVar];
         const su2double dFdUj = edge.jacobian_j[iVar][jVar];
+        REQUIRE(std::isfinite(SU2_TYPE::GetValue(dFdUi)));
+        REQUIRE(std::isfinite(SU2_TYPE::GetValue(dFdUj)));
         jacobian_scale = std::max(jacobian_scale, std::max(std::fabs(dFdUi), std::fabs(dFdUj)));
 
         /*--- Diagonal blocks collect every edge of a point. ---*/
@@ -212,6 +214,8 @@ TEST_CASE("NEMO viscous edge assembly is the derivative of the subtracted and ad
         /*--- Off-diagonal blocks belong to this edge alone. ---*/
         const su2double assembled_ij = block_ij[iVar * nVar + jVar];
         const su2double assembled_ji = block_ji[iVar * nVar + jVar];
+        REQUIRE(std::isfinite(SU2_TYPE::GetValue(assembled_ij)));
+        REQUIRE(std::isfinite(SU2_TYPE::GetValue(assembled_ji)));
         offdiag_error = std::max(offdiag_error, std::fabs(assembled_ij - (-dFdUj)));
         offdiag_error = std::max(offdiag_error, std::fabs(assembled_ji - (+dFdUi)));
       }
@@ -224,11 +228,15 @@ TEST_CASE("NEMO viscous edge assembly is the derivative of the subtracted and ad
     const auto* assembled_residual = solver->LinSysRes.GetBlock(iPoint);
     REQUIRE(block_ii != nullptr);
     for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+      REQUIRE(std::isfinite(SU2_TYPE::GetValue(residual_ref[iPoint * nVar + iVar])));
+      REQUIRE(std::isfinite(SU2_TYPE::GetValue(assembled_residual[iVar])));
       residual_scale = std::max(residual_scale, std::fabs(residual_ref[iPoint * nVar + iVar]));
       residual_error =
           std::max(residual_error, std::fabs(assembled_residual[iVar] - residual_ref[iPoint * nVar + iVar]));
       for (unsigned short jVar = 0; jVar < nVar; ++jVar) {
         const su2double assembled = block_ii[iVar * nVar + jVar];
+        REQUIRE(std::isfinite(SU2_TYPE::GetValue(assembled)));
+        REQUIRE(std::isfinite(SU2_TYPE::GetValue(diagonal_ref[(iPoint * nVar + iVar) * nVar + jVar])));
         diagonal_error =
             std::max(diagonal_error, std::fabs(assembled - diagonal_ref[(iPoint * nVar + iVar) * nVar + jVar]));
       }
