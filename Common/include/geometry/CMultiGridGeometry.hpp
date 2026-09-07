@@ -91,8 +91,11 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in,out] Index_CoarseCV - Current coarse CV index, incremented as new coarse CVs are created.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Configuration.
+   * \param[in] iMesh - Multigrid level being built, used to label the summary.
+   * \return Summary of the paving, empty except on the master rank.
    */
-  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config);
+  string AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
+                                  unsigned short iMesh);
 
   /*!
    * \brief Weakest and strongest dual-grid coupling at each node, and the neighbour across the
@@ -146,6 +149,9 @@ class CMultiGridGeometry final : public CGeometry {
                                                   const CConfig* config, const vector<char>& mixedBC) const;
 
  public:
+  /*!< \brief Paving summary for this level. */
+  string pavingReport;
+
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetBoundControlVolume;
   using CGeometry::SetControlVolume;

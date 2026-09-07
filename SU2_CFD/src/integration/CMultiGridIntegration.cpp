@@ -66,16 +66,7 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
 /*!\cond PRIVATE
  *  Prolongate a coarse-grid field onto the fine grid via constant injection: every fine
  *  child gets its parent's value. \c getCoarse returns the coarse-grid block of a point
- *  and \c setFine writes it to a fine-grid point, so the same loop serves both the FAS
- *  correction and the Full-MG solution handoff.
- *
- *  The loop covers all coarse points, halos included. Halo coarse CVs own the fine halo points as
- *  children (CMultiGridGeometry sets Children_CV for received CVs), so injecting from them is what
- *  fills the fine-grid halo entries of the prolongated field. Restricting the loop to domain points
- *  leaves those entries at whatever the last solver update left there (zero, for LinSysRes), which
- *  is wrong for any operator that reads the prolongated field at neighbours across a partition
- *  boundary - the Jacobi smoother in SmoothProlongated_Correction does exactly that. The caller
- *  must therefore have synchronized the coarse-grid field being read before calling this.
+ *  and \c setFine writes it to a fine-grid point.
  \endcond */
 template <class GetCoarse, class SetFine>
 void ProlongateField(CGeometry* geo_coarse, GetCoarse getCoarse, SetFine setFine) {

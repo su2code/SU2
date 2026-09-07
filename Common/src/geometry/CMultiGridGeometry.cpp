@@ -94,7 +94,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    *    CVs it creates occupy [firstLineCV, endLineCV), which is how the repair passes identify them. ---*/
   const auto firstLineCV = Index_CoarseCV;
   if (config->GetMGOptions().MG_Implicit_Lines) {
-    AgglomerateImplicitLines(Index_CoarseCV, fine_grid, config);
+    pavingReport = AgglomerateImplicitLines(Index_CoarseCV, fine_grid, config, iMesh);
   }
   const auto endLineCV = Index_CoarseCV;
 
@@ -1939,8 +1939,8 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
   return groups;
 }
 
-void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
-                                                  const CConfig* config) {
+string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
+                                                    const CConfig* config, unsigned short iMesh) {
   /*--- Paving by advancing fronts. Each boundary patch from PHASE 1 rises into the domain keeping its
    *    footprint: every front node picks a successor and the front advances only if all succeed, so the
    *    layers of a stack are congruent and a coarse CV never spans two patches. A front stops at a
@@ -2601,21 +2601,24 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   SU2_MPI::Allreduce(&dmax, &depthMax, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
   if (depthMin == std::numeric_limits<unsigned long>::max()) depthMin = 0; /*--- No fronts anywhere. ---*/
 
-  if (rank != MASTER_NODE) return;
+  if (rank != MASTER_NODE) return {};
 
-  cout << "  Paving fronts: " << tot[P_STACKS] << " fronts from " << pairTot[1] << " seed nodes, patch sizes ";
+  stringstream out;
+  out << "  MG level " << iMesh << " paving: " << tot[P_STACKS] << " fronts from " << pairTot[1]
+      << " seed nodes, patch sizes ";
   for (unsigned n = 1; n <= 8; ++n)
-    if (tot[P_HIST + n] > 0) cout << n << "x" << tot[P_HIST + n] << " ";
-  cout << "\n  Coarse CVs from fronts: " << pairTot[0] << " covering " << tot[P_COVERED] << " nodes in "
-       << tot[P_LAYERS] << " layers, front depth " << depthMin << " to " << depthMax;
+    if (tot[P_HIST + n] > 0) out << n << "x" << tot[P_HIST + n] << " ";
+  out << "\n  Coarse CVs from fronts: " << pairTot[0] << " covering " << tot[P_COVERED] << " nodes in " << tot[P_LAYERS]
+      << " layers, front depth " << depthMin << " to " << depthMax;
   if (tot[P_SEMICV] + tot[P_FULLCV] > 0)
-    cout << "\n  Coarse CVs by depth: " << tot[P_FULLCV] << " two layers deep, " << tot[P_SEMICV]
-         << " one layer (top of a stack)";
+    out << "\n  Coarse CVs by depth: " << tot[P_FULLCV] << " two layers deep, " << tot[P_SEMICV]
+        << " one layer (top of a stack)";
   if (tot[P_HANDOUT] + tot[P_HANDIN] > 0)
-    cout << "\n  Stacks handed across partitions: " << tot[P_HANDOUT] << " sent, " << tot[P_HANDIN] << " picked up";
+    out << "\n  Stacks handed across partitions: " << tot[P_HANDOUT] << " sent, " << tot[P_HANDIN] << " picked up";
   if (tot[P_SPLIT] > 0)
-    cout << "\n  Footprints split at partitions: " << tot[P_SPLIT] << " cut by an interface (" << tot[P_SPLITLOC]
-         << " nodes marching on here, " << tot[P_SPLITHAND] << " handed across)";
-  if (tot[P_SPLITDROP] > 0) cout << "\n  Nodes lost in split pieces that came apart: " << tot[P_SPLITDROP];
-  cout << endl;
+    out << "\n  Footprints split at partitions: " << tot[P_SPLIT] << " cut by an interface (" << tot[P_SPLITLOC]
+        << " nodes marching on here, " << tot[P_SPLITHAND] << " handed across)";
+  if (tot[P_SPLITDROP] > 0) out << "\n  Nodes lost in split pieces that came apart: " << tot[P_SPLITDROP];
+  out << "\n";
+  return out.str();
 }

@@ -809,11 +809,14 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   /*--- Loop over all the new grid ---*/
 
+  string pavingReports;
+
   for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
     /*--- Create main agglomeration structure ---*/
 
-    geometry[iMGlevel] = new CMultiGridGeometry(geometry[iMGlevel-1], config, iMGlevel);
+    auto* coarse_grid = new CMultiGridGeometry(geometry[iMGlevel-1], config, iMGlevel);
+    geometry[iMGlevel] = coarse_grid;
 
     /*--- Protect against the situation that we were not able to complete
        the agglomeration for this level, i.e., there weren't enough points.
@@ -824,6 +827,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
       geometry[iMGlevel] = nullptr;
       break;
     }
+    pavingReports += coarse_grid->pavingReport;
 
     /*--- Compute points surrounding points. ---*/
 
@@ -849,6 +853,9 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     geometry[iMGlevel]->SetMGLevel(iMGlevel);
 
   }
+
+  /*--- Held back so they do not interleave with the multigrid level table. ---*/
+  if (rank == MASTER_NODE) cout << pavingReports;
 
   if (config->GetWrt_MultiGrid()) geometry[MESH_0]->ColorMGLevels(config->GetnMGLevels(), geometry);
 
