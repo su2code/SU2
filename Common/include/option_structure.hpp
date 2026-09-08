@@ -195,6 +195,49 @@ inline unsigned short nPointsOfElementType(unsigned short elementType) {
 }
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
+
+/*--- Layout of the header of the native SU2 binary solution/restart format, shared by
+      CSU2BinaryFileWriter and the routines that read those files so they cannot drift
+      apart. The header is SU2_RESTART_HEADER_SIZE ints: a magic number, the number of
+      variables, the number of points, the size in bytes of the floating point data that
+      follows, and one spare. ---*/
+const int SU2_RESTART_MAGIC_NUMBER = 535532; /*!< \brief Hex representation of "SU2". */
+const int SU2_RESTART_HEADER_SIZE = 5;       /*!< \brief Number of ints in the header. */
+const int SU2_RESTART_PRECISION_IDX = 3;     /*!< \brief Position of the precision field. */
+
+/*!
+ * \brief Size in bytes of the floating point data of a native SU2 binary solution file.
+ * \param[in] precisionField - The SU2_RESTART_PRECISION_IDX entry of the file header.
+ * \return 8 for double precision, 4 for single precision.
+ * \note The field was introduced after the format, files written before it have a 0 there
+ * and were always double precision.
+ */
+inline int GetSU2BinaryScalarSize(int precisionField) {
+  if (precisionField == 0) return static_cast<int>(sizeof(double));
+  if (precisionField != static_cast<int>(sizeof(double)) && precisionField != static_cast<int>(sizeof(float))) {
+    SU2_MPI::Error("Invalid floating point precision in the header of a binary SU2 solution file.", CURRENT_FUNCTION);
+  }
+  return precisionField;
+}
+
+/*!
+ * \brief Convert floating point data read from a native SU2 binary solution file, which
+ * may have been written by a build of different precision, to the precision of this build.
+ * \param[in] buffer - Raw data as read from the file, of size count*scalarSize bytes.
+ * \param[in] scalarSize - Size in bytes of the scalars in the file, see GetSU2BinaryScalarSize.
+ * \param[in] count - Number of scalars.
+ * \param[out] data - Converted data, must not overlap with buffer.
+ */
+inline void SU2BinaryDataToPassive(const void* buffer, int scalarSize, unsigned long count, passivedouble* data) {
+  if (scalarSize == static_cast<int>(sizeof(float))) {
+    const auto* src = static_cast<const float*>(buffer);
+    for (unsigned long i = 0; i < count; ++i) data[i] = src[i];
+  } else {
+    const auto* src = static_cast<const double*>(buffer);
+    for (unsigned long i = 0; i < count; ++i) data[i] = src[i];
+  }
+}
+
 const int SU2_BINARY_STRING_SIZE = 65; /*!< \brief Length of strings (e.g. marker names) used in the native
                                                     SU2 binary mesh format. Shared by CSU2BinaryMeshReaderBase
                                                     and CSU2MeshBinaryFileWriter so they cannot drift apart. */
