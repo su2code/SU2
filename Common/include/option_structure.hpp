@@ -200,7 +200,13 @@ const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS 
       CSU2BinaryFileWriter and the routines that read those files so they cannot drift
       apart. The header is SU2_RESTART_HEADER_SIZE ints: a magic number, the number of
       variables, the number of points, the size in bytes of the floating point data that
-      follows, and one spare. ---*/
+      follows, and one spare.
+
+      The 4th and 5th ints used to be the number of ints and of doubles of a metadata
+      trailer (1 and 5, later 1 and 8) that the writer appended after the data. That
+      trailer is no longer written (metadata goes to a separate ASCII file) and both
+      ints have been 0 since, but old files in circulation still have 1 and 5 or 8
+      there, which is why 1 is accepted below as meaning double precision. ---*/
 const int SU2_RESTART_MAGIC_NUMBER = 535532; /*!< \brief Hex representation of "SU2". */
 const int SU2_RESTART_HEADER_SIZE = 5;       /*!< \brief Number of ints in the header. */
 const int SU2_RESTART_PRECISION_IDX = 3;     /*!< \brief Position of the precision field. */
@@ -209,11 +215,11 @@ const int SU2_RESTART_PRECISION_IDX = 3;     /*!< \brief Position of the precisi
  * \brief Size in bytes of the floating point data of a native SU2 binary solution file.
  * \param[in] precisionField - The SU2_RESTART_PRECISION_IDX entry of the file header.
  * \return 8 for double precision, 4 for single precision.
- * \note The field was introduced after the format, files written before it have a 0 there
+ * \note Files written before the field had this meaning have a 0 or a 1 there (see above)
  * and were always double precision.
  */
 inline int GetSU2BinaryScalarSize(int precisionField) {
-  if (precisionField == 0) return static_cast<int>(sizeof(double));
+  if (precisionField == 0 || precisionField == 1) return static_cast<int>(sizeof(double));
   if (precisionField != static_cast<int>(sizeof(double)) && precisionField != static_cast<int>(sizeof(float))) {
     SU2_MPI::Error("Invalid floating point precision in the header of a binary SU2 solution file.", CURRENT_FUNCTION);
   }
