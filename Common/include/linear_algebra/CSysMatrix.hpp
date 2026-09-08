@@ -385,20 +385,24 @@ class CSysMatrix {
   mutable struct CUgraphExec_st* precond_bwd_graph_exec = nullptr;  // LU-SGS backward only
   mutable const ScalarType* precond_fwd_graph_vec = nullptr;        /*!< \brief Pointers the apply graph
                                                                      * was captured with, to detect when
-                                                                     * it must be recaptured. */
+                                                                     * it must be recaptured (the
+                                                                     * executable graph itself is then
+                                                                     * updated in place, not rebuilt,
+                                                                     * see InstantiateOrUpdateGraph). */
   mutable ScalarType* precond_fwd_graph_prod = nullptr;
   mutable ScalarType* precond_bwd_graph_prod = nullptr;
 
-  /*--- Non-default stream, needed for two mutually exclusive uses that never overlap on a given
-   * matrix (quantized_mode and ILU are alternative preconditioner choices, decided once in
-   * Initialize()): (1) the ILU build/apply CUDA graphs below, since the legacy default stream
-   * cannot be captured into a graph; (2) HtDTransfer's async H2D transfer of the quantized L/U
-   * blocks, so that transfer can run concurrently (copy engine) with kernels issued on the
-   * default stream (e.g. QuantizeDiagonalBlocksGPU, on the SM) instead of queueing behind them on
-   * the same stream. Because the two uses are mutually exclusive, sharing one stream (rather than
-   * a dedicated one per use) needs no extra synchronization between them. htd_event marks the end
-   * of the H2D transfer specifically, so the default-stream kernel that first reads the result
-   * (the quantized SpMV) can wait on it without a host-side block. ---*/
+  /*--- Non-default stream, needed for two uses: (1) the preconditioner build/apply CUDA graphs
+   * below, since the legacy default stream cannot be captured into a graph; (2) HtDTransfer's
+   * async H2D transfer of the quantized L/U blocks, so that transfer can run concurrently (copy
+   * engine) with kernels issued on the default stream (e.g. QuantizeDiagonalBlocksGPU, on the SM)
+   * instead of queueing behind them on the same stream. The two are mutually exclusive for ILU
+   * (never quantized) but not for Q_LU_SGS, which uses both; sharing one stream still needs no
+   * extra synchronization, and in fact gives the right answer for free: the apply graph is
+   * launched into aux_stream, hence ordered after the transfer of the quantized blocks its
+   * kernels read. htd_event marks the end of the H2D transfer specifically, so a *default*-stream
+   * kernel that reads the result (the quantized SpMV) can wait on it without a host-side
+   * block. ---*/
   mutable struct CUstream_st* aux_stream = nullptr;
   mutable struct CUevent_st* htd_event = nullptr;
 
