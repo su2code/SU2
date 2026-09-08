@@ -46,9 +46,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    3rd) One marker ---> Surface (always agglomerate)
    4th) No marker ---> Internal Volume (always agglomerate) ---*/
 
-  // Note that for MPI, we introduce interfaces and we can choose to have agglomeration over
-  // the interface or not. Nishikawa chooses not to agglomerate over interfaces.
-
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
    i.e. consider up to neighbors of neighbors.
    For other levels this information is propagated down during their construction. ---*/
@@ -88,10 +85,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-  /*--- STEP 0: pave the domain with advancing fronts rising from the boundaries, wall CV included.
-   *    It runs before the boundary agglomeration so that the wall CV and the layers above it share one
-   *    footprint. Everything it claims is marked agglomerated, so the passes below skip it. The coarse
-   *    CVs it creates occupy [firstLineCV, endLineCV), which is how the repair passes identify them. ---*/
+  /*--- STEP 0: pave the domain with advancing fronts rising from the boundaries. The coarse CVs it
+   *    creates occupy [firstLineCV, endLineCV). ---*/
   const auto firstLineCV = Index_CoarseCV;
   if (config->GetMGOptions().MG_Implicit_Lines) {
     pavingReport = AgglomerateImplicitLines(Index_CoarseCV, fine_grid, config, iMesh);
@@ -113,8 +108,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     /*--- Skip periodic boundaries: do not agglomerate on periodic markers. ---*/
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) continue;
 
-    /*--- Skip SEND_RECEIVE markers: they record that a point is mirrored on another rank, not that it
-     *    lies on a boundary. Such points are left to the domain pass, as in a serial run. ---*/
+    /*--- Skip SEND_RECEIVE markers, those points are left to the domain pass. ---*/
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
 
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
@@ -148,8 +142,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
           if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) continue;
           if (fine_grid->nodes->GetVertex(iPoint, jMarker) != -1) {
-            /*--- Count every physical marker, the counter > 2 test needs the true count, but only
-             store the first few, which is all the matching rules ever look at. ---*/
+            /*--- Count every physical marker, but store only the first few. ---*/
             if (counter < 3) copy_marker[counter] = jMarker;
             counter++;
 
@@ -193,9 +186,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         /*--- Two physical markers meet here. ---*/
         if (counter == 2) {
-          /*--- In 2D that is a genuine corner in the geometry, which is never agglomerated. A wall
-                point merely split by a partition interface no longer reaches this branch: it counts
-                one physical marker and is handled above as the valley point it is. ---*/
+          /*--- In 2D that is a corner in the geometry, which is never agglomerated. ---*/
           if (nDim == 2) agglomerate_seed = false;
           /*--- In 3D, this is a ridge point (an edge where two surface markers meet). ---*/
           if (nDim == 3) agglomerate_seed = true;
@@ -227,9 +218,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         if (counter > 2) agglomerate_seed = false;
 
-        /*--- ...and so is a node where two markers of DIFFERENT type meet, whatever the count and
-         *    whatever the dimension. A coarse CV holding such a node would average two conditions the
-         *    fine grid applies separately. ---*/
+        /*--- ...and so is a node where two markers of different type meet, in any dimension. ---*/
         if (mixedBC[iPoint]) agglomerate_seed = false;
 
         /*--- If the seed (parent) can be agglomerated, we try to agglomerate connected childs to the parent ---*/
@@ -305,9 +294,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    i.e. make one coarse CV with a single child. ---*/
 
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
-    /*--- As in STEP 1, a SEND_RECEIVE marker does not make a point a boundary point. Turning the
-     leftovers of those markers into single-child coarse CVs here would strand every interior point
-     along a partition interface before the domain pass below ever gets to see it. ---*/
+    /*--- As in STEP 1, a SEND_RECEIVE marker does not make a point a boundary point. ---*/
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
 
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
@@ -347,9 +334,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   vector<unsigned long> members, candidates;
   members.reserve(maxAgglomSize);
 
-  /*--- A local frame at the seed: up to nDim of its incident edges, as mutually orthogonal as possible,
-   *    each with its own length. An offset is resolved onto these and each component divided by that
-   *    direction's spacing. ---*/
+  /*--- A local frame at the seed: up to nDim of its incident edges, as mutually orthogonal as
+   *    possible, each with its own length. ---*/
   vector<std::array<su2double, MAXNDIM>> frameDir, edgeDir;
   vector<su2double> frameLen, edgeLen;
   vector<char> edgeUsed;
@@ -410,9 +396,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       /*--- A seed with no usable edge cannot be measured against anything, leave the scale at one. ---*/
       if (seedShortest == std::numeric_limits<su2double>::max()) seedShortest = 1.0;
 
-      /*--- The shortest edge goes in first, so that the direction the mesh is stretched along is the
-       *    one measured against its own small spacing; the rest are taken in order of how orthogonal
-       *    they are to what is already in the frame. ---*/
+      /*--- The shortest edge goes in first, the rest in order of how orthogonal they are to what is
+       *    already in the frame. ---*/
       frameDir.clear();
       frameLen.clear();
       edgeUsed.assign(edgeDir.size(), 0);
@@ -463,8 +448,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           unsigned short shared = 0;
           for (auto jPoint : fine_grid->nodes->GetPoints(CVPoint)) shared += inCV[jPoint];
 
-          /*--- Distance to the centroid in cells rather than in metres: the offset is scaled by the
-           *    seed edge pointing most nearly along it. ---*/
+          /*--- Distance to the centroid in cells: the offset is scaled by the seed edge pointing
+           *    most nearly along it. ---*/
           su2double off[MAXNDIM] = {0.0};
           for (unsigned short d = 0; d < nDim; ++d) off[d] = fine_grid->nodes->GetCoord(CVPoint)[d] - centroid[d];
           const su2double offLen = GeometryToolbox::Norm(nDim, off);
@@ -528,21 +513,13 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   SetPoint_Connectivity(fine_grid);
 
-  /*--- The connectivity just built only knows about coarse CVs of this rank: the halo CVs do not
-   exist until the MPI relay below runs, and the relay cannot run earlier because it broadcasts the
-   parent indices that the merge here is still free to change. So a CV touching a partition boundary
-   may look isolated while actually having neighbors on the other rank, and merging it would be
-   wrong. Mark those CVs and leave them alone; a genuinely isolated CV in the interior is unaffected.
-   Note this deliberately keeps the conservative outcome the sentinel used to produce by accident,
-   but only for the CVs that really do border another rank rather than for every CV near one. ---*/
+  /*--- The connectivity just built only knows about coarse CVs of this rank, so a CV touching a
+   partition boundary may look isolated. Mark those CVs and leave them alone. ---*/
 
   /*--- Coarse CVs to leave exactly as the agglomeration made them: those holding a node where two
-   *    different boundary conditions meet. Both repair passes remove one-child CVs, and a deliberately
-   *    isolated junction is one, so they must be protected as a merge TARGET as well as a source. ---*/
+   *    different boundary conditions meet. ---*/
   vector<bool> mustStayAlone(nPointDomain, false);
-  /*--- ...and which coarse CVs hold a boundary node at all. A boundary node is never agglomerated with
-   *    an interior one, which the paving already respects. The repair passes below would undo it from
-   *    the other end, since a boundary CV's neighbours include the interior CV sitting on top of it. ---*/
+  /*--- ...and which coarse CVs hold a boundary node at all. ---*/
   vector<bool> cvOnBoundary(nPointDomain, false);
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++)
     for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
@@ -551,10 +528,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       if (onPhysBoundary[iFinePoint]) cvOnBoundary[iCoarsePoint] = true;
     }
 
-  /*--- Which physical boundaries each coarse CV sits on, one bit per marker. cvOnBoundary records only
-   *    THAT a CV touches a boundary, so a one-child CV on boundary A could be merged into a neighbour on
-   *    boundary B; SetVertex would then give the merged CV marker A while its body sits on B. Comparing
-   *    marker sets is strictly stronger and keeps a merge inside one boundary. ---*/
+  /*--- Which physical boundaries each coarse CV sits on, one bit per marker. Comparing marker sets
+   *    keeps a merge inside one boundary. ---*/
   vector<unsigned long long> cvMarkerMask(nPointDomain, 0);
   {
     vector<int> bitOfMarker(fine_grid->GetnMarker(), -1);
@@ -581,10 +556,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-  /*--- A boundary CV built by the paving is the base of a stack and must keep its footprint. Merging
-   *    one into a neighbour leaves the column headless and widens the base, which on the next level
-   *    stops it seeding a front and lets an interior front swallow it mid-stack. The repair passes
-   *    below are for the interior singleton left where a line narrows, not for these. ---*/
+  /*--- A boundary CV built by the paving is the base of a stack and keeps its footprint, so the
+   *    repair passes below leave it alone. ---*/
   auto isStackBase = [&](unsigned long iCoarsePoint) {
     return cvOnBoundary[iCoarsePoint] && (iCoarsePoint >= firstLineCV) && (iCoarsePoint < endLineCV);
   };
@@ -678,31 +651,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-  /*--- The pass above only rescues a coarse CV that has a single coarse neighbor, i.e. one enclosed
-   entirely within another. It does nothing for a CV that was left with a single fine-grid child but
-   sits between several coarse neighbors, which happens routinely with the implicit-line stacks above:
-   a bundle whose members reach the top of the boundary layer at slightly different heights (graded
-   spacing, local curvature) narrows one line at a time (see AgglomerateImplicitLines, Phase C), and
-   the fine node just past where a line dropped out is left to fend for itself. It usually has no
-   unclaimed neighbor left to agglomerate with by the time the ordinary domain pass (STEP 2) reaches
-   it, so it becomes a coarse CV of its own, surrounded on multiple sides by CVs it cannot join under
-   the single-neighbor rule above. Left alone, this is exactly the "hole" that turns what should be a
-   compact block into an L shape with an isolated singleton sitting in the missing corner. Merge such
-   a CV into whichever neighbor currently has the fewest children (and still has room under
-   maxAgglomSize): the smallest neighbor is the one most likely to be the under-filled block the
-   singleton belongs with, e.g. the 3-node L that this merge completes into a 4-node square, and
-   folding into it keeps the coarse grid from accumulating disproportionately large CVs.
-
-   Unlike the pass above this one deliberately does not skip CVs that border another rank. That guard
-   exists because "has exactly one coarse neighbour" is measured on connectivity this rank cannot yet
-   see in full, so it misfires on a CV whose other neighbours merely live across the partition. The
-   trigger here is a child count, which is complete locally: a CV owning one fine point owns one fine
-   point no matter how the mesh was cut. The merge is local too - every candidate neighbour comes from
-   the connectivity built above and is therefore an owned CV, every child is an owned point, and the
-   MPI relay below broadcasts the result afterwards, so the ranks stay consistent. Requiring at least
-   two local neighbours below also rules out the one case that could not be repaired locally, a CV
-   whose neighbours are all halo: a halo CV mirrors another rank's decision and must not be added to
-   here. Keeping the guard cost 455 of 473 unrepaired singletons on a four-rank 3D bump. ---*/
+  /*--- Merge a coarse CV that still holds a single fine child into whichever coarse neighbor has the
+   fewest children. Both the merged CV and the target are owned by this rank. ---*/
 
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
     if (nodes->GetnChildren_CV(iCoarsePoint) != 1) continue;
@@ -710,12 +660,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     if (isStackBase(iCoarsePoint)) continue;
     if (nodes->GetnPoint(iCoarsePoint) <= 1) continue; /*--- Already handled above, or truly islanded. ---*/
 
-    /*--- The smallest neighbour is the one most likely to be an under-filled block, and taking the
-     smallest also means a neighbour with room is always preferred over a full one: anything below
-     maxAgglomSize necessarily has fewer children than anything at it. When every neighbour is full
-     the smallest is taken anyway, one child over the limit. maxAgglomSize is a quality target rather
-     than a capacity - Children_CV grows on demand - and a CV of nine is a far smaller blemish on the
-     coarse grid than the CV of one it removes. ---*/
+    /*--- Pick the neighbour with the fewest children. When every neighbour is already at
+     maxAgglomSize the smallest is still taken, one child over the limit. ---*/
     unsigned long best_neighbor = std::numeric_limits<unsigned long>::max();
     unsigned short best_nChildren = 0;
     for (auto jCoarsePoint : nodes->GetPoints(iCoarsePoint)) {
@@ -739,19 +685,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     nodes->SetnChildren_CV(iCoarsePoint, 0);
   }
 
-  /*--- Compact the coarse numbering. Both repair passes empty a control volume by moving its children
-   elsewhere, but nPointDomain was fixed before them, so an emptied index survives as a control volume
-   that owns no fine points at all. It ends up with EPS volume, (0,0,0) coordinates and, because
-   neighbours are derived through children, no neighbours either. Nothing is then adjacent to it on the
-   next level, so it cannot be agglomerated there and becomes a one-child CV again, and so on down the
-   hierarchy: the repair would otherwise trade a bad CV on this level for a degenerate one on every
-   level above. Squeezing the empty slots out keeps the CV count honest and stops that propagation.
-
-   Renumbering is safe here because only three things refer to coarse indices at this point - the
-   children lists, the indirect-agglomeration flags, and the fine grid's parent indices - and the MPI
-   relay below has not run yet, so no other rank has seen these numbers. Only parents of *owned* fine
-   points are remapped; halo points are assigned by the relay afterwards. Every surviving parent keeps
-   a valid new index because a CV that still has a child is never removed. ---*/
+  /*--- Compact the coarse numbering, squeezing out the indices the repair passes emptied. The
+   children lists, indirect-agglomeration flags and owned parent indices are remapped. ---*/
 
   {
     constexpr auto NO_INDEX = std::numeric_limits<unsigned long>::max();
@@ -791,11 +726,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   nodes->ResetPoints();
 
 #ifdef HAVE_MPI
-  /*--- Reset halo point parents before MPI agglomeration.
-   When creating level N from level N-1, the fine grid (level N-1)
-   already has Parent_CV set from when it was created from level N-2.
-   Those parent indices point to level N, but when creating level N+1, they would be
-   incorrectly interpreted as level N+1 indices. ---*/
+  /*--- Reset halo point parents before MPI agglomeration, the fine grid still carries the parent
+   indices it was given when it was itself built. ---*/
 
   for (auto iPoint = fine_grid->GetnPointDomain(); iPoint < fine_grid->GetnPoint(); iPoint++) {
     fine_grid->nodes->SetParent_CV(iPoint, std::numeric_limits<unsigned long>::max());
@@ -856,8 +788,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       vector<unsigned long> Parent_Local(nVertexR);
       vector<unsigned long> Children_Local(nVertexR);
 
-      /*--- First pass: Determine which parents will actually be used (have non-skipped children).
-       This prevents creating orphaned halo CVs that have coordinates (0,0,0). ---*/
+      /*--- First pass: determine which parents will actually be used, i.e. have non-skipped
+       children. ---*/
       vector<bool> parent_used(Aux_Parent.size(), false);
       vector<unsigned long> parent_local_index(Aux_Parent.size(), std::numeric_limits<unsigned long>::max());
 
@@ -952,10 +884,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   const su2double ratio = su2double(Global_nPointFine) / su2double(Global_nPointCoarse);
 
-  /*--- Stop coarsening once the smallest per-rank partition falls below the minimum,
-        not just the summed total, since each rank runs its own MG hierarchy locally
-        and a partition that agglomerates down to too few CVs degenerates the operator
-        on that rank even if other ranks still have plenty of points. ---*/
+  /*--- Stop coarsening once the smallest per-rank partition falls below the minimum, not just the
+        summed total. ---*/
   if (Min_nPointCoarse < config->GetMGOptions().MG_Min_MeshSize) {
     if (rank == MASTER_NODE)
       cout << "MG level " << iMesh << " has only " << Min_nPointCoarse
@@ -1043,9 +973,7 @@ vector<char> CMultiGridGeometry::FindMixedBoundaryNodes(const CGeometry* fine_gr
   vector<char> mixed(fine_grid->GetnPoint(), 0);
 
   /*--- The first physical condition seen at each node, -1 until one is. A second one of a different
-   *    KIND is what makes the node mixed. A second marker of the same kind - two wall patches meeting
-   *    - is not, and neither is SEND_RECEIVE, which records where the partition runs and says nothing
-   *    about the boundary condition. ---*/
+   *    kind is what makes the node mixed. ---*/
   vector<short> firstBC(fine_grid->GetnPoint(), -1);
 
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
@@ -1081,11 +1009,8 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
     unsigned short copy_marker[3] = {};
 
     if (fine_grid->nodes->GetBoundary(CVPoint)) {
-      /*--- Identify the physical markers of the vertex that we want to agglomerate. SEND_RECEIVE
-       markers are skipped for the same reason as on the seed side: they say nothing about the
-       boundary condition the candidate carries, only that it is mirrored on another rank. A
-       candidate whose markers are all SEND_RECEIVE therefore ends up with counter == 0 and is
-       rejected below, which is the answer a serial run gives for the interior point it really is. ---*/
+      /*--- Identify the physical markers of the vertex that we want to agglomerate. A candidate whose
+       markers are all SEND_RECEIVE ends up with counter == 0 and is rejected below. ---*/
 
       for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
         if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) continue;
@@ -1105,10 +1030,6 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
         /*--- We agglomerate if there is only one marker and it is the same marker as the seed marker ---*/
         // So this is the case when in 2D we are on an edge, and in 3D we are in the interior of a surface.
         // note that this should be the same marker id, not just the same marker type.
-        /*--- Because neither side counts SEND_RECEIVE any more, this test is symmetric: a wall point
-         on a partition interface is now just as absorbable by an ordinary wall seed as the other way
-         around. Previously only an interface seed could absorb an interface candidate, so whenever an
-         ordinary seed reached the shared neighbours first the interface point was stranded. ---*/
         if ((marker_seed.size() == 1) && (copy_marker[0] == marker_seed[0])) agglomerate_CV = true;
       }
 
@@ -1135,8 +1056,6 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
 
   return agglomerate_CV;
 }
-
-/*--- ---*/
 
 void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
                                               unsigned long Index_CoarseCV, const CGeometry* fine_grid) const {
@@ -1200,11 +1119,8 @@ void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
       /*--- loop over the parent CVs (coarse grid) of its (fine) neighbors. ---*/
       for (auto iFinePoint_Neighbor : fine_grid->nodes->GetPoints(iFinePoint)) {
         const auto iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
-        /*--- Skip neighbors whose parent is not known yet. The first call to this function happens
-         during construction, before the MPI relay has assigned parents to the fine grid's halo
-         points, so those still hold the sentinel. Letting it through would add one fake neighbor to
-         every coarse CV along a partition boundary, which both corrupts nNeighbor and hides the CV
-         from the isolated-CV repair. The driver calls this again once the relay has run. ---*/
+        /*--- Skip neighbors whose parent is not known yet, halo points still hold the sentinel until
+         the MPI relay has run. ---*/
         if (iParent == std::numeric_limits<unsigned long>::max()) continue;
         /*--- If it is not the target coarse point, it is a coarse neighbor. ---*/
         if (iParent != iCoarsePoint) {
@@ -1537,8 +1453,7 @@ void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
 
 su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, unsigned long iPoint,
                                                     unsigned short iMarker) const {
-  /*--- Compute local curvature (maximum angle between adjacent face normals) at a boundary vertex.
-        This is used to determine if agglomeration is safe based on a curvature threshold. ---*/
+  /*--- Local curvature is the maximum angle between adjacent face normals at a boundary vertex. ---*/
 
   /*--- Get the vertex index for this point on this marker ---*/
   long iVertex = fine_grid->nodes->GetVertex(iPoint, iMarker);
@@ -1600,10 +1515,8 @@ su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, 
 }
 
 CMultiGridGeometry::CNodeStiffness CMultiGridGeometry::ComputeNodeStiffness(const CGeometry* fine_grid) const {
-  /*--- Coupling across the dual face between a node and a neighbour. For a cell of size dx by dy this
-   *    is 1/dy across the wall-normal face and 1/dx across the tangential one, so the ratio of largest
-   *    to smallest weight at a node is the local aspect ratio. Unlike CGeometry::Aspect_Ratio this is
-   *    available on every multigrid level, since SetControlVolume builds the dual grid on each. ---*/
+  /*--- Coupling across the dual face between a node and a neighbour, so the ratio of largest to
+   *    smallest weight at a node is the local aspect ratio. ---*/
   const auto nPointFine = fine_grid->GetnPoint();
 
   CNodeStiffness stiff;
@@ -1641,7 +1554,7 @@ CMultiGridGeometry::CNodeStiffness CMultiGridGeometry::ComputeNodeStiffness(cons
 namespace {
 
 /*--- Unit normal of a boundary at a vertex, false if the marker does not reach iPoint. Boundary
- *    normals point INTO the domain, so this doubles as a starting direction to march in. ---*/
+ *    normals point into the domain. ---*/
 bool VertexUnitNormal(const CGeometry* grid, unsigned short nDim, unsigned long iPoint, unsigned short iMarker,
                       su2double* unitNormal) {
   const long iVertex = grid->nodes->GetVertex(iPoint, iMarker);
@@ -1659,8 +1572,7 @@ bool IsAdjacent(const CGeometry* grid, unsigned long a, unsigned long b) {
   return std::find(pts.begin(), pts.end(), b) != pts.end();
 }
 
-/*--- Is a footprint one connected patch? A set that falls into pieces is not the extrusion of
- *    anything, so an arriving footprint and a piece left by a split both have to pass this. ---*/
+/*--- Is a footprint one connected patch? ---*/
 bool IsConnectedLayer(const CGeometry* grid, const vector<unsigned long>& layer) {
   if (layer.size() < 2) return true;
   vector<char> seen(layer.size(), 0);
@@ -1680,8 +1592,8 @@ bool IsConnectedLayer(const CGeometry* grid, const vector<unsigned long>& layer)
   return nSeen == layer.size();
 }
 
-/*--- Is the new layer topologically identical to the old? They are index-aligned, so phi maps
- *    old[k] to new[k], and the layer is valid when phi is an isomorphism of the induced subgraphs. ---*/
+/*--- Is the new layer topologically identical to the old? The layers are index-aligned, so the map
+ *    old[k] to new[k] has to be an isomorphism of the induced subgraphs. ---*/
 bool LayerIsIsomorphic(const CGeometry* grid, const vector<unsigned long>& oldL, const vector<unsigned long>& newL) {
   const auto n = oldL.size();
   if (newL.size() != n) return false;
@@ -1704,8 +1616,7 @@ bool LayerIsIsomorphic(const CGeometry* grid, const vector<unsigned long>& oldL,
   return true;
 }
 
-/*--- A boundary node ends a front only if the step runs INTO it, i.e. roughly along its normal. One
- *    running ALONG a boundary is a legitimate interior node of the stack. ---*/
+/*--- Does the step run into a boundary at jPoint, i.e. roughly along that boundary's normal? ---*/
 bool EntersBoundary(const CGeometry* grid, const CConfig* config, unsigned short nDim, unsigned long jPoint,
                     const su2double* stepDir, su2double cosBoundary) {
   for (unsigned short iMarker = 0; iMarker < grid->GetnMarker(); iMarker++) {
@@ -1717,15 +1628,14 @@ bool EntersBoundary(const CGeometry* grid, const CConfig* config, unsigned short
   return false;
 }
 
-/*--- Fine layers the next coarse CV of this front holds: two, so the stack coarsens by the same
- *    factor along the marching direction as the footprint does across it. One only if a second
- *    layer would exceed the agglomeration size limit. ---*/
+/*--- Fine layers the next coarse CV of this front holds: two, or one if that would exceed the
+ *    agglomeration size limit. ---*/
 unsigned long BlockFor(short int maxAgglomSize, const vector<unsigned long>& layer) {
   return (layer.size() * 2 > static_cast<size_t>(maxAgglomSize)) ? 1 : 2;
 }
 
-/*--- Rank-independent name for a set of nodes: the smallest global index in it, +1 so that 0 is
- *    free to mean "nothing". A footprint is claimed by one front and no other, so it is unique. ---*/
+/*--- Rank-independent name for a set of nodes: the smallest global index in it, +1 so that 0 means
+ *    "nothing". ---*/
 unsigned long TagOfSet(const CGeometry* grid, const vector<unsigned long>& set) {
   unsigned long t = std::numeric_limits<unsigned long>::max();
   for (auto p : set) t = std::min(t, grid->nodes->GetGlobalIndex(p));
@@ -1739,10 +1649,8 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
   /*--- Fraction of a marker's nodes that must sit in a layer before the whole marker may seed. ---*/
   constexpr passivedouble QUALIFIED_FRACTION = 0.5;
   constexpr passivedouble ANGLE_THRESHOLD_DEG = 30.0;
-  /*--- Smallest local cell aspect ratio for which a node still counts as part of a stretched layer.
-   *    Not exposed as an option: the two populations it separates are decades apart - a boundary
-   *    carrying a layer normal to itself measures in the hundreds or more, one in isotropic mesh
-   *    measures about one - so every value between them selects the same set of markers. ---*/
+  /*--- Smallest local cell aspect ratio for which a node still counts as part of a stretched
+   *    layer. ---*/
   constexpr passivedouble MIN_AR = 2.0;
   const su2double cos_threshold = cos(ANGLE_THRESHOLD_DEG * PI_NUMBER / 180.0);
 
@@ -1757,8 +1665,7 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
   };
 
   /*--- True if the mesh at iPoint is stretched along the boundary normal, i.e. this boundary has a
-   *    layer growing off it the way a viscous wall does. On the side planes of a bump the mesh is just
-   *    as stretched, but in a direction running ALONG the plane, and those nodes belong to the wall. ---*/
+   *    layer growing off it the way a viscous wall does. ---*/
   auto hasLayerNormalTo = [&](unsigned long iPoint, const su2double* unitNormal) {
     const auto jStiffest = stiff.jStiffest[iPoint];
     if (jStiffest == NO_POINT) return false;
@@ -1791,24 +1698,19 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
     }
   };
 
-  /*--- Viscous walls always carry a stretched layer, so they seed unconditionally. Running them first
-   *    also settles nodes where a wall meets another boundary: the wall claims them. ---*/
+  /*--- Viscous walls always carry a stretched layer, so they seed unconditionally and first, which
+   *    gives them the nodes where a wall meets another boundary. ---*/
   for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++)
     if (isWall(config->GetMarker_All_KindBC(iMarker))) seedMarker(iMarker, false);
 
-  /*--- Non-wall boundaries that still carry a layer normal to themselves, such as a symmetry plane in
-   *    the same surface as a wall. The verdict is per marker, not per node: seeding isolated qualifying
-   *    nodes scatters one-node patches that do not coarsen tangentially at all. ---*/
-  /*--- Counted per configuration-file marker, not per local marker: ranks agree on neither the
-   *    number nor the order of local markers, because each partition appends its own SEND_RECEIVE
-   *    markers, so the same index means a different boundary elsewhere. ---*/
+  /*--- Non-wall boundaries that still carry a layer normal to themselves, counted per
+   *    configuration-file marker because local marker indices differ between ranks. ---*/
   const auto nMarkerCfg = config->GetnMarker_CfgFile();
   vector<unsigned long> nValid(nMarkerCfg, 0), nQualified(nMarkerCfg, 0);
 
   auto canSeed = [&](unsigned short iMarker) {
     const auto bc = config->GetMarker_All_KindBC(iMarker);
-    /*--- Periodic boundaries are left out: the two halves are the same physical location under a
-     *    transform and have their own matching, which a front running into one would disturb. ---*/
+    /*--- Periodic boundaries are left out, they have their own matching. ---*/
     return (bc != SEND_RECEIVE) && (bc != PERIODIC_BOUNDARY) && !isWall(bc);
   };
 
@@ -1829,8 +1731,8 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
     }
   }
 
-  /*--- A marker is generally split over several ranks, so the verdict must be taken on all of it.
-   *    Every rank reaches these collectives, including one that owns no boundary at all. ---*/
+  /*--- A marker is generally split over several ranks, so the verdict is taken on all of it. Every
+   *    rank reaches these collectives. ---*/
   if (nMarkerCfg > 0) {
     vector<unsigned long> tmp(nMarkerCfg);
     SU2_MPI::Allreduce(nValid.data(), tmp.data(), nMarkerCfg, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
@@ -1853,15 +1755,13 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
 vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFrontSeeds& seeds,
                                                                     const CGeometry* fine_grid, const CConfig* config,
                                                                     const vector<char>& mixedBC) const {
-  /*--- Repeated pairwise matching, one round per doubling, partitions the seeds into compact patches:
-   *    a boundary edge in 2D, a boundary quadrilateral in 3D. Matching keeps membership mutually
-   *    exclusive, which choosing neighbours per seed would not. It needs only point connectivity, so it
-   *    works on every multigrid level. This patch alone fixes the footprint of the stack above it. ---*/
+  /*--- Repeated pairwise matching, one round per doubling, partitions the seeds into compact
+   *    patches: a boundary edge in 2D, a boundary quadrilateral in 3D. ---*/
   const auto nSeeds = seeds.node.size();
   const unsigned long max_group = (nDim == 2) ? 2 : 4;
 
-  /*--- Physical markers each seed lies on, ascending. Seeds may only be matched when these agree, so
-   *    a patch never straddles a change of boundary condition. ---*/
+  /*--- Physical markers each seed lies on, ascending. Seeds may only be matched when these
+   *    agree. ---*/
   const auto nMarkerFine = fine_grid->GetnMarker();
   vector<vector<unsigned short>> sig(nSeeds);
   for (unsigned long si = 0; si < nSeeds; ++si)
@@ -1881,9 +1781,7 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
       if ((sj >= 0) && (static_cast<unsigned long>(sj) != si)) adj[si].push_back(static_cast<unsigned long>(sj));
     }
 
-  /*--- Global point index of each seed, used everywhere below as the deterministic sort key. Local
-   *    indices depend on the partitioning, so ordering by them would make the coarse grid depend on
-   *    the rank count. ---*/
+  /*--- Global point index of each seed, used below as the partitioning-independent sort key. ---*/
   vector<unsigned long> sgkey(nSeeds);
   for (unsigned long si = 0; si < nSeeds; ++si) sgkey[si] = fine_grid->nodes->GetGlobalIndex(seeds.node[si]);
 
@@ -1899,11 +1797,8 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
 
   const unsigned nRounds = (max_group <= 1) ? 0 : ((max_group <= 2) ? 1 : 2);
 
-  /*--- One admissible merge of two groups, weighted by how many seed-to-seed adjacencies they share.
-   *    A group lying ALONGSIDE this one touches it along its whole length and shares two, whereas one
-   *    continuing in the same direction touches at an end and shares one. So weight 2 is the square
-   *    and weight 1 is the strip, and the strip extrudes into a coarse CV elongated in one
-   *    boundary-tangential direction. ---*/
+  /*--- One admissible merge of two groups, weighted by how many seed-to-seed adjacencies they
+   *    share: 2 for a group lying alongside, 1 for one continuing in the same direction. ---*/
   struct CMerge {
     unsigned long g, h;       /*!< \brief The two groups, g < h. */
     unsigned long weight;     /*!< \brief Shared adjacencies: 2 makes a square, 1 makes a strip. */
@@ -1923,13 +1818,12 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
     for (unsigned long g = 0; g < nGroups; ++g)
       for (auto si : groups[g]) gkey[g] = std::min(gkey[g], sgkey[si]);
 
-    /*--- Every merge this round could make. Counted once per unordered pair: adjacency is symmetric,
-     *    so the count from g's side equals the count from h's, and taking only h > g avoids both. ---*/
+    /*--- Every merge this round could make, counted once per unordered pair by taking only
+     *    h > g. ---*/
     merges.clear();
     for (unsigned long g = 0; g < nGroups; ++g) {
-      /*--- A node where two different boundary conditions meet stays a patch of its own, so the front
-       *    rising from it is one node wide. Both sides of a merge are tested: skipping only the mixed
-       *    group would still let an ordinary group reach out and take it. ---*/
+      /*--- A node where two different boundary conditions meet stays a patch of its own, so both
+       *    sides of a merge are tested for it. ---*/
       if (mixedBC[seeds.node[groups[g].front()]]) continue;
       touched.clear();
       for (auto si : groups[g])
@@ -1947,9 +1841,8 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
       }
     }
 
-    /*--- Best merges first over all groups at once. Sweeping groups in index order lets one with no
-     *    square partner take a weight-1 merge and consume a group a later one needed, and the failures
-     *    cascade. Ordering globally makes every square before the first strip is considered. ---*/
+    /*--- Best merges first over all groups at once, so every square is considered before the first
+     *    strip. ---*/
     std::sort(merges.begin(), merges.end(), [](const CMerge& a, const CMerge& b) {
       if (a.weight != b.weight) return a.weight > b.weight;
       if (a.keyG != b.keyG) return a.keyG < b.keyG;
@@ -1981,35 +1874,30 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
 
 string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
                                                     const CConfig* config, unsigned short iMesh) {
-  /*--- Paving by advancing fronts. Each boundary patch rises into the domain keeping its footprint, so
-   *    a coarse CV never spans two patches. A front stops at a boundary or when the next layer is not
-   *    isomorphic to the current one. Each coarse CV is the footprint two layers deep. ---*/
+  /*--- Paving by advancing fronts. Each boundary patch rises into the domain keeping its footprint,
+   *    stopping at a boundary or where the next layer is not isomorphic to the current one. ---*/
   const auto starting_Index_CoarseCV = Index_CoarseCV;
   const auto nPointFine = fine_grid->GetnPoint();
   const auto nMarkerFine = fine_grid->GetnMarker();
   constexpr auto NO_POINT = std::numeric_limits<unsigned long>::max();
   const short int maxAgglomSize = (nDim == 2) ? 4 : 8;
 
-  /*--- How nearly parallel a step must be to a boundary's normal to count as running INTO that
-   *    boundary rather than along it. This is not a limit on where a front may go - it is only how
-   *    "the front has reached a boundary" is recognised. ---*/
+  /*--- How nearly parallel a step must be to a boundary's normal to count as running into that
+   *    boundary rather than along it. ---*/
   constexpr passivedouble BOUNDARY_ALIGN_DEG = 30.0;
   const su2double cos_boundary = cos(BOUNDARY_ALIGN_DEG * PI_NUMBER / 180.0);
-  /*--- Weight of the new step direction when the front's marching direction is updated. The direction
-   *    only ever RANKS candidates, it never rejects one, so this is a preference and not a limit. ---*/
+  /*--- Weight of the new step direction when the front's marching direction is updated. ---*/
   constexpr passivedouble DIR_BLEND = 0.5;
 
   const auto stiff = ComputeNodeStiffness(fine_grid);
 
-  /*--- PHASE 1. SeedFrontNodes must be reached by every rank, including one that owns no boundary:
-   *    it takes a collective to agree on which markers carry a layer. ---*/
+  /*--- PHASE 1. SeedFrontNodes is collective and must be reached by every rank. ---*/
   const auto seeds = SeedFrontNodes(fine_grid, config, stiff);
   const auto mixedBC = FindMixedBoundaryNodes(fine_grid, config);
   const auto patches = BuildFrontPatches(seeds, fine_grid, config, mixedBC);
 
-  /*--- Nodes on a boundary carrying a boundary condition; a front must not grow into one or the stack
-   *    would straddle two boundaries. CPoint's Boundary flag is also set by SEND_RECEIVE, so it would
-   *    stop every front one layer short of a partition. ---*/
+  /*--- Nodes on a boundary carrying a boundary condition, which a front must not grow into. CPoint's
+   *    Boundary flag cannot be used, it is also set by SEND_RECEIVE. ---*/
   vector<char> onPhysicalBoundary(nPointFine, 0);
   for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
@@ -2031,8 +1919,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     su2double dir[MAXNDIM]; /*!< Unit step direction, reused to update the front's direction. */
   };
 
-  /*--- One advancing front. Fronts are not a fixed set: one handed over from a neighbouring rank is
-   *    appended while the rounds are running, so the loops below are bounded by fronts.size(). ---*/
+  /*--- One advancing front. Fronts handed over from a neighbouring rank are appended while the
+   *    rounds are running, so the loops below are bounded by fronts.size(). ---*/
   struct CFront {
     vector<unsigned long> nodes;          /*!< \brief Current footprint. */
     vector<unsigned long> pending;        /*!< \brief Nodes buffered for the coarse CV being built. */
@@ -2040,8 +1928,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     vector<CStep> prop;                   /*!< \brief This round's proposed successors. */
     std::array<su2double, MAXNDIM> dir{}; /*!< \brief Marching direction. */
     unsigned long tag = 0;                /*!< \brief Rank-independent name, see TagOfSet. */
-    unsigned long handTag = 0;            /*!< \brief Name the handed-over piece travels under. After a
-                                           *    split this is NOT tag: the pieces are separate stacks. */
+    unsigned long handTag = 0;            /*!< \brief Name the handed-over piece travels under, which
+                                           *    after a split differs from tag. */
     unsigned long depth = 0;              /*!< \brief Layers laid. */
     unsigned long nBlock = 0;             /*!< \brief Fine layers the next coarse CV holds. */
     unsigned long pendingLayers = 0;      /*!< \brief Layers currently buffered. */
@@ -2065,9 +1953,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
 
   vector<char> claimed(nPointFine, 0);
 
-  /*--- Best free neighbour of n to step onto, ranked by alignment with dir. Local and halo candidates
-   *    are ranked separately: a halo node cannot be claimed here, but it is where the stack would go
-   *    next, so it is what gets handed over. ---*/
+  /*--- Best free neighbour of n to step onto, ranked by alignment with dir. Local and halo
+   *    candidates are ranked separately, only the halo one can be handed over. ---*/
   struct CCandidate {
     unsigned long node = std::numeric_limits<unsigned long>::max();
     unsigned long halo = std::numeric_limits<unsigned long>::max();
@@ -2085,14 +1972,13 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       if (len <= 0.0) continue;
       for (unsigned short d = 0; d < nDim; ++d) vec[d] /= len;
 
-      /*--- The direction only RANKS candidates; a front is never stopped for turning. ---*/
       const su2double dot = GeometryToolbox::DotProduct(nDim, vec, marchDir);
       const bool admissible =
           !(onPhysicalBoundary[jPoint] && EntersBoundary(fine_grid, config, nDim, jPoint, vec, cos_boundary)) &&
           GeometricalCheck(jPoint, fine_grid, config);
 
-      /*--- Halo parents are assigned by the owning rank through the MPI relay, so claiming one here
-       *    would fight that assignment. Admissibility is still checked, as the owner would. ---*/
+      /*--- Halo parents are assigned by the owning rank through the MPI relay, so a halo node is
+       *    only checked for admissibility here, never claimed. ---*/
       if (!fine_grid->nodes->GetDomain(jPoint)) {
         if (dot > haloDot && admissible) {
           haloDot = dot;
@@ -2112,14 +1998,13 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     return c;
   };
 
-  /*--- Bid table: only an index per mesh point, the bids themselves in a compact vector. A whole
-   *    CStep per point would be hundreds of megabytes that is empty almost everywhere. ---*/
+  /*--- Bid table: an index per mesh point, the bids themselves in a compact vector. ---*/
   constexpr unsigned NOBID = std::numeric_limits<unsigned>::max();
   vector<unsigned> bidIdx(nPointFine, NOBID);
   vector<CStep> bids;
   vector<unsigned long> bidOwner;
 
-  /*--- Scratch for the layer under construction, hoisted so a front does not allocate per layer. ---*/
+  /*--- Scratch for the layer under construction. ---*/
   vector<unsigned long> newLayer;
 
   /*--- Summed over all ranks for the one-line report at the end. ---*/
@@ -2135,7 +2020,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
   vector<CInherited> inherited;
 
   /*--- Where each halo node sits in this rank's SEND_RECEIVE receive lists, so a handover can be
-   *    packed against the right vertex without searching. A halo node appears in exactly one. ---*/
+   *    packed against the right vertex. ---*/
   vector<int> haloMarker(nPointFine, -1);
   vector<unsigned long> haloVertex(nPointFine, 0);
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -2151,9 +2036,6 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
 
   auto markFail = [&](unsigned long f) { fronts[f].failed = 1; };
 
-  /*--- How many fine layers the next coarse CV of this front holds: two, so the stack coarsens by the
-   *    same factor along the marching direction as the footprint does across it. One only if a second
-   *    layer would exceed the agglomeration size limit. ---*/
   /*--- Turn everything buffered for this front into one coarse control volume. ---*/
   auto emit = [&](unsigned long f) {
     if (fronts[f].pending.empty()) return;
@@ -2172,12 +2054,10 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     fronts[f].nBlock = BlockFor(maxAgglomSize, fronts[f].nodes);
   };
 
-  /*--- The boundary layer of every front. Claiming it before ordinary boundary agglomeration runs is
-   *    what keeps the stack aligned: every layer above has exactly the same footprint. ---*/
+  /*--- The boundary layer of every front, claimed before ordinary boundary agglomeration runs so
+   *    that every layer above keeps the same footprint. ---*/
   for (const auto& patch : patches) {
-    /*--- A one-node patch may seed a front and marches as a stack one node wide. Leaving it to
-     *    ordinary agglomeration is worse: its whole column then goes unpaved, and such seeds sit where
-     *    markers meet, cutting full-height stripes through the paved region. ---*/
+    /*--- A one-node patch may seed a front and marches as a stack one node wide. ---*/
     bool valid = !patch.empty();
     for (auto si : patch) {
       const auto p = seeds.node[si];
@@ -2198,9 +2078,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     if (nrm <= 0.0) continue;
     for (unsigned short d = 0; d < nDim; ++d) n0[d] /= nrm;
 
-    /*--- The boundary layer is a coarse CV on its own: a boundary node is never merged with an
-     *    interior one, so only the first advance is a single layer. This also isolates a junction
-     *    node without a rule of its own, since such a node is a patch of one. ---*/
+    /*--- The boundary layer is a coarse CV on its own, so only the first advance is a single
+     *    layer. ---*/
     const auto f = addFront(layer0, n0, frontTag + 1, 1);
     for (auto p : layer0) {
       claimed[p] = 1;
@@ -2211,8 +2090,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
   }
 
   for (unsigned long layer = 1;; ++layer) {
-    /*--- Every rank runs the same number of rounds: each ends in a collective handover exchange, so
-     *    one dropping out early would hang the others. ---*/
+    /*--- Every rank runs the same number of rounds, each ends in a collective handover
+     *    exchange. ---*/
     int aliveLocal = 0;
     for (unsigned long f = 0; f < fronts.size(); ++f) aliveLocal |= fronts[f].alive;
     int aliveGlobal = 0;
@@ -2224,9 +2103,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     bids.clear();
     bidOwner.clear();
 
-    /*--- (a) Every alive front proposes a successor for each of its nodes. A front that cannot fill a
-     *    whole layer proposes NOTHING: it is retiring this round anyway, and letting its partial bids
-     *    stand would let a dying front displace a healthy one out of nodes it can still use. ---*/
+    /*--- (a) Every alive front proposes a successor for each of its nodes. A front that cannot fill
+     *    a whole layer proposes nothing and retires this round. ---*/
     for (unsigned long f = 0; f < fronts.size(); ++f) {
       if (!fronts[f].alive) continue;
       fronts[f].prop.clear();
@@ -2235,8 +2113,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       for (auto n : fronts[f].nodes) {
         const auto c = bestSuccessor(n, fronts[f].dir.data());
 
-        /*--- Nothing free here but the stack continues across the interface; the split test below
-         *    decides whether the whole layer goes over. ---*/
+        /*--- Nothing free here but the stack continues across the interface. ---*/
         if ((c.node == NO_POINT) && (c.halo != NO_POINT)) {
           fronts[f].handTo.push_back(c.halo);
           continue;
@@ -2252,21 +2129,19 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
         fronts[f].prop.push_back(s);
       }
 
-      /*--- An interface can cut a footprint. If all of it crosses, the stack is handed over intact
-       *    and this front is finished. If only part crosses, the footprint is SPLIT: the piece whose
-       *    successors are local marches on here, the rest is handed across, and both are renamed. ---*/
+      /*--- An interface can cut a footprint. All of it crossing hands the stack over intact, part of
+       *    it crossing splits the footprint into a piece that stays and a piece handed across. ---*/
       if (fronts[f].failed) {
         fronts[f].prop.clear();
         fronts[f].handTo.clear();
       } else if (!fronts[f].handTo.empty()) {
-        /*--- fronts[f].prop is built in the order of fronts[f].nodes, so this is the piece that stays, in the same
-         *    order, and phi still runs index for index between it and the layer it proposes. ---*/
+        /*--- fronts[f].prop is built in the order of fronts[f].nodes, so this is the piece that
+         *    stays, in the same order as the layer it proposes. ---*/
         vector<unsigned long> narrow;
         for (const auto& s : fronts[f].prop) narrow.push_back(s.from);
 
-        /*--- A cut can leave the local piece in two disconnected halves - a square footprint cut
-         *    diagonally does exactly that - and that is not a layer. Drop it and hand over the rest;
-         *    the stack still survives on the far side instead of ending here. ---*/
+        /*--- A cut can leave the local piece disconnected, which is not a layer. Drop it and hand
+         *    over the rest. ---*/
         if (!narrow.empty() && !IsConnectedLayer(fine_grid, narrow)) {
           narrow.clear();
         }
@@ -2276,8 +2151,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
         if (narrow.empty()) {
           fronts[f].prop.clear();
         } else {
-          /*--- Close the coarse CV that is open on the WIDE footprint before narrowing, so that no CV
-           *    ever ends up holding two layers of different shape. ---*/
+          /*--- Close the coarse CV open on the wide footprint before narrowing, so that no CV holds
+           *    two layers of different shape. ---*/
           fronts[f].nodes = narrow;
           emit(f);
           fronts[f].nBlock = BlockFor(maxAgglomSize, fronts[f].nodes);
@@ -2288,8 +2163,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     }
 
     /*--- (b) Contention resolved from bids that were all collected before any was granted, so the
-     *    outcome is a pure function of the proposals and does not depend on the order the fronts are
-     *    visited in. That is what makes the coarse grid reproducible. ---*/
+     *    outcome does not depend on the order the fronts are visited in. ---*/
     auto better = [](const CStep& a, const CStep& b) {
       if (a.score != b.score) return a.score > b.score;
       if (a.dist != b.dist) return a.dist < b.dist;
@@ -2299,8 +2173,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     for (unsigned long f = 0; f < fronts.size(); ++f) {
       if (!fronts[f].alive || fronts[f].failed) continue;
       for (const auto& s : fronts[f].prop) {
-        /*--- A front that has lost a bid is retiring and must not displace a healthy one with the
-         *    rest of its layer. What it placed before losing stays, which is conservative. ---*/
+        /*--- A front that has lost a bid retires and places no more of its layer. ---*/
         if (fronts[f].failed) break;
 
         if (bidIdx[s.node] == NOBID) {
@@ -2312,8 +2185,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
 
         const auto k = bidIdx[s.node];
         const auto g = bidOwner[k];
-        /*--- Two nodes of the SAME front reaching for one successor is a pinch: the layer would come
-         *    out narrower than the front, which all-or-nothing does not allow. ---*/
+        /*--- Two nodes of the same front reaching for one successor is a pinch, the layer would come
+         *    out narrower than the front. ---*/
         if (better(s, bids[k])) {
           markFail(g);
           bids[k] = s;
@@ -2322,8 +2195,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
           markFail(f);
         }
 
-        /*--- A head-on meeting stops BOTH fronts, or the winner overshoots into the other's
-         *    territory. A glancing contact is not a meeting and only costs the loser. ---*/
+        /*--- A head-on meeting stops both fronts, a glancing contact only costs the loser. ---*/
         if ((g != f) && (GeometryToolbox::DotProduct(nDim, fronts[f].dir.data(), fronts[g].dir.data()) < 0.0)) {
           markFail(f);
           markFail(g);
@@ -2332,14 +2204,13 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     }
 
     /*--- (c) All-or-nothing acceptance: a front takes the whole layer or none of it and retires. A
-     *    bid only becomes a claim here, so a retiring front never has to give anything back and the
-     *    nodes it was reaching for stay available to ordinary agglomeration. ---*/
+     *    bid only becomes a claim here. ---*/
     for (unsigned long f = 0; f < fronts.size(); ++f) {
       if (!fronts[f].alive) continue;
 
       newLayer.clear();
       if (!fronts[f].failed) {
-        /*--- Built in proposal order, so newLayer[k] is the successor of nodes[k] and the two carry phi. ---*/
+        /*--- Built in proposal order, so newLayer[k] is the successor of nodes[k]. ---*/
         for (const auto& s : fronts[f].prop) {
           const auto k = bidIdx[s.node];
           if ((k != NOBID) && (bidOwner[k] == f)) newLayer.push_back(s.node);
@@ -2350,7 +2221,6 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       }
 
       if (fronts[f].failed) {
-        /*--- Nothing to give back: a bid only becomes a claim on acceptance. ---*/
         fronts[f].alive = 0;
         emit(f);
         continue;
@@ -2382,11 +2252,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       if (fronts[f].pendingLayers >= fronts[f].nBlock) emit(f);
     }
 
-    /*--- (d) Hand stacks across partition interfaces. A front that runs into the halo cannot go on
-     *    here, so the footprint is sent to the owning rank, which picks the stack up and carries on.
-     *    What crosses is the footprint, not a coarse CV, so both halves keep the same shape. It travels
-     *    the reverse of the usual halo direction: packed against the RECEIVE marker and sent to the
-     *    rank that marker receives from. ---*/
+    /*--- (d) Hand stacks across partition interfaces. The footprint is sent to the owning rank,
+     *    packed against the receive marker and sent to the rank that marker receives from. ---*/
     for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
       if (!((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) && (config->GetMarker_All_SendRecv(iMarker) > 0)))
         continue;
@@ -2397,8 +2264,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       const auto nVertexS = fine_grid->nVertex[MarkerS];
       const auto nVertexR = fine_grid->nVertex[MarkerR];
 
-      /*--- Packed against the halo vertices, i.e. what this rank wants the neighbour to continue.
-       *    Tag and direction go separately: the AD MPI wrapper has no byte type to send a struct. ---*/
+      /*--- Packed against the halo vertices. Tag and direction go separately, the AD MPI wrapper has
+       *    no byte type to send a struct. ---*/
       vector<unsigned long> tagOut(nVertexR, 0), tagIn(nVertexS, 0);
       vector<su2double> dirOut(nVertexR * nDim, 0.0), dirIn(nVertexS * nDim, 0.0);
 
@@ -2406,7 +2273,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
         for (auto p : F.handTo) {
           if (haloMarker[p] != static_cast<int>(MarkerR)) continue;
           const auto v = haloVertex[p];
-          /*--- Two fronts reaching for one node: the lower tag takes it, the same way on both ranks. ---*/
+          /*--- Two fronts reaching for one node: the lower tag takes it. ---*/
           if ((tagOut[v] != 0) && (tagOut[v] <= F.handTag)) continue;
           tagOut[v] = F.handTag;
           for (unsigned short d = 0; d < nDim; ++d) dirOut[v * nDim + d] = F.dir[d];
@@ -2424,8 +2291,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       }
     }
 
-    /*--- A front that handed its WHOLE footprint over is finished here; the neighbour owns the rest
-     *    of the stack. One that handed over only a piece keeps marching on what was left of it. ---*/
+    /*--- A front that handed its whole footprint over is finished here, one that handed over only a
+     *    piece keeps marching on what was left. ---*/
     for (unsigned long f = 0; f < fronts.size(); ++f) {
       if (fronts[f].handTo.empty()) continue;
       fronts[f].handTo.clear();
@@ -2435,7 +2302,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     }
 
     /*--- Adopt what the neighbours sent, tags ascending so arrival order cannot change the outcome.
-     *    A footprint whose nodes are not all free is dropped and the stack simply ends. ---*/
+     *    A footprint whose nodes are not all free is dropped. ---*/
     std::sort(inherited.begin(), inherited.end(),
               [](const CInherited& a, const CInherited& b) { return a.tag < b.tag; });
 
@@ -2450,14 +2317,13 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
         if (claimed[p] || fine_grid->nodes->GetAgglomerate(p) || !GeometricalCheck(p, fine_grid, config)) ok = false;
         layer0.push_back(p);
       }
-      /*--- The footprint has to arrive whole and connected, the same test any other layer passes. ---*/
+      /*--- The footprint has to arrive whole and connected. ---*/
       if (ok && !IsConnectedLayer(fine_grid, layer0)) ok = false;
 
       if (ok) {
         std::array<su2double, MAXNDIM> d0{};
         for (unsigned short d = 0; d < nDim; ++d) d0[d] = inherited[i].dir[d];
-        /*--- An inherited layer is an interior one, so it is NOT subject to the single-layer rule the
-         *    boundary layer gets: it opens an ordinary two-deep coarse CV and waits for its partner. ---*/
+        /*--- An inherited layer is an interior one, so it opens an ordinary two-deep coarse CV. ---*/
         const auto nf = addFront(layer0, d0, inherited[i].tag, BlockFor(maxAgglomSize, layer0));
         for (auto p : layer0) {
           claimed[p] = 1;
@@ -2470,11 +2336,10 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     inherited.clear();
   }
 
-  /*--- Nothing should be left buffered, but a front retired outside the loop would strand its nodes
-   *    with a parent index that was never assigned. ---*/
+  /*--- Emit whatever is still buffered, so no node is left without a parent index. ---*/
   for (unsigned long f = 0; f < fronts.size(); ++f) emit(f);
 
-  /*--- A rank with no fronts leaves dmin at its sentinel so it stays out of the MPI_MIN. ---*/
+  /*--- A rank with no fronts leaves dmin at its sentinel, keeping it out of the MPI_MIN. ---*/
   unsigned long dmin = std::numeric_limits<unsigned long>::max(), dmax = 0;
   for (unsigned long f = 0; f < fronts.size(); ++f) {
     if (fronts[f].nodes.empty()) continue;
