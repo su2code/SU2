@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <type_traits>
 
 #include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/linear_algebra/CSysMatrix.inl"
@@ -541,6 +542,33 @@ __global__ void QuantizedBlockLDU_SpMV_kernel(
   y[iRow * nVar + iVar] = sum;
 }
 
+/*!
+ * \brief Instantiate the freshly captured \p graph into \p exec, or, when \p exec already holds a
+ *        graph with the same topology, push the new node parameters into it in place.
+ * \note Re-capturing the topology is cheap, instantiating it is not: cudaGraphInstantiate
+ *       allocates and builds the executable graph, at a cost that grows with the node count (one
+ *       node per level here), so doing it on every call would cost more than simply launching the
+ *       kernels and would defeat the purpose of using graphs at all. cudaGraphExecUpdate keeps the
+ *       executable graph and only rewrites the kernel arguments that changed, which is what makes
+ *       the graphs worth having on the flexible-FGMRES path where the vectors change every call.
+ *       The full instantiation stays as the fallback for the first call and for the (unexpected)
+ *       case of the topology actually changing.
+ */
+inline void InstantiateOrUpdateGraph(cudaGraphExec_t& exec, cudaGraph_t graph, const char* what) {
+  SU2_ZONE_SCOPED_N("Graph instantiate or update")
+  if (exec != nullptr) {
+    cudaGraphExecUpdateResultInfo info{};
+    if (cudaGraphExecUpdate(exec, graph, &info) == cudaSuccess) return;
+
+    /*--- A failed update is recoverable (we just instantiate again), but the runtime holds on to
+     * the error, so consume it before the next gpuErrChk mistakes it for a real failure. ---*/
+    cudaGetLastError();
+    gpuErrChk(cudaGraphExecDestroy(exec));
+    exec = nullptr;
+  }
+  gpuErrChk(cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
+}
+
 }  // namespace
 
 template <class ScalarType>
@@ -692,15 +720,13 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
   if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
 
   /*--- Same idea as BuildILUPreconditionerGPU: the launch sequence only depends on the (fixed)
-   * level structure, plus the vec/prod device pointers. Those normally are the same temporary
-   * buffers on every call (owned by CSysSolve / CSysVector, allocated once), so the graph is
-   * captured once and replayed; if the pointers ever do change the graph is recaptured, which is
-   * no worse than the un-graphed loop, just not free. ---*/
+   * level structure, plus the vec/prod device pointers. Unlike the build graph those pointers do
+   * change: flexible FGMRES applies the preconditioner as precond(V[i], Z[i]), so they walk the
+   * Krylov basis and differ on every call. The topology does not change though, so we re-record
+   * and let InstantiateOrUpdateGraph patch the new arguments into the executable graph instead of
+   * building a new one. ---*/
   if (precond_fwd_graph_exec == nullptr || precond_fwd_graph_vec != d_vec || precond_fwd_graph_prod != d_prod) {
-    if (precond_fwd_graph_exec != nullptr) {
-      gpuErrChk(cudaGraphExecDestroy(precond_fwd_graph_exec));
-      precond_fwd_graph_exec = nullptr;
-    }
+    SU2_ZONE_SCOPED_N("ILU graph recapture")
 
     cudaGraph_t graph;
     gpuErrChk(cudaStreamBeginCapture(aux_stream, cudaStreamCaptureModeThreadLocal));
@@ -727,7 +753,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
     }
 
     gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
-    gpuErrChk(cudaGraphInstantiate(&precond_fwd_graph_exec, graph, nullptr, nullptr, 0));
+    InstantiateOrUpdateGraph(precond_fwd_graph_exec, graph, "ILU preconditioner");
     gpuErrChk(cudaGraphDestroy(graph));
     precond_fwd_graph_vec = d_vec;
     precond_fwd_graph_prod = d_prod;
@@ -742,12 +768,12 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
  * \brief Exact forward substitution for the rows of one level, x* = D^{-1}.(b-Lx*)
  * \note See notes in IluForwardKernel for more details.
  */
-template <class ScalarType, class QuantType, class QuantScaleType>
+template <class ScalarType, class QuantType, class QuantScaleType, bool Quantized>
 __global__ void LU_SGS_ForwardKernel(const su2uint* __restrict__ level_idx, unsigned long level_begin,
                                      unsigned long level_size, unsigned long nVar, DeviceLDU<ScalarType> M,
                                      const QuantType* __restrict__ q_l, const QuantScaleType* __restrict__ q_scale_l,
                                      const ScalarType* __restrict__ invD, const ScalarType* __restrict__ vec,
-                                     ScalarType* __restrict__ prod, bool quantized_mode) {
+                                     ScalarType* __restrict__ prod) {
   if (blockIdx.x >= level_size) return;
 
   const unsigned long iRow = level_idx[level_begin + blockIdx.x];
@@ -760,7 +786,7 @@ __global__ void LU_SGS_ForwardKernel(const su2uint* __restrict__ level_idx, unsi
   auto* aux = partial + blockSize; // skip nVar * nVar threads, serves nVar threads
 
   // Compute L.x*
-  if (quantized_mode) {
+  if constexpr (Quantized) {
     partial[tid] = QuantizedDeviceSparseBlockMatVec(iRow, iVar, jVar, nVar, M.row_ptr_l, M.col_ind_l, q_l, q_scale_l, prod);
   } else {
     partial[tid] = DeviceSparseBlockMatVec(iRow, iVar, jVar, nVar, M.row_ptr_l, M.col_ind_l, M.l, prod);
@@ -781,12 +807,12 @@ __global__ void LU_SGS_ForwardKernel(const su2uint* __restrict__ level_idx, unsi
  * \brief Exact backward substitution for the rows of one level, x* = D^{-1}.(D.x* - U.x) = x* - D^{-1}.U.x
  * \note See notes in IluBackwardKernel for more details
  */
-template <class ScalarType, class QuantType, class QuantScaleType>
+template <class ScalarType, class QuantType, class QuantScaleType, bool Quantized>
 __global__ void LU_SGS_BackwardKernel(const su2uint* __restrict__ level_idx, unsigned long level_begin,
                                      unsigned long level_size, unsigned long nRows, unsigned long nVar,
                                      DeviceLDU<ScalarType> M, const QuantType* __restrict__ q_u,
                                      const QuantScaleType* __restrict__ q_scale_u, const ScalarType* __restrict__ invD,
-                                     ScalarType* __restrict__ prod, bool quantized_mode) {
+                                     ScalarType* __restrict__ prod) {
   if (blockIdx.x >= level_size) return;
 
   const unsigned long iRow = level_idx[level_begin + blockIdx.x];
@@ -799,7 +825,7 @@ __global__ void LU_SGS_BackwardKernel(const su2uint* __restrict__ level_idx, uns
   auto* aux = partial + blockSize; // skip nVar * nVar threads, serves nVar threads
 
   // Compute U.x
-  if (quantized_mode) {
+  if constexpr (Quantized) {
     partial[tid] = QuantizedDeviceSparseBlockMatVec(iRow, iVar, jVar, nVar, M.row_ptr_u, M.col_ind_u, q_u, q_scale_u, prod, nRows);
   } else {
     partial[tid] = DeviceSparseBlockMatVec(iRow, iVar, jVar, nVar, M.row_ptr_u, M.col_ind_u, M.u, prod, nRows);
@@ -864,25 +890,35 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSForwardGPU(const CSysVector<ScalarType
 
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
   if (precond_fwd_graph_exec == nullptr || precond_fwd_graph_vec != d_vec || precond_fwd_graph_prod != d_prod) {
-    if (precond_fwd_graph_exec != nullptr) {
-      gpuErrChk(cudaGraphExecDestroy(precond_fwd_graph_exec));
-      precond_fwd_graph_exec = nullptr;
-    }
+    SU2_ZONE_SCOPED_N("LU-SGS fwd graph recapture")
 
     cudaGraph_t graph;
     gpuErrChk(cudaStreamBeginCapture(aux_stream, cudaStreamCaptureModeThreadLocal));
 
     const auto nLevels = precond_level_ptr.size() - 1;
-    /*--- Forward substitution: compute x* = D^{-1}.(vec - L.x*) ---*/
-    for (auto level = 0ul; level < nLevels; ++level) {
-      const auto begin = precond_level_ptr[level];
-      const auto size = precond_level_ptr[level + 1] - begin;
-      if (size == 0) continue;
-      LU_SGS_ForwardKernel<ScalarType, QuantType, QuantScaleType><<<size, threads, sharedForward, aux_stream>>>(d_precond_level_idx, begin, size, nVar, M, d_q_blocks.l, d_q_scale.l, d_invM, d_vec, d_prod, quantized_mode);
+    /*--- Forward substitution: compute x* = D^{-1}.(vec - L.x*). Whether the off-diagonal blocks
+     * are quantized is fixed for the lifetime of the matrix (Initialize decides it from the
+     * preconditioner type), so it selects the kernel instantiation here rather than being tested
+     * by every thread: inside the kernel it is a compile-time constant and the unused branch is
+     * not compiled at all. ---*/
+    auto RecordSweep = [&](auto quantized) {
+      for (auto level = 0ul; level < nLevels; ++level) {
+        const auto begin = precond_level_ptr[level];
+        const auto size = precond_level_ptr[level + 1] - begin;
+        if (size == 0) continue;
+        LU_SGS_ForwardKernel<ScalarType, QuantType, QuantScaleType, decltype(quantized)::value>
+            <<<size, threads, sharedForward, aux_stream>>>(d_precond_level_idx, begin, size, nVar, M, d_q_blocks.l,
+                                                           d_q_scale.l, d_invM, d_vec, d_prod);
+      }
+    };
+    if (quantized_mode) {
+      RecordSweep(std::true_type{});
+    } else {
+      RecordSweep(std::false_type{});
     }
 
     gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
-    gpuErrChk(cudaGraphInstantiate(&precond_fwd_graph_exec, graph, nullptr, nullptr, 0));
+    InstantiateOrUpdateGraph(precond_fwd_graph_exec, graph, "LU-SGS forward");
     gpuErrChk(cudaGraphDestroy(graph));
     precond_fwd_graph_vec = d_vec;
     precond_fwd_graph_prod = d_prod;
@@ -920,26 +956,33 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSBackwardGPU(CSysVector<ScalarType>& pr
 
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
   if (precond_bwd_graph_exec == nullptr || precond_bwd_graph_prod != d_prod) {
-    if (precond_bwd_graph_exec != nullptr) {
-      gpuErrChk(cudaGraphExecDestroy(precond_bwd_graph_exec));
-      precond_bwd_graph_exec = nullptr;
-    }
+    SU2_ZONE_SCOPED_N("LU-SGS bwd graph recapture")
 
     cudaGraph_t graph;
     gpuErrChk(cudaStreamBeginCapture(aux_stream, cudaStreamCaptureModeThreadLocal));
 
     const auto nLevels = precond_level_ptr.size() - 1;
-    /*--- Backward substitution: compute x* = D^{-1}.(D.x* - U.x) = x* - D^{-1}.U.x ---*/
-    for (auto level = nLevels; level > 0;) {
-      --level;
-      const auto begin = precond_level_ptr[level];
-      const auto size = precond_level_ptr[level + 1] - begin;
-      if (size == 0) continue;
-      LU_SGS_BackwardKernel<ScalarType, QuantType, QuantScaleType><<<size, threads, sharedBackward, aux_stream>>>(d_precond_level_idx, begin, size, nPointDomain, nVar, M, d_q_blocks.u, d_q_scale.u, d_invM, d_prod, quantized_mode);
+    /*--- Backward substitution: compute x* = D^{-1}.(D.x* - U.x) = x* - D^{-1}.U.x. Quantization
+     * selects the kernel instantiation, see the forward sweep. ---*/
+    auto RecordSweep = [&](auto quantized) {
+      for (auto level = nLevels; level > 0;) {
+        --level;
+        const auto begin = precond_level_ptr[level];
+        const auto size = precond_level_ptr[level + 1] - begin;
+        if (size == 0) continue;
+        LU_SGS_BackwardKernel<ScalarType, QuantType, QuantScaleType, decltype(quantized)::value>
+            <<<size, threads, sharedBackward, aux_stream>>>(d_precond_level_idx, begin, size, nPointDomain, nVar, M,
+                                                            d_q_blocks.u, d_q_scale.u, d_invM, d_prod);
+      }
+    };
+    if (quantized_mode) {
+      RecordSweep(std::true_type{});
+    } else {
+      RecordSweep(std::false_type{});
     }
 
     gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
-    gpuErrChk(cudaGraphInstantiate(&precond_bwd_graph_exec, graph, nullptr, nullptr, 0));
+    InstantiateOrUpdateGraph(precond_bwd_graph_exec, graph, "LU-SGS backward");
     gpuErrChk(cudaGraphDestroy(graph));
     precond_bwd_graph_prod = d_prod;
 
