@@ -59,7 +59,7 @@ struct CNoFlowIndices {
 template <class FlowIndices>
 class CAvgGrad_Scalar : public CNumerics {
  protected:
-  enum : unsigned short {MAXNVAR = 8};
+  enum : unsigned short {MAXNVAR = 20};
 
   const FlowIndices idx;                      /*!< \brief Object to manage the access to the flow primitives. */
   su2double Proj_Mean_GradScalarVar[MAXNVAR]; /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */

@@ -37,6 +37,7 @@
 #include "../../include/fluid/CConstantSchmidt.hpp"
 #include "../../include/fluid/CConstantViscosity.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
+#include "../../include/fluid/CFluidCantera.hpp"
 #include "../../include/fluid/CPolynomialConductivity.hpp"
 #include "../../include/fluid/CPolynomialConductivityRANS.hpp"
 #include "../../include/fluid/CPolynomialViscosity.hpp"
@@ -61,6 +62,9 @@ unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig
           new CPolynomialViscosity<N_POLY_COEFFS>(config->GetMu_PolyCoeffND()));
     case VISCOSITYMODEL::FLAMELET:
       /*--- Viscosity is obtained from the LUT ---*/
+      return nullptr;
+    case VISCOSITYMODEL::CANTERA:
+      /*--- Viscosity is obtained from the Cantera library---*/
       return nullptr;
     default:
       SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
@@ -115,6 +119,9 @@ unique_ptr<CConductivityModel> CFluidModel::MakeThermalConductivityModel(const C
     case CONDUCTIVITYMODEL::FLAMELET:
       /*--- Conductivity is obtained from the LUT ---*/
       return nullptr;
+    case CONDUCTIVITYMODEL::CANTERA:
+      /*--- Conductivity is obtained from Cantera library---*/
+      return nullptr;
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
       return nullptr;
@@ -142,6 +149,10 @@ unique_ptr<CDiffusivityModel> CFluidModel::MakeMassDiffusivityModel(const CConfi
       break;
     case DIFFUSIVITYMODEL::FLAMELET:
       /*--- Diffusivity is obtained from the LUT ---*/
+      return nullptr;
+      break;
+    case DIFFUSIVITYMODEL::CANTERA:
+      /*--- Diffusivity is obtained from CANTERA. Transport model option determines the diffusivity model---*/
       return nullptr;
       break;
     default:

@@ -36,6 +36,8 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncNSSolver final : public CIncEulerSolver {
+  FluidFlamelet_ParsedOptions flamelet_config_options;
+  su2double TemperatureLimits[2];
 
   /*!
    * \brief Generic implementation of the isothermal, heatflux and heat-transfer/convection walls.

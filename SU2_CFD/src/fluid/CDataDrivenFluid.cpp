@@ -471,4 +471,4 @@ size_t MiniTable2D::FindNode(const size_t iX, const su2double val_x, const size_
         }
     }
     return iMin;
-}  
+}
