@@ -1560,12 +1560,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
       /*--- Build preconditioner for the transposed Jacobian ---*/
 
-      if (RequiresTranspose) {
-        Jacobian.TransposeInPlace();
-        /*--- The transpose is host side and the preconditioners below build from the
-         * device copy, which still holds the matrix as it was uploaded for the solve. ---*/
-        UploadMatrix(Jacobian, config->GetCUDA());
-      }
+      if (RequiresTranspose) Jacobian.TransposeInPlace();
 
       switch (KindPrecond) {
         case ILU:
@@ -1666,9 +1661,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
   /*--- If there was no call to solve first the preconditioner needs to be built here. ---*/
   if (directCall) {
     Jacobian.TransposeInPlace();
-    /*--- The transpose is host side, the device copy has to follow it before anything is
-     * built from it (the product above uploaded the matrix as it was). ---*/
-    UploadMatrix(Jacobian, config->GetCUDA());
     normal_prec->Build();
   }
 

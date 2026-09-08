@@ -660,13 +660,8 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
    * change execution order relative to the rest of the (single-stream) solver. ---*/
   if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
 
-  /*--- Once the matrix is transposed the factors cannot be refined (see ilu_can_refine) and the
-   * colored sweeps cannot recover on their own: the kernel reseeds the row it works on from A,
-   * but the updates it applies come from the other rows' factors, which still describe the
-   * previous orientation. Sweep levels_ilu in increasing order instead; rows in a level depend
-   * only on lower levels, so every input is already final and one pass is the exact
-   * factorization, the same one the host computes, with no sweep count to pick. Not worth a
-   * graph, it runs once per solve and costs one launch per level. ---*/
+  /*--- Once the matrix is transposed the factors cannot be refined, see ilu_can_refine, so
+   * launch by levels instead of colors to eliminate the dependence on previous factors. ---*/
   if (!ilu_can_refine) {
     for (auto level = 0ul; level + 1 < precond_level_ptr.size(); ++level) {
       const auto begin = precond_level_ptr[level];

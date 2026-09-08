@@ -1778,6 +1778,14 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
   pastix_wrapper.SetTransposedSolve();
   END_SU2_OMP_MASTER
 #endif
+
+#ifdef SU2_ENABLE_CUDA_KERNELS
+  if constexpr (su2_gpu_capable_v<ScalarType>) {
+    if (useCuda) {
+      SU2_DEVICE_REGION(HtDTransfer();)
+    }
+  }
+#endif
 }
 
 template <class ScalarType>
