@@ -45,6 +45,26 @@ class AeroacousticsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not uniform"):
             AEROACOUSTICS.sampling_rate(np.array([0.0, 0.1, 0.21, 0.3]))
 
+    def test_acoustic_metrics_rejects_invalid_spectra(self):
+        frequencies = np.array([0.0, 1.0, 2.0])
+        psd = np.array([0.0, 1.0, 0.5])
+
+        cases = [
+            (frequencies.reshape(1, 3), psd, "one-dimensional"),
+            (frequencies, psd[:2], "equal length"),
+            (frequencies[:1], psd[:1], "at least two"),
+            (np.array([0.0, float("nan"), 2.0]), psd, "finite"),
+            (np.array([0.0, 2.0, 1.0]), psd, "strictly increasing"),
+            (np.array([0.0, 1.0, 3.0]), psd, "uniformly spaced"),
+            (frequencies, np.array([0.0, -1.0, 0.5]), "non-negative"),
+            (frequencies, np.array([0.0, float("inf"), 0.5]), "finite"),
+        ]
+
+        for test_frequencies, test_psd, message in cases:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ValueError, message):
+                    AEROACOUSTICS.acoustic_metrics(test_frequencies, test_psd)
+
     def test_read_history_accepts_su2_quoted_headers_and_comments(self):
         with tempfile.TemporaryDirectory() as directory:
             history = Path(directory) / "history.csv"

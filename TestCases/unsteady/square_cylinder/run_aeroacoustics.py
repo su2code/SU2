@@ -36,7 +36,13 @@ su2_run = os.environ.get("SU2_RUN")
 if su2_run:
     sys.path.insert(0, su2_run)
 
-from aeroacoustics import analyze  # noqa: E402
+try:
+    from aeroacoustics import analyze  # noqa: E402
+except ImportError as error:
+    raise SystemExit(
+        'run_aeroacoustics: error: could not import "aeroacoustics" '
+        "(set SU2_RUN or PYTHONPATH to the SU2 Python tools directory)"
+    ) from error
 
 
 SEGMENT_LENGTH = 2048

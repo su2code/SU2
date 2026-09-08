@@ -191,10 +191,28 @@ def acoustic_metrics(frequencies, psd, reference_pressure=20.0e-6):
     """Calculate PSD level, bin SPL, OASPL, and the dominant frequency."""
     if reference_pressure <= 0.0 or not math.isfinite(reference_pressure):
         raise ValueError("reference pressure must be positive and finite")
+
+    frequencies = np.asarray(frequencies, dtype=float)
+    psd = np.asarray(psd, dtype=float)
+    if frequencies.ndim != 1 or psd.ndim != 1 or psd.size != frequencies.size:
+        raise ValueError(
+            "frequencies and psd must be one-dimensional arrays of equal length"
+        )
     if frequencies.size < 2:
         raise ValueError("an acoustic spectrum needs at least two frequency bins")
+    if not np.all(np.isfinite(frequencies)):
+        raise ValueError("frequency bins must be finite")
+    if not np.all(np.isfinite(psd)):
+        raise ValueError("PSD values must be finite")
+    if np.any(psd < 0.0):
+        raise ValueError("PSD values must be non-negative")
 
-    frequency_step = float(frequencies[1] - frequencies[0])
+    frequency_steps = np.diff(frequencies)
+    if not np.all(np.isfinite(frequency_steps)) or np.any(frequency_steps <= 0.0):
+        raise ValueError("frequency bins must be strictly increasing")
+    frequency_step = float(frequency_steps[0])
+    if not np.allclose(frequency_steps, frequency_step, rtol=1.0e-6, atol=0.0):
+        raise ValueError("frequency bins must be uniformly spaced")
     tiny = np.finfo(float).tiny
     psd_level = 10.0 * np.log10(np.maximum(psd, tiny) / reference_pressure**2)
     narrowband_spl = 10.0 * np.log10(
