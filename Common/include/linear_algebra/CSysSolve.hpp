@@ -261,24 +261,6 @@ class CSysSolve {
   }
 
   /*!
-   * \brief Sends the matrix to the device after it was modified on the host.
-   * \note CSysMatrixVectorProduct uploads it once when it is constructed, this is for the
-   * transposes done for the discrete adjoint after that point.
-   */
-  static void UploadMatrix(const CSysMatrix<ScalarType>& Jacobian, bool useCuda) {
-#ifdef SU2_ENABLE_CUDA_KERNELS
-    if constexpr (su2_gpu_capable_v<ScalarType>) {
-      if (useCuda) {
-        SU2_DEVICE_REGION(Jacobian.HtDTransfer();)
-      }
-    }
-#else
-    (void)Jacobian;
-    (void)useCuda;
-#endif
-  }
-
-  /*!
    * \brief Brings the solution back from the device and returns to host evaluation.
    */
   void DownloadSolution(bool useCuda) const {
