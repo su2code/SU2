@@ -1710,9 +1710,6 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
   SU2_ZONE_SCOPED
   assert(nVar == nEqn && "Cannot transpose with nVar != nEqn.");
 
-  /*--- The factors of one orientation are not a starting point for the other. ---*/
-  ilu_can_refine = false;
-
   auto swapAndTransp = [](unsigned long n, ScalarType* a, ScalarType* b) {
     assert(a != b);
     /*--- a=b', b=a' ---*/
@@ -1782,7 +1779,12 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
 #ifdef SU2_ENABLE_CUDA_KERNELS
   if constexpr (su2_gpu_capable_v<ScalarType>) {
     if (useCuda) {
-      SU2_DEVICE_REGION(HtDTransfer();)
+      BEGIN_SU2_DEVICE_REGION {
+        HtDTransfer();
+        /*--- The factors of one orientation are not a starting point for the other. ---*/
+        ilu_can_refine = false;
+      }
+      END_SU2_DEVICE_REGION
     }
   }
 #endif
