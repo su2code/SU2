@@ -8016,26 +8016,33 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
-    /*--- Compute (negative) displacements and grab the metadata. ---*/
+    /*--- Grab the metadata trailer, which only old files have. Without it the iteration
+     number and the metadata keep the zeros they were initialized with. ---*/
 
-    ret = sizeof(int) + 8 * scalarSize;
-    fseek(fhw, -ret, SEEK_END);
+    const int nMeta =
+        GetSU2BinaryMetadataSize(Restart_Vars[SU2_RESTART_PRECISION_IDX], Restart_Vars[SU2_RESTART_METADATA_IDX]);
+    if (nMeta > 0) {
+      /*--- Compute (negative) displacements and jump to the trailer. ---*/
 
-    /*--- Read the external iteration. ---*/
+      ret = sizeof(int) + nMeta * scalarSize;
+      fseek(fhw, -ret, SEEK_END);
 
-    ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
-    if (ret != 1) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+      /*--- Read the external iteration. ---*/
+
+      ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+      if (ret != 1) {
+        SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+      }
+
+      /*--- Read the metadata. ---*/
+
+      double meta_buf[SU2_RESTART_MAX_METADATA]; /*--- Correctly aligned for either precision. ---*/
+      ret = fread(meta_buf, scalarSize, nMeta, fhw);
+      if (ret != static_cast<unsigned long>(nMeta)) {
+        SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+      }
+      SU2BinaryDataToPassive(meta_buf, scalarSize, nMeta, Restart_Meta_Passive);
     }
-
-    /*--- Read the metadata. ---*/
-
-    double meta_buf[8]; /*--- Large enough and correctly aligned for either precision. ---*/
-    ret = fread(meta_buf, scalarSize, 8, fhw);
-    if (ret != 8) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
-    }
-    SU2BinaryDataToPassive(meta_buf, scalarSize, 8, Restart_Meta_Passive);
 
     /*--- Close the file. ---*/
 
@@ -8184,9 +8191,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, (char*)"native", MPI_INFO_NULL);
 
-    /*--- Access the metadata. ---*/
+    /*--- Access the metadata trailer, which only old files have. Without it the iteration
+     number and the metadata keep the zeros they were initialized with. ---*/
 
-    if (rank == MASTER_NODE) {
+    const int nMeta =
+        GetSU2BinaryMetadataSize(Restart_Vars[SU2_RESTART_PRECISION_IDX], Restart_Vars[SU2_RESTART_METADATA_IDX]);
+    if (nMeta > 0 && rank == MASTER_NODE) {
       /*--- External iteration. ---*/
       disp = (nRestart_Vars * sizeof(int) + nFields * CGNS_STRING_SIZE * sizeof(char) +
               static_cast<unsigned long>(nFields) * Restart_Vars[2] * scalarSize);
@@ -8195,9 +8205,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
       /*--- Additional doubles for AoA, AoS, etc. ---*/
 
       disp += sizeof(int);
-      double meta_buf[8]; /*--- Large enough and correctly aligned for either precision. ---*/
-      MPI_File_read_at(fhw, disp, meta_buf, 8 * scalarSize, MPI_BYTE, MPI_STATUS_IGNORE);
-      SU2BinaryDataToPassive(meta_buf, scalarSize, 8, Restart_Meta_Passive);
+      double meta_buf[SU2_RESTART_MAX_METADATA]; /*--- Correctly aligned for either precision. ---*/
+      MPI_File_read_at(fhw, disp, meta_buf, nMeta * scalarSize, MPI_BYTE, MPI_STATUS_IGNORE);
+      SU2BinaryDataToPassive(meta_buf, scalarSize, nMeta, Restart_Meta_Passive);
     }
 
     /*--- Communicate metadata. ---*/

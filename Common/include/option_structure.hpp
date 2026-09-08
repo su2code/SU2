@@ -210,6 +210,8 @@ const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS 
 const int SU2_RESTART_MAGIC_NUMBER = 535532; /*!< \brief Hex representation of "SU2". */
 const int SU2_RESTART_HEADER_SIZE = 5;       /*!< \brief Number of ints in the header. */
 const int SU2_RESTART_PRECISION_IDX = 3;     /*!< \brief Position of the precision field. */
+const int SU2_RESTART_METADATA_IDX = 4;      /*!< \brief Position of the legacy metadata count. */
+const int SU2_RESTART_MAX_METADATA = 8;      /*!< \brief Most metadata doubles a trailer ever had. */
 
 /*!
  * \brief Size in bytes of the floating point data of a native SU2 binary solution file.
@@ -224,6 +226,20 @@ inline int GetSU2BinaryScalarSize(int precisionField) {
     SU2_MPI::Error("Invalid floating point precision in the header of a binary SU2 solution file.", CURRENT_FUNCTION);
   }
   return precisionField;
+}
+
+/*!
+ * \brief Number of metadata scalars in the trailer of a native SU2 binary solution file.
+ * \param[in] precisionField - The SU2_RESTART_PRECISION_IDX entry of the file header.
+ * \param[in] metadataField - The SU2_RESTART_METADATA_IDX entry of the file header.
+ * \return Number of scalars of the trailer, preceded by one int (the iteration number),
+ * or 0 for the files that do not have one.
+ * \note Only files that still use the two ints as trailer counts have a trailer, and in
+ * those the precision field is the number of trailer ints, which was always 1 (see above).
+ */
+inline int GetSU2BinaryMetadataSize(int precisionField, int metadataField) {
+  if (precisionField != 1) return 0;
+  return std::min(metadataField, SU2_RESTART_MAX_METADATA);
 }
 
 /*!
