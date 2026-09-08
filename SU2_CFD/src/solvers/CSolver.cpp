@@ -2856,7 +2856,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
 
-  if (magic_number == 535532) {
+  if (magic_number == SU2_RESTART_MAGIC_NUMBER) {
     SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
@@ -2895,7 +2895,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
 
-  if (magic_number == 535532) {
+  if (magic_number == SU2_RESTART_MAGIC_NUMBER) {
     SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
@@ -2979,7 +2979,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
   strcpy(fname, val_filename.c_str());
-  const int nRestart_Vars = 5;
+  const int nRestart_Vars = SU2_RESTART_HEADER_SIZE;
   Restart_Vars.resize(nRestart_Vars);
   fields.clear();
 
@@ -3007,17 +3007,20 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
 
-  if (Restart_Vars[0] != 535532) {
+  if (Restart_Vars[0] != SU2_RESTART_MAGIC_NUMBER) {
     SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
                    string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
-  /*--- Store the number of fields and points to be read for clarity. ---*/
+  /*--- Store the number of fields and points to be read for clarity. The file may
+   have been written by a build of different precision, in which case the data needs
+   to be converted after reading it. ---*/
 
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
+  const int scalarSize = GetSU2BinaryScalarSize(Restart_Vars[SU2_RESTART_PRECISION_IDX]);
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
@@ -3039,7 +3042,13 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  ret = fread(Restart_Data.data(), sizeof(passivedouble), nFields*nPointFile, fhw);
+  if (scalarSize == static_cast<int>(sizeof(passivedouble))) {
+    ret = fread(Restart_Data.data(), scalarSize, nFields*nPointFile, fhw);
+  } else {
+    vector<char> buffer(nFields*nPointFile*scalarSize);
+    ret = fread(buffer.data(), scalarSize, nFields*nPointFile, fhw);
+    SU2BinaryDataToPassive(buffer.data(), scalarSize, nFields*nPointFile, Restart_Data.data());
+  }
   if (ret != nFields*nPointFile) {
     SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
   }
@@ -3077,17 +3086,20 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
 
-  if (Restart_Vars[0] != 535532) {
+  if (Restart_Vars[0] != SU2_RESTART_MAGIC_NUMBER) {
     SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
                    string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
-  /*--- Store the number of fields and points to be read for clarity. ---*/
+  /*--- Store the number of fields and points to be read for clarity. The file may
+   have been written by a build of different precision, in which case the data needs
+   to be converted after reading it. ---*/
 
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
+  const int scalarSize = GetSU2BinaryScalarSize(Restart_Vars[SU2_RESTART_PRECISION_IDX]);
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
@@ -3124,9 +3136,12 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   delete [] mpi_str_buf;
 
-  /*--- We're writing only su2doubles in the data portion of the file. ---*/
+  /*--- The data portion of the file holds scalars of the precision recorded in the
+   header, which is not necessarily that of this build. Describe them as opaque
+   blocks of bytes so that the file views do not depend on the build precision. ---*/
 
-  etype = MPI_DOUBLE;
+  MPI_Type_contiguous(scalarSize, MPI_BYTE, &etype);
+  MPI_Type_commit(&etype);
 
   /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
    along with the string names of the variables. ---*/
@@ -3152,7 +3167,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     for (auto iPoint_Global = 0ul; iPoint_Global < geometry->GetGlobal_nPointDomain(); ++iPoint_Global) {
       if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
         blocklen[counter] = nFields;
-        displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
+        displace[counter] = iPoint_Global*nFields*scalarSize;
         counter++;
       }
     }
@@ -3167,10 +3182,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     const auto partitioner = CLinearPartitioner(nPointFile,0);
 
     blocklen[0] = nFields*partitioner.GetSizeOnRank(rank);
-    displace[0] = nFields*partitioner.GetFirstIndexOnRank(rank)*sizeof(passivedouble);;
+    displace[0] = nFields*partitioner.GetFirstIndexOnRank(rank)*scalarSize;
   }
 
-  MPI_Type_create_hindexed(nBlock, blocklen, displace, MPI_DOUBLE, &filetype);
+  MPI_Type_create_hindexed(nBlock, blocklen, displace, etype, &filetype);
   MPI_Type_commit(&filetype);
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
@@ -3183,17 +3198,25 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   const int bufSize = nBlock*blocklen[0];
   Restart_Data.resize(bufSize);
 
-  /*--- Collective call for all ranks to read from their view simultaneously. ---*/
+  /*--- Collective call for all ranks to read from their view simultaneously,
+   converting the data if the file precision does not match this build. ---*/
 
-  MPI_File_read_all(fhw, Restart_Data.data(), bufSize, MPI_DOUBLE, &status);
+  if (scalarSize == static_cast<int>(sizeof(passivedouble))) {
+    MPI_File_read_all(fhw, Restart_Data.data(), bufSize, etype, &status);
+  } else {
+    vector<char> buffer(static_cast<unsigned long>(bufSize)*scalarSize);
+    MPI_File_read_all(fhw, buffer.data(), bufSize, etype, &status);
+    SU2BinaryDataToPassive(buffer.data(), scalarSize, bufSize, Restart_Data.data());
+  }
 
   /*--- All ranks close the file after writing. ---*/
 
   MPI_File_close(&fhw);
 
-  /*--- Free the derived datatype and release temp memory. ---*/
+  /*--- Free the derived datatypes and release temp memory. ---*/
 
   MPI_Type_free(&filetype);
+  MPI_Type_free(&etype);
 
   delete [] blocklen;
   delete [] displace;
