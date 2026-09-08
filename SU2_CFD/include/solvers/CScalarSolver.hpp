@@ -58,6 +58,7 @@ class CScalarSolver : public CSolver {
   su2double Solution_Inf[MAXNVAR]; /*!< \brief Far-field solution. */
 
   const bool Conservative; /*!< \brief Transported Variable is conservative. Solution has to be multiplied with rho. */
+  const bool BoundedScalar; /*!< \brief Whether the derived solver uses the bounded-scalar convective scheme. */
 
   const CPrimitiveIndices<unsigned short> prim_idx; /*!< \brief Indices of the primitive flow variables. */
 
@@ -440,7 +441,7 @@ class CScalarSolver : public CSolver {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative);
+  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative, bool bounded_scalar);
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.

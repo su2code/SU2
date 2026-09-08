@@ -37,7 +37,7 @@ using namespace GeometryToolbox;
 CIsoparametric::CIsoparametric(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
                                unsigned int jZone)
     : CInterpolator(geometry_container, config, iZone, jZone) {
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
 void CIsoparametric::PrintStatistics() const {
@@ -46,7 +46,7 @@ void CIsoparametric::PrintStatistics() const {
        << "  Interpolation clipped for " << ErrorCounter << " (" << ErrorRate << "%) target vertices." << endl;
 }
 
-void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
+void CIsoparametric::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
   const su2double matchingVertexTol = 1e-12;  // 1um^2
 
   const int nProcessor = size;

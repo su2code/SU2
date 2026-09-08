@@ -64,7 +64,7 @@ class CIsoparametric final : public CInterpolator {
    * \brief Set up transfer matrix defining relation between two meshes
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTransferCoeff(const CConfig* const* config) override;
+  void SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) override;
 
   /*!
    * \brief Print information about the interpolation.

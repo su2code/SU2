@@ -1405,6 +1405,10 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   }
 }
 
+void CFlowOutput::LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) {
+  LoadHistoryData(config, geometry, solver);
+}
+
 void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   /*--- Only place outputs of the "RESIDUAL" group here. ---*/
 
@@ -4301,6 +4305,8 @@ void CFlowOutput::AddTurboOutput(unsigned short nZone){
     AddHistoryOutput("MachOut_" + tag, "MachOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("AbsFlowAngleIn_" + tag, "AbsFlowAngleIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("AbsFlowAngleOut_" + tag, "AbsFlowAngleOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("RelFlowAngleIn_" + tag, "RelFlowAngleIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Relative flow angle in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("RelFlowAngleOut_" + tag, "RelFlowAngleOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Relative flow angle out " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("KineticEnergyLoss_" + tag, "KELC_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Blade Kinetic Energy Loss Coefficient", HistoryFieldType::DEFAULT);
     AddHistoryOutput("TotPressureLoss_" + tag, "TPLC_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Blade Pressure Loss Coefficient", HistoryFieldType::DEFAULT);
   }

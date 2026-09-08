@@ -105,28 +105,6 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    if (config->GetCUDA()) {
-#ifdef SU2_ENABLE_CUDA_KERNELS
-      if constexpr (su2_gpu_capable_v<ScalarType>) {
-        BEGIN_SU2_DEVICE_REGION
-        matrix.GPUMatrixVectorProduct(u, v, geometry, config);
-        END_SU2_DEVICE_REGION
-      } else {
-        SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
-      }
-#elif defined(HAVE_CUDA)
-      SU2_MPI::Error(
-          "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nThe GPU kernels are not "
-          "part of the AD libraries, use the primal build for GPU acceleration",
-          CURRENT_FUNCTION);
-#else
-      SU2_MPI::Error(
-          "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
-          "options enabled in Meson to access GPU Functions",
-          CURRENT_FUNCTION);
-#endif
-    } else {
-      matrix.MatrixVectorProduct(u, v, geometry, config);
-    }
+    matrix.MatrixVectorProduct(u, v, geometry, config);
   }
 };

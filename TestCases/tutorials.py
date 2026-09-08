@@ -266,7 +266,7 @@ def main():
     tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sst.cfg_file   = "transitional_SST_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sst.test_iter  = 20
-    tutorial_trans_e387_sst.test_vals  = [-6.532415, -2.932984, 0.401484, 1.078294, 0.188167, 2.000000, -10.005786]
+    tutorial_trans_e387_sst.test_vals  = [-6.532415, -5.082018, -0.789469, 1.078293, 0.188166, 2.000000, -9.567997]
     tutorial_trans_e387_sst.no_restart = True
     test_list.append(tutorial_trans_e387_sst)
 
@@ -302,7 +302,7 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.301440, 0.000000, 0.313631, 0.803638, 0.002198, 0.014969]
+    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.293170, 0.000000, 0.301553, 0.773822, 0.001267, 0.007555]
     tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.292359, 0, 0.284720, 0.766329, 0.000954, 0.007565]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
