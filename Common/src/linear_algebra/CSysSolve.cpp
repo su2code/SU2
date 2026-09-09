@@ -550,6 +550,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     if (nestedParallel) {
       /*--- "omp parallel if" does not work well here ---*/
       SU2_OMP_PARALLEL
+      /*--- Atomic write into a shared variable to avoid sanitizer errors. ---*/
+      SU2_OMP_ATOMIC_WRITE
       orthog_ok = ModGramSchmidt(true, i, H, V);
       END_SU2_OMP_PARALLEL
     } else {
@@ -826,6 +828,8 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       if (nestedParallel) {
         /*--- "omp parallel if" does not work well here ---*/
         SU2_OMP_PARALLEL
+        /*--- Atomic write into a shared variable to avoid sanitizer errors. ---*/
+        SU2_OMP_ATOMIC_WRITE
         orthog_ok = ModGramSchmidt(true, j, H, V);
         END_SU2_OMP_PARALLEL
       } else {
@@ -900,6 +904,8 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       const auto n = same_mat ? 1 : m + 1;
       if (nestedParallel) {
         SU2_OMP_PARALLEL
+        /*--- Atomic write into a shared variable to avoid sanitizer errors. ---*/
+        SU2_OMP_ATOMIC_WRITE
         VWk = &CSysVector<ScalarType>::multiDot(V, i0, n, W, k);
         END_SU2_OMP_PARALLEL
       } else {
