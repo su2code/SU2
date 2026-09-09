@@ -28,6 +28,7 @@
 # make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
 from __future__ import print_function
 
+import shutil
 import sys
 from TestCase import TestCase
 from TestCase import parse_args
@@ -218,6 +219,29 @@ def main():
     #end
 
     pass_list = [ test.run_test(args.tsan) for test in test_list ]
+
+    ##########################################
+    ### Thread sanitizer only              ###
+    ##########################################
+
+    # Sanitizer coverage for the nested parallel logic in adjoint Krylov mode.
+    # The case is not run to convergence here because the hybrid binary uses
+    # mixed precision which does not work very well with the adjoint Krylov mode.
+    if args.tsan:
+        shutil.copy("vandv/rans/30p30n/solution.dat", "vandv/rans/30p30n/solution_0.dat")
+
+    discadj_30p30n_krylov = TestCase('discadj_30p30n_krylov')
+    discadj_30p30n_krylov.cfg_dir = "vandv/rans/30p30n"
+    discadj_30p30n_krylov.cfg_file = "config_ad.cfg"
+    discadj_30p30n_krylov.multizone = True
+    discadj_30p30n_krylov.test_iter = 0
+    discadj_30p30n_krylov.test_vals = [-2.101502, -1.334769, -1.144549, -1.970734, 0.150069,
+                                       -1.137743, -2.897633, 0.077908, 10.334000]
+    discadj_30p30n_krylov.command = TestCase.Command(exec = "SU2_CFD_AD", param = "-t 2")
+    discadj_30p30n_krylov.timeout = 1600
+    discadj_30p30n_krylov.enabled_with_regular = False
+    test_list.append(discadj_30p30n_krylov)
+    pass_list.append(discadj_30p30n_krylov.run_test(args.tsan))
 
     ###################################
     ### Python Wrapper              ###
