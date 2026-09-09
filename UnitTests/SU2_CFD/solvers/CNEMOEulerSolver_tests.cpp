@@ -25,92 +25,35 @@
  */
 
 #include "catch.hpp"
-#include "../../UnitQuadTestCase.hpp"
 #include "../../../SU2_CFD/include/solvers/CNEMOEulerSolver.hpp"
 
-/*!
- * \brief Build a NEMO Euler solver on the unit box and check which conserved
- * variables the implicit update limiter (MAX_UPDATE_FLOW) reacts to. The
- * total-energy check used to be nested inside the species block and could
- * never run, so the factor stayed at one for arbitrarily large energy updates.
- */
-TEST_CASE("NEMO under-relaxation reacts to the total-energy update", "[NEMO][Solver]") {
-  UnitQuadTestCase testCase;
-  testCase.config_options =
-      "SOLVER= NEMO_EULER\n"
-      "FLUID_MODEL= SU2_NONEQ\n"
-      "GAS_MODEL= AIR-5\n"
-      "GAS_COMPOSITION= (0.77, 0.23, 0.0, 0.0, 0.0)\n"
-      "MESH_FORMAT= BOX\n"
-      "MESH_BOX_SIZE= 3,3,3\n"
-      "MESH_BOX_LENGTH= 1,1,1\n"
-      "MESH_BOX_OFFSET= 0,0,0\n"
-      "INIT_OPTION= TD_CONDITIONS\n"
-      "MACH_NUMBER= 5.0\n"
-      "FREESTREAM_PRESSURE= 101325.0\n"
-      "FREESTREAM_TEMPERATURE= 288.15\n"
-      "FREESTREAM_TEMPERATURE_VE= 288.15\n"
-      "MARKER_FAR= (x_minus, x_plus, y_minus, y_plus, z_minus, z_plus)\n"
-      "TIME_DISCRE_FLOW= EULER_IMPLICIT\n"
-      "MAX_UPDATE_FLOW= 0.2\n";
-  testCase.InitConfig();
-  testCase.InitGeometry();
+TEST_CASE("NEMO under-relaxation limits species and total-energy updates", "[NEMO][Solver]") {
+  const unsigned short nSpecies = 2;
+  const unsigned short nVar = 6;
+  /*--- Two species, two momentum components, total energy, and vibrational energy. ---*/
+  const su2double solution[nVar] = {0.75, 0.25, 1.0, 1.0, 10.0, 2.0};
+  const su2double allowableRatio = 0.2;
 
-  CConfig* config = testCase.config.get();
-  CGeometry* geometry = testCase.geometry.get();
-
-  /*--- Construct the class under test directly instead of going through
-   * UnitQuadTestCase::InitSolver (CSolverFactory), so the test depends on
-   * CNEMOEulerSolver alone. The constructor reports to cout; silence it the
-   * way the harness helpers do. ---*/
-  std::cout.rdbuf(nullptr);
-  CNEMOEulerSolver solver(geometry, config, MESH_0);
-  std::cout.rdbuf(testCase.orig_buf);
-
-  const unsigned short nSpecies = config->GetnSpecies();
-  const unsigned short nDim = geometry->GetnDim();
-  const unsigned short nVar = solver.GetnVar();
-  REQUIRE(nVar == nSpecies + nDim + 2);
-
-  const unsigned long nPointDomain = geometry->GetnPointDomain();
-  REQUIRE(nPointDomain > 1);
-  const unsigned long iPoint = nPointDomain / 2;
-  const unsigned long jPoint = (iPoint + 1) % nPointDomain;
-
-  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
-  REQUIRE(allowableRatio == Approx(0.2));
-
-  /*--- Exceed the allowable update fraction by this factor for one variable at
-   * one point. If the limiter sees the variable, the factor drops to 1/excess. ---*/
-  const su2double excess = 4.0;
-  CVariable* nodes = solver.GetNodes();
-
-  auto factorWithUpdateOn = [&](unsigned short iVar, su2double reference) {
-    solver.LinSysSol.SetValZero();
-    solver.LinSysSol(iPoint, iVar) = excess * allowableRatio * reference;
-    solver.ComputeUnderRelaxationFactor(config);
-    return nodes->GetUnderRelaxation(iPoint);
+  const struct {
+    const char* name;
+    su2double update[nVar];
+    su2double expected;
+  } cases[] = {
+      {"zero update", {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, 1.0},
+      {"small energy update", {0.0, 0.0, 0.0, 0.0, 1.0, 0.0}, 1.0},
+      {"positive energy excess", {0.0, 0.0, 0.0, 0.0, 8.0, 0.0}, 0.25},
+      {"negative energy excess", {0.0, 0.0, 0.0, 0.0, -8.0, 0.0}, 0.25},
+      {"opposing species updates", {0.4, -0.4, 0.0, 0.0, 0.0, 0.0}, 0.25},
+      {"species sets the tighter limit", {0.8, -0.8, 0.0, 0.0, 8.0, 0.0}, 0.125},
+      {"energy sets the tighter limit", {0.2, -0.2, 0.0, 0.0, 8.0, 0.0}, 0.25},
+      {"momentum and vibrational energy are not limited", {0.0, 0.0, 100.0, -100.0, 0.0, 100.0}, 1.0},
+      {"tiny factor cancels the update", {0.0, 0.0, 0.0, 0.0, 1e12, 0.0}, 0.0},
   };
 
-  const unsigned short rhoE = nVar - 2;
-  REQUIRE(rhoE >= nSpecies);
-
-  /*--- Control: the species check compares the summed species update with the
-   * mixture density, so the reference for the first species is the density. ---*/
-  su2double density = 0.0;
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; ++iSpecies)
-    density += fabs(nodes->GetSolution(iPoint, iSpecies));
-  CHECK(factorWithUpdateOn(0, density + EPS) == Approx(1.0 / excess).margin(1e-12));
-  CHECK(nodes->GetUnderRelaxation(jPoint) == 1.0);
-
-  /*--- The total-energy update must be limited by the same rule. ---*/
-  const su2double energy = fabs(nodes->GetSolution(iPoint, rhoE));
-  CHECK(factorWithUpdateOn(rhoE, energy + EPS) == Approx(1.0 / excess).margin(1e-12));
-  CHECK(nodes->GetUnderRelaxation(jPoint) == 1.0);
-
-  /*--- An energy update within the allowable fraction leaves the factor at one. ---*/
-  solver.LinSysSol.SetValZero();
-  solver.LinSysSol(iPoint, rhoE) = 0.5 * allowableRatio * energy;
-  solver.ComputeUnderRelaxationFactor(config);
-  CHECK(nodes->GetUnderRelaxation(iPoint) == 1.0);
+  for (const auto& test : cases) {
+    CAPTURE(test.name);
+    const su2double factor =
+        CNEMOEulerSolver::ComputeUnderRelaxationFactor(nSpecies, nVar, solution, test.update, allowableRatio);
+    CHECK(factor == Approx(test.expected).margin(1e-12));
+  }
 }

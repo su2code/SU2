@@ -200,6 +200,19 @@ public:
   void ComputeUnderRelaxationFactor(const CConfig *config) final;
 
   /*!
+   * \brief Limit the species and total-energy updates at one point.
+   * \param[in] nSpecies - Number of species.
+   * \param[in] nVar - Number of conserved variables.
+   * \param[in] solution - Conserved variables at the point.
+   * \param[in] update - Proposed change in the conserved variables.
+   * \param[in] allowableRatio - Maximum allowed relative update.
+   * \return Under-relaxation factor for the point.
+   */
+  static su2double ComputeUnderRelaxationFactor(unsigned short nSpecies, unsigned short nVar,
+                                               const su2double* solution, const su2double* update,
+                                               su2double allowableRatio);
+
+  /*!
    * \brief Set the fluid solver nondimensionalization.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
