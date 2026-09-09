@@ -2071,6 +2071,20 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
   /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
+  /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
+   * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
+  addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
+  /*!\brief MG_STARTUP_CONVERGENCE\n DESCRIPTION: During the startup phase of Full-MG, leave the current level once
+   * CONV_FIELD has dropped by this many orders of magnitude relative to its value when the level became active.
+   * DEFAULT: -2 \ingroup Config*/
+  addDoubleOption("MG_STARTUP_CONVERGENCE", MGOptions.MG_Startup_Convergence, -2.0);
+  /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio
+   * between successive iterations exceeds this value for MG_STARTUP_STAGNATION_ITER consecutive iterations, promote to
+   * the next finer level without waiting out MG_STARTUP_ITER. 0 disables it. DEFAULT: 0.99 \ingroup Config*/
+  addDoubleOption("MG_STARTUP_STAGNATION", MGOptions.MG_Startup_Stagnation, 0.99);
+  /*!\brief MG_STARTUP_STAGNATION_ITER\n DESCRIPTION: Consecutive stalled iterations required before Full-MG promotes
+   * on stagnation. 0 disables it, as MG_STARTUP_STAGNATION= 0 does. DEFAULT: 5 \ingroup Config*/
+  addUnsignedLongOption("MG_STARTUP_STAGNATION_ITER", MGOptions.MG_Startup_Stagnation_Iter, 5);
   /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i). If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
 
@@ -3631,6 +3645,31 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Multizone_Problem = YES;
   }
 
+  /*--- The solver vectors stay on the device but the halo exchange is host-side, so more than
+   * one rank would use stale halos. Use OpenMP for the host parts instead. ---*/
+  if (Enable_Cuda && size > 1) {
+    SU2_MPI::Error("ENABLE_CUDA= YES is not supported with more than one MPI rank,\n"
+                   "       the halo exchange only happens on the host.\n"
+                   "       Use a single rank with OpenMP threads, e.g. 'SU2_CFD -t <threads> config.cfg'.",
+                   CURRENT_FUNCTION);
+  }
+
+  /*--- nvcc cannot compile the CoDiPack types, so the kernels are only built into the primal
+   * solver (see SU2_ENABLE_CUDA_KERNELS). Catch it here, not minutes into the run. ---*/
+  if (Enable_Cuda) {
+#ifndef SU2_ENABLE_CUDA_KERNELS
+#ifdef HAVE_CUDA
+    SU2_MPI::Error("ENABLE_CUDA= YES is not available in the AD and direct differentiation solvers,\n"
+                   "       the CUDA kernels are only built into SU2_CFD.",
+                   CURRENT_FUNCTION);
+#else
+    SU2_MPI::Error("ENABLE_CUDA= YES but SU2 was not compiled with CUDA support,\n"
+                   "       reconfigure the build with -Denable-cuda=true.",
+                   CURRENT_FUNCTION);
+#endif
+#endif
+  }
+
   /*--- Set the default output files ---*/
   if (!OptionIsSet("OUTPUT_FILES")){
     nVolumeOutputFiles = 3;
@@ -4835,6 +4874,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  /*--- Only the direct problem promotes a Full-MG startup. Downgrade before FinestMesh is
+   *    derived from the cycle, or it stays on the coarsest level for the entire run. ---*/
+
+  if (Restart || ((Kind_MGCycle == MG_CYCLE::FULL) && ContinuousAdjoint)) Kind_MGCycle = MG_CYCLE::V;
+
   FinestMesh = MESH_0;
   if (Kind_MGCycle == MG_CYCLE::FULL) FinestMesh = nMGLevels;
 
@@ -4895,8 +4939,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   MGOptions.MG_PostSmooth[MESH_0] = 0;
   MGOptions.MG_PostSmooth[nMGLevels] = 0;
   MGOptions.MG_CorrecSmooth[nMGLevels] = 0;
-
-  if (Restart) Kind_MGCycle = MG_CYCLE::V;
 
   if (ContinuousAdjoint) {
     if (Kind_Solver == MAIN_SOLVER::EULER) Kind_Solver = MAIN_SOLVER::ADJ_EULER;
@@ -5763,6 +5805,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS &&
         Kind_Solver != MAIN_SOLVER::MULTIPHYSICS)
       SU2_MPI::Error("Species transport currently only available for compressible and incompressible flow.", CURRENT_FUNCTION);
+
+    /*--- The dual-time density history is recomputed via the fluid model, which needs the species
+          solution; the species solver only exists on the finest grid. ---*/
+    if ((Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) && (Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) &&
+        (TimeMarching == TIME_MARCHING::DT_STEPPING_1ST || TimeMarching == TIME_MARCHING::DT_STEPPING_2ND) &&
+        (nMGLevels > 0))
+      SU2_MPI::Error("Dual-time stepping with species-dependent variable density does not support MGLEVEL > 0.",
+                     CURRENT_FUNCTION);
 
     /*--- Species specific OF currently can only handle one entry in Marker_Analyze. ---*/
     for (unsigned short iObj = 0; iObj < nObj; iObj++) {
@@ -7132,6 +7182,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         case TOPOL_DISCRETENESS:         cout << "Topology discreteness objective function." << endl; break;
         case TOPOL_COMPLIANCE:           cout << "Topology compliance objective function." << endl; break;
         case STRESS_PENALTY:             cout << "Stress penalty objective function." << endl; break;
+        case ENTROPY_GENERATION:         cout << "Entropy generation objective function." << endl; break;
       }
     }
     else {
@@ -7473,6 +7524,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 case LU_SGS:  cout << "Using LU-SGS preconditioning."<< endl; break;
                 case Q_LU_SGS:  cout << "Using LU-SGS preconditioning with matrix quantization."<< endl; break;
                 case JACOBI:  cout << "Using Jacobi preconditioning."<< endl; break;
+                case Q_JACOBI:  cout << "Using Jacobi preconditioning with matrix quantization."<< endl; break;
               }
               break;
             case SMOOTHER:
@@ -7482,6 +7534,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 case LU_SGS:  cout << "A LU-SGS"; break;
                 case Q_LU_SGS:  cout << "A quantized LU-SGS"; break;
                 case JACOBI:  cout << "A Jacobi"; break;
+                case Q_JACOBI:  cout << "A quantized Jacobi"; break;
               }
               cout << " method is used for smoothing the linear system." << endl;
               break;
@@ -8738,6 +8791,7 @@ CConfig::~CConfig() {
 
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
+
 }
 
 /*--- Input is the filename base, output is the completed filename. ---*/
@@ -8881,6 +8935,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case TOPOL_DISCRETENESS:          AdjExt = "_topdisc";  break;
         case TOPOL_COMPLIANCE:            AdjExt = "_topcomp";  break;
         case STRESS_PENALTY:              AdjExt = "_stress";   break;
+        case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
+        case TOTAL_PRESSURE_LOSS:         AdjExt = "_tot_press_loss"; break;
+        case KINETIC_ENERGY_LOSS:         AdjExt = "_kin_en_loss"; break;
       }
     }
     else{
@@ -10179,6 +10236,23 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
     if ((tag == sideA) || (tag == sideB)) return iMarker;
   }
   return -1;
+}
+
+short CConfig::FindMixingPlaneInterfaceMarker(unsigned short nMarker, unsigned short iMarkerInt) const {
+  short mark;
+  for (auto iMarker = 0; iMarker < nMarker; iMarker++){
+      /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
+      if (GetMarker_All_MixingPlaneInterface(iMarker) == iMarkerInt){
+          /*--- We have identified the local index of the marker ---*/
+          /*--- Store the identifier for the marker ---*/
+          mark = iMarker;
+          /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
+          return mark;
+      }
+      /*--- If the tag hasn't matched any tag within the donor markers ---*/
+      mark = -1;
+  }
+  return mark;
 }
 
 void CConfig::GEMM_Tick(double *val_start_time) const {

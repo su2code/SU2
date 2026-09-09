@@ -321,8 +321,10 @@ protected:
   vector<su2double> oldFunc,     /*!< \brief Old value of the coefficient. */
   newFunc;                       /*!< \brief Current value of the coefficient. */
   bool convergence;              /*!< \brief To indicate if the solver has converged or not. */
+  bool convergenceInterrupted;   /*!< \brief To indicate that the exit was forced by an interrupt signal instead of the convergence criteria. */
   su2double initResidual;        /*!< \brief Initial value of the residual to evaluate the convergence level. */
   vector<string> convFields;     /*!< \brief Name of the field to be monitored for convergence. */
+  unsigned long convergenceStartIter = 0; /*!< \brief Iteration the convergence history is counted from. */
 
   /*----------------------------- Adaptive CFL ----------------------------*/
 
@@ -411,7 +413,7 @@ public:
    */
   void SetHistoryOutput(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                          std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf,
-                         std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone,
+                         su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, unsigned short val_iZone,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst);
 
   /*!
@@ -425,6 +427,15 @@ public:
    */
   void SetMultizoneHistoryOutput(COutput** output, CConfig **config, CConfig *driver_config,
                                   unsigned long TimeIter, unsigned long OuterIter);
+
+  /*!
+   * \brief Evaluates objective functions in the (multiphysics) discrete adjoint solver.
+   * \note Uses the same subroutines for objective function evaluation as SetHistoryOutput, but omits unnecessary evaluations (e.g. residuals, convergence data) to avoid AD complications.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetObjectiveFunctionValues(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief Sets the volume output filename
@@ -484,6 +495,28 @@ public:
     if (it != historyOutput_Map.end()) return it->second.value;
     SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     return 0;
+  }
+
+  /*!
+   * \brief Discard the convergence history and count it from the given iteration instead.
+   * \param[in] Iteration - Iteration the history restarts from.
+   */
+  void ResetConvergenceMonitoring(unsigned long Iteration) { convergenceStartIter = Iteration; }
+
+  /*!
+   * \brief Names and values of the fields convergence is monitored on that are residuals.
+   * \return Name and current value of every monitored residual field, in CONV_FIELD order.
+   */
+  vector<pair<string, passivedouble>> GetResidualConvFields() const {
+    vector<pair<string, passivedouble>> fields;
+    for (const auto& name : convFields) {
+      const auto it = historyOutput_Map.find(name);
+      if (it == historyOutput_Map.end()) continue;
+      if ((it->second.fieldType != HistoryFieldType::RESIDUAL) &&
+          (it->second.fieldType != HistoryFieldType::AUTO_RESIDUAL)) continue;
+      fields.emplace_back(name, SU2_TYPE::GetValue(it->second.value));
+    }
+    return fields;
   }
 
  /*!
@@ -564,6 +597,12 @@ public:
    * \return Boolean indicating whether the problem is converged.
    */
   bool GetConvergence() const {return convergence;}
+
+  /*!
+   * \brief Get whether the exit was forced by an interrupt signal (e.g. SIGTERM) instead of the convergence criteria.
+   * \return Boolean indicating whether an interrupt signal forced the exit.
+   */
+  bool GetConvergenceInterrupted() const {return convergenceInterrupted;}
 
   /*!
    * \brief Set the value of the convergence flag.
@@ -787,6 +826,12 @@ protected:
   void CheckHistoryOutput(unsigned short nZone);
 
   /*!
+   * \brief Check that the Full-MG startup has a criterion left to promote the active level on.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CheckFullMG_Startup(const CConfig *config) const;
+
+  /*!
    * \brief Open the history file and write the header.
    * \param[in] config - Definition of the particular problem.
    */
@@ -968,6 +1013,17 @@ protected:
   inline virtual void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {}
 
   /*!
+   * \brief Recompute history output field values that can be used as objective functions in the (multiphysics) discrete adjoint solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   */
+  inline virtual void LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) {
+    /*--- Unless LoadCustomAndComboObjectiveFunctions is implemented in a derived output class, we use LoadHistoryData (not ideal for AD). ---*/
+    LoadHistoryData(config, geometry, solver);
+  }
+
+  /*!
    * \brief Load the multizone history output field values
    * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem.
@@ -982,7 +1038,7 @@ protected:
    * \param[in] OuterIter - Index of current outer iteration
    * \param[in] InnerIter - Index of current inner iteration
    */
-  inline virtual void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
+  inline virtual void SetTurboPerformance_Output(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
 
   /*!
    * \brief Sets the multizone turboperformacne screen output
@@ -990,7 +1046,7 @@ protected:
    * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  inline virtual void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
+  inline virtual void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboPerf, CConfig *config) {}
 
   /*!
    * \brief Loads the turboperformacne history data
@@ -998,7 +1054,7 @@ protected:
    * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
+  inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboPerf, CConfig *config) {}
 
   /*!
    * \brief Write the kinematic and thermodynamic variables at each spanwise division
@@ -1007,7 +1063,7 @@ protected:
    * \param[in] config - Descripiton of the particular problem
    * \param[in] val_iZone - Idientifier of current zone
   */
-  inline virtual void WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
+  inline virtual void WriteTurboSpanwisePerformance(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CGeometry *geometry, CConfig **config,
                                        unsigned short val_iZone) {};
 
   /*!

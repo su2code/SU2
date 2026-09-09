@@ -33,10 +33,10 @@
 CSlidingMesh::CSlidingMesh(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
                            unsigned int jZone)
     : CInterpolator(geometry_container, config, iZone, jZone) {
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
-void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
+void CSlidingMesh::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
   /* 0 - Variable declaration */
 
   /* --- General variables --- */

@@ -44,7 +44,7 @@ protected:
    */
   CFlowOutput(const CConfig *config, unsigned short nDim, bool femOutput);
 
-  /*
+  /*!
    * \brief Add turboperformance outputs as history field
    * \param[in] nZone - Number of zones in problem
   */
@@ -115,6 +115,14 @@ protected:
    * \brief Set all scalar (turbulence/species) history field values.
    */
   void LoadHistoryDataScalar(const CConfig* config, const CSolver* const* solver);
+
+  /*!
+   * \brief Recompute history output field values that can be used as objective functions in the (multiphysics) discrete adjoint solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   */
+  void LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) override;
 
   /*!
    * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).

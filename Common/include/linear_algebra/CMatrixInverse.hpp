@@ -30,11 +30,7 @@
 
 #include <cmath>
 
-#ifdef __CUDACC__
-#define SU2_CUDA_HOST_DEVICE __host__ __device__
-#else
-#define SU2_CUDA_HOST_DEVICE
-#endif
+#include "../code_config.hpp"
 
 namespace SU2_LinAlg {
 
@@ -95,5 +91,3 @@ SU2_CUDA_HOST_DEVICE inline void MatrixInverse(unsigned long nVar, ScalarType* m
 }
 
 }  // namespace SU2_LinAlg
-
-#undef SU2_CUDA_HOST_DEVICE

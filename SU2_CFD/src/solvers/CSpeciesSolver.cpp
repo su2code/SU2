@@ -36,7 +36,7 @@
 template class CScalarSolver<CSpeciesVariable>;
 
 CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
-    : CScalarSolver<CSpeciesVariable>(geometry, config, true) {
+    : CScalarSolver<CSpeciesVariable>(geometry, config, true, config->GetBounded_Species()) {
   SU2_ZONE_SCOPED
 
   /*--- Dimension of the problem. ---*/
