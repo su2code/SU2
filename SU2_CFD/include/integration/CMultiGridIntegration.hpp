@@ -321,6 +321,8 @@ private:
 
   static constexpr int MAX_MG_LEVELS = 10;
 
+  /*--- Bounds the fixed-size stack buffers in the restriction and prolongation kernels,
+   *    independently of the CSysMatrix limit of the same name. ---*/
   static constexpr unsigned short MAXNVAR = 25;
   static constexpr unsigned short MAXNDIM = 3;
 

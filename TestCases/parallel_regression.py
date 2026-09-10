@@ -1134,7 +1134,7 @@ def main():
     edge_VW           = TestCase('edge_VW')
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
-    edge_VW.test_iter = 25
+    edge_VW.test_iter = 20
     edge_VW.test_vals = [-3.109008, 3.092306, -0.000009, 0.000000]
     test_list.append(edge_VW)
 

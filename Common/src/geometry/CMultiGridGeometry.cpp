@@ -30,6 +30,39 @@
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
+namespace {
+
+/*--- Euler wall nodes are not agglomerated where the surface turns by more than this, in
+ *    degrees. ---*/
+constexpr passivedouble EULER_WALL_MAX_CURVATURE = 45.0;
+
+/*--- Equivalence-class id per entity for the set of physical markers it lies on: entities with the
+ *    same set share an id, 0 means no marker. Only set equality is ever asked, so the sets are
+ *    interned and compared as ids, which puts no limit on the number of markers. The (entity,
+ *    marker) pairs may arrive in any order and are consumed. ---*/
+vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<unsigned long, unsigned short>>& pairs) {
+  vector<unsigned long> classOfEntity(nEntity, 0);
+
+  std::sort(pairs.begin(), pairs.end());
+  pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+
+  map<vector<unsigned short>, unsigned long> classOf;
+  unsigned long nClass = 0;
+  for (size_t i = 0; i < pairs.size();) {
+    size_t j = i;
+    vector<unsigned short> markerSet;
+    while ((j < pairs.size()) && (pairs[j].first == pairs[i].first)) markerSet.push_back(pairs[j++].second);
+
+    const auto res = classOf.emplace(std::move(markerSet), nClass + 1);
+    if (res.second) nClass++;
+    classOfEntity[pairs[i].first] = res.first->second;
+    i = j;
+  }
+  return classOfEntity;
+}
+
+}  // namespace
+
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
   nDim = fine_grid->GetnDim();  // Write the number of dimensions of the coarse grid.
 
@@ -170,8 +203,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
             if (!boundIsStraight[marker_seed[0]]) {
               /*--- Compute local curvature at this point ---*/
               su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, marker_seed[0]);
-              // limit to 45 degrees
-              if (local_curvature >= 45.0) {
+              if (local_curvature >= EULER_WALL_MAX_CURVATURE) {
                 agglomerate_seed = false;  // High curvature: do not agglomerate
                 euler_wall_rejected_curvature[marker_seed[0]]++;
               } else {
@@ -199,8 +231,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               if (!boundIsStraight[copy_marker[i]]) {
                 /*--- Compute local curvature at this point ---*/
                 su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, copy_marker[i]);
-                // limit to 45 degrees
-                if (local_curvature >= 45.0) {
+                if (local_curvature >= EULER_WALL_MAX_CURVATURE) {
                   agglomerate_seed = false;  // High curvature: do not agglomerate
                   euler_wall_rejected_curvature[copy_marker[i]]++;
                   euler_wall_rejected_here = true;
@@ -528,33 +559,17 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       if (onPhysBoundary[iFinePoint]) cvOnBoundary[iCoarsePoint] = true;
     }
 
-  /*--- Which physical boundaries each coarse CV sits on, one bit per marker. Comparing marker sets
-   *    keeps a merge inside one boundary. ---*/
-  vector<unsigned long long> cvMarkerMask(nPointDomain, 0);
-  {
-    vector<int> bitOfMarker(fine_grid->GetnMarker(), -1);
-    int nBits = 0;
-    for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
-      if (nBits < 64) bitOfMarker[iMarker] = nBits;
-      nBits++;
-    }
-    if (nBits <= 64) {
-      for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++)
-        for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-          const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-          for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
-            if (bitOfMarker[iMarker] < 0) continue;
-            if (fine_grid->nodes->GetVertex(iFinePoint, iMarker) >= 0)
-              cvMarkerMask[iCoarsePoint] |= 1ULL << bitOfMarker[iMarker];
-          }
-        }
-    } else {
-      /*--- More markers than bits: fall back to the boolean test. ---*/
-      for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++)
-        cvMarkerMask[iCoarsePoint] = cvOnBoundary[iCoarsePoint] ? 1ULL : 0ULL;
+  /*--- Which physical boundaries each coarse CV sits on, as a marker-set class. Comparing classes
+   *    keeps a merge inside one boundary. Halo points hold the parent sentinel and drop out. ---*/
+  vector<std::pair<unsigned long, unsigned short>> cvMarker;
+  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+    for (auto iVertex = 0ul; iVertex < fine_grid->nVertex[iMarker]; iVertex++) {
+      const auto iParent = fine_grid->nodes->GetParent_CV(fine_grid->vertex[iMarker][iVertex]->GetNode());
+      if (iParent < nPointDomain) cvMarker.push_back({iParent, static_cast<unsigned short>(iMarker)});
     }
   }
+  const auto cvMarkerClass = MarkerSetClasses(nPointDomain, cvMarker);
 
   /*--- A boundary CV built by the paving is the base of a stack and keeps its footprint, so the
    *    repair passes below leave it alone. ---*/
@@ -584,23 +599,27 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       const auto iCoarsePoint_Complete = nodes->GetPoint(iCoarsePoint, 0);
       if (mustStayAlone[iCoarsePoint_Complete]) continue;
       if (isStackBase(iCoarsePoint) || isStackBase(iCoarsePoint_Complete)) continue;
-      if (cvMarkerMask[iCoarsePoint] != cvMarkerMask[iCoarsePoint_Complete]) continue;
+      if (cvMarkerClass[iCoarsePoint] != cvMarkerClass[iCoarsePoint_Complete]) continue;
 
       /*--- Check if merging would exceed the maximum agglomeration size ---*/
       auto nChildren_Target = nodes->GetnChildren_CV(iCoarsePoint_Complete);
       auto nChildren_Isolated = nodes->GetnChildren_CV(iCoarsePoint);
       auto nChildren_Total = nChildren_Target + nChildren_Isolated;
 
-      /*--- If the total would exceed maxAgglomSize, try to redistribute children to neighbors ---*/
+      /*--- If the total would exceed maxAgglomSize, try to redistribute children to neighbors. The
+       merge below runs whether or not the quota is met, so the limit can still be exceeded. ---*/
       if (nChildren_Total > maxAgglomSize) {
         /*--- Find neighbors of the target coarse point that have room ---*/
         unsigned short nChildrenToRedistribute = nChildren_Total - maxAgglomSize;
 
         for (auto jCoarsePoint : nodes->GetPoints(iCoarsePoint_Complete)) {
           if (nChildrenToRedistribute == 0) break;
+          /*--- The isolated CV is a neighbour of the target and hands anything it takes straight
+           *    back below, spending the quota without lowering the count. ---*/
+          if (jCoarsePoint == iCoarsePoint) continue;
           if (mustStayAlone[jCoarsePoint]) continue;
           if (isStackBase(jCoarsePoint)) continue;
-          if (cvMarkerMask[jCoarsePoint] != cvMarkerMask[iCoarsePoint_Complete]) continue;
+          if (cvMarkerClass[jCoarsePoint] != cvMarkerClass[iCoarsePoint_Complete]) continue;
 
           auto nChildren_Neighbor = nodes->GetnChildren_CV(jCoarsePoint);
           if (nChildren_Neighbor < maxAgglomSize) {
@@ -660,14 +679,15 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     if (isStackBase(iCoarsePoint)) continue;
     if (nodes->GetnPoint(iCoarsePoint) <= 1) continue; /*--- Already handled above, or truly islanded. ---*/
 
-    /*--- Pick the neighbour with the fewest children. When every neighbour is already at
-     maxAgglomSize the smallest is still taken, one child over the limit. ---*/
+    /*--- Pick the neighbour with the fewest children. The target takes the child even when it is
+     already at maxAgglomSize, so the limit is exceeded by one rather than a single-child CV
+     surviving. ---*/
     unsigned long best_neighbor = std::numeric_limits<unsigned long>::max();
     unsigned short best_nChildren = 0;
     for (auto jCoarsePoint : nodes->GetPoints(iCoarsePoint)) {
       if (mustStayAlone[jCoarsePoint]) continue;
       if (isStackBase(jCoarsePoint)) continue;
-      if (cvMarkerMask[jCoarsePoint] != cvMarkerMask[iCoarsePoint]) continue;
+      if (cvMarkerClass[jCoarsePoint] != cvMarkerClass[iCoarsePoint]) continue;
       const auto nChildren_Neighbor = nodes->GetnChildren_CV(jCoarsePoint);
       /*--- Skip neighbors already emptied by an earlier merge in this same pass. ---*/
       if (nChildren_Neighbor == 0) continue;
@@ -712,7 +732,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
       for (auto iFinePoint = 0ul; iFinePoint < fine_grid->GetnPointDomain(); iFinePoint++) {
         const auto iParent = fine_grid->nodes->GetParent_CV(iFinePoint);
-        if (iParent != NO_INDEX) fine_grid->nodes->SetParent_CV(iFinePoint, newIndex[iParent]);
+        if (iParent == NO_INDEX) continue;
+        /*--- A fine point may only reference a CV the compaction kept. ---*/
+        if ((iParent >= nPointDomain) || (newIndex[iParent] == NO_INDEX))
+          SU2_MPI::Error("Multigrid compaction: a fine point still references an emptied coarse CV.",
+                         CURRENT_FUNCTION);
+        fine_grid->nodes->SetParent_CV(iFinePoint, newIndex[iParent]);
       }
 
       nPointDomain = nKept;
@@ -1664,6 +1689,7 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
     return (bc == HEAT_FLUX) || (bc == ISOTHERMAL) || (bc == CHT_WALL_INTERFACE) || (bc == SMOLUCHOWSKI_MAXWELL);
   };
 
+
   /*--- True if the mesh at iPoint is stretched along the boundary normal, i.e. this boundary has a
    *    layer growing off it the way a viscous wall does. ---*/
   auto hasLayerNormalTo = [&](unsigned long iPoint, const su2double* unitNormal) {
@@ -1689,6 +1715,12 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
       su2double Normal[MAXNDIM] = {0.0};
       if (!VertexUnitNormal(fine_grid, nDim, iPoint, iMarker, Normal)) continue;
       if (requireLayer && !hasLayerNormalTo(iPoint, Normal)) continue;
+
+      /*--- A front claims its seed before the boundary pass runs, so the Euler wall curvature
+       *    limit is applied here too, on the same terms. ---*/
+      if ((config->GetMarker_All_KindBC(iMarker) == EULER_WALL) && !fine_grid->boundIsStraight[iMarker] &&
+          (ComputeLocalCurvature(fine_grid, iPoint, iMarker) >= EULER_WALL_MAX_CURVATURE))
+        continue;
 
       std::array<su2double, MAXNDIM> n0{};
       for (unsigned short d = 0; d < nDim; ++d) n0[d] = Normal[d];
@@ -1749,6 +1781,7 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
     seedMarker(iMarker, true);
   }
 
+
   return seeds;
 }
 
@@ -1760,15 +1793,15 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
   const auto nSeeds = seeds.node.size();
   const unsigned long max_group = (nDim == 2) ? 2 : 4;
 
-  /*--- Physical markers each seed lies on, ascending. Seeds may only be matched when these
-   *    agree. ---*/
+  /*--- Marker-set class of each seed. Seeds may only be matched when these agree. ---*/
   const auto nMarkerFine = fine_grid->GetnMarker();
-  vector<vector<unsigned short>> sig(nSeeds);
+  vector<std::pair<unsigned long, unsigned short>> seedMarker;
   for (unsigned long si = 0; si < nSeeds; ++si)
     for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++)
       if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
           (fine_grid->nodes->GetVertex(seeds.node[si], iMarker) != -1))
-        sig[si].push_back(iMarker);
+        seedMarker.push_back({si, static_cast<unsigned short>(iMarker)});
+  const auto sig = MarkerSetClasses(nSeeds, seedMarker);
 
   /*--- Seed-to-seed adjacency, inherited from the boundary nodes' mesh connectivity. ---*/
   vector<long> seedOfNode(fine_grid->GetnPoint(), -1);
@@ -2314,6 +2347,8 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       bool ok = true;
       for (size_t k = i; k < j; ++k) {
         const auto p = inherited[k].node;
+        /*--- One node can be handed over by two neighbours under the same tag. ---*/
+        if (std::find(layer0.begin(), layer0.end(), p) != layer0.end()) continue;
         if (claimed[p] || fine_grid->nodes->GetAgglomerate(p) || !GeometricalCheck(p, fine_grid, config)) ok = false;
         layer0.push_back(p);
       }
