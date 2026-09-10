@@ -74,6 +74,10 @@ public:
   VectorType Density_time_n,                           /*!< \brief Density at time n for dual-time stepping. */
              Density_time_n1;                          /*!< \brief Density at time n-1 for dual-time stepping. */
   su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
+  
+  using BoolVectorType = C2DContainer<unsigned long, bool, StorageType::ColumnMajor, 64, DynamicSize, 1>;
+  BoolVectorType strongBC;    /*!< \brief Flag for boundary conditions to indicate if a strong BC has been applied, currently only used to keep track of farfield.  */
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -325,4 +329,23 @@ public:
    */
   inline void SetDensity_time_n1(unsigned long iPoint, su2double val_density) { Density_time_n1(iPoint) = val_density; }
 
+    /*!
+   * \brief Set the BC flag to true of the point.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetStrongBC(unsigned long iPoint) { strongBC(iPoint) = true; }
+  
+  /*!
+   * \brief Get the BC flag of the point
+   * \param[in] iPoint - Point index.
+   * \return The boolean flag of the strong boundary condition.
+   */
+  inline bool GetStrongBC(unsigned long iPoint) { return strongBC(iPoint); }
+  
+  /*!
+   * \brief Set the BC flag to false of the point.
+   * \param[in] iPoint - Point index.
+   */
+  inline void ResetStrongBC(unsigned long iPoint) { strongBC(iPoint) = false; }
+  
 };

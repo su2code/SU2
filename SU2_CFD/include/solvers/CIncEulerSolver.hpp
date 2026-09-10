@@ -41,6 +41,12 @@ protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
   StreamwisePeriodicValues SPvals, SPvalsUpdated;
 
+  bool pressure_based;
+  su2activevector alpha_p;
+  su2activevector pressureCorrection;
+  su2activematrix momentumCorrection;
+  su2activevector EdgeMassFluxCorrection;
+
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -147,6 +153,22 @@ protected:
    * \brief Set reference values for pressure, forces, etc.
    */
   void SetReferenceValues(const CConfig& config) final;
+
+  /*!
+   * \brief Apply a correction to the pressure or pressure deviation gradient to align with the edges
+   * \param[in] corrected_grad_pressure - The corrected gradient at the edge
+   * \param[in] avg_grad_pressure - The average gradient at the edge
+   * \param[in] val_pressure_i - variable at point i
+   * \param[in] val_pressure_j - variable at point j
+   * \param[in] val_edge_vector - The vector between points i and j
+   * \param[in] val_dist_ij_2 - The distance between points i and j, squared
+   */
+  void CorrectPressureGradient(su2double* corrected_grad_pressure,
+                               const su2double* avg_grad_pressure,
+                               const su2double val_pressure_i,
+                               const su2double val_pressure_j,
+                               const su2double* val_edge_vector,
+                               const su2double val_dist_ij_2);
 
 public:
   CIncEulerSolver() = delete;
@@ -451,4 +473,20 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) final;
+
+  /*!
+   * \brief Compute the spatial integration using a centered scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   */
+  void ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+
+  /*!
+   * \brief Compute the spatial integration using a centered scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ApplyPressureVelocityCorrection(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+
 };

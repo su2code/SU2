@@ -87,7 +87,39 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   const bool fmg_cfl_ramp = integration[val_iZone][val_iInst][FLOW_SOL]->GetFullMG_CFLRamp();
 
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
+  CommonAuxiliarySolvers(output, integration, geometry, solver, numerics, config, surface_movement, 
+                             grid_movement, FFDBox, val_iZone, val_iInst, main_solver, frozen_visc);
 
+  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
+        The Full-MG startup owns the CFL while it ramps, so leave it alone until then. ---*/
+  SU2_OMP_PARALLEL
+  if (!disc_adj && config[val_iZone]->GetFinestMesh() == MESH_0 && !fmg_cfl_ramp) {
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
+                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->IdentifySolutionOutliers(config[val_iZone], InnerIter);
+  }
+  END_SU2_OMP_PARALLEL
+
+  /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
+
+  if ((config[val_iZone]->GetGrid_Movement()) && (config[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
+    SetGrid_Movement(geometry[val_iZone][val_iInst], surface_movement[val_iZone], grid_movement[val_iZone][val_iInst],
+                     solver[val_iZone][val_iInst], config[val_iZone], InnerIter, TimeIter);
+
+    /*--- Apply a Wind Gust ---*/
+
+    if (config[val_iZone]->GetWind_Gust()) {
+      if (InnerIter % config[val_iZone]->GetAeroelasticIter() == 0 && InnerIter != 0)
+        SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
+    }
+  }
+}
+
+void CFluidIteration::CommonAuxiliarySolvers(COutput* output, CIntegration**** integration, CGeometry**** geometry,
+                              CSolver***** solver, CNumerics****** numerics, CConfig** config,
+                              CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
+                              CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, MAIN_SOLVER main_solver, bool frozen_visc) {
+  
   if (config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE && !frozen_visc) {
 
     /*--- Solve transition model ---*/
@@ -133,30 +165,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     integration[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
-
-  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
-        The Full-MG startup owns the CFL while it ramps, so leave it alone until then. ---*/
-  SU2_OMP_PARALLEL
-  if (!disc_adj && config[val_iZone]->GetFinestMesh() == MESH_0 && !fmg_cfl_ramp) {
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
-                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->IdentifySolutionOutliers(config[val_iZone], InnerIter);
-  }
-  END_SU2_OMP_PARALLEL
-
-  /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
-
-  if ((config[val_iZone]->GetGrid_Movement()) && (config[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
-    SetGrid_Movement(geometry[val_iZone][val_iInst], surface_movement[val_iZone], grid_movement[val_iZone][val_iInst],
-                     solver[val_iZone][val_iInst], config[val_iZone], InnerIter, TimeIter);
-
-    /*--- Apply a Wind Gust ---*/
-
-    if (config[val_iZone]->GetWind_Gust()) {
-      if (InnerIter % config[val_iZone]->GetAeroelasticIter() == 0 && InnerIter != 0)
-        SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
-    }
-  }
+  
 }
 
 void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
