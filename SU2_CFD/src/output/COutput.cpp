@@ -435,7 +435,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       LogOutputFiles("SU2 ASCII restart");
 
-      if (config->GetWrt_Restart_Compact() && volumeDataSorterCompact != nullptr) {
+      if (config->GetWrt_Restart_Compact()) {
         /*--- If we have compact restarts, we use only the required fields. ---*/
         volumeDataSorterCompact->SetRequiredFieldNames(requiredVolumeFieldNames);
         fileWriter = new CSU2FileWriter(volumeDataSorterCompact);
