@@ -35,7 +35,7 @@ CSU2FileWriter::CSU2FileWriter(CParallelDataSorter *valDataSorter) :
 void CSU2FileWriter::WriteData(string val_filename){
 
   ofstream restart_file;
-  const vector<string> fieldNames = dataSorter->GetRequiredFieldNames();
+  const vector<string>& fieldNames = dataSorter->GetFieldNames();
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
