@@ -9723,6 +9723,14 @@ public:
   bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
 
   /*!
+   * \brief Whether the factorized least-squares gradient metric terms are cached and reused
+   *        across evaluations. This is the default behavior, except for periodic boundaries
+   *        (their metric and RHS accumulations are fused in one exchange) and the discrete
+   *        adjoint (the coordinate dependence of the metrics must remain on the tape).
+   */
+  bool GetLSQMetricCaching() const { return (nMarker_PerBound == 0) && !DiscreteAdjoint; }
+
+  /*!
    * \brief Get Compute Average.
    * \return YES if start computing averages
    */

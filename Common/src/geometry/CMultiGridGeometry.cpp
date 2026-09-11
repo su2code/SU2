@@ -1000,6 +1000,9 @@ void CMultiGridGeometry::MatchActuator_Disk(const CConfig* config) {
 
 void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned short action) {
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    /*--- Coarse coordinates change with the fine grid, any cached LSQ metrics are stale. ---*/
+    if (action != ALLOCATE) InvalidateLSQMetricCache();
+
     /*--- Compute the area of the coarse volume ---*/
     for (auto iCoarsePoint = 0u; iCoarsePoint < nPoint; iCoarsePoint++) {
       nodes->SetVolume(iCoarsePoint, 0.0);
