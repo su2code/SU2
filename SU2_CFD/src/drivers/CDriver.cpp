@@ -870,9 +870,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
         if (ratio > VOL_RATIO_WARN)
           ss << "  WARNING: MG level " << iMGlevel << " has a coarse CV volume ratio of " << ratio
              << " -- some coarse control volume is many orders of magnitude smaller than another\n"
-                "           on the same level. This can happen with either classical or paved\n"
-                "           agglomeration on a highly anisotropic viscous mesh, and has been observed\n"
-                "           to destabilise the multigrid correction when MG_CORRECTION_SMOOTH is on.\n";
+                "           on the same level. \n";
         volRatioReport += ss.str();
       }
     }
