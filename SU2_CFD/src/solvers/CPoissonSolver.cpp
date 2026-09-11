@@ -67,6 +67,7 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned sh
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+  EdgeSourceFlux.resize(geometry->GetnEdge()) = su2double(0.0);
 
   if (config->GetExtraOutput()) {
     if (nDim == 2) { nOutputVariables = 13; }
@@ -302,7 +303,11 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const auto& edgeMassFluxes = *(flow_solver->GetEdgeMassFluxes());
 
-  /*--- flux is computed over all edges ---*/
+  /*--- Stage the net (mass flux + HbyA) source per edge first, indexed by edge, so that no two
+  threads ever write the same slot regardless of how edges were colored. Points are shared between
+  edges, so scattering the staged values into LinSysRes has to happen afterwards, partitioned by
+  point instead of by edge (mirrors CScalarSolver::SumEdgeFluxes but is additive, not a reset,
+  since the viscous residual has already been assembled into LinSysRes at this stage). ---*/
 
   for (auto color : EdgeColoring) {
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
@@ -313,26 +318,35 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       su2double Normal[MAXNDIM] = {0.0};
       geometry->edges->GetNormal(iEdge, Normal);
 
-      /*--- Add the mass flux to the source term for the poisson equation ---*/
-
-      auto residual = CNumerics::ResidualType<>(&edgeMassFluxes[iEdge], nullptr, nullptr);
-
-      if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
-      if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residual);
-
       /*--- Only for the second pressure correction in the case PISO is used, we need the additional HbyA(u') term ---*/
       // TODO: currently its just set to zero and does not contribute for the first piso correctin but would be nice if this entire block would be skipped otherwise.
       su2double MeanHbyA = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; ++iDim)
-        MeanHbyA += 0.5 * (nodes->GetHbyACorrection(iPoint, iDim) + nodes->GetHbyACorrection(jPoint, iDim)) * Normal[iDim]; 
+        MeanHbyA += 0.5 * (nodes->GetHbyACorrection(iPoint, iDim) + nodes->GetHbyACorrection(jPoint, iDim)) * Normal[iDim];
 
-      auto residualHbyA = CNumerics::ResidualType<>(&MeanHbyA, nullptr, nullptr);
-      if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residualHbyA);
-      if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residualHbyA);
+      EdgeSourceFlux(iEdge) = edgeMassFluxes[iEdge] + MeanHbyA;
 
     }
     END_SU2_OMP_FOR
   }
+
+  /*--- Scatter the staged edge sources into the residual, partitioned by point so that each
+  point is only ever touched by the thread that owns it in this loop. ---*/
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+    for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
+      auto residual = CNumerics::ResidualType<>(&EdgeSourceFlux(iEdge), nullptr, nullptr);
+      if (iPoint == geometry->edges->GetNode(iEdge, 0)) {
+        LinSysRes.AddBlock(iPoint, residual);
+      } else {
+        LinSysRes.SubtractBlock(iPoint, residual);
+      }
+    }
+  }
+  END_SU2_OMP_FOR
 
   /*--- Now add corrections to the previously computed mass fluxes for boundary conditions which alter the mass flux ---*/
 
@@ -356,19 +370,20 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
         break;
 
       case INLET_FLOW:
+        SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);            
-              
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+
           MassFlux_corr = 0.0;
           if (dynamic_grid) {
             GridVel_i = geometry->nodes->GetGridVel(iPoint);
             for (iDim = 0; iDim < nDim; iDim++)
               MassFlux_corr -= flow_nodes->GetDensity(iPoint) * (flow_nodes->GetVelocity(iPoint, iDim) - GridVel_i[iDim]) * Normal[iDim];
-          } 
+          }
           else
             for (iDim = 0; iDim < nDim; iDim++)
             MassFlux_corr -= flow_nodes->GetDensity(iPoint) * flow_nodes->GetVelocity(iPoint, iDim) * Normal[iDim];
@@ -378,10 +393,12 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
           if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
 
         }
+        END_SU2_OMP_FOR
         break;
 
       case FAR_FIELD:
         /*--- Treat the farfield as a fully developed outlet for pressure. ---*/
+        SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
@@ -390,7 +407,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
             if (dynamic_grid)
               GridVel_i = geometry->nodes->GetGridVel(iPoint);
-                
+
             MassFlux_corr = 0.0;
             if (dynamic_grid)
               for (iDim = 0; iDim < nDim; iDim++)
@@ -398,12 +415,13 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
             else
              for (iDim = 0; iDim < nDim; iDim++)
               MassFlux_corr -= flow_nodes->GetDensity(iPoint) * flow_nodes->GetVelocity(iPoint, iDim) * Normal[iDim];
-  
+
             auto residual = CNumerics::ResidualType<>(&MassFlux_corr, nullptr, nullptr);
-            LinSysRes.AddBlock(iPoint, residual);    
+            LinSysRes.AddBlock(iPoint, residual);
 
           }
         }
+        END_SU2_OMP_FOR
         break;
 
 
@@ -416,6 +434,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
         switch (Kind_Outlet) {
           case INC_OUTLET_TYPE::PRESSURE_OUTLET:
+            SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
             for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
               iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
@@ -424,7 +443,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
                 if (dynamic_grid)
                   GridVel_i = geometry->nodes->GetGridVel(iPoint);
-                
+
                 MassFlux_corr = 0.0;
                 if (dynamic_grid)
                   for (iDim = 0; iDim < nDim; iDim++)
@@ -438,6 +457,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
                 if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
               }
             }
+            END_SU2_OMP_FOR
             break;
           default:
             SU2_MPI::Error("Requested type of outlet boundary condition not available", CURRENT_FUNCTION);
