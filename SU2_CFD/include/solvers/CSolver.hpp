@@ -586,6 +586,12 @@ public:
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
 
   /*!
+   * \brief A virtual member.
+   * \return flame thickness value.
+   */
+  virtual su2double GetFlameThickness() const {return 1.0;}
+
+  /*!
    * \brief Compute the projection of a variable for MUSCL reconstruction.
    * \note The result should be halved when added to i (or subtracted from j).
    * \param[in] grad - Gradient vector.
