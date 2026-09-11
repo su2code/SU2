@@ -1069,6 +1069,20 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
+  /*--- Source_Residual needs the pressure gradient to build the pressure-based solver's
+  momentum source term. For a viscous run CIncNSSolver::Preprocessing computes it unconditionally,
+  but this inviscid path otherwise only computes Gradient_Reconstruction, and only when MUSCL is
+  on - which silently leaves the pressure gradient at zero for an inviscid PB run with
+  MUSCL_FLOW=NO, or with mismatched reconstruction/base gradient methods. ---*/
+
+  if (pressure_based) {
+    switch (config->GetKind_Gradient_Method()) {
+      case GREEN_GAUSS: SetPrimitive_Gradient_GG(geometry, config); break;
+      case WEIGHTED_LEAST_SQUARES: SetPrimitive_Gradient_LS(geometry, config); break;
+      default: break;
+    }
+  }
+
   /*--- Upwind second order reconstruction ---*/
 
   if (!Output && muscl && !center) {
