@@ -841,6 +841,16 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     /*--- Create the control volume structures ---*/
 
     geometry[iMGlevel]->SetControlVolume(geometry[iMGlevel-1], ALLOCATE);
+    {  // TMPVOLCMP
+      auto* g = geometry[iMGlevel];
+      double vmin = 1e300, vmax = 0.0;
+      for (auto i = 0ul; i < g->GetnPointDomain(); i++) {
+        const double v = SU2_TYPE::GetValue(g->nodes->GetVolume(i));
+        vmin = std::min(vmin, v); vmax = std::max(vmax, v);
+      }
+      std::cout << "[VOLCMP] rank " << rank << " level " << iMGlevel << " minV " << vmin << " maxV " << vmax
+                << " ratio " << (vmax / std::max(1e-300, vmin)) << " nDom " << g->GetnPointDomain() << std::endl;
+    }  // TMPVOLCMP
     geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 

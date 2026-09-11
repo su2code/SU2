@@ -138,8 +138,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   /*--- STEP 0: pave the domain with advancing fronts rising from the boundaries. The coarse CVs it
    *    creates occupy [firstLineCV, endLineCV). ---*/
   const auto firstLineCV = Index_CoarseCV;
+  vector<unsigned long> neverGrewCV;
   if (config->GetMGOptions().MG_Implicit_Lines) {
-    pavingReport = PaveAdvancingFronts(Index_CoarseCV, fine_grid, config, iMesh, mixedBC, onPhysBoundary);
+    pavingReport = PaveAdvancingFronts(Index_CoarseCV, fine_grid, config, iMesh, mixedBC, onPhysBoundary, neverGrewCV);
   }
   const auto endLineCV = Index_CoarseCV;
 
@@ -578,10 +579,19 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
   const auto cvMarkerClass = MarkerSetClasses(nPointDomain, cvMarker);
 
+  /*--- A CV whose front never advanced past its seed is not a stack: protecting it anyway can
+   *    leave it many orders of magnitude smaller than its neighbours (its footprint is a single
+   *    fine cell, most often on a thin near-wall layer), which is unstable once its correction is
+   *    carried up through further coarsening. Let it fall through to ordinary repair instead. ---*/
+  vector<bool> neverGrew(nPointDomain, false);
+  for (auto iCV : neverGrewCV)
+    if (iCV < nPointDomain) neverGrew[iCV] = true;
+
   /*--- A boundary CV built by the paving is the base of a stack and keeps its footprint, so the
-   *    repair passes below leave it alone. ---*/
+   *    repair passes below leave it alone -- unless it never grew into one, see above. ---*/
   auto isStackBase = [&](unsigned long iCoarsePoint) {
-    return cvOnBoundary[iCoarsePoint] && (iCoarsePoint >= firstLineCV) && (iCoarsePoint < endLineCV);
+    return cvOnBoundary[iCoarsePoint] && (iCoarsePoint >= firstLineCV) && (iCoarsePoint < endLineCV) &&
+           !neverGrew[iCoarsePoint];
   };
 
   vector<bool> touchesPartition(nPointDomain, false);
@@ -1900,7 +1910,8 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
 string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
                                                     const CConfig* config, unsigned short iMesh,
                                                     const vector<char>& mixedBC,
-                                                    const vector<char>& onPhysBoundary) {
+                                                    const vector<char>& onPhysBoundary,
+                                                    vector<unsigned long>& neverGrewCV) {
   /*--- Paving by advancing fronts. Each boundary patch rises into the domain keeping its footprint,
    *    stopping at a boundary or where the next layer is not isomorphic to the current one. ---*/
   const auto starting_Index_CoarseCV = Index_CoarseCV;
@@ -1950,6 +1961,9 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     char alive = 1;
     char failed = 0;
     char keepLocal = 0; /*!< \brief Handed over only part of its footprint, so it marches on here. */
+    unsigned long seedCV = std::numeric_limits<unsigned long>::max(); /*!< \brief Coarse CV index of
+        this front's first emitted layer, recorded so a front that never advances past it can be
+        told apart, after the fact, from one that grew into a genuine stack. */
   };
   vector<CFront> fronts;
 
@@ -2076,6 +2090,16 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   /*--- Turn everything buffered for this front into one coarse control volume. ---*/
   auto emit = [&](unsigned long f) {
     if (fronts[f].pending.empty()) return;
+    if (fronts[f].seedCV == std::numeric_limits<unsigned long>::max()) fronts[f].seedCV = Index_CoarseCV;
+    {  // TMPGROW
+      if (f < 3) {
+        double v = 0.0;
+        for (auto p : fronts[f].pending) v += SU2_TYPE::GetValue(fine_grid->nodes->GetVolume(p));
+        std::cout << "[GROW] rank " << rank << " front " << f << " emitCV " << Index_CoarseCV
+                  << " depthAtEmit " << fronts[f].depth << " nLayers " << fronts[f].pending.size()
+                  << " volume " << v << std::endl;
+      }
+    }  // TMPGROW
     nodes->SetChildren_CV(Index_CoarseCV, fronts[f].pending);
     for (auto p : fronts[f].pending) {
       fine_grid->nodes->SetParent_CV(p, Index_CoarseCV);
@@ -2433,8 +2457,17 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     inherited.clear();
   }
 
-  /*--- Emit whatever is still buffered, so no node is left without a parent index. ---*/
+  /*--- Emit whatever is still buffered, so no node is left without a parent index. This also
+   *    catches an adopted front (block size 2) whose very first round after adoption fails: it
+   *    dies at depth 0 without ever having called emit() on its own, so its seed CV is only
+   *    assigned here. ---*/
   for (unsigned long f = 0; f < fronts.size(); ++f) emit(f);
+
+  /*--- A front that never advanced past its seed did not build a stack at all: it is
+   *    indistinguishable from ordinary boundary agglomeration and gains nothing from the
+   *    protection below, which exists to keep a genuine line intact. ---*/
+  for (const auto& F : fronts)
+    if ((F.depth == 0) && (F.seedCV != std::numeric_limits<unsigned long>::max())) neverGrewCV.push_back(F.seedCV);
 
   /*--- A rank with no fronts leaves dmin at its sentinel, keeping it out of the MPI_MIN. ---*/
   unsigned long dmin = std::numeric_limits<unsigned long>::max(), dmax = 0;

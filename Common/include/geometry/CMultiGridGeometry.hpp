@@ -94,11 +94,16 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] iMesh - Multigrid level being built, used to label the summary.
    * \param[in] mixedBC - Nodes that must stay on their own, from FindMixedBoundaryNodes.
    * \param[in] onPhysBoundary - Nodes carrying a physical boundary condition, excluding SEND_RECEIVE.
+   * \param[out] neverGrewCV - Coarse CV index of every front whose stack never advanced past its
+   *             seed layer. Such a CV gives up nothing by losing the stack-base protection below,
+   *             and protecting it anyway can leave it orders of magnitude smaller than its
+   *             neighbours (a seed sized to a single fine cell, most often at a thin near-wall
+   *             layer), which destabilises the FAS correction at coarser levels.
    * \return Summary of the paving, empty except on the master rank.
    */
   string PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
                                   unsigned short iMesh, const vector<char>& mixedBC,
-                                  const vector<char>& onPhysBoundary);
+                                  const vector<char>& onPhysBoundary, vector<unsigned long>& neverGrewCV);
 
   /*!
    * \brief Boundary nodes that seed a front, with the direction each starts marching in.
