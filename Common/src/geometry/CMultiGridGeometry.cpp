@@ -30,6 +30,13 @@
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
+#include <algorithm>
+#include <array>
+#include <limits>
+#include <map>
+#include <sstream>
+#include <utility>
+
 namespace {
 
 /*--- Euler wall nodes are not agglomerated where the surface turns by more than this, in
@@ -118,14 +125,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-  /*--- STEP 0: pave the domain with advancing fronts rising from the boundaries. The coarse CVs it
-   *    creates occupy [firstLineCV, endLineCV). ---*/
-  const auto firstLineCV = Index_CoarseCV;
-  if (config->GetMGOptions().MG_Implicit_Lines) {
-    pavingReport = AgglomerateImplicitLines(Index_CoarseCV, fine_grid, config, iMesh);
-  }
-  const auto endLineCV = Index_CoarseCV;
-
   /*--- Points carrying a physical boundary condition. This does not include SEND_RECEIVE. ---*/
   vector<char> onPhysBoundary(fine_grid->GetnPoint(), 0);
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
@@ -135,6 +134,14 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
   /*--- Nodes where two different boundary conditions meet.  ---*/
   const auto mixedBC = FindMixedBoundaryNodes(fine_grid, config);
+
+  /*--- STEP 0: pave the domain with advancing fronts rising from the boundaries. The coarse CVs it
+   *    creates occupy [firstLineCV, endLineCV). ---*/
+  const auto firstLineCV = Index_CoarseCV;
+  if (config->GetMGOptions().MG_Implicit_Lines) {
+    pavingReport = PaveAdvancingFronts(Index_CoarseCV, fine_grid, config, iMesh, mixedBC, onPhysBoundary);
+  }
+  const auto endLineCV = Index_CoarseCV;
 
   /*--- STEP 1: The first step is the boundary agglomeration. ---*/
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
@@ -721,10 +728,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
         const auto iNew = newIndex[iCoarsePoint];
         if ((iNew == NO_INDEX) || (iNew == iCoarsePoint)) continue;
-        const auto nChildren = nodes->GetnChildren_CV(iCoarsePoint);
-        for (auto iChildren = 0u; iChildren < nChildren; iChildren++)
-          nodes->SetChildren_CV(iNew, iChildren, nodes->GetChildren_CV(iCoarsePoint, iChildren));
-        nodes->SetnChildren_CV(iNew, nChildren);
+        nodes->SetChildren_CV(iNew, nodes->GetChildren_CV(iCoarsePoint));
+        nodes->SetnChildren_CV(iNew, nodes->GetnChildren_CV(iCoarsePoint));
         nodes->SetAgglomerate_Indirect(iNew, nodes->GetAgglomerate_Indirect(iCoarsePoint));
       }
       for (auto iCoarsePoint = nKept; iCoarsePoint < nPointDomain; iCoarsePoint++)
@@ -1539,43 +1544,6 @@ su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, 
   return max_angle;
 }
 
-CMultiGridGeometry::CNodeStiffness CMultiGridGeometry::ComputeNodeStiffness(const CGeometry* fine_grid) const {
-  /*--- Coupling across the dual face between a node and a neighbour, so the ratio of largest to
-   *    smallest weight at a node is the local aspect ratio. ---*/
-  const auto nPointFine = fine_grid->GetnPoint();
-
-  CNodeStiffness stiff;
-  stiff.wMin.assign(nPointFine, 0.0);
-  stiff.wMax.assign(nPointFine, 0.0);
-  stiff.jStiffest.assign(nPointFine, std::numeric_limits<unsigned long>::max());
-
-  for (auto iPoint = 0ul; iPoint < nPointFine; ++iPoint) {
-    su2double wmin = std::numeric_limits<su2double>::max(), wmax = 0.0;
-    auto jStiffest = std::numeric_limits<unsigned long>::max();
-
-    for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
-      const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
-      const auto iEdge = fine_grid->nodes->GetEdge(iPoint, iNeigh);
-      const su2double area = GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(iEdge));
-      const su2double w =
-          0.5 * area * (1.0 / fine_grid->nodes->GetVolume(iPoint) + 1.0 / fine_grid->nodes->GetVolume(jPoint));
-      if (w > wmax) {
-        wmax = w;
-        jStiffest = jPoint;
-      }
-      wmin = std::min(wmin, w);
-    }
-
-    /*--- A node with no neighbours keeps the zeroed defaults, so AspectRatio reads 1. ---*/
-    if (jStiffest != std::numeric_limits<unsigned long>::max()) {
-      stiff.wMin[iPoint] = wmin;
-      stiff.wMax[iPoint] = wmax;
-      stiff.jStiffest[iPoint] = jStiffest;
-    }
-  }
-  return stiff;
-}
-
 namespace {
 
 /*--- Unit normal of a boundary at a vertex, false if the marker does not reach iPoint. Boundary
@@ -1669,8 +1637,8 @@ unsigned long TagOfSet(const CGeometry* grid, const vector<unsigned long>& set) 
 
 }  // namespace
 
-CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeometry* fine_grid, const CConfig* config,
-                                                                   const CNodeStiffness& stiff) const {
+CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeometry* fine_grid,
+                                                                   const CConfig* config) const {
   /*--- Fraction of a marker's nodes that must sit in a layer before the whole marker may seed. ---*/
   constexpr passivedouble QUALIFIED_FRACTION = 0.5;
   constexpr passivedouble ANGLE_THRESHOLD_DEG = 30.0;
@@ -1691,11 +1659,28 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
 
 
   /*--- True if the mesh at iPoint is stretched along the boundary normal, i.e. this boundary has a
-   *    layer growing off it the way a viscous wall does. ---*/
+   *    layer growing off it the way a viscous wall does. The coupling across the dual face between
+   *    iPoint and a neighbour is measured here, so the ratio of largest to smallest weight is the
+   *    local aspect ratio. Only boundary nodes are ever asked, at most twice each. ---*/
   auto hasLayerNormalTo = [&](unsigned long iPoint, const su2double* unitNormal) {
-    const auto jStiffest = stiff.jStiffest[iPoint];
+    su2double wMin = std::numeric_limits<su2double>::max(), wMax = 0.0;
+    auto jStiffest = NO_POINT;
+    for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
+      const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
+      const auto iEdge = fine_grid->nodes->GetEdge(iPoint, iNeigh);
+      const su2double area = GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(iEdge));
+      const su2double w =
+          0.5 * area * (1.0 / fine_grid->nodes->GetVolume(iPoint) + 1.0 / fine_grid->nodes->GetVolume(jPoint));
+      if (w > wMax) {
+        wMax = w;
+        jStiffest = jPoint;
+      }
+      wMin = std::min(wMin, w);
+    }
+
+    /*--- A node with no neighbours has no aspect ratio to measure. ---*/
     if (jStiffest == NO_POINT) return false;
-    if (stiff.AspectRatio(iPoint) < MIN_AR) return false;
+    if (((wMin > 0.0) ? wMax / wMin : su2double(1.0)) < MIN_AR) return false;
 
     su2double vec[MAXNDIM] = {0.0};
     GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jStiffest), fine_grid->nodes->GetCoord(iPoint), vec);
@@ -1719,8 +1704,10 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
       /*--- A front claims its seed before the boundary pass runs, so the Euler wall curvature
        *    limit is applied here too, on the same terms. ---*/
       if ((config->GetMarker_All_KindBC(iMarker) == EULER_WALL) && !fine_grid->boundIsStraight[iMarker] &&
-          (ComputeLocalCurvature(fine_grid, iPoint, iMarker) >= EULER_WALL_MAX_CURVATURE))
+          (ComputeLocalCurvature(fine_grid, iPoint, iMarker) >= EULER_WALL_MAX_CURVATURE)) {
+        seeds.nRefusedCurvature++;
         continue;
+      }
 
       std::array<su2double, MAXNDIM> n0{};
       for (unsigned short d = 0; d < nDim; ++d) n0[d] = Normal[d];
@@ -1788,8 +1775,10 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
 vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFrontSeeds& seeds,
                                                                     const CGeometry* fine_grid, const CConfig* config,
                                                                     const vector<char>& mixedBC) const {
-  /*--- Repeated pairwise matching, one round per doubling, partitions the seeds into compact
-   *    patches: a boundary edge in 2D, a boundary quadrilateral in 3D. ---*/
+  /*--- Repeated pairwise matching groups the seeds into connected patches of 1 to max_group seeds,
+   *    smaller wherever no partner was found. A patch is any connected shape the boundary gives:
+   *    a square, a strip, a triangle or a single node. What follows keys off the patch size and
+   *    the layer isomorphism check, never off an assumed shape. ---*/
   const auto nSeeds = seeds.node.size();
   const unsigned long max_group = (nDim == 2) ? 2 : 4;
 
@@ -1828,13 +1817,14 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
     groups.push_back({si});
   }
 
-  const unsigned nRounds = (max_group <= 1) ? 0 : ((max_group <= 2) ? 1 : 2);
+  const unsigned nRounds = (max_group <= 2) ? 1 : 2;
 
   /*--- One admissible merge of two groups, weighted by how many seed-to-seed adjacencies they
    *    share: 2 for a group lying alongside, 1 for one continuing in the same direction. ---*/
   struct CMerge {
     unsigned long g, h;       /*!< \brief The two groups, g < h. */
     unsigned long weight;     /*!< \brief Shared adjacencies: 2 makes a square, 1 makes a strip. */
+    unsigned long size;       /*!< \brief Seeds the merged group would hold. */
     unsigned long keyG, keyH; /*!< \brief Their global-index keys, the deterministic tie-break. */
   };
 
@@ -1869,15 +1859,17 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
           if (nShared[h]++ == 0) touched.push_back(h);
         }
       for (auto h : touched) {
-        merges.push_back({g, h, nShared[h], gkey[g], gkey[h]});
+        merges.push_back({g, h, nShared[h], static_cast<unsigned long>(groups[g].size() + groups[h].size()),
+                          gkey[g], gkey[h]});
         nShared[h] = 0;
       }
     }
 
     /*--- Best merges first over all groups at once, so every square is considered before the first
-     *    strip. ---*/
+     *    strip. At equal weight the bigger patch wins, to fill max_group before settling for less. ---*/
     std::sort(merges.begin(), merges.end(), [](const CMerge& a, const CMerge& b) {
       if (a.weight != b.weight) return a.weight > b.weight;
+      if (a.size != b.size) return a.size > b.size;
       if (a.keyG != b.keyG) return a.keyG < b.keyG;
       return a.keyH < b.keyH;
     });
@@ -1905,13 +1897,14 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
   return groups;
 }
 
-string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
-                                                    const CConfig* config, unsigned short iMesh) {
+string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
+                                                    const CConfig* config, unsigned short iMesh,
+                                                    const vector<char>& mixedBC,
+                                                    const vector<char>& onPhysBoundary) {
   /*--- Paving by advancing fronts. Each boundary patch rises into the domain keeping its footprint,
    *    stopping at a boundary or where the next layer is not isomorphic to the current one. ---*/
   const auto starting_Index_CoarseCV = Index_CoarseCV;
   const auto nPointFine = fine_grid->GetnPoint();
-  const auto nMarkerFine = fine_grid->GetnMarker();
   constexpr auto NO_POINT = std::numeric_limits<unsigned long>::max();
   const short int maxAgglomSize = (nDim == 2) ? 4 : 8;
 
@@ -1922,21 +1915,9 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
   /*--- Weight of the new step direction when the front's marching direction is updated. ---*/
   constexpr passivedouble DIR_BLEND = 0.5;
 
-  const auto stiff = ComputeNodeStiffness(fine_grid);
-
   /*--- PHASE 1. SeedFrontNodes is collective and must be reached by every rank. ---*/
-  const auto seeds = SeedFrontNodes(fine_grid, config, stiff);
-  const auto mixedBC = FindMixedBoundaryNodes(fine_grid, config);
+  const auto seeds = SeedFrontNodes(fine_grid, config);
   const auto patches = BuildFrontPatches(seeds, fine_grid, config, mixedBC);
-
-  /*--- Nodes on a boundary carrying a boundary condition, which a front must not grow into. CPoint's
-   *    Boundary flag cannot be used, it is also set by SEND_RECEIVE. ---*/
-  vector<char> onPhysicalBoundary(nPointFine, 0);
-  for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
-    for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++)
-      onPhysicalBoundary[fine_grid->vertex[iMarker][iVertex]->GetNode()] = 1;
-  }
 
   /*==================================================================================================
    *  PHASE 2 - advance every front, one layer per round.
@@ -2007,7 +1988,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
 
       const su2double dot = GeometryToolbox::DotProduct(nDim, vec, marchDir);
       const bool admissible =
-          !(onPhysicalBoundary[jPoint] && EntersBoundary(fine_grid, config, nDim, jPoint, vec, cos_boundary)) &&
+          !(onPhysBoundary[jPoint] && EntersBoundary(fine_grid, config, nDim, jPoint, vec, cos_boundary)) &&
           GeometricalCheck(jPoint, fine_grid, config);
 
       /*--- Halo parents are assigned by the owning rank through the MPI relay, so a halo node is
@@ -2041,8 +2022,31 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
   vector<unsigned long> newLayer;
 
   /*--- Summed over all ranks for the one-line report at the end. ---*/
-  enum { P_STACKS, P_LAYERS, P_COVERED, P_COUNT };
+  enum {
+    P_STACKS,       /*!< \brief Fronts started. */
+    P_LAYERS,       /*!< \brief Layers laid by all fronts. */
+    P_COVERED,      /*!< \brief Fine nodes given a coarse parent by the paving. */
+    P_RETIRED,      /*!< \brief Fronts that died on a failed layer rather than running out. */
+    P_SEED_CURV,    /*!< \brief Euler wall seeds refused by the curvature limit. */
+    P_HAND_SENT,    /*!< \brief Footprints offered across a partition interface. */
+    P_HAND_SPLIT,   /*!< \brief ...of those, ones whose nodes are owned by more than one rank. */
+    P_HAND_CONTEST, /*!< \brief Halo nodes two fronts reached for in the same round. */
+    P_HAND_TAKEN,   /*!< \brief Inherited footprints adopted. */
+    P_HAND_DROPPED, /*!< \brief Inherited footprints refused as not free or not connected. */
+    P_PATCH1,       /*!< \brief Seed patches by width, 1 to 4. ---*/
+    P_PATCH2,
+    P_PATCH3,
+    P_PATCH4,
+    P_COUNT
+  };
   unsigned long ct[P_COUNT] = {0};
+
+  /*--- Patch widths, the footprint every front starts from. ---*/
+  for (const auto& patch : patches) {
+    if (patch.empty()) continue;
+    ct[P_PATCH1 + std::min<size_t>(patch.size(), 4) - 1]++;
+  }
+  ct[P_SEED_CURV] = seeds.nRefusedCurvature;
 
   /*--- One footprint node arriving from a neighbouring rank, to be regrouped by tag. ---*/
   struct CInherited {
@@ -2072,10 +2076,9 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
   /*--- Turn everything buffered for this front into one coarse control volume. ---*/
   auto emit = [&](unsigned long f) {
     if (fronts[f].pending.empty()) return;
-    for (unsigned long c = 0; c < fronts[f].pending.size(); ++c) {
-      const auto p = fronts[f].pending[c];
+    nodes->SetChildren_CV(Index_CoarseCV, fronts[f].pending);
+    for (auto p : fronts[f].pending) {
       fine_grid->nodes->SetParent_CV(p, Index_CoarseCV);
-      nodes->SetChildren_CV(Index_CoarseCV, c, p);
       if (fine_grid->nodes->GetAgglomerate_Indirect(p)) nodes->SetAgglomerate_Indirect(Index_CoarseCV, true);
     }
     nodes->SetnChildren_CV(Index_CoarseCV, static_cast<unsigned short>(fronts[f].pending.size()));
@@ -2121,6 +2124,44 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
     ct[P_LAYERS]++;
     emit(f);
   }
+
+  /*--- The handover carries a marching direction, but only to make discrete choices, so it is
+   *    exchanged as a passive type and never taped. ---*/
+  using CPassiveMPI = SelectMPIWrapper<passivedouble>::W;
+
+  /*--- One SEND_RECEIVE marker pair per neighbour, with where its vertices sit in the flat
+   *    exchange buffers. ---*/
+  struct CHandoverPair {
+    unsigned short markerS, markerR;
+    int send_to, receive_from;
+    unsigned long nVertexS, nVertexR, offS, offR;
+  };
+  vector<CHandoverPair> handPairs;
+  unsigned long nSendTotal = 0, nRecvTotal = 0;
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (!((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) && (config->GetMarker_All_SendRecv(iMarker) > 0)))
+      continue;
+    CHandoverPair hp;
+    hp.markerS = iMarker;
+    hp.markerR = iMarker + 1;
+    hp.send_to = config->GetMarker_All_SendRecv(hp.markerS) - 1;
+    hp.receive_from = abs(config->GetMarker_All_SendRecv(hp.markerR)) - 1;
+    hp.nVertexS = fine_grid->nVertex[hp.markerS];
+    hp.nVertexR = fine_grid->nVertex[hp.markerR];
+    hp.offS = nSendTotal;
+    hp.offR = nRecvTotal;
+    nSendTotal += hp.nVertexS;
+    nRecvTotal += hp.nVertexR;
+    handPairs.push_back(hp);
+  }
+
+  /*--- Reused every round: the handovers bucketed by the receive marker they cross, and the
+   *    exchange buffers packed against the halo vertices of every pair at once. ---*/
+  vector<vector<std::pair<unsigned long, unsigned long>>> handByMarker(config->GetnMarker_All());
+  vector<unsigned long> tagOut(nRecvTotal), tagIn(nSendTotal);
+  vector<passivedouble> dirOut(nRecvTotal * nDim), dirIn(nSendTotal * nDim);
+  vector<CPassiveMPI::Request> handReq(4 * handPairs.size());
+  vector<CPassiveMPI::Status> handStat(4 * handPairs.size());
 
   for (unsigned long layer = 1;; ++layer) {
     /*--- Every rank runs the same number of rounds, each ends in a collective handover
@@ -2195,8 +2236,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
       }
     }
 
-    /*--- (b) Contention resolved from bids that were all collected before any was granted, so the
-     *    outcome does not depend on the order the fronts are visited in. ---*/
+    /*--- (b) Place every bid; nothing is granted until (c) reads the settled table. ---*/
     auto better = [](const CStep& a, const CStep& b) {
       if (a.score != b.score) return a.score > b.score;
       if (a.dist != b.dist) return a.dist < b.dist;
@@ -2255,6 +2295,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
 
       if (fronts[f].failed) {
         fronts[f].alive = 0;
+        ct[P_RETIRED]++;
         emit(f);
         continue;
       }
@@ -2287,42 +2328,60 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
 
     /*--- (d) Hand stacks across partition interfaces. The footprint is sent to the owning rank,
      *    packed against the receive marker and sent to the rank that marker receives from. ---*/
-    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (!((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) && (config->GetMarker_All_SendRecv(iMarker) > 0)))
-        continue;
-
-      const auto MarkerS = iMarker, MarkerR = iMarker + 1;
-      const auto send_to = config->GetMarker_All_SendRecv(MarkerS) - 1;
-      const auto receive_from = abs(config->GetMarker_All_SendRecv(MarkerR)) - 1;
-      const auto nVertexS = fine_grid->nVertex[MarkerS];
-      const auto nVertexR = fine_grid->nVertex[MarkerR];
-
-      /*--- Packed against the halo vertices. Tag and direction go separately, the AD MPI wrapper has
-       *    no byte type to send a struct. ---*/
-      vector<unsigned long> tagOut(nVertexR, 0), tagIn(nVertexS, 0);
-      vector<su2double> dirOut(nVertexR * nDim, 0.0), dirIn(nVertexS * nDim, 0.0);
-
-      for (auto& F : fronts)
-        for (auto p : F.handTo) {
-          if (haloMarker[p] != static_cast<int>(MarkerR)) continue;
-          const auto v = haloVertex[p];
-          /*--- Two fronts reaching for one node: the lower tag takes it. ---*/
-          if ((tagOut[v] != 0) && (tagOut[v] <= F.handTag)) continue;
-          tagOut[v] = F.handTag;
-          for (unsigned short d = 0; d < nDim; ++d) dirOut[v * nDim + d] = F.dir[d];
-        }
-
-      SU2_MPI::Sendrecv(tagOut.data(), nVertexR, MPI_UNSIGNED_LONG, receive_from, 2, tagIn.data(), nVertexS,
-                        MPI_UNSIGNED_LONG, send_to, 2, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
-      SU2_MPI::Sendrecv(dirOut.data(), nVertexR * nDim, MPI_DOUBLE, receive_from, 3, dirIn.data(), nVertexS * nDim,
-                        MPI_DOUBLE, send_to, 3, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
-
-      for (auto iVertex = 0ul; iVertex < nVertexS; iVertex++) {
-        if (tagIn[iVertex] == 0) continue;
-        inherited.push_back({tagIn[iVertex], fine_grid->vertex[MarkerS][iVertex]->GetNode(), {}});
-        for (unsigned short d = 0; d < nDim; ++d) inherited.back().dir[d] = dirIn[iVertex * nDim + d];
+    for (auto& bucket : handByMarker) bucket.clear();
+    for (unsigned long f = 0; f < fronts.size(); ++f) {
+      int firstMarker = -1;
+      bool split = false;
+      for (auto p : fronts[f].handTo) {
+        if (haloMarker[p] < 0) continue;
+        if (firstMarker < 0) firstMarker = haloMarker[p];
+        else if (haloMarker[p] != firstMarker) split = true;
+        handByMarker[haloMarker[p]].push_back({f, p});
+      }
+      /*--- A footprint owned by more than one rank cannot travel whole. ---*/
+      if (firstMarker >= 0) {
+        ct[P_HAND_SENT]++;
+        ct[P_HAND_SPLIT] += split;
       }
     }
+
+    /*--- Pack every pair, then exchange them all at once so a round costs one wait, not one
+     *    round trip per neighbour. Tag and direction go separately, there is no byte type to
+     *    send a struct with. ---*/
+    std::fill(tagOut.begin(), tagOut.end(), 0ul);
+    std::fill(dirOut.begin(), dirOut.end(), passivedouble(0.0));
+
+    for (const auto& hp : handPairs)
+      for (const auto& hand : handByMarker[hp.markerR]) {
+        const auto& F = fronts[hand.first];
+        const auto v = hp.offR + haloVertex[hand.second];
+        /*--- Two fronts reaching for one node: the lower tag takes it. ---*/
+        if (tagOut[v] != 0) ct[P_HAND_CONTEST]++;
+        if ((tagOut[v] != 0) && (tagOut[v] <= F.handTag)) continue;
+        tagOut[v] = F.handTag;
+        for (unsigned short d = 0; d < nDim; ++d) dirOut[v * nDim + d] = SU2_TYPE::GetValue(F.dir[d]);
+      }
+
+    unsigned long nReq = 0;
+    for (const auto& hp : handPairs) {
+      CPassiveMPI::Irecv(&tagIn[hp.offS], hp.nVertexS, MPI_UNSIGNED_LONG, hp.send_to, 2, CPassiveMPI::GetComm(),
+                         &handReq[nReq++]);
+      CPassiveMPI::Irecv(&dirIn[hp.offS * nDim], hp.nVertexS * nDim, MPI_DOUBLE, hp.send_to, 3,
+                         CPassiveMPI::GetComm(), &handReq[nReq++]);
+      CPassiveMPI::Isend(&tagOut[hp.offR], hp.nVertexR, MPI_UNSIGNED_LONG, hp.receive_from, 2,
+                         CPassiveMPI::GetComm(), &handReq[nReq++]);
+      CPassiveMPI::Isend(&dirOut[hp.offR * nDim], hp.nVertexR * nDim, MPI_DOUBLE, hp.receive_from, 3,
+                         CPassiveMPI::GetComm(), &handReq[nReq++]);
+    }
+    if (nReq > 0) CPassiveMPI::Waitall(static_cast<int>(nReq), handReq.data(), handStat.data());
+
+    for (const auto& hp : handPairs)
+      for (auto iVertex = 0ul; iVertex < hp.nVertexS; iVertex++) {
+        const auto v = hp.offS + iVertex;
+        if (tagIn[v] == 0) continue;
+        inherited.push_back({tagIn[v], fine_grid->vertex[hp.markerS][iVertex]->GetNode(), {}});
+        for (unsigned short d = 0; d < nDim; ++d) inherited.back().dir[d] = dirIn[v * nDim + d];
+      }
 
     /*--- A front that handed its whole footprint over is finished here, one that handed over only a
      *    piece keeps marching on what was left. ---*/
@@ -2352,7 +2411,7 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
         if (claimed[p] || fine_grid->nodes->GetAgglomerate(p) || !GeometricalCheck(p, fine_grid, config)) ok = false;
         layer0.push_back(p);
       }
-      /*--- The footprint has to arrive whole and connected. ---*/
+      /*--- Whatever arrived must be free and form one connected layer. ---*/
       if (ok && !IsConnectedLayer(fine_grid, layer0)) ok = false;
 
       if (ok) {
@@ -2364,7 +2423,10 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
           claimed[p] = 1;
         }
         ct[P_LAYERS]++;
+        ct[P_HAND_TAKEN]++;
         if (fronts[nf].pendingLayers >= fronts[nf].nBlock) emit(nf);
+      } else {
+        ct[P_HAND_DROPPED]++;
       }
       i = j;
     }
@@ -2397,5 +2459,12 @@ string CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseC
   out << "  MG level " << iMesh << " paving: " << tot[P_STACKS] << " fronts from " << pairTot[1] << " seeds, "
       << pairTot[0] << " CVs covering " << tot[P_COVERED] << " nodes in " << tot[P_LAYERS] << " layers, depth "
       << depthMin << " to " << depthMax << "\n";
+  out << "    patches 1/2/3/4 wide: " << tot[P_PATCH1] << "/" << tot[P_PATCH2] << "/" << tot[P_PATCH3] << "/"
+      << tot[P_PATCH4] << ", " << tot[P_SEED_CURV] << " seeds refused on curvature, " << tot[P_RETIRED]
+      << " fronts retired early\n";
+  if (tot[P_HAND_SENT] > 0)
+    out << "    handovers: " << tot[P_HAND_SENT] << " offered (" << tot[P_HAND_SPLIT] << " split across ranks, "
+        << tot[P_HAND_CONTEST] << " nodes contested), " << tot[P_HAND_TAKEN] << " adopted, " << tot[P_HAND_DROPPED]
+        << " dropped\n";
   return out.str();
 }

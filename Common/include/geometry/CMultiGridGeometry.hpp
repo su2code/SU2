@@ -92,31 +92,13 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Configuration.
    * \param[in] iMesh - Multigrid level being built, used to label the summary.
+   * \param[in] mixedBC - Nodes that must stay on their own, from FindMixedBoundaryNodes.
+   * \param[in] onPhysBoundary - Nodes carrying a physical boundary condition, excluding SEND_RECEIVE.
    * \return Summary of the paving, empty except on the master rank.
    */
-  string AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
-                                  unsigned short iMesh);
-
-  /*!
-   * \brief Weakest and strongest dual-grid coupling at each node, and the neighbour across the
-   *        strongest edge. Their ratio is the local cell aspect ratio, available on every MG level.
-   */
-  struct CNodeStiffness {
-    vector<su2double> wMin, wMax;    /*!< \brief Weakest and strongest edge coupling at each node. */
-    vector<unsigned long> jStiffest; /*!< \brief Neighbour across the strongest edge. */
-
-    /*!< \brief Local aspect ratio at a node, 1.0 where it could not be measured. */
-    su2double AspectRatio(unsigned long iPoint) const {
-      return (wMin[iPoint] > 0.0) ? wMax[iPoint] / wMin[iPoint] : su2double(1.0);
-    }
-  };
-
-  /*!
-   * \brief Measure the dual-grid coupling at every node of a grid.
-   * \param[in] fine_grid - Grid to measure.
-   * \return Weakest/strongest coupling per node.
-   */
-  CNodeStiffness ComputeNodeStiffness(const CGeometry* fine_grid) const;
+  string PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
+                                  unsigned short iMesh, const vector<char>& mixedBC,
+                                  const vector<char>& onPhysBoundary);
 
   /*!
    * \brief Boundary nodes that seed a front, with the direction each starts marching in.
@@ -124,6 +106,7 @@ class CMultiGridGeometry final : public CGeometry {
   struct CFrontSeeds {
     vector<unsigned long> node;                    /*!< \brief Seed node on the boundary. */
     vector<std::array<su2double, MAXNDIM>> normal; /*!< \brief Unit normal there, pointing into the domain. */
+    unsigned long nRefusedCurvature = 0; /*!< \brief Euler wall nodes the curvature limit kept out. */
   };
 
   /*!
@@ -131,10 +114,9 @@ class CMultiGridGeometry final : public CGeometry {
    *        boundary carrying a stretched layer normal to itself.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] stiff - Node coupling from ComputeNodeStiffness.
    * \return Seed nodes and their inward boundary normals.
    */
-  CFrontSeeds SeedFrontNodes(const CGeometry* fine_grid, const CConfig* config, const CNodeStiffness& stiff) const;
+  CFrontSeeds SeedFrontNodes(const CGeometry* fine_grid, const CConfig* config) const;
 
   /*!
    * \brief Partition the seed nodes into compact surface patches by repeated pairwise matching. Each
@@ -143,14 +125,19 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Definition of the particular problem.
    * \param[in] mixedBC - Nodes that must stay on their own, from FindMixedBoundaryNodes.
-   * \return One vector of indices into seeds.node per patch.
+   * \return One vector of indices into seeds.node per patch, at most two entries in 2D, four in 3D.
    */
   vector<vector<unsigned long>> BuildFrontPatches(const CFrontSeeds& seeds, const CGeometry* fine_grid,
                                                   const CConfig* config, const vector<char>& mixedBC) const;
 
+  string pavingReport; /*!< \brief Paving summary for this level. */
+
  public:
-  /*!< \brief Paving summary for this level. */
-  string pavingReport;
+  /*!
+   * \brief Get the paving summary for this level, for console output.
+   * \return Summary text, empty except on the master rank.
+   */
+  const string& GetPavingReport() const { return pavingReport; }
 
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetBoundControlVolume;

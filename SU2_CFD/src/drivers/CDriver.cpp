@@ -827,7 +827,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
       geometry[iMGlevel] = nullptr;
       break;
     }
-    pavingReports += coarse_grid->pavingReport;
+    pavingReports += coarse_grid->GetPavingReport();
 
     /*--- Compute points surrounding points. ---*/
 
@@ -856,6 +856,16 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   /*--- Held back so they do not interleave with the multigrid level table. ---*/
   if (rank == MASTER_NODE) cout << pavingReports;
+
+  /*--- MG_MIN_MESHSIZE is a per-rank floor, so the levels actually built fall with rank count. ---*/
+  if ((rank == MASTER_NODE) && (requestedMGlevels > 0)) {
+    if (config->GetnMGLevels() == 0)
+      cout << "\nWARNING: no multigrid levels used, reduce MG_MIN_MESHSIZE or the number of MPI ranks\n"
+              "         if you want multigrid.\n" << endl;
+    else
+      cout << config->GetnMGLevels() << " multigrid levels used, maximum allowed is " << requestedMGlevels
+           << ". Change MGLEVEL or MG_MIN_MESHSIZE to use a different number." << endl;
+  }
 
   if (config->GetWrt_MultiGrid()) geometry[MESH_0]->ColorMGLevels(config->GetnMGLevels(), geometry);
 

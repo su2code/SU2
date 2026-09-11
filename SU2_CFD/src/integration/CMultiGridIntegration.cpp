@@ -63,24 +63,6 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
   return sqrt(result);
 }
 
-/*!\cond PRIVATE
- *  Prolongate a coarse-grid field onto the fine grid via constant injection: every fine
- *  child gets its parent's value. \c getCoarse returns the coarse-grid block of a point
- *  and \c setFine writes it to a fine-grid point.
- \endcond */
-template <class GetCoarse, class SetFine>
-void ProlongateField(CGeometry* geo_coarse, GetCoarse getCoarse, SetFine setFine) {
-
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
-  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
-    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      setFine(Point_Fine, getCoarse(Point_Coarse));
-    }
-  }
-  END_SU2_OMP_FOR
-}
-
 }  // anonymous namespace
 
 void CMultiGridIntegration::adaptDampingFactors(CConfig* config, passivedouble crossCycleRatio) {
@@ -964,11 +946,16 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   /*--- Interpolate the coarse-grid correction onto the fine
    *    grid and store in LinSysRes. ---*/
 
-  ProlongateField(geo_coarse,
-                  [&](unsigned long iPoint) { return sol_coarse->GetNodes()->GetSolution_Old(iPoint); },
-                  [&](unsigned long Point_Fine, const su2double* value) {
-                    sol_fine->LinSysRes.SetBlock(Point_Fine, value);
-                  });
+  /*--- Halos too: the correction smoother reads them before its first exchange. ---*/
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
+    const auto* Correction = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      sol_fine->LinSysRes.SetBlock(Point_Fine, Correction);
+    }
+  }
+  END_SU2_OMP_FOR
 
 }
 
