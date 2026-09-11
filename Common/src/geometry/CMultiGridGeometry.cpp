@@ -722,6 +722,55 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     nodes->SetnChildren_CV(iCoarsePoint, 0);
   }
 
+  /*--- Merge a small paved CV (typically the two-layer block a narrow stack emits) into an
+   equally small neighbour. Neither pass above reaches it: it usually has several coarse
+   neighbours (fore, aft, and often a parallel stack alongside), so it is never "isolated", and
+   it usually holds two children, not one. isStackBase still protects a CV that touches the
+   physical boundary, so a merge here never crosses a marker the way a seed-time merge would. ---*/
+
+  constexpr unsigned short SMALL_STACK_CV = 2; /*!< \brief The block size a narrow stack emits
+                                                     between flushes; see BlockFor. */
+
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
+    const auto nChildren_This = nodes->GetnChildren_CV(iCoarsePoint);
+    if ((nChildren_This == 0) || (nChildren_This > SMALL_STACK_CV)) continue;
+    if (mustStayAlone[iCoarsePoint]) continue;
+    if (isStackBase(iCoarsePoint)) continue;
+    if (touchesPartition[iCoarsePoint]) continue;
+
+    /*--- Pick the smallest eligible neighbour, so two similarly tiny CVs merge before either
+     grows large enough to absorb a third. ---*/
+    unsigned long best_neighbor = std::numeric_limits<unsigned long>::max();
+    unsigned short best_nChildren = std::numeric_limits<unsigned short>::max();
+    for (auto jCoarsePoint : nodes->GetPoints(iCoarsePoint)) {
+      const auto nChildren_j = nodes->GetnChildren_CV(jCoarsePoint);
+      /*--- Skip neighbors already emptied, or grown past SMALL_STACK_CV, by an earlier merge in
+       this same pass. ---*/
+      if ((nChildren_j == 0) || (nChildren_j > SMALL_STACK_CV)) continue;
+      if (mustStayAlone[jCoarsePoint]) continue;
+      if (isStackBase(jCoarsePoint)) continue;
+      if (touchesPartition[jCoarsePoint]) continue;
+      if (cvMarkerClass[jCoarsePoint] != cvMarkerClass[iCoarsePoint]) continue;
+      if (nChildren_j < best_nChildren) {
+        best_nChildren = nChildren_j;
+        best_neighbor = jCoarsePoint;
+      }
+    }
+    if (best_neighbor == std::numeric_limits<unsigned long>::max()) continue;
+
+    /*--- Two CVs of at most SMALL_STACK_CV children each can never together exceed
+     maxAgglomSize, so no redistribution is needed here. ---*/
+    auto nChildren = best_nChildren;
+    for (auto iChildren = 0u; iChildren < nChildren_This; iChildren++) {
+      const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+      nodes->SetChildren_CV(best_neighbor, nChildren, iFinePoint);
+      nChildren++;
+      fine_grid->nodes->SetParent_CV(iFinePoint, best_neighbor);
+    }
+    nodes->SetnChildren_CV(best_neighbor, nChildren);
+    nodes->SetnChildren_CV(iCoarsePoint, 0);
+  }
+
   /*--- Compact the coarse numbering, squeezing out the indices the repair passes emptied. The
    children lists, indirect-agglomeration flags and owned parent indices are remapped. ---*/
 
