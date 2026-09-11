@@ -4219,6 +4219,31 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
 
+  /*--- The pressure-based solver's Poisson equation only runs on the finest grid, its Rhie-Chow
+   * mass flux has no pseudo-transient term, it has no adjoint, and its marker switches have no
+   * PERIODIC_BOUNDARY case. Fail here instead of silently ignoring the option or erroring deep
+   * inside the first iteration. ---*/
+  if (Kind_Incomp_System == INCOMP_SYSTEM::PRESSURE_BASED) {
+    if (nMGLevels > 0) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support MGLEVEL > 0,\n"
+                     "       the Poisson solver is single-grid only.", CURRENT_FUNCTION);
+    }
+    if (Time_Domain) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES,\n"
+                     "       the Rhie-Chow mass flux interpolation has no transient term.", CURRENT_FUNCTION);
+    }
+    if (DiscreteAdjoint || ContinuousAdjoint) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED has no adjoint formulation.", CURRENT_FUNCTION);
+    }
+    if (nMarker_PerBound > 0) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support MARKER_PERIODIC.", CURRENT_FUNCTION);
+    }
+    if (Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support streamwise periodicity.",
+                     CURRENT_FUNCTION);
+    }
+  }
+
   /*--- Check for Fluid model consistency ---*/
 
   if (standard_air) {
