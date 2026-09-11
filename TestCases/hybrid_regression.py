@@ -350,6 +350,15 @@ def main():
     inc_euler_naca0012.test_vals = [-5.858104, -4.937295, 0.519817, 0.008958]
     test_list.append(inc_euler_naca0012)
 
+    # NACA0012 Hydrofoil, pressure-based. Exercises the OpenMP path of the Poisson
+    # solver's boundary flux corrections (inlet, far-field, pressure outlet).
+    inc_euler_naca0012_pb           = TestCase('inc_euler_naca0012_pb')
+    inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
+    inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
+    inc_euler_naca0012_pb.test_iter = 20
+    inc_euler_naca0012_pb.test_vals = [-4.154444, -4.919398, 0.468631, 0.010040]
+    test_list.append(inc_euler_naca0012_pb)
+
     # C-D nozzle with pressure inlet and mass flow outlet
     inc_nozzle           = TestCase('inc_nozzle')
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
@@ -414,6 +423,16 @@ def main():
     inc_turb_naca0012_sst_sust.test_iter = 20
     inc_turb_naca0012_sst_sust.test_vals = [-7.170018, 0.332638, 0.000002, 0.312117]
     test_list.append(inc_turb_naca0012_sst_sust)
+
+    # Flat plate, pressure-based. Exercises the OpenMP path of the Poisson solver's
+    # boundary flux corrections on a case with a nonzero inlet/outlet mass flux, where
+    # unpartitioned per-thread duplication of those corrections would be visible.
+    inc_flatplate_pb           = TestCase('inc_flatplate_pb')
+    inc_flatplate_pb.cfg_dir   = "incomp_rans/rough_flatplate"
+    inc_flatplate_pb.cfg_file  = "pb_rough_flatplate_incomp.cfg"
+    inc_flatplate_pb.test_iter = 10
+    inc_flatplate_pb.test_vals = [-4.063342, -9.884401, 0.000011, 0.228472]
+    test_list.append(inc_flatplate_pb)
 
     # Weakly coupled heat equation
     inc_weakly_coupled = TestCase('inc_weakly_coupled')
