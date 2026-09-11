@@ -3649,8 +3649,10 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
   CSolver* poisson_solver = solver_container[POISSON_SOL];
   CVariable* poisson_nodes = poisson_solver->GetNodes();
 
-  /*--- Mass flux is computed over all edges ---*/
+  /*--- Mass flux is computed over all edges. Each edge writes only its own slot of
+  EdgeMassFluxes, so no coloring is needed to avoid races between edges sharing a point. ---*/
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
@@ -3782,6 +3784,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
 
   su2double* Coord_i,* Coord_j;
   su2double GradPressure_f[MAXNDIM], GradPressure_avg[MAXNDIM], Edge_Vector[MAXNDIM], dist_ij_2;
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
@@ -3829,6 +3832,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
 
     EdgeMassFluxCorrection[iEdge] = ProjMassFluxCorrection;
   }
+  END_SU2_OMP_FOR
 
   /*--- Reassign strong boundary conditions ---*/
   /*--- For now I only have velocity inlet and fully developed outlet. Will need to add other types of inlet/outlet conditions
@@ -3850,11 +3854,13 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
         auto Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
         switch (Kind_Outlet) {
           case INC_OUTLET_TYPE::PRESSURE_OUTLET:{
+            SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
             for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
               iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
               if (geometry->nodes->GetDomain(iPoint))
                 pressureCorrection[iPoint] = PCorr_Ref;
             }
+            END_SU2_OMP_FOR
             break;
           }
           //TODO: other outlet types
@@ -3887,6 +3893,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
       * is made, otherwise a Neumann BC is used and velocity is adjusted. ---*/
 
       case FAR_FIELD:
+        SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->nodes->GetDomain(iPoint)) {
@@ -3898,7 +3905,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
             pressureCorrection[iPoint] = PCorr_Ref;
           }
         }
-        
+        END_SU2_OMP_FOR
         break;
 
       default: 
@@ -3932,10 +3939,13 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   }
   END_SU2_OMP_FOR
 
-  /*--- Add corrections to the edge velocities ---*/
+  /*--- Add corrections to the edge velocities. Each edge accumulates only into its own slot,
+  so partitioning by edge index is race-free. ---*/
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++)
     EdgeMassFluxes[iEdge] += EdgeMassFluxCorrection[iEdge];
+  END_SU2_OMP_FOR
 
   /*--- Reset HbyA for next iteration ---*/
 

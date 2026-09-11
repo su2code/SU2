@@ -52,16 +52,20 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
 
-  /*--- The momentum coefficients (resulting from the flow solution) are set only once 
+  /*--- The momentum coefficients (resulting from the flow solution) are set only once
   at the start of the corrections. These coefficients make up the entirety of the coefficient
-  matrix (Jacobian) used by the Poisson solver. Currently the matrix is redefined each correction 
+  matrix (Jacobian) used by the Poisson solver. Currently the matrix is redefined each correction
   but as the coefficients are frozen this doesnt/shouldnt change the matrix at all. ---*/
-  
+
+  SU2_OMP_PARALLEL
   solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
+  END_SU2_OMP_PARALLEL
 
   /*--- Compute the mass fluxes at the cell edges based on Rhie-Chow interpolation ---*/
 
+  SU2_OMP_PARALLEL
   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeEdgeMassFluxesRhieChow(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+  END_SU2_OMP_PARALLEL
 
   /*--- Solve the pressure poisson (correction) equation ---*/
 
@@ -70,17 +74,24 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   for (unsigned short iCorrection = 0; iCorrection < nCorrections; ++iCorrection) {
 
     /*--- For later corrections (PISO) the pressure equation has an additional div(H(u')/A_p) term on the right side, u' is computed in the last correction routine. ---*/
-    
-    if (iCorrection > 0) solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->ComputeHbyA(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
 
-    /*--- Solve the pressure Poisson equation to find p' i.e. div(V/A_p * grad(p')) = div rhou*} ---*/
+    if (iCorrection > 0) {
+      SU2_OMP_PARALLEL
+      solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->ComputeHbyA(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+      END_SU2_OMP_PARALLEL
+    }
+
+    /*--- Solve the pressure Poisson equation to find p' i.e. div(V/A_p * grad(p')) = div rhou*}. This
+    call opens its own parallel region internally, so it must not be nested inside one of ours. ---*/
 
     integration[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS,
                                                                    val_iZone, val_iInst);
 
     /*--- The velocity and pressure are corrected based on the solution to the Poisson problem i.e. p* = p + p' and rhou** = rhou* - V/Ap * p' ---*/
-    
+
+    SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ApplyPressureVelocityCorrection(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+    END_SU2_OMP_PARALLEL
 
    }
 
