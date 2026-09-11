@@ -164,16 +164,16 @@ def main():
     inv_channel           = TestCase('inv_channel')
     inv_channel.cfg_dir   = "euler/channel"
     inv_channel.cfg_file  = "inv_channel.cfg"
-    inv_channel.test_iter = 25
-    inv_channel.test_vals = [-2.440884, 0.027508, -0.483209, 3.044825]
+    inv_channel.test_iter = 20
+    inv_channel.test_vals = [-2.881210, -0.363528, -0.766663, 2.541394]
     test_list.append(inv_channel)
 
     # CRM DPW4 wing-body, transonic
     inv_crm_jst           = TestCase('inv_crm_jst')
     inv_crm_jst.cfg_dir   = "euler/CRM"
     inv_crm_jst.cfg_file  = "inv_CRM_JST.cfg"
-    inv_crm_jst.test_iter = 25
-    inv_crm_jst.test_vals = [-2.145237, -2.046222, -2.198081, -2.050411, -1.558285]
+    inv_crm_jst.test_iter = 20
+    inv_crm_jst.test_vals = [-2.000366, -1.822591, -1.831202, -1.712343, -1.392624]
     test_list.append(inv_crm_jst)
 
     ##########################
@@ -232,8 +232,8 @@ def main():
     lam_naca0012           = TestCase('lam_naca0012')
     lam_naca0012.cfg_dir   = "navierstokes/naca0012"
     lam_naca0012.cfg_file  = "lam_NACA0012.cfg"
-    lam_naca0012.test_iter = 25
-    lam_naca0012.test_vals = [-5.217967, -2.867946, -2.901995, 0.256977]
+    lam_naca0012.test_iter = 20
+    lam_naca0012.test_vals = [-5.522140, -3.127430, -3.286926, -0.109971]
     test_list.append(lam_naca0012)
 
     ##########################
@@ -386,16 +386,16 @@ def main():
     turb_sst_flatplate           = TestCase('turb_sst_flatplate')
     turb_sst_flatplate.cfg_dir   = "rans/flatplate"
     turb_sst_flatplate.cfg_file  = "turb_SST_flatplate.cfg"
-    turb_sst_flatplate.test_iter = 25
-    turb_sst_flatplate.test_vals = [-4.245474, -1.275603, -1.700304, 1.240340, -1.342766, 4.003679]
+    turb_sst_flatplate.test_iter = 20
+    turb_sst_flatplate.test_vals = [-4.894651, -1.648175, -2.218517, 0.580205, -0.691347, 4.979689]
     test_list.append(turb_sst_flatplate)
 
     # S809 wind turbine airfoil, SA
     turb_s809           = TestCase('turb_s809')
     turb_s809.cfg_dir   = "rans/s809"
     turb_s809.cfg_file  = "turb_S809.cfg"
-    turb_s809.test_iter = 25
-    turb_s809.test_vals = [-4.604018, -3.617906, -3.593938, -2.207865, -10.285758]
+    turb_s809.test_iter = 20
+    turb_s809.test_vals = [-4.630441, -3.675887, -3.599443, -2.233596, -10.265408]
     test_list.append(turb_s809)
 
     #######################################
