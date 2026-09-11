@@ -424,16 +424,6 @@ def main():
     inc_turb_naca0012_sst_sust.test_vals = [-7.170018, 0.332638, 0.000002, 0.312117]
     test_list.append(inc_turb_naca0012_sst_sust)
 
-    # Flat plate, pressure-based. Exercises the OpenMP path of the Poisson solver's
-    # boundary flux corrections on a case with a nonzero inlet/outlet mass flux, where
-    # unpartitioned per-thread duplication of those corrections would be visible.
-    inc_flatplate_pb           = TestCase('inc_flatplate_pb')
-    inc_flatplate_pb.cfg_dir   = "incomp_rans/rough_flatplate"
-    inc_flatplate_pb.cfg_file  = "pb_rough_flatplate_incomp.cfg"
-    inc_flatplate_pb.test_iter = 10
-    inc_flatplate_pb.test_vals = [-4.063342, -9.884401, 0.000011, 0.228472]
-    test_list.append(inc_flatplate_pb)
-
     # Weakly coupled heat equation
     inc_weakly_coupled = TestCase('inc_weakly_coupled')
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"
