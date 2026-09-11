@@ -44,6 +44,13 @@ protected:
   su2activevector EdgeSourceFlux; /*!< \brief Per-edge mass flux plus HbyA correction, staged in
   Source_Residual so the scatter into LinSysRes can be partitioned by point instead of by edge. */
 
+  su2activevector RawMomCoeff;  /*!< \brief A_p read directly off the momentum Jacobian diagonal in
+  SetMomCoeff, before the strong-BC reconstruction is applied; staged so the reconstruction pass
+  can average genuine neighbour values instead of re-deriving them. */
+  C2DContainer<unsigned long, bool, StorageType::ColumnMajor, 64, DynamicSize, 1> RowDeleted;
+  /*!< \brief True where the momentum Jacobian row has no coupling to any neighbour, i.e. where
+  DeleteValsRowi zeroed it for a strong velocity BC; set in SetMomCoeff. */
+
   /*!
    * \brief Compute the viscous flux for the scalar equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux

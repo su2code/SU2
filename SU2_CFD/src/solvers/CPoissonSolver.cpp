@@ -68,6 +68,8 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned sh
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
   EdgeSourceFlux.resize(geometry->GetnEdge()) = su2double(0.0);
+  RawMomCoeff.resize(nPoint) = su2double(0.0);
+  RowDeleted.resize(nPoint) = false;
 
   /*--- Initialize the nodes vector. ---*/
 
@@ -156,16 +158,50 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
 
   if (implicit) {
 
-    /*--- First sum up the momentum coefficient using the jacobian from given point and it's neighbors. ---*/
+    /*--- First pass: read the self coefficient A_p = dR/d(rhou) off the momentum Jacobian diagonal
+     * (the x-momentum entry is used for all directions, as before) and flag points whose row has no
+     * coupling to any neighbour. DeleteValsRowi zeros a strong-BC point's entire momentum row and
+     * writes 1.0 on the diagonal, so a flagged point's raw value carries that row-deletion artefact
+     * rather than a real momentum coefficient - a genuine interior or weak-BC point always has
+     * nonzero convective and/or diffusive coupling to at least one neighbour. ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Self contribution of the coefficient A_p, defined as dR/d(rhou). The jacobian of the momentum
-      equations is already defined as dR/du so it can be reused. Note that this coefficient should be the same for
-      all variable directions, therefore just the x-momentum coefficient is taken. ---*/
+      RawMomCoeff(iPoint) = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1) / flow_nodes->GetDensity(iPoint);
 
-      su2double A_p = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1) / flow_nodes->GetDensity(iPoint);
+      bool rowDeleted = true;
+      for (unsigned long iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+        auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+        if (flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(1,1) != 0.0) { rowDeleted = false; break; }
+      }
+      RowDeleted(iPoint) = rowDeleted;
+    }
+    END_SU2_OMP_FOR
+
+    /*--- Second pass: at a flagged point, substitute the average raw A_p of its non-flagged,
+     * locally-owned neighbours for the row-deletion artefact - an extrapolation from the interior
+     * momentum operator rather than a value the boundary condition overwrote. Off-rank neighbours
+     * have no local Jacobian row to read and are skipped; if every neighbour is itself flagged or
+     * off-rank there is nothing to extrapolate from and the artefact value is kept. ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      su2double A_p = RawMomCoeff(iPoint);
+
+      if (RowDeleted(iPoint)) {
+        su2double Sum_Nb_Ap = 0.0;
+        unsigned short nValidNeigh = 0;
+        for (unsigned long iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+          auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+          if (jPoint < nPointDomain && !RowDeleted(jPoint)) {
+            Sum_Nb_Ap += RawMomCoeff(jPoint);
+            ++nValidNeigh;
+          }
+        }
+        if (nValidNeigh > 0) A_p = Sum_Nb_Ap / nValidNeigh;
+      }
 
       /*--- Optionally alter the coefficient using SIMPLEC ---*/
 

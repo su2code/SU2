@@ -420,7 +420,7 @@ def main():
     inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
-    inc_euler_naca0012_pb.test_vals = [-4.154445, -4.919400, 0.468630, 0.010040]
+    inc_euler_naca0012_pb.test_vals = [-4.154444, -4.919407, 0.468630, 0.010040]
     test_list.append(inc_euler_naca0012_pb)
 
     # C-D nozzle with pressure inlet and mass flow outlet
@@ -455,7 +455,7 @@ def main():
     inc_lam_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder_pb.cfg_file  = "incomp_pb_cylinder.cfg"
     inc_lam_cylinder_pb.test_iter = 10
-    inc_lam_cylinder_pb.test_vals = [-3.484442, -3.775560, 0.012341, 6.190300]
+    inc_lam_cylinder_pb.test_vals = [-3.484786, -3.775234, 0.012672, 6.199949]
     test_list.append(inc_lam_cylinder_pb)
 
     # Buoyancy-driven cavity
@@ -487,7 +487,7 @@ def main():
     inc_lam_bend_pb.cfg_dir   = "incomp_navierstokes/bend"
     inc_lam_bend_pb.cfg_file  = "pb_lam_bend.cfg"
     inc_lam_bend_pb.test_iter = 10
-    inc_lam_bend_pb.test_vals = [-4.170368, -3.465917, -0.012065, 1.882147]
+    inc_lam_bend_pb.test_vals = [-4.261208, -3.503264, -0.016801, 0.518719]
     test_list.append(inc_lam_bend_pb)
 
     ############################
