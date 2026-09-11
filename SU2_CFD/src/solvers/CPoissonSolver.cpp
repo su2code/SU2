@@ -143,10 +143,11 @@ void CPoissonSolver::Postprocessing(CGeometry *geometry,
   SU2_ZONE_SCOPED
 
   /*--- Compute gradients of the pressure correction p' so we can use it to find the velocity corrections ---*/
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) 
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
     SetSolution_Gradient_GG(geometry, config,false);
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) 
+  if (config->GetKind_Gradient_Method() == LEAST_SQUARES ||
+      config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
     SetSolution_Gradient_LS(geometry, config,false);
 
 }

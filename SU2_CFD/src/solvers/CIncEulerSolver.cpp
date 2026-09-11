@@ -1078,6 +1078,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   if (pressure_based) {
     switch (config->GetKind_Gradient_Method()) {
       case GREEN_GAUSS: SetPrimitive_Gradient_GG(geometry, config); break;
+      case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES: SetPrimitive_Gradient_LS(geometry, config); break;
       default: break;
     }
@@ -3651,7 +3652,8 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetPrimitive_Gradient_GG(geometry, config);
   }
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetKind_Gradient_Method() == LEAST_SQUARES ||
+      config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
