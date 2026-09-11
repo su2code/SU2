@@ -810,6 +810,12 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
   /*--- Loop over all the new grid ---*/
 
   string pavingReports;
+  /*--- Coarse-CV volume ratio per level, for BOTH paved and classical grids: an anisotropic
+   *    viscous mesh can leave a coarse CV many orders of magnitude smaller than its neighbours
+   *    regardless of the agglomeration algorithm, and that is worth surfacing either way. Held
+   *    back with pavingReports, for the same reason. ---*/
+  string volRatioReport;
+  constexpr passivedouble VOL_RATIO_WARN = 1e9;
 
   for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
@@ -841,17 +847,38 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     /*--- Create the control volume structures ---*/
 
     geometry[iMGlevel]->SetControlVolume(geometry[iMGlevel-1], ALLOCATE);
-    {  // TMPVOLCMP
-      auto* g = geometry[iMGlevel];
-      double vmin = 1e300, vmax = 0.0;
+
+    /*--- Largest-to-smallest coarse CV volume on this level, reduced across every rank. Not an
+     *    AD quantity -- a diagnostic ratio has nothing to differentiate. ---*/
+    {
+      const auto* g = geometry[iMGlevel];
+      passivedouble vmin = std::numeric_limits<passivedouble>::max(), vmax = 0.0;
       for (auto i = 0ul; i < g->GetnPointDomain(); i++) {
-        const double v = SU2_TYPE::GetValue(g->nodes->GetVolume(i));
-        vmin = std::min(vmin, v); vmax = std::max(vmax, v);
+        const passivedouble v = SU2_TYPE::GetValue(g->nodes->GetVolume(i));
+        vmin = std::min(vmin, v);
+        vmax = std::max(vmax, v);
       }
-      std::cout << "[VOLCMP] rank " << rank << " level " << iMGlevel << " minV " << vmin << " maxV " << vmax
-                << " ratio " << (vmax / std::max(1e-300, vmin)) << " nDom " << g->GetnPointDomain() << std::endl;
-    }  // TMPVOLCMP
+      passivedouble vminGlobal = 0.0, vmaxGlobal = 0.0;
+      SU2_MPI::Allreduce(&vmin, &vminGlobal, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&vmax, &vmaxGlobal, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+
+      if (rank == MASTER_NODE) {
+        const passivedouble ratio = vmaxGlobal / std::max(std::numeric_limits<passivedouble>::min(), vminGlobal);
+        stringstream ss;
+        ss << "  MG level " << iMGlevel << " CV volume: min " << vminGlobal << ", max " << vmaxGlobal
+           << ", ratio " << ratio << "\n";
+        if (ratio > VOL_RATIO_WARN)
+          ss << "  WARNING: MG level " << iMGlevel << " has a coarse CV volume ratio of " << ratio
+             << " -- some coarse control volume is many orders of magnitude smaller than another\n"
+                "           on the same level. This can happen with either classical or paved\n"
+                "           agglomeration on a highly anisotropic viscous mesh, and has been observed\n"
+                "           to destabilise the multigrid correction when MG_CORRECTION_SMOOTH is on.\n";
+        volRatioReport += ss.str();
+      }
+    }
+
     geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
+
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
     /*--- Find closest, most normal, neighbor to a surface point ---*/
@@ -865,7 +892,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
   }
 
   /*--- Held back so they do not interleave with the multigrid level table. ---*/
-  if (rank == MASTER_NODE) cout << pavingReports;
+  if (rank == MASTER_NODE) cout << pavingReports << volRatioReport;
 
   /*--- MG_MIN_MESHSIZE is a per-rank floor, so the levels actually built fall with rank count. ---*/
   if ((rank == MASTER_NODE) && (requestedMGlevels > 0)) {

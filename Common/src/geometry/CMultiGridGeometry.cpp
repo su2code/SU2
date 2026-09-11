@@ -2091,15 +2091,6 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   auto emit = [&](unsigned long f) {
     if (fronts[f].pending.empty()) return;
     if (fronts[f].seedCV == std::numeric_limits<unsigned long>::max()) fronts[f].seedCV = Index_CoarseCV;
-    {  // TMPGROW
-      if (f < 3) {
-        double v = 0.0;
-        for (auto p : fronts[f].pending) v += SU2_TYPE::GetValue(fine_grid->nodes->GetVolume(p));
-        std::cout << "[GROW] rank " << rank << " front " << f << " emitCV " << Index_CoarseCV
-                  << " depthAtEmit " << fronts[f].depth << " nLayers " << fronts[f].pending.size()
-                  << " volume " << v << std::endl;
-      }
-    }  // TMPGROW
     nodes->SetChildren_CV(Index_CoarseCV, fronts[f].pending);
     for (auto p : fronts[f].pending) {
       fine_grid->nodes->SetParent_CV(p, Index_CoarseCV);
