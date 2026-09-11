@@ -702,6 +702,14 @@ def main():
     inc_lam_sphere.test_vals = [-7.600533, -8.244915, -8.361301, -9.325293, 0.121003, 25.782687, -1.881890]
     test_list.append(inc_lam_sphere)
 
+    # Laminar sphere, Re=1, pressure-based. Only 3D pressure-based case in the regression suite.
+    inc_lam_sphere_pb          = TestCase('inc_lam_sphere_pb')
+    inc_lam_sphere_pb.cfg_dir   = "incomp_navierstokes/sphere"
+    inc_lam_sphere_pb.cfg_file  = "pb_sphere.cfg"
+    inc_lam_sphere_pb.test_iter = 9
+    inc_lam_sphere_pb.test_vals = [-6.092137, -2.304829, -2.478942, -2.549013, 0.189592, 170.838311, -6.819622]
+    test_list.append(inc_lam_sphere_pb)
+
     # Buoyancy-driven cavity
     inc_buoyancy          = TestCase('inc_buoyancy')
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
@@ -725,6 +733,14 @@ def main():
     inc_lam_bend.test_iter = 10
     inc_lam_bend.test_vals = [-3.585943, -3.096592, -0.022111, 1.064110]
     test_list.append(inc_lam_bend)
+
+    # X-coarse laminar bend as a mixed element CGNS test, pressure-based
+    inc_lam_bend_pb          = TestCase('inc_lam_bend_pb')
+    inc_lam_bend_pb.cfg_dir   = "incomp_navierstokes/bend"
+    inc_lam_bend_pb.cfg_file  = "pb_lam_bend.cfg"
+    inc_lam_bend_pb.test_iter = 10
+    inc_lam_bend_pb.test_vals = [-4.170368, -3.465917, -0.012068, 1.882148]
+    test_list.append(inc_lam_bend_pb)
 
     # 3D laminar channnel with 1 cell in flow direction, streamwise periodic
     sp_pipeSlice_3d_dp_hf_tp           = TestCase('sp_pipeSlice_3d_dp_hf_tp')

@@ -482,6 +482,14 @@ def main():
     inc_lam_bend.test_vals = [-3.639664, -3.218039, -0.016067, 1.090645]
     test_list.append(inc_lam_bend)
 
+    # X-coarse laminar bend as a mixed element CGNS test, pressure-based
+    inc_lam_bend_pb          = TestCase('inc_lam_bend_pb')
+    inc_lam_bend_pb.cfg_dir   = "incomp_navierstokes/bend"
+    inc_lam_bend_pb.cfg_file  = "pb_lam_bend.cfg"
+    inc_lam_bend_pb.test_iter = 10
+    inc_lam_bend_pb.test_vals = [-4.170368, -3.465917, -0.012065, 1.882147]
+    test_list.append(inc_lam_bend_pb)
+
     ############################
     ### Incompressible RANS  ###
     ############################
