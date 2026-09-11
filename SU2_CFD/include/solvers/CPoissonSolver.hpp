@@ -165,6 +165,13 @@ public:
                             unsigned short iMesh, unsigned short RunTime_EqSystem) override {}
 
   /*!
+   * \brief The pressure correction is reset to zero every iteration (see Preprocessing), so it
+   *        carries no state that a restart file needs to provide.
+   */
+  void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
+                   bool val_update_geo) override {}
+
+  /*!
    * \brief Compute the coefficients for the pressure correction equation based
    *        on the residuals from the solution of the momentum equation.
    * \param[in] geometry - Geometrical definition of the problem.

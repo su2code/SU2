@@ -339,9 +339,10 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::POISSON:
-      if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED)
+      if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
         genericSolver = new CPoissonSolver(geometry, config, iMGLevel);
-      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
+        metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      }
       break;
     default:
       SU2_MPI::Error("No proper allocation found for requested sub solver", CURRENT_FUNCTION);
