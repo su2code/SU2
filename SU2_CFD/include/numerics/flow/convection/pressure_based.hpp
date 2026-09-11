@@ -43,13 +43,13 @@ protected:
   bool implicit, dynamic_grid, energy, variable_density;
 
   unsigned short iDim, jDim, iVar, jVar;
-  
+
   su2double *AdvectedVelocity = nullptr, AdvectedEnthalpy;
   su2double *Flux = nullptr;
   su2double **Jacobian_i = nullptr;
   su2double **Jacobian_j = nullptr;
 
-  su2double MeanPressure, MeanDensity;
+  su2double MeanDensity;
   su2double dRhodh_i, dRhodh_j, Temperature_i, Temperature_j;
 
   su2double weight_jacobian_i, weight_jacobian_j;
@@ -70,9 +70,9 @@ protected:
   void ComputeJacobian(su2double val_density, const su2double *val_velocity,
                        su2double val_enthalpy, su2double val_dRhodh,
                        su2double val_scale, su2double **val_Proj_Jac_Tensor);
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -80,12 +80,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CPBConvection_Base(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CPBConvection_Base(void);
-  
+
   /*!
    * \brief Compute the flow residual.
    * \param[out] val_resconv - Pointer to the convective residual.
@@ -103,9 +103,9 @@ public:
  * \author T. Aalbers
  */
 class CPBConvection_Central : public CPBConvection_Base {
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -124,7 +124,7 @@ public:
    * \brief Function which defines jacobian weights
    */
   void ComputeJacobianWeights(void) final;
-  
+
 };
 
 
@@ -135,9 +135,9 @@ public:
  * \author T. Aalbers
  */
 class CPBConvection_Upwind : public CPBConvection_Base {
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -156,5 +156,5 @@ public:
    * \brief Function which defines jacobian weights
    */
   void ComputeJacobianWeights(void) final;
-  
+
 };

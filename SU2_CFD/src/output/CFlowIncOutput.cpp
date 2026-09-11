@@ -97,8 +97,10 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   solved as a correction and it is thus possible to run the pb solver without corrections. to 
   ensure the default residual is always defined we use velocity instead ---*/
 
-  if (convFields.empty() && !pressure_based) convFields.emplace_back("RMS_PRESSURE");
-  if (convFields.empty() && pressure_based) convFields.emplace_back("RMS_VELOCITY-X");
+  if (convFields.empty()) {
+    if (pressure_based) convFields.emplace_back("RMS_VELOCITY-X");
+    else                convFields.emplace_back("RMS_PRESSURE");
+  }
 
 }
 

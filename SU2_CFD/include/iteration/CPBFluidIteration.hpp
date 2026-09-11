@@ -1,7 +1,7 @@
 /*!
  * \file CPBFluidIteration.hpp
  * \brief Headers of the pressure based fluid iteration class.
- * \author F. Palacios, T. Economon
+ * \author T. Aalbers
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -30,10 +30,10 @@
 #include "CFluidIteration.hpp"
 
 /*!
- * \class CFluidIteration
+ * \class CPBFluidIteration
  * \ingroup Drivers
- * \brief Class for driving an iteration of the fluid system.
- * \author T. Economon
+ * \brief Class for driving a pressure-based iteration of the fluid system.
+ * \author T. Aalbers
  */
 class CPBFluidIteration : public CFluidIteration {
 public:

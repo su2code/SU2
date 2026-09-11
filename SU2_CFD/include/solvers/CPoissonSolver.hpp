@@ -1,7 +1,7 @@
 /*!
  * \file CPoissonSolver.hpp
  * \brief Headers of the CPoissonSolver class
- * \author F. Palacios, T. Economon
+ * \author T. Aalbers
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -33,7 +33,7 @@
 /*!
  * \class CPoissonSolver
  * \brief Main class for defining the finite-volume poisson equation solver.
- * \author O. Burghardt
+ * \author T. Aalbers
  * \version 8.5.0 "Harrier"
  */
 class CPoissonSolver final : public CScalarSolver<CPoissonVariable> {

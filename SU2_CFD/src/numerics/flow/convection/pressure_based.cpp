@@ -67,7 +67,6 @@ CNumerics::ResidualType<> CPBConvection_Base::ComputeResidual(const CConfig *con
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
   Enthalpy_i    = V_i[nDim+3];        Enthalpy_j    = V_j[nDim+3];
-  MeanPressure = 0.5 * (Pressure_i + Pressure_j);
   MeanDensity = 0.5 * (DensityInc_i + DensityInc_j);
 
   /*--- Find the velocity that is advected ---*/

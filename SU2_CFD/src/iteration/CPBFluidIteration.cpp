@@ -1,7 +1,7 @@
 /*!
  * \file CPBFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
- * \author F. Palacios, T. Economon
+ * \author T. Aalbers
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -98,8 +98,7 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   /*--- Pressure-based algorithm finished, now run auxiliary solvers ---*/
 
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
-  CommonAuxiliarySolvers(output, integration, geometry, solver, numerics, config, surface_movement, 
-                             grid_movement, FFDBox, val_iZone, val_iInst, main_solver, frozen_visc);
+  CommonAuxiliarySolvers(integration, geometry, solver, numerics, config, val_iZone, val_iInst, main_solver, frozen_visc);
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
 

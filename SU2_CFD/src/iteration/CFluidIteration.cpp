@@ -87,8 +87,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   const bool fmg_cfl_ramp = integration[val_iZone][val_iInst][FLOW_SOL]->GetFullMG_CFLRamp();
 
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
-  CommonAuxiliarySolvers(output, integration, geometry, solver, numerics, config, surface_movement, 
-                             grid_movement, FFDBox, val_iZone, val_iInst, main_solver, frozen_visc);
+  CommonAuxiliarySolvers(integration, geometry, solver, numerics, config, val_iZone, val_iInst, main_solver, frozen_visc);
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
         The Full-MG startup owns the CFL while it ramps, so leave it alone until then. ---*/
@@ -115,11 +114,11 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   }
 }
 
-void CFluidIteration::CommonAuxiliarySolvers(COutput* output, CIntegration**** integration, CGeometry**** geometry,
+void CFluidIteration::CommonAuxiliarySolvers(CIntegration**** integration, CGeometry**** geometry,
                               CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                              CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                              CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, MAIN_SOLVER main_solver, bool frozen_visc) {
-  
+                              unsigned short val_iZone, unsigned short val_iInst, MAIN_SOLVER main_solver, bool frozen_visc) {
+
+
   if (config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE && !frozen_visc) {
 
     /*--- Solve transition model ---*/

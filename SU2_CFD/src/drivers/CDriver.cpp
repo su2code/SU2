@@ -1457,7 +1457,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   bool incompressible = false;
   bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) || (config->GetKind_FluidModel() == IDEAL_GAS);
   bool pressure_based = (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED);
-  bool poisson = (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED);
   bool roe_low_dissipation = (config->GetKind_RoeLowDiss() != NO_ROELOWDISS);
 
   /*--- Initialize some useful booleans ---*/
@@ -2128,7 +2127,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   }
 
   /*--- Solver definition for the poisson/pressure correction problem ---*/
-  if (poisson) {
+  if (pressure_based) {
     /*--- Pressure correction (Poisson) equation ---*/
     numerics[MESH_0][POISSON_SOL][visc_term] = new CAvgGrad_Heat(nDim, config, true);
        

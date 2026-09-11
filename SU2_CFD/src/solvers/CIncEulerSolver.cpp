@@ -2141,7 +2141,7 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
   PrepareImplicitIteration_impl(precond, geometry, config);
 
   /*--- Delete pressure rows for segregated solver type. ---*/
-  if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
+  if (pressure_based) {
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       Jacobian.DeleteValsRowi(iPoint, 0);
@@ -2721,7 +2721,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Directly overwrite the velocity at the boundary nodes as a dirichlet boundary condition ---*/
 
-      nodes->SetVelocity_Old(iPoint,V_inlet+1);
+      nodes->SetVelocity_Old(iPoint,V_inlet+prim_idx.Velocity());
 
       LinSysRes.SetBlock_Zero(iPoint);
 
@@ -3756,14 +3756,14 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   }
   END_SU2_OMP_FOR
 
-  /*--- Define a reference pressure ---*/
-  // TODO: look at this, currently copied (but working?) logic from old solver (by Akshay)
-  unsigned long PRef_Point = 1;
-  auto Pref_local = geometry->GetGlobal_to_Local_Point(PRef_Point);
+  /*--- Define a reference pressure. Fixed at 0 for now: for a domain with at least one
+  Dirichlet pressure boundary (an outlet or a far-field with outflow) this reference is
+  unused (the boundary loop below overwrites pressureCorrection at those points instead),
+  but for a fully closed domain (walls only) the Poisson system is pure-Neumann and has no
+  pressure datum, so pinning a single point's correction to a real reference value would be
+  needed there instead of leaving it at 0. ---*/
+
   PCorr_Ref = 0.0;
-  if (Pref_local >= 0)
-    if(geometry->nodes->GetDomain(Pref_local))
-      PCorr_Ref = 0.0;//Pressure_Correc[Pref_local];
 
   /*--- Compute Velocity Corrections and under relaxation factor for the pressure. ---*/
 
