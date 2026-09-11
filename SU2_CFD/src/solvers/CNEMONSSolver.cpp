@@ -238,7 +238,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
       LinSysRes.SubtractBlock(iPoint, residual);
       LinSysRes.AddBlock(jPoint, residual);
       if (implicit) {
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+        Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
     }
   } //iEdge
