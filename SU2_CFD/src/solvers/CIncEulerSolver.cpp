@@ -3822,10 +3822,20 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
       dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     }
 
-    /*--- 1. Interpolate the p' gradient based on node values ---*/
+    /*--- 1. Interpolate the p' gradient based on node values - deliberately zero: this is a
+    compact (orthogonal-only) mass-flux correction, not an oversight. Feeding the real,
+    node-averaged p' gradient here (available via GetGradient(), already used correctly a few
+    lines above for the interior velocity correction) was tried and measured to reintroduce
+    checkerboard-style pressure-velocity decoupling - the 3D sphere case diverges from the first
+    iteration regardless of CFL, with the same sign-flipping, magnitude-growing oscillation
+    signature as the unrelated broken-SIMPLEC finding. A node-averaged gradient is exactly the
+    kind of quantity Rhie-Chow interpolation exists to avoid using directly in a face mass flux.
+    Kept explicitly zero (rather than reachable only by accident through
+    GetGradient_Primitive's unrelated always-0.0 base-class stub) so a future refactor cannot
+    silently reintroduce this instability by "fixing" what looks like a missing override. ---*/
 
     for (iDim = 0; iDim < nDim; iDim++)
-      GradPressure_avg[iDim] = 0.5*(poisson_nodes->GetGradient_Primitive(iPoint,0,iDim) + poisson_nodes->GetGradient_Primitive(jPoint,0,iDim));
+      GradPressure_avg[iDim] = 0.0;
 
     /*--- 2. Compute p' at the face ---*/
 
