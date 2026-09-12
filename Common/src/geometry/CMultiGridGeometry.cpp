@@ -68,6 +68,42 @@ vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<u
   return classOfEntity;
 }
 
+/*--- Smallest fraction of the largest volume within a few hops a node may have and still be
+ *    admissible for paving -- seeding a front, marching onto it, or arriving in a handover. A
+ *    genuine boundary-layer cell's volume is comparable to its local surroundings (the stretching
+ *    happens normal to the wall, not from one along-wall cell to the next); a mesh defect -- a
+ *    collapsed cell, or a short run of them, at a block seam -- can be orders of magnitude
+ *    smaller than its surroundings while still passing the aspect-ratio seed test, since aspect
+ *    ratio and absolute size are independent. Such a node is left to ordinary boundary
+ *    agglomeration instead, which handles it the same way it would with paving turned off.
+ *
+ *    A one-hop neighbourhood is not wide enough: the defect can span several adjacent cells, so
+ *    every one of them looks normal-sized to its immediate neighbours even though the whole run
+ *    is a local outlier. A mesh-wide reference is too wide the other way: a large surface mesh
+ *    commonly carries more than one legitimate resolution (a finely meshed wing next to a coarser
+ *    fuselage), so a single global scale flags the finer, still perfectly normal, region as
+ *    degenerate too. A few-hop neighbourhood is the compromise: wide enough to reach past a short
+ *    run of collapsed cells into normal ones, narrow enough to stay within one mesh region. ---*/
+constexpr passivedouble DEGENERATE_VOLUME_FRACTION = 0.01;
+constexpr int DEGENERATE_VOLUME_HOPS = 4;
+
+bool HasDegenerateVolume(const CGeometry* fine_grid, unsigned long iPoint) {
+  vector<unsigned long> frontier{iPoint}, visited{iPoint};
+  su2double maxNearbyVol = fine_grid->nodes->GetVolume(iPoint);
+  for (int hop = 0; hop < DEGENERATE_VOLUME_HOPS && !frontier.empty(); ++hop) {
+    vector<unsigned long> next;
+    for (auto p : frontier)
+      for (auto jPoint : fine_grid->nodes->GetPoints(p)) {
+        if (std::find(visited.begin(), visited.end(), jPoint) != visited.end()) continue;
+        visited.push_back(jPoint);
+        next.push_back(jPoint);
+        maxNearbyVol = std::max(maxNearbyVol, fine_grid->nodes->GetVolume(jPoint));
+      }
+    frontier = std::move(next);
+  }
+  return fine_grid->nodes->GetVolume(iPoint) < DEGENERATE_VOLUME_FRACTION * maxNearbyVol;
+}
+
 }  // namespace
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
@@ -1716,7 +1752,6 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
     return (bc == HEAT_FLUX) || (bc == ISOTHERMAL) || (bc == CHT_WALL_INTERFACE) || (bc == SMOLUCHOWSKI_MAXWELL);
   };
 
-
   /*--- True if the mesh at iPoint is stretched along the boundary normal, i.e. this boundary has a
    *    layer growing off it the way a viscous wall does. The coupling across the dual face between
    *    iPoint and a neighbour is measured here, so the ratio of largest to smallest weight is the
@@ -1755,6 +1790,9 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
       if (!fine_grid->nodes->GetDomain(iPoint)) continue;
       if (fine_grid->nodes->GetAgglomerate(iPoint)) continue;
       if (taken[iPoint]) continue; /*--- A node on two markers must seed only one front. ---*/
+      /*--- Falls through to ordinary boundary agglomeration instead, exactly as it would with
+       *    paving turned off, rather than seeding a stack that starts out already degenerate. ---*/
+      if (HasDegenerateVolume(fine_grid, iPoint)) continue;
 
       su2double Normal[MAXNDIM] = {0.0};
       if (!VertexUnitNormal(fine_grid, nDim, iPoint, iMarker, Normal)) continue;
@@ -2052,7 +2090,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
       const su2double dot = GeometryToolbox::DotProduct(nDim, vec, marchDir);
       const bool admissible =
           !(onPhysBoundary[jPoint] && EntersBoundary(fine_grid, config, nDim, jPoint, vec, cos_boundary)) &&
-          GeometricalCheck(jPoint, fine_grid, config);
+          GeometricalCheck(jPoint, fine_grid, config) && !HasDegenerateVolume(fine_grid, jPoint);
 
       /*--- Halo parents are assigned by the owning rank through the MPI relay, so a halo node is
        *    only checked for admissibility here, never claimed. ---*/
@@ -2472,7 +2510,9 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
         const auto p = inherited[k].node;
         /*--- One node can be handed over by two neighbours under the same tag. ---*/
         if (std::find(layer0.begin(), layer0.end(), p) != layer0.end()) continue;
-        if (claimed[p] || fine_grid->nodes->GetAgglomerate(p) || !GeometricalCheck(p, fine_grid, config)) ok = false;
+        if (claimed[p] || fine_grid->nodes->GetAgglomerate(p) || !GeometricalCheck(p, fine_grid, config) ||
+            HasDegenerateVolume(fine_grid, p))
+          ok = false;
         layer0.push_back(p);
       }
       /*--- Whatever arrived must be free and form one connected layer. ---*/
