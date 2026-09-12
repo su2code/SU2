@@ -141,11 +141,16 @@ void CPBConvection_Base::ComputeJacobian(su2double val_density, const su2double 
     val_Proj_Jac_Tensor[0][iDim+1] = val_scale*(Normal[iDim] * (val_density));
   }
 
-  /*--- Fill momentum parts ---*/
+  /*--- Fill momentum parts. proj_vel*delta_ij is d(m_f*v_adv)/du at fixed m_f, and correctly
+  carries the advection scheme's weight (upwind: 1 or 0; central: 1/2) since v_adv is what the
+  scheme upwinds or averages. The mass flux m_f itself is frozen at this stage of the outer
+  iteration (it comes from the previous Rhie-Chow interpolation, not from the state being solved
+  for here), so d(m_f)/du is exactly zero and the momentum block has no other legitimate term to
+  add. ---*/
 
   for (jDim = 0; jDim < nDim; jDim++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      val_Proj_Jac_Tensor[iDim+1][jDim+1] = val_scale * val_density * (val_velocity[iDim] * Normal[jDim] + proj_vel * delta[iDim][jDim]);
+      val_Proj_Jac_Tensor[iDim+1][jDim+1] = val_density * val_scale * proj_vel * delta[iDim][jDim];
     }
   }
 
