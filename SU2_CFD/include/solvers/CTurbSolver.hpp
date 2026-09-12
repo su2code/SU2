@@ -52,8 +52,9 @@ public:
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] flow_solver - Flow solver the boundary ghost states mirror.
    */
-  CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative);
+  CTurbSolver(CGeometry* geometry, CConfig *config, const CSolver* flow_solver, bool conservative);
 
 
   /*!

@@ -18,7 +18,8 @@ su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
                        'SU2_CFD/gradients.cpp',
                        'SU2_CFD/windowing.cpp',
                        'Common/toolboxes/random_toolbox_tests.cpp',
-                       'Common/linear_algebra/quantization_tests.cpp'])
+                       'Common/linear_algebra/quantization_tests.cpp',
+                       'Common/linear_algebra/edge_residual_blocks_tests.cpp'])
 
 # Reverse-mode (algorithmic differentiation) tests:
 su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp',
@@ -39,6 +40,7 @@ if get_option('enable-tests')
         'test_driver',
         unit_test_files,
         install : true,
+        install_rpath : '$ORIGIN/../lib',
         dependencies : [su2_cfd_dep, common_dep, su2_deps, catch2_dep],
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
@@ -51,6 +53,7 @@ if get_option('enable-tests')
         'test_driver_AD',
         unit_test_files_ad,
         install : true,
+        install_rpath : '$ORIGIN/../lib',
         dependencies : [su2_cfd_dep_ad, commonAD_dep, su2_deps, codi_dep, catch2_dep],
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args, codi_rev_args]
     )
@@ -63,6 +66,7 @@ if get_option('enable-tests')
         'test_driver_DD',
         unit_test_files_dd,
         install : true,
+        install_rpath : '$ORIGIN/../lib',
         dependencies : [su2_cfd_dep_dd, commonDD_dep, su2_deps, codi_dep, catch2_dep],
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args, codi_for_args]
     )

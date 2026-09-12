@@ -51,11 +51,9 @@
 
 #include "../../include/variables/CEulerVariable.hpp"
 #include "../../include/variables/CIncEulerVariable.hpp"
-#include "../../include/variables/CNEMOEulerVariable.hpp"
 
 #include "../../include/numerics/template.hpp"
 #include "../../include/numerics/radiation.hpp"
-#include "../../include/numerics/heat.hpp"
 #include "../../include/numerics/flow/convection/roe.hpp"
 #include "../../include/numerics/flow/convection/fds.hpp"
 #include "../../include/numerics/flow/convection/fvs.hpp"
@@ -73,17 +71,9 @@
 #include "../../include/numerics/continuous_adjoint/adj_convection.hpp"
 #include "../../include/numerics/continuous_adjoint/adj_diffusion.hpp"
 #include "../../include/numerics/continuous_adjoint/adj_sources.hpp"
-#include "../../include/numerics/scalar/scalar_convection.hpp"
-#include "../../include/numerics/scalar/scalar_diffusion.hpp"
 #include "../../include/numerics/scalar/scalar_sources.hpp"
-#include "../../include/numerics/turbulent/turb_convection.hpp"
-#include "../../include/numerics/turbulent/turb_diffusion.hpp"
 #include "../../include/numerics/turbulent/turb_sources.hpp"
-#include "../../include/numerics/turbulent/transition/trans_convection.hpp"
-#include "../../include/numerics/turbulent/transition/trans_diffusion.hpp"
 #include "../../include/numerics/turbulent/transition/trans_sources.hpp"
-#include "../../include/numerics/species/species_convection.hpp"
-#include "../../include/numerics/species/species_diffusion.hpp"
 #include "../../include/numerics/species/species_sources.hpp"
 #include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
@@ -1193,14 +1183,8 @@ void CDriver::FinalizeIntegration(CIntegration ***integration, CGeometry **geome
 template <class Indices>
 void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset, const CConfig *config,
                                            const CSolver* turb_solver, CNumerics ****&numerics) const {
-  const int conv_term = CONV_TERM + offset;
-  const int visc_term = VISC_TERM + offset;
-
   const int source_first_term = SOURCE_FIRST_TERM + offset;
   const int source_second_term = SOURCE_SECOND_TERM + offset;
-
-  const int conv_bound_term = CONV_BOUND_TERM + offset;
-  const int visc_bound_term = VISC_BOUND_TERM + offset;
 
   /*--- Assign turbulence model booleans ---*/
 
@@ -1230,38 +1214,19 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     omega_Inf = turb_solver->GetOmega_Inf();
   }
 
-  /*--- Definition of the convective scheme for each equation and mesh level ---*/
+  /*--- Both SA and SST drive their interior loop through their own CScalarFlux_* edge kernel
+   * (see CTurbSASolver, CTurbSSTSolver), so conv_term is never set here; this switch only checks
+   * the config value. ---*/
 
   switch (config->GetKind_ConvNumScheme_Turb()) {
     case NO_CONVECTIVE:
       SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
       break;
     case SPACE_UPWIND :
-      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        if (spalart_allmaras) {
-          numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSA<Indices>(nDim, nVar_Turb, config);
-        }
-        else if (menter_sst)
-          numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSST<Indices>(nDim, nVar_Turb, config);
-      }
       break;
     default:
       SU2_MPI::Error("Invalid convective scheme for the turbulence equations.", CURRENT_FUNCTION);
       break;
-  }
-
-  /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
-  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (spalart_allmaras) {
-      if (config->GetSAParsedOptions().version == SA_OPTIONS::NEG) {
-        numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSA_Neg<Indices>(nDim, nVar_Turb, true, config);
-      } else {
-        numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSA<Indices>(nDim, nVar_Turb, true, config);
-      }
-    }
-    else if (menter_sst)
-      numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSST<Indices>(nDim, nVar_Turb, constants, true, config);
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1278,69 +1243,38 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     numerics[iMGlevel][TURB_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Turb, config);
   }
 
-  /*--- Definition of the boundary condition method ---*/
-
-  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (spalart_allmaras) {
-      numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CUpwSca_TurbSA<Indices>(nDim, nVar_Turb, config);
-
-      if (config->GetSAParsedOptions().version == SA_OPTIONS::NEG) {
-        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSA_Neg<Indices>(nDim, nVar_Turb, true, config);
-      } else {
-        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSA<Indices>(nDim, nVar_Turb, true, config);
-      }
-    }
-    else if (menter_sst) {
-      numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CUpwSca_TurbSST<Indices>(nDim, nVar_Turb, config);
-      numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSST<Indices>(nDim, nVar_Turb, constants, true,
-                                                                                    config);
-    }
-  }
+  /*--- Both SA and SST drive their boundaries through their own CScalarFlux_* edge kernel, so
+   * neither needs conv_bound_term/visc_bound_term here. ---*/
 }
-/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
+/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp.
+ * NEMO has no explicit instantiation: NEMO with a turbulence model is rejected at configuration. ---*/
 template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
-template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
-
 template <class Indices>
 void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offset, const CConfig *config,
                                            const CSolver* trans_solver, CNumerics ****&numerics) const {
-  const int conv_term = CONV_TERM + offset;
-  const int visc_term = VISC_TERM + offset;
-
   const int source_first_term = SOURCE_FIRST_TERM + offset;
   const int source_second_term = SOURCE_SECOND_TERM + offset;
 
-  const int conv_bound_term = CONV_BOUND_TERM + offset;
-  const int visc_bound_term = VISC_BOUND_TERM + offset;
-
   const bool LM = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM;
 
-  /*--- Definition of the convective scheme for each equation and mesh level ---*/
+  /*--- LM drives its interior loop and boundaries through its own CScalarFlux_TransLM edge kernel
+   * (see CTransLMSolver), so conv_term/visc_term/conv_bound_term/visc_bound_term are never set
+   * here; this switch only checks the config value. ---*/
 
   switch (config->GetKind_ConvNumScheme_Turb()) {
     case NONE:
       SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
       break;
     case SPACE_UPWIND :
-      for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        if (LM) numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
-      }
       break;
     default:
       SU2_MPI::Error("Invalid convective scheme for the transition equations.", CURRENT_FUNCTION);
       break;
-  }
-
-  /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
-  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (LM) numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, true, config);
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1352,59 +1286,35 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
 
     numerics[iMGlevel][TRANS_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Trans, config);
   }
-
-  /*--- Definition of the boundary condition method ---*/
-
-  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (LM) {
-      numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
-      numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, false, config);
-    }
-  }
 }
-/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
+/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp.
+ * NEMO has no explicit instantiation: transition requires a turbulence model, which is rejected
+ * for NEMO at configuration. ---*/
 template void CDriver::InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
-template void CDriver::InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
-
 template <class Indices>
 void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig *config,
                                          const CSolver* species_solver, CNumerics ****&numerics) const {
-  const int conv_term = CONV_TERM + offset;
-  const int visc_term = VISC_TERM + offset;
-
   const int source_first_term = SOURCE_FIRST_TERM + offset;
   const int source_second_term = SOURCE_SECOND_TERM + offset;
 
-  const int conv_bound_term = CONV_BOUND_TERM + offset;
-  const int visc_bound_term = VISC_BOUND_TERM + offset;
-
-  /*--- Definition of the convective scheme for each equation and mesh level. Also for boundary conditions. ---*/
+  /*--- Species transport drives its interior loop and boundaries through its own
+   * CScalarFlux_Species edge kernel (see CSpeciesSolver), so conv_term/visc_term/
+   * conv_bound_term/visc_bound_term are never set here; this switch only checks the config
+   * value. ---*/
 
   switch (config->GetKind_ConvNumScheme_Species()) {
     case NONE :
       break;
     case SPACE_UPWIND :
-      for (auto iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        numerics[iMGlevel][SPECIES_SOL][conv_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
-        numerics[iMGlevel][SPECIES_SOL][conv_bound_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
-      }
       break;
     default :
       SU2_MPI::Error("Invalid convective scheme for the species transport equations. Use SCALAR_UPWIND.", CURRENT_FUNCTION);
       break;
-  }
-
-  /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
-  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    numerics[iMGlevel][SPECIES_SOL][visc_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, true, config);
-    numerics[iMGlevel][SPECIES_SOL][visc_bound_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, false, config);
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1420,14 +1330,12 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
   }
 }
 
-/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
+/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp.
+ * NEMO has no explicit instantiation: the call site below errors before reaching NEMO indices. ---*/
 template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
-
-template void CDriver::InstantiateSpeciesNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
@@ -2038,9 +1946,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
     if (incompressible)
       InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
                                                                                  solver[MESH_0][TURB_SOL], numerics);
-    else if (NEMO_ns)
-      InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
-                                                                                  solver[MESH_0][TURB_SOL], numerics);
     else
       InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
                                                                               solver[MESH_0][TURB_SOL], numerics);
@@ -2051,9 +1956,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
     if (incompressible)
       InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
                                                                                  solver[MESH_0][TRANS_SOL], numerics);
-    else if (NEMO_ns)
-      InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
-                                                                                  solver[MESH_0][TRANS_SOL], numerics);
     else
       InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
                                                                               solver[MESH_0][TRANS_SOL], numerics);
@@ -2074,24 +1976,16 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
   /*--- Solver definition of the finite volume heat solver  ---*/
   if (heat) {
+    /*--- Heat drives its interior loop and boundaries through its own CScalarFlux_Heat edge
+     * kernel (see CHeatSolver), so conv_term/visc_term/conv_bound_term/visc_bound_term are never
+     * set here; this switch only checks the config value. ---*/
 
-    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
-      numerics[iMGlevel][HEAT_SOL][visc_term] = new CAvgGrad_Heat(nDim, config, true);
-      numerics[iMGlevel][HEAT_SOL][visc_bound_term] = new CAvgGrad_Heat(nDim, config, false);
-
-      switch (config->GetKind_ConvNumScheme_Heat()) {
-
-        case SPACE_UPWIND :
-          numerics[iMGlevel][HEAT_SOL][conv_term] = new CUpwSca_Heat(nDim, config);
-          numerics[iMGlevel][HEAT_SOL][conv_bound_term] = new CUpwSca_Heat(nDim, config);
-          break;
-
-        default:
-          SU2_MPI::Error("Invalid convective scheme for the heat transfer equations.", CURRENT_FUNCTION);
-          break;
-      }
+    switch (config->GetKind_ConvNumScheme_Heat()) {
+      case SPACE_UPWIND:
+        break;
+      default:
+        SU2_MPI::Error("Invalid convective scheme for the heat transfer equations.", CURRENT_FUNCTION);
+        break;
     }
   }
 
