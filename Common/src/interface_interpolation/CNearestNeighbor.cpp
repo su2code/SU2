@@ -111,6 +111,57 @@ void CNearestNeighbor::SetTransferCoeff(CGeometry**** geometry, const CConfig* c
         /*--- Coordinates of the target point. ---*/
         const su2double* Coord_i = target_geometry->nodes->GetCoord(Point_Target);
 
+        /*--- If the relative-frame sliding plane is active, precompute (once per target vertex, not per
+         *    donor candidate) the rotated target coordinate and the donor-zone rotation matrix: both are
+         *    invariant across every donor candidate visited in the loop below. ---*/
+        const bool relframe_sp =
+            config[targetZone]->GetBoolRelFrame_SlidingPlane() || config[donorZone]->GetBoolRelFrame_SlidingPlane();
+        su2double rotCoord_i[3] = {0.0, 0.0, 0.0};
+        su2double donorRotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+        bool rotate_donor = false;
+        const su2double zeros[3] = {0.0};
+
+        if (relframe_sp) {
+          for (unsigned short iDim = 0; iDim < 3; iDim++) rotCoord_i[iDim] = Coord_i[iDim];
+
+          if (config[targetZone]->GetRotating_Frame() == YES) {
+            su2double Omega_i[3] = {0.0, 0.0, 0.0};
+            su2double dt = config[targetZone]->GetDelta_UnstTimeND();
+            unsigned long TimeIter = config[targetZone]->GetTimeIter();
+            for (unsigned short iDim = 0; iDim < 3; iDim++) {
+              Omega_i[iDim] = config[targetZone]->GetRotation_Rate(iDim) / config[targetZone]->GetOmega_Ref();
+            }
+
+            /*--- Compute the rotation matrix. Note that the implicit
+            ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            su2double Theta = Omega_i[0] * dt * TimeIter;
+            su2double Phi = Omega_i[1] * dt * TimeIter;
+            su2double Psi = Omega_i[2] * dt * TimeIter;
+            su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+            GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+
+            /*--- Compute transformed point coordinates. ---*/
+            GeometryToolbox::Rotate(rotMatrix, zeros, Coord_i, rotCoord_i);
+          }
+
+          if (config[donorZone]->GetRotating_Frame() == YES) {
+            rotate_donor = true;
+            su2double Omega_j[3] = {0.0, 0.0, 0.0};
+            su2double dt = config[donorZone]->GetDelta_UnstTimeND();
+            unsigned long TimeIter = config[donorZone]->GetTimeIter();
+            for (unsigned short iDim = 0; iDim < 3; iDim++) {
+              Omega_j[iDim] = config[donorZone]->GetRotation_Rate(iDim) / config[donorZone]->GetOmega_Ref();
+            }
+
+            /*--- Compute the rotation matrix. Note that the implicit
+            ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            su2double Theta = Omega_j[0] * dt * TimeIter;
+            su2double Phi = Omega_j[1] * dt * TimeIter;
+            su2double Psi = Omega_j[2] * dt * TimeIter;
+            GeometryToolbox::RotationMatrix(Theta, Phi, Psi, donorRotMatrix);
+          }
+        }
+
         /*--- Compute all distances. ---*/
         for (int iProcessor = 0, iDonor = 0; iProcessor < nProcessor; ++iProcessor) {
           for (auto jVertex = 0ul; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++jVertex) {
@@ -118,57 +169,10 @@ void CNearestNeighbor::SetTransferCoeff(CGeometry**** geometry, const CConfig* c
             const auto pGlobalPoint = Buffer_Receive_GlobalPoint[idx];
             const su2double* Coord_j = Buffer_Receive_Coord[idx];
 
-            bool relframe_sp_target = config[targetZone]->GetBoolRelFrame_SlidingPlane();
-            bool relframe_sp_donor = config[donorZone]->GetBoolRelFrame_SlidingPlane();
-
-            /*--- Rotate the points before matching if sliding plane for relative frame is activated ---*/
-            if (relframe_sp_target || relframe_sp_donor) {
-              su2double Theta, Phi, Psi;
-              su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};
-              su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
-              const su2double zeros[3] = {0.0};
-              for (unsigned short iDim = 0; iDim < 3; iDim++) {
-                rotCoord_i[iDim] = Coord_i[iDim];
-                rotCoord_j[iDim] = Coord_j[iDim];
-              }
-
-              if (config[targetZone]->GetRotating_Frame() == YES) {
-                su2double Omega_i[3] = {0.0, 0.0, 0.0};
-                su2double dt = config[targetZone]->GetDelta_UnstTimeND();
-                unsigned long TimeIter = config[targetZone]->GetTimeIter();
-                for (unsigned short iDim = 0; iDim < 3; iDim++) {
-                  Omega_i[iDim] = config[targetZone]->GetRotation_Rate(iDim) / config[targetZone]->GetOmega_Ref();
-                }
-
-                /*--- Compute the rotation matrix. Note that the implicit
-                ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-                Theta = Omega_i[0] * dt * TimeIter;
-                Phi = Omega_i[1] * dt * TimeIter;
-                Psi = Omega_i[2] * dt * TimeIter;
-                GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
-
-                /*--- Compute transformed point coordinates. ---*/
-                GeometryToolbox::Rotate(rotMatrix, zeros, Coord_i, rotCoord_i);
-              }
-
-              if (config[donorZone]->GetRotating_Frame() == YES) {
-                su2double Omega_j[3] = {0.0, 0.0, 0.0};
-                su2double dt = config[donorZone]->GetDelta_UnstTimeND();
-                unsigned long TimeIter = config[donorZone]->GetTimeIter();
-                for (unsigned short iDim = 0; iDim < 3; iDim++) {
-                  Omega_j[iDim] = config[donorZone]->GetRotation_Rate(iDim) / config[donorZone]->GetOmega_Ref();
-                }
-
-                /*--- Compute the rotation matrix. Note that the implicit
-                ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-                Theta = Omega_j[0] * dt * TimeIter;
-                Phi = Omega_j[1] * dt * TimeIter;
-                Psi = Omega_j[2] * dt * TimeIter;
-                GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
-
-                /*--- Compute transformed point coordinates. ---*/
-                GeometryToolbox::Rotate(rotMatrix, zeros, Coord_j, rotCoord_j);
-              }
+            /*--- Rotate the donor point before matching if sliding plane for relative frame is activated. ---*/
+            if (relframe_sp) {
+              su2double rotCoord_j[3] = {Coord_j[0], Coord_j[1], Coord_j[2]};
+              if (rotate_donor) GeometryToolbox::Rotate(donorRotMatrix, zeros, Coord_j, rotCoord_j);
 
               const auto dist2 = GeometryToolbox::SquaredDistance(nDim, rotCoord_i, rotCoord_j);
               donorInfo[iDonor++] = DonorInfo(dist2, pGlobalPoint, iProcessor);

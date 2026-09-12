@@ -56,16 +56,15 @@ public:
 
   /*!
   * \brief Rotate the velocity if rotating frame is applied.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.   
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
    * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] target_config - Definition of the problem at the donor mesh.   
-   * \param[in] target_geometry - Geometry of the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
    */
-  void GetDonor_Velocity_RotatingFrame(const CConfig *donor_config, CGeometry *donor_geometry, 
+  void GetDonor_Velocity_RotatingFrame(const CConfig *donor_config, CGeometry *donor_geometry,
                                  const CConfig *target_config, CGeometry *target_geometry) override;
 
-
-  /*!  
+  /*!
    * \brief A virtual member, initializes the target variable for sliding mesh.
    * \param[in] target_solution - Solution from the target mesh.
    * \param[in] Marker_Target - Index of the target marker.
