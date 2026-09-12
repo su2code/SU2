@@ -4230,7 +4230,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
     if (Time_Domain) {
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES,\n"
-                     "       the Rhie-Chow mass flux interpolation has no transient term.", CURRENT_FUNCTION);
+                     "       CPBFluidIteration never calls SetDualTime_Solver/SetDualTime_Geometry\n"
+                     "       for any solver, so there is no time-history bookkeeping at all, not\n"
+                     "       just a missing Rhie-Chow transient term.", CURRENT_FUNCTION);
     }
     if (DiscreteAdjoint || ContinuousAdjoint) {
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED has no adjoint formulation.", CURRENT_FUNCTION);
