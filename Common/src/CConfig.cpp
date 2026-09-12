@@ -4222,19 +4222,30 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- The pressure-based solver's Poisson equation only runs on the finest grid, its Rhie-Chow
    * mass flux has no pseudo-transient term, it has no adjoint, and its marker switches have no
    * PERIODIC_BOUNDARY case. Fail here instead of silently ignoring the option or erroring deep
-   * inside the first iteration. ---*/
-  if (Kind_Incomp_System == INCOMP_SYSTEM::PRESSURE_BASED) {
+   * inside the first iteration. Gated on the incompressible regime (not just the option's raw
+   * value) since KIND_INCOMP_SYSTEM is read regardless of solver family, and a compressible or
+   * SU2_DEF config that happens to carry a leftover PRESSURE_BASED line (e.g. copied from
+   * config_template.cfg before it defaulted to DENSITY_BASED) must not hard-error here. ---*/
+  if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE && Kind_Incomp_System == INCOMP_SYSTEM::PRESSURE_BASED) {
     if (nMGLevels > 0) {
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support MGLEVEL > 0,\n"
                      "       the Poisson solver is single-grid only.", CURRENT_FUNCTION);
     }
     if (Time_Domain) {
-      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES:\n"
-                     "       enabling it produces a converged-but-wrong solution (spurious O(1)\n"
-                     "       velocity from a near-zero initial condition and far-field, no\n"
-                     "       forcing anywhere) rather than a crash. Root cause not established;\n"
-                     "       see PB_SOLVER_PLAN.md card F10 for what has been ruled out.",
-                     CURRENT_FUNCTION);
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES: enabling it\n"
+                     "       produces a converged-but-wrong solution rather than a crash. Tested on\n"
+                     "       incomp_pb_cylinder.cfg with DUAL_TIME_STEPPING-2ND_ORDER: each time step's\n"
+                     "       inner iterations converge cleanly (monotonic residuals, no oscillation),\n"
+                     "       but to a self-consistent, physically wrong state - pressure swinging to\n"
+                     "       roughly +-965 and velocity reaching 1.88 from an initial condition and\n"
+                     "       far-field value of 0.000008 (six orders of magnitude smaller) with no\n"
+                     "       forcing anywhere in the domain. Ruled out a mundane TIME_STEP/flow-timescale\n"
+                     "       mismatch: a 10000x larger TIME_STEP did not converge toward the right answer\n"
+                     "       and even flipped sign between steps. Root cause not established; leading\n"
+                     "       candidates are an interaction between the dual-time Jacobian term (added\n"
+                     "       automatically via CIntegration's shared SetResidual_DualTime call) and\n"
+                     "       SetMomCoeff's A_p, or a missing explicit unsteady correction term in the\n"
+                     "       Rhie-Chow interpolation itself.", CURRENT_FUNCTION);
     }
     if (DiscreteAdjoint || ContinuousAdjoint) {
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED has no adjoint formulation.", CURRENT_FUNCTION);

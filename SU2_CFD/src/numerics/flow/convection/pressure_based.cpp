@@ -134,7 +134,14 @@ void CPBConvection_Base::ComputeJacobian(su2double val_density, const su2double 
 
   su2double proj_vel = MassFlux / MeanDensity;
 
-  /*--- Fill continuity parts ---*/
+  /*--- Fill continuity parts. Flux[0] is MassFlux itself, which - like the momentum block below -
+  is frozen at this stage of the outer iteration, so d(Flux[0])/du is exactly zero; the nonzero
+  entries below are pre-existing and not exact w.r.t. that reasoning. They are harmless in every
+  case this solver currently supports: CIncEulerSolver::PrepareImplicitIteration unconditionally
+  deletes row 0 of the Jacobian for INCOMP_SYSTEM::PRESSURE_BASED (the continuity equation is
+  solved by the Poisson correction instead), so whatever this row contributes here is discarded
+  before the linear system is assembled. Left as-is rather than zeroed, to avoid asserting a
+  derivation that hasn't actually been worked out. ---*/
 
   val_Proj_Jac_Tensor[0][0] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -154,7 +161,11 @@ void CPBConvection_Base::ComputeJacobian(su2double val_density, const su2double 
     }
   }
 
-  /*--- Fill enthalpy parts ---*/
+  /*--- Fill enthalpy parts. Same caveat as the continuity row above: some of these entries carry
+  proj_vel (i.e. an implicit dependence on the frozen MassFlux) that the momentum block's reasoning
+  says shouldn't be there. Unlike the continuity row this one is not discarded - the energy equation
+  is not row-deleted - but no currently-registered pressure-based regression case runs with
+  INC_ENERGY_EQUATION= YES, so this path has not been exercised or re-derived here. ---*/
 
   val_Proj_Jac_Tensor[nDim+1][0] = 0.0;
   val_Proj_Jac_Tensor[0][nDim+1] = val_scale * ((val_dRhodh) * proj_vel);
