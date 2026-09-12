@@ -48,7 +48,16 @@ class CMultiGridGeometry final : public CGeometry {
    * \return <code>TRUE</code> or <code>FALSE</code> depending if the control volume can be agglomerated.
    */
   bool SetBoundAgglomeration(unsigned long CVPoint, vector<short> marker_seed, const CGeometry* fine_grid,
-                             const CConfig* config) const;
+                             const CConfig* config, const vector<char>& mixedBC) const;
+
+  /*!
+   * \brief Find nodes where two boundary conditions of different type meet. These are never
+   *        agglomerated, since a coarse CV holding one would average both conditions.
+   * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \return One flag per fine grid point, set where that point must stay on its own.
+   */
+  vector<char> FindMixedBoundaryNodes(const CGeometry* fine_grid, const CConfig* config) const;
 
   /*!
    * \brief Determine if a Point can be agglomerated using geometrical criteria.
@@ -78,16 +87,63 @@ class CMultiGridGeometry final : public CGeometry {
   su2double ComputeLocalCurvature(const CGeometry* fine_grid, unsigned long iPoint, unsigned short iMarker) const;
 
   /*!
-   * \brief Agglomerate high-aspect-ratio interior cells along implicit lines from wall vertices.
+   * \brief Pave the domain with advancing fronts extruded from the boundary patches.
    * \param[in,out] Index_CoarseCV - Current coarse CV index, incremented as new coarse CVs are created.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Configuration.
-   * \param[in,out] MGQueue_InnerCV - Queue for domain agglomeration; processed points are removed.
+   * \param[in] iMesh - Multigrid level being built, used to label the summary.
+   * \param[in] mixedBC - Nodes that must stay on their own, from FindMixedBoundaryNodes.
+   * \param[in] onPhysBoundary - Nodes carrying a physical boundary condition, excluding SEND_RECEIVE.
+   * \param[out] neverGrewCV - Coarse CV index of every front whose stack never advanced past its
+   *             seed layer. Such a CV gives up nothing by losing the stack-base protection below,
+   *             and protecting it anyway can leave it orders of magnitude smaller than its
+   *             neighbours (a seed sized to a single fine cell, most often at a thin near-wall
+   *             layer), which destabilises the FAS correction at coarser levels.
+   * \return Summary of the paving, empty except on the master rank.
    */
-  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
-                                CMultiGridQueue& MGQueue_InnerCV);
+  string PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
+                                  unsigned short iMesh, const vector<char>& mixedBC,
+                                  const vector<char>& onPhysBoundary, vector<unsigned long>& neverGrewCV);
+
+  /*!
+   * \brief Boundary nodes that seed a front, with the direction each starts marching in.
+   */
+  struct CFrontSeeds {
+    vector<unsigned long> node;                    /*!< \brief Seed node on the boundary. */
+    vector<std::array<su2double, MAXNDIM>> normal; /*!< \brief Unit normal there, pointing into the domain. */
+    unsigned long nRefusedCurvature = 0; /*!< \brief Euler wall nodes the curvature limit kept out. */
+  };
+
+  /*!
+   * \brief Collect the boundary nodes that seed an advancing front: those on a viscous wall, or on a
+   *        boundary carrying a stretched layer normal to itself.
+   * \param[in] fine_grid - Fine grid geometry.
+   * \param[in] config - Definition of the particular problem.
+   * \return Seed nodes and their inward boundary normals.
+   */
+  CFrontSeeds SeedFrontNodes(const CGeometry* fine_grid, const CConfig* config) const;
+
+  /*!
+   * \brief Partition the seed nodes into compact surface patches by repeated pairwise matching. Each
+   *        patch is the footprint of one front and fixes the shape of the stack above it.
+   * \param[in] seeds - Seed nodes from SeedFrontNodes.
+   * \param[in] fine_grid - Fine grid geometry.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] mixedBC - Nodes that must stay on their own, from FindMixedBoundaryNodes.
+   * \return One vector of indices into seeds.node per patch, at most two entries in 2D, four in 3D.
+   */
+  vector<vector<unsigned long>> BuildFrontPatches(const CFrontSeeds& seeds, const CGeometry* fine_grid,
+                                                  const CConfig* config, const vector<char>& mixedBC) const;
+
+  string pavingReport; /*!< \brief Paving summary for this level. */
 
  public:
+  /*!
+   * \brief Get the paving summary for this level, for console output.
+   * \return Summary text, empty except on the master rank.
+   */
+  const string& GetPavingReport() const { return pavingReport; }
+
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetBoundControlVolume;
   using CGeometry::SetControlVolume;

@@ -657,6 +657,15 @@ class CPoint {
   }
 
   /*!
+   * \brief Set all the children control volumes of an agglomerated control volume at once.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] children_CV - Indices of the children control volumes.
+   */
+  inline void SetChildren_CV(unsigned long iPoint, const vector<unsigned long>& children_CV) {
+    Children_CV[iPoint] = children_CV;
+  }
+
+  /*!
    * \brief Get the parent control volume of an agglomerated control volume.
    * \param[in] iPoint - Index of the point.
    * \return Index of the parent control volume.
@@ -672,6 +681,14 @@ class CPoint {
   inline unsigned long GetChildren_CV(unsigned long iPoint, unsigned short nchildren_CV) const {
     return Children_CV[iPoint][nchildren_CV];
   }
+
+  /*!
+   * \brief Get the children control volumes of an agglomerated control volume. Only the first
+   *        GetnChildren_CV entries are meaningful, the storage may be longer.
+   * \param[in] iPoint - Index of the point.
+   * \return Indices of the children control volumes.
+   */
+  inline const vector<unsigned long>& GetChildren_CV(unsigned long iPoint) const { return Children_CV[iPoint]; }
 
   /*!
    * \brief Get information about if a control volume has been agglomerated.
