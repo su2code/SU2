@@ -161,18 +161,26 @@ void CPBConvection_Base::ComputeJacobian(su2double val_density, const su2double 
     }
   }
 
-  /*--- Fill enthalpy parts. Same caveat as the continuity row above: some of these entries carry
-  proj_vel (i.e. an implicit dependence on the frozen MassFlux) that the momentum block's reasoning
-  says shouldn't be there. Unlike the continuity row this one is not discarded - the energy equation
-  is not row-deleted - but no currently-registered pressure-based regression case runs with
-  INC_ENERGY_EQUATION= YES, so this path has not been exercised or re-derived here. ---*/
+  /*--- Fill enthalpy parts. Flux[nDim+1] = MassFlux * AdvectedEnthalpy (frozen MassFlux, AdvectedEnthalpy
+  a weight_jacobian-based average of h_i/h_j only), so - by the exact same frozen-mass-flux reasoning as
+  the momentum block above - it has zero dependence on velocity, and Flux[1+iDim] = MassFlux *
+  AdvectedVelocity[iDim] has zero dependence on enthalpy. The two velocity<->enthalpy cross-coupling
+  entries below were previously nonzero, carrying the standard compressible-flow d(rho*u.n*h)/du and
+  d(rho*u.n)/dh terms that assume the mass flux is NOT frozen; under the frozen-mass-flux PB
+  formulation these are spurious. Verified empirically: with them left in, a viscous PB case with
+  INC_ENERGY_EQUATION= YES (isothermal wall, otherwise-converging config) diverges - rms[U] stalls at
+  -0.38 with 1000+ non-physical points and the temperature field swinging between 0K and ~5000K
+  regardless of CFL (tried 50 and 1) - while the exact same physics on the density-based path converges
+  cleanly to a sane field. Zeroing them removes the spurious coupling; see pressure_based_energy note in
+  PB_SOLVER_PLAN.md card X-1 for the before/after. The diagonal energy entry keeps the same
+  val_density*proj_vel structure as the accepted momentum diagonal above, so it is left untouched. ---*/
 
   val_Proj_Jac_Tensor[nDim+1][0] = 0.0;
   val_Proj_Jac_Tensor[0][nDim+1] = val_scale * ((val_dRhodh) * proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*(((val_enthalpy)*(val_dRhodh) + (val_density))*proj_vel);
   for (iDim = 0; iDim < nDim; iDim++) {
-    val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale * ((val_enthalpy) * Normal[iDim] * (val_density));
-    val_Proj_Jac_Tensor[iDim+1][nDim+1] = val_scale*((val_dRhodh) * val_velocity[iDim] * proj_vel);
+    val_Proj_Jac_Tensor[nDim+1][iDim+1] = 0.0;
+    val_Proj_Jac_Tensor[iDim+1][nDim+1] = 0.0;
   }
 
 }
