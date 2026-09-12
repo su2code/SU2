@@ -482,14 +482,6 @@ void CCGNSMeshReaderFVM::ReadCGNSSurfaceSection(int val_section) {
   char sectionName[CGNS_STRING_SIZE];
 
   if (rank == MASTER_NODE) {
-    /*--- Allocate some memory for the handling the connectivity
-     and auxiliary data that we are need to communicate. ---*/
-
-    vector<cgsize_t> connElemCGNS(nElems[val_section] * SU2_CONN_SIZE, 0);
-    vector<unsigned short> elemTypes(nElems[val_section], 0);
-    vector<unsigned short> nPoinPerElem(nElems[val_section], 0);
-    vector<unsigned long> elemGlobalID(nElems[val_section], 0);
-
     /*--- Read the section info again ---*/
 
     if (cg_section_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, sectionName, &elemType, &startE, &endE,
