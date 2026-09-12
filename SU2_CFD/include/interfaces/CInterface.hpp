@@ -132,12 +132,12 @@ protected:
 
   /*!
    * \brief A virtual member.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.   
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
    * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] target_config - Definition of the problem at the donor mesh.   
-   * \param[in] target_geometry - Geometry of the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
    */
-  inline virtual void GetDonor_Velocity_RotatingFrame(const CConfig *donor_config, CGeometry *donor_geometry, 
+  inline virtual void GetDonor_Velocity_RotatingFrame(const CConfig *donor_config, CGeometry *donor_geometry,
                                  const CConfig *target_config, CGeometry *target_geometry) {}
 
   /*!
