@@ -4229,10 +4229,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                      "       the Poisson solver is single-grid only.", CURRENT_FUNCTION);
     }
     if (Time_Domain) {
-      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES,\n"
-                     "       CPBFluidIteration never calls SetDualTime_Solver/SetDualTime_Geometry\n"
-                     "       for any solver, so there is no time-history bookkeeping at all, not\n"
-                     "       just a missing Rhie-Chow transient term.", CURRENT_FUNCTION);
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES:\n"
+                     "       enabling it produces a converged-but-wrong solution (spurious O(1)\n"
+                     "       velocity from a near-zero initial condition and far-field, no\n"
+                     "       forcing anywhere) rather than a crash. Root cause not established;\n"
+                     "       see PB_SOLVER_PLAN.md card F10 for what has been ruled out.",
+                     CURRENT_FUNCTION);
     }
     if (DiscreteAdjoint || ContinuousAdjoint) {
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED has no adjoint formulation.", CURRENT_FUNCTION);
