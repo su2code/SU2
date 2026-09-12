@@ -370,10 +370,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   auto *Diff      = new su2double[nVar];
   auto *Und_Lapl  = new su2double[nVar];
-  auto *Sol_Min   = new su2double[nPrimVarGrad];
-  auto *Sol_Max   = new su2double[nPrimVarGrad];
-  auto *rotPrim_i = new su2double[nPrimVar];
-  auto *rotPrim_j = new su2double[nPrimVar];
+  auto *Sol_Min   = new su2double[std::max(nVar, nPrimVarGrad)];
+  auto *Sol_Max   = new su2double[std::max(nVar, nPrimVarGrad)];
+  auto *rotPrim_i = new su2double[std::max(nVar, nPrimVar)];
+  auto *rotPrim_j = new su2double[std::max(nVar, nPrimVar)];
 
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
   const su2double *Coord_i, *Coord_j;
