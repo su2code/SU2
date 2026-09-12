@@ -104,6 +104,11 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     switch (config_container[iZone]->GetKind_GridMovement()){
       case RIGID_MOTION:
         prefixed_motion[iZone] = true; break;
+      case ROTATING_FRAME:
+        /*--- A non-deforming rotating-frame zone only needs its interface transfer coefficients
+         *    refreshed every time step when the relative-frame sliding-plane feature is active;
+         *    otherwise its interpolation weights are constant like any other static zone. ---*/
+        prefixed_motion[iZone] = config_container[iZone]->GetBoolRelFrame_SlidingPlane(); break;
       default:
         prefixed_motion[iZone] = false; break;
     }
@@ -273,7 +278,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   if (driver_config->GetTime_Domain()) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (unsigned short jZone = 0; jZone < nZone; jZone++){
-        if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr && prefixed_motion[iZone])
+        if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr && (prefixed_motion[iZone] || prefixed_motion[jZone]))
           interpolator_container[iZone][jZone]->SetTransferCoeff(geometry_container, config_container);
       }
     }

@@ -985,6 +985,17 @@ def main():
     uniform_flow.multizone = True
     test_list.append(uniform_flow)
 
+    # Inlet distortion, relative-frame sliding plane (rotating-frame zone with a non-deforming grid)
+    inlet_distortion_relative_frame         = TestCase('inlet_distortion_relative_frame')
+    inlet_distortion_relative_frame.cfg_dir   = "sliding_interface/inlet_distortion_relative_frame"
+    inlet_distortion_relative_frame.cfg_file  = "duct_unsteady.cfg"
+    inlet_distortion_relative_frame.test_iter = 4
+    inlet_distortion_relative_frame.test_vals = [4.000000, 0.000000, -0.100233, -0.079874]
+    inlet_distortion_relative_frame.tol       = 0.000001
+    inlet_distortion_relative_frame.unsteady  = True
+    inlet_distortion_relative_frame.multizone = True
+    test_list.append(inlet_distortion_relative_frame)
+
     # Channel_2D, native SU2 binary mesh format (.su2b)
     # channel_2D_WA.cfg loads channel_2D_su2bin.su2b directly, so SU2_DEF must
     # first convert channel_2D.su2 (3 zones) into that binary mesh.
