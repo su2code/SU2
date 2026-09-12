@@ -1,0 +1,4 @@
+[wrap-git]
+url = https://github.com/wolfpld/tracy.git
+revision = v0.12.2
+depth = 1

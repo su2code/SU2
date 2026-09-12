@@ -2,14 +2,14 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-  kappa = config->GetRoe_Kappa(); // 1 is unstable
+  kappa = config->GetRoe_Kappa();
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -109,7 +109,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
   }
 
-  /*--- Face area (norm or the normal vector) and unit normal ---*/
+  /*--- Face area (norm of the normal vector) and unit normal ---*/
 
   Area = GeometryToolbox::Norm(nDim, Normal);
 
@@ -170,7 +170,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- P tensor ---*/
 
-  GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
+  GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor);
 
   /*--- Projected velocity adjusted for mesh motion ---*/
 
@@ -244,6 +244,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
 
   AD::SetPreaccOut(Flux, nVar);
+  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
   AD::EndPreacc();
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
@@ -259,7 +261,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   unsigned short iVar, jVar, kVar;
 
   /*--- Compute inverse P tensor ---*/
-  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -349,7 +351,7 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- If implicit use the Jacobians of the standard Roe scheme as an approximation ---*/
 
-  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
@@ -422,7 +424,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- If implicit use the Jacobians of the standard Roe scheme as an approximation ---*/
 
-  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
@@ -683,7 +685,7 @@ CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-  kappa = config->GetRoe_Kappa(); // 1 is unstable
+  kappa = config->GetRoe_Kappa();
 
 
   Flux = new su2double [nVar];

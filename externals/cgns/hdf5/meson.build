@@ -16,7 +16,9 @@ if target_machine.system() != 'windows' and cc.get_id() != 'intel'
                       '-Wno-pedantic',
                       '-Wno-error=stringop-truncation',
                       '-Wno-error=cast-function-type',
-                      '-Wno-stringop-truncation']
+                      '-Wno-stringop-truncation',
+                      '-Wno-dangling-pointer',
+                      '-Wno-format-truncation']
   foreach flag : desired_warnings
     if cc.has_argument(flag)
       hdf5_default_warnings += flag

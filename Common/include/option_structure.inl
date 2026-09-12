@@ -3,14 +3,14 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "option_structure.hpp"
 #include "parallelization/mpi_structure.hpp"
 using namespace std;
 
@@ -232,18 +233,19 @@ class COptionEnumList final : public COptionBase {
 
 template <class Type>
 class COptionArray final : public COptionBase {
-  string name;     // Identifier for the option
-  const int size;  // Number of elements
-  Type* field;     // Reference to the field
+  string name;             // Identifier for the option
+  const int size;          // Number of elements
+  const bool allow_fewer;  // Allow smaller size
+  Type* field;             // Reference to the field
 
  public:
-  COptionArray(string option_field_name, const int list_size, Type* option_field)
-      : name(option_field_name), size(list_size), field(option_field) {}
+  COptionArray(string option_field_name, const int list_size, const bool allow_fewer, Type* option_field)
+      : name(std::move(option_field_name)), size(list_size), allow_fewer(allow_fewer), field(option_field) {}
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     // Check that the size is correct
-    if (option_value.size() != (unsigned long)this->size) {
+    if ((option_value.size() < size_t(size) && !allow_fewer) || option_value.size() > size_t(size)) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": wrong number of arguments: ");
@@ -257,7 +259,7 @@ class COptionArray final : public COptionBase {
       newstring.append(" found");
       return newstring;
     }
-    for (int i = 0; i < this->size; i++) {
+    for (size_t i = 0; i < option_value.size(); i++) {
       istringstream is(option_value[i]);
       if (!(is >> field[i])) {
         return badValue(" array", this->name);
@@ -569,6 +571,9 @@ class COptionDVParam : public COptionBase {
           break;
         case HICKS_HENNE:
           nParamDV[iDV] = 2;
+          break;
+        case HICKS_HENNE_CAMBER:
+          nParamDV[iDV] = 1;
           break;
         case SURFACE_BUMP:
           nParamDV[iDV] = 3;
@@ -1096,6 +1101,21 @@ struct CStringValuesListHelper<T*> {
 };
 
 // Class where the option is represented by (string, N * "some type", string, N * "some type", ...)
+/*!
+ * \brief Whether a config token is a numeric value rather than a name.
+ *
+ * Options that interleave marker names with numbers have to tell the two apart. Testing the first
+ * character for a letter is not enough: mesh formats such as CGNS routinely produce boundary names
+ * that begin with a digit (4000_QUAD_4_Bdy6), which such a test reads as a value. Requiring the
+ * whole token to parse as a number is unambiguous for every name that is not purely numeric.
+ */
+inline bool IsNumericToken(const std::string& token) {
+  if (token.empty()) return false;
+  char* end = nullptr;
+  std::strtod(token.c_str(), &end);
+  return (end != token.c_str()) && (*end == '\0');
+}
+
 template <class Type>
 class COptionStringValuesList final : public COptionBase {
   const string name;                     // identifier for the option
@@ -1138,15 +1158,20 @@ class COptionStringValuesList final : public COptionBase {
       return "";
     }
 
-    /*--- Determine the number of strings: A new string is found if the first char in the option is a letter.
-     * This will fail in if a string starts with a number! Additionally, determine the number of values that
-     * are prescribed per string. ---*/
+    /*--- Determine the number of strings: a field that does not parse as a number starts a new string,
+     * anything that does is one of its values. Testing only the first character for a letter would
+     * misread the digit-leading marker names that CGNS meshes produce. Additionally, determine the
+     * number of values that are prescribed per string. ---*/
     vector<unsigned short> num_vals_per_string;
     /*--- Loop through the fields of the option. ---*/
     for (const auto& val : option_value) {
-      if (isalpha(val[0])) {
+      if (!IsNumericToken(val)) {
         num_vals_per_string.push_back(0);
       } else {
+        if (num_vals_per_string.empty())
+          SU2_MPI::Error(name + string(" must begin with a marker name, but starts with the value \"") + val +
+                             string("\". A marker whose name is purely numeric cannot be told apart from a value."),
+                         CURRENT_FUNCTION);
         num_vals_per_string.back()++;
       }
     }
@@ -1294,6 +1319,170 @@ class COptionRiemann : public COptionBase {
     this->var2 = nullptr;
     this->flowdir = nullptr;
     this->size = 0;  // There is no default value for list
+  }
+};
+
+template <class Tenum>
+class COptionWallSpecies : public COptionBase {
+ protected:
+  map<string, Tenum> m;
+  string name;  // identifier for the option
+  unsigned short& size;
+  string*& marker;
+  WALL_SPECIES_TYPE**& field;  // Reference to the field name (now 2D: marker x species)
+  su2double**& value;          // Now 2D: marker x species
+  unsigned short& nSpecies_per_Wall;
+
+ public:
+  COptionWallSpecies(string option_field_name, unsigned short& nMarker_Wall_Species, string*& Marker_Wall_Species,
+                     WALL_SPECIES_TYPE**& option_field, const map<string, Tenum> m, su2double**& value,
+                     unsigned short& nSpecies_per_Wall)
+      : size(nMarker_Wall_Species),
+        marker(Marker_Wall_Species),
+        field(option_field),
+        value(value),
+        nSpecies_per_Wall(nSpecies_per_Wall) {
+    this->name = option_field_name;
+    this->m = m;
+  }
+  ~COptionWallSpecies() override {
+    if (marker) {
+      delete[] marker;
+      marker = nullptr;
+    }
+    if (field) {
+      for (unsigned short i = 0; i < size; i++) {
+        delete[] field[i];
+      }
+      delete[] field;
+      field = nullptr;
+    }
+    if (value) {
+      for (unsigned short i = 0; i < size; i++) {
+        delete[] value[i];
+      }
+      delete[] value;
+      value = nullptr;
+    }
+  }
+
+  string SetValue(const vector<string>& option_value) override {
+    COptionBase::SetValue(option_value);
+    unsigned short totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker = nullptr;
+      this->field = nullptr;
+      this->value = nullptr;
+      this->nSpecies_per_Wall = 0;
+      return "";
+    }
+
+    /*--- Determine the number of markers and species per marker.
+     * Format: marker1, TYPE1, value1, TYPE2, value2, ..., marker2, TYPE1, value1, ...
+     * Marker names and TYPE keywords are non-numeric fields, values are numeric.
+     * Pattern: marker, (TYPE, value) x N ---*/
+
+    vector<unsigned short> marker_indices;  // Indices where markers start
+    vector<unsigned short> species_counts;  // Number of species per marker
+
+    // Find all marker positions (strings starting with a letter that are not TYPE keywords)
+    for (unsigned short i = 0; i < totalVals; i++) {
+      if (!IsNumericToken(option_value[i])) {
+        // Check if this could be a TYPE keyword (i.e., is it in the enum map?)
+        if (this->m.find(option_value[i]) != m.end()) {
+          continue;  // This is a TYPE keyword, not a marker
+        }
+        // This is a marker name
+        marker_indices.push_back(i);
+      }
+    }
+
+    if (marker_indices.empty()) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": no valid markers found");
+      return newstring;
+    }
+
+    // Calculate number of species for each marker
+    for (size_t i = 0; i < marker_indices.size(); i++) {
+      unsigned short start_idx = marker_indices[i] + 1;  // Start after marker name
+      unsigned short end_idx = (i + 1 < marker_indices.size()) ? marker_indices[i + 1] : totalVals;
+      unsigned short entries = end_idx - start_idx;
+
+      // Each species needs 2 entries: TYPE and value
+      if (entries % 2 != 0) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": each marker must have pairs of (TYPE, value) entries");
+        return newstring;
+      }
+
+      species_counts.push_back(entries / 2);
+    }
+
+    // Check that all markers have the same number of species
+    this->nSpecies_per_Wall = species_counts[0];
+    for (auto count : species_counts) {
+      if (count != this->nSpecies_per_Wall) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": all markers must specify the same number of species");
+        return newstring;
+      }
+    }
+
+    // Allocate arrays
+    this->size = marker_indices.size();
+    this->marker = new string[this->size];
+    this->field = new WALL_SPECIES_TYPE*[this->size];
+    this->value = new su2double*[this->size];
+
+    for (unsigned short i = 0; i < this->size; i++) {
+      this->field[i] = new WALL_SPECIES_TYPE[this->nSpecies_per_Wall];
+      this->value[i] = new su2double[this->nSpecies_per_Wall];
+    }
+
+    // Parse the values
+    for (unsigned short iMarker = 0; iMarker < this->size; iMarker++) {
+      unsigned short marker_idx = marker_indices[iMarker];
+      this->marker[iMarker].assign(option_value[marker_idx]);
+
+      // Parse species data for this marker
+      for (unsigned short iSpecies = 0; iSpecies < this->nSpecies_per_Wall; iSpecies++) {
+        unsigned short type_idx = marker_idx + 1 + 2 * iSpecies;
+        unsigned short val_idx = type_idx + 1;
+
+        // Check TYPE keyword
+        if (this->m.find(option_value[type_idx]) == m.end()) {
+          string str;
+          str.append(this->name);
+          str.append(": invalid option value ");
+          str.append(option_value[type_idx]);
+          str.append(". Check current SU2 options in config_template.cfg.");
+          return str;
+        }
+
+        Tenum val = this->m[option_value[type_idx]];
+        this->field[iMarker][iSpecies] = val;
+
+        istringstream ss_value(option_value[val_idx]);
+        if (!(ss_value >> this->value[iMarker][iSpecies])) {
+          return badValue("WallSpecies", this->name);
+        }
+      }
+    }
+
+    return "";
+  }
+
+  void SetDefault() override {
+    this->marker = nullptr;
+    this->field = nullptr;
+    this->value = nullptr;
+    this->size = 0;  // There is no default value for list
+    this->nSpecies_per_Wall = 0;
   }
 };
 
@@ -1606,11 +1795,15 @@ class COptionTurboPerformance : public COptionBase {
   unsigned short& size;
   string*& marker_turboIn;
   string*& marker_turboOut;
+  string*& markers;
 
  public:
   COptionTurboPerformance(const string option_field_name, unsigned short& nMarker_TurboPerf,
-                          string*& Marker_TurboBoundIn, string*& Marker_TurboBoundOut)
-      : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut) {
+                          string*& Marker_TurboBoundIn, string*& Marker_TurboBoundOut, string*& Marker_Turbomachinery)
+      : size(nMarker_TurboPerf),
+        marker_turboIn(Marker_TurboBoundIn),
+        marker_turboOut(Marker_TurboBoundOut),
+        markers(Marker_Turbomachinery) {
     this->name = option_field_name;
   }
 
@@ -1624,6 +1817,7 @@ class COptionTurboPerformance : public COptionBase {
       this->size = 0;
       this->marker_turboIn = nullptr;
       this->marker_turboOut = nullptr;
+      this->markers = nullptr;
       return "";
     }
 
@@ -1634,8 +1828,14 @@ class COptionTurboPerformance : public COptionBase {
       this->size = 0;
       this->marker_turboIn = nullptr;
       this->marker_turboOut = nullptr;
+      this->markers = nullptr;
       ;
       return newstring;
+    }
+
+    this->markers = new string[totalVals];
+    for (unsigned long i = 0; i < totalVals; i++) {
+      this->markers[i].assign(option_value[i]);
     }
 
     unsigned long nVals = totalVals / mod_num;
@@ -1654,6 +1854,7 @@ class COptionTurboPerformance : public COptionBase {
     this->size = 0;
     this->marker_turboIn = nullptr;
     this->marker_turboOut = nullptr;
+    this->markers = nullptr;
   }
 };
 

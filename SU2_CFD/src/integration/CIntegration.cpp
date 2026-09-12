@@ -2,14 +2,14 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@
 
 
 CIntegration::CIntegration() {
+  SU2_ZONE_SCOPED
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 }
@@ -40,6 +41,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
+
   unsigned short iMarker, KindBC;
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
@@ -81,31 +84,19 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config);
 
-  /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/
+  /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied.
+   Turbomachinery span-wise data structures are only initialized on the fine grid. ---*/
 
-  if (config->GetBoolGiles() && config->GetSpatialFourier()){
+  if (iMesh == MESH_0 && config->GetBoolGiles() && config->GetSpatialFourier()){
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, INFLOW);
-
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, OUTFLOW);
   }
-
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    if (config->GetBoolTurbomachinery()){
-        /*--- Average quantities at the inflow and outflow boundaries ---*/ 
-      solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry,config,INFLOW);
-      solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry, config, OUTFLOW);
-    }
-  }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Weak boundary conditions ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
-      case EULER_WALL:
-        solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
-        break;
       case ACTDISK_INLET:
         solver_container[MainSolver]->BC_ActDisk_Inlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
@@ -131,10 +122,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case GILES_BOUNDARY:
-        solver_container[MainSolver]->BC_Giles(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        /*--- Giles BC uses turbo geometry data only available on the fine grid. ---*/
+        if (iMesh == MESH_0) {
+          solver_container[MainSolver]->BC_Giles(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        }
         break;
       case RIEMANN_BOUNDARY:
-        if (config->GetBoolTurbomachinery()){
+        /*--- TurboRiemann uses turbo geometry data only available on the fine grid. ---*/
+        if (config->GetBoolTurbomachinery() && iMesh == MESH_0){
           solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         }
         else{
@@ -143,9 +138,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
       case FAR_FIELD:
         solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
-        break;
-      case SYMMETRY_PLANE:
-        solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
     }
   }
@@ -195,12 +187,20 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, conv_bound_numerics, config);
   }
 
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker)==SYMMETRY_PLANE)
+        solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+    else if (config->GetMarker_All_KindBC(iMarker)==EULER_WALL)
+        solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+  }
   //AD::ResumePreaccumulation(pausePreacc);
 
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
@@ -222,6 +222,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solver, const CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_PARALLEL
   {
@@ -241,6 +242,7 @@ void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solve
 }
 
 void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_PARALLEL
   {

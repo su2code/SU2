@@ -2,14 +2,14 @@
  * \file CTurboOutput.cpp
  * \brief Source of the Turbomachinery Performance class
  * \author S. Vitale, N. Anand
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,8 +39,7 @@ CTurbomachineryCombinedPrimitiveStates::CTurbomachineryCombinedPrimitiveStates(
     : InletPrimitiveState(inletPrimitiveState), OutletPrimitiveState(outletPrimitiveState) {}
 
 CTurbomachineryState::CTurbomachineryState() {
-  Density = Pressure = Entropy = Enthalpy = Temperature = TotalTemperature = TotalPressure = TotalEnthalpy = 0.0;
-  AbsFlowAngle = FlowAngle = MassFlow = Rothalpy = TotalRelPressure = 0.0;
+  SetZeroValues();
   Area = Radius = 0.0;
 }
 
@@ -60,7 +59,7 @@ void CTurbomachineryState::ComputeState(CFluidModel& fluidModel, const CTurbomac
   Pressure = primitiveState.GetPressure();
   std::vector<su2double> velocity = primitiveState.GetVelocity();
   Velocity.assign(velocity.begin(), velocity.end());
-  su2double tangVel = primitiveState.GetTangVelocity();
+  TangVelocity = primitiveState.GetTangVelocity();
 
   /*--- Compute static TD quantities ---*/
   fluidModel.SetTDState_Prho(Pressure, Density);
@@ -81,10 +80,10 @@ void CTurbomachineryState::ComputeState(CFluidModel& fluidModel, const CTurbomac
   std::for_each(Mach.begin(), Mach.end(), [&](su2double& el) { el /= soundSpeed; });
 
   /*--- Compute relative kinematic quantities ---*/
-  su2double tangVel2 = tangVel * tangVel;
+  su2double tangVel2 = TangVelocity * TangVelocity;
   RelVelocity.assign(Velocity.begin(), Velocity.end());
-  RelVelocity[1] -= tangVel;
-  su2double relVel2 = GetRelVelocityValue();
+  RelVelocity[1] -= TangVelocity;
+  su2double relVel2 = GetRelVelocityValue() * GetRelVelocityValue();
   FlowAngle = atan(RelVelocity[1] / RelVelocity[0]);
   RelMach.assign(RelVelocity.begin(), RelVelocity.end());
   std::for_each(RelMach.begin(), RelMach.end(), [&](su2double& el) { el /= soundSpeed; });
@@ -160,51 +159,46 @@ void CPropellorBladePerformance::ComputePerformance(const CTurbomachineryCombine
   // TODO: to be implemented
 }
 
-CTurboOutput::CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel) {
-  unsigned short nBladesRow = config[ZONE_0]->GetnMarker_Turbomachinery();
+CTurboOutput::CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel, unsigned short iBladeRow) {
   unsigned short nDim = geometry.GetnDim();
 
-  for (unsigned short iBladeRow = 0; iBladeRow < nBladesRow; iBladeRow++) {
-    vector<shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
-    unsigned short nSpan = config[iBladeRow]->GetnSpanWiseSections();
-    for (unsigned short iSpan = 0; iSpan < nSpan + 1; iSpan++) {
-      su2double areaIn = geometry.GetSpanAreaIn(iBladeRow, iSpan);
-      su2double areaOut = geometry.GetSpanAreaOut(iBladeRow, iSpan);
-      su2double radiusIn = geometry.GetTurboRadiusIn(iBladeRow, iSpan);
-      su2double radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
+  vector<shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
+  unsigned short nSpan = config[iBladeRow]->GetnSpanWiseSections();
+  for (unsigned short iSpan = 0; iSpan < nSpan + 1; iSpan++) {
+    auto areaIn = geometry.GetSpanAreaIn(iBladeRow, iSpan);
+    auto areaOut = geometry.GetSpanAreaOut(iBladeRow, iSpan);
+    auto radiusIn = geometry.GetTurboRadiusIn(iBladeRow, iSpan);
+    auto radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
 
-      /* Switch between the Turbomachinery Performance Kind */
-      switch (config[ZONE_0]->GetKind_TurboPerf(iBladeRow)) {
-        case TURBO_PERF_KIND::TURBINE:
-          bladeSpanPerformances.push_back(
-              make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-          break;
+    /* Switch between the Turbomachinery Performance Kind */
+    switch (config[ZONE_0]->GetKind_TurboPerf(iBladeRow)) {
+      case TURBO_PERF_KIND::TURBINE:
+        bladeSpanPerformances.push_back(
+            make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+        break;
 
-        case TURBO_PERF_KIND::COMPRESSOR:
-          bladeSpanPerformances.push_back(
-              make_shared<CCompressorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-          break;
+      case TURBO_PERF_KIND::COMPRESSOR:
+        bladeSpanPerformances.push_back(
+            make_shared<CCompressorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+        break;
 
-        case TURBO_PERF_KIND::PROPELLOR:
-          bladeSpanPerformances.push_back(
-              make_shared<CPropellorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-          break;
+      case TURBO_PERF_KIND::PROPELLOR:
+        bladeSpanPerformances.push_back(
+            make_shared<CPropellorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+        break;
 
-        default:
-          bladeSpanPerformances.push_back(
-              make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-          break;
-      }
+      default:
+        bladeSpanPerformances.push_back(
+            make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+        break;
     }
-    BladesPerformances.push_back(bladeSpanPerformances);
   }
+  BladesPerformances = bladeSpanPerformances;
 }
 
 void CTurboOutput::ComputeTurbomachineryPerformance(
-    vector<vector<CTurbomachineryCombinedPrimitiveStates>> const bladesPrimitives) {
-  for (unsigned i = 0; i < BladesPerformances.size(); ++i) {
-    ComputePerBlade(BladesPerformances[i], bladesPrimitives[i]);
-  }
+    vector<CTurbomachineryCombinedPrimitiveStates> const bladePrimitives, unsigned short iBladeRow) {
+  ComputePerBlade(BladesPerformances, bladePrimitives);
 }
 
 void CTurboOutput::ComputePerBlade(vector<shared_ptr<CTurbomachineryBladePerformance>> const bladePerformances,
@@ -217,6 +211,22 @@ void CTurboOutput::ComputePerBlade(vector<shared_ptr<CTurbomachineryBladePerform
 void CTurboOutput::ComputePerSpan(shared_ptr<CTurbomachineryBladePerformance> const spanPerformances,
                                   const CTurbomachineryCombinedPrimitiveStates& spanPrimitives) {
   spanPerformances->ComputePerformance(spanPrimitives);
+}
+
+bool CTurboOutput::IsTurboObjective(unsigned short kind) {
+  return kind == ENTROPY_GENERATION || kind == TOTAL_PRESSURE_LOSS || kind == KINETIC_ENERGY_LOSS;
+}
+
+su2double CTurboOutput::GetObjectiveValue(unsigned short kind) const {
+  /*--- Use the tip-span (last element) performance, consistent with how ComputeTurboBladePerformance
+   *    selects the representative blade performance for objective function evaluation. ---*/
+  const auto& perf = BladesPerformances.back();
+  switch (kind) {
+    case ENTROPY_GENERATION:  return perf->GetEntropyGen();
+    case TOTAL_PRESSURE_LOSS: return perf->GetTotalPressureLoss();
+    case KINETIC_ENERGY_LOSS: return perf->GetKineticEnergyLoss();
+    default:                  return 0.0;
+  }
 }
 
 CTurbomachineryStagePerformance::CTurbomachineryStagePerformance(CFluidModel& fluid) : fluidModel(fluid) {}
@@ -244,6 +254,8 @@ void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(const CTurb
   fluidModel.SetTDState_Ps(OutState.GetPressure(), InState.GetEntropy());
   su2double enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
   su2double totEnthalpyOutIs = enthalpyOutIs + 0.5 * OutState.GetVelocityValue() * OutState.GetVelocityValue();
+  su2double tangVel = OutState.GetTangVelocity();
+  su2double relVelOutIs2 = 2 * (OutState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
 
   /*--- Compute turbine stage performance ---*/
   NormEntropyGen = (OutState.GetEntropy() - InState.GetEntropy()) / InState.GetEntropy();
@@ -252,6 +264,9 @@ void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(const CTurb
   TotalTotalEfficiency = EulerianWork / (InState.GetTotalEnthalpy() - totEnthalpyOutIs);
   TotalStaticPressureRatio = InState.GetTotalPressure() / OutState.GetPressure();
   TotalTotalPressureRatio = InState.GetTotalPressure() / OutState.GetTotalPressure();
+  TotalPressureLoss = (InState.GetTotalRelPressure() - OutState.GetTotalRelPressure()) /
+                      (OutState.GetTotalRelPressure() - OutState.GetPressure());
+  KineticEnergyLoss = 2 * (OutState.GetEnthalpy() - enthalpyOutIs) / relVelOutIs2;
 }
 
 void CTurbomachineryStagePerformance::ComputeCompressorStagePerformance(const CTurbomachineryState& InState,
@@ -260,6 +275,8 @@ void CTurbomachineryStagePerformance::ComputeCompressorStagePerformance(const CT
   fluidModel.SetTDState_Ps(OutState.GetPressure(), InState.GetEntropy());
   su2double enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
   su2double totEnthalpyOutIs = enthalpyOutIs + 0.5 * OutState.GetVelocityValue() * OutState.GetVelocityValue();
+  su2double tangVel = OutState.GetTangVelocity();
+  su2double relVelOutIs2 = 2 * (OutState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
 
   /*--- Compute compressor stage performance ---*/
   NormEntropyGen = (OutState.GetEntropy() - InState.GetEntropy()) / InState.GetEntropy();
@@ -268,4 +285,7 @@ void CTurbomachineryStagePerformance::ComputeCompressorStagePerformance(const CT
   TotalTotalEfficiency = (totEnthalpyOutIs - InState.GetTotalEnthalpy()) / EulerianWork;
   TotalStaticPressureRatio = OutState.GetPressure() / InState.GetTotalPressure();
   TotalTotalPressureRatio = OutState.GetTotalPressure() / InState.GetTotalPressure();
+  TotalPressureLoss = (InState.GetTotalRelPressure() - OutState.GetTotalRelPressure()) /
+                      (InState.GetTotalRelPressure() - InState.GetPressure());
+  KineticEnergyLoss = 2 * (OutState.GetEnthalpy() - enthalpyOutIs) / relVelOutIs2;
 }

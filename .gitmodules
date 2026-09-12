@@ -27,3 +27,9 @@
 [submodule "subprojects/MLPCpp"]
 	path = subprojects/MLPCpp
 	url = https://github.com/EvertBunschoten/MLPCpp.git
+[submodule "externals/FADO"]
+	path = externals/FADO
+	url = https://github.com/pcarruscag/FADO.git
+[submodule "externals/eigen"]
+	path = externals/eigen
+	url = https://gitlab.com/libeigen/eigen.git

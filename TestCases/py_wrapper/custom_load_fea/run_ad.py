@@ -2,14 +2,14 @@
 
 ## \file run.py
 #  \brief Unsteady adjoint FEA case with custom load.
-#  \version 8.0.1 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -61,6 +61,7 @@ OUTPUT_FILES= RESTART, PARAVIEW
 OUTPUT_WRT_FREQ= 1
 OBJECTIVE_FUNCTION= STRESS_PENALTY
 STRESS_PENALTY_PARAM= ( 500, 20 )
+WRT_RESTART_COMPACT= NO
 
 INNER_ITER= 20
 CONV_RESIDUAL_MINVAL= -4
@@ -83,7 +84,7 @@ CONV_FIELD= ADJOINT_DISP_X, ADJOINT_DISP_Y
 FEA_ADVANCED_MODE= YES
 UNST_ADJOINT_ITER= 21
 ITER_AVERAGE_OBJ= 0
-SOLUTION_FILENAME= restart.dat
+SOLUTION_FILENAME= restart
 VOLUME_OUTPUT= SOLUTION, SENSITIVITY, SENSITIVITY_N
 """
 

@@ -2,14 +2,14 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,11 @@
 
 #include <limits>
 #include "CFlowVariable.hpp"
+
+/*!
+ * \brief Returns the number of primitive variables for which to compute gradients.
+ */
+unsigned long EulerNPrimVarGrad(const CConfig *config, unsigned long ndim);
 
 /*!
  * \class CEulerVariable
@@ -93,6 +98,20 @@ class CEulerVariable : public CFlowVariable {
                  unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
+   * \brief Get the density at time level n for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n.
+   */
+  inline su2double GetDensity_time_n(unsigned long iPoint) const final { return GetSolution_time_n(iPoint, 0); }
+
+  /*!
+   * \brief Get the density at time level n-1 for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n-1.
+   */
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const final { return GetSolution_time_n1(iPoint, 0); }
+
+  /*!
    * \brief A virtual member.
    */
   inline void SetdPdrho_e(unsigned long iPoint, su2double dPdrho_e) final { Secondary(iPoint,0) = dPdrho_e;}
@@ -116,10 +135,8 @@ class CEulerVariable : public CFlowVariable {
    */
   bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) final {
     if (soundspeed2 < 0.0) return true;
-    else {
-      Primitive(iPoint,nDim+4) = sqrt(soundspeed2);
-      return false;
-    }
+    Primitive(iPoint,nDim+4) = sqrt(soundspeed2);
+    return false;
   }
 
   /*!
@@ -237,7 +254,7 @@ class CEulerVariable : public CFlowVariable {
    * \return Value of the velocity for the dimension <i>iDim</i>.
    */
   inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final {
-    return Primitive(iPoint,iDim+indices.Velocity());
+    return Primitive(iPoint, iDim+indices.Velocity());
   }
 
   /*!
@@ -256,7 +273,7 @@ class CEulerVariable : public CFlowVariable {
   inline su2double GetProjVel(unsigned long iPoint, const su2double *val_vector) const final {
     su2double ProjVel = 0.0;
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      ProjVel += Primitive(iPoint,iDim+indices.Velocity())*val_vector[iDim];
+      ProjVel += Primitive(iPoint, iDim+indices.Velocity())*val_vector[iDim];
     return ProjVel;
   }
 
@@ -341,5 +358,15 @@ class CEulerVariable : public CFlowVariable {
    * \return Number of iterations evaluated by the Newton solver
    */
   inline unsigned long GetNewtonSolverIterations(unsigned long iPoint) const final { return NIterNewtonsolver[iPoint]; }
+
+  /*!
+   * \brief Maximum value that OutlierMitigation can have.
+   */
+  static constexpr auto MAX_OUTLIER_MITIGATION = std::numeric_limits<uint8_t>::max();
+
+  /*!
+   * \brief Marks outliers (0 ok, MAX_OUTLIER_MITIGATION maximum mitigation).
+   */
+  su2vector<uint8_t> OutlierMitigation;
 
 };

@@ -2,14 +2,14 @@
  * \file CDriverBase.hpp
  * \brief Base class for all drivers.
  * \author H. Patel, A. Gastaldi
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,8 +60,7 @@ class CDriverBase {
       nZone,             /*!< \brief Total number of zones in the problem. */
       nDim,              /*!< \brief Number of dimensions. */
       iInst,             /*!< \brief Iterator on instance levels. */
-      *nInst,            /*!< \brief Total number of instances in the problem (per zone). */
-      **interface_types; /*!< \brief Type of coupling between the distinct (physical) zones. */
+      *nInst;            /*!< \brief Total number of instances in the problem (per zone). */
 
   CConfig* driver_config = nullptr; /*!< \brief Definition of the driver configuration. */
   COutput* driver_output = nullptr; /*!< \brief Definition of the driver output. */
@@ -445,6 +444,23 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Get read/write view of the gradients of a solver variable in a point.
+   */
+  inline CPyWrapper3DMatrixView Gradient(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapper3DMatrixView(solver->GetNodes()->GetGradient(), "Gradient of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the user defined source on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView UserDefinedSource(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapperMatrixView(
+      solver->GetNodes()->GetUserDefinedSource(), "User Defined Source of " + solver->GetSolverName(), false);
+  }
+
+  /*!
    * \brief Get a read/write view of the current solution on the mesh nodes of a marker.
    */
   inline CPyWrapperMarkerMatrixView MarkerSolution(unsigned short iSolver, unsigned short iMarker) {
@@ -547,6 +563,18 @@ class CDriverBase {
    */
   inline void SetMarkerCustomNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble WallHeatFlux) {
     main_geometry->SetCustomBoundaryHeatFlux(iMarker, iVertex, WallHeatFlux);
+  }
+
+    /*!
+   * \brief Set the wall normal scalar values at a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
+   * \note This can be the input of a scalar transport equation.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] WallScalar - Value of the normal heat flux.
+   */
+   inline void SetMarkerCustomScalar(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> WallScalar) {
+    auto* solver = solver_container[selected_zone][INST_0][MESH_0][SPECIES_SOL];
+    solver->SetCustomBoundaryScalar(iMarker, iVertex, WallScalar);
   }
 
   /*!

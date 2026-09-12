@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -87,7 +87,7 @@ class CTurbomachineryCombinedPrimitiveStates {
 class CTurbomachineryState {
  private:
   su2double Density, Pressure, Entropy, Enthalpy, Temperature, TotalTemperature, TotalPressure, TotalEnthalpy;
-  su2double AbsFlowAngle, FlowAngle, MassFlow, Rothalpy, TotalRelPressure;
+  su2double AbsFlowAngle, FlowAngle, MassFlow, Rothalpy, TangVelocity, TotalRelPressure;
   vector<su2double> Velocity, RelVelocity, Mach, RelMach;
   su2double Area, Radius;
 
@@ -95,6 +95,11 @@ class CTurbomachineryState {
   CTurbomachineryState();
 
   CTurbomachineryState(unsigned short nDim, su2double area, su2double radius);
+
+  inline void SetZeroValues() {
+    Density = Pressure = Entropy = Enthalpy = Temperature = TotalTemperature = TotalPressure = TotalEnthalpy = 0.0;
+    AbsFlowAngle = FlowAngle = MassFlow = Rothalpy = TotalRelPressure = 0.0;
+  }
 
   void ComputeState(CFluidModel& fluidModel, const CTurbomachineryPrimitiveState& primitiveState);
 
@@ -123,6 +128,8 @@ class CTurbomachineryState {
   const su2double& GetMassFlow() const { return MassFlow; }
 
   const su2double& GetRothalpy() const { return Rothalpy; }
+
+  const su2double& GetTangVelocity() const { return TangVelocity; }
 
   const vector<su2double>& GetVelocity() const { return Velocity; }
 
@@ -207,7 +214,7 @@ class CPropellorBladePerformance : public CTurbomachineryBladePerformance {
  */
 class CTurbomachineryStagePerformance {
  protected:
-  su2double TotalStaticEfficiency, TotalTotalEfficiency, NormEntropyGen, TotalStaticPressureRatio, TotalTotalPressureRatio, EulerianWork;
+  su2double TotalStaticEfficiency, TotalTotalEfficiency, NormEntropyGen, TotalStaticPressureRatio, TotalTotalPressureRatio, EulerianWork, TotalPressureLoss, KineticEnergyLoss;
   CFluidModel& fluidModel;
 
  public:
@@ -232,6 +239,10 @@ class CTurbomachineryStagePerformance {
   su2double GetTotalStaticPressureRatio() const { return TotalStaticPressureRatio; }
 
   su2double GetTotalTotalPressureRatio() const { return TotalTotalPressureRatio; }
+
+  su2double GetTotalPressureLoss() const { return TotalPressureLoss; }
+
+  su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
 };
 
 /*!
@@ -241,16 +252,30 @@ class CTurbomachineryStagePerformance {
  */
 class CTurboOutput {
  private:
-  vector<vector<shared_ptr<CTurbomachineryBladePerformance>>> BladesPerformances;
+  vector<shared_ptr<CTurbomachineryBladePerformance>> BladesPerformances;
 
   static void ComputePerBlade(vector<shared_ptr<CTurbomachineryBladePerformance>> const bladePerformances, vector<CTurbomachineryCombinedPrimitiveStates> const bladePrimitives);
 
   static void ComputePerSpan(shared_ptr<CTurbomachineryBladePerformance> const spanPerformances, const CTurbomachineryCombinedPrimitiveStates& spanPrimitives);
   
  public:
-  CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel);
+  CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel, unsigned short iBladeRow);
 
-  const vector<vector<shared_ptr<CTurbomachineryBladePerformance>>>& GetBladesPerformances() const { return BladesPerformances; }
+  const vector<shared_ptr<CTurbomachineryBladePerformance>>& GetBladesPerformances() const { return BladesPerformances; }
 
-  void ComputeTurbomachineryPerformance(vector<vector<CTurbomachineryCombinedPrimitiveStates>> const primitives);
+  void ComputeTurbomachineryPerformance(vector<CTurbomachineryCombinedPrimitiveStates> const primitives, unsigned short iBladeRow);
+
+  /*!
+   * \brief Returns true if the given objective function kind is a turbomachinery objective
+   *        that can be evaluated via GetObjectiveValue.
+   * \param[in] kind - Objective function kind (ENUM_OBJECTIVE value).
+   */
+  static bool IsTurboObjective(unsigned short kind);
+
+  /*!
+   * \brief Get the value of a turbomachinery objective function from the tip span performance.
+   * \param[in] kind - Objective function kind (ENUM_OBJECTIVE value).
+   * \return The objective function value, or 0.0 for unrecognised kinds.
+   */
+  su2double GetObjectiveValue(unsigned short kind) const;
 };

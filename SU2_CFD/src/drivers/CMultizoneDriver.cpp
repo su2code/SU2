@@ -2,14 +2,14 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 
 CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) :
                   CDriver(confFile, val_nZone, MPICommunicator, false) {
+                    SU2_ZONE_SCOPED
 
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
@@ -101,8 +102,13 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
   prefixed_motion = new bool[nZone];
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
-      case RIGID_MOTION: case ROTATING_FRAME:
+      case RIGID_MOTION:
         prefixed_motion[iZone] = true; break;
+      case ROTATING_FRAME:
+        /*--- A non-deforming rotating-frame zone only needs its interface transfer coefficients
+         *    refreshed every time step when the relative-frame sliding-plane feature is active;
+         *    otherwise its interpolation weights are constant like any other static zone. ---*/
+        prefixed_motion[iZone] = config_container[iZone]->GetBoolRelFrame_SlidingPlane(); break;
       default:
         prefixed_motion[iZone] = false; break;
     }
@@ -118,6 +124,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
 }
 
 CMultizoneDriver::~CMultizoneDriver() {
+  SU2_ZONE_SCOPED
 
   for (iZone = 0; iZone < nZone; iZone++){
     delete [] init_res[iZone];
@@ -135,6 +142,7 @@ CMultizoneDriver::~CMultizoneDriver() {
 }
 
 void CMultizoneDriver::StartSolver() {
+  SU2_ZONE_SCOPED
 
   /*--- Find out the minimum of all references times and then set each zone to this (same) value.
         To ensure that all zones run synchronously in time, be it a dimensional or non-dimensionalized one. ---*/
@@ -206,6 +214,7 @@ void CMultizoneDriver::StartSolver() {
 }
 
 void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Set the current time iteration in the config ---*/
   driver_config->SetTimeIter(TimeIter);
@@ -270,7 +279,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (unsigned short jZone = 0; jZone < nZone; jZone++){
         if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr && (prefixed_motion[iZone] || prefixed_motion[jZone]))
-          interpolator_container[iZone][jZone]->SetTransferCoeff(config_container);
+          interpolator_container[iZone][jZone]->SetTransferCoeff(geometry_container, config_container);
       }
     }
   }
@@ -278,6 +287,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 }
 
 void CMultizoneDriver::RunGaussSeidel() {
+  SU2_ZONE_SCOPED
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -328,6 +338,7 @@ void CMultizoneDriver::RunGaussSeidel() {
 }
 
 void CMultizoneDriver::RunJacobi() {
+  SU2_ZONE_SCOPED
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -388,6 +399,7 @@ void CMultizoneDriver::RunJacobi() {
 }
 
 void CMultizoneDriver::Corrector(unsigned short val_iZone) {
+  SU2_ZONE_SCOPED
 
   if (config_container[val_iZone]->GetRelaxation())
     iteration_container[val_iZone][INST_0]->Relaxation(output_container[ZONE_0], integration_container,
@@ -396,6 +408,7 @@ void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 }
 
 bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Update the residual for the all the zones. ---*/
 
@@ -428,6 +441,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 }
 
 void CMultizoneDriver::Update() {
+  SU2_ZONE_SCOPED
 
   /*--- For enabling a consistent restart, we need to update the mesh with the interface information that introduces displacements --*/
   /*--- Loop over the number of zones (IZONE) ---*/
@@ -453,6 +467,7 @@ void CMultizoneDriver::Update() {
 }
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Time the output for performance benchmarking. ---*/
 
@@ -486,6 +501,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 }
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   bool AnyDeformMesh = false;
 
@@ -506,6 +522,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 }
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   auto iteration = iteration_container[val_iZone][INST_0];
 
@@ -531,30 +548,35 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
 }
 
 bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short targetZone) {
+  SU2_ZONE_SCOPED
 
   bool UpdateMesh = false;
 
   /*--- Select the transfer method according to the magnitudes being transferred ---*/
+  if(donorZone == targetZone || interface_container[donorZone][targetZone] == nullptr) return UpdateMesh; // Zones are equal or unconnected
 
-  auto BroadcastData = [&](int donorSol, int targetSol) {
-    interface_container[donorZone][targetZone]->BroadcastData(
-      *interpolator_container[donorZone][targetZone].get(),
-      solver_container[donorZone][INST_0][MESH_0][donorSol],
-      solver_container[targetZone][INST_0][MESH_0][targetSol],
-      geometry_container[donorZone][INST_0][MESH_0],
-      geometry_container[targetZone][INST_0][MESH_0],
-      config_container[donorZone],
-      config_container[targetZone]);
-  };
+  auto HandleInterfaceType = [&] (const auto interface_type, auto* interface) {
+    auto BroadcastData = [&](int donorSol, int targetSol) {
+      interface->BroadcastData(
+        *interpolator_container[donorZone][targetZone],
+        solver_container[donorZone][INST_0][MESH_0][donorSol],
+        solver_container[targetZone][INST_0][MESH_0][targetSol],
+        geometry_container[donorZone][INST_0][MESH_0],
+        geometry_container[targetZone][INST_0][MESH_0],
+        config_container[donorZone],
+        config_container[targetZone]);
+    };
 
-  switch (interface_types[donorZone][targetZone]) {
-
+    switch (interface_type) {
     case SLIDING_INTERFACE:
       BroadcastData(FLOW_SOL, FLOW_SOL);
 
       /*--- Additional transfer for turbulence variables. ---*/
       if (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS ||
-          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) {
+          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS ||
+          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS ||
+          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS
+        ) {
         BroadcastData(TURB_SOL, TURB_SOL);
       }
 
@@ -562,6 +584,9 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
       if (config_container[targetZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
         BroadcastData(SPECIES_SOL, SPECIES_SOL);
       }
+      break;
+    case CONJUGATE_HEAT_SS:
+      BroadcastData(HEAT_SOL, HEAT_SOL);
       break;
     case CONJUGATE_HEAT_FS:
       BroadcastData(FLOW_SOL, HEAT_SOL);
@@ -584,49 +609,39 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
       break;
     case MIXING_PLANE:
     {
-      const auto nMarkerInt = config_container[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
-
-    /*--- Transfer the average value from the donorZone to the targetZone ---*/
-      for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
-            interface_container[donorZone][targetZone]->AllgatherAverage(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                config_container[donorZone], config_container[targetZone], iMarkerInt );
-      }
-
-      for (donorZone = 0; donorZone < nZone; donorZone++) {
-        if (interface_types[donorZone][targetZone]==MIXING_PLANE) {
-          interface_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
-          geometry_container[targetZone][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
-        }
-      }
-      
+      interface_container[donorZone][targetZone]->BroadcastData_MixingPlane(
+        *interpolator_container[donorZone][targetZone].get(),
+        solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+        solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[donorZone][INST_0][MESH_0],
+        geometry_container[targetZone][INST_0][MESH_0],
+        config_container[donorZone],
+        config_container[targetZone]);
       break;
     }
-    case NO_TRANSFER:
-    case ZONES_ARE_EQUAL:
-    case NO_COMMON_INTERFACE:
-      break;
     default:
-      if(rank == MASTER_NODE)
+      if (rank == MASTER_NODE) {
         cout << "WARNING: One of the intended interface transfer routines is not "
              << "known to the chosen driver and has not been executed." << endl;
+      }
       break;
+    }
+  };
+
+  auto type = interface_types[donorZone][targetZone];
+  auto* interface = interface_container[donorZone][targetZone];
+
+  while (interface != nullptr) {
+    HandleInterfaceType(type, interface);
+    type = interface->NextInterfaceType;
+    interface = interface->NextInterface;
   }
 
   return UpdateMesh;
 }
 
-
-
-void CMultizoneDriver::SetTurboPerformance() {
-  for (auto donorZone = 1u; donorZone < nZone; donorZone++) {
-    interface_container[donorZone][ZONE_0]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
-                                                                solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
-                                                                donorZone);
-  }
-}
-
 bool CMultizoneDriver::Monitor(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Check whether the inner solver has converged --- */
 
@@ -640,7 +655,9 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter) {
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << "\n----------------------------- Solver Exit -------------------------------" << endl;
-      if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
+      if (driver_output->GetConvergenceInterrupted())
+        cout << "Interrupt signal received, exiting before the convergence criteria were satisfied." << endl;
+      else if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
       else cout << "\nMaximum number of iterations reached (OUTER_ITER = " << OuterIter+1 << ") before convergence." << endl;
       driver_output->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
@@ -672,5 +689,6 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter) {
 }
 
 bool CMultizoneDriver::GetTimeConvergence() const{
+  SU2_ZONE_SCOPED
   return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }

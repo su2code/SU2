@@ -2,14 +2,14 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,12 +36,13 @@
 #include "../../include/fluid/CCoolProp.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
+#include "../../include/output/COutput.hpp"
 #include "../../include/output/CTurboOutput.hpp"
-
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
   CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>(*geometry, *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CNSSolver. ---*/
@@ -116,9 +117,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   nDim = geometry->GetnDim();
 
-  nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-  nSecondaryVar = nSecVar; nSecondaryVarGrad = 2;
+  nVar = nDim + 2;
+  nPrimVar = nDim + 9;
+  /*--- Centered schemes only need gradients for viscous fluxes (T and v). ---*/
+  nPrimVarGrad = EulerNPrimVarGrad(config, nDim);
+  nSecondaryVar = nSecVar;
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -162,7 +165,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy, false, true);
   }
   else {
     if (rank == MASTER_NODE)
@@ -232,6 +235,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   Exhaust_Pressure.resize(nMarker);
   Exhaust_Area.resize(nMarker);
 
+  /*--- Turbomachinery simulation ---*/
+  AverageMassFlowRate.resize(nMarker);
+
   /*--- Read farfield conditions from config ---*/
 
   Temperature_Inf = config->GetTemperature_FreeStreamND();
@@ -241,7 +247,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   Energy_Inf = config->GetEnergy_FreeStreamND();
   Mach_Inf = config->GetMach();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
 
   switch(direct_diff) {
     case NO_DERIVATIVE:
@@ -279,6 +285,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     Exhaust_Temperature[iMarker] = Temperature_Inf;
     Exhaust_Pressure[iMarker]    = Pressure_Inf;
     Exhaust_Area[iMarker]        = 0.0;
+
+    AverageMassFlowRate[iMarker] = 0.0;
   }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -341,6 +349,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   CommunicateInitialState(geometry, config);
 
+  /*--- Sizing edge mass flux array, padded to a multiple of the SIMD size since the vectorized
+   *    numerics write to it with contiguous (unmasked) SIMD stores, same as CEdge's Normal. ---*/
+  if (config->GetBounded_Scalar()) {
+    EdgeMassFluxes.resize(nextMultiple(geometry->GetnEdge(), simd::preferredLen<su2double>())) = su2double(0.0);
+  }
+
   /*--- Add the solver name.. ---*/
   SolverName = "C.FLOW";
 
@@ -351,11 +365,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 }
 
 CEulerSolver::~CEulerSolver() {
-
   for(auto& model : FluidModel) delete model;
 }
 
 void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_container, const CConfig* config) {
+  SU2_ZONE_SCOPED
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
@@ -376,37 +390,32 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
+void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig **config_container, unsigned short iZone){
+
+  auto config = config_container[iZone];
 
   /*--- Initialize quantities for the average process for internal flow ---*/
-
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
   AverageVelocity.resize(nMarker);
   AverageTurboVelocity.resize(nMarker);
   OldAverageTurboVelocity.resize(nMarker);
-  ExtAverageTurboVelocity.resize(nMarker);
   AverageFlux.resize(nMarker);
   SpanTotalFlux.resize(nMarker);
   AveragePressure.resize(nMarker,nSpanWiseSections+1) = su2double(0.0);
   OldAveragePressure = AveragePressure;
   RadialEquilibriumPressure = AveragePressure;
-  ExtAveragePressure = AveragePressure;
   AverageDensity = AveragePressure;
   OldAverageDensity = AveragePressure;
-  ExtAverageDensity = AveragePressure;
   AverageNu = AveragePressure;
   AverageKine = AveragePressure;
   AverageOmega = AveragePressure;
-  ExtAverageNu = AveragePressure;
-  ExtAverageKine = AveragePressure;
-  ExtAverageOmega = AveragePressure;
+  AverageRelTangVelocity = AveragePressure;
 
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     AverageVelocity[iMarker].resize(nSpanWiseSections+1,nDim) = su2double(0.0);
     AverageTurboVelocity[iMarker].resize(nSpanWiseSections+1,nDim) = su2double(0.0);
     OldAverageTurboVelocity[iMarker].resize(nSpanWiseSections+1,nDim) = su2double(0.0);
-    ExtAverageTurboVelocity[iMarker].resize(nSpanWiseSections+1,nDim) = su2double(0.0);
     AverageFlux[iMarker].resize(nSpanWiseSections+1,nVar) = su2double(0.0);
     SpanTotalFlux[iMarker].resize(nSpanWiseSections+1,nVar) = su2double(0.0);
   }
@@ -428,6 +437,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   KineOut = DensityIn;
   OmegaOut = DensityIn;
   NuOut = DensityIn;
+  RelTangVelocityIn = DensityIn;
+  RelTangVelocityOut = DensityIn;
 
   for (unsigned long iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++) {
     TurboVelocityIn[iMarker].resize(nSpanMax+1,nDim) = su2double(0.0);
@@ -448,9 +459,27 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       CkOutflow2[iMarker] = CkOutflow1[iMarker];
     }
   }
+
+  /*--- Initialise donor quantities ---*/
+  ExtAverageDensity = su2double(0.0);
+  ExtAveragePressure = su2double(0.0);
+  ExtAverageTurboVelocity.resize(nDim);
+  for (auto iDim = 0u; iDim < nDim; iDim++) ExtAverageTurboVelocity[iDim] = su2double(0.0);
+
+  MixingState.resize(nMarker);
+
+  for (auto iMarkerInt = 1; iMarkerInt < config->GetnMarker_MixingPlaneInterface()/2 + 1; iMarkerInt++) {
+    auto iMarkerMP = config->FindMixingPlaneInterfaceMarker(geometry->GetnMarker(), iMarkerInt);
+    if (iMarkerMP != -1) {
+      MixingState[iMarkerMP].resize(nSpanWiseSections+1, nMixingStateVars) = su2double(0.0);
+    }
+  }
+
+  TurbomachineryPerformance = std::make_shared<CTurboOutput>(config_container, *geometry, *GetFluidModel(), iZone);
 }
 
 void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
   Buffer_Send_nPointTotal = 0;
@@ -775,10 +804,12 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
 }
 
 void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
   Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
+  Thermal_Conductivity_FreeStream = 0.0, SpecificHeat_Cp_FreeStream = 0.0,
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0, Re_ThetaT_FreeStream = 0.0,
   Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0,
   Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
@@ -786,6 +817,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Froude = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0,
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
+  Thermal_Conductivity_FreeStreamND = 0.0, SpecificHeat_Cp_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0, Heat_Flux_Ref = 0.0;
 
@@ -935,9 +967,15 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
             viscosity, depending on the input option.---*/
 
       auxFluidModel->SetLaminarViscosityModel(config);
+      auxFluidModel->SetThermalConductivityModel(config);
 
       Viscosity_FreeStream = auxFluidModel->GetLaminarViscosity();
+      Thermal_Conductivity_FreeStream = auxFluidModel->GetThermalConductivity();
+      SpecificHeat_Cp_FreeStream = auxFluidModel->GetCp();
+
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
+      config->SetSpecificHeatCp_FreeStream(SpecificHeat_Cp_FreeStream);
 
       Density_FreeStream = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds());
       config->SetDensity_FreeStream(Density_FreeStream);
@@ -953,8 +991,13 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     else {
 
       auxFluidModel->SetLaminarViscosityModel(config);
+      auxFluidModel->SetThermalConductivityModel(config);
       Viscosity_FreeStream = auxFluidModel->GetLaminarViscosity();
+      Thermal_Conductivity_FreeStream = auxFluidModel->GetThermalConductivity();
+      SpecificHeat_Cp_FreeStream = auxFluidModel->GetCp();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
+      config->SetSpecificHeatCp_FreeStream(SpecificHeat_Cp_FreeStream);
       Energy_FreeStream = auxFluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
 
       /*--- Compute Reynolds number ---*/
@@ -1037,6 +1080,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
 
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
+  Thermal_Conductivity_FreeStreamND = Thermal_Conductivity_FreeStream / Conductivity_Ref;
+  config->SetThermalConductivity_FreeStreamND(Thermal_Conductivity_FreeStreamND);
+  SpecificHeat_Cp_FreeStreamND = SpecificHeat_Cp_FreeStream / Gas_Constant_Ref;
+  config->SetSpecificHeatCp_FreeStreamND(SpecificHeat_Cp_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStream(Tke_FreeStream);
@@ -1044,10 +1091,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
-  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
+  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStream(Omega_FreeStream);
 
-  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   if (config->GetTurbulenceIntensity_FreeStream() *100 <= 1.3) {
@@ -1403,6 +1450,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 }
 
 void CEulerSolver::SetReferenceValues(const CConfig& config) {
+  SU2_ZONE_SCOPED
 
   /*--- Evaluate reference values for non-dimensionalization. For dynamic meshes,
    use the motion Mach number as a reference value for computing the force coefficients.
@@ -1421,11 +1469,17 @@ void CEulerSolver::SetReferenceValues(const CConfig& config) {
   }
 
   DynamicPressureRef = 0.5 * Density_Inf * RefVel2;
+
+  if (DynamicPressureRef < EPS) {
+    DynamicPressureRef = 1.0;
+  }
+
   AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
   const bool SubsonicEngine = config->GetSubsonicEngine();
@@ -1479,7 +1533,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         Velocity_Cyl[1] = sin(Beta)*Mach_Cyl*Mach2Vel_Cyl;
         Velocity_Cyl[2] = sin(Alpha)*cos(Beta)*Mach_Cyl*Mach2Vel_Cyl;
 
-        ModVel_Cyl = GeometryToolbox::Norm(nDim, Velocity_Cyl);
+        ModVel_Cyl = GeometryToolbox::Norm(3, Velocity_Cyl);
 
         if (config->GetViscous()) {
           if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
@@ -1551,6 +1605,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
 void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                        unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
@@ -1614,6 +1669,9 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
       if (!center_jst_ke) SetUndivided_Laplacian(geometry, config);
     }
   }
+  if (config->GetKind_Upwind_Flow() == UPWIND::MSW && !Output) {
+    SetCentered_Dissipation_Sensor(geometry, config);
+  }
 
   /*--- Roe Low Dissipation Sensor ---*/
 
@@ -1627,9 +1685,9 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
 
-  if(!ReducerStrategy && !Output) {
+  if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
-    if (implicit) Jacobian.SetValZero();
+    if (implicit) Jacobian.SetValDiagonalZero();
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
 
@@ -1637,6 +1695,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                  unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -1669,6 +1728,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 }
 
 unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Number of non-physical points, local to the thread, needs
    *    further reduction if function is called in parallel ---*/
@@ -1697,6 +1757,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to compute the speed of sound. ---*/
   struct SoundSpeed {
@@ -1712,14 +1773,15 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Define an object to compute the viscous eigenvalue. ---*/
   struct LambdaVisc {
-    const su2double gamma, prandtlLam, prandtlTurb;
+    const su2double gamma, prandtlTurb;
 
-    LambdaVisc(su2double g, su2double pl, su2double pt) : gamma(g), prandtlLam(pl), prandtlTurb(pt) {}
+    LambdaVisc(su2double g, su2double pt) : gamma(g), prandtlTurb(pt) {}
 
-    FORCEINLINE su2double lambda(su2double laminarVisc, su2double eddyVisc, su2double density) const {
-      su2double Lambda_1 = (4.0/3.0)*(laminarVisc + eddyVisc);
+    FORCEINLINE su2double lambda(su2double laminarVisc, su2double eddyVisc, su2double density, su2double cp,
+                                 su2double thermalCond) const {
+      su2double Lambda_1 = (4.0 / 3.0) * (laminarVisc + eddyVisc);
       /// TODO: (REAL_GAS) removing gamma as it cannot work with FLUIDPROP
-      su2double Lambda_2 = (1.0 + (prandtlLam/prandtlTurb)*(eddyVisc/laminarVisc))*(gamma*laminarVisc/prandtlLam);
+      su2double Lambda_2 = (thermalCond / cp + eddyVisc / prandtlTurb) * gamma;
       return (Lambda_1 + Lambda_2) / density;
     }
 
@@ -1727,17 +1789,21 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       su2double laminarVisc = 0.5*(nodes.GetLaminarViscosity(iPoint) + nodes.GetLaminarViscosity(jPoint));
       su2double eddyVisc = 0.5*(nodes.GetEddyViscosity(iPoint) + nodes.GetEddyViscosity(jPoint));
       su2double density = 0.5*(nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
-      return lambda(laminarVisc, eddyVisc, density);
+      su2double thermalCond = 0.5*(nodes.GetThermalConductivity(iPoint) + nodes.GetThermalConductivity(jPoint));
+      su2double cp = 0.5*(nodes.GetSpecificHeatCp(iPoint) + nodes.GetSpecificHeatCp(jPoint));
+      return lambda(laminarVisc, eddyVisc, density, cp, thermalCond);
     }
 
     FORCEINLINE su2double operator() (const CEulerVariable& nodes, unsigned long iPoint) const {
       su2double laminarVisc = nodes.GetLaminarViscosity(iPoint);
       su2double eddyVisc = nodes.GetEddyViscosity(iPoint);
       su2double density = nodes.GetDensity(iPoint);
-      return lambda(laminarVisc, eddyVisc, density);
+      su2double thermalCond = nodes.GetThermalConductivity(iPoint);
+      su2double cp = nodes.GetSpecificHeatCp(iPoint);
+      return lambda(laminarVisc, eddyVisc, density, cp, thermalCond);
     }
 
-  } lambdaVisc(Gamma, Prandtl_Lam, Prandtl_Turb);
+  } lambdaVisc(Gamma, Prandtl_Turb);
 
   /*--- Now instantiate the generic implementation with the two functors above. ---*/
 
@@ -1747,31 +1813,40 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
 void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   EdgeFluxResidual(geometry, solver_container, config);
 }
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                          (config->GetKind_FluidModel() == IDEAL_GAS);
   const bool low_mach_corr = config->Low_Mach_Correction();
 
   /*--- Use vectorization if the scheme supports it. ---*/
-  if (config->GetKind_Upwind_Flow() == UPWIND::ROE && ideal_gas && !low_mach_corr) {
-    EdgeFluxResidual(geometry, solver_container, config);
-    return;
+  if (ideal_gas && !low_mach_corr) {
+    if (config->GetKind_Upwind_Flow() == UPWIND::ROE || config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+      EdgeFluxResidual(geometry, solver_container, config);
+      return;
+    }
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool bounded_scalar   = config->GetBounded_Scalar();
 
+  const bool msw              = (config->GetKind_Upwind_Flow() == UPWIND::MSW);
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == UPWIND::TURKEL);
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
+
+  const su2double kappa       = config->GetMUSCL_Kappa_Flow();
+  const su2double musclRamp   = config->GetMUSCLRampValue() * config->GetNewtonKrylovRelaxation();
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -1801,8 +1876,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     auto iEdge = color.indices[k];
 
-    unsigned short iDim, iVar;
-
     /*--- Points in edge and normal vectors ---*/
 
     auto iPoint = geometry->edges->GetNode(iEdge,0);
@@ -1828,8 +1901,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Get primitive and secondary variables ---*/
 
-    auto V_i = nodes->GetPrimitive(iPoint); auto V_j = nodes->GetPrimitive(jPoint);
-    auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
+    auto V_i = nodes->GetPrimitive(iPoint);
+    auto V_j = nodes->GetPrimitive(jPoint);
+
+    const su2double* S_i = ideal_gas? nullptr : nodes->GetSecondary(iPoint);
+    const su2double* S_j = ideal_gas? nullptr : nodes->GetSecondary(jPoint);
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
@@ -1843,38 +1919,31 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Reconstruction ---*/
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-      }
+      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Vector_ij);
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (auto iVar = 0u; iVar < nPrimVarGrad; iVar++) {
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        }
+        const su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa, musclRamp);
+        const su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa, musclRamp);
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;
-
         if (van_albada) {
-          su2double V_ij = V_j[iVar] - V_i[iVar];
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
-        }
-        else if (limiter) {
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, V_ij, EPS);
+        } else if (limiter) {
           lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
           lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
         }
+        lim_i *= (1 - static_cast<passivedouble>(nodes->OutlierMitigation(iPoint)) / CEulerVariable::MAX_OUTLIER_MITIGATION);
+        lim_j *= (1 - static_cast<passivedouble>(nodes->OutlierMitigation(jPoint)) / CEulerVariable::MAX_OUTLIER_MITIGATION);
 
-        Primitive_i[iVar] = V_i[iVar] + lim_i * Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + lim_j * Project_Grad_j;
+        Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_i * Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] - 0.5 * lim_j * Project_Grad_j;
 
       }
 
@@ -1900,7 +1969,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       su2double R = sqrt(fabs(Primitive_j[prim_idx.Density()]/Primitive_i[prim_idx.Density()]));
       su2double sq_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
         su2double RoeVelocity = (R * Primitive_j[iDim + prim_idx.Velocity()] +
                                  Primitive_i[iDim + prim_idx.Velocity()]) / (R+1);
         sq_vel += pow(RoeVelocity, 2);
@@ -1920,22 +1989,22 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Roe Low Dissipation Scheme ---*/
 
     if (kind_dissipation != NO_ROELOWDISS) {
-
       numerics->SetDissipation(nodes->GetRoe_Dissipation(iPoint),
                                nodes->GetRoe_Dissipation(jPoint));
-
-      if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
-        numerics->SetSensor(nodes->GetSensor(iPoint),
-                            nodes->GetSensor(jPoint));
-      }
-      if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
-        numerics->SetCoord(Coord_i, Coord_j);
-      }
+    }
+    if (msw || kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
+      numerics->SetSensor(nodes->GetSensor(iPoint),
+                          nodes->GetSensor(jPoint));
+    }
+    if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
+      numerics->SetCoord(Coord_i, Coord_j);
     }
 
     /*--- Compute the residual ---*/
 
-    auto residual = numerics->ComputeResidual(config);
+    auto conv_residual = numerics->ComputeResidual(config);
+
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = conv_residual[0];
 
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
@@ -1947,23 +2016,18 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Update residual value ---*/
 
     if (ReducerStrategy) {
-      EdgeFluxes.SetBlock(iEdge, residual);
-      if (implicit)
-        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
-    }
-    else {
-      LinSysRes.AddBlock(iPoint, residual);
-      LinSysRes.SubtractBlock(jPoint, residual);
-
-      /*--- Set implicit computation ---*/
-      if (implicit)
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      EdgeFluxes.SetBlock(iEdge, conv_residual);
+    } else {
+      LinSysRes.AddBlock(iPoint, conv_residual);
+      LinSysRes.SubtractBlock(jPoint, conv_residual);
     }
 
-    /*--- Viscous contribution. ---*/
+    /*--- Viscous contribution, returns its Jacobians so that the matrix is updated once. ---*/
 
-    Viscous_Residual(iEdge, geometry, solver_container,
-                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+    const auto visc_residual = Viscous_Residual(
+        iEdge, geometry, solver_container, numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+
+    if (implicit) UpdateJacobian(iEdge, iPoint, jPoint, conv_residual, visc_residual);
   }
   END_SU2_OMP_FOR
   } // end color loop
@@ -1973,6 +2037,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
                                                   su2double *primitive, su2double *secondary) {
+  SU2_ZONE_SCOPED
   const CEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
   const su2double density = primitive[prim_idx.Density()];
   const su2double pressure = primitive[prim_idx.Pressure()];
@@ -1990,6 +2055,7 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
 
 void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned short nDim,
                                               su2double *primitive_i, su2double *primitive_j) {
+  SU2_ZONE_SCOPED
   unsigned short iDim;
 
   su2double velocity2_i = 0.0;
@@ -2028,6 +2094,7 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   const bool implicit         = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const bool viscous          = config->GetViscous();
@@ -2044,15 +2111,12 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
 
-  unsigned short iVar;
-  unsigned long iPoint;
-
   if (body_force) {
 
     /*--- Loop over all points ---*/
     AD::StartNoSharedReading();
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
       numerics->SetConservative(nodes->GetSolution(iPoint),
@@ -2082,7 +2146,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Loop over all points ---*/
     AD::StartNoSharedReading();
     SU2_OMP_FOR_DYN(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
       numerics->SetConservative(nodes->GetSolution(iPoint),
@@ -2115,7 +2179,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- loop over points ---*/
     AD::StartNoSharedReading();
     SU2_OMP_FOR_DYN(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Set solution  ---*/
       numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
@@ -2168,7 +2232,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- loop over points ---*/
     SU2_OMP_FOR_DYN(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Set solution  ---*/
       numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
@@ -2191,13 +2255,13 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- loop over points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Get control volume ---*/
       su2double Volume = geometry->nodes->GetVolume(iPoint);
 
       /*--- Get stored time spectral source term and add to residual ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
         LinSysRes(iPoint,iVar) += Volume * nodes->GetHarmonicBalance_Source(iPoint,iVar);
       }
     }
@@ -2214,7 +2278,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- set vorticity magnitude as auxilliary variable ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       const su2double VorticityMag = max(GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)), 1e-12);
       nodes->SetAuxVar(iPoint, 0, VorticityMag);
     }
@@ -2224,7 +2288,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     SetAuxVar_Gradient_GG(geometry, config);
 
     SU2_OMP_FOR_DYN(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
       second_numerics->SetVorticity(nodes->GetVorticity(iPoint), nullptr);
       second_numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
@@ -2251,7 +2315,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Loop over points ---*/
       SU2_OMP_FOR_DYN(omp_chunk_size)
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
         /*--- Get control volume size. ---*/
         su2double Volume = geometry->nodes->GetVolume(iPoint);
@@ -2264,7 +2328,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan.data());
 
         /*--- Compute the residual for this control volume and subtract. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0ul; iVar < nVar; iVar++) {
           LinSysRes(iPoint,iVar) -= sourceMan[iVar]*Volume;
         }
       }
@@ -2273,10 +2337,17 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 
   AD::EndNoSharedReading();
+
+  /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource() ) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
+
 }
 
 void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /* This method should be used to call any new source terms for a particular problem*/
   /* This method calls the new child class in CNumerics, where the new source term should be implemented.  */
@@ -2290,6 +2361,7 @@ void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to compute the speed of sound. ---*/
   struct SoundSpeed {
@@ -2310,6 +2382,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config)
 }
 
 void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Loop domain points. ---*/
 
@@ -2357,6 +2430,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
 }
 
 void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object for the sensor variable, pressure. ---*/
   struct SensVar {
@@ -2370,6 +2444,7 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const CCo
 }
 
 void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -2422,22 +2497,26 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
 
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<RUNGE_KUTTA_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<CLASSICAL_RK4_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
 void CEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   struct LowMachPrec {
     const CEulerSolver* solver;
@@ -2458,13 +2537,169 @@ void CEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CCon
   PrepareImplicitIteration_impl(precond, geometry, config);
 }
 
-void CEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
+  SU2_ZONE_SCOPED
 
-  CompleteImplicitIteration_impl<true>(geometry, config);
+  /*--- Loop over the solution update given by relaxing the linear system for this
+   * nonlinear iteration and impose a limit on the maximum percentage that the
+   * density and static energy can change. */
+
+  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    su2double ratio = fabs(LinSysSol(iPoint, 0)) / max(nodes->GetSolution(iPoint, 0), EPS);
+    su2double e_old = nodes->GetSolution(iPoint, nVar - 1);
+    su2double e_new = e_old + LinSysSol(iPoint, nVar - 1);
+    for (unsigned short jVar = 1; jVar <= nDim; jVar++) {
+      e_old -= 0.5 * pow(nodes->GetSolution(iPoint, jVar), 2);
+      e_new -= 0.5 * pow(nodes->GetSolution(iPoint, jVar) + LinSysSol(iPoint, jVar), 2);
+    }
+    ratio = fmax(ratio, fabs(e_new - e_old) / max(e_old, EPS));
+
+    su2double localUnderRelaxation = fmin(allowableRatio / fmax(ratio, EPS), 1);
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+  }
+  END_SU2_OMP_FOR
+}
+
+void CEulerSolver::IdentifySolutionOutliers(const CConfig *config, unsigned long iter) {
+  SU2_ZONE_SCOPED
+
+  const unsigned long startIteration = config->GetOutlierMitigationParam()[0];
+  const unsigned long updateFrequency = config->GetOutlierMitigationParam()[1];
+  const unsigned long printFrequency = config->GetOutlierMitigationParam()[2];
+  const int nSigma = config->GetOutlierMitigationParam()[3];
+
+  if (iter < startIteration) return;
+
+  auto DetermineBinAndUpdatePoint = [&](const unsigned long iPoint) {
+    const su2double t = nodes->GetTemperature(iPoint);
+    const auto i = nSigma + min(max(-nSigma, SU2_TYPE::Int((t - MeanTemperature) / max(StdDevTemperature, EPS))), nSigma);
+    if (i == 0 || i == 2 * nSigma) {
+      if (nodes->OutlierMitigation(iPoint) == 0) {
+        /*--- Start mitigating with maximum strength if the point was just identified as outlier. ---*/
+        nodes->OutlierMitigation(iPoint) = CEulerVariable::MAX_OUTLIER_MITIGATION;
+      } else if (nodes->OutlierMitigation(iPoint) < CEulerVariable::MAX_OUTLIER_MITIGATION) {
+        /*--- The point became an outlier again after reducing mitigations (below), increase them slowly. ---*/
+        ++nodes->OutlierMitigation(iPoint);
+      }
+    } else if (nodes->OutlierMitigation(iPoint) > 0) {
+      /*--- Not an outlier anymore, try to slowly reduce the mitigations. ---*/
+      --nodes->OutlierMitigation(iPoint);
+    }
+    return i;
+  };
+
+  /*--- Recompute mean and std deviation of temperature or use the stored values. ---*/
+  if (iter == startIteration || iter % updateFrequency == 0) {
+    su2double localSum = 0;
+    static unsigned long nPointGlobal;
+    SU2_OMP_MASTER
+    MeanTemperature = 0;
+    END_SU2_OMP_MASTER
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+      localSum += nodes->GetTemperature(iPoint);
+    }
+    END_SU2_OMP_FOR
+
+    atomicAdd(localSum, MeanTemperature);
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      su2double tmp[2] = {MeanTemperature, static_cast<su2double>(nPointDomain)}, global[2];
+      SU2_MPI::Allreduce(tmp, global, 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      nPointGlobal = static_cast<unsigned long>(SU2_TYPE::GetValue(global[1]));
+      MeanTemperature = global[0] / global[1];
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+    localSum = 0;
+    SU2_OMP_MASTER
+    StdDevTemperature = 0;
+    END_SU2_OMP_MASTER
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint ++) {
+      localSum += pow(MeanTemperature - nodes->GetTemperature(iPoint), 2);
+    }
+    END_SU2_OMP_FOR
+
+    atomicAdd(localSum, StdDevTemperature);
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      SU2_MPI::Allreduce(&StdDevTemperature, &localSum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      StdDevTemperature = sqrt(localSum / nPointGlobal);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+    const auto nBins = 2 * nSigma + 2;
+    std::vector<unsigned long> bins(nBins, 0);
+    unsigned long nPointLocal = 0;
+    SU2_OMP_MASTER
+    nPointGlobal = 0;
+    END_SU2_OMP_MASTER
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      const auto i = DetermineBinAndUpdatePoint(iPoint);
+      if (iPoint < nPointDomain) {
+        nPointLocal += static_cast<unsigned long>(nodes->OutlierMitigation(iPoint) > 0);
+
+        SU2_OMP_ATOMIC
+        ++bins[i];
+      }
+    }
+    END_SU2_OMP_FOR
+
+    atomicAdd(nPointLocal, nPointGlobal);
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    if (iter == 0 || iter % (updateFrequency * printFrequency) == 0) {
+      bins.back() = nPointGlobal;
+      std::vector<unsigned long> global(nBins);
+      SU2_MPI::Reduce(bins.data(), global.data(), nBins, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+      if (rank == MASTER_NODE) {
+        PrintingToolbox::CTablePrinter outlierTable(&std::cout);
+        outlierTable.AddColumn("Mean T", 12);
+        outlierTable.AddColumn("StdDev", 12);
+        outlierTable.AddColumn("< -" + std::to_string(nSigma), 12);
+        for (int i = -nSigma; i < nSigma; ++i) {
+          const int jump = (i == -1);
+          outlierTable.AddColumn(std::to_string(i) + " to " + std::to_string(i + 1 + jump), 12);
+          i += jump;
+        }
+        outlierTable.AddColumn("> " + std::to_string(nSigma), 12);
+        outlierTable.AddColumn("#Mitig.", 12);
+        outlierTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+        outlierTable.PrintHeader();
+        outlierTable << MeanTemperature << StdDevTemperature;
+        for (const auto n : global) outlierTable << n;
+        outlierTable.PrintFooter();
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  } else {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      (void)DetermineBinAndUpdatePoint(iPoint);
+    }
+    END_SU2_OMP_FOR
+  }
 }
 
 void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,
                                      su2double delta, su2activematrix& preconditioner) const {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim, jDim, iVar, jVar;
   su2double local_Mach, rho, enthalpy, soundspeed, sq_vel;
@@ -2521,6 +2756,7 @@ void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint
 }
 
 void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim, iMarker, jMarker;
   unsigned long iVertex, iPoint;
@@ -2541,7 +2777,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
   bool write_heads = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0) && (config->GetInnerIter()!= 0)) || (config->GetInnerIter() == 1));
-  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
+  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetBc_Eval_Freq())) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
 
   if ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0)) Engine = true;
   if ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0)) Engine = false;
@@ -2930,6 +3166,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           config->SetInflow_RamDrag(iMarker_Inlet, Inlet_RamDrag_Total[iMarker_Inlet]);
           config->SetInflow_Force(iMarker_Inlet, Inlet_Force_Total[iMarker_Inlet]);
           config->SetInflow_Power(iMarker_Inlet, Inlet_Power_Total[iMarker_Inlet]);
+          config->SetInflow_Mach(iMarker_Inlet, Inlet_Mach_Total[iMarker_Inlet]);
         }
         else {
           config->SetActDiskInlet_MassFlow(iMarker_Inlet, Inlet_MassFlow_Total[iMarker_Inlet]);
@@ -3450,6 +3687,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
 void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
                                        CConfig *config, unsigned short iMesh, bool Output) {
+  SU2_ZONE_SCOPED
 
   su2double Massflow = 0.0 , Target_Massflow = 0.0, DragMinusThrust = 0.0 ,
   Target_DragMinusThrust = 0.0, Target_NetThrust = 0.0, BCThrust = 0.0, BCThrust_inc = 0.0;
@@ -3897,6 +4135,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 
 void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_container,
                                        CConfig *config, unsigned short iMesh, bool Output) {
+  SU2_ZONE_SCOPED
   /*--- Input file provides force coefficients distributions along disk radius. Initialization
         necessary only at initial iteration. ---*/
 
@@ -4097,6 +4336,7 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
 
 void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_container,
                                        CConfig *config, unsigned short iMesh, bool Output) {
+  SU2_ZONE_SCOPED
 
   /*!
    * \function SetActDisk_BEM_VLAD
@@ -4105,7 +4345,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    * Institution: Computational and Theoretical Fluid Dynamics (CTFD),
    *            CSIR - National Aerospace Laboratories, Bangalore
    *            Academy of Scientific and Innovative Research, Ghaziabad
-   * \version 8.0.1 "Harrier"
+   * \version 8.5.0 "Harrier"
    * First release date : September 26 2023
    * modified on:
    *
@@ -4523,6 +4763,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
 
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
+  SU2_ZONE_SCOPED
 
   const auto InnerIter = config->GetInnerIter();
   /* --- Initialize values at first iteration --- */
@@ -4568,6 +4809,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 }
 
 bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
+  SU2_ZONE_SCOPED
   const su2double Target_CL = config->GetTarget_CL();
   const auto curr_iter = config->GetInnerIter();
   const auto Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
@@ -4669,6 +4911,7 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
 }
 
 void CEulerSolver::SetCoefficient_Gradients(CConfig *config) const{
+  SU2_ZONE_SCOPED
 
   const su2double AoA = config->GetAoA();
 
@@ -4693,6 +4936,7 @@ void CEulerSolver::SetCoefficient_Gradients(CConfig *config) const{
 }
 
 void CEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
+  SU2_ZONE_SCOPED
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
@@ -4734,6 +4978,10 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
   Weight_ObjFunc = config->GetWeight_ObjFunc(0);
   Kind_ObjFunc   = config->GetKind_ObjFunc(0);
 
+  /*--- Turbomachinery specific objective functions ---*/
+  if (TurbomachineryPerformance && CTurboOutput::IsTurboObjective(Kind_ObjFunc))
+    Total_ComboObj += Weight_ObjFunc * TurbomachineryPerformance->GetObjectiveValue(Kind_ObjFunc);
+
   switch(Kind_ObjFunc) {
     case NEARFIELD_PRESSURE:
       Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
@@ -4748,6 +4996,7 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
 
 void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -5005,12 +5254,15 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                               CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   const bool viscous      = config->GetViscous(),
-             implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
+             implicit     = config->GetKind_TimeIntScheme() == EULER_IMPLICIT,
              gravity      = config->GetGravityForce(),
-             tkeNeeded    = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+             tkeNeeded    = config->GetKind_Turb_Model() == TURB_MODEL::SST,
+             ideal_gas    = config->GetKind_FluidModel() == STANDARD_AIR ||
+                            config->GetKind_FluidModel() == IDEAL_GAS;
 
   su2double **P_Tensor = new su2double*[nVar],
             **invP_Tensor = new su2double*[nVar];
@@ -5378,7 +5630,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Secondary variables ---*/
 
-        auto S_domain = nodes->GetSecondary(iPoint);
+        const su2double* S_domain = ideal_gas? nullptr : nodes->GetSecondary(iPoint);
 
         /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
         su2double S_boundary[8];
@@ -5433,6 +5685,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics *conv_numerics, CNumerics *visc_numerics,
                                    CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim, iVar, jVar, kVar, iSpan;
   unsigned long iPoint, Point_Normal, oldVertex, iVertex;
@@ -5453,6 +5706,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   bool viscous = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
+                         config->GetKind_FluidModel() == IDEAL_GAS;
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
@@ -5541,12 +5796,26 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
+        su2double donorAverages[5] = {0.0};
+        switch (config->GetKind_Data_Giles(Marker_Tag)){
+          case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:
+            for (auto mixVar = 0u; mixVar < 5; mixVar++) donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
+            break;
+          default:
+            break;
+        }
+        ExtAverageDensity = donorAverages[0];
+        ExtAveragePressure = donorAverages[1];
+        ExtAverageTurboVelocity[0] = donorAverages[2];
+        ExtAverageTurboVelocity[1] = donorAverages[3];
+        if (nDim == 3) ExtAverageTurboVelocity[2] = donorAverages[4];
+
         /*--- Build the external state u_e from boundary data and internal node ---*/
 
         switch(config->GetKind_Data_Riemann(Marker_Tag))
         {
-          //TODO(turbo), generilize for 3D case
-          //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
+          //TODO(turbo), generalize for 3D case
+          //TODO(turbo), generalize for Inlet and Outlet in for backflow treatment
           //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
           case TOTAL_CONDITIONS_PT:
 
@@ -5581,15 +5850,15 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           case MIXING_IN:
 
             /* --- compute total averaged quantities ---*/
-            GetFluidModel()->SetTDState_Prho(ExtAveragePressure[val_marker][iSpan], ExtAverageDensity[val_marker][iSpan]);
-            AverageEnthalpy = GetFluidModel()->GetStaticEnergy() + ExtAveragePressure[val_marker][iSpan]/ExtAverageDensity[val_marker][iSpan];
+            GetFluidModel()->SetTDState_Prho(ExtAveragePressure, ExtAverageDensity);
+            AverageEnthalpy = GetFluidModel()->GetStaticEnergy() + ExtAveragePressure/ExtAverageDensity;
             AverageEntropy  = GetFluidModel()->GetEntropy();
 
             FlowDirMixMag = 0;
             for (iDim = 0; iDim < nDim; iDim++)
-              FlowDirMixMag += ExtAverageTurboVelocity[val_marker][iSpan][iDim]*ExtAverageTurboVelocity[val_marker][iSpan][iDim];
+              FlowDirMixMag += ExtAverageTurboVelocity[iDim]*ExtAverageTurboVelocity[iDim];
             for (iDim = 0; iDim < nDim; iDim++){
-              FlowDirMix[iDim] = ExtAverageTurboVelocity[val_marker][iSpan][iDim]/sqrt(FlowDirMixMag);
+              FlowDirMix[iDim] = ExtAverageTurboVelocity[iDim]/sqrt(FlowDirMixMag);
             }
 
 
@@ -5617,7 +5886,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           case MIXING_OUT:
 
             /*--- Retrieve the static pressure for this boundary. ---*/
-            Pressure_e = ExtAveragePressure[val_marker][iSpan];
+            Pressure_e = ExtAveragePressure;
             Density_e = Density_i;
 
             /* --- Compute the boundary state u_e --- */
@@ -5873,7 +6142,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           /*--- Secondary variables ---*/
 
-          S_domain = nodes->GetSecondary(iPoint);
+          S_domain = ideal_gas ? nullptr : nodes->GetSecondary(iPoint);
 
           /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 
@@ -5947,7 +6216,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag) {
-  /* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
+  /* Implementation of Fourier Transformations for non-reflecting BC will come soon */
   su2double cj_inf,cj_out1, cj_out2, Density_i, Pressure_i, *turboNormal, *turboVelocity, *Velocity_i, AverageSoundSpeed;
   su2double *deltaprim, *cj, TwoPiThetaFreq_Pitch, pitch, theta, deltaTheta;
   unsigned short iMarker, iSpan, iMarkerTP, iDim;
@@ -6114,6 +6383,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
 
 void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                             CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim, iVar, jVar, iSpan;
   unsigned long  iPoint, Point_Normal, oldVertex, k, kend, kend_max, iVertex;
@@ -6127,6 +6397,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
   bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
+  const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
+                         config->GetKind_FluidModel() == IDEAL_GAS;
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   su2double relfacAvgCfg       = config->GetGiles_RelaxFactorAverage(Marker_Tag);
   su2double relfacFouCfg       = config->GetGiles_RelaxFactorFourier(Marker_Tag);
@@ -6188,7 +6460,6 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     deltaSpan       = SpanWiseValues[nSpanWiseSections-1]*spanPercent;
     coeffrelfacAvg  = (relfacAvgCfg - extrarelfacAvg)/deltaSpan;
   }
-
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
     /*--- Compute under relaxation for the Hub and Shroud Avg and Fourier Coefficient---*/
     if(nDim == 3){
@@ -6218,7 +6489,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     AverageTurboMach[1] = AverageTurboVelocity[val_marker][iSpan][1]/AverageSoundSpeed;
 
     if(dynamic_grid){
-      AverageTurboMach[1] -= geometry->GetAverageTangGridVel(val_marker,iSpan)/AverageSoundSpeed;
+      AverageTurboMach[1] = AverageRelTangVelocity[val_marker][iSpan]/AverageSoundSpeed;
     }
 
     AvgMach = AverageTurboMach[0]*AverageTurboMach[0] + AverageTurboMach[1]*AverageTurboMach[1];
@@ -6226,6 +6497,22 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     kend     = geometry->GetnFreqSpan(val_marker, iSpan);
     kend_max = geometry->GetnFreqSpanMax(config->GetMarker_All_TurbomachineryFlag(val_marker));
     conv_numerics->GetRMatrix(AverageSoundSpeed, AverageDensity[val_marker][iSpan], R_Matrix);
+
+    su2double donorAverages[5] = {0.0};
+    switch (config->GetKind_Data_Giles(Marker_Tag)){
+      case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:
+        for (auto mixVar = 0u; mixVar < 5; mixVar++) donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
+        break;
+      default:
+        break;
+    }
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      ExtAverageDensity = donorAverages[0];
+      ExtAveragePressure = donorAverages[1];
+      ExtAverageTurboVelocity[0] = donorAverages[2];
+      ExtAverageTurboVelocity[1] = donorAverages[3];
+      if (nDim == 3) ExtAverageTurboVelocity[2] = donorAverages[4];
+    } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     switch(config->GetKind_Data_Giles(Marker_Tag)){
 
@@ -6344,16 +6631,16 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     case MIXING_IN: case MIXING_OUT:
 
       /* --- Compute average jump of primitive at the mixing-plane interface--- */
-      deltaprim[0] = ExtAverageDensity[val_marker][iSpan] - AverageDensity[val_marker][iSpan];
-      deltaprim[1] = ExtAverageTurboVelocity[val_marker][iSpan][0] - AverageTurboVelocity[val_marker][iSpan][0];
-      deltaprim[2] = ExtAverageTurboVelocity[val_marker][iSpan][1] - AverageTurboVelocity[val_marker][iSpan][1];
+      deltaprim[0] = ExtAverageDensity - AverageDensity[val_marker][iSpan];
+      deltaprim[1] = ExtAverageTurboVelocity[0] - AverageTurboVelocity[val_marker][iSpan][0];
+      deltaprim[2] = ExtAverageTurboVelocity[1] - AverageTurboVelocity[val_marker][iSpan][1];
       if (nDim == 2){
-        deltaprim[3] = ExtAveragePressure[val_marker][iSpan] - AveragePressure[val_marker][iSpan];
+        deltaprim[3] = ExtAveragePressure - AveragePressure[val_marker][iSpan];
       }
       else
       {
-        deltaprim[3] = ExtAverageTurboVelocity[val_marker][iSpan][2] - AverageTurboVelocity[val_marker][iSpan][2];
-        deltaprim[4] = ExtAveragePressure[val_marker][iSpan] - AveragePressure[val_marker][iSpan];
+        deltaprim[3] = ExtAverageTurboVelocity[2] - AverageTurboVelocity[val_marker][iSpan][2];
+        deltaprim[4] = ExtAveragePressure - AveragePressure[val_marker][iSpan];
       }
 
 
@@ -6366,16 +6653,16 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     case MIXING_IN_1D: case MIXING_OUT_1D:
 
       /* --- Compute average jump of primitive at the mixing-plane interface--- */
-      deltaprim[0] = ExtAverageDensity[val_marker][nSpanWiseSections] - AverageDensity[val_marker][nSpanWiseSections];
-      deltaprim[1] = ExtAverageTurboVelocity[val_marker][nSpanWiseSections][0] - AverageTurboVelocity[val_marker][nSpanWiseSections][0];
-      deltaprim[2] = ExtAverageTurboVelocity[val_marker][nSpanWiseSections][1] - AverageTurboVelocity[val_marker][nSpanWiseSections][1];
+      deltaprim[0] = ExtAverageDensity - AverageDensity[val_marker][nSpanWiseSections];
+      deltaprim[1] = ExtAverageTurboVelocity[0] - AverageTurboVelocity[val_marker][nSpanWiseSections][0];
+      deltaprim[2] = ExtAverageTurboVelocity[1] - AverageTurboVelocity[val_marker][nSpanWiseSections][1];
       if (nDim == 2){
-        deltaprim[3] = ExtAveragePressure[val_marker][nSpanWiseSections] - AveragePressure[val_marker][nSpanWiseSections];
+        deltaprim[3] = ExtAveragePressure - AveragePressure[val_marker][nSpanWiseSections];
       }
       else
       {
-        deltaprim[3] = ExtAverageTurboVelocity[val_marker][nSpanWiseSections][2] - AverageTurboVelocity[val_marker][nSpanWiseSections][2];
-        deltaprim[4] = ExtAveragePressure[val_marker][nSpanWiseSections] - AveragePressure[val_marker][nSpanWiseSections];
+        deltaprim[3] = ExtAverageTurboVelocity[2] - AverageTurboVelocity[val_marker][nSpanWiseSections][2];
+        deltaprim[4] = ExtAveragePressure - AveragePressure[val_marker][nSpanWiseSections];
       }
 
       /* --- Compute average jump of charachteristic variable at the mixing-plane interface--- */
@@ -6421,6 +6708,16 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
       break;
 
+    case MASS_FLOW_OUTLET:
+      auto const MassFlowRate_e = config->GetGiles_Var1(Marker_Tag);
+      auto const relFacMassFlowRate = config->GetGiles_Var2(Marker_Tag);
+
+      Pressure_e = AveragePressure[val_marker][nSpanWiseSections]+relFacMassFlowRate*GetFluidModel()->GetdPdrho_e()*(AverageMassFlowRate[val_marker]-MassFlowRate_e);
+
+      /*--- Compute avg characteristic jump  ---*/
+      c_avg[nDim + 1] = -2.0*(AveragePressure[val_marker][iSpan]-Pressure_e);
+      break;
+
     }
 
     /*--- Loop over all the vertices on this boundary marker ---*/
@@ -6452,8 +6749,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       V_domain = nodes->GetPrimitive(iPoint);
 
       /*--- Retrieve domain Secondary variables ---*/
-      S_domain = nodes->GetSecondary(iPoint);
-
+      S_domain = ideal_gas? nullptr : nodes->GetSecondary(iPoint);
 
       /*--- Compute the internal state u_i ---*/
       Velocity2_i = 0;
@@ -6499,8 +6795,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       switch(config->GetKind_Data_Giles(Marker_Tag))
       {
 
-      //Done, generilize for 3D case
-      //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
+      //Done, generalize for 3D case
+      //TODO(turbo), generalize for Inlet and Outlet in for backflow treatment
 
       case TOTAL_CONDITIONS_PT: case MIXING_IN:case TOTAL_CONDITIONS_PT_1D: case MIXING_IN_1D:
         if(config->GetSpatialFourier()){
@@ -6592,7 +6888,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
         break;
 
 
-      case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D:
+      case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D: case MASS_FLOW_OUTLET:
 
         /* --- implementation of Giles BC---*/
         if(config->GetSpatialFourier()){
@@ -6861,8 +7157,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics,
                             CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned short iDim;
-  unsigned long iVertex, iPoint;
   su2double P_Total, T_Total, Velocity[MAXNDIM], Velocity2, H_Total, Temperature, Riemann,
   Pressure, Density, Energy, Flow_Dir[MAXNDIM], Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
   alpha, aa, bb, cc, dd, Area, UnitNormal[MAXNDIM], Normal[MAXNDIM];
@@ -6871,290 +7167,278 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const auto Kind_Inlet = config->GetKind_Inlet();
+  const auto Kind_Inlet_Cfg = config->GetKind_Inlet();
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Allocate the value at the inlet ---*/
 
     V_inlet = GetCharacPrimVar(val_marker, iVertex);
 
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      conv_numerics->SetNormal(Normal);
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    conv_numerics->SetNormal(Normal);
 
-      Area = GeometryToolbox::Norm(nDim, Normal);
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
+    Area = GeometryToolbox::Norm(nDim, Normal);
+    for (iDim = 0; iDim < nDim; iDim++)
+      UnitNormal[iDim] = Normal[iDim]/Area;
 
-      /*--- Retrieve solution at this boundary node ---*/
+    /*--- Retrieve solution at this boundary node ---*/
 
-      V_domain = nodes->GetPrimitive(iPoint);
+    V_domain = nodes->GetPrimitive(iPoint);
 
-      /*--- Build the fictitious intlet state based on characteristics ---*/
+    /*--- On intersections with viscous walls we set the total conditions equal to
+        the static conditions of the wall point. This avoids a jump in pressure,
+        energy, etc. at this location. ---*/
 
+    const auto Kind_Inlet = geometry->nodes->GetViscousBoundary(iPoint)
+        ? INLET_TYPE::TOTAL_CONDITIONS : Kind_Inlet_Cfg;
 
-      /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
-         therefore we can specify all but one state variable at the inlet.
-         The outgoing Riemann invariant provides the final piece of info.
-         Adapted from an original implementation in the Stanford University
-         multi-block (SUmb) solver in the routine bcSubsonicInflow.f90
-         written by Edwin van der Weide, last modified 04-20-2009. ---*/
+    /*--- Build the fictitious inlet state based on characteristics ---*/
 
-      switch (Kind_Inlet) {
+    /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
+        therefore we can specify all but one state variable at the inlet.
+        The outgoing Riemann invariant provides the final piece of info.
+        Adapted from an original implementation in the Stanford University
+        multi-block (SUmb) solver in the routine bcSubsonicInflow.f90
+        written by Edwin van der Weide, last modified 04-20-2009. ---*/
 
-        /*--- Total properties have been specified at the inlet. ---*/
+    switch (Kind_Inlet) {
 
-        case INLET_TYPE::TOTAL_CONDITIONS: {
+      /*--- Total properties have been specified at the inlet. ---*/
 
-          /*--- Retrieve the specified total conditions for this inlet. ---*/
+      case INLET_TYPE::TOTAL_CONDITIONS: {
 
-          P_Total  = Inlet_Ptotal[val_marker][iVertex];
-          T_Total  = Inlet_Ttotal[val_marker][iVertex];
-          const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
-          const su2double mag = GeometryToolbox::Norm(nDim, dir);
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Flow_Dir[iDim] = dir[iDim] / mag;
-          }
+        /*--- Retrieve the specified total conditions for this inlet. ---*/
 
-          /*--- Non-dim. the inputs if necessary. ---*/
+        P_Total = Inlet_Ptotal[val_marker][iVertex];
+        T_Total = Inlet_Ttotal[val_marker][iVertex];
+        const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
+        const su2double mag = GeometryToolbox::Norm(nDim, dir);
 
-          P_Total /= config->GetPressure_Ref();
-          T_Total /= config->GetTemperature_Ref();
+        /*--- Store the unit flow direction vector.
+         If requested, use the local boundary normal (negative),
+         instead of the prescribed flow direction in the config. ---*/
 
-          /*--- Store primitives and set some variables for clarity. ---*/
-
-          Density = V_domain[nDim+2];
-          Velocity2 = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity[iDim] = V_domain[iDim+1];
-            Velocity2 += Velocity[iDim]*Velocity[iDim];
-          }
-          Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
-          Pressure    = V_domain[nDim+1];
-          H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
-          SoundSpeed2 = Gamma*Pressure/Density;
-
-          /*--- Compute the acoustic Riemann invariant that is extrapolated
-             from the domain interior. ---*/
-
-          Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
+        if (config->GetInletUseNormal()) {
           for (iDim = 0; iDim < nDim; iDim++)
-            Riemann += Velocity[iDim]*UnitNormal[iDim];
-
-          /*--- Total speed of sound ---*/
-
-          SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
-
-          /*--- Dot product of normal and flow direction. This should
-             be negative due to outward facing boundary normal convention. ---*/
-
-          alpha = 0.0;
+            Flow_Dir[iDim] = -UnitNormal[iDim];
+        } else {
           for (iDim = 0; iDim < nDim; iDim++)
-            alpha += UnitNormal[iDim]*Flow_Dir[iDim];
-
-          /*--- Coefficients in the quadratic equation for the velocity ---*/
-
-          aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
-          bb = -1.0*Gamma_Minus_One*alpha*Riemann;
-          cc =  0.5*Gamma_Minus_One*Riemann*Riemann
-              -2.0*SoundSpeed_Total2/Gamma_Minus_One;
-
-          /*--- Solve quadratic equation for velocity magnitude. Value must
-             be positive, so the choice of root is clear. ---*/
-
-          dd = bb*bb - 4.0*aa*cc;
-          dd = sqrt(max(0.0, dd));
-          Vel_Mag   = (-bb + dd)/(2.0*aa);
-          Vel_Mag   = max(0.0, Vel_Mag);
-          Velocity2 = Vel_Mag*Vel_Mag;
-
-          /*--- Compute speed of sound from total speed of sound eqn. ---*/
-
-          SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-          /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-
-          Mach2 = Velocity2/SoundSpeed2;
-          Mach2 = min(1.0, Mach2);
-          Velocity2   = Mach2*SoundSpeed2;
-          Vel_Mag     = sqrt(Velocity2);
-          SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-          /*--- Compute new velocity vector at the inlet ---*/
-
-          for (iDim = 0; iDim < nDim; iDim++)
-            Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
-
-          /*--- Static temperature from the speed of sound relation ---*/
-
-          Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-
-          /*--- Static pressure using isentropic relation at a point ---*/
-
-          Pressure = P_Total*pow((Temperature/T_Total), Gamma/Gamma_Minus_One);
-
-          /*--- Density at the inlet from the gas law ---*/
-
-          Density = Pressure/(Gas_Constant*Temperature);
-
-          /*--- Using pressure, density, & velocity, compute the energy ---*/
-
-          Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-          if (tkeNeeded) Energy += GetTke_Inf();
-
-          /*--- Primitive variables, using the derived quantities ---*/
-
-          V_inlet[0] = Temperature;
-          for (iDim = 0; iDim < nDim; iDim++)
-            V_inlet[iDim+1] = Velocity[iDim];
-          V_inlet[nDim+1] = Pressure;
-          V_inlet[nDim+2] = Density;
-          V_inlet[nDim+3] = Energy + Pressure/Density;
-
-          break;
+            Flow_Dir[iDim] = dir[iDim]/mag;
         }
-        /*--- Mass flow has been specified at the inlet. ---*/
 
-        case INLET_TYPE::MASS_FLOW: {
+        /*--- Non-dim. the inputs if necessary. ---*/
 
-          /*--- Retrieve the specified mass flow for the inlet. ---*/
+        P_Total /= config->GetPressure_Ref();
+        T_Total /= config->GetTemperature_Ref();
 
-          Density  = Inlet_Ttotal[val_marker][iVertex];
-          Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
-          const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
-          const su2double mag = GeometryToolbox::Norm(nDim, dir);
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Flow_Dir[iDim] = dir[iDim] / mag;
-          }
-
-          /*--- Non-dim. the inputs if necessary. ---*/
-
-          Density /= config->GetDensity_Ref();
-          Vel_Mag /= config->GetVelocity_Ref();
-
-          /*--- Get primitives from current inlet state. ---*/
-
-          for (iDim = 0; iDim < nDim; iDim++)
-            Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
-          Pressure    = nodes->GetPressure(iPoint);
-          SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
-
-          /*--- Compute the acoustic Riemann invariant that is extrapolated
-             from the domain interior. ---*/
-
-          Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-          for (iDim = 0; iDim < nDim; iDim++)
-            Riemann += Velocity[iDim]*UnitNormal[iDim];
-
-          /*--- Speed of sound squared for fictitious inlet state ---*/
-
-          SoundSpeed2 = Riemann;
-          for (iDim = 0; iDim < nDim; iDim++)
-            SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
-
-          SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-          SoundSpeed2 = SoundSpeed2*SoundSpeed2;
-
-          /*--- Pressure for the fictitious inlet state ---*/
-
-          Pressure = SoundSpeed2*Density/Gamma;
-
-          /*--- Energy for the fictitious inlet state ---*/
-
-          Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
-          if (tkeNeeded) Energy += GetTke_Inf();
-
-          /*--- Primitive variables, using the derived quantities ---*/
-
-          V_inlet[0] = Pressure / ( Gas_Constant * Density);
-          for (iDim = 0; iDim < nDim; iDim++)
-            V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
-          V_inlet[nDim+1] = Pressure;
-          V_inlet[nDim+2] = Density;
-          V_inlet[nDim+3] = Energy + Pressure/Density;
-
-          break;
+        if (geometry->nodes->GetViscousBoundary(iPoint)) {
+          P_Total = nodes->GetPressure(iPoint);
+          T_Total = nodes->GetTemperature(iPoint);
         }
-        default:
-          SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
-          break;
+
+        /*--- Store primitives and set some variables for clarity. ---*/
+
+        Density = V_domain[nDim+2];
+        Velocity2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim] = V_domain[iDim+1];
+          Velocity2 += Velocity[iDim]*Velocity[iDim];
+        }
+        Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+        Pressure    = V_domain[nDim+1];
+        H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
+        SoundSpeed2 = Gamma*Pressure/Density;
+
+        /*--- Compute the acoustic Riemann invariant that is extrapolated
+            from the domain interior. ---*/
+
+        Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Riemann += Velocity[iDim]*UnitNormal[iDim];
+
+        /*--- Total speed of sound ---*/
+
+        SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
+
+        /*--- Dot product of normal and flow direction. This should
+            be negative due to outward facing boundary normal convention. ---*/
+
+        alpha = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          alpha += UnitNormal[iDim]*Flow_Dir[iDim];
+
+        /*--- Coefficients in the quadratic equation for the velocity ---*/
+
+        aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
+        bb = -1.0*Gamma_Minus_One*alpha*Riemann;
+        cc =  0.5*Gamma_Minus_One*Riemann*Riemann
+            -2.0*SoundSpeed_Total2/Gamma_Minus_One;
+
+        /*--- Solve quadratic equation for velocity magnitude. Value must
+            be positive, so the choice of root is clear. ---*/
+
+        dd = bb*bb - 4.0*aa*cc;
+        dd = sqrt(max(0.0, dd));
+        Vel_Mag   = (-bb + dd)/(2.0*aa);
+        Vel_Mag   = max(0.0, Vel_Mag);
+        Velocity2 = Vel_Mag*Vel_Mag;
+
+        /*--- Compute speed of sound from total speed of sound eqn. ---*/
+
+        SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
+
+        /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
+
+        Mach2 = Velocity2/SoundSpeed2;
+        Mach2 = min(1.0, Mach2);
+        Velocity2   = Mach2*SoundSpeed2;
+        Vel_Mag     = sqrt(Velocity2);
+        SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
+
+        /*--- Compute new velocity vector at the inlet ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
+
+        /*--- Static temperature from the speed of sound relation ---*/
+
+        Temperature = SoundSpeed2/(Gamma*Gas_Constant);
+
+        /*--- Static pressure using isentropic relation at a point ---*/
+
+        Pressure = P_Total*pow((Temperature/T_Total), Gamma/Gamma_Minus_One);
+
+        /*--- Density at the inlet from the gas law ---*/
+
+        Density = Pressure/(Gas_Constant*Temperature);
+
+        /*--- Using pressure, density, & velocity, compute the energy ---*/
+
+        Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+        if (tkeNeeded) Energy += GetTke_Inf();
+
+        /*--- Primitive variables, using the derived quantities ---*/
+
+        V_inlet[0] = Temperature;
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_inlet[iDim+1] = Velocity[iDim];
+        V_inlet[nDim+1] = Pressure;
+        V_inlet[nDim+2] = Density;
+        V_inlet[nDim+3] = Energy + Pressure/Density;
+
+        break;
       }
+      /*--- Mass flow has been specified at the inlet. ---*/
 
-      /*--- Set various quantities in the solver class ---*/
+      case INLET_TYPE::MASS_FLOW: {
 
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
+        /*--- Retrieve the specified mass flow for the inlet. ---*/
 
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+        Density  = Inlet_Ttotal[val_marker][iVertex];
+        Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
+        const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
+        const su2double mag = GeometryToolbox::Norm(nDim, dir);
 
-      /*--- Compute the residual using an upwind scheme ---*/
 
-      auto residual = conv_numerics->ComputeResidual(config);
+        /*--- Store the unit flow direction vector.
+         If requested, use the local boundary normal (negative),
+         instead of the prescribed flow direction in the config. ---*/
 
-      /*--- Update residual value ---*/
+        if (config->GetInletUseNormal()) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = -UnitNormal[iDim];
+        } else {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = dir[iDim]/mag;
+        }
 
-      LinSysRes.AddBlock(iPoint, residual);
+        /*--- Non-dim. the inputs if necessary. ---*/
 
-      /*--- Jacobian contribution for implicit integration ---*/
+        Density /= config->GetDensity_Ref();
+        Vel_Mag /= config->GetVelocity_Ref();
 
-      if (implicit)
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+        /*--- Get primitives from current inlet state. ---*/
 
-//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-//
-//      if (viscous) {
-//
-//        /*--- Set laminar and eddy viscosity at the infinity ---*/
-//
-//        V_inlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-//        V_inlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
-//
-//        /*--- Set the normal vector and the coordinates ---*/
-//
-//        visc_numerics->SetNormal(Normal);
-//        su2double Coord_Reflected[MAXNDIM];
-//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-//                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//
-//        /*--- Primitive variables, and gradient ---*/
-//
-//        visc_numerics->SetPrimitive(V_domain, V_inlet);
-//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
-//
-//        /*--- Turbulent kinetic energy ---*/
-//
-//        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
-//
-//        /*--- Compute and update residual ---*/
-//
-//        auto residual = visc_numerics->ComputeResidual(config);
-//        LinSysRes.SubtractBlock(iPoint, residual);
-//
-//        /*--- Jacobian contribution for implicit integration ---*/
-//
-//        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-//
-//      }
+        for (iDim = 0; iDim < nDim; iDim++)
+          Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
+        Pressure    = nodes->GetPressure(iPoint);
+        SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
 
+        /*--- Compute the acoustic Riemann invariant that is extrapolated
+            from the domain interior. ---*/
+
+        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
+        for (iDim = 0; iDim < nDim; iDim++)
+          Riemann += Velocity[iDim]*UnitNormal[iDim];
+
+        /*--- Speed of sound squared for fictitious inlet state ---*/
+
+        SoundSpeed2 = Riemann;
+        for (iDim = 0; iDim < nDim; iDim++)
+          SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
+
+        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
+        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
+
+        /*--- Pressure for the fictitious inlet state ---*/
+
+        Pressure = SoundSpeed2*Density/Gamma;
+
+        /*--- Energy for the fictitious inlet state ---*/
+
+        Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
+        if (tkeNeeded) Energy += GetTke_Inf();
+
+        /*--- Primitive variables, using the derived quantities ---*/
+        Temperature = Pressure / ( Gas_Constant * Density);
+        V_inlet[0] = Temperature;
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
+        V_inlet[nDim+1] = Pressure;
+        V_inlet[nDim+2] = Density;
+        V_inlet[nDim+3] = Energy + Pressure/Density;
+
+        break;
+      }
+      default:
+        SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
+        break;
     }
+
+    /*--- Set various quantities in the solver class ---*/
+
+    conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
+    /*--- Compute the residual using an upwind scheme ---*/
+
+    auto residual = conv_numerics->ComputeResidual(config);
+
+    /*--- Update residual value ---*/
+
+    LinSysRes.AddBlock(iPoint, residual);
+
+    /*--- Jacobian contribution for implicit integration ---*/
+
+    if (implicit)
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
   }
   END_SU2_OMP_FOR
 
@@ -7163,6 +7447,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics,
                              CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint;
   su2double Pressure, P_Exit, Velocity[3],
@@ -7337,34 +7622,14 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                        CNumerics *conv_numerics, CNumerics *visc_numerics,
                                        CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   /*--- Supersonic inlet flow: there are no outgoing characteristics,
-   so all flow variables can be imposed at the inlet.
-   First, retrieve the specified values for the primitive variables. ---*/
-
-  const su2double Temperature = config->GetInlet_Temperature(Marker_Tag) / config->GetTemperature_Ref();
-  const su2double Pressure = config->GetInlet_Pressure(Marker_Tag) / config->GetPressure_Ref();
-  const auto* Vel = config->GetInlet_Velocity(Marker_Tag);
-
-  su2double Velocity[MAXNDIM] = {0.0};
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
-
-  /*--- Density at the inlet from the gas law ---*/
-
-  const su2double Density = Pressure / (Gas_Constant * Temperature);
-
-  /*--- Compute the energy from the specified state ---*/
-
-  const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
-  su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
-  if (tkeNeeded) Energy += GetTke_Inf();
-
-  /*--- Loop over all the vertices on this boundary marker ---*/
+   so all flow variables can be imposed at the inlet. ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -7372,12 +7637,33 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    /*--- Allocate the value at the inlet ---*/
+    /*--- Retrieve the inlet profile, note that total conditions are reused as static. ---*/
+
+    const su2double Temperature = Inlet_Ttotal[val_marker][iVertex] / config->GetTemperature_Ref();
+    const su2double Pressure = Inlet_Ptotal[val_marker][iVertex] / config->GetPressure_Ref();
+    su2double Velocity[MAXNDIM] = {0.0};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Velocity[iDim] = Inlet_FlowDir[val_marker][iVertex][iDim] / config->GetVelocity_Ref();
+    }
+
+    /*--- Density at the inlet from the gas law. ---*/
+
+    const su2double Density = Pressure / (Gas_Constant * Temperature);
+
+    /*--- Compute the energy from the specified state. ---*/
+
+    const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
+    su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
+    if (tkeNeeded) {
+      const su2double* Turb_Properties = config->GetInlet_TurbVal(Marker_Tag);
+      const su2double Intensity = Turb_Properties[0];
+      const su2double Tke = 3.0 / 2.0 * (Velocity2 * pow(Intensity, 2));
+      Energy += Tke;
+    }
+
+    /*--- Primitive variables, using the derived quantities. ---*/
 
     auto* V_inlet = GetCharacPrimVar(val_marker, iVertex);
-
-    /*--- Primitive variables, using the derived quantities ---*/
-
     V_inlet[prim_idx.Temperature()] = Temperature;
     V_inlet[prim_idx.Pressure()] = Pressure;
     V_inlet[prim_idx.Density()] = Density;
@@ -7385,17 +7671,17 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       V_inlet[iDim+prim_idx.Velocity()] = Velocity[iDim];
 
-    /*--- Current solution at this boundary node ---*/
+    /*--- Current solution at this boundary node. ---*/
 
-    auto* V_domain = nodes->GetPrimitive(iPoint);
+    const auto* V_domain = nodes->GetPrimitive(iPoint);
 
-    /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    /*--- Normal vector for this vertex (negate for outward convention). ---*/
 
     su2double Normal[MAXNDIM] = {0.0};
     geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-    /*--- Set various quantities in the solver class ---*/
+    /*--- Set various quantities in the solver class. ---*/
 
     conv_numerics->SetNormal(Normal);
     conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -7404,13 +7690,13 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
 
-    /*--- Compute the residual using an upwind scheme ---*/
+    /*--- Compute the residual using an upwind scheme. ---*/
 
     auto residual = conv_numerics->ComputeResidual(config);
 
     LinSysRes.AddBlock(iPoint, residual);
 
-    /*--- Jacobian contribution for implicit integration ---*/
+    /*--- Jacobian contribution for implicit integration. ---*/
 
     if (implicit)
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
@@ -7425,11 +7711,13 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
                                         CNumerics *conv_numerics, CNumerics *visc_numerics,
                                         CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double *V_outlet, *V_domain;
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   auto *Normal = new su2double[nDim];
@@ -7494,44 +7782,45 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-//
-//      if (viscous) {
-//
-//        /*--- Set laminar and eddy viscosity at the infinity ---*/
-//
-//        V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-//        V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
-//
-//        /*--- Set the normal vector and the coordinates ---*/
-//
-//        visc_numerics->SetNormal(Normal);
-//        su2double Coord_Reflected[MAXNDIM];
-//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-//                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//
-//        /*--- Primitive variables, and gradient ---*/
-//
-//        visc_numerics->SetPrimitive(V_domain, V_outlet);
-//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
-//
-//        /*--- Turbulent kinetic energy ---*/
-//
-//        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
-//
-//        /*--- Compute and update residual ---*/
-//
-//        auto residual = visc_numerics->ComputeResidual(config);
-//        LinSysRes.SubtractBlock(iPoint, residual);
-//
-//        /*--- Jacobian contribution for implicit integration ---*/
-//
-//        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-//      }
+     /*--- Viscous contribution, commented out because serious convergence problems ---*/
+
+     if (viscous) {
+
+       /*--- Set laminar and eddy viscosity at the infinity ---*/
+
+       V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
+       V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
+
+       /*--- Set the normal vector and the coordinates ---*/
+
+       visc_numerics->SetNormal(Normal);
+       su2double Coord_Reflected[MAXNDIM];
+       unsigned long Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+       GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                                geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+       visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+
+       /*--- Primitive variables, and gradient ---*/
+
+       visc_numerics->SetPrimitive(V_domain, V_domain);
+       visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
+
+       /*--- Turbulent kinetic energy ---*/
+
+       if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+         visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                             solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+
+       /*--- Compute and update residual ---*/
+
+       auto residual = visc_numerics->ComputeResidual(config);
+       LinSysRes.SubtractBlock(iPoint, residual);
+
+       /*--- Jacobian contribution for implicit integration ---*/
+
+       if (implicit)
+         Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+     }
 
     }
   }
@@ -7544,6 +7833,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 }
 
 void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim;
   unsigned long iVertex, iPoint;
@@ -7589,6 +7879,17 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
     /*--- Retrieve the specified target mass flow (non-dimensional) at the nacelle. ---*/
 
     Target_Inflow_MassFlow = config->GetEngineInflow_Target(Marker_Tag) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+
+    if (config->GetExhaustToInlet_Engine()) {
+      su2double Outlet_MF = 0.0;
+      unsigned short nMarker_Global = config->GetnMarker_CfgFile();
+      for (unsigned short iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == ENGINE_EXHAUST) {
+          Outlet_MF = Outlet_MF + config->GetExhaust_MassFlow(config->GetMarker_CfgFile_TagBound(iMarker_Global));
+        }
+      }
+      Target_Inflow_MassFlow = Outlet_MF;
+    }
 
     if (config->GetSystemMeasurements() == US) Target_Inflow_MassFlow /= 32.174;
 
@@ -7763,6 +8064,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim;
   unsigned long iVertex, iPoint;
@@ -8015,6 +8317,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 
 void CEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                     CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short Kind_ActDisk = config->GetKind_ActDisk();
 
@@ -8029,6 +8332,7 @@ void CEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_contai
 
 void CEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                      CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short Kind_ActDisk = config->GetKind_ActDisk();
 
@@ -8043,6 +8347,7 @@ void CEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_conta
 
 void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim;
   unsigned long iVertex, iPoint, GlobalIndex_donor, GlobalIndex;
@@ -8454,6 +8759,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
 void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
+  SU2_ZONE_SCOPED
 
   /*!
    * \function BC_ActDisk_VariableLoad
@@ -8694,6 +9000,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
 }
 
 void CEulerSolver::PrintVerificationError(const CConfig *config) const {
+  SU2_ZONE_SCOPED
 
   if ((rank != MASTER_NODE) || (MGLevel != MESH_0)) return;
 
@@ -8732,6 +9039,7 @@ void CEulerSolver::PrintVerificationError(const CConfig *config) const {
 }
 
 void CEulerSolver::SetFreeStream_Solution(const CConfig *config) {
+  SU2_ZONE_SCOPED
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
     nodes->SetSolution(iPoint,0, Density_Inf);
@@ -8744,6 +9052,7 @@ void CEulerSolver::SetFreeStream_Solution(const CConfig *config) {
 }
 
 void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
+  SU2_ZONE_SCOPED
 
   const su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
   const auto Mach             = config->GetMach();
@@ -8775,14 +9084,20 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
 }
 
 void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
+  SU2_ZONE_SCOPED
 
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
   const auto iZone = config->GetiZone();
+  const bool spalart_allmaras = (config->GetKind_Turb_Model() == TURB_MODEL::SA);
+  const bool menter_sst       = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   for (auto iSpan= 0u; iSpan < nSpanWiseSections; iSpan++){
     su2double TotalAreaVelocity[MAXNDIM]={0.0},
               TotalAreaPressure{0},
-              TotalAreaDensity{0};
+              TotalAreaDensity{0},
+              TotalAreaNu{0},
+              TotalAreaKine{0},
+              TotalAreaOmega{0};
     for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++){
       for (auto iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
@@ -8798,6 +9113,16 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
                 auto Pressure = nodes->GetPressure(iPoint);
                 auto Density = nodes->GetDensity(iPoint);
+
+                /*--- This is in Euler, however we also need to average the turbulent variables so we do it here too ---*/
+                su2double Kine{0}, Omega{0}, Nu{0};
+                if(menter_sst){
+                  Kine = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+                  Omega = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
+                }
+                if(spalart_allmaras){
+                  Nu = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+                }
 
                 su2double UnitNormal[MAXNDIM]={0},
                           TurboNormal[MAXNDIM]={0},
@@ -8819,6 +9144,9 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
                 TotalAreaDensity  += Area*Density;
                 for (auto iDim = 0u; iDim < nDim; iDim++)
                   TotalAreaVelocity[iDim] += Area*Velocity[iDim];
+                TotalAreaNu       += Area*Nu;
+                TotalAreaKine     += Area*Kine;
+                TotalAreaOmega    += Area*Omega;
               }
             }
           }
@@ -8828,29 +9156,34 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
 #ifdef HAVE_MPI
 
+    auto Allreduce = [](su2double x) {
+      su2double tmp = x; x = 0.0;
+      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      return x;
+    };
+
     /*--- Add information using all the nodes ---*/
 
-    su2double MyTotalAreaDensity = TotalAreaDensity;
-    su2double MyTotalAreaPressure  = TotalAreaPressure;
+    TotalAreaDensity = Allreduce(TotalAreaDensity);
+    TotalAreaPressure = Allreduce(TotalAreaPressure);
+    TotalAreaNu = Allreduce(TotalAreaNu);
+    TotalAreaKine = Allreduce(TotalAreaKine);
+    TotalAreaOmega = Allreduce(TotalAreaOmega);
 
-    SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    auto* buffer = new su2double[nDim];
 
-    auto* MyTotalAreaVelocity = new su2double[nDim];
+    auto Allreduce_inplace = [buffer](int size, su2double* x) {
+      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      for(int i=0; i<size; ++i) x[i] = buffer[i];
+    };
 
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      MyTotalAreaVelocity[iDim] = TotalAreaVelocity[iDim];
-    }
+    Allreduce_inplace(nDim, TotalAreaVelocity);
 
-    SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-    delete [] MyTotalAreaVelocity;
-
+    delete [] buffer;
+  
 #endif
 
     /*--- initialize spanwise average quantities ---*/
-
-
     for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++){
       for (auto iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
@@ -8865,6 +9198,10 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
             AveragePressure[iMarker][iSpan]          = TotalAreaPressure / TotalArea;
             for (auto iDim = 0u; iDim < nDim; iDim++)
               AverageVelocity[iMarker][iSpan][iDim]  = TotalAreaVelocity[iDim] / TotalArea;
+
+            AverageNu[iMarker][iSpan]             = TotalAreaNu / TotalArea;
+            AverageKine[iMarker][iSpan]           = TotalAreaKine / TotalArea;
+            AverageOmega[iMarker][iSpan]          = TotalAreaOmega / TotalArea;
 
             /* --- compute static averaged quantities ---*/
             ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
@@ -8896,6 +9233,10 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
           for (auto iDim = 0u; iDim < nDim; iDim++)
             AverageVelocity[iMarker][nSpanWiseSections][iDim] = AverageVelocity[iMarker][nSpanWiseSections/2][iDim];
 
+          AverageNu[iMarker][nSpanWiseSections]             = AverageNu[iMarker][nSpanWiseSections/2];
+          AverageKine[iMarker][nSpanWiseSections]           = AverageKine[iMarker][nSpanWiseSections/2];
+          AverageOmega[iMarker][nSpanWiseSections]          = AverageOmega[iMarker][nSpanWiseSections/2];
+
           /* --- compute static averaged quantities ---*/
           ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
 
@@ -8912,6 +9253,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
 
 void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
+  SU2_ZONE_SCOPED
 
   const auto average_process = config->GetKind_AverageProcess();
   const auto performance_average_process = config->GetKind_PerformanceAverageProcess();
@@ -8924,7 +9266,9 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   for (auto iSpan= 0; iSpan < nSpanWiseSections + 1; iSpan++){
     su2double TotalDensity{0}, TotalPressure{0}, TotalNu{0}, TotalOmega{0}, TotalKine{0}, TotalVelocity[MAXNDIM],
               TotalAreaDensity{0}, TotalAreaPressure{0}, TotalAreaNu{0}, TotalAreaOmega{0}, TotalAreaKine{0}, TotalAreaVelocity[MAXNDIM],
-              TotalMassDensity{0}, TotalMassPressure{0}, TotalMassNu{0}, TotalMassOmega{0}, TotalMassKine{0}, TotalMassVelocity[MAXNDIM];
+              TotalMassDensity{0}, TotalMassPressure{0}, TotalMassNu{0}, TotalMassOmega{0}, TotalMassKine{0}, TotalMassVelocity[MAXNDIM],
+              TotalRelTangVel{0}, TotalTangFlux{0}, TotalAreaRelTangVel{0},
+              TotalAbsTangVel{0}, TotalAreaAbsTangVel{0}, TotalMassAbsTangVel{0};
 
     su2double TotalFluxes[MAXNVAR];
     /*--- Forces initialization for contenitors ---*/
@@ -8946,7 +9290,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
       const auto Density  = nodes->GetDensity(iPoint);
       const auto Enthalpy = nodes->GetEnthalpy(iPoint);
 
-      su2double Velocity[MAXNDIM] = {0}, UnitNormal[MAXNDIM] = {0}, TurboNormal[MAXNDIM] = {0}, TurboVelocity[MAXNDIM] = {0};
+      su2double Velocity[MAXNDIM] = {0}, UnitNormal[MAXNDIM] = {0}, TurboNormal[MAXNDIM] = {0}, TurboVelocity[MAXNDIM] = {0}, TurboGridVelocity[MAXNDIM] = {0};
       geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
       geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
       const auto Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
@@ -8976,6 +9320,20 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
       for (auto iDim = 2; iDim < nDim+1; iDim++)
         TotalFluxes[iDim] += Area*(Density*TurboVelocity[0]*TurboVelocity[iDim -1]);
       TotalFluxes[nDim+1] += Area*(Density*TurboVelocity[0]*Enthalpy);
+
+      /*--- Compute relative tangential velocity ---*/
+      if (dynamic_grid) {
+        auto GridVel = geometry->nodes->GetGridVel(iPoint);
+        ComputeTurboVelocity(GridVel, TurboNormal, TurboGridVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
+      }
+
+      TotalRelTangVel += (TurboVelocity[1] - TurboGridVelocity[1]);
+      TotalAreaRelTangVel += Area*(TurboVelocity[1] - TurboGridVelocity[1]);
+      TotalTangFlux += Area*Density*TurboVelocity[0]*(TurboVelocity[1] - TurboGridVelocity[1]);
+
+      TotalAbsTangVel += TurboVelocity[1];
+      TotalAreaAbsTangVel += Area*TurboVelocity[1];
+      TotalMassAbsTangVel += Area*Density*TurboVelocity[0]*TurboVelocity[1];
 
       /*--- Compute turbulent integral quantities for the boundary of interest ---*/
 
@@ -9054,6 +9412,14 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     TotalMassKine = Allreduce(TotalMassKine);
     TotalMassOmega = Allreduce(TotalMassOmega);
 
+    TotalRelTangVel = Allreduce(TotalRelTangVel);
+    TotalAreaRelTangVel = Allreduce(TotalAreaRelTangVel);
+    TotalTangFlux = Allreduce(TotalTangFlux);
+
+    TotalAbsTangVel = Allreduce(TotalAbsTangVel);
+    TotalAreaAbsTangVel = Allreduce(TotalAreaAbsTangVel);
+    TotalMassAbsTangVel = Allreduce(TotalMassAbsTangVel);
+
     auto* buffer = new su2double[max(nVar,nDim)];
 
     auto Allreduce_inplace = [buffer](int size, su2double* x) {
@@ -9088,8 +9454,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
             const bool belowMachLimit = (abs(MachTest)< config->GetAverageMachLimit());
-            su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0},
-                      avgVelocity[MAXNDIM] = {0};
+            su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0}, avgVelocity[MAXNDIM] = {0}, avgRelTangVel{0}, avgAbsTangVel{0};
             for (auto iVar = 0u; iVar<nVar; iVar++){
               AverageFlux[iMarker][iSpan][iVar]   = TotalFluxes[iVar]/TotalArea;
               SpanTotalFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar];
@@ -9107,6 +9472,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 avgOmega          = TotalOmega/nVert;
                 avgNu             = TotalNu/nVert;
               }
+              avgRelTangVel = TotalRelTangVel/nVert;
+              avgAbsTangVel = TotalAbsTangVel/nVert;
               break;
             case AREA:
             /*--- compute area average ---*/
@@ -9118,6 +9485,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 avgOmega = TotalAreaOmega / TotalArea;
                 avgNu = TotalAreaNu / TotalArea;
               }
+              avgRelTangVel = TotalAreaRelTangVel / TotalArea;
+              avgAbsTangVel = TotalAreaAbsTangVel / TotalArea;
               break;
             case MASSFLUX:
             /*--- compute mass-flux average ---*/
@@ -9130,6 +9499,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   avgOmega = TotalAreaOmega / TotalArea;
                   avgNu = TotalAreaNu / TotalArea;
                 }
+                avgRelTangVel = TotalAreaRelTangVel / TotalArea;
+                avgAbsTangVel = TotalAreaAbsTangVel / TotalArea;
               } else {
                 avgDensity = TotalMassDensity / TotalFluxes[0];
                 avgPressure = TotalMassPressure / TotalFluxes[0];
@@ -9139,6 +9510,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   avgOmega = TotalMassOmega / TotalFluxes[0];
                   avgNu = TotalMassNu / TotalFluxes[0];
                 }
+                avgRelTangVel = TotalTangFlux / TotalFluxes[0];
+                avgAbsTangVel = TotalMassAbsTangVel / TotalFluxes[0];
               }
               break;
             case MIXEDOUT:
@@ -9153,6 +9526,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   avgOmega = TotalAreaOmega / TotalArea;
                   avgNu = TotalAreaNu / TotalArea;
                 }
+                avgRelTangVel = TotalAreaRelTangVel / TotalArea;
+                avgAbsTangVel = TotalAreaAbsTangVel / TotalArea;
               }else {
                 auto val_init_pressure = OldAveragePressure[iMarker][iSpan];
                 MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgPressure, avgDensity);
@@ -9160,25 +9535,31 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 for (auto iDim = 2; iDim < nDim +1;iDim++)
                   avgVelocity[iDim-1]  = AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
 
-                if (isnan(avgDensity) || isnan(avgPressure) || avgPressure < 0.0 || avgDensity < 0.0 ){
+                if (std::isnan(avgDensity) || std::isnan(avgPressure) || avgPressure < 0.0 || avgDensity < 0.0 ){
                   val_init_pressure = TotalAreaPressure / TotalArea;
                   MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgPressure, avgDensity);
                   avgVelocity[0]          = ( AverageFlux[iMarker][iSpan][1] - avgPressure) / AverageFlux[iMarker][iSpan][0];
                   for (auto iDim = 2; iDim < nDim +1;iDim++)
                     avgVelocity[iDim-1]   = AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
                 }
+                avgRelTangVel = TotalTangFlux / TotalFluxes[0];
+                avgAbsTangVel = TotalMassAbsTangVel / TotalFluxes[0];
                 if (turbulent) {
                   avgKine       = TotalMassKine / TotalFluxes[0];
                   avgOmega      = TotalMassOmega / TotalFluxes[0];
                   avgNu         = TotalMassNu / TotalFluxes[0];
                 }
               }
+
+              if (iSpan == nSpanWiseSections){
+                AverageMassFlowRate[iMarker] = TotalFluxes[0];
+              }
+
               break;
             default:
               SU2_MPI::Error(" Invalid AVERAGE PROCESS input!", CURRENT_FUNCTION);
               break;
             }
-
             AverageDensity[iMarker][iSpan] = avgDensity;
             AveragePressure[iMarker][iSpan] = avgPressure;
             if ((average_process == MIXEDOUT) && !belowMachLimit) {
@@ -9191,9 +9572,10 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               AverageOmega[iMarker][iSpan] = avgOmega;
               AverageNu[iMarker][iSpan] = avgNu;
             }
+            AverageRelTangVelocity[iMarker][iSpan] = avgRelTangVel;
 
             /* --- check if averaged quantities are correct otherwise reset the old quantities ---*/
-            const bool nanSolution = (isnan(AverageDensity[iMarker][iSpan]) || isnan(AveragePressure[iMarker][iSpan]));
+            const bool nanSolution = (std::isnan(AverageDensity[iMarker][iSpan]) || std::isnan(AveragePressure[iMarker][iSpan]));
             const bool negSolution = (AverageDensity[iMarker][iSpan] < 0.0 || AveragePressure[iMarker][iSpan] < 0.0);
             if (nanSolution || negSolution){
               if (nanSolution)
@@ -9227,12 +9609,14 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               KineIn[iMarkerTP - 1][iSpan]      = AverageKine[iMarker][iSpan];
               OmegaIn[iMarkerTP - 1][iSpan]     = AverageOmega[iMarker][iSpan];
               NuIn[iMarkerTP - 1][iSpan]        = AverageNu[iMarker][iSpan];
+              RelTangVelocityIn[iMarkerTP - 1][iSpan] = AverageRelTangVelocity[iMarker][iSpan];
             } else {
               DensityOut[iMarkerTP - 1][iSpan]  = AverageDensity[iMarker][iSpan];
               PressureOut[iMarkerTP - 1][iSpan] = AveragePressure[iMarker][iSpan];
               KineOut[iMarkerTP - 1][iSpan]     = AverageKine[iMarker][iSpan];
               OmegaOut[iMarkerTP - 1][iSpan]    = AverageOmega[iMarker][iSpan];
               NuOut[iMarkerTP - 1][iSpan]       = AverageNu[iMarker][iSpan];
+              RelTangVelocityOut[iMarkerTP - 1][iSpan] = AverageRelTangVelocity[iMarker][iSpan];
             }
 
             auto TurboVel = (marker_flag == INFLOW) ? TurboVelocityIn[iMarkerTP - 1][iSpan] : TurboVelocityOut[iMarkerTP - 1][iSpan];
@@ -9242,6 +9626,9 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             } else {
               ComputeTurboVelocity(avgVelocity, AverageTurboNormal , TurboVel, marker_flag, config->GetKind_TurboMachinery(iZone));
             }
+            /*--- Override the tangential component with the direct per-vertex turbo-frame average
+             *    so that TurboVel[1] - RelTangVelocity = avg(grid tang. vel.) ---*/
+            TurboVel[1] = avgAbsTangVel;
           }
         }
       } // iMarkerTP
@@ -9255,7 +9642,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
           auto Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
-          if(config->GetBoolGiles() || config->GetBoolRiemann()){
+          if(config->GetMarker_All_Giles(iMarker) || config->GetBoolRiemann()){ // May have to implement something similar for Riemann?
             if(config->GetBoolRiemann()){
               if(config->GetKind_Data_Riemann(Marker_Tag) == RADIAL_EQUILIBRIUM){
                 RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetRiemann_Var1(Marker_Tag)/config->GetPressure_Ref();
@@ -9287,6 +9674,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
 void CEulerSolver::MixedOut_Average(CConfig *config, su2double val_init_pressure, const su2double *val_Averaged_Flux,
                                      const su2double *val_normal, su2double& pressure_mix, su2double& density_mix) {
+  SU2_ZONE_SCOPED
 
   const auto relax_factor = config->GetMixedout_Coeff(0);
   const auto toll = config->GetMixedout_Coeff(1);
@@ -9331,12 +9719,13 @@ void CEulerSolver::MixedOut_Average(CConfig *config, su2double val_init_pressure
 }
 
 void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry){
+  SU2_ZONE_SCOPED
 
   unsigned short iMarker, iMarkerTP;
   unsigned short iSpan;
   int markerTP;
-  su2double     densityIn, pressureIn, normalVelocityIn, tangVelocityIn, radialVelocityIn;
-  su2double     densityOut, pressureOut, normalVelocityOut, tangVelocityOut, radialVelocityOut;
+  su2double     densityIn, pressureIn, normalVelocityIn, tangVelocityIn, radialVelocityIn, relTangVelocityIn;
+  su2double     densityOut, pressureOut, normalVelocityOut, tangVelocityOut, radialVelocityOut, relTangVelocityOut;
   su2double     kineIn, omegaIn, nuIn, kineOut, omegaOut, nuOut;
   //TODO (turbo) implement interpolation so that Inflow and Outflow spanwise section can be different
 
@@ -9350,8 +9739,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     su2double *TotTurbPerfIn = nullptr,*TotTurbPerfOut = nullptr;
     int *TotMarkerTP = nullptr;
 
-    n1          = 8;
-    n2          = 8;
+    n1          = 9;
+    n2          = 9;
     n1t         = n1*size;
     n2t         = n2*size;
     TurbPerfIn  = new su2double[n1];
@@ -9368,11 +9757,13 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     normalVelocityIn     = -1.0;
     tangVelocityIn       = -1.0;
     radialVelocityIn     = -1.0;
+    relTangVelocityIn    = -1.0;
     densityOut           = -1.0;
     pressureOut          = -1.0;
     normalVelocityOut    = -1.0;
     tangVelocityOut      = -1.0;
     radialVelocityOut    = -1.0;
+    relTangVelocityOut   = -1.0;
     kineIn               = -1.0;
     omegaIn              = -1.0;
     nuIn                 = -1.0;
@@ -9397,6 +9788,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             kineIn              = KineIn[iMarkerTP -1][iSpan];
             omegaIn             = OmegaIn[iMarkerTP -1][iSpan];
             nuIn                = NuIn[iMarkerTP -1][iSpan];
+            relTangVelocityIn   = RelTangVelocityIn[iMarkerTP -1][iSpan];
 
 #ifdef HAVE_MPI
             TurbPerfIn[0]  = densityIn;
@@ -9407,6 +9799,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfIn[5]  = kineIn;
             TurbPerfIn[6]  = omegaIn;
             TurbPerfIn[7]  = nuIn;
+            TurbPerfIn[8]  = relTangVelocityIn;
 #endif
           }
 
@@ -9422,6 +9815,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             kineOut              = KineOut[iMarkerTP -1][iSpan];
             omegaOut             = OmegaOut[iMarkerTP -1][iSpan];
             nuOut                = NuOut[iMarkerTP -1][iSpan];
+            relTangVelocityOut   = RelTangVelocityOut[iMarkerTP -1][iSpan];
 
 #ifdef HAVE_MPI
             TurbPerfOut[0]  = densityOut;
@@ -9432,6 +9826,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfOut[5]  = kineOut;
             TurbPerfOut[6]  = omegaOut;
             TurbPerfOut[7]  = nuOut;
+            TurbPerfOut[8]  = relTangVelocityOut;
 #endif
           }
         }
@@ -9461,26 +9856,28 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     if (rank == MASTER_NODE){
       for (int i=0;i<size;i++){
         if(TotTurbPerfIn[n1*i] > 0.0){
-          densityIn        = TotTurbPerfIn[n1*i];
-          pressureIn       = TotTurbPerfIn[n1*i+1];
-          normalVelocityIn = TotTurbPerfIn[n1*i+2];
-          tangVelocityIn   = TotTurbPerfIn[n1*i+3];
-          radialVelocityIn = TotTurbPerfIn[n1*i+4];
-          kineIn           = TotTurbPerfIn[n1*i+5];
-          omegaIn          = TotTurbPerfIn[n1*i+6];
-          nuIn             = TotTurbPerfIn[n1*i+7];
-          markerTP         = TotMarkerTP[i];
+          densityIn           = TotTurbPerfIn[n1*i];
+          pressureIn          = TotTurbPerfIn[n1*i+1];
+          normalVelocityIn    = TotTurbPerfIn[n1*i+2];
+          tangVelocityIn      = TotTurbPerfIn[n1*i+3];
+          radialVelocityIn    = TotTurbPerfIn[n1*i+4];
+          kineIn              = TotTurbPerfIn[n1*i+5];
+          omegaIn             = TotTurbPerfIn[n1*i+6];
+          nuIn                = TotTurbPerfIn[n1*i+7];
+          relTangVelocityIn   = TotTurbPerfIn[n1*i+8];
+          markerTP            = TotMarkerTP[i];
         }
 
         if(TotTurbPerfOut[n2*i] > 0.0){
-          densityOut        = TotTurbPerfOut[n1*i];
-          pressureOut       = TotTurbPerfOut[n1*i+1];
-          normalVelocityOut = TotTurbPerfOut[n1*i+2];
-          tangVelocityOut   = TotTurbPerfOut[n1*i+3];
-          radialVelocityOut = TotTurbPerfOut[n1*i+4];
-          kineOut           = TotTurbPerfOut[n1*i+5];
-          omegaOut          = TotTurbPerfOut[n1*i+6];
-          nuOut             = TotTurbPerfOut[n1*i+7];
+          densityOut           = TotTurbPerfOut[n2*i];
+          pressureOut          = TotTurbPerfOut[n2*i+1];
+          normalVelocityOut    = TotTurbPerfOut[n2*i+2];
+          tangVelocityOut      = TotTurbPerfOut[n2*i+3];
+          radialVelocityOut    = TotTurbPerfOut[n2*i+4];
+          kineOut              = TotTurbPerfOut[n2*i+5];
+          omegaOut             = TotTurbPerfOut[n2*i+6];
+          nuOut                = TotTurbPerfOut[n2*i+7];
+          relTangVelocityOut   = TotTurbPerfOut[n2*i+8];
         }
       }
 
@@ -9500,6 +9897,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       KineIn[markerTP -1][iSpan]                 = kineIn;
       OmegaIn[markerTP -1][iSpan]                = omegaIn;
       NuIn[markerTP -1][iSpan]                   = nuIn;
+      RelTangVelocityIn[markerTP -1][iSpan]      = relTangVelocityIn;
 
       DensityOut[markerTP -1][iSpan]             = densityOut;
       PressureOut[markerTP -1][iSpan]            = pressureOut;
@@ -9510,6 +9908,25 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       KineOut[markerTP -1][iSpan]                = kineOut;
       OmegaOut[markerTP -1][iSpan]               = omegaOut;
       NuOut[markerTP -1][iSpan]                  = nuOut;
+      RelTangVelocityOut[markerTP -1][iSpan]     = relTangVelocityOut;
     }
+  }
+}
+
+void CEulerSolver::ComputeTurboBladePerformance(CGeometry* geometry, CConfig* config, unsigned short iBlade) {
+  // Computes the turboperformance per blade in zone iBlade and stores the results in TurbomachineryPerformance.
+  const auto nDim = geometry->GetnDim();
+  vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
+  if (rank == MASTER_NODE) {
+    std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
+    auto nSpan = config->GetnSpanWiseSections();
+    for (auto iSpan = 0; iSpan < nSpan + 1; iSpan++) {
+      TurboPrimitiveIn = GetTurboPrimitive(iBlade, iSpan, true);
+      TurboPrimitiveOut = GetTurboPrimitive(iBlade, iSpan, false);
+      auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, GetTangGridVelIn(iBlade, iSpan));
+      auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, GetTangGridVelOut(iBlade, iSpan));
+      bladePrimitives.push_back(CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive));
+    }
+    TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladePrimitives, iBlade);
   }
 }

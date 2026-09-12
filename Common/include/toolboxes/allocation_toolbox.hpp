@@ -5,14 +5,14 @@
  * \note  These are "kernel" functions, only to be used with good reason,
  *        always try to use higher level container classes.
  * \author P. Gomes, D. Kavolis
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,10 @@
 #include <malloc.h>
 #else
 #include <stdlib.h>
+#endif
+
+#ifdef HAVE_CUDA
+#include "../linear_algebra/GPUComms.cuh"
 #endif
 
 #include <cstring>
@@ -63,16 +67,18 @@ inline T* aligned_alloc(size_t alignment, size_t size) noexcept {
 
   void* ptr = nullptr;
 
+  if (size > 0) {
 #if defined(__APPLE__)
-  if (::posix_memalign(&ptr, alignment, size) != 0) {
-    ptr = nullptr;
-  }
+    if (::posix_memalign(&ptr, alignment, size) != 0) {
+      ptr = nullptr;
+    }
 #elif defined(_WIN32)
-  ptr = _aligned_malloc(size, alignment);
+    ptr = _aligned_malloc(size, alignment);
 #else
-  ptr = ::aligned_alloc(alignment, size);
+    ptr = ::aligned_alloc(alignment, size);
 #endif
-  if (ZeroInit) memset(ptr, 0, size);
+    if (ZeroInit) memset(ptr, 0, size);
+  }
   return static_cast<T*>(ptr);
 }
 
@@ -90,3 +96,87 @@ inline void aligned_free(T* ptr) noexcept {
 }
 
 }  // namespace MemoryAllocation
+
+namespace GPUMemoryAllocation {
+/*!
+ * \brief Memory allocation for variables on the GPU.
+ * \param[in] size in bytes.
+ * \tparam ZeroInit, initialize memory to 0.
+ * \return Pointer to memory, always use gpu_free to deallocate.
+ */
+template <class T, bool ZeroInit = false>
+inline T* gpu_alloc(size_t size) noexcept {
+  void* ptr = nullptr;
+
+#if defined(HAVE_CUDA)
+  gpuErrChk(cudaMalloc((void**)(&ptr), size));
+  if (ZeroInit) gpuErrChk(cudaMemset((void*)(ptr), 0.0, size));
+#else
+  return 0;
+#endif
+
+  return static_cast<T*>(ptr);
+}
+
+/*!
+ * \brief Free memory allocated on the GPU with gpu_alloc.
+ * \param[in] ptr, pointer to memory we want to release.
+ */
+template <class T>
+inline void gpu_free(T* ptr) noexcept {
+#ifdef HAVE_CUDA
+  gpuErrChk(cudaFree((void*)ptr));
+#endif
+}
+/*!
+ * \brief Memory allocation for variables on the GPU along with initialization from a source host array.
+ * \param[in] size in bytes.
+ * \return Pointer to memory, always use gpu_free to deallocate.
+ */
+template <class T>
+inline T* gpu_alloc_cpy(const T* src_ptr, size_t size) noexcept {
+  void* ptr = nullptr;
+
+#ifdef HAVE_CUDA
+  gpuErrChk(cudaMalloc((void**)(&ptr), size));
+  gpuErrChk(cudaMemcpy((void*)(ptr), (void*)src_ptr, size, cudaMemcpyHostToDevice));
+#endif
+
+  return static_cast<T*>(ptr);
+}
+
+/*!
+ * \brief Page-locked ("pinned") host memory allocation.
+ * \note Unlike regular (pageable) host memory, cudaMemcpyAsync from/to a pinned buffer is
+ *       actually asynchronous with respect to the host thread; from pageable memory the driver
+ *       silently falls back to a synchronous staged copy. Only worth it for host buffers that
+ *       are the source/destination of an async transfer meant to overlap with other host work.
+ * \param[in] size in bytes.
+ * \tparam ZeroInit, initialize memory to 0.
+ * \return Pointer to memory, always use pinned_free to deallocate.
+ */
+template <class T, bool ZeroInit = false>
+inline T* pinned_alloc(size_t size) noexcept {
+  void* ptr = nullptr;
+
+#if defined(HAVE_CUDA)
+  gpuErrChk(cudaMallocHost((void**)(&ptr), size));
+  if (ZeroInit) memset(ptr, 0, size);
+#else
+  return 0;
+#endif
+
+  return static_cast<T*>(ptr);
+}
+
+/*!
+ * \brief Free memory allocated with pinned_alloc.
+ * \param[in] ptr, pointer to memory we want to release.
+ */
+template <class T>
+inline void pinned_free(T* ptr) noexcept {
+#ifdef HAVE_CUDA
+  gpuErrChk(cudaFreeHost((void*)ptr));
+#endif
+}
+}  // namespace GPUMemoryAllocation

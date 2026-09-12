@@ -17,6 +17,9 @@ freely, subject to the following restrictions:
 
 3. This notice may not be removed or altered from any source distribution.
 -------------------------------------------------------------------------*/
+/**
+ * \defgroup ErrorHandling Error Handling
+ **/
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -54,11 +57,35 @@ CGNSDLL void cgi_warning(const char *format, ...) {
     va_end(arg);
 }
 
-CGNSDLL const char *cg_get_error() {
+/**
+ * \ingroup ErrorHandling
+ *
+ * \brief If an error occurs during the execution of a CGNS library function,
+ * signified by a non-zero value of the error status variable \p ier, an error
+ * message may be retrieved using the function cg_get_error().
+ *
+ * \return The error message
+ */
+
+const char *cg_get_error() {
     return cgns_error_mess;
 }
 
-CGNSDLL void cg_error_exit() {
+/**
+ * \ingroup ErrorHandling
+ *
+ * \brief Print the error message and stop the execution of the program
+ *
+ * \note In C, you may define a function to be called automatically in the case of a
+ *       warning or error using the cg_configure() routine. The function is of the form
+ *       \code void err_func(int is_error, char *errmsg) \endcode and will be called whenever an error
+ *       or warning occurs. The first argument, \p is_error, will be 0 for warning messages,
+ *       1 for error messages, and -1 if the program is going to terminate
+ *       (i.e., a call to cg_error_exit()). The second argument is the error or warning message.
+ *
+ */
+
+void cg_error_exit() {
     if (cgns_error_handler)
         (*cgns_error_handler)(-1, cgns_error_mess);
     else
@@ -67,7 +94,21 @@ CGNSDLL void cg_error_exit() {
     exit(1);
 }
 
-CGNSDLL void cg_error_print() {
+/**
+ * \ingroup ErrorHandling
+ *
+ * \brief Print the error message and continue execution of the program
+ *
+ * \note In C, you may define a function to be called automatically in the case of a
+ *       warning or error using the cg_configure() routine. The function is of the form
+ *       \code void err_func(int is_error, char *errmsg) \endcode and will be called whenever an error
+ *       or warning occurs. The first argument, \p is_error, will be 0 for warning messages,
+ *       1 for error messages, and -1 if the program is going to terminate
+ *       (i.e., a call to cg_error_exit()). The second argument is the error or warning message.
+ *
+ */
+
+void cg_error_print() {
     fprintf(stderr,"%s\n",cgns_error_mess);
 }
 

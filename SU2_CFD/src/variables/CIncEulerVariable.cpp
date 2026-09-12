@@ -2,14 +2,14 @@
  * \file CIncEulerVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,19 +27,23 @@
 
 #include "../../include/variables/CIncEulerVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
-CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
+CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CFlowVariable(npoint, ndim, nvar, ndim + 9, ndim + 4, config),
+  : CFlowVariable(npoint, ndim, nvar, ndim + 10,
+                  ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 2 : 4), config),
     indices(ndim, 0) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  TemperatureLimits[0]= config->GetTemperatureLimits(0);
+  TemperatureLimits[1]= config->GetTemperatureLimits(1);
 
   /*--- Solution initialization ---*/
 
-  su2double val_solution[5] = {pressure, velocity[0], velocity[1], temperature, temperature};
+  su2double val_solution[5] = {pressure, velocity[0], velocity[1], enthalpy, enthalpy};
   if(nDim==3) val_solution[3] = velocity[2];
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
@@ -55,6 +59,11 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
+
+    if (config->GetKind_DensityModel() != INC_DENSITYMODEL::CONSTANT) {
+      Density_time_n.resize(nPoint) = su2double(0.0);
+      Density_time_n1.resize(nPoint) = su2double(0.0);
+    }
   }
 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
@@ -72,18 +81,15 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   SetPressure(iPoint);
 
-  /*--- Set the value of the temperature directly ---*/
+  su2double Enthalpy = Solution(iPoint, nDim +1);
+  FluidModel->SetTDState_h(Enthalpy);
+  su2double Temperature = FluidModel->GetTemperature();
 
-  su2double Temperature = Solution(iPoint, nDim+1);
-  const auto check_temp = SetTemperature(iPoint, Temperature);
+  const auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
   from the dynamic pressure being iterated. ---*/
-
-  /*--- Use the fluid model to compute the new value of density. ---*/
-
-  FluidModel->SetTDState_T(Temperature);
 
   /*--- Set the value of the density ---*/
 
@@ -100,9 +106,9 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
     /*--- Recompute the primitive variables ---*/
 
-    Temperature = Solution(iPoint, nDim+1);
-    SetTemperature(iPoint, Temperature);
-    FluidModel->SetTDState_T(Temperature);
+    Enthalpy = Solution(iPoint, nDim+1);
+    FluidModel->SetTDState_h(Enthalpy);
+    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/
@@ -115,11 +121,16 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   SetVelocity(iPoint);
 
-  /*--- Set specific heats (only necessary for consistency with preconditioning). ---*/
+  /*--- Set specific heats ---*/
 
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
   SetSpecificHeatCv(iPoint, FluidModel->GetCv());
 
+  /*--- Set enthalpy ---*/
+
+  SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
+
   return physical;
 
 }
+

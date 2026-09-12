@@ -3,14 +3,14 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.1 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -46,6 +46,7 @@ def parse_args(description: str):
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--tsan', action='store_true', help='Run thread sanitizer tests. Requires a tsan-enabled SU2 build.')
     parser.add_argument('--asan', action='store_true', help='Run address sanitizer tests. Requires an asan-enabled SU2 build.')
+    parser.add_argument('--tapetests', action='store_true', help='Run discrete adjoint tests in tape debug mode. Requires a SU2_CFD_AD build with Tag reverse type.')
     return parser.parse_args()
 
 class TestCase:
@@ -107,18 +108,26 @@ class TestCase:
         # multizone problem
         self.multizone = False
 
+        # Indicate tapetest mode
+        self.enabled_with_tapetests = False
+
         # The test condition. These must be set after initialization
         self.test_iter = 1
         self.ntest_vals = 4
         self.test_vals = []
+        self.tapetest_vals = []
         self.test_vals_aarch64 = []
         self.cpu_arch = platform.machine().casefold()
         self.enabled_on_cpu_arch = ["x86_64","amd64","aarch64","arm64"]
         self.enabled_with_tsan = True
         self.enabled_with_asan = True
+        self.enabled_with_regular = True # Set to False for a case that should only run under a sanitizer,
+                                          # e.g. one added purely to exercise a sanitizer-only finding.
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
+        self.tol_aarch64 = 0.0
+        self.tapetest_tol = 0
         self.tol_file_percent = 0.0
         self.comp_threshold = 0.0
 
@@ -127,9 +136,10 @@ class TestCase:
         self.reference_file_aarch64 = ""
         self.test_file      = "of_grad.dat"
 
-    def run_test(self, with_tsan=False, with_asan=False):
+    def run_test(self, with_tsan=False, with_asan=False, with_tapetests=False):
 
-        if not self.is_enabled(with_tsan, with_asan):
+        # Check whether this test is valid and can be continued
+        if not self.is_enabled(with_tsan, with_asan, with_tapetests):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -138,6 +148,7 @@ class TestCase:
         timed_out    = False
         iter_missing = True
         start_solver = True
+        tapetest_out = True
 
         # if root, add flag to mpirun
         self.command.allow_mpi_as_root()
@@ -168,6 +179,15 @@ class TestCase:
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
+
+        if hasattr(self, "decompress") and self.decompress:
+            print("--- Decompressing grid file: " + self.grid_file + ".gz")
+            import gzip, shutil
+            with gzip.open(self.grid_file + ".gz", "rb") as f_in:
+                with open(self.grid_file, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            print("--- Decompression completed!")
+
         start   = datetime.datetime.now()
         process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
@@ -188,10 +208,10 @@ class TestCase:
         delta_vals = []
         sim_vals = []
 
-        if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
+        if not with_tsan and not with_asan and not with_tapetests: # Sanitizer findings result in non-zero return code, no need to examine the output. Tapetest output is examined separately.
             # Examine the output
-            f = open(logfilename,'r')
-            output = f.readlines()
+            with open(logfilename,'r') as f:
+                output = f.readlines()
             if not timed_out and len(self.test_vals) != 0:
                 start_solver = False
                 for line in output:
@@ -223,9 +243,14 @@ class TestCase:
                             for j in range(len(data)):
                                 sim_vals.append( float(data[j]) )
                                 delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                                if delta_vals[j] > self.tol:
-                                    exceed_tol = True
-                                    passed     = False
+                                if isinstance(self.tol, list):
+                                    if delta_vals[j] > self.tol[j]:
+                                        exceed_tol = True
+                                        passed     = False
+                                else:
+                                    if delta_vals[j] > self.tol:
+                                        exceed_tol = True
+                                        passed     = False
                             break
                         else:
                             iter_missing = True
@@ -239,6 +264,32 @@ class TestCase:
         # Write the test results
         #for j in output:
         #  print(j)
+
+        if with_tapetests and self.enabled_with_tapetests: # examine the tapetest output
+            with open(logfilename,'r') as f:
+                output = f.readlines()
+            if not timed_out and len(self.tapetest_vals) != 0:
+                tapetest_out = False
+                for line in output:
+                    if not tapetest_out: # Don't bother parsing anything before "Total number of tape inconsistencies"
+                        if line.find('Total number of tape inconsistencies:') > -1:
+                            tapetest_out = True
+                            raw_data = line.split(':') # Split line into description and the string representing the number of errors
+                            data = raw_data[1].strip() # Clear the string representing the number of errors (for now, expecting a single integer, but zone-wise error numbers are planned)
+
+                            if not len(self.tapetest_vals)==len(data):   # something went wrong... probably bad input
+                                print("Error in tapetest_vals!")
+                                passed = False
+                                break
+                            for j in range(len(data)):
+                                sim_vals.append( int(data[j]) )
+                                delta_vals.append( abs(int(data[j])-self.tapetest_vals[j]) )
+                                if delta_vals[j] > self.tapetest_tol:
+                                    exceed_tol = True
+                                    passed     = False
+
+                if not tapetest_out:
+                    passed = False
 
 
         process.communicate()
@@ -257,17 +308,20 @@ class TestCase:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
         if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+            print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
-        if not start_solver:
+        if not start_solver and not with_tapetests:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
 
-        if not with_tsan and not with_asan and iter_missing:
+        if not tapetest_out and with_tapetests:
+            print('ERROR: The code was not able to get to the "Total number of tape inconsistencies" line.')
+
+        if not with_tsan and not with_asan and not with_tapetests and iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
         print('CPU architecture=%s' % self.cpu_arch)
 
-        if len(self.test_vals) != 0:
+        if len(self.test_vals) != 0 and not with_tapetests:
             print('test_iter=%d' % self.test_iter)
 
             print_vals(self.test_vals, name="test_vals (stored)")
@@ -283,9 +337,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_filediff(self, with_tsan=False, with_asan=False):
+    def run_filediff(self, with_tsan=False, with_asan=False, with_tapetests=False):
 
-        if not self.is_enabled(with_tsan, with_asan):
+        if not self.is_enabled(with_tsan, with_asan, with_tapetests):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -349,6 +403,9 @@ class TestCase:
 
                         # If file tolerance is set to 0, make regular diff
                         if self.tol_file_percent == 0.0:
+                            # Strip trailing whitespace but keep newline for difflib
+                            fromlines = [line.rstrip() + '\n' for line in fromlines]
+                            tolines = [line.rstrip() + '\n' for line in tolines]
                             diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
 
                         # Else test word by word with given tolerance
@@ -361,7 +418,14 @@ class TestCase:
 
                             # Assert that both files have the same number of lines
                             if len(fromlines) != len(tolines):
-                                diff = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ."]
+                                stringerr = "ERROR: Number of lines in " + str(fromfile) + " and " + str(tofile) + " differ: " + str(len(fromlines)) + " vs " + str(len(tolines)) + "."
+                                diff = [stringerr]
+                                print("generated file = ")
+                                for i_line in tolines:
+                                    print(i_line)
+                                for i_line in fromlines:
+                                    print(i_line)
+
                                 passed = False
 
                             # Loop through all lines
@@ -464,15 +528,18 @@ class TestCase:
                 print('Ignored entries:     ' + str(ignore_counter))
                 print('Maximum difference:  ' + str(max_delta) + '%')
 
+            if not passed:
+                print(open(self.test_file).readlines())
+
         print('==================== End Test: %s ====================\n'%self.tag)
 
         sys.stdout.flush()
         os.chdir(workdir)
         return passed
 
-    def run_opt(self, with_tsan=False, with_asan=False):
+    def run_opt(self, with_tsan=False, with_asan=False, with_tapetests=False):
 
-        if not self.is_enabled(with_tsan, with_asan):
+        if not self.is_enabled(with_tsan, with_asan, with_tapetests):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -572,7 +639,7 @@ class TestCase:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
         if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+            print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
         if not start_solver:
             print('ERROR: The code was not able to get to the "OBJFUN" section.')
@@ -595,9 +662,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_geo(self, with_tsan=False, with_asan=False):
+    def run_geo(self, with_tsan=False, with_asan=False, with_tapetests=False):
 
-        if not self.is_enabled(with_tsan, with_asan):
+        if not self.is_enabled(with_tsan, with_asan, with_tapetests):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -686,7 +753,7 @@ class TestCase:
                         delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
                         if delta_vals[j] > self.tol:
                             exceed_tol = True
-                            passed     = False
+                            passed = False
                 else:
                     iter_missing = True
 
@@ -714,7 +781,7 @@ class TestCase:
 
         if not with_tsan and not with_asan:
           if exceed_tol:
-              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+              print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
           if not start_solver:
               print('ERROR: The code was not able to get to the "OBJFUN" section.')
@@ -735,9 +802,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_def(self, with_tsan=False, with_asan=False):
+    def run_def(self, with_tsan=False, with_asan=False, with_tapetests=False):
 
-        if not self.is_enabled(with_tsan, with_asan):
+        if not self.is_enabled(with_tsan, with_asan, with_tapetests):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -845,7 +912,7 @@ class TestCase:
 
         if not with_tsan and not with_asan:
           if exceed_tol:
-              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
+              print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
           if not start_solver:
               print('ERROR: The code was not able to get to the "Begin solver" section.')
@@ -960,19 +1027,31 @@ class TestCase:
 
         return
 
-    def is_enabled(self, with_tsan=False, with_asan=False):
+    def is_enabled(self, with_tsan=False, with_asan=False, with_tapetests=False):
         is_enabled_on_arch = self.cpu_arch in self.enabled_on_cpu_arch
 
         if not is_enabled_on_arch:
             print('Ignoring test "%s" because it is not enabled for the current CPU architecture: %s' % (self.tag, self.cpu_arch))
 
+        # A test case is valid to be continued if neither of the special modes (tsan, asan, tapetests) is active, or if so, the corresponding test case is enabled, too.
         tsan_compatible = not with_tsan or self.enabled_with_tsan
         asan_compatible = not with_asan or self.enabled_with_asan
+        tapetests_compatible = not with_tapetests or self.enabled_with_tapetests
+        # A case marked enabled_with_regular = False only runs under a sanitizer/tapetests mode,
+        # e.g. one added purely to exercise a finding that only a sanitizer catches.
+        regular_run = not (with_tsan or with_asan or with_tapetests)
+        regular_compatible = not regular_run or self.enabled_with_regular
 
         if not tsan_compatible:
             print('Ignoring test "%s" because it is not enabled to run with the thread sanitizer.' % self.tag)
 
-        return is_enabled_on_arch and tsan_compatible and asan_compatible
+        if not tapetests_compatible:
+            print('Ignoring test "%s" because it is not enabled to run a test of the tape.' % self.tag)
+
+        if not regular_compatible:
+            print('Ignoring test "%s" because it is only enabled to run under a sanitizer.' % self.tag)
+
+        return is_enabled_on_arch and tsan_compatible and asan_compatible and tapetests_compatible and regular_compatible
 
     def adjust_test_data(self):
 
@@ -982,3 +1061,6 @@ class TestCase:
 
             if len(self.reference_file_aarch64) != 0:
                 self.reference_file = self.reference_file_aarch64
+
+            if self.tol_aarch64 != 0:
+                self.tol = self.tol_aarch64

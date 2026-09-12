@@ -2,14 +2,14 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,6 +57,14 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
 //////////////////////////////////////////////////////////////////////////////////
 
 unsigned long CDriver::GetNumberTimeIter() const { return config_container[selected_zone]->GetnTime_Iter(); }
+
+passivedouble CDriver::GetDensityFreeStreamND() const {
+  return SU2_TYPE::GetValue(config_container[selected_zone]->GetDensity_FreeStreamND());
+  }
+
+passivedouble CDriver::GetForceRef() const {
+  return SU2_TYPE::GetValue(config_container[selected_zone]->GetForce_Ref());
+  }
 
 unsigned long CDriver::GetTimeIter() const { return TimeIter; }
 
@@ -111,7 +119,7 @@ void CSinglezoneDriver::SetInitialMesh() {
   DynamicMeshUpdate(0);
 
   SU2_OMP_PARALLEL {
-    for (iMesh = 0u; iMesh <= main_config->GetnMGLevels(); iMesh++) {
+    for (auto iMesh = 0u; iMesh <= main_config->GetnMGLevels(); iMesh++) {
       SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[selected_zone][INST_0][iMesh]->GetnPoint(), omp_get_max_threads()))
       for (auto iPoint = 0ul; iPoint < geometry_container[selected_zone][INST_0][iMesh]->GetnPoint(); iPoint++) {
         /*--- Overwrite fictitious velocities. ---*/

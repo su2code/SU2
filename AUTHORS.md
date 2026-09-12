@@ -10,18 +10,18 @@ Thomas D. Economon    (formerly Stanford University)
 Juan J. Alonso                 (Stanford University)
 ```
 
-## Current Maintainer ##
+## Current Maintainers ##
 
 The SU2 project is maintained by members of the SU2 Foundation (https://su2foundation.org)
 
 ```
-Thomas D. Economon - Executive Director - tom@su2foundation.org
-Tim Albring        - Director           - tim@su2foundation.org
-Juan J. Alonso     - Director           - juan@su2foundation.org
-Eran Arad          - Director           - eran@su2foundation.org
-Piero Colonna      - Director           - piero@su2foundation.org
-Pedro Gomes        - Director           - pedro@su2foundation.org
-Daniel Mayer       - Director           - daniel@su2foundation.org
+Thomas D. Economon  - Chairperson
+Matteo Pini         - Vice Chairperson
+Nijso Beishuizen    - Treasurer
+Pedro Gomes         - Development Officer
+Giulio Gori         - Secretary
+Nitish Anand        - Editorial Officer
+Edwin van der Weide - Events Officer
 ```
 
 in collaboration with the following main contributors and research teams:
@@ -52,12 +52,15 @@ Amit Sachdeva
 Ana Lourenco
 Andrew Burkett
 Andrew Wendorff
+Angelo Passariello
 Aniket C. Aranake
 Antonio Rubino
 Arne Bachmann
 Arne Voß
+Ayush Kumar
 Beckett Y. Zhou
 Benjamin S. Kirk
+BlueChips
 Brendan Tracey
 Brian Munguía
 Carsten Othmer
@@ -67,9 +70,12 @@ Christian Bauer
 Clark Pederson
 Daumantas Kavolis
 Dave Taflin
+Davide Di Giusto
 Eduardo Molina
 Edwin van der Weide
+Eitan Aberman
 Ethan Alan Hereth
+Ezgi Orbay Akcengiz
 Florian Dittmann
 Filip Hahs
 Francesco Poli
@@ -89,11 +95,13 @@ Jairo Paes Cavalcante Filho
 Jason Howison
 Jayant Mukhopadhaya
 Jeffrey van Oostrom
+Jesse Li
 Jessie Lauzon
 João Loureiro
 Johannes Blühdorn
 JonathanSmith1936
 Joseph Signorelli
+Joshua A. Kelly
 Josy P. Pullockara
 Kedar Naik
 Kürşat Yurt
@@ -108,6 +116,7 @@ Max Sagebaum
 Michele Gaffuri
 Mickael Philit
 Mladen Banovic
+Mor
 Nat-1
 Nicola Fonzi
 Nijso Beishuizen
@@ -118,6 +127,7 @@ Paul Zhang
 Pedro Gomes
 Peng Yan
 Pete Bachant
+Pratyksh Gupta
 RaulFeijo55
 Ruben Sanchez
 Ryan Barrett
@@ -134,9 +144,11 @@ Thomas D. Economon
 Tim Albring
 TobiKattmann
 Trent Lukaczyk
+Vikram Bharadwaj
 Vinzenz Götz
 VivaanKhatri
 Wally Maier
+Yair Mor-Yossef
 Y. Chandukrishna
 Zan Xu
 Zcaic
@@ -163,4 +175,5 @@ sravya91
 srcopela
 tobadavid
 vfrancesmolla
+Yilun Tan
 ```

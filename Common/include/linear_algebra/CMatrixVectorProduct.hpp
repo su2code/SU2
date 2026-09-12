@@ -3,14 +3,14 @@
  * \brief Headers for the classes related to sparse matrix-vector product wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,7 @@
  * passed to a single implementation of the Krylov solvers.
  * This abstraction may also be used to define matrix-free products.
  */
+
 template <class ScalarType>
 class CMatrixVectorProduct {
  public:
@@ -81,7 +82,17 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
                                  const CConfig* config_ref)
-      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {}
+      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {
+    /*--- The matrix does not change while this object lives, so it crosses the bus once,
+     * here. The vectors are uploaded by CSysSolve, see HandleTemporariesIn. ---*/
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      if (config->GetCUDA()) {
+        SU2_DEVICE_REGION(matrix.HtDTransfer();)
+      }
+    }
+#endif
+  }
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.

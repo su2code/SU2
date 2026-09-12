@@ -2,14 +2,14 @@
  * \file CSU2BinaryFileWriter.cpp
  * \brief Filewriter class SU2 native binary format.
  * \author T. Albring
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,7 +41,7 @@ void CSU2BinaryFileWriter::WriteData(string val_filename){
 
   unsigned short iVar;
 
-  const vector<string>& fieldNames = dataSorter->GetFieldNames();
+  const vector<string>& fieldNames = dataSorter->GetRequiredFieldNames();
   unsigned short nVar = fieldNames.size();
   unsigned long nParallel_Poin = dataSorter->GetnPoints();
   unsigned long nPoint_Global = dataSorter->GetnPointsGlobal();
@@ -51,10 +51,14 @@ void CSU2BinaryFileWriter::WriteData(string val_filename){
   /*--- Prepare the first ints containing the counts. The first is a
    magic number that we can use to check for binary files (it is the hex
    representation for "SU2"). The second two values are number of variables
-   and number of points (DoFs). ---*/
+   and number of points (DoFs). The fourth is the size in bytes of the
+   floating point data, which lets builds of either precision read the
+   file (a 0 there, in files written before this field existed, means
+   double precision). ---*/
 
-  int var_buf_size = 5;
-  int var_buf[5] = {535532, nVar, (int)nPoint_Global, 0, 0};
+  int var_buf_size = SU2_RESTART_HEADER_SIZE;
+  int var_buf[SU2_RESTART_HEADER_SIZE] = {SU2_RESTART_MAGIC_NUMBER, nVar, (int)nPoint_Global,
+                                          (int)sizeof(passivedouble), 0};
 
   /*--- Open the file using MPI I/O ---*/
 

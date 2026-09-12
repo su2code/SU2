@@ -22,7 +22,10 @@ if build_machine.system() != 'windows' and meson.get_compiler('cpp').get_id() !=
                       '-Wno-error=deprecated-copy',
                       '-Wno-deprecated-copy',
                       '-Wno-error=cast-function-type',
-                      '-Wno-cast-function-type']
+                      '-Wno-cast-function-type',
+                      '-Wno-free-nonheap-object',
+                      '-Wno-deprecated-copy',
+                      '-Wno-array-bounds']
   foreach flag : desired_warnings
     if meson.get_compiler('cpp').has_argument(flag)
       tec_cxx_flags += flag
@@ -103,9 +106,9 @@ teciompi = static_library('teciompi',
            'TecioSZL.cpp',
            'exportSubzonePlt.cpp',
            install : false,
-	   dependencies: [mpi_dep], 
+	   dependencies: [mpi_dep],
 	   cpp_args: [default_warning_flags, tec_cxx_flags],
-	   include_directories: 
+	   include_directories:
 	   teciompi_include)
 
 teciompi_dep = declare_dependency(link_with: teciompi,

@@ -2,14 +2,14 @@
  * \file CSpeciesFlameletSolver.hpp
  * \brief Headers of the CSpeciesFlameletSolver class
  * \author D. Mayer, N. Beishuizen, T. Economon, E. Bunschoten
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,6 +37,10 @@
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
+  const su2double default_flame_thickness{1.0};
+  su2double global_flame_thickness;
+  bool calc_flame_thickness{false};
+  FluidFlamelet_ParsedOptions flamelet_config_options;
   bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
@@ -69,9 +73,10 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \brief Find maximum progress variable value within the manifold for the current solution.
    * \param[in] fluid_model - pointer to flamelet fluid model.
    * \param[in] scalars - local scalar solution.
+   * \param[in] T_ignition - ignition temperature - at this temperature, the progress variable is considered burnt.
    * \return - maximum progress variable value within manifold bounds.
    */
-  su2double GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalars);
+  su2double GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalars, const su2double T_ignition);
 
   /*!
    * \brief Retrieve scalar source terms from manifold.
@@ -80,32 +85,47 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] iPoint - node ID.
    * \param[in] scalars - local scalar solution.
    * \param[in] table_source_names - variable names of scalar source terms.
+   * \param[in] F - flame thickness correction factor.
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
   unsigned long SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
-                                 const vector<su2double>& scalars);
+                                 const vector<su2double>& scalars, const su2double F=1.0);
 
   /*!
    * \brief Retrieve passive look-up data from manifold.
-   * \param[in] config - definition of particular problem.
    * \param[in] fluid_model_local - pointer to flamelet fluid model.
    * \param[in] iPoint - node ID.
    * \param[in] scalars - local scalar solution.
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
-  unsigned long SetScalarLookUps(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
+  unsigned long SetScalarLookUps(CFluidModel* fluid_model_local, unsigned long iPoint,
                                  const vector<su2double>& scalars);
 
   /*!
    * \brief Retrieve the preferential diffusion scalar values from manifold.
-   * \param[in] config - definition of particular problem.
    * \param[in] fluid_model_local - pointer to flamelet fluid model.
    * \param[in] iPoint - node ID.
    * \param[in] scalars - local scalar solution.
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
-  unsigned long SetPreferentialDiffusionScalars(const CConfig* config, CFluidModel* fluid_model_local,
+  unsigned long SetPreferentialDiffusionScalars(CFluidModel* fluid_model_local,
                                                 unsigned long iPoint, const vector<su2double>& scalars);
+  
+  /*!
+   * \brief Calculate correction factor for flame propagation on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - node ID.
+   * \return - flame thickness correction factor.
+   */                                              
+  su2double ThickenedFlameCorrection(const CGeometry* geometry, unsigned long iPoint) const;   
+
+  /*!
+   * \brief Approximate the minimum flame thickness value used for the thickened flame model.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \return - approximate flame thickness value.
+   */
+  su2double GetOverallFlameThickness(CGeometry* geometry,  CSolver** solver_container) const;
 
  public:
   /*!
@@ -163,6 +183,21 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
                           CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
 
   /*!
+   * \brief Impose the heat-flux wall boundary condition on the flamelet enthalpy scalar.
+   * When FLAMELET_ENTHALPY_BC= FLOW_MARKERS (default), the heat flux value from MARKER_HEATFLUX
+   * is applied as a Neumann boundary condition on the enthalpy scalar H.
+   * When FLAMELET_ENTHALPY_BC= SPECIES_MARKERS, use flux/value from MARKER_WALL_SPECIES.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                        CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
+
+  /*!
    * \brief Impose the inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -196,4 +231,10 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                         const CConfig* config) final;
+
+  /*!
+   * \brief Obtain the overall flame thickness value.
+   * \return flame thickness value.
+   */
+  su2double GetFlameThickness() const override {return global_flame_thickness;}
 };

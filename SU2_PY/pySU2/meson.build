@@ -19,10 +19,17 @@ else
     mpi4py_include = ''
 endif
 
+su2_swig_args = []
+foreach arg : su2_cpp_args
+    if not arg.startswith('-f') and not arg.startswith('-m')
+        su2_swig_args += arg
+    endif
+endforeach
+
 swig_gen = generator(
     swig,
     output: ['@BASENAME@.cxx'],
-    arguments: su2_cpp_args +
+    arguments: su2_swig_args +
     [ '-c++', '-python', '-I'+mpi4py_include, '-outdir', meson.current_build_dir(), '-o', './@OUTPUT@', '@INPUT@'],
     depfile: '@BASENAME@.d',
 )
@@ -43,7 +50,7 @@ if get_option('enable-normal')
       ],
       install: true,
       include_directories : mpi4py_include,
-      cpp_args : [default_warning_flags,su2_cpp_args],
+      cpp_args : [default_warning_flags, su2_swig_args],
       name_prefix : '',
       install_dir: 'bin'
   )
@@ -62,7 +69,7 @@ if get_option('enable-autodiff')
       ],
       install: true,
       include_directories : mpi4py_include,
-      cpp_args : [default_warning_flags, su2_cpp_args, codi_rev_args],
+      cpp_args : [default_warning_flags, su2_swig_args, codi_rev_args],
       name_prefix : '',
       install_dir: 'bin'
   )

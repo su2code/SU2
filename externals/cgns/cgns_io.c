@@ -23,6 +23,9 @@ freely, subject to the following restrictions:
 #define _XOPEN_SOURCE 600
 #endif
 #endif
+#ifndef _WIN32
+  #define _POSIX_C_SOURCE 200112L
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -590,53 +593,71 @@ int cgio_check_file (const char *filename, int *file_type)
     int n;
     char buf[32];
     FILE *fp;
+    double rootid;
     static char *HDF5sig = "\211HDF\r\n\032\n";
     struct cgns_stat st;
 
     int mpibuf[2], err = CGIO_ERR_NONE;
 
+    *file_type = CGIO_FILE_NONE;
+
+#if 0
+    /* ACCESS call deactivated file open try-error strategy used instead */
     if (ACCESS (filename, 0) || cgns_stat (filename, &st) ||
         S_IFREG != (st.st_mode & S_IFREG)) {
         last_err = CGIO_ERR_NOT_FOUND;
         return last_err;
     }
-    *file_type = CGIO_FILE_NONE;
-
+#endif
 
 #if CG_BUILD_PARALLEL
     /* don't overload the file system by having all the processors doing a read */
     if(ctx_cgio.pcg_mpi_comm_rank == 0) {
 #endif
-
-      fp = fopen(filename, "rb");
-      if (NULL == fp) {
-	if (errno == EMFILE) {
-	  err = set_error(CGIO_ERR_TOO_MANY);
-	} else {
-	  err = set_error(CGIO_ERR_FILE_OPEN);
-	}
-	return err;
-      }
-    if (sizeof(buf) != fread (buf, 1, sizeof(buf), fp)) {
-      buf[4] = 0;
-    }
-    buf[sizeof(buf)-1] = 0;
-    fclose (fp);
-
-    /* check for ADF */
-    if (0 == strncmp (&buf[4], "ADF Database Version", 20)) {
-      *file_type = CGIO_FILE_ADF;
-      err = set_error(CGIO_ERR_NONE);
-    } else {
-      /* check for HDF5 */
-      for (n = 0; n < 8; n++) {
-	if (buf[n] != HDF5sig[n]) break;
-      }
-      if (n == 8) {
+#if CG_BUILD_HDF5
+      /* First try to open with HDF5 */
+      ADFH_Database_Open(filename, "READ_ONLY", ctx_cgio.hdf5_access, &rootid, &err);
+      if (err == 0) {
+        ADFH_Database_Close(rootid, &err);
+	if (err > 0) return set_error(err);
 	*file_type = CGIO_FILE_HDF5;
-	err = set_error(CGIO_ERR_NONE);
       }
-    }
+      else {
+      /* HDF5 did not work now try other cases */
+#endif
+        fp = fopen(filename, "rb");
+        if (NULL == fp) {
+	  if (errno == EMFILE) {
+	    err = set_error(CGIO_ERR_TOO_MANY);
+	  } else {
+	    err = set_error(CGIO_ERR_FILE_OPEN);
+	  }
+          return err;
+        }
+        if (sizeof(buf) != fread (buf, 1, sizeof(buf), fp)) {
+          buf[4] = 0;
+        }
+        buf[sizeof(buf)-1] = 0;
+        fclose (fp);
+
+        /* check for ADF */
+        if (0 == strncmp (&buf[4], "ADF Database Version", 20)) {
+          *file_type = CGIO_FILE_ADF;
+          err = set_error(CGIO_ERR_NONE);
+        } else {
+          /* check for HDF5 */
+          for (n = 0; n < 8; n++) {
+            if (buf[n] != HDF5sig[n]) break;
+          }
+          if (n == 8) {
+            *file_type = CGIO_FILE_HDF5;
+            err = set_error(CGIO_ERR_NONE);
+          }
+        }
+#if CG_BUILD_HDF5
+      } /* endif case not hdf5 */
+#endif
+
 #if CG_BUILD_PARALLEL
     }
     if(ctx_cgio.pcg_mpi_initialized) {
@@ -733,18 +754,14 @@ int cgio_open_file (const char *filename, int file_mode,
         case CGIO_MODE_READ:
         case 'r':
         case 'R':
+	    fmode = "READ_ONLY";
+	    file_mode = CGIO_MODE_READ;
+            /* skip file checking if HDF5 requested */
+	    if (file_type == CGIO_FILE_HDF5)
+               break;
             if (cgio_check_file(filename, &type))
                 return get_error();
-#if CG_BUILD_PARALLEL
-           if (file_type == CGIO_FILE_HDF5) {
-                if (type != CGIO_FILE_HDF5)
-                    return set_error(CGIO_ERR_NOT_HDF5);
-            }
-            else
-#endif
             file_type = type;
-            file_mode = CGIO_MODE_READ;
-            fmode = "READ_ONLY";
             break;
         case CGIO_MODE_WRITE:
         case 'w':
@@ -757,17 +774,14 @@ int cgio_open_file (const char *filename, int file_mode,
         case CGIO_MODE_MODIFY:
         case 'm':
         case 'M':
+	    fmode = "OLD";
+	    file_mode = CGIO_MODE_MODIFY;
+	    /* skip file checking if HDF5 requested */
+            if (file_type == CGIO_FILE_HDF5)
+                break;
             if (cgio_check_file(filename, &type))
                 return get_error();
-#if CG_BUILD_PARALLEL
-           if (file_type == CGIO_FILE_HDF5) {
-                if (type != CGIO_FILE_HDF5)
-                    return set_error(CGIO_ERR_NOT_HDF5);
-            }
-#endif
             file_type = type;
-            file_mode = CGIO_MODE_MODIFY;
-            fmode = "OLD";
             break;
         default:
             return set_error(CGIO_ERR_FILE_MODE);

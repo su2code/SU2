@@ -2,14 +2,14 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,6 +44,7 @@ CSinglezoneDriver::CSinglezoneDriver(char* confFile,
 CSinglezoneDriver::~CSinglezoneDriver() = default;
 
 void CSinglezoneDriver::StartSolver() {
+  SU2_ZONE_SCOPED
 
   StartTime = SU2_MPI::Wtime();
 
@@ -66,8 +67,8 @@ void CSinglezoneDriver::StartSolver() {
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/
-  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter() ) {
-
+  /*--- or until a SIGTERM signal stops the loop. We catch SIGTERM and exit gracefully ---*/
+  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {
     /*--- Perform some preprocessing before starting the time-step simulation. ---*/
 
     Preprocess(TimeIter);
@@ -103,6 +104,7 @@ void CSinglezoneDriver::StartSolver() {
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Set the current time iteration in the config and also in the driver
    * because the python interface doesn't offer an explicit way of doing it. ---*/
@@ -154,6 +156,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 }
 
 void CSinglezoneDriver::Run() {
+  SU2_ZONE_SCOPED
 
   unsigned long OuterIter = 0;
   config_container[ZONE_0]->SetOuterIter(OuterIter);
@@ -165,6 +168,7 @@ void CSinglezoneDriver::Run() {
 }
 
 void CSinglezoneDriver::Postprocess() {
+  SU2_ZONE_SCOPED
 
   iteration_container[ZONE_0][INST_0]->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container,
       numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
@@ -178,6 +182,7 @@ void CSinglezoneDriver::Postprocess() {
 }
 
 void CSinglezoneDriver::Update() {
+  SU2_ZONE_SCOPED
 
   iteration_container[ZONE_0][INST_0]->Update(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
@@ -186,6 +191,7 @@ void CSinglezoneDriver::Update() {
 }
 
 void CSinglezoneDriver::Output(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Time the output for performance benchmarking. ---*/
 
@@ -222,6 +228,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 }
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   auto iteration = iteration_container[ZONE_0][INST_0];
 
@@ -247,6 +254,7 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 }
 
 bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
+  SU2_ZONE_SCOPED
 
   unsigned long nInnerIter, InnerIter, nTimeIter;
   su2double MaxTime, CurTime;
@@ -270,7 +278,9 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << "\n----------------------------- Solver Exit -------------------------------" << endl;
-      if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
+      if (output_container[ZONE_0]->GetConvergenceInterrupted())
+        cout << "Interrupt signal received, exiting before the convergence criteria were satisfied." << endl;
+      else if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
       else cout << "\nMaximum number of iterations reached (ITER = " << nInnerIter << ") before convergence." << endl;
       output_container[ZONE_0]->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
@@ -310,5 +320,6 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 }
 
 bool CSinglezoneDriver::GetTimeConvergence() const{
+  SU2_ZONE_SCOPED
   return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }

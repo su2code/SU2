@@ -136,9 +136,21 @@ freely, subject to the following restrictions:
 
 #endif
 
+/* For modern GCC or ARM64 config, assume size_t for string length */
+
 #ifndef STR_PSTR
 #	define STR_PSTR(str)       char *str
-#	define STR_PLEN(str)       , int CONCATENATE(Len,str)
+#if defined(__arm64__) && defined(__APPLE__)
+#	define STR_PLEN(str)       , size_t  CONCATENATE(Len,str)
+#elif defined(__GNUC__)
+#if __GNUC__ > 7
+#	define STR_PLEN(str)       , size_t  CONCATENATE(Len,str)
+#else
+#	define STR_PLEN(str)       , int  CONCATENATE(Len,str)
+#endif
+#else
+#	define STR_PLEN(str)       , int  CONCATENATE(Len,str)
+#endif
 #	define STR_PTR(str)        str
 #	define STR_LEN(str)        CONCATENATE(Len,str)
 #endif
