@@ -233,7 +233,9 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
+          # TODO: temporarily pointed at su2code/TestCases#sliding_interface_inlet_distortion_relative_frame
+          # (see su2code/TestCases#204) for this PR's new test case; revert -c to 'develop' once that PR merges.
+          args: -b ${{github.ref}} -t develop -c sliding_interface_inlet_distortion_relative_frame -s ${{matrix.testscript}}
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
@@ -282,7 +284,9 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tapetests"
+          # TODO: temporarily pointed at su2code/TestCases#sliding_interface_inlet_distortion_relative_frame
+          # (see su2code/TestCases#204) for this PR's new test case; revert -c to 'develop' once that PR merges.
+          args: -b ${{github.ref}} -t develop -c sliding_interface_inlet_distortion_relative_frame -s ${{matrix.testscript}} -a "--tapetests"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
@@ -330,7 +334,9 @@ jobs:
           PMIX_MCA_gds: hash
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tsan"
+          # TODO: temporarily pointed at su2code/TestCases#sliding_interface_inlet_distortion_relative_frame
+          # (see su2code/TestCases#204) for this PR's new test case; revert -c to 'develop' once that PR merges.
+          args: -b ${{github.ref}} -t develop -c sliding_interface_inlet_distortion_relative_frame -s ${{matrix.testscript}} -a "--tsan"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2-tsan:260405-0054
         with:
@@ -375,7 +381,9 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2-asan:260405-0054
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--asan"
+          # TODO: temporarily pointed at su2code/TestCases#sliding_interface_inlet_distortion_relative_frame
+          # (see su2code/TestCases#204) for this PR's new test case; revert -c to 'develop' once that PR merges.
+          args: -b ${{github.ref}} -t develop -c sliding_interface_inlet_distortion_relative_frame -s ${{matrix.testscript}} -a "--asan"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2-asan:260405-0054
         with:
