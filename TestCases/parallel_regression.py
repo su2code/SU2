@@ -710,6 +710,16 @@ def main():
     inc_lam_sphere_pb.test_vals = [-6.060878, -2.320294, -2.469405, -2.652477, 0.186791, 171.483579, -6.799915]
     test_list.append(inc_lam_sphere_pb)
 
+    # Laminar sphere, Re=1, pressure-based, automatic relaxation factors. The only case
+    # in the suite that exercises USE_AUTOMATIC_RELAXATION_FACTORS, and 3D since the alpha_p
+    # bug this guards against is invisible in 2D (it sums the wrong set of Jacobian diagonals).
+    inc_lam_sphere_pb_urf          = TestCase('inc_lam_sphere_pb_urf')
+    inc_lam_sphere_pb_urf.cfg_dir   = "incomp_navierstokes/sphere"
+    inc_lam_sphere_pb_urf.cfg_file  = "pb_sphere_urf.cfg"
+    inc_lam_sphere_pb_urf.test_iter = 9
+    inc_lam_sphere_pb_urf.test_vals = [-4.738493, -2.283730, -2.316236, -1.690502, 0.158085, 193.163982, -6.243736]
+    test_list.append(inc_lam_sphere_pb_urf)
+
     # Buoyancy-driven cavity
     inc_buoyancy          = TestCase('inc_buoyancy')
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"

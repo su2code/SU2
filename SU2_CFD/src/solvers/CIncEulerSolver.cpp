@@ -3769,14 +3769,19 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    factor = 0.0;
-    const auto view = Jacobian.GetBlockView(iPoint, iPoint);
     for (iDim = 0; iDim < nDim; iDim++) {
       momentumCorrection[iPoint][iDim] = - poisson_nodes->GetMomCoeff(iPoint) * poisson_nodes->GetGradient(iPoint,0,iDim);
-      if (AutomaticURF) factor += view(iDim, iDim);
     }
 
     if (AutomaticURF) {
+      /*--- a_P = dR/d(rho u) has mass/time units, so it needs the same /density SetMomCoeff
+       * applies for the same reason. Block row 0 is the continuity/pressure row, not a velocity
+       * direction - starting the diagonal sum from iDim=0 mixed it into a_P, and summing every
+       * velocity direction's diagonal made alpha_p dimension-dependent. Use the x-momentum row
+       * alone, matching SetMomCoeff's own convention that this coefficient is the same in every
+       * direction. ---*/
+      const auto view = Jacobian.GetBlockView(iPoint, iPoint);
+      factor = view(1, 1) / nodes->GetDensity(iPoint);
       Vol = geometry->nodes->GetVolume(iPoint);
       delT = nodes->GetDelta_Time(iPoint);
       alpha_p[iPoint] = (Vol / delT) / (factor + (Vol / delT));
