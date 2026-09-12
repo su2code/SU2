@@ -4242,6 +4242,20 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support streamwise periodicity.",
                      CURRENT_FUNCTION);
     }
+
+    /*--- SetMomCoeff's A_p already has Vol/dt added to it (from PrepareImplicitIteration_impl)
+     * before SIMPLEC's A_p-Sum_A_nb correction runs, so with TRANSIENT_TERM_REMOVAL_FACTOR left at
+     * its 0.0 default that correction evaluates to roughly Vol/dt regardless of the momentum
+     * operator, and the pressure correction becomes vanishingly weak at low CFL - defeating the
+     * point of choosing SIMPLEC over SIMPLE. Default the removal factor to 1.0 under SIMPLEC
+     * unless the user set it explicitly, rather than silently underperforming. ---*/
+    if (Kind_PBIter == PBITER::SIMPLEC && !OptionIsSet("TRANSIENT_TERM_REMOVAL_FACTOR")) {
+      SIMPLE_Options.Transient_Term_Removal_Factor = 1.0;
+      if (rank == MASTER_NODE) {
+        cout << "WARNING: KIND_PB_ITER= SIMPLEC without TRANSIENT_TERM_REMOVAL_FACTOR set - "
+             << "defaulting it to 1.0, its intended companion value for SIMPLEC." << endl;
+      }
+    }
   }
 
   /*--- Check for Fluid model consistency ---*/

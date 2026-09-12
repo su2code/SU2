@@ -269,9 +269,17 @@ void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container
   if (implicit) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Read A_p back from SetMomCoeff's own result (MomCoeff = Vol/A_p) instead of
+       * re-deriving it from the raw Jacobian diagonal: that raw diagonal is exactly what
+       * SetMomCoeff itself does not use any more, since it applies the strong-BC row-deletion
+       * reconstruction and the SIMPLEC/transient-removal corrections before storing MomCoeff.
+       * Re-reading the uncorrected diagonal here would use a different, inconsistent A_p in the
+       * PISO correction than the one the pressure equation was actually assembled against. ---*/
+      A_p = geometry->nodes->GetVolume(iPoint) / nodes->GetMomCoeff(iPoint);
+
       for (iDim = 0; iDim < nDim; ++iDim) {
         H = 0.0;
-        A_p = flow_solver->Jacobian.GetBlockView(iPoint, iPoint)(1,1) / flow_nodes->GetDensity(iPoint);
         for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
           jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
           A_nb = flow_solver->Jacobian.GetBlockView(iPoint, jPoint)(1,1) / flow_nodes->GetDensity(jPoint);
