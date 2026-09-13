@@ -21,12 +21,6 @@ t
 4. Adjoint simulation with 1 timestep, using the primal restart file from simulation in 2nd step. The printed direct residuals are taken for comparison
 
 
-- `species2_primitiveVenturi_compact_restart_read_ascii.cfg` and `species2_primitiveVenturi_compact_restart_read_binary.cfg` check that compact restart files (`WRT_RESTART_COMPACT= YES`) are written and read correctly.
-They restart from the files that `species2_venturiPrimitive.cfg` writes at iteration 49 (`WRT_RESTART_OVERWRITE= NO` with `OUTPUT_WRT_FREQ= 49, 49, 1000`), which hold the solution that enters iteration 50.
-Their first iteration must therefore reproduce the residuals of iteration 50 of that case, and the regression test uses its values for all three cases.
-`VOLUME_OUTPUT` contains fields outside the compact set, which is the situation in which the compact writers can shift the restart columns.
-
-
 - `species3_venturiPrimitive_inletFile.cfg` With the `test_inlet_files.sh` a simple sanity check for inlet files is performed.
 SU2 writes an `example_inlet_file.dat` when the specified inlet file is not available, with the values of the specified `MARKER_INLET` content.
 Therefore comparing a simulation with this example inlet file and without inlet files should result in exactly the same results.
