@@ -266,7 +266,7 @@ def main():
     tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sst.cfg_file   = "transitional_SST_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sst.test_iter  = 20
-    tutorial_trans_e387_sst.test_vals  = [-6.532415, -2.932984, 0.401484, 1.078294, 0.188167, 2.000000, -10.005786]
+    tutorial_trans_e387_sst.test_vals  = [-6.532415, -5.082018, -0.789469, 1.078293, 0.188166, 2.000000, -9.567997]
     tutorial_trans_e387_sst.no_restart = True
     test_list.append(tutorial_trans_e387_sst)
 

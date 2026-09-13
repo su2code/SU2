@@ -19,7 +19,38 @@ python = pymod.find_installation()
 
 if get_option('enable-cuda')
   add_languages('cuda')
-  add_global_arguments('-arch=sm_89', language : 'cuda')
+
+  # Compute capability to generate code for. Anything other than 'auto' is passed to nvcc as it
+  # is, so 'native', 'all-major', 'compute_XY', etc. all work.
+  cuda_arch = get_option('cuda-arch')
+  if cuda_arch == 'auto'
+    cuda_cc = ''
+    # Ships with the toolkit and prints e.g. "89"; it is what nvcc's own -arch=native uses.
+    cuda_query = find_program('__nvcc_device_query', required : false)
+    if cuda_query.found()
+      cuda_probe = run_command(cuda_query, check : false)
+      if cuda_probe.returncode() == 0
+        cuda_cc = cuda_probe.stdout().strip().split('\n')[0].strip()
+      endif
+    endif
+    # Fall back to the driver, which prints e.g. "8.9".
+    if cuda_cc == ''
+      cuda_query = find_program('nvidia-smi', required : false)
+      if cuda_query.found()
+        cuda_probe = run_command(cuda_query, '--query-gpu=compute_cap', '--format=csv,noheader', check : false)
+        if cuda_probe.returncode() == 0
+          cuda_cc = cuda_probe.stdout().strip().split('\n')[0].strip().replace('.', '')
+        endif
+      endif
+    endif
+    if cuda_cc == ''
+      error('Could not detect the CUDA compute capability of this machine (no GPU visible?), ' +
+            'set it explicitly, for example -Dcuda-arch=sm_89.')
+    endif
+    cuda_arch = 'sm_' + cuda_cc
+    message('Detected CUDA compute capability, building for ' + cuda_arch)
+  endif
+  add_global_arguments('-arch=' + cuda_arch, language : 'cuda')
   # nvcc's frontend does not recognize the AMX-tile builtins pulled in by
   # newer glibc/gcc <immintrin.h>; SU2 does not use AMX, so skip the header.
   add_global_arguments('-D_AMXTILEINTRIN_H_INCLUDED', language : 'cuda')
@@ -28,15 +59,10 @@ if get_option('enable-cuda')
   # the MPI link flags that -Dcustom-mpi=true relies on mpicxx to provide.
   add_global_arguments('-ccbin=' + meson.get_compiler('cpp').cmd_array()[0], language : 'cuda')
   add_global_link_arguments('-ccbin=' + meson.get_compiler('cpp').cmd_array()[0], language : 'cuda')
-  cuda_deps = [
-    meson.get_compiler('cuda').find_library('cublas', required : true),
-  ]
-else
-  cuda_deps = []
 endif
 
 su2_cpp_args = []
-su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')] + cuda_deps
+su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
 default_warning_flags = []
 if build_machine.system() != 'windows'

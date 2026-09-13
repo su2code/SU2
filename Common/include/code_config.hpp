@@ -50,6 +50,13 @@
 #define NEVERINLINE inline
 #endif
 
+/*--- Marks a function callable from both host and device code, a no-op outside nvcc. ---*/
+#ifdef __CUDACC__
+#define SU2_CUDA_HOST_DEVICE __host__ __device__
+#else
+#define SU2_CUDA_HOST_DEVICE
+#endif
+
 #if defined(__INTEL_COMPILER)
 /*--- Disable warnings related to inline attributes. ---*/
 #pragma warning disable 2196
@@ -96,13 +103,12 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 #define HAVE_OMP
 #endif
 
-/*--- Detect whether the CUDA kernels are part of this build. The .cu translation units
- * cannot be compiled with the CoDiPack defines (nvcc's device pass cannot parse the tape
- * machinery), and an object compiled with a different definition of su2double must not be
- * linked into an AD library. They are therefore only built into the primal libraries, and
- * all device dispatch has to be compiled out of the AD builds, which HAVE_CUDA alone does
- * not do because su2mixedfloat is a passive type there as well. ---*/
-#if defined(HAVE_CUDA) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+/*--- Detect whether the CUDA kernels are part of this build. They work on su2mixedfloat
+ * and passivedouble, so reverse AD is fine: su2_gpu_capable_v is false for the active type
+ * and CSysMatrix<su2double> stays on the host. Forward AD is not, there su2mixedfloat is
+ * su2double (see below) and the active type would reach the kernels. The .cu sources are
+ * compiled with the CoDiPack defines like everything else, see codi_host_only.hpp. ---*/
+#if defined(HAVE_CUDA) && !defined(CODI_FORWARD_TYPE)
 #define SU2_ENABLE_CUDA_KERNELS
 #endif
 

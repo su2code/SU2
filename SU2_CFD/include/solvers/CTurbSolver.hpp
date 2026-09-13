@@ -133,7 +133,7 @@ public:
    * \returns The number of extra variables.
    */
   unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
-  
+
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
    * a nonlinear iteration for stability.

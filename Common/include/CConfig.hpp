@@ -2014,12 +2014,6 @@ public:
   su2double GetPressure_FreeStreamND(void) const { return Pressure_FreeStreamND; }
 
   /*!
-   * \brief Get a reference to the non-dimensionalized freestream pressure (used for AD tracking).
-   * \return Reference to non-dimensionalized freestream pressure.
-   */
-  su2double& GetPressure_FreeStreamND(void) { return Pressure_FreeStreamND; }
-
-  /*!
    * \brief Get the value of the thermodynamic pressure.
    * \return Thermodynamic pressure.
    */
@@ -2043,12 +2037,6 @@ public:
    * \return Non-dimensionalized freestream temperature.
    */
   su2double GetTemperature_FreeStreamND(void) const { return Temperature_FreeStreamND; }
-
-  /*!
-   * \brief Get a reference to the non-dimensionalized freestream temperature (used for AD tracking).
-   * \return Reference to non-dimensionalized freestream temperature.
-   */
-  su2double& GetTemperature_FreeStreamND(void) { return Temperature_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized vibrational-electronic freestream temperature.
@@ -2948,7 +2936,8 @@ public:
    */
   void SetMGLevels(unsigned short val_nMGLevels) {
     nMGLevels = val_nMGLevels;
-    if (Kind_MGCycle == MG_CYCLE::FULL) {
+    /*--- Clamp so FinestMesh can never point past the last level that still exists. ---*/
+    if ((Kind_MGCycle == MG_CYCLE::FULL) || (FinestMesh > val_nMGLevels)) {
       SetFinestMesh(val_nMGLevels);
     }
   }
@@ -5652,14 +5641,14 @@ public:
   unsigned short GetnVar(void);
 
   /*!
-   * \brief Provides the number of variables.
-   * \return Number of variables.
+   * \brief Provides the total number of zones.
+   * \return Total number of zones.
    */
   unsigned short GetnZone(void) const { return nZone; }
 
   /*!
-   * \brief Provides the number of variables.
-   * \return Number of variables.
+   * \brief Provides the zone index the configuration belongs to.
+   * \return Zone index.
    */
   unsigned short GetiZone(void) const { return iZone; }
 
@@ -10183,6 +10172,13 @@ public:
    * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
+
+  /*!
+   * \brief Find the marker index (if any) that is part of a mixing plane interface pair.
+   * \param[in] nMarker - Number of the marker in a zone being tested, starting at 0.
+   * \return value > 1 if (on this mpi rank) the zone defined by config is part of the mixing plane.
+   */
+  short FindMixingPlaneInterfaceMarker(unsigned short nMarker, unsigned short iMarkerInt) const;
 
   /*!
    * \brief Get whether or not to save solution data to libROM.

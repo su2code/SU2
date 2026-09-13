@@ -60,6 +60,7 @@ Arne Voß
 Ayush Kumar
 Beckett Y. Zhou
 Benjamin S. Kirk
+BlueChips
 Brendan Tracey
 Brian Munguía
 Carsten Othmer
@@ -69,6 +70,7 @@ Christian Bauer
 Clark Pederson
 Daumantas Kavolis
 Dave Taflin
+Davide Di Giusto
 Eduardo Molina
 Edwin van der Weide
 Eitan Aberman

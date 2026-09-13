@@ -894,7 +894,7 @@ class CGeometry {
   inline virtual void GatherInOutAverageValues(CConfig* config, bool allocate) {}
 
   /*!
-   * \brief Store all the turboperformance in the solver in ZONE_0.
+   * \brief Store all the turboperformance in the solver in final zone.
    * \param[in] donor_geometry  - Solution from the donor mesh.
    * \param[in] target_geometry - Solution from the target mesh.
    * \param[in] donorZone       - counter of the donor solution
@@ -1978,7 +1978,8 @@ class CGeometry {
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] geometry_container - Geometrical definition of the problem.
    */
-  static void ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container);
+  static void ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container,
+                                  const int record_zone = -1);
 
   /*!
    * \brief Set the amount of nonconvex elements in the mesh.

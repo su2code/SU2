@@ -109,9 +109,19 @@ class CFVMFlowSolverBase : public CSolver {
 
     void allocate(int size); /*!< \brief Allocates arrays. */
 
-    void setZero(int i); /*!< \brief Sets all values to zero at a particular index. */
-    void setZero() {     /*!< \brief Sets all values to zero for all indices. */
+    /*!< \brief Sets all values to zero at a particular index. */
+    void setZero(int i) {
+      CD[i] = CL[i] = CSF[i] = CEff[i] = 0.0;
+      CFx[i] = CFy[i] = CFz[i] = CMx[i] = 0.0;
+      CMy[i] = CMz[i] = CoPx[i] = CoPy[i] = 0.0;
+      CoPz[i] = CT[i] = CQ[i] = CMerit[i] = 0.0;
+    }
+
+    /*!< \brief Sets all values to zero for all indices. */
+    void setZero() {
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE / 2)
       for (int i = 0; i < _size; ++i) setZero(i);
+      END_SU2_OMP_FOR
     }
 
     AeroCoeffsArray(int size = 0) : _size(size) {

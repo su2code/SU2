@@ -38,6 +38,7 @@ CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned
                                                const CConfig *config, bool conservative_) :
   CInterface(val_nVar, val_nConst),
   conservative(conservative_) {
+  InterfaceType = ENUM_TRANSFER::FLOW_TRACTION;
 }
 
 void CFlowTractionInterface::Preprocess(const CConfig *flow_config, const CConfig *struct_config,

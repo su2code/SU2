@@ -34,7 +34,7 @@
 template class CScalarSolver<CTurbVariable>;
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative)
-  : CScalarSolver<CTurbVariable>(geometry, config, conservative) {
+  : CScalarSolver<CTurbVariable>(geometry, config, conservative, config->GetBounded_Turb()) {
   SU2_ZONE_SCOPED
   /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
   SetImplicitPeriodic(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);

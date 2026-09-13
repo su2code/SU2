@@ -6,11 +6,11 @@ common_src =files(['graph_coloring_structure.cpp',
            '../include/parallelization/mpi_structure.cpp',
            '../include/parallelization/omp_structure.cpp'])
 
-# nvcc cannot parse CoDiPack's tape machinery in the device pass, so the CUDA sources are
-# compiled without the CODI_REVERSE_TYPE/CODI_FORWARD_TYPE defines. That gives them a
-# different su2double (and hence a different layout for CConfig, CGeometry, ...) than the
-# AD libraries, so they are collected separately and only linked into the primal library.
-# The AD builds compile the device dispatch out entirely, see SU2_ENABLE_CUDA_KERNELS.
+# The CUDA sources are kept in their own list because nvcc only accepts the defines out of
+# su2_cpp_args, not the warning and tuning flags meant for the host compiler. They go into
+# the primal and the reverse AD libraries with the same defines as the .cpp sources next to
+# them, so su2double means the same thing everywhere; codi_host_only.hpp is what keeps
+# CoDiPack out of the device pass. Forward AD gets no kernels, see SU2_ENABLE_CUDA_KERNELS.
 common_cuda_src = []
 common_cuda_cpp_args = []
 foreach arg : su2_cpp_args
@@ -52,11 +52,15 @@ endif
 
 if get_option('enable-autodiff')
 
+  # codi_rev_args is only defined for AD builds, and it is all defines, which nvcc accepts.
+  common_cuda_rev_args = common_cuda_cpp_args + codi_rev_args
+
   commonAD = static_library('SU2CommonAD',
-                            common_src,
+                            common_src, common_cuda_src,
                             install : false,
                             dependencies : [su2_deps, codi_dep],
-                            cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args])
+                            cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args],
+                            cuda_args: common_cuda_rev_args)
 
   commonAD_dep = declare_dependency(link_with: commonAD,
                                     include_directories : common_include)
