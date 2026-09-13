@@ -101,12 +101,12 @@ void CBaseMPIWrapper::Error(const std::string& ErrorMsg, const std::string& Func
 
   /* Check if this rank must write the error message and do so. */
   if (Rank == MinRankError) {
-    std::cout << std::endl << std::endl;
-    std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
-    std::cout << "-------------------------------------------------------------------------" << std::endl;
-    std::cout << ErrorMsg << std::endl;
-    std::cout << "------------------------------ Error Exit -------------------------------" << std::endl;
-    std::cout << std::endl << std::endl;
+    std::cerr << std::endl << std::endl;
+    std::cerr << "Error in \"" << FunctionName << "\": " << std::endl;
+    std::cerr << "-------------------------------------------------------------------------" << std::endl;
+    std::cerr << ErrorMsg << std::endl;
+    std::cerr << "------------------------------ Error Exit -------------------------------" << std::endl;
+    std::cerr << std::endl << std::endl;
   }
   Abort(currentComm, EXIT_FAILURE);
 }
@@ -130,12 +130,12 @@ void CBaseMPIWrapper::CopyData(const void* sendbuf, void* recvbuf, int size, Dat
 template <typename ScalarType>
 void CBaseMPIWrapper<ScalarType>::Error(const std::string& ErrorMsg, const std::string& FunctionName) {
   if (Rank == 0) {
-    std::cout << std::endl << std::endl;
-    std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
-    std::cout << "-------------------------------------------------------------------------" << std::endl;
-    std::cout << ErrorMsg << std::endl;
-    std::cout << "------------------------------ Error Exit -------------------------------" << std::endl;
-    std::cout << std::endl << std::endl;
+    std::cerr << std::endl << std::endl;
+    std::cerr << "Error in \"" << FunctionName << "\": " << std::endl;
+    std::cerr << "-------------------------------------------------------------------------" << std::endl;
+    std::cerr << ErrorMsg << std::endl;
+    std::cerr << "------------------------------ Error Exit -------------------------------" << std::endl;
+    std::cerr << std::endl << std::endl;
   }
   Abort(currentComm, 0);
 }

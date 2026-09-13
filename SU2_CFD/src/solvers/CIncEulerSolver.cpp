@@ -2667,7 +2667,10 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double Normal[MAXNDIM] = {0.0};
+  int nBackflow_loc = 0;
 
+  const bool backflow_prevention = config->GetInc_Outlet_BackflowPrevention() &&
+                                   (config->GetOuterIter() < config->GetInc_Outlet_BackflowPrevention_Iter());
   INC_OUTLET_TYPE Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -2701,6 +2704,16 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Store the current static pressure for clarity. ---*/
 
     P_domain = nodes->GetPressure(iPoint);
+
+    /*--- Compute the face area and normal velocity (positive = outflow, negative = backflow). ---*/
+
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    const su2double Vn   = GeometryToolbox::DotProduct(nDim, &V_domain[prim_idx.Velocity()], Normal) / Area;
+
+    if (Vn < 0.0) {
+      SU2_OMP_ATOMIC
+      nBackflow_loc += 1;
+    }
 
     /*--- Compute a boundary value for the pressure depending on whether
      we are prescribing a back pressure or a mass flow target. ---*/
@@ -2770,6 +2783,26 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         break;
 
+    }
+
+    /*--- Backflow prevention via velocity reflection.
+     *
+     * When reverse flow is detected at the outlet (Vn < 0),
+     * we reflect the normal velocity component to prevent 
+     * backflow and stabilize the solution.
+     * 
+     * Factor of 2 is used to ensure that the reflected velocity
+     * is sufficient to counteract the backflow, by applying a
+     * restorative force that is proportional to the detected backflow velocity.
+     *
+     * Dynamic pressure is intentionally NOT applied here.  For
+     * variable-density / FGM cases the penalty is too small to
+     * overcome expansion-driven backflow and creates a thermodynamically
+     * inconsistent ghost state that pushes FGM controlling variables outside the manifold. ---*/
+
+    if (Vn < 0.0 && backflow_prevention) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_outlet[iDim + prim_idx.Velocity()] -= 2.0 * Vn * Normal[iDim] / Area;
     }
 
     /*--- Neumann condition for the temperature. ---*/
@@ -2857,6 +2890,16 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   }
   END_SU2_OMP_FOR
+
+  /*--- Print a warning if backflow was detected on this outlet marker. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    if (nBackflow_loc > 0) {
+      cout << "WARNING [Rank " << rank << "]: Backflow detected at outlet marker \""
+           << Marker_Tag << "\": " << static_cast<unsigned long>(nBackflow_loc)
+           << " face(s) have reversed normal velocity." << endl;
+    }
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
 }
 

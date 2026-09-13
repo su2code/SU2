@@ -146,7 +146,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
-                 CConfig* config, unsigned short val_marker) final;
+                 CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the isothermal wall Dirichlet boundary condition (value).
