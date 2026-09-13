@@ -278,7 +278,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   if (driver_config->GetTime_Domain()) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (unsigned short jZone = 0; jZone < nZone; jZone++){
-        if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr && (prefixed_motion[iZone] || prefixed_motion[jZone]))
+        if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr && prefixed_motion[iZone])
           interpolator_container[iZone][jZone]->SetTransferCoeff(geometry_container, config_container);
       }
     }
