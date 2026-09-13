@@ -1006,9 +1006,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   SetGlobal_nPointDomain(Global_nPointCoarse);
 
   if (iMesh != MESH_0) {
-    /*--- Initialize coarse-level CFL from config. MG_CFL_SCALING will
-          apply per-level reductions during the multigrid cycle. ---*/
-    config->SetCFL(iMesh, config->GetCFL(MESH_0));
+    /*--- Seed the coarse-level CFL with the same per-level reduction that CMultiGridIntegration
+          applies after every cycle, so the first cycle of a run matches all later ones. Without
+          this a restarted run replays a first cycle it never saw mid-run. ---*/
+    const su2double scale = max(su2double(1e-6), min(su2double(1.0), config->GetMGOptions().MG_CflScaling[iMesh - 1]));
+    config->SetCFL(iMesh, config->GetCFL(iMesh - 1) * scale);
   }
 
   const su2double ratio = su2double(Global_nPointFine) / su2double(Global_nPointCoarse);

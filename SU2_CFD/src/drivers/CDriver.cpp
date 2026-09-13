@@ -858,9 +858,12 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
         vmin = std::min(vmin, v);
         vmax = std::max(vmax, v);
       }
-      passivedouble vminGlobal = 0.0, vmaxGlobal = 0.0;
-      SU2_MPI::Allreduce(&vmin, &vminGlobal, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&vmax, &vmaxGlobal, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      passivedouble vminGlobal = vmin, vmaxGlobal = vmax;
+#ifdef HAVE_MPI
+      /*--- SU2_MPI maps MPI_DOUBLE to the AD type, which does not fit these passive buffers. ---*/
+      MPI_Allreduce(&vmin, &vminGlobal, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+      MPI_Allreduce(&vmax, &vmaxGlobal, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+#endif
 
       if (rank == MASTER_NODE) {
         const passivedouble ratio = vmaxGlobal / std::max(std::numeric_limits<passivedouble>::min(), vminGlobal);
