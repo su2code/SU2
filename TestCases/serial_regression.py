@@ -458,6 +458,17 @@ def main():
     inc_lam_cylinder_pb.test_vals = [-3.486234, -3.777516, 0.012155, 6.184025]
     test_list.append(inc_lam_cylinder_pb)
 
+    # Laminar heated cylinder with polynomial fluid model, pressure-based, coupled energy
+    # equation and variable density. Convergence is genuine but slow (needs ~40k iterations
+    # for rms[h] to reach a low residual); this only checks a short trajectory guard, matching
+    # the pattern used for other hard-to-converge cases in this suite.
+    inc_poly_cylinder_pb          = TestCase('inc_poly_cylinder_pb')
+    inc_poly_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_poly_cylinder_pb.cfg_file  = "pb_poly_cylinder.cfg"
+    inc_poly_cylinder_pb.test_iter = 20
+    inc_poly_cylinder_pb.test_vals = [-13.411510, 0.541350, 0.006208, 16.970571, -8927.600000]
+    test_list.append(inc_poly_cylinder_pb)
+
     # Buoyancy-driven cavity
     inc_buoyancy          = TestCase('inc_buoyancy')
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
