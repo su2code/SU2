@@ -1750,6 +1750,23 @@ def main():
     species2_primitiveVenturi.test_vals = [-5.470699, -4.435379, -4.486544, -5.327925, -0.866369, -5.623281, 5.000000, -0.557915, 5.000000, -2.599732, 5.000000, -0.536608, 0.000037, 0.000037, 0.000000, 0.000000]
     test_list.append(species2_primitiveVenturi)
 
+    # Compact restart check. The case above writes a compact ASCII and binary restart file at
+    # iteration 49, holding the solution that enters iteration 50. The first iteration of these
+    # restarted runs must therefore reproduce its iteration 50, so they share its test values.
+    species2_compact_restart_ascii           = TestCase('species2_primitiveVenturi_compact_restart_read_ascii')
+    species2_compact_restart_ascii.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_compact_restart_ascii.cfg_file  = "species2_primitiveVenturi_compact_restart_read_ascii.cfg"
+    species2_compact_restart_ascii.test_iter = 0
+    species2_compact_restart_ascii.test_vals = species2_primitiveVenturi.test_vals
+    test_list.append(species2_compact_restart_ascii)
+
+    species2_compact_restart_binary           = TestCase('species2_primitiveVenturi_compact_restart_read_binary')
+    species2_compact_restart_binary.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_compact_restart_binary.cfg_file  = "species2_primitiveVenturi_compact_restart_read_binary.cfg"
+    species2_compact_restart_binary.test_iter = 0
+    species2_compact_restart_binary.test_vals = species2_primitiveVenturi.test_vals
+    test_list.append(species2_compact_restart_binary)
+
     # 2 species (1 eq) primitive venturi mixing with bounded scalar transport
     species_primitiveVenturi_boundedscalar             = TestCase('species2_primitiveVenturi_bounded_scalar')
     species_primitiveVenturi_boundedscalar.cfg_dir     = "species_transport/venturi_primitive_3species"
