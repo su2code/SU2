@@ -356,7 +356,7 @@ def main():
     inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
-    inc_euler_naca0012_pb.test_vals = [-4.454825, -4.784255, 0.427448, 0.012084]
+    inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784246, 0.427448, 0.012083]
     test_list.append(inc_euler_naca0012_pb)
 
     # C-D nozzle with pressure inlet and mass flow outlet

@@ -340,7 +340,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return The boolean flag of the strong boundary condition.
    */
-  inline bool GetStrongBC(unsigned long iPoint) { return strongBC(iPoint); }
+  inline bool GetStrongBC(unsigned long iPoint) const final { return strongBC(iPoint); }
   
   /*!
    * \brief Set the BC flag to false of the point.

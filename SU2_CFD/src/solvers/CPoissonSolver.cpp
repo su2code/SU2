@@ -68,8 +68,6 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned sh
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
   EdgeSourceFlux.resize(geometry->GetnEdge()) = su2double(0.0);
-  RawMomCoeff.resize(nPoint) = su2double(0.0);
-  RowDeleted.resize(nPoint) = false;
 
   /*--- Initialize the nodes vector. ---*/
 
@@ -158,50 +156,26 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
 
   if (implicit) {
 
-    /*--- First pass: read the self coefficient A_p = dR/d(rhou) off the momentum Jacobian diagonal
-     * (the x-momentum entry is used for all directions, as before) and flag points whose row has no
-     * coupling to any neighbour. DeleteValsRowi zeros a strong-BC point's entire momentum row and
-     * writes 1.0 on the diagonal, so a flagged point's raw value carries that row-deletion artefact
-     * rather than a real momentum coefficient - a genuine interior or weak-BC point always has
-     * nonzero convective and/or diffusive coupling to at least one neighbour. ---*/
-
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      RawMomCoeff(iPoint) = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1) / flow_nodes->GetDensity(iPoint);
+      su2double Vol = geometry->nodes->GetVolume(iPoint);
 
-      bool rowDeleted = true;
-      for (unsigned long iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-        auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-        if (flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(1,1) != 0.0) { rowDeleted = false; break; }
+      /*--- The momentum equation is not assembled at a strong velocity BC, DeleteValsRowi zeroes
+       * the row and writes 1.0 on the diagonal, so there is no A_p to read. Nothing consumes the
+       * value stored here: edges touching the point take the coefficient of their other node, the
+       * velocity correction is overwritten in the boundary loop, and HbyA scales it by a numerator
+       * that is identically zero. Store a finite placeholder and skip the corrections below, which
+       * divide by zero for a transient removal factor of 1. ---*/
+
+      if (flow_nodes->GetStrongBC(iPoint)) {
+        nodes->SetMomCoeff(iPoint, Vol * flow_nodes->GetDensity(iPoint));
+        continue;
       }
-      RowDeleted(iPoint) = rowDeleted;
-    }
-    END_SU2_OMP_FOR
 
-    /*--- Second pass: at a flagged point, substitute the average raw A_p of its non-flagged,
-     * locally-owned neighbours for the row-deletion artefact - an extrapolation from the interior
-     * momentum operator rather than a value the boundary condition overwrote. Off-rank neighbours
-     * have no local Jacobian row to read and are skipped; if every neighbour is itself flagged or
-     * off-rank there is nothing to extrapolate from and the artefact value is kept. ---*/
+      /*--- Self coefficient A_p = dR/d(rhou), the x-momentum entry is used for all directions. ---*/
 
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-      su2double A_p = RawMomCoeff(iPoint);
-
-      if (RowDeleted(iPoint)) {
-        su2double Sum_Nb_Ap = 0.0;
-        unsigned short nValidNeigh = 0;
-        for (unsigned long iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-          auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-          if (jPoint < nPointDomain && !RowDeleted(jPoint)) {
-            Sum_Nb_Ap += RawMomCoeff(jPoint);
-            ++nValidNeigh;
-          }
-        }
-        if (nValidNeigh > 0) A_p = Sum_Nb_Ap / nValidNeigh;
-      }
+      su2double A_p = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1) / flow_nodes->GetDensity(iPoint);
 
       /*--- Optionally alter the coefficient using SIMPLEC ---*/
 
@@ -216,7 +190,6 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
 
       /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
 
-      su2double Vol = geometry->nodes->GetVolume(iPoint);
       su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
       su2double CorrectedA_p = A_p - Sum_A_nb - config->GetSIMPLE_Options().Transient_Term_Removal_Factor * (Vol / delT);

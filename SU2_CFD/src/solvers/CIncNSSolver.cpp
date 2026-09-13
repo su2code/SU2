@@ -499,6 +499,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
+    if (pressure_based) nodes->SetStrongBC(iPoint);
+
     /*--- Enforce the no-slip boundary condition in a strong way by
      modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
 
@@ -654,6 +656,8 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
+
+    if (pressure_based) nodes->SetStrongBC(iPoint);
 
     /*--- Enforce the no-slip boundary condition in a strong way by
      modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/

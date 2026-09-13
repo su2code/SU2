@@ -2725,8 +2725,10 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       LinSysRes.SetBlock_Zero(iPoint);
 
+      if (pressure_based) nodes->SetStrongBC(iPoint);
+
       if (implicit)
-        for (iDim = 0; iDim < nDim; iDim++) 
+        for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.DeleteValsRowi(iPoint, iDim+1);
 
     } else {
@@ -3699,9 +3701,11 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
 
     CorrectPressureGradient(GradPressure_f, GradPressure_avg, nodes->GetPressure(iPoint), nodes->GetPressure(jPoint), Edge_Vector, dist_ij_2);
     
-    /*--- Linearly interpolated coefficient. ---*/
+    /*--- Linearly interpolated coefficient. A point under a strong velocity BC has no momentum
+    coefficient, so the edge uses that of its other node. ---*/
 
-    Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(iPoint) + poisson_nodes->GetMomCoeff(jPoint));
+    Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(nodes->GetStrongBC(iPoint) ? jPoint : iPoint) +
+                     poisson_nodes->GetMomCoeff(nodes->GetStrongBC(jPoint) ? iPoint : jPoint));
 
     /*--- Initialize mass flux ---*/
 
@@ -3847,7 +3851,9 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     
     for (iDim = 0; iDim < nDim; iDim++) {
 
-      su2double MassFluxCorrection = -0.5 * (poisson_nodes->GetMomCoeff(iPoint) + poisson_nodes->GetMomCoeff(jPoint)) * GradPressure_f[iDim];
+      su2double MassFluxCorrection =
+          -0.5 * (poisson_nodes->GetMomCoeff(nodes->GetStrongBC(iPoint) ? jPoint : iPoint) +
+                  poisson_nodes->GetMomCoeff(nodes->GetStrongBC(jPoint) ? iPoint : jPoint)) * GradPressure_f[iDim];
 
       /*--- 2nd piso correction term (HbyA') --- (TODO: this is zero for the first correction and can thus also be skipped) ---*/
 
