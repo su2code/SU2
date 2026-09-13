@@ -61,6 +61,11 @@
 
 #ifdef HAVE_MPI
 
+#ifdef USE_SINGLE_PRECISION
+#undef MPI_DOUBLE
+#define MPI_DOUBLE MPI_FLOAT
+#endif
+
 /*--- Depending on the datatype used, the correct MPI wrapper class is defined.
  * For the default (double type) case this results in using the normal MPI routines. ---*/
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
@@ -71,10 +76,10 @@ using namespace medi;
 #include <codi/tools/mpi/codiMpiTypes.hpp>
 
 class CMediMPIWrapper;
-typedef CMediMPIWrapper SU2_MPI;
+using SU2_MPI = CMediMPIWrapper;
 
-typedef codi::CoDiMpiTypes<su2double> MediTypes;
-typedef MediTypes::Tool MediTool;
+using MediTypes = codi::CoDiMpiTypes<su2double>;
+using MediTool = MediTypes::Tool;
 
 extern MediTypes* mediTypes;
 #define AMPI_ADOUBLE ((medi::MpiTypeInterface*)mediTypes->MPI_TYPE)
@@ -91,12 +96,12 @@ using SU2_MPI = CBaseMPIWrapper;
  */
 class CBaseMPIWrapper {
  public:
-  typedef MPI_Request Request;
-  typedef MPI_Status Status;
-  typedef MPI_Datatype Datatype;
-  typedef MPI_Op Op;
-  typedef MPI_Comm Comm;
-  typedef MPI_Win Win;
+  using Request = MPI_Request;
+  using Status = MPI_Status;
+  using Datatype = MPI_Datatype;
+  using Op = MPI_Op;
+  using Comm = MPI_Comm;
+  using Win = MPI_Win;
 
  protected:
   static int Rank, Size, MinRankError;
@@ -256,7 +261,7 @@ class CBaseMPIWrapper {
   static inline passivedouble Wtime(void) { return MPI_Wtime(); }
 };
 
-typedef MPI_Comm SU2_Comm;
+using SU2_Comm = MPI_Comm;
 
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
@@ -267,8 +272,8 @@ typedef MPI_Comm SU2_Comm;
 
 class CMediMPIWrapper : public CBaseMPIWrapper {
  public:
-  typedef AMPI_Request Request;
-  typedef AMPI_Status Status;
+  using Request = AMPI_Request;
+  using Status = AMPI_Status;
 
   static inline void Init(int* argc, char*** argv) {
     AMPI_Init(argc, argv);
@@ -492,10 +497,10 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
 template <typename ScalarType>
 class CBaseMPIWrapper {
  public:
-  typedef int Comm;
-  typedef int Datatype;
-  typedef int Request;
-  typedef int Op;
+  using Comm = int;
+  using Datatype = int;
+  using Request = int;
+  using Op = int;
 
   struct Status {
     int MPI_TAG;
@@ -632,7 +637,7 @@ struct SelectMPIWrapper<passivedouble> {
 #endif
 
 /*--- Specialize for the low precision type. ---*/
-#if defined(USE_MIXED_PRECISION)
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template <>
 struct SelectMPIWrapper<su2mixedfloat> {
 #if defined HAVE_MPI

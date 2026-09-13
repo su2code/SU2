@@ -60,16 +60,5 @@ public:
    * \param[in] val_filename - The name of the file
    */
   void WriteData(string val_filename) override ;
-
-private:
-
-  /*!
-   * \brief Change storage of buffer from big endian to little endian
-   * \param buffer - Pointer to the beginning of the buffer
-   * \param nBytes - The size in bytes of an data entry
-   * \param nVar - The number of entries
-   */
-  void SwapBytes(char *buffer, size_t nBytes, unsigned long nVar);
-
 };
 

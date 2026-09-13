@@ -38,6 +38,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   MatrixType source_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   MatrixType lookup_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   su2vector<unsigned short> table_misses; /*!< \brief Vector of lookup table misses. */
+  MatrixType source_cons_jac; /*!< \brief Consumption-rate Jacobian dS_aux_i/dY_aux_i = source_cons_i, one column per user scalar. */
 
  public:
   /*!
@@ -87,4 +88,18 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   inline void SetTableMisses(unsigned long iPoint, unsigned short misses) override { table_misses[iPoint] = misses; }
 
   inline unsigned short GetTableMisses(unsigned long iPoint) const override { return table_misses[iPoint]; }
+
+  /*!
+   * \brief Store the consumption-rate Jacobian dS_aux_i/dY_aux_i = source_cons_i for user scalar i_aux.
+   */
+  inline void SetAuxSourceCons(unsigned long iPoint, unsigned long i_aux, su2double val) {
+    source_cons_jac(iPoint, i_aux) = val;
+  }
+
+  /*!
+   * \brief Get the consumption-rate Jacobian entry for user scalar i_aux at iPoint.
+   */
+  inline su2double GetAuxSourceCons(unsigned long iPoint, unsigned long i_aux) const {
+    return source_cons_jac(iPoint, i_aux);
+  }
 };

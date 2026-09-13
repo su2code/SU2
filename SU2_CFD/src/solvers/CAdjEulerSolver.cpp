@@ -2094,7 +2094,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       A[iVertex][iVertex+1] = 0.0;
       A[iVertex][iVertex-1] = 0.0;
 
-      Gauss_Elimination(A, b, (unsigned short)nVertex);
+      GaussElimination(A, b, (unsigned short)nVertex);
 
       /*--- Set the new value of the sensitiviy ---*/
 

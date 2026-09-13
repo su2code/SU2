@@ -1075,6 +1075,8 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
         const auto& CV_name = flamelet_config_options.controlling_variable_names[iCV];
         AddHistoryOutput("RMS_"+CV_name, "rms["+CV_name+"]",ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean squared residual of " + CV_name + " controlling variable equation.", HistoryFieldType::RESIDUAL);
       }
+      if (flamelet_config_options.thickenedflame_correction)
+        AddHistoryOutput("THICKNESS","flamethickness",ScreenOutputFormat::FIXED, "FLAME_THICKNESS", "Flame thickness used for thickened flame correction model.", HistoryFieldType::COEFFICIENT);
 
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++){
@@ -1339,6 +1341,9 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
         }
       }
 
+      if (flamelet_config_options.thickenedflame_correction)
+        SetHistoryOutputValue("THICKNESS", solver[SPECIES_SOL]->GetFlameThickness());
+
       SetHistoryOutputValue("LINSOL_ITER_FLAMELET", solver[SPECIES_SOL]->GetIterLinSolver());
       SetHistoryOutputValue("LINSOL_RESIDUAL_FLAMELET", log10(solver[SPECIES_SOL]->GetResLinSolver()));
     }
@@ -1403,6 +1408,10 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case SPECIES_MODEL::NONE:
       break;
   }
+}
+
+void CFlowOutput::LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) {
+  LoadHistoryData(config, geometry, solver);
 }
 
 void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
@@ -4303,6 +4312,8 @@ void CFlowOutput::AddTurboOutput(unsigned short nZone){
     AddHistoryOutput("MachOut_" + tag, "MachOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("AbsFlowAngleIn_" + tag, "AbsFlowAngleIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("AbsFlowAngleOut_" + tag, "AbsFlowAngleOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("RelFlowAngleIn_" + tag, "RelFlowAngleIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Relative flow angle in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("RelFlowAngleOut_" + tag, "RelFlowAngleOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Relative flow angle out " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("KineticEnergyLoss_" + tag, "KELC_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Blade Kinetic Energy Loss Coefficient", HistoryFieldType::DEFAULT);
     AddHistoryOutput("TotPressureLoss_" + tag, "TPLC_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Blade Pressure Loss Coefficient", HistoryFieldType::DEFAULT);
   }

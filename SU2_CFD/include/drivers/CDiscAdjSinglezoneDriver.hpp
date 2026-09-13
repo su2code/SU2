@@ -56,6 +56,14 @@ protected:
   CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
 
   /*!
+   * \brief Returns true if the objective function does not depend on the main variables. In which case,
+   * the adjoint variables are 0 and the sensitivities can be computed just with the secondary recording.
+   */
+  bool TrivialFunction() const {
+    return config_container[ZONE_0]->GetnObj() == 1 && config_container[ZONE_0]->GetKind_ObjFunc() == VOLUME_FRACTION;
+  }
+
+  /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */

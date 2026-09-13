@@ -27,6 +27,9 @@
 
 
 #include "../../include/solvers/CSolver.hpp"
+
+#include <limits>
+
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
@@ -89,7 +92,7 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
   Jacobian_jj        = nullptr;
   base_nodes         = nullptr;
   nOutputVariables   = 0;
-  ResLinSolver       = 0.0;
+  ResLinSolver       = EPS;
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
 
@@ -367,10 +370,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   auto *Diff      = new su2double[nVar];
   auto *Und_Lapl  = new su2double[nVar];
-  auto *Sol_Min   = new su2double[nPrimVarGrad];
-  auto *Sol_Max   = new su2double[nPrimVarGrad];
-  auto *rotPrim_i = new su2double[nPrimVar];
-  auto *rotPrim_j = new su2double[nPrimVar];
+  auto *Sol_Min   = new su2double[std::max(nVar, nPrimVarGrad)];
+  auto *Sol_Max   = new su2double[std::max(nVar, nPrimVarGrad)];
+  auto *rotPrim_i = new su2double[std::max(nVar, nPrimVar)];
+  auto *rotPrim_j = new su2double[std::max(nVar, nPrimVar)];
 
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
   const su2double *Coord_i, *Coord_j;
@@ -542,9 +545,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             if (implicit_periodic) {
 
+              const auto block = Jacobian.GetBlockView(iPoint, iPoint);
+
               for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
-                  jacBlock[iVar][jVar] = Jacobian.GetBlock(iPoint, iPoint, iVar, jVar);
+                  jacBlock[iVar][jVar] = block(iVar, jVar);
                 }
               }
 
@@ -553,21 +558,15 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               if (rotate_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
                   if (nDim == 2) {
-                    jacBlock[1][iVar] = (rotMatrix2D[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix2D[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
-                    jacBlock[2][iVar] = (rotMatrix2D[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix2D[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
+                    jacBlock[1][iVar] = rotMatrix2D[0][0]*block(1, iVar) + rotMatrix2D[0][1]*block(2, iVar);
+                    jacBlock[2][iVar] = rotMatrix2D[1][0]*block(1, iVar) + rotMatrix2D[1][1]*block(2, iVar);
                   } else {
-
-                    jacBlock[1][iVar] = (rotMatrix3D[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[0][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[2][iVar] = (rotMatrix3D[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[1][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[3][iVar] = (rotMatrix3D[2][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[2][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[2][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
+                    jacBlock[1][iVar] = rotMatrix3D[0][0]*block(1, iVar) + rotMatrix3D[0][1]*block(2, iVar) +
+                                        rotMatrix3D[0][2]*block(3, iVar);
+                    jacBlock[2][iVar] = rotMatrix3D[1][0]*block(1, iVar) + rotMatrix3D[1][1]*block(2, iVar) +
+                                        rotMatrix3D[1][2]*block(3, iVar);
+                    jacBlock[3][iVar] = rotMatrix3D[2][0]*block(1, iVar) + rotMatrix3D[2][1]*block(2, iVar) +
+                                        rotMatrix3D[2][2]*block(3, iVar);
                   }
                 }
               }
@@ -1747,6 +1746,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CConfig   *config) {
   SU2_ZONE_SCOPED
 
+  if (config->GetCFL_Adapt() != YES) return;
+
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
 
@@ -1811,7 +1812,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     canIncrease = (linRes < linTol) && (iter >= startingIter);
 
-    if ((iMesh == MESH_0) && (Res_Count > 0)) {
+    /* Do not use the residual flip-flop criteria when we are mitigating outliers
+     * because the former was never very reliable for large cases where monotonic
+     * residual reduction is impossible to achieve. */
+    if (!config->OptionIsSet("OUTLIER_MITIGATION_PARAM") && iMesh == MESH_0 && Res_Count > 0) {
       Old_Func = New_Func;
       if (NonLinRes_Series.empty()) NonLinRes_Series.resize(Res_Count,0.0);
 
@@ -1983,16 +1987,18 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
 }
 
-void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) {
+void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config, bool force) {
   SU2_ZONE_SCOPED
 
-  if (geometry->GetMGLevel() != MESH_0) return;
+  /*--- On coarse levels the reduction is skipped for performance, unless MG_Smooth_EarlyExit
+   *    needs it or the caller asks for it. ---*/
+  if (!force && geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit) return;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- Set the L2 Norm residual in all the processors. ---*/
 
-  vector<su2double> rbuf_res(nVar);
+  vector<su2double> rbuf_res(nVar * nDim);
   unsigned long Global_nPointDomain = 0;
 
   if (config->GetComm_Level() == COMM_FULL) {
@@ -2023,21 +2029,22 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
   /*--- Set the Maximum residual in all the processors. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-
-    const unsigned long nProcessor = size;
-
-    su2activematrix rbuf_residual(nProcessor,nVar);
-    su2matrix<unsigned long> rbuf_point(nProcessor,nVar);
-    su2activematrix rbuf_coord(nProcessor*nVar, nDim);
-
-    SU2_MPI::Allgather(Residual_Max.data(), nVar, MPI_DOUBLE, rbuf_residual.data(), nVar, MPI_DOUBLE, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Point_Max.data(), nVar, MPI_UNSIGNED_LONG, rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Point_Max_Coord.data(), nVar*nDim, MPI_DOUBLE, rbuf_coord.data(), nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
-
+    SU2_MPI::Allreduce(Residual_Max.data(), rbuf_res.data(), nVar, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (auto iProcessor = 0ul; iProcessor < nProcessor; iProcessor++) {
-        AddRes_Max(iVar, rbuf_residual(iProcessor,iVar), rbuf_point(iProcessor,iVar), rbuf_coord[iProcessor*nVar+iVar]);
+      if (Residual_Max[iVar] < rbuf_res[iVar]) {
+        Point_Max[iVar] = 0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Point_Max_Coord(iVar, iDim) = std::numeric_limits<su2double>::lowest();
+        }
       }
+      Residual_Max[iVar] = rbuf_res[iVar];
+    }
+    vector<unsigned long> rbuf_point(nVar);
+    SU2_MPI::Allreduce(Point_Max.data(), rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Point_Max_Coord.data(), rbuf_res.data(), nVar*nDim, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    Point_Max = std::move(rbuf_point);
+    for (unsigned short iVar = 0; iVar < nVar * nDim; iVar++) {
+      Point_Max_Coord.data()[iVar] = rbuf_res[iVar];
     }
   }
 
@@ -2326,7 +2333,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
                   *geometry, *config, 0, nVar, umusclKappa, solution, gradient, solMin, solMax, limiter);
 }
 
-void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {
+void CSolver::GaussElimination(su2double** A, su2double* rhs, unsigned short nVar) {
   SU2_ZONE_SCOPED
 
   short iVar, jVar, kVar;
@@ -2849,7 +2856,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
 
-  if (magic_number == 535532) {
+  if (magic_number == SU2_RESTART_MAGIC_NUMBER) {
     SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
@@ -2888,7 +2895,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
 
-  if (magic_number == 535532) {
+  if (magic_number == SU2_RESTART_MAGIC_NUMBER) {
     SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
@@ -2972,7 +2979,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
   strcpy(fname, val_filename.c_str());
-  const int nRestart_Vars = 5;
+  const int nRestart_Vars = SU2_RESTART_HEADER_SIZE;
   Restart_Vars.resize(nRestart_Vars);
   fields.clear();
 
@@ -3000,17 +3007,20 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
 
-  if (Restart_Vars[0] != 535532) {
+  if (Restart_Vars[0] != SU2_RESTART_MAGIC_NUMBER) {
     SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
                    string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
-  /*--- Store the number of fields and points to be read for clarity. ---*/
+  /*--- Store the number of fields and points to be read for clarity. The file may
+   have been written by a build of different precision, in which case the data needs
+   to be converted after reading it. ---*/
 
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
+  const int scalarSize = GetSU2BinaryScalarSize(Restart_Vars[SU2_RESTART_PRECISION_IDX]);
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
@@ -3032,7 +3042,13 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  ret = fread(Restart_Data.data(), sizeof(passivedouble), nFields*nPointFile, fhw);
+  if (scalarSize == static_cast<int>(sizeof(passivedouble))) {
+    ret = fread(Restart_Data.data(), scalarSize, nFields*nPointFile, fhw);
+  } else {
+    vector<char> buffer(nFields*nPointFile*scalarSize);
+    ret = fread(buffer.data(), scalarSize, nFields*nPointFile, fhw);
+    SU2BinaryDataToPassive(buffer.data(), scalarSize, nFields*nPointFile, Restart_Data.data());
+  }
   if (ret != nFields*nPointFile) {
     SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
   }
@@ -3070,17 +3086,20 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
 
-  if (Restart_Vars[0] != 535532) {
+  if (Restart_Vars[0] != SU2_RESTART_MAGIC_NUMBER) {
     SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
                    string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
-  /*--- Store the number of fields and points to be read for clarity. ---*/
+  /*--- Store the number of fields and points to be read for clarity. The file may
+   have been written by a build of different precision, in which case the data needs
+   to be converted after reading it. ---*/
 
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
+  const int scalarSize = GetSU2BinaryScalarSize(Restart_Vars[SU2_RESTART_PRECISION_IDX]);
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
@@ -3117,9 +3136,12 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   delete [] mpi_str_buf;
 
-  /*--- We're writing only su2doubles in the data portion of the file. ---*/
+  /*--- The data portion of the file holds scalars of the precision recorded in the
+   header, which is not necessarily that of this build. Describe them as opaque
+   blocks of bytes so that the file views do not depend on the build precision. ---*/
 
-  etype = MPI_DOUBLE;
+  MPI_Type_contiguous(scalarSize, MPI_BYTE, &etype);
+  MPI_Type_commit(&etype);
 
   /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
    along with the string names of the variables. ---*/
@@ -3145,7 +3167,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     for (auto iPoint_Global = 0ul; iPoint_Global < geometry->GetGlobal_nPointDomain(); ++iPoint_Global) {
       if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
         blocklen[counter] = nFields;
-        displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
+        displace[counter] = iPoint_Global*nFields*scalarSize;
         counter++;
       }
     }
@@ -3160,10 +3182,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     const auto partitioner = CLinearPartitioner(nPointFile,0);
 
     blocklen[0] = nFields*partitioner.GetSizeOnRank(rank);
-    displace[0] = nFields*partitioner.GetFirstIndexOnRank(rank)*sizeof(passivedouble);;
+    displace[0] = nFields*partitioner.GetFirstIndexOnRank(rank)*scalarSize;
   }
 
-  MPI_Type_create_hindexed(nBlock, blocklen, displace, MPI_DOUBLE, &filetype);
+  MPI_Type_create_hindexed(nBlock, blocklen, displace, etype, &filetype);
   MPI_Type_commit(&filetype);
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
@@ -3176,17 +3198,25 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   const int bufSize = nBlock*blocklen[0];
   Restart_Data.resize(bufSize);
 
-  /*--- Collective call for all ranks to read from their view simultaneously. ---*/
+  /*--- Collective call for all ranks to read from their view simultaneously,
+   converting the data if the file precision does not match this build. ---*/
 
-  MPI_File_read_all(fhw, Restart_Data.data(), bufSize, MPI_DOUBLE, &status);
+  if (scalarSize == static_cast<int>(sizeof(passivedouble))) {
+    MPI_File_read_all(fhw, Restart_Data.data(), bufSize, etype, &status);
+  } else {
+    vector<char> buffer(static_cast<unsigned long>(bufSize)*scalarSize);
+    MPI_File_read_all(fhw, buffer.data(), bufSize, etype, &status);
+    SU2BinaryDataToPassive(buffer.data(), scalarSize, bufSize, Restart_Data.data());
+  }
 
   /*--- All ranks close the file after writing. ---*/
 
   MPI_File_close(&fhw);
 
-  /*--- Free the derived datatype and release temp memory. ---*/
+  /*--- Free the derived datatypes and release temp memory. ---*/
 
   MPI_Type_free(&filetype);
+  MPI_Type_free(&etype);
 
   delete [] blocklen;
   delete [] displace;

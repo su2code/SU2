@@ -96,6 +96,11 @@ class CTurbomachineryState {
 
   CTurbomachineryState(unsigned short nDim, su2double area, su2double radius);
 
+  inline void SetZeroValues() {
+    Density = Pressure = Entropy = Enthalpy = Temperature = TotalTemperature = TotalPressure = TotalEnthalpy = 0.0;
+    AbsFlowAngle = FlowAngle = MassFlow = Rothalpy = TotalRelPressure = 0.0;
+  }
+
   void ComputeState(CFluidModel& fluidModel, const CTurbomachineryPrimitiveState& primitiveState);
 
   const su2double& GetDensity() const { return Density; }
@@ -247,16 +252,30 @@ class CTurbomachineryStagePerformance {
  */
 class CTurboOutput {
  private:
-  vector<vector<shared_ptr<CTurbomachineryBladePerformance>>> BladesPerformances;
+  vector<shared_ptr<CTurbomachineryBladePerformance>> BladesPerformances;
 
   static void ComputePerBlade(vector<shared_ptr<CTurbomachineryBladePerformance>> const bladePerformances, vector<CTurbomachineryCombinedPrimitiveStates> const bladePrimitives);
 
   static void ComputePerSpan(shared_ptr<CTurbomachineryBladePerformance> const spanPerformances, const CTurbomachineryCombinedPrimitiveStates& spanPrimitives);
   
  public:
-  CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel);
+  CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel, unsigned short iBladeRow);
 
-  const vector<vector<shared_ptr<CTurbomachineryBladePerformance>>>& GetBladesPerformances() const { return BladesPerformances; }
+  const vector<shared_ptr<CTurbomachineryBladePerformance>>& GetBladesPerformances() const { return BladesPerformances; }
 
-  void ComputeTurbomachineryPerformance(vector<vector<CTurbomachineryCombinedPrimitiveStates>> const primitives);
+  void ComputeTurbomachineryPerformance(vector<CTurbomachineryCombinedPrimitiveStates> const primitives, unsigned short iBladeRow);
+
+  /*!
+   * \brief Returns true if the given objective function kind is a turbomachinery objective
+   *        that can be evaluated via GetObjectiveValue.
+   * \param[in] kind - Objective function kind (ENUM_OBJECTIVE value).
+   */
+  static bool IsTurboObjective(unsigned short kind);
+
+  /*!
+   * \brief Get the value of a turbomachinery objective function from the tip span performance.
+   * \param[in] kind - Objective function kind (ENUM_OBJECTIVE value).
+   * \return The objective function value, or 0.0 for unrecognised kinds.
+   */
+  su2double GetObjectiveValue(unsigned short kind) const;
 };
