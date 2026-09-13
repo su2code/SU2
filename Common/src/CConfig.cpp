@@ -4222,6 +4222,46 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
 
+  /*--- The pressure-based solver's Poisson equation only runs on the finest grid, its Rhie-Chow
+   * mass flux has no pseudo-transient term, it has no adjoint, and its marker switches have no
+   * PERIODIC_BOUNDARY case. Fail here instead of silently ignoring the option or erroring deep
+   * inside the first iteration. Gated on the incompressible regime (not just the option's raw
+   * value) since KIND_INCOMP_SYSTEM is read regardless of solver family, and a compressible or
+   * SU2_DEF config that happens to carry a leftover PRESSURE_BASED line (e.g. copied from
+   * config_template.cfg before it defaulted to DENSITY_BASED) must not hard-error here. ---*/
+  if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE && Kind_Incomp_System == INCOMP_SYSTEM::PRESSURE_BASED) {
+    if (nMGLevels > 0) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support MGLEVEL > 0,\n"
+                     "       the Poisson solver is single-grid only.", CURRENT_FUNCTION);
+    }
+    if (Time_Domain) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES,\n"
+                     "       it converges to a physically wrong solution instead of failing.",
+                     CURRENT_FUNCTION);
+    }
+    if (DiscreteAdjoint || ContinuousAdjoint) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED has no adjoint formulation.", CURRENT_FUNCTION);
+    }
+    if (nMarker_PerBound > 0) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support MARKER_PERIODIC.", CURRENT_FUNCTION);
+    }
+    if (Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support streamwise periodicity.",
+                     CURRENT_FUNCTION);
+    }
+
+    /*--- A_p already carries Vol/dt when SIMPLEC's A_p-Sum_A_nb correction runs, so at the 0.0
+     * default that correction collapses to roughly Vol/dt and the pressure correction becomes
+     * vanishingly weak at low CFL. ---*/
+    if (Kind_PBIter == PBITER::SIMPLEC && !OptionIsSet("TRANSIENT_TERM_REMOVAL_FACTOR")) {
+      SIMPLE_Options.Transient_Term_Removal_Factor = 1.0;
+      if (rank == MASTER_NODE) {
+        cout << "WARNING: KIND_PB_ITER= SIMPLEC without TRANSIENT_TERM_REMOVAL_FACTOR set - "
+             << "defaulting it to 1.0, its intended companion value for SIMPLEC." << endl;
+      }
+    }
+  }
+
   /*--- Check for Fluid model consistency ---*/
 
   if (standard_air) {

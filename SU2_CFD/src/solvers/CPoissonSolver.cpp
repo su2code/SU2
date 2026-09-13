@@ -1,7 +1,7 @@
 /*!
  * \file CPoissonSolver.cpp
  * \brief Main subroutines for solving the Poisson equation
- * \author F. Palacios, T. Economon
+ * \author T. Aalbers
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -68,13 +68,6 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned sh
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
 
-  if (config->GetExtraOutput()) {
-    if (nDim == 2) { nOutputVariables = 13; }
-    else if (nDim == 3) { nOutputVariables = 19; }
-    OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
-    OutputHeadingNames = new string[nOutputVariables];
-  }
-
   /*--- Initialize the nodes vector. ---*/
 
   nodes = new CPoissonVariable(0.0, nPoint, nDim, nVar, config);
@@ -105,7 +98,7 @@ void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
                                 unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   SU2_ZONE_SCOPED
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
-                               
+
   /*--- Reset pressure corrections to zero for next iteration. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -122,7 +115,7 @@ void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     solver_container[POISSON_SOL]->CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
-  /*--- Compute the gradients only after the solution has been reset to zero ---*/  
+  /*--- Compute the gradients only after the solution has been reset to zero ---*/
   CommonPreprocessing(geometry, config, Output);
 
   /*--- Need to clear EdgeFluxes and Jacobian. ---*/
@@ -132,7 +125,7 @@ void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     Jacobian.SetValZero();
   }
 
-  
+
 }
 
 void CPoissonSolver::Postprocessing(CGeometry *geometry,
@@ -142,10 +135,11 @@ void CPoissonSolver::Postprocessing(CGeometry *geometry,
   SU2_ZONE_SCOPED
 
   /*--- Compute gradients of the pressure correction p' so we can use it to find the velocity corrections ---*/
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) 
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
     SetSolution_Gradient_GG(geometry, config,false);
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) 
+  if (config->GetKind_Gradient_Method() == LEAST_SQUARES ||
+      config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
     SetSolution_Gradient_LS(geometry, config,false);
 
 }
@@ -158,20 +152,30 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
 
   const CSolver* flow_solution = solver_container[FLOW_SOL];
   const CVariable* flow_nodes = flow_solution->GetNodes();
-  
-  if (implicit) {
 
-    /*--- First sum up the momentum coefficient using the jacobian from given point and it's neighbors. ---*/
+  if (implicit) {
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Self contribution of the coefficient A_p, defined as dR/d(rhou). The jacobian of the momentum 
-      equations is already defined as dR/du so it can be reused. Note that this coefficient should be the same for 
-      all variable directions, therefore just the x-momentum coefficient is taken. ---*/
-      
+      su2double Vol = geometry->nodes->GetVolume(iPoint);
+
+      /*--- The momentum equation is not assembled at a strong velocity BC, DeleteValsRowi zeroes
+       * the row and writes 1.0 on the diagonal, so there is no A_p to read. Nothing consumes the
+       * value stored here: edges touching the point take the coefficient of their other node, the
+       * velocity correction is overwritten in the boundary loop, and HbyA scales it by a numerator
+       * that is identically zero. Store a finite placeholder and skip the corrections below, which
+       * divide by zero for a transient removal factor of 1. ---*/
+
+      if (flow_nodes->GetStrongBC(iPoint)) {
+        nodes->SetMomCoeff(iPoint, Vol * flow_nodes->GetDensity(iPoint));
+        continue;
+      }
+
+      /*--- Self coefficient A_p = dR/d(rhou), the x-momentum entry is used for all directions. ---*/
+
       su2double A_p = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1) / flow_nodes->GetDensity(iPoint);
-    
+
       /*--- Optionally alter the coefficient using SIMPLEC ---*/
 
       su2double Sum_A_nb = 0.0;
@@ -185,7 +189,6 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
 
       /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
 
-      su2double Vol = geometry->nodes->GetVolume(iPoint); 
       su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
       su2double CorrectedA_p = A_p - Sum_A_nb - config->GetSIMPLE_Options().Transient_Term_Removal_Factor * (Vol / delT);
@@ -217,7 +220,7 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
 
   /*--- Insert MPI call here. ---*/
   InitiateComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
-  CompleteComms(geometry, config, MPI_QUANTITIES::MOM_COEFF); 
+  CompleteComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
 }
 
 
@@ -233,14 +236,22 @@ void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container
 
   /*--- First exchange momentum correction which is required to compute H. ---*/
   InitiateComms(geometry, config, MPI_QUANTITIES::MOM_CORRECTION);
-  CompleteComms(geometry, config, MPI_QUANTITIES::MOM_CORRECTION); 
-  
+  CompleteComms(geometry, config, MPI_QUANTITIES::MOM_CORRECTION);
+
   if (implicit) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Read A_p back from SetMomCoeff's own result (MomCoeff = Vol/A_p) instead of
+       * re-deriving it from the raw Jacobian diagonal: that raw diagonal is exactly what
+       * SetMomCoeff itself does not use any more, since it applies the strong-BC row-deletion
+       * reconstruction and the SIMPLEC/transient-removal corrections before storing MomCoeff.
+       * Re-reading the uncorrected diagonal here would use a different, inconsistent A_p in the
+       * PISO correction than the one the pressure equation was actually assembled against. ---*/
+      A_p = geometry->nodes->GetVolume(iPoint) / nodes->GetMomCoeff(iPoint);
+
       for (iDim = 0; iDim < nDim; ++iDim) {
         H = 0.0;
-        A_p = flow_solver->Jacobian.GetBlockView(iPoint, iPoint)(1,1) / flow_nodes->GetDensity(iPoint);
         for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
           jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
           A_nb = flow_solver->Jacobian.GetBlockView(iPoint, jPoint)(1,1) / flow_nodes->GetDensity(jPoint);
@@ -257,13 +268,13 @@ void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container
 
   /*--- Exchange HbyA with MPI call. ---*/
   InitiateComms(geometry, config, MPI_QUANTITIES::HBYA_CORRECTION);
-  CompleteComms(geometry, config, MPI_QUANTITIES::HBYA_CORRECTION); 
+  CompleteComms(geometry, config, MPI_QUANTITIES::HBYA_CORRECTION);
 }
 
 void CPoissonSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   SU2_ZONE_SCOPED
- 
+
   CNumerics* numerics = numerics_container[VISC_TERM + omp_get_thread_num() * MAX_TERMS];
 
   bool pausePreacc = false;
@@ -296,7 +307,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   SU2_ZONE_SCOPED
 
   su2double *GridVel_i;
-  
+
   const CSolver* flow_solver = solver_container[FLOW_SOL];
   const CVariable* flow_nodes = flow_solver->GetNodes();
 
@@ -313,28 +324,27 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       su2double Normal[MAXNDIM] = {0.0};
       geometry->edges->GetNormal(iEdge, Normal);
 
-      /*--- Add the mass flux to the source term for the poisson equation ---*/
-
-      auto residual = CNumerics::ResidualType<>(&edgeMassFluxes[iEdge], nullptr, nullptr);
-
-      if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
-      if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residual);
-
       /*--- Only for the second pressure correction in the case PISO is used, we need the additional HbyA(u') term ---*/
       // TODO: currently its just set to zero and does not contribute for the first piso correctin but would be nice if this entire block would be skipped otherwise.
       su2double MeanHbyA = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; ++iDim)
-        MeanHbyA += 0.5 * (nodes->GetHbyACorrection(iPoint, iDim) + nodes->GetHbyACorrection(jPoint, iDim)) * Normal[iDim]; 
+        MeanHbyA += 0.5 * (nodes->GetHbyACorrection(iPoint, iDim) + nodes->GetHbyACorrection(jPoint, iDim)) * Normal[iDim];
 
-      auto residualHbyA = CNumerics::ResidualType<>(&MeanHbyA, nullptr, nullptr);
-      if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residualHbyA);
-      if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residualHbyA);
+      /*--- Add the mass flux and the HbyA correction to the source term for the poisson equation ---*/
+
+      su2double EdgeSource = edgeMassFluxes[iEdge] + MeanHbyA;
+      auto residual = CNumerics::ResidualType<>(&EdgeSource, nullptr, nullptr);
+
+      if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
+      if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residual);
 
     }
     END_SU2_OMP_FOR
   }
 
-  /*--- Now add corrections to the previously computed mass fluxes for boundary conditions which alter the mass flux ---*/
+  /*--- Now add corrections to the previously computed mass fluxes for boundary conditions which alter the mass flux.
+  geometry->vertex[...]->GetNormal() returns the normal pointing into the domain, so accumulating with -= below
+  (rather than negating Normal first, as CIncEulerSolver does) yields the outward mass flux used as the RHS here. ---*/
 
   unsigned short iDim, KindBC;
   unsigned long  iMarker, iVertex, iPoint;
@@ -356,19 +366,20 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
         break;
 
       case INLET_FLOW:
+        SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);            
-              
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+
           MassFlux_corr = 0.0;
           if (dynamic_grid) {
             GridVel_i = geometry->nodes->GetGridVel(iPoint);
             for (iDim = 0; iDim < nDim; iDim++)
               MassFlux_corr -= flow_nodes->GetDensity(iPoint) * (flow_nodes->GetVelocity(iPoint, iDim) - GridVel_i[iDim]) * Normal[iDim];
-          } 
+          }
           else
             for (iDim = 0; iDim < nDim; iDim++)
             MassFlux_corr -= flow_nodes->GetDensity(iPoint) * flow_nodes->GetVelocity(iPoint, iDim) * Normal[iDim];
@@ -378,10 +389,12 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
           if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
 
         }
+        END_SU2_OMP_FOR
         break;
 
       case FAR_FIELD:
         /*--- Treat the farfield as a fully developed outlet for pressure. ---*/
+        SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
@@ -390,7 +403,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
             if (dynamic_grid)
               GridVel_i = geometry->nodes->GetGridVel(iPoint);
-                
+
             MassFlux_corr = 0.0;
             if (dynamic_grid)
               for (iDim = 0; iDim < nDim; iDim++)
@@ -398,12 +411,13 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
             else
              for (iDim = 0; iDim < nDim; iDim++)
               MassFlux_corr -= flow_nodes->GetDensity(iPoint) * flow_nodes->GetVelocity(iPoint, iDim) * Normal[iDim];
-  
+
             auto residual = CNumerics::ResidualType<>(&MassFlux_corr, nullptr, nullptr);
-            LinSysRes.AddBlock(iPoint, residual);    
+            LinSysRes.AddBlock(iPoint, residual);
 
           }
         }
+        END_SU2_OMP_FOR
         break;
 
 
@@ -416,6 +430,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
         switch (Kind_Outlet) {
           case INC_OUTLET_TYPE::PRESSURE_OUTLET:
+            SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
             for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
               iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
@@ -424,7 +439,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
                 if (dynamic_grid)
                   GridVel_i = geometry->nodes->GetGridVel(iPoint);
-                
+
                 MassFlux_corr = 0.0;
                 if (dynamic_grid)
                   for (iDim = 0; iDim < nDim; iDim++)
@@ -438,6 +453,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
                 if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
               }
             }
+            END_SU2_OMP_FOR
             break;
           default:
             SU2_MPI::Error("Requested type of outlet boundary condition not available", CURRENT_FUNCTION);
@@ -449,7 +465,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       default:
         SU2_MPI::Error("Invalid boundary condition for flux correction", CURRENT_FUNCTION);
         break;
-        
+
     }
   }
 
@@ -458,11 +474,11 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   SU2_ZONE_SCOPED
 
-  /*--- No actual time integration is done here. The routine is used as a means to solve the linear equation 
+  /*--- No actual time integration is done here. The routine is used as a means to solve the linear equation
    * resulting from the poisson equation. The linear system is solved using the jacobian matrix in a way
    * consistent with the rest of the code. The time step is set to zero and no under-relaxation is applied to the
    * jacobian matrix. ---*/
-  
+
   /*--- Local residual variables for current thread ---*/
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
   unsigned long idxMax[MAXNVAR] = {0};
@@ -534,10 +550,10 @@ void CPoissonSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (!geometry->nodes->GetDomain(iPoint)) continue;
-    /*--- The farfield boundary is considered as an inlet-outlet boundary, where flow 
+    /*--- The farfield boundary is considered as an inlet-outlet boundary, where flow
       * can either enter or leave. For pressure, it is treated as a fully developed flow
-      * and a dirichlet BC is applied. For velocity, based on the sign of massflux, either 
-      * a dirichlet or a neumann BC is applied (in correction routine). ---*/		
+      * and a dirichlet BC is applied. For velocity, based on the sign of massflux, either
+      * a dirichlet or a neumann BC is applied (in correction routine). ---*/
 
     LinSysRes.SetBlock_Zero(iPoint);
 
@@ -560,7 +576,7 @@ void CPoissonSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (!geometry->nodes->GetDomain(iPoint)) continue;
-    
+
     /*--- apply a dirichlet boundary condition as pressure is prescribed*/
 
     LinSysRes.SetBlock_Zero(iPoint);

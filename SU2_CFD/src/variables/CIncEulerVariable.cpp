@@ -73,8 +73,10 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   }
 
   /*--- Allocate strong BC vector for pressure-based solver ---*/
-  
-  strongBC.resize(nPoint);
+
+  if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
+    strongBC.resize(nPoint) = false;
+  }
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

@@ -420,7 +420,7 @@ def main():
     inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
-    inc_euler_naca0012_pb.test_vals = [-4.154445, -4.919400, 0.468630, 0.010040]
+    inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784246, 0.427448, 0.012083]
     test_list.append(inc_euler_naca0012_pb)
 
     # C-D nozzle with pressure inlet and mass flow outlet
@@ -455,8 +455,9 @@ def main():
     inc_lam_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder_pb.cfg_file  = "incomp_pb_cylinder.cfg"
     inc_lam_cylinder_pb.test_iter = 10
-    inc_lam_cylinder_pb.test_vals = [-3.484442, -3.775560, 0.012341, 6.190300]
+    inc_lam_cylinder_pb.test_vals = [-3.486100, -3.777681, 0.012003, 6.178586]
     test_list.append(inc_lam_cylinder_pb)
+
 
     # Buoyancy-driven cavity
     inc_buoyancy          = TestCase('inc_buoyancy')
@@ -481,6 +482,7 @@ def main():
     inc_lam_bend.test_iter = 10
     inc_lam_bend.test_vals = [-3.639664, -3.218039, -0.016067, 1.090645]
     test_list.append(inc_lam_bend)
+
 
     ############################
     ### Incompressible RANS  ###
@@ -514,7 +516,7 @@ def main():
     inc_flatplate_pb.cfg_dir   = "incomp_rans/rough_flatplate"
     inc_flatplate_pb.cfg_file  = "pb_rough_flatplate_incomp.cfg"
     inc_flatplate_pb.test_iter = 10
-    inc_flatplate_pb.test_vals = [ -4.063342, -9.884401, 0.000011, 0.228472]
+    inc_flatplate_pb.test_vals = [-4.063342, -9.884401, 0.000010, 0.228472]
     test_list.append(inc_flatplate_pb)
 
     # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SST

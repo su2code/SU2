@@ -1,7 +1,7 @@
 /*!
  * \file CPoissonVariable.cpp
  * \brief Definition of the variables for poisson equation problems.
- * \author F. Palacios, T. Economon
+ * \author T. Aalbers
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -31,7 +31,7 @@ CPoissonVariable::CPoissonVariable(su2double value, unsigned long npoint, unsign
   : CScalarVariable(npoint, ndim, nvar, config) {
 
   /*--- Initialization ---*/
-    
+
   Solution = value;
   Solution_Old = value;
 
@@ -46,12 +46,12 @@ CPoissonVariable::CPoissonVariable(su2double value, unsigned long npoint, unsign
       Residual_Sum.resize(nPoint, nVar);
       Residual_Old.resize(nPoint, nVar);
       break;
-    }       
-  } 
+    }
+  }
 
   /*--- Initialize momentum coefficient and HbyA ---*/
   MomCoeff.resize(nPoint) = su2double(0.0);
   MomentumCorrection.resize(nPoint, nDim) = su2double(0.0);
   HbyACorrection.resize(nPoint, nDim) = su2double(0.0);
-  
+
 }

@@ -1,7 +1,7 @@
 /*!
  * \file CPoissonSolver.hpp
  * \brief Headers of the CPoissonSolver class
- * \author F. Palacios, T. Economon
+ * \author T. Aalbers
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -33,7 +33,7 @@
 /*!
  * \class CPoissonSolver
  * \brief Main class for defining the finite-volume poisson equation solver.
- * \author O. Burghardt
+ * \author T. Aalbers
  * \version 8.5.0 "Harrier"
  */
 class CPoissonSolver final : public CScalarSolver<CPoissonVariable> {
@@ -55,10 +55,13 @@ protected:
 
     su2double mom_coeff_i{}, mom_coeff_j{};
 
-    /*--- Sets the momentum coefficients to use in the viscous numerics. ---*/
+    /*--- Sets the momentum coefficients to use in the viscous numerics. A point under a strong
+     * velocity BC has no momentum coefficient, so the edge uses that of its other node. ---*/
     auto compute_momentum_coeff = [&](unsigned long iPoint, unsigned long jPoint) {
-      mom_coeff_i = nodes->GetMomCoeff(iPoint);
-      mom_coeff_j = nodes->GetMomCoeff(jPoint);
+      const auto* flow_nodes = solver_container[FLOW_SOL]->GetNodes();
+
+      mom_coeff_i = nodes->GetMomCoeff(flow_nodes->GetStrongBC(iPoint) ? jPoint : iPoint);
+      mom_coeff_j = nodes->GetMomCoeff(flow_nodes->GetStrongBC(jPoint) ? iPoint : jPoint);
       numerics->SetDiffusionCoeff(&mom_coeff_i, &mom_coeff_j);
     };
     
@@ -160,6 +163,13 @@ public:
    */
   void SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iRKStep,
                             unsigned short iMesh, unsigned short RunTime_EqSystem) override {}
+
+  /*!
+   * \brief The pressure correction is reset to zero every iteration (see Preprocessing), so it
+   *        carries no state that a restart file needs to provide.
+   */
+  void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
+                   bool val_update_geo) override {}
 
   /*!
    * \brief Compute the coefficients for the pressure correction equation based

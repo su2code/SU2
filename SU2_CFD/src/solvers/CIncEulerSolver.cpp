@@ -1069,6 +1069,21 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
+  /*--- Source_Residual needs the pressure gradient to build the pressure-based solver's
+  momentum source term. For a viscous run CIncNSSolver::Preprocessing computes it unconditionally,
+  but this inviscid path otherwise only computes Gradient_Reconstruction, and only when MUSCL is
+  on - which silently leaves the pressure gradient at zero for an inviscid PB run with
+  MUSCL_FLOW=NO, or with mismatched reconstruction/base gradient methods. ---*/
+
+  if (pressure_based) {
+    switch (config->GetKind_Gradient_Method()) {
+      case GREEN_GAUSS: SetPrimitive_Gradient_GG(geometry, config); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES: SetPrimitive_Gradient_LS(geometry, config); break;
+      default: break;
+    }
+  }
+
   /*--- Upwind second order reconstruction ---*/
 
   if (!Output && muscl && !center) {
@@ -2126,7 +2141,7 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
   PrepareImplicitIteration_impl(precond, geometry, config);
 
   /*--- Delete pressure rows for segregated solver type. ---*/
-  if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
+  if (pressure_based) {
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       Jacobian.DeleteValsRowi(iPoint, 0);
@@ -2706,12 +2721,14 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Directly overwrite the velocity at the boundary nodes as a dirichlet boundary condition ---*/
 
-      nodes->SetVelocity_Old(iPoint,V_inlet+1);
+      nodes->SetVelocity_Old(iPoint,V_inlet+prim_idx.Velocity());
 
       LinSysRes.SetBlock_Zero(iPoint);
 
+      if (pressure_based) nodes->SetStrongBC(iPoint);
+
       if (implicit)
-        for (iDim = 0; iDim < nDim; iDim++) 
+        for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.DeleteValsRowi(iPoint, iDim+1);
 
     } else {
@@ -3637,7 +3654,8 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetPrimitive_Gradient_GG(geometry, config);
   }
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetKind_Gradient_Method() == LEAST_SQUARES ||
+      config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
@@ -3649,8 +3667,10 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
   CSolver* poisson_solver = solver_container[POISSON_SOL];
   CVariable* poisson_nodes = poisson_solver->GetNodes();
 
-  /*--- Mass flux is computed over all edges ---*/
+  /*--- Mass flux is computed over all edges. Each edge writes only its own slot of
+  EdgeMassFluxes, so no coloring is needed to avoid races between edges sharing a point. ---*/
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
@@ -3681,9 +3701,11 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
 
     CorrectPressureGradient(GradPressure_f, GradPressure_avg, nodes->GetPressure(iPoint), nodes->GetPressure(jPoint), Edge_Vector, dist_ij_2);
     
-    /*--- Linearly interpolated coefficient. ---*/
+    /*--- Linearly interpolated coefficient. A point under a strong velocity BC has no momentum
+    coefficient, so the edge uses that of its other node. ---*/
 
-    Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(iPoint) + poisson_nodes->GetMomCoeff(jPoint));
+    Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(nodes->GetStrongBC(iPoint) ? jPoint : iPoint) +
+                     poisson_nodes->GetMomCoeff(nodes->GetStrongBC(jPoint) ? iPoint : jPoint));
 
     /*--- Initialize mass flux ---*/
 
@@ -3738,27 +3760,32 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   }
   END_SU2_OMP_FOR
 
-  /*--- Define a reference pressure ---*/
-  // TODO: look at this, currently copied (but working?) logic from old solver (by Akshay)
-  unsigned long PRef_Point = 1;
-  auto Pref_local = geometry->GetGlobal_to_Local_Point(PRef_Point);
+  /*--- Define a reference pressure. Fixed at 0 for now: for a domain with at least one
+  Dirichlet pressure boundary (an outlet or a far-field with outflow) this reference is
+  unused (the boundary loop below overwrites pressureCorrection at those points instead),
+  but for a fully closed domain (walls only) the Poisson system is pure-Neumann and has no
+  pressure datum, so pinning a single point's correction to a real reference value would be
+  needed there instead of leaving it at 0. ---*/
+
   PCorr_Ref = 0.0;
-  if (Pref_local >= 0)
-    if(geometry->nodes->GetDomain(Pref_local))
-      PCorr_Ref = 0.0;//Pressure_Correc[Pref_local];
 
   /*--- Compute Velocity Corrections and under relaxation factor for the pressure. ---*/
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    factor = 0.0;
-    const auto view = Jacobian.GetBlockView(iPoint, iPoint);
     for (iDim = 0; iDim < nDim; iDim++) {
       momentumCorrection[iPoint][iDim] = - poisson_nodes->GetMomCoeff(iPoint) * poisson_nodes->GetGradient(iPoint,0,iDim);
-      if (AutomaticURF) factor += view(iDim, iDim);
     }
 
     if (AutomaticURF) {
+      /*--- a_P = dR/d(rho u) has mass/time units, so it needs the same /density SetMomCoeff
+       * applies for the same reason. Block row 0 is the continuity/pressure row, not a velocity
+       * direction - starting the diagonal sum from iDim=0 mixed it into a_P, and summing every
+       * velocity direction's diagonal made alpha_p dimension-dependent. Use the x-momentum row
+       * alone, matching SetMomCoeff's own convention that this coefficient is the same in every
+       * direction. ---*/
+      const auto view = Jacobian.GetBlockView(iPoint, iPoint);
+      factor = view(1, 1) / nodes->GetDensity(iPoint);
       Vol = geometry->nodes->GetVolume(iPoint);
       delT = nodes->GetDelta_Time(iPoint);
       alpha_p[iPoint] = (Vol / delT) / (factor + (Vol / delT));
@@ -3782,6 +3809,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
 
   su2double* Coord_i,* Coord_j;
   su2double GradPressure_f[MAXNDIM], GradPressure_avg[MAXNDIM], Edge_Vector[MAXNDIM], dist_ij_2;
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
@@ -3798,10 +3826,20 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
       dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     }
 
-    /*--- 1. Interpolate the p' gradient based on node values ---*/
+    /*--- 1. Interpolate the p' gradient based on node values - deliberately zero: this is a
+    compact (orthogonal-only) mass-flux correction, not an oversight. Feeding the real,
+    node-averaged p' gradient here (available via GetGradient(), already used correctly a few
+    lines above for the interior velocity correction) was tried and measured to reintroduce
+    checkerboard-style pressure-velocity decoupling - the 3D sphere case diverges from the first
+    iteration regardless of CFL, with the same sign-flipping, magnitude-growing oscillation
+    signature as the unrelated broken-SIMPLEC finding. A node-averaged gradient is exactly the
+    kind of quantity Rhie-Chow interpolation exists to avoid using directly in a face mass flux.
+    Kept explicitly zero (rather than reachable only by accident through
+    GetGradient_Primitive's unrelated always-0.0 base-class stub) so a future refactor cannot
+    silently reintroduce this instability by "fixing" what looks like a missing override. ---*/
 
     for (iDim = 0; iDim < nDim; iDim++)
-      GradPressure_avg[iDim] = 0.5*(poisson_nodes->GetGradient_Primitive(iPoint,0,iDim) + poisson_nodes->GetGradient_Primitive(jPoint,0,iDim));
+      GradPressure_avg[iDim] = 0.0;
 
     /*--- 2. Compute p' at the face ---*/
 
@@ -3813,7 +3851,9 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     
     for (iDim = 0; iDim < nDim; iDim++) {
 
-      su2double MassFluxCorrection = -0.5 * (poisson_nodes->GetMomCoeff(iPoint) + poisson_nodes->GetMomCoeff(jPoint)) * GradPressure_f[iDim];
+      su2double MassFluxCorrection =
+          -0.5 * (poisson_nodes->GetMomCoeff(nodes->GetStrongBC(iPoint) ? jPoint : iPoint) +
+                  poisson_nodes->GetMomCoeff(nodes->GetStrongBC(jPoint) ? iPoint : jPoint)) * GradPressure_f[iDim];
 
       /*--- 2nd piso correction term (HbyA') --- (TODO: this is zero for the first correction and can thus also be skipped) ---*/
 
@@ -3829,6 +3869,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
 
     EdgeMassFluxCorrection[iEdge] = ProjMassFluxCorrection;
   }
+  END_SU2_OMP_FOR
 
   /*--- Reassign strong boundary conditions ---*/
   /*--- For now I only have velocity inlet and fully developed outlet. Will need to add other types of inlet/outlet conditions
@@ -3850,11 +3891,13 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
         auto Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
         switch (Kind_Outlet) {
           case INC_OUTLET_TYPE::PRESSURE_OUTLET:{
+            SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
             for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
               iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
               if (geometry->nodes->GetDomain(iPoint))
                 pressureCorrection[iPoint] = PCorr_Ref;
             }
+            END_SU2_OMP_FOR
             break;
           }
           //TODO: other outlet types
@@ -3887,6 +3930,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
       * is made, otherwise a Neumann BC is used and velocity is adjusted. ---*/
 
       case FAR_FIELD:
+        SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->nodes->GetDomain(iPoint)) {
@@ -3898,7 +3942,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
             pressureCorrection[iPoint] = PCorr_Ref;
           }
         }
-        
+        END_SU2_OMP_FOR
         break;
 
       default: 
@@ -3932,10 +3976,13 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   }
   END_SU2_OMP_FOR
 
-  /*--- Add corrections to the edge velocities ---*/
+  /*--- Add corrections to the edge velocities. Each edge accumulates only into its own slot,
+  so partitioning by edge index is race-free. ---*/
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++)
     EdgeMassFluxes[iEdge] += EdgeMassFluxCorrection[iEdge];
+  END_SU2_OMP_FOR
 
   /*--- Reset HbyA for next iteration ---*/
 
