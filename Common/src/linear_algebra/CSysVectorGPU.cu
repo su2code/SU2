@@ -25,6 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*--- Must come first, see the file for why. ---*/
+#include "../../include/basic_types/codi_host_only.hpp"
+
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
 #include <algorithm>

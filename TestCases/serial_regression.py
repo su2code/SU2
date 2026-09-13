@@ -308,6 +308,19 @@ def main():
     turb_naca0012_sst.timeout   = 3200
     test_list.append(turb_naca0012_sst)
 
+    # E387 transitional SST+LM tutorial config, re-run here as a sanitizer-only probe.
+    # Covers the density gradient not being available for MUSCL_TURB=YES with a flow scheme
+    # that does not store that gradient.
+    tutorial_trans_e387_sst_asan                  = TestCase('tutorial_trans_e387_sst_asan')
+    tutorial_trans_e387_sst_asan.cfg_dir          = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
+    tutorial_trans_e387_sst_asan.cfg_file         = "transitional_SST_LM_model_ConfigFile.cfg"
+    tutorial_trans_e387_sst_asan.test_iter        = 2
+    tutorial_trans_e387_sst_asan.test_vals        = [-6.418119, -4.827573, -2.220229, 3.029787, 3.123846, 5.000000, -5.610239]
+    tutorial_trans_e387_sst_asan.timeout          = 1600
+    tutorial_trans_e387_sst_asan.no_restart       = True
+    tutorial_trans_e387_sst_asan.enabled_with_regular = False
+    test_list.append(tutorial_trans_e387_sst_asan)
+
     # NACA0012 (SST V2003m, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
     turb_naca0012_sst_2003m           = TestCase('turb_naca0012_sst_2003m')
     turb_naca0012_sst_2003m.cfg_dir   = "rans/naca0012"

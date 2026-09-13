@@ -134,6 +134,7 @@ void omp_finalize();
 /*--- Convenience macros (do not use excessive nesting). ---*/
 
 #define SU2_OMP_ATOMIC SU2_OMP(atomic)
+#define SU2_OMP_ATOMIC_WRITE SU2_OMP(atomic write)
 
 #ifndef HAVE_OPDI
 
