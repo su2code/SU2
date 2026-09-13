@@ -102,8 +102,8 @@ class CMultiGridGeometry final : public CGeometry {
    * \return Summary of the paving, empty except on the master rank.
    */
   string PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
-                                  unsigned short iMesh, const vector<char>& mixedBC,
-                                  const vector<char>& onPhysBoundary, vector<unsigned long>& neverGrewCV);
+                             unsigned short iMesh, const vector<char>& mixedBC, const vector<char>& onPhysBoundary,
+                             vector<unsigned long>& neverGrewCV);
 
   /*!
    * \brief Boundary nodes that seed a front, with the direction each starts marching in.
@@ -111,7 +111,7 @@ class CMultiGridGeometry final : public CGeometry {
   struct CFrontSeeds {
     vector<unsigned long> node;                    /*!< \brief Seed node on the boundary. */
     vector<std::array<su2double, MAXNDIM>> normal; /*!< \brief Unit normal there, pointing into the domain. */
-    unsigned long nRefusedCurvature = 0; /*!< \brief Euler wall nodes the curvature limit kept out. */
+    unsigned long nRefusedCurvature = 0;           /*!< \brief Euler wall nodes the curvature limit kept out. */
   };
 
   /*!

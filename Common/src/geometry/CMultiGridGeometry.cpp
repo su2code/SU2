@@ -87,6 +87,11 @@ vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<u
 constexpr passivedouble DEGENERATE_VOLUME_FRACTION = 0.01;
 constexpr int DEGENERATE_VOLUME_HOPS = 4;
 
+/*--- Smallest footprint a front may march on. The shape test a front advances under compares the
+ *    new layer with the current one, which says nothing about a footprint holding a single node:
+ *    any one node matches any other. Two nodes give it an edge to preserve. ---*/
+constexpr size_t MIN_FRONT_WIDTH = 2;
+
 bool HasDegenerateVolume(const CGeometry* fine_grid, unsigned long iPoint) {
   vector<unsigned long> frontier{iPoint}, visited{iPoint};
   su2double maxNearbyVol = fine_grid->nodes->GetVolume(iPoint);
@@ -835,8 +840,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         if (iParent == NO_INDEX) continue;
         /*--- A fine point may only reference a CV the compaction kept. ---*/
         if ((iParent >= nPointDomain) || (newIndex[iParent] == NO_INDEX))
-          SU2_MPI::Error("Multigrid compaction: a fine point still references an emptied coarse CV.",
-                         CURRENT_FUNCTION);
+          SU2_MPI::Error("Multigrid compaction: a fine point still references an emptied coarse CV.", CURRENT_FUNCTION);
         fine_grid->nodes->SetParent_CV(iFinePoint, newIndex[iParent]);
       }
 
@@ -1865,7 +1869,6 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
     seedMarker(iMarker, true);
   }
 
-
   return seeds;
 }
 
@@ -1956,8 +1959,8 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
           if (nShared[h]++ == 0) touched.push_back(h);
         }
       for (auto h : touched) {
-        merges.push_back({g, h, nShared[h], static_cast<unsigned long>(groups[g].size() + groups[h].size()),
-                          gkey[g], gkey[h]});
+        merges.push_back(
+            {g, h, nShared[h], static_cast<unsigned long>(groups[g].size() + groups[h].size()), gkey[g], gkey[h]});
         nShared[h] = 0;
       }
     }
@@ -1995,10 +1998,8 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
 }
 
 string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
-                                                    const CConfig* config, unsigned short iMesh,
-                                                    const vector<char>& mixedBC,
-                                                    const vector<char>& onPhysBoundary,
-                                                    vector<unsigned long>& neverGrewCV) {
+                                               const CConfig* config, unsigned short iMesh, const vector<char>& mixedBC,
+                                               const vector<char>& onPhysBoundary, vector<unsigned long>& neverGrewCV) {
   /*--- Paving by advancing fronts. Each boundary patch rises into the domain keeping its footprint,
    *    stopping at a boundary or where the next layer is not isomorphic to the current one. ---*/
   const auto starting_Index_CoarseCV = Index_CoarseCV;
@@ -2195,8 +2196,11 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   /*--- The boundary layer of every front, claimed before ordinary boundary agglomeration runs so
    *    that every layer above keeps the same footprint. ---*/
   for (const auto& patch : patches) {
-    /*--- A one-node patch may seed a front and marches as a stack one node wide. ---*/
-    bool valid = !patch.empty();
+    /*--- LayerIsIsomorphic constrains nothing on a one-node footprint, so such a front marches
+     *    wherever the successor search leads and paves columns that follow no mesh structure. Its
+     *    nodes are left to ordinary agglomeration instead. ---*/
+    if (patch.size() < MIN_FRONT_WIDTH) continue;
+    bool valid = true;
     for (auto si : patch) {
       const auto p = seeds.node[si];
       if (!GeometricalCheck(p, fine_grid, config) || fine_grid->nodes->GetAgglomerate(p)) valid = false;
@@ -2316,9 +2320,9 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
         vector<unsigned long> narrow;
         for (const auto& s : fronts[f].prop) narrow.push_back(s.from);
 
-        /*--- A cut can leave the local piece disconnected, which is not a layer. Drop it and hand
-         *    over the rest. ---*/
-        if (!narrow.empty() && !IsConnectedLayer(fine_grid, narrow)) {
+        /*--- A cut can leave the local piece disconnected, or narrower than a front may march on.
+         *    Drop it and hand over the rest. ---*/
+        if (narrow.size() < MIN_FRONT_WIDTH || !IsConnectedLayer(fine_grid, narrow)) {
           narrow.clear();
         }
 
@@ -2436,8 +2440,10 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
       bool split = false;
       for (auto p : fronts[f].handTo) {
         if (haloMarker[p] < 0) continue;
-        if (firstMarker < 0) firstMarker = haloMarker[p];
-        else if (haloMarker[p] != firstMarker) split = true;
+        if (firstMarker < 0)
+          firstMarker = haloMarker[p];
+        else if (haloMarker[p] != firstMarker)
+          split = true;
         handByMarker[haloMarker[p]].push_back({f, p});
       }
       /*--- A footprint owned by more than one rank cannot travel whole. ---*/
@@ -2468,10 +2474,10 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     for (const auto& hp : handPairs) {
       CPassiveMPI::Irecv(&tagIn[hp.offS], hp.nVertexS, MPI_UNSIGNED_LONG, hp.send_to, 2, CPassiveMPI::GetComm(),
                          &handReq[nReq++]);
-      CPassiveMPI::Irecv(&dirIn[hp.offS * nDim], hp.nVertexS * nDim, MPI_DOUBLE, hp.send_to, 3,
-                         CPassiveMPI::GetComm(), &handReq[nReq++]);
-      CPassiveMPI::Isend(&tagOut[hp.offR], hp.nVertexR, MPI_UNSIGNED_LONG, hp.receive_from, 2,
-                         CPassiveMPI::GetComm(), &handReq[nReq++]);
+      CPassiveMPI::Irecv(&dirIn[hp.offS * nDim], hp.nVertexS * nDim, MPI_DOUBLE, hp.send_to, 3, CPassiveMPI::GetComm(),
+                         &handReq[nReq++]);
+      CPassiveMPI::Isend(&tagOut[hp.offR], hp.nVertexR, MPI_UNSIGNED_LONG, hp.receive_from, 2, CPassiveMPI::GetComm(),
+                         &handReq[nReq++]);
       CPassiveMPI::Isend(&dirOut[hp.offR * nDim], hp.nVertexR * nDim, MPI_DOUBLE, hp.receive_from, 3,
                          CPassiveMPI::GetComm(), &handReq[nReq++]);
     }
@@ -2515,8 +2521,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
           ok = false;
         layer0.push_back(p);
       }
-      /*--- Whatever arrived must be free and form one connected layer. ---*/
-      if (ok && !IsConnectedLayer(fine_grid, layer0)) ok = false;
+      /*--- Whatever arrived must be free and form one connected layer wide enough to march on. ---*/
+      if (ok && ((layer0.size() < MIN_FRONT_WIDTH) || !IsConnectedLayer(fine_grid, layer0))) ok = false;
 
       if (ok) {
         std::array<su2double, MAXNDIM> d0{};
