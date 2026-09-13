@@ -41,9 +41,6 @@ protected:
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
 
-  su2activevector EdgeSourceFlux; /*!< \brief Per-edge mass flux plus HbyA correction, staged in
-  Source_Residual so the scatter into LinSysRes can be partitioned by point instead of by edge. */
-
   /*!
    * \brief Compute the viscous flux for the scalar equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux

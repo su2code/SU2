@@ -67,7 +67,6 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned sh
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-  EdgeSourceFlux.resize(geometry->GetnEdge()) = su2double(0.0);
 
   /*--- Initialize the nodes vector. ---*/
 
@@ -314,11 +313,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const auto& edgeMassFluxes = *(flow_solver->GetEdgeMassFluxes());
 
-  /*--- Stage the net (mass flux + HbyA) source per edge first, indexed by edge, so that no two
-  threads ever write the same slot regardless of how edges were colored. Points are shared between
-  edges, so scattering the staged values into LinSysRes has to happen afterwards, partitioned by
-  point instead of by edge (mirrors CScalarSolver::SumEdgeFluxes but is additive, not a reset,
-  since the viscous residual has already been assembled into LinSysRes at this stage). ---*/
+  /*--- flux is computed over all edges ---*/
 
   for (auto color : EdgeColoring) {
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
@@ -335,29 +330,17 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       for (unsigned short iDim = 0; iDim < nDim; ++iDim)
         MeanHbyA += 0.5 * (nodes->GetHbyACorrection(iPoint, iDim) + nodes->GetHbyACorrection(jPoint, iDim)) * Normal[iDim];
 
-      EdgeSourceFlux(iEdge) = edgeMassFluxes[iEdge] + MeanHbyA;
+      /*--- Add the mass flux and the HbyA correction to the source term for the poisson equation ---*/
+
+      su2double EdgeSource = edgeMassFluxes[iEdge] + MeanHbyA;
+      auto residual = CNumerics::ResidualType<>(&EdgeSource, nullptr, nullptr);
+
+      if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
+      if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residual);
 
     }
     END_SU2_OMP_FOR
   }
-
-  /*--- Scatter the staged edge sources into the residual, partitioned by point so that each
-  point is only ever touched by the thread that owns it in this loop. ---*/
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    if (!geometry->nodes->GetDomain(iPoint)) continue;
-
-    for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
-      auto residual = CNumerics::ResidualType<>(&EdgeSourceFlux(iEdge), nullptr, nullptr);
-      if (iPoint == geometry->edges->GetNode(iEdge, 0)) {
-        LinSysRes.AddBlock(iPoint, residual);
-      } else {
-        LinSysRes.SubtractBlock(iPoint, residual);
-      }
-    }
-  }
-  END_SU2_OMP_FOR
 
   /*--- Now add corrections to the previously computed mass fluxes for boundary conditions which alter the mass flux.
   geometry->vertex[...]->GetNormal() returns the normal pointing into the domain, so accumulating with -= below
