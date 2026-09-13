@@ -1767,6 +1767,14 @@ def main():
     species2_compact_restart_binary.test_vals = species2_primitiveVenturi.test_vals
     test_list.append(species2_compact_restart_binary)
 
+    # 2 species (1 eq) primitive venturi mixing, density from the operating pressure instead of INC_DENSITY_INIT
+    species2_primitiveVenturi_operatingpressure           = TestCase('species2_primitiveVenturi_operatingpressure')
+    species2_primitiveVenturi_operatingpressure.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_operatingpressure.cfg_file  = "species2_primitiveVenturi_operatingpressure.cfg"
+    species2_primitiveVenturi_operatingpressure.test_iter = 50
+    species2_primitiveVenturi_operatingpressure.test_vals = [-5.545622, -4.383792, -4.482745, -5.553145, -1.006412, -5.464392, 5.000000, -1.455530, 5.000000, -3.950653, 5.000000, -1.396240, 0.000569, 0.000548, 0.000021, 0.000000]
+    test_list.append(species2_primitiveVenturi_operatingpressure)
+
     # 2 species (1 eq) primitive venturi mixing with bounded scalar transport
     species_primitiveVenturi_boundedscalar             = TestCase('species2_primitiveVenturi_bounded_scalar')
     species_primitiveVenturi_boundedscalar.cfg_dir     = "species_transport/venturi_primitive_3species"
