@@ -381,6 +381,15 @@ class CSysMatrix {
    * allocated once). Each is captured once into a CUDA graph and replayed to remove
    * host-side launch overhead without changing the parallelization. ---*/
   mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;
+
+  /*!< \brief Whether a build may refine the factors already on the device instead of computing
+   * them exactly. TransposeInPlace() clears it for good: from then on this matrix is used in
+   * both orientations, and the factors of one are a bad starting point for the other, which the
+   * ilu_gpu_sweeps colored sweeps cannot recover from. It is not restored after a build because
+   * the orientation flips again on the next one (and the solver refills the matrix in between
+   * without going through TransposeInPlace). Only the discrete adjoint transposes, so the primal
+   * keeps refining as before. */
+  mutable bool ilu_can_refine = true;
   mutable struct CUgraphExec_st* precond_fwd_graph_exec = nullptr;  // ILU or LU-SGS forward only
   mutable struct CUgraphExec_st* precond_bwd_graph_exec = nullptr;  // LU-SGS backward only
   mutable const ScalarType* precond_fwd_graph_vec = nullptr;        /*!< \brief Pointers the apply graph

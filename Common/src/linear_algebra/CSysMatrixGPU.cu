@@ -25,6 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*--- Must come first, see the file for why. ---*/
+#include "../../include/basic_types/codi_host_only.hpp"
+
 #include <algorithm>
 #include <cstring>
 #include <type_traits>
@@ -656,6 +659,21 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
    * created once. Every launch below is followed by a sync back to the host, so this does not
    * change execution order relative to the rest of the (single-stream) solver. ---*/
   if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
+
+  /*--- Once the matrix is transposed the factors cannot be refined, see ilu_can_refine, so
+   * launch by levels instead of colors to eliminate the dependence on previous factors. ---*/
+  if (!ilu_can_refine) {
+    for (auto level = 0ul; level + 1 < precond_level_ptr.size(); ++level) {
+      const auto begin = precond_level_ptr[level];
+      const auto size = precond_level_ptr[level + 1] - begin;
+      if (size == 0) continue;
+      IluFactorColorKernel<ScalarType>
+          <<<size, blockSize, shared, aux_stream>>>(d_precond_level_idx, begin, size, nPointDomain, nVar, A, M);
+    }
+    gpuErrChk(cudaStreamSynchronize(aux_stream));
+    gpuErrChk(cudaGetLastError());
+    return;
+  }
 
   /*--- The launch sequence (ilu_gpu_sweeps passes over all colors) is identical on every call:
    * the grid and block sizes only depend on the (fixed) sparsity pattern/coloring and the device

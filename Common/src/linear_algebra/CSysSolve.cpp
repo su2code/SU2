@@ -208,15 +208,17 @@ bool CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
   /*--- Classical Gram Schmidt twice is faster and at least as accurate
    * as Modified Gram Schmidt. ---*/
 
+  /*--- ModGramSchmidt is always called in parallel, so LinearCombination never
+   * needs to start its own parallel region here. ---*/
   const auto h_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
   LinearCombination(
-      shared_hsbg, i + 1, w, [&h_i](int k) { return -h_i(0, k); }, w[i + 1], true);
+      false, i + 1, w, [&h_i](int k) { return -h_i(0, k); }, w[i + 1], true);
   if (i < 5) {
     for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k));
   } else {
     const auto& dh_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
     LinearCombination(
-        shared_hsbg, i + 1, w, [&dh_i](int k) { return -dh_i(0, k); }, w[i + 1], true);
+        false, i + 1, w, [&dh_i](int k) { return -dh_i(0, k); }, w[i + 1], true);
     for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k) + dh_i(0, k));
   }
 
@@ -548,6 +550,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     if (nestedParallel) {
       /*--- "omp parallel if" does not work well here ---*/
       SU2_OMP_PARALLEL
+      /*--- Atomic write into a shared variable to avoid sanitizer errors. ---*/
+      SU2_OMP_ATOMIC_WRITE
       orthog_ok = ModGramSchmidt(true, i, H, V);
       END_SU2_OMP_PARALLEL
     } else {
@@ -824,6 +828,8 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       if (nestedParallel) {
         /*--- "omp parallel if" does not work well here ---*/
         SU2_OMP_PARALLEL
+        /*--- Atomic write into a shared variable to avoid sanitizer errors. ---*/
+        SU2_OMP_ATOMIC_WRITE
         orthog_ok = ModGramSchmidt(true, j, H, V);
         END_SU2_OMP_PARALLEL
       } else {
@@ -898,6 +904,8 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       const auto n = same_mat ? 1 : m + 1;
       if (nestedParallel) {
         SU2_OMP_PARALLEL
+        /*--- Atomic write into a shared variable to avoid sanitizer errors. ---*/
+        SU2_OMP_ATOMIC_WRITE
         VWk = &CSysVector<ScalarType>::multiDot(V, i0, n, W, k);
         END_SU2_OMP_PARALLEL
       } else {
@@ -1572,7 +1580,10 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
           break;
         case LU_SGS:
         case Q_LU_SGS:
-          /*--- Nothing to build (transpose path not supported for Q_LU_SGS, see CSysMatrix::Initialize). ---*/
+          /*--- Nothing to build on the host, but the device keeps the inverted diagonal blocks
+           * and those have to follow the transpose (no-op without CUDA). Transpose path not
+           * supported for Q_LU_SGS, see CSysMatrix::Initialize. ---*/
+          if (RequiresTranspose) Jacobian.BuildLU_SGSPreconditioner();
           break;
         case PASTIX_ILU:
         case PASTIX_LU_P:
@@ -1659,6 +1670,10 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
     normal_prec->Build();
   }
 
+  /*--- The vectors are already of the solver type here, but they still have to cross the
+   * bus: the matrix and preconditioner operations dispatch to the device on their own. ---*/
+  HandleTemporariesIn(LinSysRes, LinSysSol, config->GetCUDA());
+
   CPreconditioner<ScalarType>* nested_prec = nullptr;
   if (nested) {
     auto f = [&](const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) {
@@ -1717,6 +1732,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
       SU2_MPI::Error("Unknown type of linear solver.", CURRENT_FUNCTION);
       break;
   }
+
+  HandleTemporariesOut(LinSysSol, config->GetCUDA());
 
   delete normal_prec;
   delete nested_prec;

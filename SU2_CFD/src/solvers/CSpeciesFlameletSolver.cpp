@@ -40,6 +40,8 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 
   /*--- Retrieve options from config. ---*/
   flamelet_config_options = config->GetFlameletParsedOptions();
+  global_flame_thickness = default_flame_thickness;
+  calc_flame_thickness = flamelet_config_options.thickenedflame_correction;
 
   /*--- Dimension of the problem. ---*/
   nVar = flamelet_config_options.n_scalars;
@@ -66,6 +68,10 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 
   /*--- Add the solver name. ---*/
   SolverName = "FLAMELET";
+
+  if (calc_flame_thickness && rank==MASTER_NODE) {
+    cout << "Applying thickened flame source and diffusion correction." << endl;
+  }
 }
 
 void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
@@ -74,34 +80,58 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   SU2_ZONE_SCOPED
   unsigned long n_not_in_domain_local = 0, n_not_in_domain_global = 0;
   vector<su2double> scalars_vector(nVar);
+  
   unsigned long spark_iter_start, spark_duration;
   bool ignition = false;
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
+  unsigned long iter;
+  if (config->GetMultizone_Problem()) {
+    iter = config->GetOuterIter();
+  } else if (config->GetTime_Domain()) {
+    iter = config->GetTimeIter();
+  } else {
+    iter = config->GetInnerIter();
+  }
   if ((flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK)) {
     auto spark_init = flamelet_config_options.spark_init;
     spark_iter_start = ceil(spark_init[4]);
     spark_duration = ceil(spark_init[5]);
-    unsigned long iter;
-    if (config->GetTime_Domain()) {
-      iter = config->GetTimeIter();  // Use time step counter for unsteady problems
-    } else {
-      iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
-    }
+    
     ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
   }
-
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
+
+  /* Update global flame thickness value. */
+  if (calc_flame_thickness) {
+    su2double calc_thickness = GetOverallFlameThickness(geometry, solver_container);
+    su2double test_thickness = min(default_flame_thickness, calc_thickness);
+    if (test_thickness < global_flame_thickness) {
+      global_flame_thickness = test_thickness;
+    } else {
+      global_flame_thickness = 0.95*global_flame_thickness + 0.05*test_thickness;
+    }
+  }
+
+  /* Flame thickness correction factors */
+  su2double F{1.0}, F_source{1.0};
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
     CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double* scalars = nodes->GetSolution(i_point);
+
+    /*--- Calculate correction factor for flame propagation on coarse grids. ---*/
+    if (calc_flame_thickness) {
+      F = ThickenedFlameCorrection(geometry, i_point);
+      F_source = 1.0 / F;
+    }
+
     for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
 
-    /*--- Compute total source terms from the production and consumption. ---*/
-    unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
+    /*--- Only apply thickened flame correction factor to sources for steady problems. ---*/
+    unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector, F_source);
 
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
@@ -113,7 +143,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
         /*--- Add spark reaction rates to the sources that were just set by SetScalarSources ---*/
         const su2double* current_sources = nodes->GetScalarSources(i_point);
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          nodes->SetScalarSource(i_point, iVar, current_sources[iVar] + flamelet_config_options.spark_reaction_rates[iVar]);
+          nodes->SetScalarSource(i_point, iVar, current_sources[iVar] + F_source * flamelet_config_options.spark_reaction_rates[iVar]);
         }
       }
     }
@@ -126,9 +156,9 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     /*--- Set mass diffusivity based on thermodynamic state. ---*/
     auto T = flowNodes->GetTemperature(i_point);
     fluid_model_local->SetTDState_T(T, scalars);
-    /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table ---*/
+    /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table, multiplied by flame thickness correction factor ---*/
     for (auto i_scalar = 0u; i_scalar < nVar; ++i_scalar) {
-      nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(i_scalar), i_scalar);
+      nodes->SetDiffusivity(i_point, F * (fluid_model_local->GetMassDiffusivity(i_scalar)), i_scalar);
     }
 
     /*--- Obtain preferential diffusion scalar values. ---*/
@@ -226,7 +256,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
-
       for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
@@ -242,7 +271,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         if (flame_front_ignition) {
-
           /*--- Determine if point is above or below the plane, assuming the normal
             is pointing towards the burned region. ---*/
           point_loc = 0.0;
@@ -613,7 +641,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 }
 
 unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local,
-                                                       unsigned long iPoint, const vector<su2double>& scalars) {
+                                                       unsigned long iPoint, const vector<su2double>& scalars, const su2double F) {
   SU2_ZONE_SCOPED
   /*--- Compute total source terms from the production and consumption. ---*/
 
@@ -638,8 +666,9 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
     /*--- Store the analytic Jacobian dS_aux/dY_aux = source_cons for implicit treatment. ---*/
     static_cast<CSpeciesFlameletVariable*>(nodes)->SetAuxSourceCons(iPoint, i_aux, source_cons);
   }
+  /*--- Source term is divided by flame thickness correction factor to improve stability on coarse grids. ---*/
   for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
-    nodes->SetScalarSource(iPoint, i_scalar, source_scalar[i_scalar]);
+    nodes->SetScalarSource(iPoint, i_scalar,  F*source_scalar[i_scalar]);
   return misses;
 }
 
@@ -914,4 +943,86 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
     cout << "Burnt temperature from flamelet table: " << fluid_model->GetTemperature() << endl;
   }
   return pv_burnt;
+}
+
+
+su2double CSpeciesFlameletSolver::ThickenedFlameCorrection(const CGeometry* geometry, unsigned long iPoint) const {
+  su2double F{1.0};
+  if (fabs(global_flame_thickness - default_flame_thickness) > EPS * max(1.0, fabs(default_flame_thickness))) {
+    su2double max_flame_vol = pow(global_flame_thickness, nDim);
+    F = max(1.0, geometry->nodes->GetVolume(iPoint) / max_flame_vol);
+  }
+  return F;
+}
+
+su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, CSolver** solver_container) const {
+  SU2_ZONE_SCOPED
+
+  const CFlowVariable* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  su2double pvmax_local{-1e3}, pvmin_local{1e3}, gradpv_local{0.0}, Tmax_local{-1e6};
+
+  static su2double pvmax_global,pvmin_global,gradpv_global,Tmax_global;
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    pvmax_global = -1e3;
+    pvmin_global = 1e3;
+    gradpv_global = 0.0;
+    Tmax_global = 0.0;
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+  for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
+      su2double pv_local = nodes->GetSolution(iPoint, I_PROGVAR);
+      su2double T_local = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+      
+      /* Parallel projection of progress variable gradient against velocity */
+      su2double proj_grad_pv_u[MAXNDIM]={0};
+      for (auto iDim=0u; iDim < nDim; iDim++) {
+        su2double gradpv = nodes->GetGradient(iPoint, I_PROGVAR, iDim);
+        su2double val_u = flowNodes->GetVelocity(iPoint, iDim);
+        proj_grad_pv_u[iDim] = gradpv * val_u * val_u / (flowNodes->GetVelocity2(iPoint) + EPS);
+      }
+
+      /* Parallel projection of temperature gradient against projected progress variable gradient */
+      su2double gradT[MAXNDIM]={0};
+      for (auto iDim=0u; iDim < nDim; iDim++) 
+        gradT[iDim] = flowNodes->GetGradient_Primitive(iPoint, prim_idx.Temperature(), iDim);
+      
+      su2double proj_grad_T_u = GeometryToolbox::DotProduct(nDim, gradT, proj_grad_pv_u);
+      su2double mag_gradT = GeometryToolbox::Norm(nDim, gradT);
+      
+      proj_grad_T_u /= max(mag_gradT,  EPS);
+
+      /* Update minimum and maximum values. */
+      gradpv_local = max(gradpv_local, proj_grad_T_u);
+      pvmax_local = max(pvmax_local, pv_local);
+      pvmin_local = min(pvmin_local, pv_local);
+      Tmax_local = max(Tmax_local, T_local);
+  }
+  END_SU2_OMP_FOR
+
+  atomicMax(pvmax_local, pvmax_global);
+  atomicMax(Tmax_local, Tmax_global);
+  atomicMin(pvmin_local, pvmin_global);
+  
+  su2double MyFlameThickness[3]={}, TotalFlameThickness[3]={}; 
+  MyFlameThickness[0] = gradpv_local;
+  MyFlameThickness[1] = pvmax_local;
+  MyFlameThickness[2] = Tmax_local;
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    SU2_MPI::Allreduce(MyFlameThickness, TotalFlameThickness, 3, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&pvmin_local, &pvmin_global, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+    gradpv_global = TotalFlameThickness[0];
+    pvmax_global = TotalFlameThickness[1];
+    Tmax_global = TotalFlameThickness[2];
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+
+  /* Update flame thickness value. */
+  su2double flame_thickness{default_flame_thickness};
+  if (Tmax_global > flamelet_config_options.Flame_T_ignition) flame_thickness = (pvmax_global - pvmin_global) / (gradpv_global+EPS);
+
+  return flame_thickness;
 }
