@@ -4235,20 +4235,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                      "       the Poisson solver is single-grid only.", CURRENT_FUNCTION);
     }
     if (Time_Domain) {
-      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES: enabling it\n"
-                     "       produces a converged-but-wrong solution rather than a crash. Tested on\n"
-                     "       incomp_pb_cylinder.cfg with DUAL_TIME_STEPPING-2ND_ORDER: each time step's\n"
-                     "       inner iterations converge cleanly (monotonic residuals, no oscillation),\n"
-                     "       but to a self-consistent, physically wrong state - pressure swinging to\n"
-                     "       roughly +-965 and velocity reaching 1.88 from an initial condition and\n"
-                     "       far-field value of 0.000008 (six orders of magnitude smaller) with no\n"
-                     "       forcing anywhere in the domain. Ruled out a mundane TIME_STEP/flow-timescale\n"
-                     "       mismatch: a 10000x larger TIME_STEP did not converge toward the right answer\n"
-                     "       and even flipped sign between steps. Root cause not established; leading\n"
-                     "       candidates are an interaction between the dual-time Jacobian term (added\n"
-                     "       automatically via CIntegration's shared SetResidual_DualTime call) and\n"
-                     "       SetMomCoeff's A_p, or a missing explicit unsteady correction term in the\n"
-                     "       Rhie-Chow interpolation itself.", CURRENT_FUNCTION);
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES,\n"
+                     "       it converges to a physically wrong solution instead of failing.",
+                     CURRENT_FUNCTION);
     }
     if (DiscreteAdjoint || ContinuousAdjoint) {
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED has no adjoint formulation.", CURRENT_FUNCTION);
@@ -4261,12 +4250,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                      CURRENT_FUNCTION);
     }
 
-    /*--- SetMomCoeff's A_p already has Vol/dt added to it (from PrepareImplicitIteration_impl)
-     * before SIMPLEC's A_p-Sum_A_nb correction runs, so with TRANSIENT_TERM_REMOVAL_FACTOR left at
-     * its 0.0 default that correction evaluates to roughly Vol/dt regardless of the momentum
-     * operator, and the pressure correction becomes vanishingly weak at low CFL - defeating the
-     * point of choosing SIMPLEC over SIMPLE. Default the removal factor to 1.0 under SIMPLEC
-     * unless the user set it explicitly, rather than silently underperforming. ---*/
+    /*--- A_p already carries Vol/dt when SIMPLEC's A_p-Sum_A_nb correction runs, so at the 0.0
+     * default that correction collapses to roughly Vol/dt and the pressure correction becomes
+     * vanishingly weak at low CFL. ---*/
     if (Kind_PBIter == PBITER::SIMPLEC && !OptionIsSet("TRANSIENT_TERM_REMOVAL_FACTOR")) {
       SIMPLE_Options.Transient_Term_Removal_Factor = 1.0;
       if (rank == MASTER_NODE) {

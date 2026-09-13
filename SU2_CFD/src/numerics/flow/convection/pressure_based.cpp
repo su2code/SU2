@@ -134,26 +134,17 @@ void CPBConvection_Base::ComputeJacobian(su2double val_density, const su2double 
 
   su2double proj_vel = MassFlux / MeanDensity;
 
-  /*--- Fill continuity parts. Flux[0] is MassFlux itself, which - like the momentum block below -
-  is frozen at this stage of the outer iteration, so d(Flux[0])/du is exactly zero; the nonzero
-  entries below are pre-existing and not exact w.r.t. that reasoning. They are harmless in every
-  case this solver currently supports: CIncEulerSolver::PrepareImplicitIteration unconditionally
-  deletes row 0 of the Jacobian for INCOMP_SYSTEM::PRESSURE_BASED (the continuity equation is
-  solved by the Poisson correction instead), so whatever this row contributes here is discarded
-  before the linear system is assembled. Left as-is rather than zeroed, to avoid asserting a
-  derivation that hasn't actually been worked out. ---*/
+  /*--- Continuity row is discarded by PrepareImplicitIteration, which deletes row 0 under
+  PRESSURE_BASED because continuity is solved by the Poisson correction instead. ---*/
 
   val_Proj_Jac_Tensor[0][0] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     val_Proj_Jac_Tensor[0][iDim+1] = val_scale*(Normal[iDim] * (val_density));
   }
 
-  /*--- Fill momentum parts. proj_vel*delta_ij is d(m_f*v_adv)/du at fixed m_f, and correctly
-  carries the advection scheme's weight (upwind: 1 or 0; central: 1/2) since v_adv is what the
-  scheme upwinds or averages. The mass flux m_f itself is frozen at this stage of the outer
-  iteration (it comes from the previous Rhie-Chow interpolation, not from the state being solved
-  for here), so d(m_f)/du is exactly zero and the momentum block has no other legitimate term to
-  add. ---*/
+  /*--- MassFlux is frozen here: it comes from the previous Rhie-Chow interpolation, not from the
+  state being solved for. The only derivative left is d(m_f*v_adv)/du, and val_scale carries the
+  advection scheme's weight since v_adv is what the scheme upwinds or averages. ---*/
 
   for (jDim = 0; jDim < nDim; jDim++) {
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -161,19 +152,8 @@ void CPBConvection_Base::ComputeJacobian(su2double val_density, const su2double 
     }
   }
 
-  /*--- Fill enthalpy parts. Flux[nDim+1] = MassFlux * AdvectedEnthalpy (frozen MassFlux, AdvectedEnthalpy
-  a weight_jacobian-based average of h_i/h_j only), so - by the exact same frozen-mass-flux reasoning as
-  the momentum block above - it has zero dependence on velocity, and Flux[1+iDim] = MassFlux *
-  AdvectedVelocity[iDim] has zero dependence on enthalpy. The two velocity<->enthalpy cross-coupling
-  entries below were previously nonzero, carrying the standard compressible-flow d(rho*u.n*h)/du and
-  d(rho*u.n)/dh terms that assume the mass flux is NOT frozen; under the frozen-mass-flux PB
-  formulation these are spurious. Verified empirically: with them left in, a viscous PB case with
-  INC_ENERGY_EQUATION= YES (isothermal wall, otherwise-converging config) diverges - rms[U] stalls at
-  -0.38 with 1000+ non-physical points and the temperature field swinging between 0K and ~5000K
-  regardless of CFL (tried 50 and 1) - while the exact same physics on the density-based path converges
-  cleanly to a sane field. Zeroing them removes the spurious coupling; see pressure_based_energy note in
-  PB_SOLVER_PLAN.md card X-1 for the before/after. The diagonal energy entry keeps the same
-  val_density*proj_vel structure as the accepted momentum diagonal above, so it is left untouched. ---*/
+  /*--- With m_f frozen, Flux[nDim+1] = m_f*h_adv depends only on enthalpy and Flux[1+iDim] =
+  m_f*v_adv only on velocity, so the velocity<->enthalpy cross terms are exactly zero. ---*/
 
   val_Proj_Jac_Tensor[nDim+1][0] = 0.0;
   val_Proj_Jac_Tensor[0][nDim+1] = val_scale * ((val_dRhodh) * proj_vel);

@@ -57,14 +57,13 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   matrix (Jacobian) used by the Poisson solver. Currently the matrix is redefined each correction
   but as the coefficients are frozen this doesnt/shouldnt change the matrix at all. ---*/
 
-  SU2_OMP_PARALLEL
-  solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
-  END_SU2_OMP_PARALLEL
+  /*--- The mass fluxes at the cell edges then follow from Rhie-Chow interpolation. ---*/
 
-  /*--- Compute the mass fluxes at the cell edges based on Rhie-Chow interpolation ---*/
+  SU2_OMP_PARALLEL {
+    solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
 
-  SU2_OMP_PARALLEL
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeEdgeMassFluxesRhieChow(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeEdgeMassFluxesRhieChow(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+  }
   END_SU2_OMP_PARALLEL
 
   /*--- Solve the pressure poisson (correction) equation ---*/
