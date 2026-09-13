@@ -32,7 +32,8 @@
 CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames) :
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()),
-  fieldNames(valFieldNames) {
+  fieldNames(valFieldNames),
+  requiredFieldNames(valFieldNames) {
 
   GlobalField_Counter = fieldNames.size();
 
