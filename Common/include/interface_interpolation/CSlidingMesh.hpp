@@ -107,6 +107,14 @@ class CSlidingMesh final : public CInterpolator {
                                            const su2double* Q1, const su2double* Q2, const su2double* Q3);
 
   /*!
+   * \brief For 3-Dimensional grids, compute area between of one triangle
+   * \param[in] P1 - first  point of triangle
+   * \param[in] P2 - second point of triangle
+   * \param[in] P3 - third  point of triangle
+   */
+  static su2double ComputeTriangleArea(const su2double* P1, const su2double* P2, const su2double* P3);
+
+  /*!
    * \brief For 2-Dimensional grids, check whether, and compute, two lines are intersecting
    * \param[in] A1 - first  defining first line
    * \param[in] A2 - second defining first line
