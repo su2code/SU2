@@ -42,7 +42,8 @@ const std::string base_options =
     "MARKER_HEATFLUX= (y_minus, 0.0, y_plus, 0.0)\n"
     "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)\n"
     "INC_DENSITY_INIT= 1.1766\n"
-    "INC_TEMPERATURE_INIT= 300.0\n";
+    "INC_TEMPERATURE_INIT= 300.0\n"
+    "VISCOSITY_MODEL= CONSTANT_VISCOSITY\n";
 
 INIT_OPTION_INC GetInitOptionInc(const std::string& options) {
   std::stringstream ss(base_options + options);
@@ -65,7 +66,11 @@ const std::string mixture_options =
     "SPECIES_INIT= 1.0\n"
     "MOLECULAR_WEIGHT= 28.96, 16.043\n"
     "SPECIFIC_HEAT_CP= 1009.39, 2225.0\n"
-    "MARKER_SPECIES_STRONG_BC= (x_minus)\n";
+    "MARKER_SPECIES_STRONG_BC= (x_minus)\n"
+    "MU_CONSTANT= 1.8551e-05, 1.1e-05\n"
+    "PRANDTL_LAM= 0.72, 0.72\n"
+    "PRANDTL_TURB= 0.9, 0.9\n"
+    "DIFFUSIVITY_CONSTANT= 1.0e-05\n";
 
 }  // namespace
 
