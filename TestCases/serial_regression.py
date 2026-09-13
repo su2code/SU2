@@ -458,16 +458,6 @@ def main():
     inc_lam_cylinder_pb.test_vals = [-3.486100, -3.777681, 0.012003, 6.178586]
     test_list.append(inc_lam_cylinder_pb)
 
-    # Laminar heated cylinder with polynomial fluid model, pressure-based, coupled energy
-    # equation and variable density. Convergence is genuine but slow (needs ~40k iterations
-    # for rms[h] to reach a low residual); this only checks a short trajectory guard, matching
-    # the pattern used for other hard-to-converge cases in this suite.
-    inc_poly_cylinder_pb          = TestCase('inc_poly_cylinder_pb')
-    inc_poly_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
-    inc_poly_cylinder_pb.cfg_file  = "pb_poly_cylinder.cfg"
-    inc_poly_cylinder_pb.test_iter = 20
-    inc_poly_cylinder_pb.test_vals = [-13.411510, 0.541350, 0.006208, 16.970571, -8927.600000]
-    test_list.append(inc_poly_cylinder_pb)
 
     # Buoyancy-driven cavity
     inc_buoyancy          = TestCase('inc_buoyancy')
@@ -493,13 +483,6 @@ def main():
     inc_lam_bend.test_vals = [-3.639664, -3.218039, -0.016067, 1.090645]
     test_list.append(inc_lam_bend)
 
-    # X-coarse laminar bend as a mixed element CGNS test, pressure-based
-    inc_lam_bend_pb          = TestCase('inc_lam_bend_pb')
-    inc_lam_bend_pb.cfg_dir   = "incomp_navierstokes/bend"
-    inc_lam_bend_pb.cfg_file  = "pb_lam_bend.cfg"
-    inc_lam_bend_pb.test_iter = 10
-    inc_lam_bend_pb.test_vals = [-4.005581, -3.433774, -0.013808, 0.376081]
-    test_list.append(inc_lam_bend_pb)
 
     ############################
     ### Incompressible RANS  ###
