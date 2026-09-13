@@ -19,7 +19,46 @@ python = pymod.find_installation()
 
 if get_option('enable-cuda')
   add_languages('cuda')
-  add_global_arguments('-arch=sm_86', language : 'cuda')
+
+  # Compute capability to generate code for. Anything other than 'auto' is passed to nvcc as it
+  # is, so 'native', 'all-major', 'compute_XY', etc. all work.
+  cuda_arch = get_option('cuda-arch')
+  if cuda_arch == 'auto'
+    cuda_cc = ''
+    # Ships with the toolkit and prints e.g. "89"; it is what nvcc's own -arch=native uses.
+    cuda_query = find_program('__nvcc_device_query', required : false)
+    if cuda_query.found()
+      cuda_probe = run_command(cuda_query, check : false)
+      if cuda_probe.returncode() == 0
+        cuda_cc = cuda_probe.stdout().strip().split('\n')[0].strip()
+      endif
+    endif
+    # Fall back to the driver, which prints e.g. "8.9".
+    if cuda_cc == ''
+      cuda_query = find_program('nvidia-smi', required : false)
+      if cuda_query.found()
+        cuda_probe = run_command(cuda_query, '--query-gpu=compute_cap', '--format=csv,noheader', check : false)
+        if cuda_probe.returncode() == 0
+          cuda_cc = cuda_probe.stdout().strip().split('\n')[0].strip().replace('.', '')
+        endif
+      endif
+    endif
+    if cuda_cc == ''
+      error('Could not detect the CUDA compute capability of this machine (no GPU visible?), ' +
+            'set it explicitly, for example -Dcuda-arch=sm_89.')
+    endif
+    cuda_arch = 'sm_' + cuda_cc
+    message('Detected CUDA compute capability, building for ' + cuda_arch)
+  endif
+  add_global_arguments('-arch=' + cuda_arch, language : 'cuda')
+  # nvcc's frontend does not recognize the AMX-tile builtins pulled in by
+  # newer glibc/gcc <immintrin.h>; SU2 does not use AMX, so skip the header.
+  add_global_arguments('-D_AMXTILEINTRIN_H_INCLUDED', language : 'cuda')
+  # Any target linking CUDA object code is linked via nvcc instead of the C++
+  # linker, which otherwise defaults to a plain host gcc and silently drops
+  # the MPI link flags that -Dcustom-mpi=true relies on mpicxx to provide.
+  add_global_arguments('-ccbin=' + meson.get_compiler('cpp').cmd_array()[0], language : 'cuda')
+  add_global_link_arguments('-ccbin=' + meson.get_compiler('cpp').cmd_array()[0], language : 'cuda')
 endif
 
 su2_cpp_args = []
@@ -153,8 +192,11 @@ if get_option('enable-cgns')
 endif
 
 # check for mixed precision floating point arithmetic
-if get_option('enable-mixedprec')
+if get_option('enable-mixedprec') or get_option('enable-singleprec')
   su2_cpp_args += '-DUSE_MIXED_PRECISION'
+endif
+if get_option('enable-singleprec')
+  su2_cpp_args += '-DUSE_SINGLE_PRECISION'
 endif
 
 # check if MPI dependencies are found and add them
@@ -228,8 +270,7 @@ endif
 # CUDA dependencies
 if get_option('enable-cuda')
   su2_cpp_args += '-DHAVE_CUDA'
-  gpu_dep = dependency('cuda', version : '>=10', modules : ['cudart'])
-  su2_deps += gpu_dep
+  su2_deps += meson.get_compiler('cuda').find_library('cudart', required : true)
 endif
 
 # blas-type dependencies

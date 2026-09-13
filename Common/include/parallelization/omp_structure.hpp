@@ -134,6 +134,7 @@ void omp_finalize();
 /*--- Convenience macros (do not use excessive nesting). ---*/
 
 #define SU2_OMP_ATOMIC SU2_OMP(atomic)
+#define SU2_OMP_ATOMIC_WRITE SU2_OMP(atomic write)
 
 #ifndef HAVE_OPDI
 
@@ -283,7 +284,10 @@ inline void atomicAdd(T rhs, T& lhs) {
 #define ATOMIC_COMPARE_FALLBACK
 
 /*--- Atomic max, shared = max(shared, local). ---*/
-#ifdef _OPENMP
+/*--- nvcc's host pass drops the clause from "#pragma omp atomic compare", which the host
+ * compiler then rejects. The .cu sources do not use these functions, so they simply get
+ * the critical section fallback below. ---*/
+#if defined(_OPENMP) && !defined(__CUDACC__)
 #if _OPENMP >= ATOMIC_COMPARE_SINCE
 /*--- Atomic min/max are supported for arithmetic types. ---*/
 template <class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
@@ -305,7 +309,7 @@ inline void atomicMax(const T& local, T& shared) {
 }
 
 /*--- Atomic min, shared = min(shared, local). ---*/
-#ifdef _OPENMP
+#if defined(_OPENMP) && !defined(__CUDACC__)
 #if _OPENMP >= ATOMIC_COMPARE_SINCE
 template <class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
 inline void atomicMin(const T& local, T& shared) {

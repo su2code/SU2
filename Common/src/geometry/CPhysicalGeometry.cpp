@@ -33,6 +33,8 @@
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CSU2BinaryMeshReaderFEM.hpp"
+#include "../../include/geometry/meshreader/CSU2BinaryMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CRectangularMeshReaderFEM.hpp"
@@ -49,6 +51,8 @@
 #include "../../include/geometry/primal_grid/CPyramid.hpp"
 #include "../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../include/geometry/primal_grid/CVertexMPI.hpp"
+
+#include "../../../Common/include/tracy_structure.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -80,6 +84,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig* config, unsigned short val_iZone, 
 
   switch (val_format) {
     case SU2:
+    case SU2_BIN:
     case CGNS_GRID:
     case RECTANGLE:
     case BOX:
@@ -3460,6 +3465,12 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
       else
         Mesh = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
       break;
+    case SU2_BIN:
+      if (fem_solver)
+        Mesh = new CSU2BinaryMeshReaderFEM(config, val_iZone, val_nZone);
+      else
+        Mesh = new CSU2BinaryMeshReaderFVM(config, val_iZone, val_nZone);
+      break;
     case CGNS_GRID:
       if (fem_solver)
         Mesh = new CCGNSMeshReaderFEM(config, val_iZone, val_nZone);
@@ -4463,6 +4474,11 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
         }
       }
 
+      /*--- Sort the neighbors in ascending order so that the edge numbering done in
+       *    SetEdges matches the upper-CSR ordering of the sparse pattern. This makes
+       *    the edge->upper-block map the identity for the CSysMatrix LDU storage. ---*/
+      sort(points[iPoint].begin(), points[iPoint].end());
+
       /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel. ---*/
       nodes->SetnNeighbor(iPoint, points[iPoint].size());
     }
@@ -4491,9 +4507,15 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
     InQueue[iPoint] = true;
   }
 
+  const auto numSeeds = std::max<unsigned short>(1, config->GetRCM_NumSeeds());
+  constexpr auto unreached = std::numeric_limits<unsigned long>::max();
+  vector<unsigned long> dist;
+  if (numSeeds > 1) dist.assign(nPoint, unreached);
+  vector<unsigned long> component, bfsQueue;
+
   /*--- Repeat as many times as necessary to handle disconnected graphs. ---*/
   while (Result.size() < nPointDomain) {
-    /*--- Select the node with the lowest degree in the grid. ---*/
+    /*--- Select the node with the lowest degree in the grid as the first seed. ---*/
     auto AddPoint = nPoint;
     auto MinDegree = std::numeric_limits<unsigned short>::max();
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
@@ -4507,11 +4529,54 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
       SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
     }
 
-    /*--- Seed the queue with the minimum degree node. ---*/
-    Result.push_back(AddPoint);
-    InQueue[AddPoint] = true;
+    /*--- Farthest-point sampling: grow the seed set with up to numSeeds-1 more points, each
+     * the node with the largest BFS distance (within this connected component) from every
+     * seed picked so far. Starting the RCM growth from several spread-out fronts instead of
+     * one bounds the number of levels by the covering radius of the seed set rather than the
+     * full component diameter, while keeping the RCM ordering local (and hence bandwidth and
+     * ILU quality) around each front.
+     * The distance from each point to its nearest seed is maintained incrementally: the first
+     * seed does a full BFS of the component, each later seed only relaxes the points it is
+     * strictly closer to than all previous seeds, keeping the total work close to a single
+     * BFS instead of one BFS per seed. ---*/
+    vector<unsigned long> Seeds(1, AddPoint);
+    if (numSeeds > 1) {
+      auto relaxFrom = [&](unsigned long seed) {
+        dist[seed] = 0;
+        bfsQueue.clear();
+        bfsQueue.push_back(seed);
+        for (auto iBfs = 0ul; iBfs < bfsQueue.size(); ++iBfs) {
+          const auto iPoint = bfsQueue[iBfs];
+          for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
+            const auto jPoint = nodes->GetPoint(iPoint, iNode);
+            if (!InQueue[jPoint] && dist[iPoint] + 1 < dist[jPoint]) {
+              dist[jPoint] = dist[iPoint] + 1;
+              bfsQueue.push_back(jPoint);
+            }
+          }
+        }
+      };
+      relaxFrom(AddPoint);
+      /*--- The first BFS reaches exactly the connected component of the seed. ---*/
+      component = bfsQueue;
+      for (auto iSeed = 1u; iSeed < numSeeds; ++iSeed) {
+        auto farthest = AddPoint;
+        for (const auto iPoint : component)
+          if (dist[iPoint] > dist[farthest]) farthest = iPoint;
+        /*--- The component is already fully covered by the existing seeds. ---*/
+        if (dist[farthest] == 0) break;
+        Seeds.push_back(farthest);
+        relaxFrom(farthest);
+      }
+    }
 
-    /*--- Loop until reorganizing all nodes connected to AddPoint. This will
+    /*--- Seed the queue with all selected fronts. ---*/
+    for (auto seed : Seeds) {
+      Result.push_back(seed);
+      InQueue[seed] = true;
+    }
+
+    /*--- Loop until reorganizing all nodes connected to the seeds. This will
      * also terminate early once the ordering + queue include all points. ---*/
     while (QueueStart < Result.size() && Result.size() < nPointDomain) {
       /*--- Move the start of the queue, equivalent to taking from the front of
@@ -5682,9 +5747,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
       }
     }
     if (marker_flag == INFLOW) {
-      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow";
     } else {
-      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow";
     }
     char buffer[50];
 
@@ -7456,10 +7521,8 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
     /*--- Compute the angle between the unit normal associated
      with the edge and the unit vector pointing from iPoint to jPoint. ---*/
 
-    su2double dotProduct = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      dotProduct += (Normal[iDim] / area) * (edgeVector[iDim] / distance);
-    }
+    su2double dotProduct = GeometryToolbox::DotProduct(nDim, Normal, edgeVector.data());
+    dotProduct = min(max(-1.0, dotProduct / (area * distance)), 1.0);
 
     /*--- The definition of orthogonality is an area-weighted average of
      90 degrees minus the angle between the face area unit normal and
@@ -7875,8 +7938,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     char str_buf[CGNS_STRING_SIZE], fname[100];
     unsigned short iVar;
     strcpy(fname, filename.c_str());
-    int nRestart_Vars = 5, nFields;
-    int* Restart_Vars = new int[5];
+    int nRestart_Vars = SU2_RESTART_HEADER_SIZE, nFields;
+    int* Restart_Vars = new int[SU2_RESTART_HEADER_SIZE];
     passivedouble* Restart_Data = nullptr;
     int Restart_Iter = 0;
     passivedouble Restart_Meta_Passive[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -7906,7 +7969,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (Restart_Vars[0] != 535532) {
+    if (Restart_Vars[0] != SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                          string("SU2 reads/writes binary restart files by default.\n") +
                          string("Note that backward compatibility for ASCII restart files is\n") +
@@ -7914,9 +7977,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
                      CURRENT_FUNCTION);
     }
 
-    /*--- Store the number of fields for simplicity. ---*/
+    /*--- Store the number of fields for simplicity. The file may have been written by
+     a build of different precision, in which case the data needs to be converted. ---*/
 
     nFields = Restart_Vars[1];
+    const int scalarSize = GetSU2BinaryScalarSize(Restart_Vars[SU2_RESTART_PRECISION_IDX]);
 
     /*--- Read the variable names from the file. Note that we are adopting a
      fixed length of 33 for the string length to match with CGNS. This is
@@ -7938,28 +8003,45 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     /*--- Read in the data for the restart at all local points. ---*/
 
-    ret = fread(Restart_Data, sizeof(passivedouble), nFields * GetnPointDomain(), fhw);
-    if (ret != static_cast<unsigned long>(nFields) * GetnPointDomain()) {
+    const unsigned long nScalars = static_cast<unsigned long>(nFields) * GetnPointDomain();
+
+    if (scalarSize == static_cast<int>(sizeof(passivedouble))) {
+      ret = fread(Restart_Data, scalarSize, nScalars, fhw);
+    } else {
+      vector<char> buffer(nScalars * scalarSize);
+      ret = fread(buffer.data(), scalarSize, nScalars, fhw);
+      SU2BinaryDataToPassive(buffer.data(), scalarSize, nScalars, Restart_Data);
+    }
+    if (ret != nScalars) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
-    /*--- Compute (negative) displacements and grab the metadata. ---*/
+    /*--- Grab the metadata trailer, which only old files have. Without it the iteration
+     number and the metadata keep the zeros they were initialized with. ---*/
 
-    ret = sizeof(int) + 8 * sizeof(passivedouble);
-    fseek(fhw, -ret, SEEK_END);
+    const int nMeta =
+        GetSU2BinaryMetadataSize(Restart_Vars[SU2_RESTART_PRECISION_IDX], Restart_Vars[SU2_RESTART_METADATA_IDX]);
+    if (nMeta > 0) {
+      /*--- Compute (negative) displacements and jump to the trailer. ---*/
 
-    /*--- Read the external iteration. ---*/
+      ret = sizeof(int) + nMeta * scalarSize;
+      fseek(fhw, -ret, SEEK_END);
 
-    ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
-    if (ret != 1) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
-    }
+      /*--- Read the external iteration. ---*/
 
-    /*--- Read the metadata. ---*/
+      ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+      if (ret != 1) {
+        SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+      }
 
-    ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
-    if (ret != 8) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+      /*--- Read the metadata. ---*/
+
+      double meta_buf[SU2_RESTART_MAX_METADATA]; /*--- Correctly aligned for either precision. ---*/
+      ret = fread(meta_buf, scalarSize, nMeta, fhw);
+      if (ret != static_cast<unsigned long>(nMeta)) {
+        SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+      }
+      SU2BinaryDataToPassive(meta_buf, scalarSize, nMeta, Restart_Meta_Passive);
     }
 
     /*--- Close the file. ---*/
@@ -8002,7 +8084,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (Restart_Vars[0] != 535532) {
+    if (Restart_Vars[0] != SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                          string("SU2 reads/writes binary restart files by default.\n") +
                          string("Note that backward compatibility for ASCII restart files is\n") +
@@ -8010,9 +8092,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
                      CURRENT_FUNCTION);
     }
 
-    /*--- Store the number of fields for simplicity. ---*/
+    /*--- Store the number of fields for simplicity. The file may have been written by
+     a build of different precision, in which case the data needs to be converted. ---*/
 
     nFields = Restart_Vars[1];
+    const int scalarSize = GetSU2BinaryScalarSize(Restart_Vars[SU2_RESTART_PRECISION_IDX]);
 
     /*--- Read the variable names from the file. Note that we are adopting a
      fixed length of 33 for the string length to match with CGNS. This is
@@ -8046,9 +8130,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     delete[] mpi_str_buf;
 
-    /*--- We're writing only su2doubles in the data portion of the file. ---*/
+    /*--- The data portion of the file holds scalars of the precision recorded in the
+     header, which is not necessarily that of this build. Describe them as opaque
+     blocks of bytes so that the file views do not depend on the build precision. ---*/
 
-    etype = MPI_DOUBLE;
+    MPI_Type_contiguous(scalarSize, MPI_BYTE, &etype);
+    MPI_Type_commit(&etype);
 
     /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
      along with the string names of the variables. ---*/
@@ -8066,11 +8153,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++) {
       if (GetGlobal_to_Local_Point(iPoint_Global) > -1) {
         blocklen[counter] = nFields;
-        displace[counter] = iPoint_Global * nFields * sizeof(passivedouble);
+        displace[counter] = iPoint_Global * nFields * scalarSize;
         counter++;
       }
     }
-    MPI_Type_create_hindexed(GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+    MPI_Type_create_hindexed(GetnPointDomain(), blocklen, displace, etype, &filetype);
     MPI_Type_commit(&filetype);
 
     /*--- Set the view for the MPI file write, i.e., describe the location in
@@ -8082,31 +8169,45 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     Restart_Data = new passivedouble[nFields * GetnPointDomain()];
 
-    /*--- Collective call for all ranks to read from their view simultaneously. ---*/
+    /*--- Collective call for all ranks to read from their view simultaneously,
+     converting the data if the file precision does not match this build. ---*/
 
-    MPI_File_read_all(fhw, Restart_Data, nFields * GetnPointDomain(), MPI_DOUBLE, &status);
+    const unsigned long nScalars = static_cast<unsigned long>(nFields) * GetnPointDomain();
 
-    /*--- Free the derived datatype. ---*/
+    if (scalarSize == static_cast<int>(sizeof(passivedouble))) {
+      MPI_File_read_all(fhw, Restart_Data, nScalars, etype, &status);
+    } else {
+      vector<char> buffer(nScalars * scalarSize);
+      MPI_File_read_all(fhw, buffer.data(), nScalars, etype, &status);
+      SU2BinaryDataToPassive(buffer.data(), scalarSize, nScalars, Restart_Data);
+    }
+
+    /*--- Free the derived datatypes. ---*/
 
     MPI_Type_free(&filetype);
+    MPI_Type_free(&etype);
 
     /*--- Reset the file view before writing the metadata. ---*/
 
     MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, (char*)"native", MPI_INFO_NULL);
 
-    /*--- Access the metadata. ---*/
+    /*--- Access the metadata trailer, which only old files have. Without it the iteration
+     number and the metadata keep the zeros they were initialized with. ---*/
 
-    if (rank == MASTER_NODE) {
+    const int nMeta =
+        GetSU2BinaryMetadataSize(Restart_Vars[SU2_RESTART_PRECISION_IDX], Restart_Vars[SU2_RESTART_METADATA_IDX]);
+    if (nMeta > 0 && rank == MASTER_NODE) {
       /*--- External iteration. ---*/
       disp = (nRestart_Vars * sizeof(int) + nFields * CGNS_STRING_SIZE * sizeof(char) +
-              nFields * Restart_Vars[2] * sizeof(passivedouble));
+              static_cast<unsigned long>(nFields) * Restart_Vars[2] * scalarSize);
       MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
 
       /*--- Additional doubles for AoA, AoS, etc. ---*/
 
-      disp = (nRestart_Vars * sizeof(int) + nFields * CGNS_STRING_SIZE * sizeof(char) +
-              nFields * Restart_Vars[2] * sizeof(passivedouble) + 1 * sizeof(int));
-      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
+      disp += sizeof(int);
+      double meta_buf[SU2_RESTART_MAX_METADATA]; /*--- Correctly aligned for either precision. ---*/
+      MPI_File_read_at(fhw, disp, meta_buf, nMeta * scalarSize, MPI_BYTE, MPI_STATUS_IGNORE);
+      SU2BinaryDataToPassive(meta_buf, scalarSize, nMeta, Restart_Meta_Passive);
     }
 
     /*--- Communicate metadata. ---*/
@@ -8214,7 +8315,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (magic_number == 535532) {
+    if (magic_number == SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                          string("SU2 reads/writes binary restart files by default.\n") +
                          string("Note that backward compatibility for ASCII restart files is\n") +
@@ -8252,7 +8353,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (magic_number == 535532) {
+    if (magic_number == SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                          string("SU2 reads/writes binary restart files by default.\n") +
                          string("Note that backward compatibility for ASCII restart files is\n") +
@@ -10161,7 +10262,6 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
   if (!WallADT->IsEmpty()) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
-
     SU2_OMP_PARALLEL {
       CPHYSGEO_PARFOR
       for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {

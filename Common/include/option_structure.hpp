@@ -195,6 +195,74 @@ inline unsigned short nPointsOfElementType(unsigned short elementType) {
 }
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
+
+/*--- Layout of the header of the native SU2 binary solution/restart format, shared by
+      CSU2BinaryFileWriter and the routines that read those files so they cannot drift
+      apart. The header is SU2_RESTART_HEADER_SIZE ints: a magic number, the number of
+      variables, the number of points, the size in bytes of the floating point data that
+      follows, and one spare.
+
+      The 4th and 5th ints used to be the number of ints and of doubles of a metadata
+      trailer (1 and 5, later 1 and 8) that the writer appended after the data. That
+      trailer is no longer written (metadata goes to a separate ASCII file) and both
+      ints have been 0 since, but old files in circulation still have 1 and 5 or 8
+      there, which is why 1 is accepted below as meaning double precision. ---*/
+const int SU2_RESTART_MAGIC_NUMBER = 535532; /*!< \brief Hex representation of "SU2". */
+const int SU2_RESTART_HEADER_SIZE = 5;       /*!< \brief Number of ints in the header. */
+const int SU2_RESTART_PRECISION_IDX = 3;     /*!< \brief Position of the precision field. */
+const int SU2_RESTART_METADATA_IDX = 4;      /*!< \brief Position of the legacy metadata count. */
+const int SU2_RESTART_MAX_METADATA = 8;      /*!< \brief Most metadata doubles a trailer ever had. */
+
+/*!
+ * \brief Size in bytes of the floating point data of a native SU2 binary solution file.
+ * \param[in] precisionField - The SU2_RESTART_PRECISION_IDX entry of the file header.
+ * \return 8 for double precision, 4 for single precision.
+ * \note Files written before the field had this meaning have a 0 or a 1 there (see above)
+ * and were always double precision.
+ */
+inline int GetSU2BinaryScalarSize(int precisionField) {
+  if (precisionField == 0 || precisionField == 1) return static_cast<int>(sizeof(double));
+  if (precisionField != static_cast<int>(sizeof(double)) && precisionField != static_cast<int>(sizeof(float))) {
+    SU2_MPI::Error("Invalid floating point precision in the header of a binary SU2 solution file.", CURRENT_FUNCTION);
+  }
+  return precisionField;
+}
+
+/*!
+ * \brief Number of metadata scalars in the trailer of a native SU2 binary solution file.
+ * \param[in] precisionField - The SU2_RESTART_PRECISION_IDX entry of the file header.
+ * \param[in] metadataField - The SU2_RESTART_METADATA_IDX entry of the file header.
+ * \return Number of scalars of the trailer, preceded by one int (the iteration number),
+ * or 0 for the files that do not have one.
+ * \note Only files that still use the two ints as trailer counts have a trailer, and in
+ * those the precision field is the number of trailer ints, which was always 1 (see above).
+ */
+inline int GetSU2BinaryMetadataSize(int precisionField, int metadataField) {
+  if (precisionField != 1) return 0;
+  return std::min(metadataField, SU2_RESTART_MAX_METADATA);
+}
+
+/*!
+ * \brief Convert floating point data read from a native SU2 binary solution file, which
+ * may have been written by a build of different precision, to the precision of this build.
+ * \param[in] buffer - Raw data as read from the file, of size count*scalarSize bytes.
+ * \param[in] scalarSize - Size in bytes of the scalars in the file, see GetSU2BinaryScalarSize.
+ * \param[in] count - Number of scalars.
+ * \param[out] data - Converted data, must not overlap with buffer.
+ */
+inline void SU2BinaryDataToPassive(const void* buffer, int scalarSize, unsigned long count, passivedouble* data) {
+  if (scalarSize == static_cast<int>(sizeof(float))) {
+    const auto* src = static_cast<const float*>(buffer);
+    for (unsigned long i = 0; i < count; ++i) data[i] = src[i];
+  } else {
+    const auto* src = static_cast<const double*>(buffer);
+    for (unsigned long i = 0; i < count; ++i) data[i] = src[i];
+  }
+}
+
+const int SU2_BINARY_STRING_SIZE = 65; /*!< \brief Length of strings (e.g. marker names) used in the native
+                                                    SU2 binary mesh format. Shared by CSU2BinaryMeshReaderBase
+                                                    and CSU2MeshBinaryFileWriter so they cannot drift apart. */
 const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that is allocated for each element
                                              that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
 const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
@@ -1129,9 +1197,18 @@ struct CMGOptions {
   std::vector<unsigned short> MG_PreSmooth;    /*!< \brief Multigrid pre-smoothing iterations per level. */
   std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
   std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
+  std::vector<su2double> MG_CflScaling;        /*!< \brief Per-level CFL scaling factors relative to the previous (finer) level. Entry [i] scales level i+1 from level i. Size = nMGLevels. */
   bool MG_Smooth_EarlyExit{false};        /*!< \brief Enable early exit for MG smoothing iterations. */
   bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
+  su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
+  unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
+  unsigned long MG_Startup_Iter{100};     /*!< \brief Iterations per mesh during FMG startup, and the length of each level's CFL ramp. 0 = no iteration budget. */
+  su2double MG_Startup_Convergence{-2.0}; /*!< \brief FMG: orders of magnitude (log10) that CONV_FIELD must drop on the
+                                                 active level before promoting to the next finer one. Negative is a
+                                                 drop, as for CONV_RESIDUAL_MINVAL. */
+  su2double MG_Startup_Stagnation{0.99};  /*!< \brief FMG: promote when the residual ratio between successive iterations exceeds this. 0 = disabled. */
+  unsigned long MG_Startup_Stagnation_Iter{5}; /*!< \brief FMG: consecutive stalled iterations required before promoting. 0 = disabled. */
 };
 
 /*!
@@ -1454,11 +1531,29 @@ static const MapType<std::string, FLAMELET_INIT_TYPE> Flamelet_Init_Map = {
 };
 
 /*!
+ * \brief Selects the source of wall/inlet enthalpy boundary conditions for the flamelet solver.
+ * SPECIES_MARKERS (default): inlet H is taken directly from MARKER_INLET_SPECIES; wall enthalpy BC
+ * is obtained from MARKER_WALL_SPECIES.
+ * FLOW_MARKERS: inlet H is derived from the MARKER_INLET temperature via a Newton iteration on the
+ * LUT (reverse lookup using Z,T) from MARKER_ISOTHERMAL or MARKER_HEATFLUX.
+ */
+enum class FLAMELET_ENTHALPY_BC {
+  FLOW_MARKERS,    /*!< \brief Derive inlet H from MARKER_INLET T (LUT Newton); walls from MARKER_ISOTHERMAL/MARKER_HEATFLUX. */
+  SPECIES_MARKERS, /*!< \brief Take inlet H directly from MARKER_INLET_SPECIES; walls from MARKER_WALL_SPECIES (default). */
+};
+
+static const MapType<std::string, FLAMELET_ENTHALPY_BC> Flamelet_Enthalpy_BC_Map = {
+  MakePair("FLOW_MARKERS",    FLAMELET_ENTHALPY_BC::FLOW_MARKERS)
+  MakePair("SPECIES_MARKERS", FLAMELET_ENTHALPY_BC::SPECIES_MARKERS)
+};
+
+/*!
  * \brief Structure containing parsed options for flamelet fluid model.
  */
 struct FluidFlamelet_ParsedOptions {
   ///TODO: Add python wrapper initialization option
   FLAMELET_INIT_TYPE ignition_method = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
+  FLAMELET_ENTHALPY_BC enthalpy_bc = FLAMELET_ENTHALPY_BC::SPECIES_MARKERS; /*!< \brief Source of enthalpy BCs: species markers (default, backward-compatible) or flow markers. */
   unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
   unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
   unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
@@ -1479,6 +1574,7 @@ struct FluidFlamelet_ParsedOptions {
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
+  bool thickenedflame_correction{true}; /*!< \brief Thickened flame correction. */
   su2double Flame_T_ignition = 5000;    /*!< \brief Ignition temperature for the flame, used for initialization. */
 
 };
@@ -2135,6 +2231,9 @@ enum ENUM_OBJECTIVE {
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
   TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
   STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
+  ENTROPY_GENERATION = 80,      /*!< \brief Entropy generation turbomachinery objective function. */
+  TOTAL_PRESSURE_LOSS = 81,     /*!< \brief Total pressure loss turbomachinery objective function. */
+  KINETIC_ENERGY_LOSS = 82      /*!< \breif Kinetic energy loss coefficient turbomachinery objective function. */
 };
 static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
@@ -2177,24 +2276,32 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
+  MakePair("ENTROPY_GENERATION", ENTROPY_GENERATION)
+  MakePair("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
+  MakePair("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 };
 
 /*!
- * \brief Types of input file formats
+ * \brief Types of grid file formats
  */
-enum ENUM_INPUT {
-  SU2       = 1,  /*!< \brief SU2 input format. */
-  CGNS_GRID = 2,  /*!< \brief CGNS input format for the computational grid. */
-  RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
-  BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
+enum ENUM_GRID {
+  SU2       = 1,  /*!< \brief SU2 ascii format. */
+  SU2_BIN   = 2,  /*!< \brief SU2 binary format. */
+  CGNS_GRID = 3,  /*!< \brief CGNS format for the computational grid. */
+  RECTANGLE = 4,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
+  BOX       = 5   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
-static const MapType<std::string, ENUM_INPUT> Input_Map = {
-  MakePair("SU2", SU2)
-  MakePair("CGNS", CGNS_GRID)
-  MakePair("RECTANGLE", RECTANGLE)
-  MakePair("BOX", BOX)
+static const MapType<std::string, ENUM_GRID> Input_Map = {
+  MakePair("SU2", ENUM_GRID::SU2)
+  MakePair("SU2B", ENUM_GRID::SU2_BIN)
+  MakePair("CGNS", ENUM_GRID::CGNS_GRID)
+  MakePair("RECTANGLE", ENUM_GRID::RECTANGLE)
+  MakePair("BOX", ENUM_GRID::BOX)
 };
-
+static const MapType<std::string, ENUM_GRID> OutputMesh_Map = {
+  MakePair("SU2", ENUM_GRID::SU2)
+  MakePair("SU2B", ENUM_GRID::SU2_BIN)
+};
 
 /*!
  * \brief Type of solution output file formats
@@ -2210,7 +2317,8 @@ enum class OUTPUT_TYPE {
   PARAVIEW_LEGACY_BINARY,  /*!< \brief Paraview binary format for the solution output. */
   SURFACE_PARAVIEW_ASCII,  /*!< \brief Paraview ASCII format for the solution output. */
   SURFACE_PARAVIEW_LEGACY_BINARY, /*!< \brief Paraview binary format for the solution output. */
-  MESH,                    /*!< \brief SU2 mesh format. */
+  MESH,                    /*!< \brief SU2 ASCII mesh format. */
+  MESH_BINARY,             /*!< \brief SU2 binary mesh format. */
   RESTART_BINARY,          /*!< \brief SU2 binary restart format. */
   RESTART_ASCII,           /*!< \brief SU2 ASCII restart format. */
   PARAVIEW_XML,            /*!< \brief Paraview XML with binary data format */
@@ -2236,6 +2344,7 @@ static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
   MakePair("SURFACE_PARAVIEW", OUTPUT_TYPE::SURFACE_PARAVIEW_XML)
   MakePair("PARAVIEW_MULTIBLOCK", OUTPUT_TYPE::PARAVIEW_MULTIBLOCK)
   MakePair("MESH", OUTPUT_TYPE::MESH)
+  MakePair("MESH_BINARY", OUTPUT_TYPE::MESH_BINARY)
   MakePair("RESTART_ASCII", OUTPUT_TYPE::RESTART_ASCII)
   MakePair("RESTART", OUTPUT_TYPE::RESTART_BINARY)
   MakePair("CGNS", OUTPUT_TYPE::CGNS)
@@ -2504,19 +2613,30 @@ static const MapType<std::string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
  * \brief Types of preconditioners for the linear solver
  */
 enum ENUM_LINEAR_SOLVER_PREC {
+  IDENTITY,       /*!< \brief No preconditioner. */
   JACOBI,         /*!< \brief Jacobi preconditioner. */
   LU_SGS,         /*!< \brief LU SGS preconditioner. */
   LINELET,        /*!< \brief Line implicit preconditioner. */
   ILU,            /*!< \brief ILU(k) preconditioner. */
+  Q_LU_SGS,       /*!< \brief LU-SGS with quantized (int8) off-diagonal storage; L/U are never allocated as ScalarType. */
+  Q_JACOBI,       /*!< \brief Jacobi with quantized (int8) off-diagonal storage; same matvec quantization as Q_LU_SGS,
+                       the diagonal inverse is still computed and applied at full precision. */
+  Q_IDENTITY,     /*!< \brief No preconditioner, but the matrix-vector product still uses quantized (int8)
+                       off-diagonal storage, same matvec quantization as Q_LU_SGS/Q_JACOBI. */
   PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
   PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
   PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
 };
 static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
+  MakePair("NONE", IDENTITY)
+  MakePair("IDENTITY", IDENTITY)
   MakePair("JACOBI", JACOBI)
   MakePair("LU_SGS", LU_SGS)
   MakePair("LINELET", LINELET)
   MakePair("ILU", ILU)
+  MakePair("Q_LU_SGS", Q_LU_SGS)
+  MakePair("Q_JACOBI", Q_JACOBI)
+  MakePair("Q_IDENTITY", Q_IDENTITY)
   MakePair("PASTIX_ILU", PASTIX_ILU)
   MakePair("PASTIX_LU", PASTIX_LU_P)
   MakePair("PASTIX_LDLT", PASTIX_LDLT_P)
@@ -2651,7 +2771,7 @@ enum class CHECK_TAPE_VARIABLES {
 };
 static const MapType<std::string, CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
     MakePair("SOLVER_VARIABLES", CHECK_TAPE_VARIABLES::SOLVER_VARIABLES)
-    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
+    MakePair("MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
 };
 
 enum class RECORDING {
@@ -2659,11 +2779,7 @@ enum class RECORDING {
   SOLUTION_VARIABLES,
   MESH_COORDS,
   MESH_DEFORM,
-  SOLUTION_AND_MESH,
-  TAG_INIT_SOLVER_VARIABLES,
-  TAG_CHECK_SOLVER_VARIABLES,
-  TAG_INIT_SOLVER_AND_MESH,
-  TAG_CHECK_SOLVER_AND_MESH
+  SOLUTION_AND_MESH
 };
 
 /*!

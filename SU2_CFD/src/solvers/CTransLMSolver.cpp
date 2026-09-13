@@ -66,9 +66,10 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   TransCorrelations.SetOptions(options);
   TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
 
-  /*--- Single grid simulation ---*/
+  /*--- Single grid simulation, and every level of a Full-MG startup, which solves the transition
+   *    equations on whichever grid the flow solver is currently on. ---*/
 
-  if (iMesh == MESH_0) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == MG_CYCLE::FULL) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -268,7 +269,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
 void CTransLMSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
-  SU2_ZONE_SCOPED
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
 
@@ -584,7 +584,7 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
   if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
     solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
-                                            RUNTIME_FLOW_SYS, false);
+                                            RUNTIME_FLOW_SYS, true);
     solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
     solver[MESH_0][TRANS_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   }
@@ -600,7 +600,7 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
-                                            false);
+                                             true);
       solver[iMesh][TRANS_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
     }
   }

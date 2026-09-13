@@ -208,15 +208,19 @@ bool CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
   /*--- Classical Gram Schmidt twice is faster and at least as accurate
    * as Modified Gram Schmidt. ---*/
 
+  /*--- ModGramSchmidt is always called in parallel, so LinearCombination never
+   * needs to start its own parallel region here. ---*/
   const auto h_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
   LinearCombination(
-      shared_hsbg, i + 1, w, [&h_i](int k) { return -h_i(0, k); }, w[i + 1], true);
-
-  const auto& dh_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
-  LinearCombination(
-      shared_hsbg, i + 1, w, [&dh_i](int k) { return -dh_i(0, k); }, w[i + 1], true);
-
-  for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k) + dh_i(0, k));
+      false, i + 1, w, [&h_i](int k) { return -h_i(0, k); }, w[i + 1], true);
+  if (i < 5) {
+    for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k));
+  } else {
+    const auto& dh_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
+    LinearCombination(
+        false, i + 1, w, [&dh_i](int k) { return -dh_i(0, k); }, w[i + 1], true);
+    for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k) + dh_i(0, k));
+  }
 
   /*--- The norm of w[i+1] is 0 or NaN: the input vector from mat_vec is
    * zero or contains NaN. Cannot proceed with orthogonalization. ---*/
@@ -425,7 +429,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   const bool flexible = !precond.IsIdentity();
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
-  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1 && !VecExpr::UseDeviceExpressions();
 
   /*---  Check the subspace size ---*/
 
@@ -546,6 +550,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     if (nestedParallel) {
       /*--- "omp parallel if" does not work well here ---*/
       SU2_OMP_PARALLEL
+      /*--- Atomic write into a shared variable to avoid sanitizer errors. ---*/
+      SU2_OMP_ATOMIC_WRITE
       orthog_ok = ModGramSchmidt(true, i, H, V);
       END_SU2_OMP_PARALLEL
     } else {
@@ -662,7 +668,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
   const bool masterRank = SU2_MPI::GetRank() == MASTER_NODE;
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
-  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1 && !VecExpr::UseDeviceExpressions();
 
   /*--- Check the subspace size. ---*/
 
@@ -822,6 +828,8 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       if (nestedParallel) {
         /*--- "omp parallel if" does not work well here ---*/
         SU2_OMP_PARALLEL
+        /*--- Atomic write into a shared variable to avoid sanitizer errors. ---*/
+        SU2_OMP_ATOMIC_WRITE
         orthog_ok = ModGramSchmidt(true, j, H, V);
         END_SU2_OMP_PARALLEL
       } else {
@@ -896,6 +904,8 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       const auto n = same_mat ? 1 : m + 1;
       if (nestedParallel) {
         SU2_OMP_PARALLEL
+        /*--- Atomic write into a shared variable to avoid sanitizer errors. ---*/
+        SU2_OMP_ATOMIC_WRITE
         VWk = &CSysVector<ScalarType>::multiDot(V, i0, n, W, k);
         END_SU2_OMP_PARALLEL
       } else {
@@ -1462,7 +1472,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
   auto externalFunction = [&]() {
     /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
 
-    HandleTemporariesIn(LinSysRes, LinSysSol);
+    HandleTemporariesIn(LinSysRes, LinSysSol, config->GetCUDA());
 
     auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
@@ -1537,7 +1547,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
     }
     END_SU2_OMP_MASTER
 
-    HandleTemporariesOut(LinSysSol);
+    HandleTemporariesOut(LinSysSol, config->GetCUDA());
 
     delete normal_prec;
     delete nested_prec;
@@ -1564,10 +1574,16 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
           break;
         case JACOBI:
         case LINELET:
+        case Q_JACOBI:
+          /*--- BuildJacobiPreconditioner() quantizes the diagonal itself when needed. ---*/
           if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
           break;
         case LU_SGS:
-          /*--- Nothing to build. ---*/
+        case Q_LU_SGS:
+          /*--- Nothing to build on the host, but the device keeps the inverted diagonal blocks
+           * and those have to follow the transpose (no-op without CUDA). Transpose path not
+           * supported for Q_LU_SGS, see CSysMatrix::Initialize. ---*/
+          if (RequiresTranspose) Jacobian.BuildLU_SGSPreconditioner();
           break;
         case PASTIX_ILU:
         case PASTIX_LU_P:
@@ -1654,6 +1670,10 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
     normal_prec->Build();
   }
 
+  /*--- The vectors are already of the solver type here, but they still have to cross the
+   * bus: the matrix and preconditioner operations dispatch to the device on their own. ---*/
+  HandleTemporariesIn(LinSysRes, LinSysSol, config->GetCUDA());
+
   CPreconditioner<ScalarType>* nested_prec = nullptr;
   if (nested) {
     auto f = [&](const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) {
@@ -1713,6 +1733,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
       break;
   }
 
+  HandleTemporariesOut(LinSysSol, config->GetCUDA());
+
   delete normal_prec;
   delete nested_prec;
 
@@ -1728,6 +1750,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
 /*--- Explicit instantiations ---*/
 
 template class CSysSolve<su2mixedfloat>;
-#ifdef USE_MIXED_PRECISION
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template class CSysSolve<passivedouble>;
 #endif

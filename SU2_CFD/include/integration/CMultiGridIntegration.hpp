@@ -53,6 +53,18 @@ public:
                            CNumerics ******numerics_container, CConfig **config,
                            unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
 
+  /*!
+   * \brief Record CONV_FIELD on the active Full-MG level and decide whether it is done.
+   * \param[in] convFields - Name and log10 value of each monitored residual field.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void MonitorFullMG_Startup(const vector<pair<string, passivedouble> >& convFields,
+                             const CConfig *config) override;
+
+  bool GetFullMG_CFLRamp() const override { return mg_ramp_mesh0_active; }
+
+  unsigned long GetLevelStartIter() const override { return mg_ramp_level_start_iter; }
+
 private:
   /*!
    * \brief Perform a Full-Approximation Storage (FAS) Multigrid.
@@ -217,90 +229,141 @@ private:
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
   /*!
-   * \brief Compute adaptive CFL for multigrid coarse levels.
-   * \param[in] config - Problem configuration.
-   * \param[in] solver_coarse - Coarse grid solver.
-   * \param[in] geometry_coarse - Coarse grid geometry.
-   * \param[in] iMesh - Current multigrid level.
-   * \param[in] CFL_fine - Fine grid CFL value (passive).
-   * \param[in] CFL_coarse_current - Current coarse grid CFL value (passive).
-   * \param[in] rms_res_coarse - Coarse-grid RMS residual (already MPI-reduced, from lastPreSmoothRMS).
-   * \return New CFL value for the coarse grid.
+   * \brief Adapt both restriction and prolongation damping factors from the global-trend signal.
+   * \param[in,out] config          - Problem configuration.
+   * \param[in]     crossCycleRatio - Current fine_d0 divided by the EMA of fine_d0.
    */
-  passivedouble computeMultigridCFL(CConfig* config, unsigned short iMesh,
-                                     passivedouble CFL_fine, passivedouble CFL_coarse_current,
-                                     passivedouble rms_res_coarse);
+  void adaptDampingFactors(CConfig* config, passivedouble crossCycleRatio);
 
   /*!
-   * \brief Adapt the residual restriction damping factor.
+   * \brief Set the CFL of every coarse multigrid level, ramping level i from the final CFL of
+   * level i+1 to its own target, which CFL_NUMBER and MG_CFL_SCALING determine.
    *
-   * Uses \c lastPreSmoothIters[] (filled by the previous multigrid cycle) to assess
-   * whether the pre-smoother is converging fast or slow on coarse levels, then adjusts
-   * \c Damp_Res_Restric in \p config accordingly.
-   *
-   * Signal logic:
-   *  - any coarse level ran its full configured iterations: reduce damping
-   *  - all coarse levels exited early: increase damping
-   *  - mixed (some full, some partial): no change
-   *
-   * \param[in,out] config - Problem configuration.
+   * \param[in]     geometry         - Geometrical definition of the problem.
+   * \param[in,out] solver_container - Container vector with all the solutions.
+   * \param[in,out] config           - Definition of the particular problem.
+   * \param[in]     RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in]     iZone            - Zone index.
+   * \param[in]     iInst            - Instance index.
+   * \param[in]     FinestMesh       - Currently active finest mesh level.
+   * \param[in]     FullMG           - Whether the Full-MG cycle is active.
+   * \param[in]     mesh0_ramp_window - Result of FullMG_Mesh0RampWindow, computed by the caller.
    */
-  void adaptRestrictionDamping(CConfig* config);
+  void SetCoarseGridCFL(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+                        unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst,
+                        unsigned short FinestMesh, bool FullMG, bool mesh0_ramp_window);
 
   /*!
-   * \brief Adapt the correction prolongation damping factor.
-   *
-   * Uses \c lastCorrecSmoothIters[] (filled by the previous multigrid cycle) to assess
-   * whether the correction smoother is struggling or converging fast,
-   * then adjusts \c Damp_Correc_Prolong in \p config accordingly.
-   *
-   * Signal logic:
-   *  - any level ran its full correction-smooth iterations: reduce damping
-   *  - all levels exited early: increase damping
-   *  - mixed: no change
-   *
-   * \param[in,out] config - Problem configuration; \c SetDamp_Correc_Prolong is called to persist the result.
+   * \brief Whether the finest grid has a Full-MG CFL ramp at all.
+   * \param[in] config     - Definition of the particular problem.
+   * \param[in] FinestMesh - Currently active finest mesh level.
+   * \param[in] FullMG     - Whether the Full-MG cycle is active.
    */
-  void adaptProlongationDamping(CConfig* config);
+  bool FullMG_Mesh0HasRamp(const CConfig* config, unsigned short FinestMesh, bool FullMG) const {
+    return FullMG && (FinestMesh == MESH_0) && (config->GetMGOptions().MG_Startup_Iter > 0) &&
+           (mg_ramp_cfl_start > 0.0);
+  }
 
-  /*--- CFL adaptation state variables.
-   *    These must be passivedouble: AD::Reset() clears the tape between adjoint recordings,
-   *    but class members survive. If these were su2double their stale AD indices would
-   *    reference the cleared tape, causing invalid memory access during the backward pass. ---*/
+  /*!
+   * \brief Whether the level-0 CFL is still climbing towards the configured number.
+   */
+  bool FullMG_Mesh0Ramping(const CConfig* config, unsigned short FinestMesh, bool FullMG) const {
+    return FullMG_Mesh0HasRamp(config, FinestMesh, FullMG) &&
+           ((config->GetInnerIter() - mg_ramp_level_start_iter) < config->GetMGOptions().MG_Startup_Iter);
+  }
+
+  /*!
+   * \brief The single iteration after the ramp, which writes the configured CFL back.
+   */
+  bool FullMG_Mesh0RampRestore(const CConfig* config, unsigned short FinestMesh, bool FullMG) const {
+    return FullMG_Mesh0HasRamp(config, FinestMesh, FullMG) &&
+           ((config->GetInnerIter() - mg_ramp_level_start_iter) == config->GetMGOptions().MG_Startup_Iter);
+  }
+
+  /*!
+   * \brief Whether the startup owns the level-0 CFL this iteration.
+   */
+  bool FullMG_Mesh0RampWindow(const CConfig* config, unsigned short FinestMesh, bool FullMG) const {
+    return FullMG_Mesh0Ramping(config, FinestMesh, FullMG) ||
+           FullMG_Mesh0RampRestore(config, FinestMesh, FullMG);
+  }
+
+  /*!
+   * \brief Interpolate a scalar solver's solution onto the newly activated Full-MG level.
+   * \param[in,out] sol_fine       - Solver on the level being activated.
+   * \param[in]     sol_coarse     - Solver on the level handing over.
+   * \param[in]     geo_fine       - Geometry of the level being activated.
+   * \param[in]     geo_coarse     - Geometry of the level handing over.
+   * \param[in]     config         - Definition of the particular problem.
+   * \param[in]     eddy_viscosity - Carry the eddy viscosity across as well.
+   */
+  void SetProlongated_ScalarSolution(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
+                                     CGeometry *geo_coarse, CConfig *config, bool eddy_viscosity);
+
+  /*!
+   * \brief Helper function for early-exit logic during pre/post-smoothing.
+   * \param[in] iSmooth - Current smoothing iteration index.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] defect - Current RMS defect value.
+   * \param[in] mgOpts - Reference to multigrid options.
+   * \param[in] stag_tol - Stagnation tolerance value.
+   * \param[in] early_exit - Whether early exit is enabled.
+   * \param[out] lastRMS - Array to store RMS values [start, end].
+   * \param[out] exitReason - Character for early exit reason ('T', 'S', 'A', or ' ').
+   * \param[out] worstStepRatio - Worst step-to-step ratio seen.
+   * \param[out] worstStep - Iteration number of worst step.
+   */
+  void prePostEarlyExit(unsigned short iSmooth, unsigned short iMesh,
+                        passivedouble defect, const CMGOptions& mgOpts,
+                        passivedouble stag_tol, bool early_exit,
+                        passivedouble lastRMS[2], char& exitReason,
+                        passivedouble& worstStepRatio, unsigned short& worstStep);
+
   static constexpr int MAX_MG_LEVELS = 10;
-  passivedouble current_avg[MAX_MG_LEVELS] = {};
-  passivedouble prev_avg[MAX_MG_LEVELS] = {};
-  passivedouble last_res[MAX_MG_LEVELS] = {};
-  bool last_was_increase[MAX_MG_LEVELS] = {};
-  int oscillation_count[MAX_MG_LEVELS] = {};
-  unsigned long last_check_iter[MAX_MG_LEVELS] = {};
-  unsigned long last_update_iter[MAX_MG_LEVELS] = {};
-  unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
 
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
-  bool mg_early_exit_flag = false;             /*!< \brief Shared flag for early exit across OMP threads. */
-  passivedouble mg_initial_smooth_rms = 0.0;  /*!< \brief Initial RMS before current smoothing phase. */
-  passivedouble mg_last_smooth_rms = 0.0;     /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
+  bool mg_early_exit_flag = false;              /*!< \brief Shared flag for early exit across OMP threads. */
+  passivedouble mg_initial_smooth_rms = 0.0; /*!< \brief Initial RMS residual before current smoothing phase (FAS). */
+  passivedouble mg_prev_smooth_rms = 0.0;    /*!< \brief RMS residual from previous smoothing step; used for stagnation detection. */
+  passivedouble mg_fine_rms_ema = 0.0;      /*!< \brief EMA of fine-grid pre-smooth RMS across cycles; cross-cycle trend signal. */
+  passivedouble last_crossCycleRatio = 1.0; /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
   unsigned short lastPostSmoothIters[MAX_MG_LEVELS+1] = {};
   unsigned short lastCorrecSmoothIters[MAX_MG_LEVELS+1] = {};
+  /*--- Early-exit reason per level: 'T'=threshold, 'S'=stagnation, ' '=ran to completion. ---*/
+  char lastPreSmoothExitReason[MAX_MG_LEVELS+1]  = {};
+  char lastPostSmoothExitReason[MAX_MG_LEVELS+1] = {};
 
-  /*--- Per-level residual progress flags: true if the final RMS after that phase was lower
-   *    than the initial RMS.  Used by the adaptive damping routines to distinguish
-   *    "hit max iters but still converging" from "hit max iters and stagnated". ---*/
-  bool lastPreSmoothProgress[MAX_MG_LEVELS+1] = {};
-  bool lastPostSmoothProgress[MAX_MG_LEVELS+1] = {};
-  bool lastCorrecSmoothProgress[MAX_MG_LEVELS+1] = {};
-
-  /*--- Per-level start/end RMS for the compact output summary.
-   *    [0] = initial RMS before smoothing, [1] = final RMS after smoothing.
-   *    Filled unconditionally (early-exit path and exhaustion path).
-   *    Must be passivedouble: class members survive tape resets; su2double would
-   *    carry stale AD indices referencing a cleared tape. ---*/
+  /*--- Per-level start/end RMS residual for adaptive damping. ---*/
   passivedouble lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+
+  /*--- Per-level worst step-to-step amplification seen inside a smoothing phase.
+   *    step==0 means no intra-smoother ratio was available (fewer than 2 sweeps). ---*/
+  passivedouble lastPreSmoothWorstStepRatio[MAX_MG_LEVELS+1] = {};
+  passivedouble lastPostSmoothWorstStepRatio[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPreSmoothWorstStep[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPostSmoothWorstStep[MAX_MG_LEVELS+1] = {};
+
+  /*! \brief FinestMesh observed on the previous call; 0 also serves as the sentinel forcing a
+   *  reset on the first call, since a FULL cycle starts at FinestMesh == nMGLevels > 0. */
+  unsigned short mg_ramp_last_FinestMesh = 0;
+  unsigned long mg_ramp_level_start_iter = 0; /*!< \brief InnerIter the active FMG level became active at. */
+  passivedouble mg_ramp_cfl_start = 0.0;      /*!< \brief CFL the level below handed over; 0 before a promotion. */
+  bool mg_ramp_mesh0_active = false;          /*!< \brief Whether the level-0 CFL ramp is still climbing. */
+
+  su2double mg_damp_restric_initial = -1.0; /*!< \brief MG_DAMP_RESTRICTION as configured; negative if not captured. */
+  su2double mg_damp_prolong_initial = 0.0;  /*!< \brief MG_DAMP_PROLONGATION as configured. */
+
+  /*! \brief Why the active level was last promoted, for the report message. */
+  enum class MGStartupPromote { NONE, BUDGET, CONVERGENCE, STAGNATION };
+  MGStartupPromote mg_startup_promote_reason = MGStartupPromote::NONE;
+
+  vector<passivedouble> mg_startup_conv_start; /*!< \brief Field values when the active level became active. */
+  vector<passivedouble> mg_startup_conv_prev;  /*!< \brief Field values on the previous iteration. */
+  unsigned long mg_startup_stall_count = 0;    /*!< \brief Consecutive iterations without useful reduction. */
 
 };

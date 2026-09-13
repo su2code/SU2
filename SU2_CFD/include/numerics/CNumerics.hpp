@@ -519,12 +519,20 @@ public:
    * See: Spalart, P. R., "Strategies for Turbulence Modelling and Simulation",
    * International Journal of Heat and Fluid Flow, Vol. 21, 2000, pp. 252-263
    *
+   * The QCR correction applies to the turbulent (Boussinesq) stresses only.
+   * When tau is the total (laminar + turbulent) stress tensor, which is
+   * proportional to the total viscosity, the turbulent part is recovered by
+   * scaling the correction with turb_fraction = mu_t / (mu_l + mu_t); at a
+   * no-slip wall (mu_t = 0) the correction vanishes. Pass 1 only if tau is
+   * already the turbulent stress tensor.
+   *
    * \param[in] nDim: 2D or 3D.
    * \param[in] gradvel: Velocity gradients.
    * \param[in,out] tau: Shear stress tensor.
+   * \param[in] turb_fraction: Turbulent share of the viscosity in tau.
    */
-  template <class Mat1, class Mat2>
-  FORCEINLINE static void AddQCR(size_t nDim, const Mat1& gradvel, Mat2& tau) {
+  template <class Mat1, class Mat2, class Scalar2>
+  FORCEINLINE static void AddQCR(size_t nDim, const Mat1& gradvel, Mat2& tau, Scalar2 turb_fraction) {
     using Scalar = typename std::decay<decltype(gradvel[0][0])>::type;
 
     const Scalar c_cr1 = 0.3;
@@ -553,7 +561,7 @@ public:
 
     for (size_t iDim = 0; iDim < nDim; iDim++)
       for (size_t jDim = 0; jDim < nDim; jDim++)
-        tau[iDim][jDim] -= c_cr1 * tauQCR[iDim][jDim];
+        tau[iDim][jDim] -= turb_fraction * c_cr1 * tauQCR[iDim][jDim];
   }
 
   /*!
