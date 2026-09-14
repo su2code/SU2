@@ -127,6 +127,13 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
 
           GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iVertex, iPoint);
 
+          /*--- Rotate the velocity if the relative-frame sliding plane is active on either side. ---*/
+          if (donor_config->GetBoolRelFrame_SlidingPlane() || target_config->GetBoolRelFrame_SlidingPlane()) {
+            if (donor_solution->GetnPrimVar() > 2){
+              GetDonor_Velocity_RotatingFrame(donor_config, donor_geometry, target_config, target_geometry);
+            }
+          }
+
           /*--- If in AD test recording mode, we manually adapt the tag to the target (this) zone and return to strict tag mismatch handling. ---*/
           for (auto iVar = 0u; iVar < nVar; iVar++) {
             AD::SetTagOnVariable(Donor_Variable[iVar], target_config->GetiZone());
