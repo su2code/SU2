@@ -545,6 +545,7 @@ void CPoissonSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   unsigned long iVertex, iPoint;
   su2double pressureDeviation = 0.0;
 
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -561,6 +562,7 @@ void CPoissonSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
     nodes->SetSolution_Old(iPoint,&pressureDeviation);
     Jacobian.DeleteValsRowi(iPoint, 0);
   }
+  END_SU2_OMP_FOR
 }
 
 void CPoissonSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -571,6 +573,7 @@ void CPoissonSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
   unsigned long iVertex, iPoint;
   su2double pressureDeviation = 0.0;
 
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -585,4 +588,5 @@ void CPoissonSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
     nodes->SetSolution_Old(iPoint,&pressureDeviation);
     Jacobian.DeleteValsRowi(iPoint, 0);
   }
+  END_SU2_OMP_FOR
 }
