@@ -219,7 +219,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Sizing edge mass flux array ---*/
   if (config->GetBounded_Scalar() || pressure_based)
     EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
-  
+
   /*--- Pressure based solver specific allocations ---*/
   if (pressure_based) {
 
@@ -232,7 +232,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
         EdgeMassFluxes[iEdge] += Density_Inf * Velocity_Inf[iDim] * geometry->edges->GetNormal(iEdge)[iDim];
 
     }
-    
+
     /*--- Allocate corrections and relaxation ---*/
 
     pressureCorrection.resize(nPointDomain) = su2double(0.0);
@@ -1204,7 +1204,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
   } lambdaVisc(config->GetEnergy_Equation());
 
   if (pressure_based) {
-    /* Define an object to compute the speed of sound, as the speed of sound is theoretically infinite, 
+    /* Define an object to compute the speed of sound, as the speed of sound is theoretically infinite,
     this makes no sense. However to be able to reuse the time step routine we artificially define the speed of sound
     to be zero such that a regular advective time step is computed */
     struct SoundSpeed {
@@ -1217,7 +1217,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     /*--- Now instantiate the generic implementation with the two functors above. ---*/
 
     SetTime_Step_impl(soundSpeed, lambdaVisc, geometry, solver_container, config, iMesh, Iteration);
-    
+
   } else {
     /*--- Define an object to compute the speed of sound. ---*/
     struct SoundSpeed {
@@ -2127,8 +2127,8 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
     const bool active;
     su2activematrix matrix;
 
-    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s), active(!s->pressure_based) { 
-      matrix.resize(nVar,nVar); 
+    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s), active(!s->pressure_based) {
+      matrix.resize(nVar,nVar);
     }
 
     FORCEINLINE const su2activematrix& operator() (const CConfig* config, unsigned long iPoint, su2double delta) {
@@ -2431,7 +2431,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       su2double Face_Flux = 0.0;
       if (dynamic_grid)
-        for (iDim = 0; iDim < nDim; iDim++) 
+        for (iDim = 0; iDim < nDim; iDim++)
           Face_Flux += nodes->GetDensity(iPoint)*(V_domain[iDim+1]-geometry->nodes->GetGridVel(iPoint)[iDim])*Normal[iDim];
       else
         for (iDim = 0; iDim < nDim; iDim++)
@@ -2447,7 +2447,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         LinSysRes.SetBlock_Zero(iPoint);
 
         /*--- Mark as a strong BC which is important for deciding if a velocity correction should be applied ---*/
-        
+
         nodes->SetStrongBC(iPoint);
 
         if (implicit)
@@ -2470,7 +2470,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         nodes->SetSolution(iPoint, 0, GetPressure_Inf());
         nodes->SetPressure(iPoint);
 
-        if (implicit) 
+        if (implicit)
           Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       }
@@ -2637,7 +2637,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       case INLET_TYPE::PRESSURE_INLET:
 
-        if (pressure_based) 
+        if (pressure_based)
           SU2_MPI::Error("Pressure Inlet is currently an unsupported INC_INLET_TYPE for pressure based solver.", CURRENT_FUNCTION);
 
         /*--- Retrieve the specified total pressure for the inlet. ---*/
@@ -2907,7 +2907,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       case INC_OUTLET_TYPE::MASS_FLOW_OUTLET:
 
-        if (pressure_based) 
+        if (pressure_based)
           SU2_MPI::Error("Mass Flow Outlet is currently an unsupported INC_OUTLET_TYPE for pressure based solver.", CURRENT_FUNCTION);
 
         /*--- Retrieve the specified target mass flow at the outlet. ---*/
@@ -2985,7 +2985,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     if (pressure_based) {
       su2double ProjVelocity = 0.0;
       if (dynamic_grid)
-        for (iDim = 0; iDim < nDim; iDim++) 
+        for (iDim = 0; iDim < nDim; iDim++)
           ProjVelocity += (V_domain[iDim+prim_idx.Velocity()] - geometry->nodes->GetGridVel(iPoint)[iDim]) * Normal[iDim];
       else
         for (iDim = 0; iDim < nDim; iDim++)
@@ -3676,7 +3676,7 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
 
     Normal = geometry->edges->GetNormal(iEdge);
-    
+
     if (dynamic_grid) {
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
       GridVel_j = geometry->nodes->GetGridVel(jPoint);
@@ -3693,14 +3693,14 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
     }
 
     /*--- 1. Interpolate the pressure gradient based on node values ---*/
-    
+
     for (iDim = 0; iDim < nDim; iDim++)
       GradPressure_avg[iDim] = 0.5 * (nodes->GetGradient_Primitive(iPoint,prim_idx.Pressure(),iDim) + nodes->GetGradient_Primitive(jPoint,prim_idx.Pressure(),iDim));
 
     /*--- 2. Compute pressure gradient at the face ---*/
 
     CorrectPressureGradient(GradPressure_f, GradPressure_avg, nodes->GetPressure(iPoint), nodes->GetPressure(jPoint), Edge_Vector, dist_ij_2);
-    
+
     /*--- Linearly interpolated coefficient. A point under a strong velocity BC has no momentum
     coefficient, so the edge uses that of its other node. ---*/
 
@@ -3715,9 +3715,9 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
 
       /*--- Face average mass flux. ---*/
 
-      su2double meanMassFlux = 0.5 * (nodes->GetDensity(iPoint) * nodes->GetVelocity(iPoint,iDim) 
+      su2double meanMassFlux = 0.5 * (nodes->GetDensity(iPoint) * nodes->GetVelocity(iPoint,iDim)
                                     + nodes->GetDensity(jPoint) * nodes->GetVelocity(jPoint,iDim));
-      
+
       if (dynamic_grid) {
         meanMassFlux -= 0.5 * (nodes->GetDensity(iPoint) * GridVel_i[iDim] + nodes->GetDensity(jPoint) * GridVel_j[iDim]);
       }
@@ -3734,6 +3734,7 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
 
     }
   }
+  END_SU2_OMP_FOR
 }
 
 
@@ -3804,7 +3805,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     }
   }
   END_SU2_OMP_FOR
-  
+
   /*--- Compute the edge corrections based on the average of the momentum coefficients and the average of the p' gradient. ---*/
 
   su2double* Coord_i,* Coord_j;
@@ -3844,11 +3845,11 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     /*--- 2. Compute p' at the face ---*/
 
     CorrectPressureGradient(GradPressure_f, GradPressure_avg, poisson_nodes->GetSolution(iPoint, 0), poisson_nodes->GetSolution(jPoint, 0), Edge_Vector, dist_ij_2);
-    
+
     /*--- Initialize projected velocity and density ---*/
 
     su2double ProjMassFluxCorrection = 0.0;
-    
+
     for (iDim = 0; iDim < nDim; iDim++) {
 
       su2double MassFluxCorrection =
@@ -3901,7 +3902,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
             break;
           }
           //TODO: other outlet types
-          default: 
+          default:
             SU2_MPI::Error("The requested outflow boundary condition has not yet been implemented for the pressure based poisson solver", CURRENT_FUNCTION);
             break;
         }
@@ -3945,7 +3946,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
         END_SU2_OMP_FOR
         break;
 
-      default: 
+      default:
         SU2_MPI::Error("The requested boundary condition has not yet been implemented for the pressure based poisson solver", CURRENT_FUNCTION);
         break;
     }
