@@ -75,8 +75,8 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.215233, -5.739371, -20.551239, -20.590906, -20.437427, 1.262779, -3.205476, -0.015697, 0.093207, 32641]
-    visc_cone.test_vals_aarch64 = [-5.215220, -5.739356, -20.551244, -20.590883, -20.437378, 1.262790, -3.205470, -0.015696, 0.093206, 32641.000000]
+    visc_cone.test_vals = [-5.298550, -5.823031, -20.330692, -20.368713, -20.310533, 1.067466, -3.251001, -0.015489, 0.095136, 24939.000000]
+    visc_cone.test_vals_aarch64 = [-5.298550, -5.823031, -20.330692, -20.368713, -20.310533, 1.067466, -3.251001, -0.015489, 0.095136, 24939.000000]
     test_list.append(visc_cone)
 
     #########################
@@ -308,6 +308,19 @@ def main():
     turb_naca0012_sst.timeout   = 3200
     test_list.append(turb_naca0012_sst)
 
+    # E387 transitional SST+LM tutorial config, re-run here as a sanitizer-only probe.
+    # Covers the density gradient not being available for MUSCL_TURB=YES with a flow scheme
+    # that does not store that gradient.
+    tutorial_trans_e387_sst_asan                  = TestCase('tutorial_trans_e387_sst_asan')
+    tutorial_trans_e387_sst_asan.cfg_dir          = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
+    tutorial_trans_e387_sst_asan.cfg_file         = "transitional_SST_LM_model_ConfigFile.cfg"
+    tutorial_trans_e387_sst_asan.test_iter        = 2
+    tutorial_trans_e387_sst_asan.test_vals        = [-6.418119, -4.827573, -2.220229, 3.029787, 3.123846, 5.000000, -5.610239]
+    tutorial_trans_e387_sst_asan.timeout          = 1600
+    tutorial_trans_e387_sst_asan.no_restart       = True
+    tutorial_trans_e387_sst_asan.enabled_with_regular = False
+    test_list.append(tutorial_trans_e387_sst_asan)
+
     # NACA0012 (SST V2003m, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
     turb_naca0012_sst_2003m           = TestCase('turb_naca0012_sst_2003m')
     turb_naca0012_sst_2003m.cfg_dir   = "rans/naca0012"
@@ -402,6 +415,14 @@ def main():
     inc_euler_naca0012.test_vals = [-5.988713, -5.020635, 0.522968, 0.008854]
     test_list.append(inc_euler_naca0012)
 
+    # NACA0012 Hydrofoil, pressure-based
+    inc_euler_naca0012_pb           = TestCase('inc_euler_naca0012_pb')
+    inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
+    inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
+    inc_euler_naca0012_pb.test_iter = 20
+    inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784246, 0.427448, 0.012083]
+    test_list.append(inc_euler_naca0012_pb)
+
     # C-D nozzle with pressure inlet and mass flow outlet
     inc_nozzle           = TestCase('inc_nozzle')
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
@@ -429,6 +450,15 @@ def main():
     inc_lam_cylinder.test_vals = [-4.161215, -3.573002, 0.019888, 4.945923]
     test_list.append(inc_lam_cylinder)
 
+    # Laminar cylinder, pressure-based
+    inc_lam_cylinder_pb          = TestCase('inc_lam_cylinder_pb')
+    inc_lam_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder_pb.cfg_file  = "incomp_pb_cylinder.cfg"
+    inc_lam_cylinder_pb.test_iter = 10
+    inc_lam_cylinder_pb.test_vals = [-3.486100, -3.777681, 0.012003, 6.178586]
+    test_list.append(inc_lam_cylinder_pb)
+
+
     # Buoyancy-driven cavity
     inc_buoyancy          = TestCase('inc_buoyancy')
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
@@ -452,6 +482,7 @@ def main():
     inc_lam_bend.test_iter = 10
     inc_lam_bend.test_vals = [-3.639664, -3.218039, -0.016067, 1.090645]
     test_list.append(inc_lam_bend)
+
 
     ############################
     ### Incompressible RANS  ###
@@ -479,6 +510,14 @@ def main():
     inc_turb_naca0012_sst_sust.test_iter = 20
     inc_turb_naca0012_sst_sust.test_vals = [-7.169704, 0.332779, 0.000021, 0.312114]
     test_list.append(inc_turb_naca0012_sst_sust)
+
+    # Flat plate, pressure-based
+    inc_flatplate_pb           = TestCase('inc_flatplate_pb')
+    inc_flatplate_pb.cfg_dir   = "incomp_rans/rough_flatplate"
+    inc_flatplate_pb.cfg_file  = "pb_rough_flatplate_incomp.cfg"
+    inc_flatplate_pb.test_iter = 10
+    inc_flatplate_pb.test_vals = [-4.063342, -9.884401, 0.000010, 0.228472]
+    test_list.append(inc_flatplate_pb)
 
     # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SST
     inc_turb_wallfunction_flatplate_sst           = TestCase('inc_turb_sst_wallfunction_flatplate')

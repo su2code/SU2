@@ -321,6 +321,7 @@ protected:
   vector<su2double> oldFunc,     /*!< \brief Old value of the coefficient. */
   newFunc;                       /*!< \brief Current value of the coefficient. */
   bool convergence;              /*!< \brief To indicate if the solver has converged or not. */
+  bool convergenceInterrupted;   /*!< \brief To indicate that the exit was forced by an interrupt signal instead of the convergence criteria. */
   su2double initResidual;        /*!< \brief Initial value of the residual to evaluate the convergence level. */
   vector<string> convFields;     /*!< \brief Name of the field to be monitored for convergence. */
   unsigned long convergenceStartIter = 0; /*!< \brief Iteration the convergence history is counted from. */
@@ -426,6 +427,15 @@ public:
    */
   void SetMultizoneHistoryOutput(COutput** output, CConfig **config, CConfig *driver_config,
                                   unsigned long TimeIter, unsigned long OuterIter);
+
+  /*!
+   * \brief Evaluates objective functions in the (multiphysics) discrete adjoint solver.
+   * \note Uses the same subroutines for objective function evaluation as SetHistoryOutput, but omits unnecessary evaluations (e.g. residuals, convergence data) to avoid AD complications.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetObjectiveFunctionValues(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief Sets the volume output filename
@@ -587,6 +597,12 @@ public:
    * \return Boolean indicating whether the problem is converged.
    */
   bool GetConvergence() const {return convergence;}
+
+  /*!
+   * \brief Get whether the exit was forced by an interrupt signal (e.g. SIGTERM) instead of the convergence criteria.
+   * \return Boolean indicating whether an interrupt signal forced the exit.
+   */
+  bool GetConvergenceInterrupted() const {return convergenceInterrupted;}
 
   /*!
    * \brief Set the value of the convergence flag.
@@ -995,6 +1011,17 @@ protected:
    * \param[in] solver - The container holding all solution data.
    */
   inline virtual void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {}
+
+  /*!
+   * \brief Recompute history output field values that can be used as objective functions in the (multiphysics) discrete adjoint solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   */
+  inline virtual void LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) {
+    /*--- Unless LoadCustomAndComboObjectiveFunctions is implemented in a derived output class, we use LoadHistoryData (not ideal for AD). ---*/
+    LoadHistoryData(config, geometry, solver);
+  }
 
   /*!
    * \brief Load the multizone history output field values
