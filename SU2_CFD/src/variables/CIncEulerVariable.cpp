@@ -71,6 +71,12 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
     if (config->GetStreamwise_Periodic_Temperature())
       Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
   }
+
+  /*--- Allocate strong BC vector for pressure-based solver ---*/
+
+  if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
+    strongBC.resize(nPoint) = false;
+  }
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
