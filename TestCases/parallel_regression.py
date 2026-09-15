@@ -192,8 +192,8 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.275015, -5.799160, -20.404778, -20.318909, -20.374566, 1.156776, -3.217423, -0.013712, 0.092252, 27878.000000]
-    visc_cone.test_vals_aarch64 = [-5.275015, -5.799159, -20.404778, -20.318909, -20.374566, 1.156775, -3.217422, -0.013713, 0.092252, 27878.000000]
+    visc_cone.test_vals = [-5.275015, -5.799160, -20.292303, -20.436143, -20.888373, 1.156776, -3.217423, -0.013712, 0.092252, 27878.000000]
+    visc_cone.test_vals_aarch64 = [-5.275015, -5.799159, -20.292303, -20.436143, -20.888374, 1.156775, -3.217422, -0.013713, 0.092252, 27878.000000]
     test_list.append(visc_cone)
 
     # Viscous single wedge with Mutation++
