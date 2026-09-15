@@ -652,9 +652,9 @@ def main():
     test_list.append(inc_euler_naca0012)
 
     # NACA0012 Hydrofoil
-    inc_euler_naca0012_pb           = TestCase('inc_euler_naca0012_pb')
-    inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
-    inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
+    inc_euler_naca0012_pb = TestCase('inc_euler_naca0012_pb')
+    inc_euler_naca0012_pb.cfg_dir = "incomp_euler/naca0012"
+    inc_euler_naca0012_pb.cfg_file = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
     inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784247, 0.427448, 0.012083]
     test_list.append(inc_euler_naca0012_pb)
@@ -688,9 +688,9 @@ def main():
     test_list.append(inc_lam_cylinder)
 
     # Laminar cylinder, pressure-based
-    inc_lam_cylinder_pb          = TestCase('inc_lam_cylinder_pb')
-    inc_lam_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
-    inc_lam_cylinder_pb.cfg_file  = "incomp_pb_cylinder.cfg"
+    inc_lam_cylinder_pb = TestCase('inc_lam_cylinder_pb')
+    inc_lam_cylinder_pb.cfg_dir = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder_pb.cfg_file = "incomp_pb_cylinder.cfg"
     inc_lam_cylinder_pb.test_iter = 10
     inc_lam_cylinder_pb.test_vals = [-3.486113, -3.777688, 0.012054, 6.178573]
     test_list.append(inc_lam_cylinder_pb)
@@ -699,9 +699,9 @@ def main():
     # equation and variable density. Convergence is genuine but slow (needs ~40k iterations
     # for rms[h] to reach a low residual); this only checks a short trajectory guard, matching
     # the pattern used for other hard-to-converge cases in this suite.
-    inc_poly_cylinder_pb          = TestCase('inc_poly_cylinder_pb')
-    inc_poly_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
-    inc_poly_cylinder_pb.cfg_file  = "pb_poly_cylinder.cfg"
+    inc_poly_cylinder_pb = TestCase('inc_poly_cylinder_pb')
+    inc_poly_cylinder_pb.cfg_dir = "incomp_navierstokes/cylinder"
+    inc_poly_cylinder_pb.cfg_file = "pb_poly_cylinder.cfg"
     inc_poly_cylinder_pb.test_iter = 20
     inc_poly_cylinder_pb.test_vals = [-13.483272, 0.541350, 0.005972, 17.020220, -8927.600000]
     test_list.append(inc_poly_cylinder_pb)
@@ -715,9 +715,9 @@ def main():
     test_list.append(inc_lam_sphere)
 
     # Laminar sphere, Re=1, pressure-based. Only 3D pressure-based case in the regression suite.
-    inc_lam_sphere_pb          = TestCase('inc_lam_sphere_pb')
-    inc_lam_sphere_pb.cfg_dir   = "incomp_navierstokes/sphere"
-    inc_lam_sphere_pb.cfg_file  = "pb_sphere.cfg"
+    inc_lam_sphere_pb = TestCase('inc_lam_sphere_pb')
+    inc_lam_sphere_pb.cfg_dir = "incomp_navierstokes/sphere"
+    inc_lam_sphere_pb.cfg_file = "pb_sphere.cfg"
     inc_lam_sphere_pb.test_iter = 9
     inc_lam_sphere_pb.test_vals = [-6.092084, -2.305040, -2.479072, -2.548968, 0.191798, 170.793203, -6.000632]
     test_list.append(inc_lam_sphere_pb)
@@ -725,9 +725,9 @@ def main():
     # Laminar sphere, Re=1, pressure-based, automatic relaxation factors. The only case
     # in the suite that exercises USE_AUTOMATIC_RELAXATION_FACTORS, and 3D since the alpha_p
     # bug this guards against is invisible in 2D (it sums the wrong set of Jacobian diagonals).
-    inc_lam_sphere_pb_urf          = TestCase('inc_lam_sphere_pb_urf')
-    inc_lam_sphere_pb_urf.cfg_dir   = "incomp_navierstokes/sphere"
-    inc_lam_sphere_pb_urf.cfg_file  = "pb_sphere_urf.cfg"
+    inc_lam_sphere_pb_urf = TestCase('inc_lam_sphere_pb_urf')
+    inc_lam_sphere_pb_urf.cfg_dir = "incomp_navierstokes/sphere"
+    inc_lam_sphere_pb_urf.cfg_file = "pb_sphere_urf.cfg"
     inc_lam_sphere_pb_urf.test_iter = 9
     inc_lam_sphere_pb_urf.test_vals = [-4.747391, -2.239844, -2.380839, -1.685462, 0.237593, 206.027273, -6.331275]
     test_list.append(inc_lam_sphere_pb_urf)
@@ -757,9 +757,9 @@ def main():
     test_list.append(inc_lam_bend)
 
     # X-coarse laminar bend as a mixed element CGNS test, pressure-based
-    inc_lam_bend_pb          = TestCase('inc_lam_bend_pb')
-    inc_lam_bend_pb.cfg_dir   = "incomp_navierstokes/bend"
-    inc_lam_bend_pb.cfg_file  = "pb_lam_bend.cfg"
+    inc_lam_bend_pb = TestCase('inc_lam_bend_pb')
+    inc_lam_bend_pb.cfg_dir = "incomp_navierstokes/bend"
+    inc_lam_bend_pb.cfg_file = "pb_lam_bend.cfg"
     inc_lam_bend_pb.test_iter = 10
     inc_lam_bend_pb.test_vals = [-3.824468, -3.345335, -0.012351, 1.685090]
     test_list.append(inc_lam_bend_pb)
@@ -801,9 +801,9 @@ def main():
     test_list.append(inc_turb_naca0012_sst_sust)
 
     # Flat plate, pressure-based
-    inc_flatplate_pb           = TestCase('inc_flatplate_pb')
-    inc_flatplate_pb.cfg_dir   = "incomp_rans/rough_flatplate"
-    inc_flatplate_pb.cfg_file  = "pb_rough_flatplate_incomp.cfg"
+    inc_flatplate_pb = TestCase('inc_flatplate_pb')
+    inc_flatplate_pb.cfg_dir = "incomp_rans/rough_flatplate"
+    inc_flatplate_pb.cfg_file = "pb_rough_flatplate_incomp.cfg"
     inc_flatplate_pb.test_iter = 10
     inc_flatplate_pb.test_vals = [-4.063342, -9.884401, 0.000010, 0.228472]
     test_list.append(inc_flatplate_pb)
