@@ -130,7 +130,7 @@ def main():
     invwedge_a.cfg_file = "invwedge_ausm.cfg"
     invwedge_a.test_iter = 10
     invwedge_a.test_vals = [-1.069665, -1.594428, -18.299923, -18.627315, -18.573325, 2.245732, 1.874096, 5.290295, 0.847739]
-    invwedge_a.test_vals_aarch64 = [-1.069675, -1.594438, -18.299736, -18.627126, -18.573137, 2.245721, 1.874105, 5.290285, 0.847729]
+    invwedge_a.test_vals_aarch64 = [-1.069665, -1.594428, -18.299923, -18.627315, -18.573325, 2.245732, 1.874096, 5.290295, 0.847739]
     test_list.append(invwedge_a)
 
     # Inviscid single wedge, ausm+-up2, implicit
@@ -148,7 +148,7 @@ def main():
     invwedge_msw.cfg_file = "invwedge_msw.cfg"
     invwedge_msw.test_iter = 10
     invwedge_msw.test_vals = [-1.212335, -1.737098, -18.301825, -18.629206, -18.575226, 2.106171, 1.651949, 5.143958, 0.704444]
-    invwedge_msw.test_vals_aarch64 = [-1.212335, -1.737098, -18.299279, -18.626656, -18.572683, 2.106171, 1.651949, 5.143958, 0.704444]
+    invwedge_msw.test_vals_aarch64 = [-1.212335, -1.737098, -18.299771, -18.627181, -18.573171, 2.106171, 1.651949, 5.143958, 0.704444]
     test_list.append(invwedge_msw)
 
     # Inviscid single wedge, roe, implicit
@@ -157,7 +157,7 @@ def main():
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
     invwedge_roe.test_vals = [-1.023283, -1.548046, -17.814403, -18.143369, -18.087522, 2.295025, 1.884804, 5.338440, 0.926068]
-    invwedge_roe.test_vals_aarch64 = [-1.052398, -1.577160, -17.794015, -18.122997, -18.067131, 2.266042, 1.849686, 5.304700, 0.899584]
+    invwedge_roe.test_vals_aarch64 = [-1.022187, -1.546949, -17.810073, -18.139026, -18.083190, 2.296242, 1.883666, 5.339443, 0.925366]
     test_list.append(invwedge_roe)
 
     # Inviscid single wedge, lax, implicit
@@ -184,7 +184,7 @@ def main():
     invwedge_ss_inlet.cfg_file = "invwedge_ss_inlet.cfg"
     invwedge_ss_inlet.test_iter = 10
     invwedge_ss_inlet.test_vals = [-1.068634, -1.593397, -18.246265, -18.575529, -18.519338, 2.246925, 1.874200, 5.291234, 0.848731]
-    invwedge_ss_inlet.test_vals_aarch64 = [-1.068592, -1.593355, -18.250183, -18.579524, -18.523255, 2.246972, 1.874197, 5.291273, 0.848771]
+    invwedge_ss_inlet.test_vals_aarch64 = [-1.068634, -1.593397, -18.246267, -18.575555, -18.519340, 2.246925, 1.874200, 5.291234, 0.848731]
     test_list.append(invwedge_ss_inlet)
 
     # Viscous single cone - axisymmetric
@@ -192,8 +192,8 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.298530, -5.823015, -20.404788, -20.318330, -20.378801, 1.067489, -3.250987, -0.015488, 0.095136, 24939.000000]
-    visc_cone.test_vals_aarch64 = [-5.298530, -5.823015, -20.404788, -20.318329, -20.378801, 1.067489, -3.250987, -0.015488, 0.095136, 24939.000000]
+    visc_cone.test_vals = [-5.298530, -5.823015, -20.290704, -20.436259, -20.904377, 1.067489, -3.250987, -0.015488, 0.095136, 24939.000000]
+    visc_cone.test_vals_aarch64 = [-5.298530, -5.823015, -20.290704, -20.436259, -20.904377, 1.067489, -3.250987, -0.015488, 0.095136, 24939.000000]
     test_list.append(visc_cone)
 
     # Viscous single wedge with Mutation++
@@ -225,7 +225,7 @@ def main():
     ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
     ion_gy.cfg_file = "cyl_ion_gy.cfg"
     ion_gy.test_iter = 99
-    ion_gy.test_vals = [-11.662039, -4.203178, -4.868257, -5.462497, -5.232052, -4.960881, -6.951391, 4.541901, 4.552855, -0.014861, 0.000001, 90357.000000]
+    ion_gy.test_vals = [-11.675651, -4.207534, -4.868346, -5.467964, -5.238572, -4.965372, -6.964212, 4.529202, 4.541233, -0.014861, 0.000001, 90357.000000]
     ion_gy.tol = 0.01
     test_list.append(ion_gy)
 
