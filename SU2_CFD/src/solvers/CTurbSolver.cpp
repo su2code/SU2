@@ -33,8 +33,8 @@
 /*--- Explicit instantiation of the parent class of CTurbSolver. ---*/
 template class CScalarSolver<CTurbVariable>;
 
-CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative)
-  : CScalarSolver<CTurbVariable>(geometry, config, conservative, config->GetBounded_Turb()) {
+CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, const CSolver* flow_solver, bool conservative)
+  : CScalarSolver<CTurbVariable>(geometry, config, flow_solver, conservative, config->GetBounded_Turb()) {
   SU2_ZONE_SCOPED
   /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
   SetImplicitPeriodic(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);

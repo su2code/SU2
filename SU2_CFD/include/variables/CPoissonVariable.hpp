@@ -58,7 +58,14 @@ public:
    * \return Value of the momentum coefficient of the point.
    */
   inline su2double GetMomCoeff(unsigned long iPoint) final { return MomCoeff(iPoint);}
-    
+
+  /*!
+   * \brief Get the momentum coefficients of all points, the diffusion coefficients of the
+   *        equation (see CScalarFlux_Poisson).
+   */
+  inline const VectorType& GetMomCoeff() const { return MomCoeff; }
+
+
   /*!
    * \brief Set the momentum coefficient of the point.
    */
