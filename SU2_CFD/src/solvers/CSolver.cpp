@@ -370,10 +370,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   auto *Diff      = new su2double[nVar];
   auto *Und_Lapl  = new su2double[nVar];
-  auto *Sol_Min   = new su2double[nPrimVarGrad];
-  auto *Sol_Max   = new su2double[nPrimVarGrad];
-  auto *rotPrim_i = new su2double[nPrimVar];
-  auto *rotPrim_j = new su2double[nPrimVar];
+  auto *Sol_Min   = new su2double[std::max(nVar, nPrimVarGrad)];
+  auto *Sol_Max   = new su2double[std::max(nVar, nPrimVarGrad)];
+  auto *rotPrim_i = new su2double[std::max(nVar, nPrimVar)];
+  auto *rotPrim_j = new su2double[std::max(nVar, nPrimVar)];
 
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
   const su2double *Coord_i, *Coord_j;
@@ -1399,6 +1399,18 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
+    case MPI_QUANTITIES::MOM_COEFF:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      break;
+    case MPI_QUANTITIES::MOM_CORRECTION:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      break;
+    case MPI_QUANTITIES::HBYA_CORRECTION:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -1556,6 +1568,17 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n1(iPoint, iVar);
             break;
+          case MPI_QUANTITIES::MOM_COEFF:
+            bufDSend[buf_offset] = base_nodes->GetMomCoeff(iPoint);
+            break;
+          case MPI_QUANTITIES::MOM_CORRECTION:
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = base_nodes->GetMomentumCorrection(iPoint, iDim);
+            break; 
+          case MPI_QUANTITIES::HBYA_CORRECTION:
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = base_nodes->GetHbyACorrection(iPoint, iDim);
+            break; 
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);
@@ -1711,6 +1734,17 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case MPI_QUANTITIES::SOLUTION_TIME_N1:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n1(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case MPI_QUANTITIES::MOM_COEFF:
+            base_nodes->SetMomCoeff(iPoint, bufDRecv[buf_offset]);
+            break;
+          case MPI_QUANTITIES::MOM_CORRECTION:
+            for (iDim = 0; iDim < nDim; iDim++)
+              base_nodes->SetMomentumCorrection(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case MPI_QUANTITIES::HBYA_CORRECTION:
+            for (iDim = 0; iDim < nDim; iDim++)
+              base_nodes->SetHbyACorrection(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",

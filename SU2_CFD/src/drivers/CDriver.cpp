@@ -60,6 +60,7 @@
 #include "../../include/numerics/flow/convection/hllc.hpp"
 #include "../../include/numerics/flow/convection/ausm_slau.hpp"
 #include "../../include/numerics/flow/convection/centered.hpp"
+#include "../../include/numerics/flow/convection/pressure_based.hpp"
 #include "../../include/numerics/flow/flow_diffusion.hpp"
 #include "../../include/numerics/flow/flow_sources.hpp"
 #include "../../include/numerics/NEMO/convection/roe.hpp"
@@ -1363,6 +1364,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   bool compressible = false;
   bool incompressible = false;
   bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) || (config->GetKind_FluidModel() == IDEAL_GAS);
+  bool pressure_based = (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED);
   bool roe_low_dissipation = (config->GetKind_RoeLowDiss() != NO_ROELOWDISS);
 
   /*--- Initialize some useful booleans ---*/
@@ -1475,7 +1477,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   if (fem_ns)       nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
 
   if (fem)          nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
-
+  
   if (config->AddRadiation()) nVar_Rad = solver[MESH_0][RAD_SOL]->GetnVar();
 
   /*--- Number of variables for adjoint problem ---*/
@@ -1563,22 +1565,36 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
         }
         if (incompressible) {
-          /*--- Incompressible flow, use preconditioning method ---*/
-          switch (config->GetKind_Centered_Flow()) {
-            case CENTERED::LAX : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentLaxInc_Flow(nDim, nVar_Flow, config); break;
-            case CENTERED::LD2 :
-            case CENTERED::JST : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJSTInc_Flow(nDim, nVar_Flow, config); break;
-            default:
-              SU2_MPI::Error("Invalid centered scheme or not implemented.\n Currently, only JST and LAX-FRIEDRICH are available for incompressible flows.", CURRENT_FUNCTION);
-              break;
+          if (!pressure_based) {
+            /*--- Incompressible flow, use preconditioning method ---*/
+            switch (config->GetKind_Centered_Flow()) {
+              case CENTERED::LAX : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentLaxInc_Flow(nDim, nVar_Flow, config); break;
+              case CENTERED::LD2 :
+              case CENTERED::JST : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJSTInc_Flow(nDim, nVar_Flow, config); break;
+              default:
+                SU2_MPI::Error("Invalid centered scheme or not implemented.\n Currently, only JST and LAX-FRIEDRICH are available for density based incompressible flows.", CURRENT_FUNCTION);
+                break;
+            } 
+            for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+              numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentLaxInc_Flow(nDim, nVar_Flow, config);
+            /*--- Definition of the boundary condition method ---*/
+            for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+              numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwFDSInc_Flow(nDim, nVar_Flow, config);
+
+          } else {
+            /*--- Incompressible flow, use pressure-based method ---*/
+            switch (config->GetKind_Centered_Flow()) {
+              case CENTERED::CDS :  numerics[MESH_0][FLOW_SOL][conv_term] = new CPBConvection_Central(nDim, nVar_Flow, config);  break; 
+              default:
+                SU2_MPI::Error("Invalid centered scheme or not implemented.\n Currently, only CDS is available for pressure based incompressible flows.", CURRENT_FUNCTION);
+
+            }
+             for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+              numerics[iMGlevel][FLOW_SOL][conv_term] = new CPBConvection_Central(nDim, nVar_Flow, config);
+            /*--- Definition of the boundary condition method ---*/
+            for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+              numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CPBConvection_Upwind(nDim, nVar_Flow, config);
           }
-          for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentLaxInc_Flow(nDim, nVar_Flow, config);
-
-          /*--- Definition of the boundary condition method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwFDSInc_Flow(nDim, nVar_Flow, config);
-
         }
         break;
       case SPACE_UPWIND :
@@ -1685,17 +1701,32 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
         }
         if (incompressible) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          switch (config->GetKind_Upwind_Flow()) {
-            case UPWIND::FDS:
-              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwFDSInc_Flow(nDim, nVar_Flow, config);
-                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwFDSInc_Flow(nDim, nVar_Flow, config);
-              }
-              break;
-            default:
-              SU2_MPI::Error("Invalid upwind scheme or not implemented.\n Currently, only FDS is available for incompressible flows.", CURRENT_FUNCTION);
-              break;
+          if (!pressure_based) {
+            /*--- Incompressible flow, use artificial compressibility method ---*/
+            switch (config->GetKind_Upwind_Flow()) {
+              case UPWIND::FDS:
+                for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                  numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwFDSInc_Flow(nDim, nVar_Flow, config);
+                  numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwFDSInc_Flow(nDim, nVar_Flow, config);
+                }
+                break;
+              default:
+                SU2_MPI::Error("Invalid upwind scheme or not implemented.\n Currently, only FDS is available for density based incompressible flows.", CURRENT_FUNCTION);
+                break;
+            }
+          } else {
+            /*--- Incompressible flow, use pressure based method ---*/
+            switch (config->GetKind_Upwind_Flow()) {
+              case UPWIND::UDS:
+                for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                  numerics[iMGlevel][FLOW_SOL][conv_term] = new CPBConvection_Upwind(nDim, nVar_Flow, config);
+                  numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CPBConvection_Upwind(nDim, nVar_Flow, config);
+                }
+                break;
+              default:
+                SU2_MPI::Error("Invalid upwind scheme or not implemented.\n Currently, only UDS is available for pressure based incompressible flows.", CURRENT_FUNCTION);
+                break;
+            }
           }
         }
         break;
@@ -1988,6 +2019,10 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         break;
     }
   }
+
+  /*--- The pressure correction (Poisson) equation drives its own CScalarFlux_Poisson edge
+   * kernel (see CPoissonSolver) and imposes its boundaries strongly, so no numerics are set
+   * here for POISSON_SOL. ---*/
 
   /*--- Solver definition for the radiation model problem ---*/
 

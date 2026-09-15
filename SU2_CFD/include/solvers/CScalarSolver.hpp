@@ -432,7 +432,7 @@ class CScalarSolver : public CSolver {
    *            has no flow to read (the heat equation on a solid zone).
    */
   CScalarSolver(CGeometry* geometry, CConfig* config, const CSolver* flow_solver, bool conservative,
-                bool bounded_scalar);
+                bool bounded_scalar, LINEAR_SOLVER_MODE linear_solver_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*!
    * \brief Impose the Far Field boundary condition.
@@ -582,7 +582,7 @@ class CScalarSolver : public CSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
+  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) override;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.

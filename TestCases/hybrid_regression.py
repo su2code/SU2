@@ -363,6 +363,41 @@ def main():
     inc_euler_naca0012.test_vals = [-5.858104, -4.937295, 0.519817, 0.008958]
     test_list.append(inc_euler_naca0012)
 
+    # NACA0012 Hydrofoil, pressure-based. Exercises the OpenMP path of the Poisson
+    # solver's boundary flux corrections (inlet, far-field, pressure outlet).
+    inc_euler_naca0012_pb           = TestCase('inc_euler_naca0012_pb')
+    inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
+    inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
+    inc_euler_naca0012_pb.test_iter = 20
+    inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784246, 0.427448, 0.012083]
+    test_list.append(inc_euler_naca0012_pb)
+
+    # Laminar cylinder, pressure-based. Viscous counterpart of the hydrofoil above, so the
+    # threaded momentum and Rhie-Chow stages run with wall markers present.
+    inc_lam_cylinder_pb          = TestCase('inc_lam_cylinder_pb')
+    inc_lam_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder_pb.cfg_file  = "incomp_pb_cylinder.cfg"
+    inc_lam_cylinder_pb.test_iter = 10
+    inc_lam_cylinder_pb.test_vals = [-3.486075, -3.777632, 0.012229, 6.178719]
+    test_list.append(inc_lam_cylinder_pb)
+
+    # Laminar sphere, pressure-based. The only 3D pressure-based case, and the one where the
+    # alpha_p reduction sums over a different set of Jacobian diagonals per thread.
+    inc_lam_sphere_pb          = TestCase('inc_lam_sphere_pb')
+    inc_lam_sphere_pb.cfg_dir   = "incomp_navierstokes/sphere"
+    inc_lam_sphere_pb.cfg_file  = "pb_sphere.cfg"
+    inc_lam_sphere_pb.test_iter = 9
+    inc_lam_sphere_pb.test_vals = [-6.092084, -2.305039, -2.479072, -2.548968, 0.191798, 170.793204, -6.134920]
+    test_list.append(inc_lam_sphere_pb)
+
+    # Heated cylinder, pressure-based, coupled energy equation and variable density.
+    inc_poly_cylinder_pb          = TestCase('inc_poly_cylinder_pb')
+    inc_poly_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_poly_cylinder_pb.cfg_file  = "pb_poly_cylinder.cfg"
+    inc_poly_cylinder_pb.test_iter = 20
+    inc_poly_cylinder_pb.test_vals = [-13.483266, 0.541350, 0.005972, 17.020220, -8927.600000]
+    test_list.append(inc_poly_cylinder_pb)
+
     # C-D nozzle with pressure inlet and mass flow outlet
     inc_nozzle           = TestCase('inc_nozzle')
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"

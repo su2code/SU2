@@ -31,8 +31,9 @@
 
 template <class VariableType>
 CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, const CSolver* flow_solver,
-                                           bool conservative, bool bounded_scalar)
-    : CSolver(), Conservative(conservative), BoundedScalar(bounded_scalar),
+                                           bool conservative, bool bounded_scalar,
+                                           LINEAR_SOLVER_MODE linear_solver_mode)
+    : CSolver(linear_solver_mode), Conservative(conservative), BoundedScalar(bounded_scalar),
       prim_idx(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
                config->GetNEMOProblem(), geometry->GetnDim(), config->GetnSpecies()) {
   SU2_ZONE_SCOPED
