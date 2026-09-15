@@ -11,6 +11,7 @@ option('enable-mkl', type : 'boolean', value : false, description: 'enable Intel
 option('mkl_root', type : 'string', value : '/opt/intel/mkl', description: 'root of Intel-MKL installation (only for non-intel compilers)')
 option('enable-openblas', type : 'boolean', value : false, description: 'enable BLAS and LAPACK support via OpenBLAS')
 option('enable-cuda', type : 'boolean', value : false, description: 'enable GPU acceleration using CUDA')
+option('cuda-arch', type : 'string', value : 'auto', description: 'CUDA compute capability to generate code for, "auto" detects the GPU in this machine, otherwise passed to nvcc verbatim (e.g. sm_89, native, all-major)')
 option('blas-name', type : 'string', value : 'openblas', description: 'name of the BLAS/LAPACK dependency')
 option('enable-pastix', type : 'boolean', value : false, description: 'enable PaStiX support')
 option('custom-mpi',  type : 'boolean', value : false, description: 'enable MPI assuming the compiler and/or env vars give the correct include dirs and linker args.')

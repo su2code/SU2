@@ -52,8 +52,11 @@ FORCEINLINE void RegularizePivot(ScalarType& pivot, unsigned long row, unsigned 
 /*--- Common failure path for a device dispatch that is not available in this build/scalar type
  * combination, called with CURRENT_FUNCTION so the error names the right caller. ---*/
 void GPUNotAvailable(const char* caller) {
-#ifdef SU2_ENABLE_CUDA_KERNELS
+#if defined(SU2_ENABLE_CUDA_KERNELS)
   SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", caller);
+#elif defined(HAVE_CUDA)
+  /*--- AD build, the kernels are compiled out; normally rejected by CConfig::SetPostprocessing. ---*/
+  SU2_MPI::Error("GPU acceleration is not available in the AD and direct differentiation solvers.", caller);
 #else
   SU2_MPI::Error(
       "ENABLE_CUDA is set to YES but SU2 was not compiled with CUDA support; "
@@ -180,7 +183,8 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar,
                                         unsigned short neqn, bool EdgeConnect, CGeometry* geometry,
-                                        const CConfig* config, bool needTranspPtr, bool grad_mode, bool allow_quant) {
+                                        const CConfig* config, bool needTranspPtr, bool allow_quant,
+                                        std::optional<unsigned short> override_prec) {
   SU2_ZONE_SCOPED
   assert(omp_get_thread_num() == 0 && "Only the master thread is allowed to initialize the matrix.");
 
@@ -210,8 +214,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
 
   /*--- No else if, but separate if case! ---*/
-  if (config->GetSmoothGradient() && grad_mode) {
-    prec = config->GetKind_Grad_Linear_Solver_Prec();
+  if (override_prec) {
+    prec = *override_prec;
   }
 
   useCuda = config->GetCUDA();
@@ -224,9 +228,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
    * the host, so only plain (or quantized) Jacobi can keep them exclusively on the device. ---*/
   jacobi_on_device = useCuda && (prec == JACOBI || prec == Q_JACOBI);
 #ifndef CODI_REVERSE_TYPE
-  /*--- Q_LU_SGS is still host-only. ---*/
-  const bool quantized_offdiag_needed =
-      allow_quant && (prec == Q_JACOBI || prec == Q_IDENTITY || (prec == Q_LU_SGS && !useCuda));
+  const bool quantized_offdiag_needed = allow_quant && (prec == Q_JACOBI || prec == Q_IDENTITY || prec == Q_LU_SGS);
 #else
   /*--- No quantization in adjoint mode for now because TransposeInPlace would get complicated. ---*/
   const bool quantized_offdiag_needed = false;
@@ -1773,6 +1775,19 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
   SU2_OMP_MASTER
   pastix_wrapper.SetTransposedSolve();
   END_SU2_OMP_MASTER
+#endif
+
+#ifdef SU2_ENABLE_CUDA_KERNELS
+  if constexpr (su2_gpu_capable_v<ScalarType>) {
+    if (useCuda) {
+      BEGIN_SU2_DEVICE_REGION {
+        HtDTransfer();
+        /*--- The factors of one orientation are not a starting point for the other. ---*/
+        ilu_can_refine = false;
+      }
+      END_SU2_DEVICE_REGION
+    }
+  }
 #endif
 }
 

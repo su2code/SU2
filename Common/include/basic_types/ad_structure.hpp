@@ -1,7 +1,7 @@
 /*!
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
- * \author T. Albring, J. Blühdorn
+ * \author T. Albring, J. Blühdorn, O. Burghardt
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -36,7 +36,21 @@
  * In case there is no reverse type configured, they have no effect at all,
  * and so the real versions of the routined are after #else.
  */
+
 namespace AD {
+
+enum class TAPE_DEBUG_OPTION {
+  ALLOW_PREACC,
+  ACTIVATE_PREACC,
+  ALLOW_ZONE,
+  ALLOW_ALL_ZONES,
+  ACTIVATE_ALL_ZONES,
+  ACTIVATE_ALL_ERRORS,
+  MULTIZONE_TAGS,
+  INIT_RUN,
+  CHECK_RUN
+};
+
 #ifndef CODI_REVERSE_TYPE
 
 using Identifier = int;
@@ -288,41 +302,72 @@ inline void SetIndex(Identifier& index, const su2double& data) {}
 inline void SetTag(int tag) {}
 
 /*!
+ * \brief Gets the current tag.
+ * \param[in] tag - the number to which the tag is set.
+ */
+inline int GetTag() { return 0; }
+
+/*!
+ * \brief Compute the zone-specific tag.
+ * \param[in] iZone - Zone index from which the zone-specific tag is formed.
+ * \return The zone-specific tag.
+ */
+inline int ComputeTag(unsigned short iZone) { return 0; }
+
+/*!
  * \brief Sets the tag of a variable to 0.
  * \param[in] v - the variable whose tag is cleared.
  */
 inline void ClearTagOnVariable(su2double& v) {}
 
 /*!
+ * \brief Sets the tag of a variable to a specified value.
+ * \param[in] v - the variable whose tag is set manually.
+ */
+inline void SetTagOnVariable(su2double& v, int zone_tag = 0, int run_tag = 0) {}
+
+/*!
  * \brief Struct to store information about errors during a tag debug run.
  */
-struct ErrorReport {};
+struct DebugControl {};
 
 /*!
- * \brief Set a reference to the output file of an ErrorReport.
- * \param[in] report - the ErrorReport whose output file is set.
+ * \brief Set a pointer to the current DebugControl.
+ * \param[in] control - pointer to the current debug control.
+ */
+inline void SetDebugControl(DebugControl* control) {}
+
+/*!
+ * \brief Set options which kind of tag mismatches are considered errors and written to file.
+ * \param[in] option - specification which kind of tag mismatches are considered.
+ * \param[in] izone - the zone w.r.t. which a tag mismatch is allowed.
+ */
+inline void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {}
+
+/*!
+ * \brief Activate the error callback by letting the tape call tagErrorCallback whenever a tag mismatch arises.
+ */
+inline void ActivateTagErrorCallback() {}
+
+/*!
+ * \brief Set a pointer to the output file of a DebugControl.
+ * \param[in] control - the DebugControl whose output file is set.
  * \param[in] output_file - pointer to the output file.
  */
-inline void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) {}
+inline void SetDebugReportFile(DebugControl& control, std::ostream* output_file) {}
 
 /*!
- * \brief Set the ErrorReport to which error information from a tag debug recording is written.
- * \param[in] report - the ErrorReport to which error information is written.
+ * \brief Reset the error counter in a DebugControl.
+ * \param[in] control - the DebugControl whose error counter is resetted.
  */
-inline void SetTagErrorCallback(ErrorReport& report) {}
+inline void ResetErrorCounter(DebugControl& control) {}
 
 /*!
- * \brief Reset the error counter in an ErrorReport.
- * \param[in] report - the ErrorReport whose error counter is resetted.
- */
-inline void ResetErrorCounter(ErrorReport& report) {}
-
-/*!
- * \brief Get the error count of an ErrorReport.
- * \param[in] report - the ErrorReport whose pointer to its error counter is returned.
+ * \brief Get the error count of a DebugControl.
+ * \param[in] control - the DebugControl whose error count is reported.
  * \return Value of the error counter.
  */
-inline unsigned long GetErrorCount(const ErrorReport& report) { return 0; }
+inline unsigned long GetErrorCount(const DebugControl& control) { return 0; }
 
 /*!
  * \brief Pushes back the current tape position to the tape position's vector.
@@ -744,37 +789,142 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
   SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
 }
 
-struct ErrorReport {
+#ifdef CODI_TAG_TAPE
+
+struct DebugControl {
+  int current_tag;
+  bool multizone_tags = false;
+  bool init_run = false;
+  bool allow_preacc = false;
+  bool allow_zones = false;
+  unsigned short allow_izone = 0;
   unsigned long ErrorCounter = 0;
   std::ostream* out = &std::cout;
 };
 
-FORCEINLINE void ResetErrorCounter(ErrorReport& report) { report.ErrorCounter = 0; }
+struct AdjustDebugControl {
+  TAPE_DEBUG_OPTION option;
+  void (*adjust)(DebugControl*, unsigned short);
+};
 
-FORCEINLINE void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) { report.out = output_file; }
+static const AdjustDebugControl debug_control_adjustments[] = {
+    {TAPE_DEBUG_OPTION::ALLOW_PREACC, [](DebugControl* c, unsigned short) { c->allow_preacc = true; }},
+    {TAPE_DEBUG_OPTION::ACTIVATE_PREACC, [](DebugControl* c, unsigned short) { c->allow_preacc = false; }},
+    {TAPE_DEBUG_OPTION::ALLOW_ZONE, [](DebugControl* c, unsigned short zone) { c->allow_izone = zone + 1; }},
+    {TAPE_DEBUG_OPTION::ALLOW_ALL_ZONES, [](DebugControl* c, unsigned short) { c->allow_zones = true; }},
+    {TAPE_DEBUG_OPTION::ACTIVATE_ALL_ZONES,
+     [](DebugControl* c, unsigned short) {
+       c->allow_zones = false;
+       c->allow_izone = 0;
+     }},
+    {TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS,
+     [](DebugControl* c, unsigned short) {
+       c->allow_preacc = false;
+       c->allow_zones = false;
+       c->allow_izone = 0;
+     }},
+    {TAPE_DEBUG_OPTION::INIT_RUN, [](DebugControl* c, unsigned short) { c->init_run = true; }},
+    {TAPE_DEBUG_OPTION::CHECK_RUN, [](DebugControl* c, unsigned short) { c->init_run = false; }},
+    {TAPE_DEBUG_OPTION::MULTIZONE_TAGS, [](DebugControl* c, unsigned short) { c->multizone_tags = true; }},
+};
 
-FORCEINLINE unsigned long GetErrorCount(const ErrorReport& report) { return report.ErrorCounter; }
+FORCEINLINE void ResetErrorCounter(DebugControl& control) { control.ErrorCounter = 0; }
 
-#ifdef CODI_TAG_TAPE
+FORCEINLINE void SetDebugReportFile(DebugControl& control, std::ostream* output_file) { control.out = output_file; }
 
-FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
-FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
+FORCEINLINE unsigned long GetErrorCount(const DebugControl& control) { return control.ErrorCounter; }
 
-static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* userData) {
-  auto* report = static_cast<ErrorReport*>(userData);
+extern DebugControl* current_control;
 
-  report->ErrorCounter += 1;
-  *(report->out) << "Use of variable with bad tag '" << wrongTag << "', should be '" << correctTag << "'." << std::endl;
+FORCEINLINE void SetDebugControl(DebugControl* control) { current_control = control; }
+
+FORCEINLINE void SetTag(int tag) {
+  current_control->current_tag = tag;
+  AD::getTape().setCurTag(tag);
 }
 
-FORCEINLINE void SetTagErrorCallback(ErrorReport& report) {
-  AD::getTape().setTagErrorCallback(tagErrorCallback, &report);
+FORCEINLINE int GetTag() { return current_control->current_tag; }
+
+FORCEINLINE int ComputeTag(unsigned short iZone) {
+  if (current_control->init_run) {
+    return (current_control->multizone_tags) ? ((int)iZone + 1) * 10 + 1 : 1;
+  } else {
+    return (current_control->multizone_tags) ? ((int)iZone + 1) * 10 + 2 : 2;
+  }
+}
+
+FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
+
+FORCEINLINE void SetTagOnVariable(su2double& v, int zone_tag = 0, int run_tag = 0) {
+  int tag = v.getIdentifier().tag;
+  int tens = (zone_tag > 0) ? zone_tag + 1 : tag / 10;
+  int ones = (run_tag > 0 && run_tag < 10) ? run_tag : tag % 10;
+  if (tag != 0) {
+    v.getIdentifier().tag = tens * 10 + ones;
+  }
+}
+
+static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* userData) {
+  auto* status = static_cast<DebugControl*>(userData);
+
+  bool throw_mismatch_error = true;
+
+  /*--- The callback could be due to a preaccumulation tag mismatch that we maybe want to allow, ... ---*/
+  if (status->allow_preacc) {
+    if (correctTag == 1337 || wrongTag == 1337) {
+      throw_mismatch_error = false;
+    }
+  }
+
+  /*--- ... or to a mismatch in the zone part of the tag. ---*/
+  if (status->allow_zones) {
+    throw_mismatch_error = false;
+  } else if (status->allow_izone > 0) {
+    if (wrongTag / 10 == status->allow_izone) {
+      throw_mismatch_error = false;
+    }
+  }
+
+  if (throw_mismatch_error) {
+    status->ErrorCounter += 1;
+    *(status->out) << "Use of variable with bad tag '" << std::setw(2) << std::setfill('0') << wrongTag
+                   << "', should be '" << std::setw(2) << std::setfill('0') << correctTag << "'." << std::endl;
+  }
+}
+
+FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {
+  if (current_control == nullptr) {
+    return;
+  }
+  for (const AdjustDebugControl& entry : debug_control_adjustments) {
+    if (entry.option == option) {
+      entry.adjust(current_control, izone);
+      break;
+    }
+  }
+}
+
+FORCEINLINE void ActivateTagErrorCallback() {
+  if (current_control != NULL) {
+    AD::getTape().setTagErrorCallback(tagErrorCallback, current_control);
+  } else {
+    std::cout << "No tape debug control set!" << std::endl;
+  }
 }
 
 #else
+struct DebugControl {};
+FORCEINLINE void ResetErrorCounter(DebugControl& control) {}
+FORCEINLINE void SetDebugReportFile(DebugControl& control, std::ostream* output_file) {}
+FORCEINLINE unsigned long GetErrorCount(const DebugControl& control) { return 0; }
+FORCEINLINE void SetDebugControl(DebugControl* status) {}
+FORCEINLINE int GetTag() { return 0; }
 FORCEINLINE void SetTag(int tag) {}
+FORCEINLINE int ComputeTag(unsigned short iZone) { return 0; }
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
-FORCEINLINE void SetTagErrorCallback(ErrorReport report) {}
+FORCEINLINE void SetTagOnVariable(su2double& v, int zone_tag = 0, int run_tag = 0) {}
+FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {}
+FORCEINLINE void ActivateTagErrorCallback() {}
 
 #endif  // CODI_TAG_TAPE
 

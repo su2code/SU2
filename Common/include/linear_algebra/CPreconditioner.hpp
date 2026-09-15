@@ -65,6 +65,33 @@ inline void ApplyPreconditionerOnHost(const CSysVector<ScalarType>& u, CSysVecto
 }
 
 /*!
+ * \brief Mirror of ApplyPreconditionerOnHost: applies a device preconditioner to host vectors.
+ * \note For callers that drive the Krylov solvers themselves and so never went through
+ * CSysSolve::Solve, which is what normally leaves the vectors on the device (Newton-Krylov).
+ * Device expressions are on for the duration so that a nested solve also uses the device copies.
+ * Only \p u is uploaded, \p v is always overwritten by the apply.
+ */
+template <class ScalarType, class Apply>
+inline void ApplyPreconditionerOnDevice(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, bool useCuda,
+                                        Apply&& apply) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+  if constexpr (su2_gpu_capable_v<ScalarType>) {
+    if (useCuda && !VecExpr::UseDeviceExpressions()) {
+      SU2_DEVICE_REGION(u.HtDTransfer(); VecExpr::SetUseDeviceExpressions(true);)
+
+      apply();
+
+      SU2_DEVICE_REGION(VecExpr::SetUseDeviceExpressions(false); v.DtHTransfer();)
+      return;
+    }
+  }
+#else
+  (void)useCuda;
+#endif
+  apply();
+}
+
+/*!
  * \class CPreconditioner
  * \brief Abstract base class for defining a preconditioning operation.
  * \author J. Hicken.
