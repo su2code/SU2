@@ -462,6 +462,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         env:
           OMPI_MCA_osc: pt2pt
+          LD_LIBRARY_PATH: /github/workspace/install/lib
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
       - name: Post Cleanup
