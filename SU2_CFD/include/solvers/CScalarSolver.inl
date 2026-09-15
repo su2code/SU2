@@ -30,8 +30,8 @@
 #include "../../include/variables/CFlowVariable.hpp"
 
 template <class VariableType>
-CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative, bool bounded_scalar)
-    : CSolver(), Conservative(conservative), BoundedScalar(bounded_scalar),
+CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative, bool bounded_scalar, LINEAR_SOLVER_MODE linear_solver_mode)
+    : CSolver(linear_solver_mode), Conservative(conservative), BoundedScalar(bounded_scalar),
       prim_idx(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
                config->GetNEMOProblem(), geometry->GetnDim(), config->GetnSpecies()) {
   SU2_ZONE_SCOPED
@@ -226,6 +226,14 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
           }
 
+          /*--- Some upwind schemes (see EulerNPrimVarGrad) size the flow's gradient/limiter
+           * columns smaller than the full primitive count, e.g. excluding density. Fall back
+           * to the cell-centered primitives for those. ---*/
+          for (auto iVar = 0u; iVar < solver_container[FLOW_SOL]->GetnPrimVar(); iVar++) {
+            flowPrimVar_i[iVar] = V_i[iVar];
+            flowPrimVar_j[iVar] = V_j[iVar];
+          }
+
           for (auto iVar = 0u; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
             const su2double V_ij = V_j[iVar] - V_i[iVar];
 
@@ -237,8 +245,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
               Project_Grad_j *= Limiter_j[iVar];
             }
 
-            flowPrimVar_i[iVar] = V_i[iVar] + 0.5 * Project_Grad_i;
-            flowPrimVar_j[iVar] = V_j[iVar] - 0.5 * Project_Grad_j;
+            flowPrimVar_i[iVar] += 0.5 * Project_Grad_i;
+            flowPrimVar_j[iVar] -= 0.5 * Project_Grad_j;
           }
 
           numerics->SetPrimitive(flowPrimVar_i, flowPrimVar_j);

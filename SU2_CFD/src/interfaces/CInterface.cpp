@@ -121,8 +121,28 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
         /*--- If this processor owns the node. ---*/
         if (donor_geometry->nodes->GetDomain(iPoint)) {
 
+          /*--- Read variables from donor solver.
+           *    If in AD test recording mode, keep the current tag, but allow the donor tag while loading the donor variable into Donor_Variable. ---*/
+          AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ALLOW_ZONE, donor_config->GetiZone());
+
           GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iVertex, iPoint);
-          for (auto iVar = 0u; iVar < nVar; iVar++) sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
+
+          /*--- Rotate the velocity if the relative-frame sliding plane is active on either side. ---*/
+          if (donor_config->GetBoolRelFrame_SlidingPlane() || target_config->GetBoolRelFrame_SlidingPlane()) {
+            if (donor_solution->GetnPrimVar() > 2){
+              GetDonor_Velocity_RotatingFrame(donor_config, donor_geometry, target_config, target_geometry);
+            }
+          }
+
+          /*--- If in AD test recording mode, we manually adapt the tag to the target (this) zone and return to strict tag mismatch handling. ---*/
+          for (auto iVar = 0u; iVar < nVar; iVar++) {
+            AD::SetTagOnVariable(Donor_Variable[iVar], target_config->GetiZone());
+          }
+          AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ZONES);
+
+          for (auto iVar = 0u; iVar < nVar; iVar++) {
+            sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
+          }
 
           sendDonorIdx[iSend] = donor_geometry->nodes->GetGlobalIndex(iPoint);
           ++iSend;

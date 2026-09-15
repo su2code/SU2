@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cassert>
+#include <optional>
 
 /*--- In forward mode the matrix is not of a built-in type. ---*/
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
@@ -381,24 +382,37 @@ class CSysMatrix {
    * allocated once). Each is captured once into a CUDA graph and replayed to remove
    * host-side launch overhead without changing the parallelization. ---*/
   mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;
+
+  /*!< \brief Whether a build may refine the factors already on the device instead of computing
+   * them exactly. TransposeInPlace() clears it for good: from then on this matrix is used in
+   * both orientations, and the factors of one are a bad starting point for the other, which the
+   * ilu_gpu_sweeps colored sweeps cannot recover from. It is not restored after a build because
+   * the orientation flips again on the next one (and the solver refills the matrix in between
+   * without going through TransposeInPlace). Only the discrete adjoint transposes, so the primal
+   * keeps refining as before. */
+  mutable bool ilu_can_refine = true;
   mutable struct CUgraphExec_st* precond_fwd_graph_exec = nullptr;  // ILU or LU-SGS forward only
   mutable struct CUgraphExec_st* precond_bwd_graph_exec = nullptr;  // LU-SGS backward only
   mutable const ScalarType* precond_fwd_graph_vec = nullptr;        /*!< \brief Pointers the apply graph
                                                                      * was captured with, to detect when
-                                                                     * it must be recaptured. */
+                                                                     * it must be recaptured (the
+                                                                     * executable graph itself is then
+                                                                     * updated in place, not rebuilt,
+                                                                     * see InstantiateOrUpdateGraph). */
   mutable ScalarType* precond_fwd_graph_prod = nullptr;
   mutable ScalarType* precond_bwd_graph_prod = nullptr;
 
-  /*--- Non-default stream, needed for two mutually exclusive uses that never overlap on a given
-   * matrix (quantized_mode and ILU are alternative preconditioner choices, decided once in
-   * Initialize()): (1) the ILU build/apply CUDA graphs below, since the legacy default stream
-   * cannot be captured into a graph; (2) HtDTransfer's async H2D transfer of the quantized L/U
-   * blocks, so that transfer can run concurrently (copy engine) with kernels issued on the
-   * default stream (e.g. QuantizeDiagonalBlocksGPU, on the SM) instead of queueing behind them on
-   * the same stream. Because the two uses are mutually exclusive, sharing one stream (rather than
-   * a dedicated one per use) needs no extra synchronization between them. htd_event marks the end
-   * of the H2D transfer specifically, so the default-stream kernel that first reads the result
-   * (the quantized SpMV) can wait on it without a host-side block. ---*/
+  /*--- Non-default stream, needed for two uses: (1) the preconditioner build/apply CUDA graphs
+   * below, since the legacy default stream cannot be captured into a graph; (2) HtDTransfer's
+   * async H2D transfer of the quantized L/U blocks, so that transfer can run concurrently (copy
+   * engine) with kernels issued on the default stream (e.g. QuantizeDiagonalBlocksGPU, on the SM)
+   * instead of queueing behind them on the same stream. The two are mutually exclusive for ILU
+   * (never quantized) but not for Q_LU_SGS, which uses both; sharing one stream still needs no
+   * extra synchronization, and in fact gives the right answer for free: the apply graph is
+   * launched into aux_stream, hence ordered after the transfer of the quantized blocks its
+   * kernels read. htd_event marks the end of the H2D transfer specifically, so a *default*-stream
+   * kernel that reads the result (the quantized SpMV) can wait on it without a host-side
+   * block. ---*/
   mutable struct CUstream_st* aux_stream = nullptr;
   mutable struct CUevent_st* htd_event = nullptr;
 
@@ -706,15 +720,15 @@ class CSysMatrix {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] needTranspPtr - If the L/U transpose maps should be built, used for "SetDiagonalAsColumnSum".
-   * \param[in] grad_mode - Gradient smoothing mode, only used to detect the right preconditioner type.
    * \param[in] allow_quant - Quantization is only possible with solvers that "set and forget" the off-diagonal
    *            blocks of the matrix. Solvers that perform multiple updates would lose too much information, so
    *            that pattern is not supported with quantization (the code will hit null pointers). It is up to
    *            the solver to declare whether it will "set and forget".
+   * \param[in] override_prec - Decide if, and with what argument to override the preconditioner.
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
-                  bool grad_mode = false, bool allow_quant = false);
+                  bool allow_quant = false, std::optional<unsigned short> override_prec = std::nullopt);
 
   /*!
    * \brief Compresses off-diagonal blocks into quantized form for use with USE_QUANTIZATION.

@@ -359,6 +359,6 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
 
   }
 
-  return ResidualType<>(Flux, Jacobian_j, Jacobian_j);
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }

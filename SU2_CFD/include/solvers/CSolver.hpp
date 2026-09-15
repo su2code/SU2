@@ -586,6 +586,12 @@ public:
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
 
   /*!
+   * \brief A virtual member.
+   * \return flame thickness value.
+   */
+  virtual su2double GetFlameThickness() const {return 1.0;}
+
+  /*!
    * \brief Compute the projection of a variable for MUSCL reconstruction.
    * \note The result should be halved when added to i (or subtracted from j).
    * \param[in] grad - Gradient vector.
@@ -776,6 +782,22 @@ public:
                                     unsigned long Iteration,
                                     unsigned short RunTime_EqSystem,
                                     bool Output) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ApplyPressureVelocityCorrection(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -4298,6 +4320,25 @@ public:
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
 
+  /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] periodic - Flag for periodic boundary conditions.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  inline virtual void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) { }
+
+  /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  inline virtual void ComputeHbyA(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
+  
   /*!
    * \brief Save snapshot or POD data using libROM
    * \param[in] geometry - Geometrical definition of the problem.

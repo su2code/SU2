@@ -77,7 +77,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 400;     /*!< \brief Maximum size of a generic string. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 14};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
@@ -195,6 +195,71 @@ inline unsigned short nPointsOfElementType(unsigned short elementType) {
 }
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
+
+/*--- Layout of the header of the native SU2 binary solution/restart format, shared by
+      CSU2BinaryFileWriter and the routines that read those files so they cannot drift
+      apart. The header is SU2_RESTART_HEADER_SIZE ints: a magic number, the number of
+      variables, the number of points, the size in bytes of the floating point data that
+      follows, and one spare.
+
+      The 4th and 5th ints used to be the number of ints and of doubles of a metadata
+      trailer (1 and 5, later 1 and 8) that the writer appended after the data. That
+      trailer is no longer written (metadata goes to a separate ASCII file) and both
+      ints have been 0 since, but old files in circulation still have 1 and 5 or 8
+      there, which is why 1 is accepted below as meaning double precision. ---*/
+const int SU2_RESTART_MAGIC_NUMBER = 535532; /*!< \brief Hex representation of "SU2". */
+const int SU2_RESTART_HEADER_SIZE = 5;       /*!< \brief Number of ints in the header. */
+const int SU2_RESTART_PRECISION_IDX = 3;     /*!< \brief Position of the precision field. */
+const int SU2_RESTART_METADATA_IDX = 4;      /*!< \brief Position of the legacy metadata count. */
+const int SU2_RESTART_MAX_METADATA = 8;      /*!< \brief Most metadata doubles a trailer ever had. */
+
+/*!
+ * \brief Size in bytes of the floating point data of a native SU2 binary solution file.
+ * \param[in] precisionField - The SU2_RESTART_PRECISION_IDX entry of the file header.
+ * \return 8 for double precision, 4 for single precision.
+ * \note Files written before the field had this meaning have a 0 or a 1 there (see above)
+ * and were always double precision.
+ */
+inline int GetSU2BinaryScalarSize(int precisionField) {
+  if (precisionField == 0 || precisionField == 1) return static_cast<int>(sizeof(double));
+  if (precisionField != static_cast<int>(sizeof(double)) && precisionField != static_cast<int>(sizeof(float))) {
+    SU2_MPI::Error("Invalid floating point precision in the header of a binary SU2 solution file.", CURRENT_FUNCTION);
+  }
+  return precisionField;
+}
+
+/*!
+ * \brief Number of metadata scalars in the trailer of a native SU2 binary solution file.
+ * \param[in] precisionField - The SU2_RESTART_PRECISION_IDX entry of the file header.
+ * \param[in] metadataField - The SU2_RESTART_METADATA_IDX entry of the file header.
+ * \return Number of scalars of the trailer, preceded by one int (the iteration number),
+ * or 0 for the files that do not have one.
+ * \note Only files that still use the two ints as trailer counts have a trailer, and in
+ * those the precision field is the number of trailer ints, which was always 1 (see above).
+ */
+inline int GetSU2BinaryMetadataSize(int precisionField, int metadataField) {
+  if (precisionField != 1) return 0;
+  return std::min(metadataField, SU2_RESTART_MAX_METADATA);
+}
+
+/*!
+ * \brief Convert floating point data read from a native SU2 binary solution file, which
+ * may have been written by a build of different precision, to the precision of this build.
+ * \param[in] buffer - Raw data as read from the file, of size count*scalarSize bytes.
+ * \param[in] scalarSize - Size in bytes of the scalars in the file, see GetSU2BinaryScalarSize.
+ * \param[in] count - Number of scalars.
+ * \param[out] data - Converted data, must not overlap with buffer.
+ */
+inline void SU2BinaryDataToPassive(const void* buffer, int scalarSize, unsigned long count, passivedouble* data) {
+  if (scalarSize == static_cast<int>(sizeof(float))) {
+    const auto* src = static_cast<const float*>(buffer);
+    for (unsigned long i = 0; i < count; ++i) data[i] = src[i];
+  } else {
+    const auto* src = static_cast<const double*>(buffer);
+    for (unsigned long i = 0; i < count; ++i) data[i] = src[i];
+  }
+}
+
 const int SU2_BINARY_STRING_SIZE = 65; /*!< \brief Length of strings (e.g. marker names) used in the native
                                                     SU2 binary mesh format. Shared by CSU2BinaryMeshReaderBase
                                                     and CSU2MeshBinaryFileWriter so they cannot drift apart. */
@@ -264,6 +329,7 @@ enum class MAIN_SOLVER {
   FEM_RANS,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
   FEM_LES,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS,
+  POISSON_EQUATION,            /*!< \brief Definition of the Poisson equation solver. */
   NEMO_EULER,                  /*!< \brief Definition of the NEMO Euler solver. */
   NEMO_NAVIER_STOKES,          /*!< \brief Definition of the NEMO NS solver. */
 };
@@ -337,6 +403,31 @@ enum class STRUCT_COMPRESS {
 static const MapType<std::string, STRUCT_COMPRESS> MatComp_Map = {
   MakePair("COMPRESSIBLE", STRUCT_COMPRESS::COMPRESSIBLE)
   MakePair("NEARLY_INCOMPRESSIBLE", STRUCT_COMPRESS::NEARLY_INCOMP)
+};
+
+/*!
+ * \brief Type of incompressible solver
+ */
+enum class INCOMP_SYSTEM {
+  DENSITY_BASED,        /*!< \brief Density-based. */
+  PRESSURE_BASED,       /*!< \brief Pressure-based. */
+};
+static const MapType<std::string, INCOMP_SYSTEM> Incomp_Map = {
+ MakePair("DENSITY_BASED", INCOMP_SYSTEM::DENSITY_BASED)
+ MakePair("PRESSURE_BASED", INCOMP_SYSTEM::PRESSURE_BASED)
+};
+
+/*!
+ * \brief Type of iteration
+ */
+enum class PBITER {
+  SIMPLE,       /*!< \brief SIMPLE algorithm. */
+  SIMPLEC,      /*!< \brief SIMPLEC algorithm. */
+};
+
+static const MapType<std::string, PBITER> PBIter_Map = {
+ MakePair("SIMPLE", PBITER::SIMPLE)
+ MakePair("SIMPLEC", PBITER::SIMPLEC)
 };
 
 /*!
@@ -479,6 +570,7 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
   RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
   RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
+  RUNTIME_POISSON_SYS = 27,   /*!< \brief One-physics case, the code is solving the poisson equation. */
 };
 
  enum SOLVER_TYPE : const int {
@@ -497,6 +589,7 @@ enum RUNTIME_TYPE {
    ADJSPECIES_SOL=12, /*!< \brief Position of the adjoint of the species solver. */
    FEA_SOL=0,        /*!< \brief Position of the Finite Element flow solution in the solver container array. */
    ADJFEA_SOL=1,     /*!< \brief Position of the continuous adjoint Finite Element flow solution in the solver container array. */
+   POISSON_SOL=13,   /*!< \brief Position of the poisson solution in the solver container array */
    TEMPLATE_SOL=0,   /*!< \brief Position of the template solution. */
  };
 
@@ -828,7 +921,8 @@ enum class CENTERED {
   LAX,            /*!< \brief Lax-Friedrich centered numerical method. */
   JST_MAT,        /*!< \brief JST with matrix dissipation. */
   JST_KE,         /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
-  LD2             /*!< \brief Low-Dissipation Low-Dispersion (LD2) centered scheme. */
+  LD2,            /*!< \brief Low-Dissipation Low-Dispersion (LD2) centered scheme. */
+  CDS             /*!< \brief Central Difference Scheme used for pressure based solver. */
 };
 static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("NONE", CENTERED::NONE)
@@ -837,6 +931,7 @@ static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("JST_MAT", CENTERED::JST_MAT)
   MakePair("LAX-FRIEDRICH", CENTERED::LAX)
   MakePair("LD2", CENTERED::LD2)
+  MakePair("CDS", CENTERED::CDS)
 };
 
 
@@ -863,7 +958,8 @@ enum class UPWIND {
   AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
   AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
   AUSMPLUSM,              /*!< \breif AUSM+M numerical method. (NEMO Only)*/
-  BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
+  BOUNDED_SCALAR,         /*!< \brief Scalar advection numerical method. */
+  UDS                     /*!< \brief Upwind Difference Scheme used for pressure based solver. */
 };
 static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("NONE", UPWIND::NONE)
@@ -885,6 +981,7 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("SLAU2", UPWIND::SLAU2)
   MakePair("FDS", UPWIND::FDS)
   MakePair("LAX-FRIEDRICH", UPWIND::LAX_FRIEDRICH)
+  MakePair("UDS", UPWIND::UDS)
 };
 
 /*!
@@ -1497,6 +1594,7 @@ struct FluidFlamelet_ParsedOptions {
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
+  bool thickenedflame_correction{true}; /*!< \brief Thickened flame correction. */
   su2double Flame_T_ignition = 5000;    /*!< \brief Ignition temperature for the flame, used for initialization. */
 
 };
@@ -2701,11 +2799,7 @@ enum class RECORDING {
   SOLUTION_VARIABLES,
   MESH_COORDS,
   MESH_DEFORM,
-  SOLUTION_AND_MESH,
-  TAG_INIT_SOLVER_VARIABLES,
-  TAG_CHECK_SOLVER_VARIABLES,
-  TAG_INIT_SOLVER_AND_MESH,
-  TAG_CHECK_SOLVER_AND_MESH
+  SOLUTION_AND_MESH
 };
 
 /*!
@@ -2781,6 +2875,9 @@ enum class MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  MOM_COEFF            ,  /*!< \brief Momentum coefficient for the Rhie-Chow scheme. */
+  MOM_CORRECTION       ,  /*!< \brief Momentum correction for the pressure-based poisson solver (used when computing HbyA). */
+  HBYA_CORRECTION      ,  /*!< \brief HbyA correction for the pressure-based poisson solver. */
 };
 
 /*!
@@ -2908,6 +3005,7 @@ enum class LINEAR_SOLVER_MODE {
   STANDARD,        /*!< \brief Operate in standard mode. */
   MESH_DEFORM,     /*!< \brief Operate in mesh deformation mode. */
   GRADIENT_MODE,   /*!< \brief Operate in gradient smoothing mode. */
+  POISSON,         /*!< \brief Operate in poisson solver mode. */
 };
 
 /*!
