@@ -203,6 +203,14 @@ def getTurboPerfIndex(nZones=1):
 #  Optimizer Function Names
 # -------------------------------------------------------------------
 
+#: optnames_aero
+
+optnames_aero = [
+    field
+    for field in historyOutFields
+    if historyOutFields[field]["TYPE"] == "COEFFICIENT"
+]
+
 #: optnames_stab
 
 optnames_stab = [
