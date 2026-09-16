@@ -49,7 +49,6 @@ install_data(['SU2/run/adjoint.py',
 	      install_dir: join_paths(get_option('bindir'), 'SU2/run'))
 
 install_data(['SU2/util/bunch.py',
-              'SU2/util/filter_adjoint.py',
               'SU2/util/lhc_unif.py',
               'SU2/util/misc.py',
               'SU2/util/mp_eval.py',
