@@ -128,6 +128,18 @@ def main():
     von_karman_cylinder.test_vals = [-7.845765, -7.681042, -8.736704, -0.002581, 1.423652]
     test_list.append(von_karman_cylinder)
 
+    # Lid Driven Cavity Flow (Re=400), pressure-based. Disabled: the config and mesh live in
+    # su2code/Tutorials#86, which had not landed as of this commit - ../Tutorials/incompressible_flow/
+    # Inc_Lid_Driven_Cavity/incomp_pb_liddrivencavity.cfg does not exist yet, and enabling this
+    # entry would fail CI outright rather than fail the regression check. Re-enable once that PR
+    # merges (test_vals recorded below were measured against the config in that PR).
+    # lid_driven_cavity = TestCase('lid_driven_cavity')
+    # lid_driven_cavity.cfg_dir = "../Tutorials/incompressible_flow/Inc_Lid_Driven_Cavity"
+    # lid_driven_cavity.cfg_file  = "incomp_pb_liddrivencavity.cfg"
+    # lid_driven_cavity.test_iter = 2
+    # lid_driven_cavity.test_vals = [-5.798956, -4.393539, -5.070494]
+    # test_list.append(lid_driven_cavity)
+
 
     ### Species Transport
 
