@@ -144,13 +144,13 @@ struct LimiterHelpers
 template<>
 struct CLimiterDetails<LIMITER::BARTH_JESPERSEN>
 {
-  su2double eps2;
+  su2double eps;
 
   /*!
    * \brief Set a small epsilon to avoid divisions by 0.
    */
   template<class... Ts>
-  inline void preprocess(Ts&...) {eps2 = LimiterHelpers<>::epsilon();}
+  inline void preprocess(Ts&...) {eps = LimiterHelpers<>::epsilon();}
 
   /*!
    * \brief No geometric modification for this kind of limiter.
@@ -159,11 +159,13 @@ struct CLimiterDetails<LIMITER::BARTH_JESPERSEN>
   inline su2double geometricFactor(Ts&...) const {return 1.0;}
 
   /*!
-   * \brief Venkatakrishnan function with a numerical epsilon.
+   * \brief Barth-Jespersen function, min(1, delta/proj).
+   * \note proj and delta have the same sign, without a projection there is nothing to limit.
    */
   inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    return LimiterHelpers<>::venkatFunction(proj, delta, eps2);
+    if (fabs(proj) <= eps) return 1.0;
+    return min(delta / proj, 1.0);
   }
 };
 
