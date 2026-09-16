@@ -90,7 +90,7 @@ class ImposedMotionClass:
         else:
             raise Exception(
                 "Imposed function {} not found, please implement it in pysu2_nastran.py".format(
-                    self.tipo
+                    self.typeOfMotion
                 )
             )
 
