@@ -66,32 +66,9 @@ vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<u
   return classOfEntity;
 }
 
-/*--- A node is too small to pave from when its volume falls below this fraction of the largest
- *    volume within DEGENERATE_VOLUME_HOPS hops. Such nodes are left to ordinary boundary
- *    agglomeration. ---*/
-constexpr passivedouble DEGENERATE_VOLUME_FRACTION = 0.01;
-constexpr int DEGENERATE_VOLUME_HOPS = 4;
-
 /*--- Smallest footprint a front may march on. A one-node layer matches any other under the
  *    isomorphism test, so two nodes are needed to constrain the shape. ---*/
 constexpr size_t MIN_FRONT_WIDTH = 2;
-
-bool HasDegenerateVolume(const CGeometry* fine_grid, unsigned long iPoint) {
-  vector<unsigned long> frontier{iPoint}, visited{iPoint};
-  su2double maxNearbyVol = fine_grid->nodes->GetVolume(iPoint);
-  for (int hop = 0; hop < DEGENERATE_VOLUME_HOPS && !frontier.empty(); ++hop) {
-    vector<unsigned long> next;
-    for (auto p : frontier)
-      for (auto jPoint : fine_grid->nodes->GetPoints(p)) {
-        if (std::find(visited.begin(), visited.end(), jPoint) != visited.end()) continue;
-        visited.push_back(jPoint);
-        next.push_back(jPoint);
-        maxNearbyVol = std::max(maxNearbyVol, fine_grid->nodes->GetVolume(jPoint));
-      }
-    frontier = std::move(next);
-  }
-  return fine_grid->nodes->GetVolume(iPoint) < DEGENERATE_VOLUME_FRACTION * maxNearbyVol;
-}
 
 }  // namespace
 
@@ -1772,9 +1749,6 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
       if (!fine_grid->nodes->GetDomain(iPoint)) continue;
       if (fine_grid->nodes->GetAgglomerate(iPoint)) continue;
       if (taken[iPoint]) continue; /*--- A node on two markers must seed only one front. ---*/
-      /*--- Falls through to ordinary boundary agglomeration instead, exactly as it would with
-       *    paving turned off, rather than seeding a stack that starts out already degenerate. ---*/
-      if (HasDegenerateVolume(fine_grid, iPoint)) continue;
 
       su2double Normal[MAXNDIM] = {0.0};
       if (!VertexUnitNormal(fine_grid, nDim, iPoint, iMarker, Normal)) continue;
@@ -2057,6 +2031,11 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     su2double haloDot = -2.0;
 
     for (auto jPoint : fine_grid->nodes->GetPoints(n)) {
+      /*--- A halo node is only checked for admissibility, its parent comes from the owning
+       *    rank. An owned node that is already taken cannot be stepped onto at all. ---*/
+      const bool isHalo = !fine_grid->nodes->GetDomain(jPoint);
+      if (!isHalo && (fine_grid->nodes->GetAgglomerate(jPoint) || claimed[jPoint])) continue;
+
       su2double vec[MAXNDIM] = {0.0};
       GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(n), vec);
       const su2double len = GeometryToolbox::Norm(nDim, vec);
@@ -2066,18 +2045,16 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
       const su2double dot = GeometryToolbox::DotProduct(nDim, vec, marchDir);
       const bool admissible =
           !(onPhysBoundary[jPoint] && EntersBoundary(fine_grid, config, nDim, jPoint, vec, cos_boundary)) &&
-          GeometricalCheck(jPoint, fine_grid, config) && !HasDegenerateVolume(fine_grid, jPoint);
+          GeometricalCheck(jPoint, fine_grid, config);
 
-      /*--- A halo node is only checked for admissibility, its parent comes from the owning
-       *    rank. ---*/
-      if (!fine_grid->nodes->GetDomain(jPoint)) {
+      if (isHalo) {
         if (dot > haloDot && admissible) {
           haloDot = dot;
           c.halo = jPoint;
         }
         continue;
       }
-      if (fine_grid->nodes->GetAgglomerate(jPoint) || claimed[jPoint] || !admissible) continue;
+      if (!admissible) continue;
 
       if (dot > c.dot) {
         c.dot = dot;
@@ -2489,9 +2466,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
         const auto p = inherited[k].node;
         /*--- One node can be handed over by two neighbours under the same tag. ---*/
         if (std::find(layer0.begin(), layer0.end(), p) != layer0.end()) continue;
-        if (claimed[p] || fine_grid->nodes->GetAgglomerate(p) || !GeometricalCheck(p, fine_grid, config) ||
-            HasDegenerateVolume(fine_grid, p))
-          ok = false;
+        if (claimed[p] || fine_grid->nodes->GetAgglomerate(p) || !GeometricalCheck(p, fine_grid, config)) ok = false;
         layer0.push_back(p);
       }
       /*--- Whatever arrived must be free and form one connected layer wide enough to march on. ---*/
