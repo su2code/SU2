@@ -44,9 +44,7 @@ namespace {
 constexpr passivedouble EULER_WALL_MAX_CURVATURE = 45.0;
 
 /*--- Equivalence-class id per entity for the set of physical markers it lies on: entities with the
- *    same set share an id, 0 means no marker. Only set equality is ever asked, so the sets are
- *    interned and compared as ids, which puts no limit on the number of markers. The (entity,
- *    marker) pairs may arrive in any order and are consumed. ---*/
+ *    same set share an id, 0 means no marker. The pairs are consumed. ---*/
 vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<unsigned long, unsigned short>>& pairs) {
   vector<unsigned long> classOfEntity(nEntity, 0);
 
@@ -68,28 +66,14 @@ vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<u
   return classOfEntity;
 }
 
-/*--- Smallest fraction of the largest volume within a few hops a node may have and still be
- *    admissible for paving -- seeding a front, marching onto it, or arriving in a handover. A
- *    genuine boundary-layer cell's volume is comparable to its local surroundings (the stretching
- *    happens normal to the wall, not from one along-wall cell to the next); a mesh defect -- a
- *    collapsed cell, or a short run of them, at a block seam -- can be orders of magnitude
- *    smaller than its surroundings while still passing the aspect-ratio seed test, since aspect
- *    ratio and absolute size are independent. Such a node is left to ordinary boundary
- *    agglomeration instead, which handles it the same way it would with paving turned off.
- *
- *    A one-hop neighbourhood is not wide enough: the defect can span several adjacent cells, so
- *    every one of them looks normal-sized to its immediate neighbours even though the whole run
- *    is a local outlier. A mesh-wide reference is too wide the other way: a large surface mesh
- *    commonly carries more than one legitimate resolution (a finely meshed wing next to a coarser
- *    fuselage), so a single global scale flags the finer, still perfectly normal, region as
- *    degenerate too. A few-hop neighbourhood is the compromise: wide enough to reach past a short
- *    run of collapsed cells into normal ones, narrow enough to stay within one mesh region. ---*/
+/*--- A node is too small to pave from when its volume falls below this fraction of the largest
+ *    volume within DEGENERATE_VOLUME_HOPS hops. Such nodes are left to ordinary boundary
+ *    agglomeration. ---*/
 constexpr passivedouble DEGENERATE_VOLUME_FRACTION = 0.01;
 constexpr int DEGENERATE_VOLUME_HOPS = 4;
 
-/*--- Smallest footprint a front may march on. The shape test a front advances under compares the
- *    new layer with the current one, which says nothing about a footprint holding a single node:
- *    any one node matches any other. Two nodes give it an edge to preserve. ---*/
+/*--- Smallest footprint a front may march on. A one-node layer matches any other under the
+ *    isomorphism test, so two nodes are needed to constrain the shape. ---*/
 constexpr size_t MIN_FRONT_WIDTH = 2;
 
 bool HasDegenerateVolume(const CGeometry* fine_grid, unsigned long iPoint) {
@@ -620,10 +604,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
   const auto cvMarkerClass = MarkerSetClasses(nPointDomain, cvMarker);
 
-  /*--- A CV whose front never advanced past its seed is not a stack: protecting it anyway can
-   *    leave it many orders of magnitude smaller than its neighbours (its footprint is a single
-   *    fine cell, most often on a thin near-wall layer), which is unstable once its correction is
-   *    carried up through further coarsening. Let it fall through to ordinary repair instead. ---*/
+  /*--- A CV whose front never advanced past its seed is not a stack, so it does not get the
+   *    stack-base protection below. ---*/
   vector<bool> neverGrew(nPointDomain, false);
   for (auto iCV : neverGrewCV)
     if (iCV < nPointDomain) neverGrew[iCV] = true;
@@ -763,11 +745,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     nodes->SetnChildren_CV(iCoarsePoint, 0);
   }
 
-  /*--- Merge a small paved CV (typically the two-layer block a narrow stack emits) into an
-   equally small neighbour. Neither pass above reaches it: it usually has several coarse
-   neighbours (fore, aft, and often a parallel stack alongside), so it is never "isolated", and
-   it usually holds two children, not one. isStackBase still protects a CV that touches the
-   physical boundary, so a merge here never crosses a marker the way a seed-time merge would. ---*/
+  /*--- Merge a paved CV of at most SMALL_STACK_CV children into an equally small neighbour. The
+   two passes above do not reach it, it is neither isolated nor single-child. ---*/
 
   constexpr unsigned short SMALL_STACK_CV = 2; /*!< \brief The block size a narrow stack emits
                                                      between flushes; see BlockFor. */
@@ -1006,9 +985,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   SetGlobal_nPointDomain(Global_nPointCoarse);
 
   if (iMesh != MESH_0) {
-    /*--- Seed the coarse-level CFL with the same per-level reduction that CMultiGridIntegration
-          applies after every cycle, so the first cycle of a run matches all later ones. Without
-          this a restarted run replays a first cycle it never saw mid-run. ---*/
+    /*--- Seed the coarse-level CFL with the same per-level reduction CMultiGridIntegration
+          applies after every cycle. ---*/
     const su2double scale = max(su2double(1e-6), min(su2double(1.0), config->GetMGOptions().MG_CflScaling[iMesh - 1]));
     config->SetCFL(iMesh, config->GetCFL(iMesh - 1) * scale);
   }
@@ -1758,10 +1736,8 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
     return (bc == HEAT_FLUX) || (bc == ISOTHERMAL) || (bc == CHT_WALL_INTERFACE) || (bc == SMOLUCHOWSKI_MAXWELL);
   };
 
-  /*--- True if the mesh at iPoint is stretched along the boundary normal, i.e. this boundary has a
-   *    layer growing off it the way a viscous wall does. The coupling across the dual face between
-   *    iPoint and a neighbour is measured here, so the ratio of largest to smallest weight is the
-   *    local aspect ratio. Only boundary nodes are ever asked, at most twice each. ---*/
+  /*--- True if the mesh at iPoint is stretched along the boundary normal. The ratio of largest to
+   *    smallest dual-face coupling weight is the local aspect ratio. ---*/
   auto hasLayerNormalTo = [&](unsigned long iPoint, const su2double* unitNormal) {
     su2double wMin = std::numeric_limits<su2double>::max(), wMax = 0.0;
     auto jStiffest = NO_POINT;
@@ -1877,10 +1853,8 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
 vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFrontSeeds& seeds,
                                                                     const CGeometry* fine_grid, const CConfig* config,
                                                                     const vector<char>& mixedBC) const {
-  /*--- Repeated pairwise matching groups the seeds into connected patches of 1 to max_group seeds,
-   *    smaller wherever no partner was found. A patch is any connected shape the boundary gives:
-   *    a square, a strip, a triangle or a single node. What follows keys off the patch size and
-   *    the layer isomorphism check, never off an assumed shape. ---*/
+  /*--- Repeated pairwise matching groups the seeds into connected patches of 1 to max_group seeds.
+   *    A patch is any connected shape: a square, a strip, a triangle or a single node. ---*/
   const auto nSeeds = seeds.node.size();
   const unsigned long max_group = (nDim == 2) ? 2 : 4;
 
@@ -2051,9 +2025,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     char alive = 1;
     char failed = 0;
     char keepLocal = 0; /*!< \brief Handed over only part of its footprint, so it marches on here. */
-    unsigned long seedCV = std::numeric_limits<unsigned long>::max(); /*!< \brief Coarse CV index of
-        this front's first emitted layer, recorded so a front that never advances past it can be
-        told apart, after the fact, from one that grew into a genuine stack. */
+    unsigned long seedCV = std::numeric_limits<unsigned long>::max(); /*!< \brief Coarse CV index
+        of this front's first emitted layer, used to identify a front that never advanced past it. */
   };
   vector<CFront> fronts;
 
@@ -2095,8 +2068,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
           !(onPhysBoundary[jPoint] && EntersBoundary(fine_grid, config, nDim, jPoint, vec, cos_boundary)) &&
           GeometricalCheck(jPoint, fine_grid, config) && !HasDegenerateVolume(fine_grid, jPoint);
 
-      /*--- Halo parents are assigned by the owning rank through the MPI relay, so a halo node is
-       *    only checked for admissibility here, never claimed. ---*/
+      /*--- A halo node is only checked for admissibility, its parent comes from the owning
+       *    rank. ---*/
       if (!fine_grid->nodes->GetDomain(jPoint)) {
         if (dot > haloDot && admissible) {
           haloDot = dot;
@@ -2198,9 +2171,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   /*--- The boundary layer of every front, claimed before ordinary boundary agglomeration runs so
    *    that every layer above keeps the same footprint. ---*/
   for (const auto& patch : patches) {
-    /*--- LayerIsIsomorphic constrains nothing on a one-node footprint, so such a front marches
-     *    wherever the successor search leads and paves columns that follow no mesh structure. Its
-     *    nodes are left to ordinary agglomeration instead. ---*/
+    /*--- A one-node footprint is unconstrained by LayerIsIsomorphic, so it is left to ordinary
+     *    agglomeration. ---*/
     if (patch.size() < MIN_FRONT_WIDTH) continue;
     bool valid = true;
     for (auto si : patch) {
@@ -2455,9 +2427,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
       }
     }
 
-    /*--- Pack every pair, then exchange them all at once so a round costs one wait, not one
-     *    round trip per neighbour. Tag and direction go separately, there is no byte type to
-     *    send a struct with. ---*/
+    /*--- Pack every pair and exchange them all at once, so a round costs one wait. Tag and
+     *    direction are sent separately. ---*/
     std::fill(tagOut.begin(), tagOut.end(), 0ul);
     std::fill(dirOut.begin(), dirOut.end(), passivedouble(0.0));
 
@@ -2545,15 +2516,11 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     inherited.clear();
   }
 
-  /*--- Emit whatever is still buffered, so no node is left without a parent index. This also
-   *    catches an adopted front (block size 2) whose very first round after adoption fails: it
-   *    dies at depth 0 without ever having called emit() on its own, so its seed CV is only
-   *    assigned here. ---*/
+  /*--- Emit whatever is still buffered, so no node is left without a parent index. ---*/
   for (unsigned long f = 0; f < fronts.size(); ++f) emit(f);
 
-  /*--- A front that never advanced past its seed did not build a stack at all: it is
-   *    indistinguishable from ordinary boundary agglomeration and gains nothing from the
-   *    protection below, which exists to keep a genuine line intact. ---*/
+  /*--- A front that never advanced past its seed did not build a stack, so it is excluded from
+   *    the stack-base protection. ---*/
   for (const auto& F : fronts)
     if ((F.depth == 0) && (F.seedCV != std::numeric_limits<unsigned long>::max())) neverGrewCV.push_back(F.seedCV);
 

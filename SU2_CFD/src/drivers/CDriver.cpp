@@ -811,10 +811,8 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
   /*--- Loop over all the new grid ---*/
 
   string pavingReports;
-  /*--- Coarse-CV volume ratio per level, for BOTH paved and classical grids: an anisotropic
-   *    viscous mesh can leave a coarse CV many orders of magnitude smaller than its neighbours
-   *    regardless of the agglomeration algorithm, and that is worth surfacing either way. Held
-   *    back with pavingReports, for the same reason. ---*/
+  /*--- Coarse-CV volume ratio per level, held back with pavingReports so it does not interleave
+   *    with the multigrid table. ---*/
   string volRatioReport;
   constexpr passivedouble VOL_RATIO_WARN = 1e9;
 

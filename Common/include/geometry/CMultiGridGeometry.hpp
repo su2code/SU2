@@ -95,10 +95,7 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] mixedBC - Nodes that must stay on their own, from FindMixedBoundaryNodes.
    * \param[in] onPhysBoundary - Nodes carrying a physical boundary condition, excluding SEND_RECEIVE.
    * \param[out] neverGrewCV - Coarse CV index of every front whose stack never advanced past its
-   *             seed layer. Such a CV gives up nothing by losing the stack-base protection below,
-   *             and protecting it anyway can leave it orders of magnitude smaller than its
-   *             neighbours (a seed sized to a single fine cell, most often at a thin near-wall
-   *             layer), which destabilises the FAS correction at coarser levels.
+   *             seed layer.
    * \return Summary of the paving, empty except on the master rank.
    */
   string PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
