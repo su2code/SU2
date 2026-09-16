@@ -140,8 +140,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL();
-  const bool limiter = (config->GetKind_SlopeLimit() != LIMITER::NONE) &&
-                       (config->GetInnerIter() <= config->GetLimiterIter());
+  /*--- After LIMITER_ITER the limiter is frozen (no longer recomputed), but still applied. ---*/
+  const bool limiter = (config->GetKind_SlopeLimit() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit() == LIMITER::VAN_ALBADA_EDGE);
 
   /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
