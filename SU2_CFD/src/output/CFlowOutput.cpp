@@ -1476,7 +1476,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
   /*--- Only place outputs of the "SOLUTION" group for species transport here. ---*/
 
 
-  if (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE) {
+  if (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE && config->GetKind_SlopeLimit_Turb() != LIMITER::VAN_ALBADA_EDGE) {
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
       case TURB_FAMILY::SA:
         AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
@@ -1492,7 +1492,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
     }
   }
 
-  if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
+  if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE && config->GetKind_SlopeLimit_Species() != LIMITER::VAN_ALBADA_EDGE) {
     switch (config->GetKind_Species_Model()) {
       case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
@@ -1658,7 +1658,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
   }
 
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
+  const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE) &&
+                       (config->GetKind_SlopeLimit_Turb() != LIMITER::VAN_ALBADA_EDGE);
 
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
@@ -1728,6 +1729,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     }
   }
 
+  const bool limiter_species = (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) &&
+                               (config->GetKind_SlopeLimit_Species() != LIMITER::VAN_ALBADA_EDGE);
+
   switch (config->GetKind_Species_Model()) {
 
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
@@ -1736,7 +1740,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
         SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
         SetVolumeOutputValue("DIFFUSIVITY_"+ std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint,iVar));
-        if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
+        if (limiter_species)
           SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
         if (config->GetPyCustomSource()){
           SetVolumeOutputValue("SPECIES_UDS_" + std::to_string(iVar), iPoint, Node_Species->GetUserDefinedSource()(iPoint, iVar));
@@ -1765,7 +1769,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("RES_" + scalar_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, flamelet_config_options.n_control_vars + i_scalar));
       }
 
-      if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
+      if (limiter_species) {
         /*--- Limiter for controlling variable transport equations. ---*/
         for (auto iCV=0u; iCV<flamelet_config_options.n_control_vars; iCV++) {
           const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];

@@ -99,6 +99,7 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
   const bool muscl = config->GetMUSCL();
   const bool limiter = (config->GetKind_SlopeLimit() != LIMITER::NONE) &&
                        (config->GetInnerIter() <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit() == LIMITER::VAN_ALBADA_EDGE);
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -126,7 +127,7 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
     case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1); break;
   }
 
-  if (limiter && muscl) SetSolution_Limiter(geometry, config);
+  if (limiter && !van_albada && muscl) SetSolution_Limiter(geometry, config);
 }
 
 template <class VariableType>
@@ -141,6 +142,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   const bool muscl = config->GetMUSCL();
   const bool limiter = (config->GetKind_SlopeLimit() != LIMITER::NONE) &&
                        (config->GetInnerIter() <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit() == LIMITER::VAN_ALBADA_EDGE);
 
   /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
   const bool musclFlow = config->GetMUSCL_Flow() && muscl && (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
@@ -258,7 +260,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
           auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-          if (limiter) {
+          if (limiter && !van_albada) {
             Limiter_i = nodes->GetLimiter(iPoint);
             Limiter_j = nodes->GetLimiter(jPoint);
           }
@@ -269,7 +271,10 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, U_ij, kappa, musclRamp);
             su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, U_ij, kappa, musclRamp);
 
-            if (limiter) {
+            if (van_albada) {
+              Project_Grad_i *= LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, U_ij, EPS);
+              Project_Grad_j *= LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, U_ij, EPS);
+            } else if (limiter) {
               Project_Grad_i *= Limiter_i[iVar];
               Project_Grad_j *= Limiter_j[iVar];
             }
