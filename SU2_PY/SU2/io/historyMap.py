@@ -458,7 +458,7 @@ history_header_map = {
     "D_MAXIMUM_HEATFLUX": {
         "DESCRIPTION": "Derivative value",
         "GROUP": "D_HEAT",
-        "HEADER": "d[MaxHF]",
+        "HEADER": "d[maxHF]",
         "TYPE": "D_COEFFICIENT",
     },
     "D_MOMENT_X": {
@@ -759,7 +759,7 @@ history_header_map = {
         "DESCRIPTION": "Maximum heatflux on all surfaces defined "
         "in MARKER_MONITORING",
         "GROUP": "HEAT",
-        "HEADER": "MaxHF",
+        "HEADER": "maxHF",
         "TYPE": "COEFFICIENT",
     },
     "MAX_ADJ_DENSITY": {
