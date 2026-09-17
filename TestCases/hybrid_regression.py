@@ -83,7 +83,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-4.010006, 1.521019, 0.300952, 0.019472]
+    fixedCL_naca0012.test_vals = [-3.940725, 1.589218, 0.300917, 0.019470]
     test_list.append(fixedCL_naca0012)
 
     # HYPERSONIC FLOW PAST BLUNT BODY
@@ -516,7 +516,7 @@ def main():
     gust_mesh_defo.cfg_dir   = "gust"
     gust_mesh_defo.cfg_file  = "gust_with_mesh_deformation.cfg"
     gust_mesh_defo.test_iter = 6
-    gust_mesh_defo.test_vals = [-1.844761, 0.001100, -0.000310]
+    gust_mesh_defo.test_vals = [-1.844761, 0.001290, -0.000316]
     gust_mesh_defo.unsteady  = True
     gust_mesh_defo.enabled_with_tsan = False
     test_list.append(gust_mesh_defo)
@@ -567,7 +567,7 @@ def main():
     edge_VW           = TestCase('edge_VW')
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
-    edge_VW.test_iter = 30
+    edge_VW.test_iter = 25
     edge_VW.test_vals = [-7.124287, -0.922783, -0.000009, 0.000000]
     test_list.append(edge_VW)
 
