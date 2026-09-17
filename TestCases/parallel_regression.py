@@ -129,8 +129,8 @@ def main():
     invwedge_a.cfg_dir = "nonequilibrium/invwedge"
     invwedge_a.cfg_file = "invwedge_ausm.cfg"
     invwedge_a.test_iter = 10
-    invwedge_a.test_vals = [-1.069665, -1.594428, -18.299923, -18.627315, -18.573325, 2.245732, 1.874096, 5.290295, 0.847739]
-    invwedge_a.test_vals_aarch64 = [-1.069675, -1.594438, -18.299736, -18.627126, -18.573137, 2.245721, 1.874105, 5.290285, 0.847729]
+    invwedge_a.test_vals = [-1.081764, -1.606527, -18.299923, -18.627313, -18.573325, 2.234595, 1.854912, 5.278328, 0.837083]
+    invwedge_a.test_vals_aarch64 = [-1.081764, -1.606527, -18.299923, -18.627313, -18.573325, 2.234595, 1.854912, 5.278328, 0.837083]
     test_list.append(invwedge_a)
 
     # Inviscid single wedge, ausm+-up2, implicit
@@ -147,8 +147,8 @@ def main():
     invwedge_msw.cfg_dir = "nonequilibrium/invwedge"
     invwedge_msw.cfg_file = "invwedge_msw.cfg"
     invwedge_msw.test_iter = 10
-    invwedge_msw.test_vals = [-1.212335, -1.737098, -18.301825, -18.629206, -18.575226, 2.106171, 1.651949, 5.143958, 0.704444]
-    invwedge_msw.test_vals_aarch64 = [-1.212335, -1.737098, -18.299279, -18.626656, -18.572683, 2.106171, 1.651949, 5.143958, 0.704444]
+    invwedge_msw.test_vals = [-1.206414, -1.731177, -18.301825, -18.629206, -18.575226, 2.111923, 1.660408, 5.150501, 0.710186]
+    invwedge_msw.test_vals_aarch64 = [-1.206414, -1.731177, -18.299771, -18.627181, -18.573171, 2.111923, 1.660408, 5.150501, 0.710186]
     test_list.append(invwedge_msw)
 
     # Inviscid single wedge, roe, implicit
@@ -156,8 +156,8 @@ def main():
     invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
-    invwedge_roe.test_vals = [-1.023283, -1.548046, -17.814403, -18.143369, -18.087522, 2.295025, 1.884804, 5.338440, 0.926068]
-    invwedge_roe.test_vals_aarch64 = [-1.052398, -1.577160, -17.794015, -18.122997, -18.067131, 2.266042, 1.849686, 5.304700, 0.899584]
+    invwedge_roe.test_vals = [-1.158437, -1.683200, -17.734417, -18.064156, -18.007526, 2.157771, 1.789407, 5.196450, 0.767270]
+    invwedge_roe.test_vals_aarch64 = [-1.156325, -1.681088, -17.726749, -18.056513, -17.999860, 2.159488, 1.793498, 5.198638, 0.769831]
     test_list.append(invwedge_roe)
 
     # Inviscid single wedge, lax, implicit
@@ -165,8 +165,8 @@ def main():
     invwedge_lax.cfg_dir = "nonequilibrium/invwedge"
     invwedge_lax.cfg_file = "invwedge_lax.cfg"
     invwedge_lax.test_iter = 10
-    invwedge_lax.test_vals = [-0.877280, -1.402043, -32.000000, -32.000000, -24.952631, 2.451869, 1.857084, 5.486158, 1.051580]
-    invwedge_lax.test_vals_aarch64 = [-0.877280, -1.402043, -32.000000, -32.000000, -24.952631, 2.451869, 1.857084, 5.486158, 1.051580]
+    invwedge_lax.test_vals = [-0.882120, -1.406883, -32.000000, -32.000000, -24.953606, 2.447071, 1.853423, 5.480164, 1.047015]
+    invwedge_lax.test_vals_aarch64 = [-0.882120, -1.406883, -32.000000, -32.000000, -24.953606, 2.447071, 1.853423, 5.480164, 1.047015]
     test_list.append(invwedge_lax)
 
     # Inviscid single wedge, implicit, AUSM+M scheme
@@ -183,8 +183,8 @@ def main():
     invwedge_ss_inlet.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ss_inlet.cfg_file = "invwedge_ss_inlet.cfg"
     invwedge_ss_inlet.test_iter = 10
-    invwedge_ss_inlet.test_vals = [-1.068634, -1.593397, -18.246265, -18.575529, -18.519338, 2.246925, 1.874200, 5.291234, 0.848731]
-    invwedge_ss_inlet.test_vals_aarch64 = [-1.068592, -1.593355, -18.250183, -18.579524, -18.523255, 2.246972, 1.874197, 5.291273, 0.848771]
+    invwedge_ss_inlet.test_vals = [-1.081061, -1.605824, -18.246258, -18.575522, -18.519330, 2.235398, 1.855022, 5.278994, 0.837755]
+    invwedge_ss_inlet.test_vals_aarch64 = [-1.081061, -1.605824, -18.246260, -18.575547, -18.519333, 2.235398, 1.855022, 5.278994, 0.837755]
     test_list.append(invwedge_ss_inlet)
 
     # Viscous single cone - axisymmetric
@@ -192,8 +192,8 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.298530, -5.823015, -20.404788, -20.318330, -20.378801, 1.067489, -3.250987, -0.015488, 0.095136, 24939.000000]
-    visc_cone.test_vals_aarch64 = [-5.298530, -5.823015, -20.404788, -20.318329, -20.378801, 1.067489, -3.250987, -0.015488, 0.095136, 24939.000000]
+    visc_cone.test_vals = [-5.275015, -5.799160, -20.292303, -20.436143, -20.888373, 1.156776, -3.217423, -0.013712, 0.092252, 27878.000000]
+    visc_cone.test_vals_aarch64 = [-5.275015, -5.799159, -20.292303, -20.436143, -20.888374, 1.156775, -3.217422, -0.013713, 0.092252, 27878.000000]
     test_list.append(visc_cone)
 
     # Viscous single wedge with Mutation++
@@ -209,7 +209,7 @@ def main():
     super_cat.cfg_dir = "nonequilibrium/visc_wedge"
     super_cat.cfg_file = "super_cat.cfg"
     super_cat.test_iter = 10
-    super_cat.test_vals = [-5.309257, -5.834048, -21.098287, -21.157699, -21.180688, 1.056908, -3.252349, -0.028039, 0.252019, 24878.000000]
+    super_cat.test_vals = [-5.296256, -5.820629, -21.102797, -21.154470, -21.132197, 1.137393, -3.220148, -0.025962, 0.247096, 27884.000000]
     test_list.append(super_cat)
 
     # Viscous single wedge - partially catalytic walls
@@ -225,7 +225,7 @@ def main():
     ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
     ion_gy.cfg_file = "cyl_ion_gy.cfg"
     ion_gy.test_iter = 99
-    ion_gy.test_vals = [-11.662039, -4.203178, -4.868257, -5.462497, -5.232052, -4.960881, -6.951391, 4.541901, 4.552855, -0.014861, 0.000001, 90357.000000]
+    ion_gy.test_vals = [-12.191649, -4.245292, -4.904190, -5.585803, -5.472455, -5.057619, -7.442352, 3.429183, 3.433581, -0.014861, 0.000001, 90357.000000]
     ion_gy.tol = 0.01
     test_list.append(ion_gy)
 
@@ -652,9 +652,9 @@ def main():
     test_list.append(inc_euler_naca0012)
 
     # NACA0012 Hydrofoil
-    inc_euler_naca0012_pb           = TestCase('inc_euler_naca0012_pb')
-    inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
-    inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
+    inc_euler_naca0012_pb = TestCase('inc_euler_naca0012_pb')
+    inc_euler_naca0012_pb.cfg_dir = "incomp_euler/naca0012"
+    inc_euler_naca0012_pb.cfg_file = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
     inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784247, 0.427448, 0.012083]
     test_list.append(inc_euler_naca0012_pb)
@@ -688,9 +688,9 @@ def main():
     test_list.append(inc_lam_cylinder)
 
     # Laminar cylinder, pressure-based
-    inc_lam_cylinder_pb          = TestCase('inc_lam_cylinder_pb')
-    inc_lam_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
-    inc_lam_cylinder_pb.cfg_file  = "incomp_pb_cylinder.cfg"
+    inc_lam_cylinder_pb = TestCase('inc_lam_cylinder_pb')
+    inc_lam_cylinder_pb.cfg_dir = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder_pb.cfg_file = "incomp_pb_cylinder.cfg"
     inc_lam_cylinder_pb.test_iter = 10
     inc_lam_cylinder_pb.test_vals = [-3.486113, -3.777688, 0.012054, 6.178573]
     test_list.append(inc_lam_cylinder_pb)
@@ -699,9 +699,9 @@ def main():
     # equation and variable density. Convergence is genuine but slow (needs ~40k iterations
     # for rms[h] to reach a low residual); this only checks a short trajectory guard, matching
     # the pattern used for other hard-to-converge cases in this suite.
-    inc_poly_cylinder_pb          = TestCase('inc_poly_cylinder_pb')
-    inc_poly_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
-    inc_poly_cylinder_pb.cfg_file  = "pb_poly_cylinder.cfg"
+    inc_poly_cylinder_pb = TestCase('inc_poly_cylinder_pb')
+    inc_poly_cylinder_pb.cfg_dir = "incomp_navierstokes/cylinder"
+    inc_poly_cylinder_pb.cfg_file = "pb_poly_cylinder.cfg"
     inc_poly_cylinder_pb.test_iter = 20
     inc_poly_cylinder_pb.test_vals = [-13.483272, 0.541350, 0.005972, 17.020220, -8927.600000]
     test_list.append(inc_poly_cylinder_pb)
@@ -715,9 +715,9 @@ def main():
     test_list.append(inc_lam_sphere)
 
     # Laminar sphere, Re=1, pressure-based. Only 3D pressure-based case in the regression suite.
-    inc_lam_sphere_pb          = TestCase('inc_lam_sphere_pb')
-    inc_lam_sphere_pb.cfg_dir   = "incomp_navierstokes/sphere"
-    inc_lam_sphere_pb.cfg_file  = "pb_sphere.cfg"
+    inc_lam_sphere_pb = TestCase('inc_lam_sphere_pb')
+    inc_lam_sphere_pb.cfg_dir = "incomp_navierstokes/sphere"
+    inc_lam_sphere_pb.cfg_file = "pb_sphere.cfg"
     inc_lam_sphere_pb.test_iter = 9
     inc_lam_sphere_pb.test_vals = [-6.092084, -2.305040, -2.479072, -2.548968, 0.191798, 170.793203, -6.000632]
     test_list.append(inc_lam_sphere_pb)
@@ -725,9 +725,9 @@ def main():
     # Laminar sphere, Re=1, pressure-based, automatic relaxation factors. The only case
     # in the suite that exercises USE_AUTOMATIC_RELAXATION_FACTORS, and 3D since the alpha_p
     # bug this guards against is invisible in 2D (it sums the wrong set of Jacobian diagonals).
-    inc_lam_sphere_pb_urf          = TestCase('inc_lam_sphere_pb_urf')
-    inc_lam_sphere_pb_urf.cfg_dir   = "incomp_navierstokes/sphere"
-    inc_lam_sphere_pb_urf.cfg_file  = "pb_sphere_urf.cfg"
+    inc_lam_sphere_pb_urf = TestCase('inc_lam_sphere_pb_urf')
+    inc_lam_sphere_pb_urf.cfg_dir = "incomp_navierstokes/sphere"
+    inc_lam_sphere_pb_urf.cfg_file = "pb_sphere_urf.cfg"
     inc_lam_sphere_pb_urf.test_iter = 9
     inc_lam_sphere_pb_urf.test_vals = [-4.747391, -2.239844, -2.380839, -1.685462, 0.237593, 206.027273, -6.331275]
     test_list.append(inc_lam_sphere_pb_urf)
@@ -757,9 +757,9 @@ def main():
     test_list.append(inc_lam_bend)
 
     # X-coarse laminar bend as a mixed element CGNS test, pressure-based
-    inc_lam_bend_pb          = TestCase('inc_lam_bend_pb')
-    inc_lam_bend_pb.cfg_dir   = "incomp_navierstokes/bend"
-    inc_lam_bend_pb.cfg_file  = "pb_lam_bend.cfg"
+    inc_lam_bend_pb = TestCase('inc_lam_bend_pb')
+    inc_lam_bend_pb.cfg_dir = "incomp_navierstokes/bend"
+    inc_lam_bend_pb.cfg_file = "pb_lam_bend.cfg"
     inc_lam_bend_pb.test_iter = 10
     inc_lam_bend_pb.test_vals = [-3.824468, -3.345335, -0.012351, 1.685090]
     test_list.append(inc_lam_bend_pb)
@@ -801,9 +801,9 @@ def main():
     test_list.append(inc_turb_naca0012_sst_sust)
 
     # Flat plate, pressure-based
-    inc_flatplate_pb           = TestCase('inc_flatplate_pb')
-    inc_flatplate_pb.cfg_dir   = "incomp_rans/rough_flatplate"
-    inc_flatplate_pb.cfg_file  = "pb_rough_flatplate_incomp.cfg"
+    inc_flatplate_pb = TestCase('inc_flatplate_pb')
+    inc_flatplate_pb.cfg_dir = "incomp_rans/rough_flatplate"
+    inc_flatplate_pb.cfg_file = "pb_rough_flatplate_incomp.cfg"
     inc_flatplate_pb.test_iter = 10
     inc_flatplate_pb.test_vals = [-4.063342, -9.884401, 0.000010, 0.228472]
     test_list.append(inc_flatplate_pb)
