@@ -195,6 +195,14 @@ def main():
     cylinder_lowmach.test_vals = [-6.453096, -0.991328, 0.722165, 66.048089, 0.000000]
     test_list.append(cylinder_lowmach)
 
+    # Laminar NACA0012 with linelet preconditioner (see #2877)
+    lam_naca0012_linelet           = TestCase('lam_naca0012_linelet')
+    lam_naca0012_linelet.cfg_dir   = "navierstokes/naca0012"
+    lam_naca0012_linelet.cfg_file  = "lam_NACA0012_LINELET.cfg"
+    lam_naca0012_linelet.test_iter = 20
+    lam_naca0012_linelet.test_vals = [-5.282867, -2.845208, -2.852421, 0.154542]
+    test_list.append(lam_naca0012_linelet)
+
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
     poiseuille           = TestCase('poiseuille')
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
