@@ -134,6 +134,15 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++)
       onPhysBoundary[fine_grid->vertex[iMarker][iVertex]->GetNode()] = 1;
   }
+  /*--- Nodes on a periodic marker. Periodic donor matching is rebuilt per level and pairs one
+   *    coarse vertex per marker, so a coarse CV holding two of these would receive twice. ---*/
+  vector<char> onPeriodic(fine_grid->GetnPoint(), 0);
+  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
+    for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++)
+      onPeriodic[fine_grid->vertex[iMarker][iVertex]->GetNode()] = 1;
+  }
+
   /*--- Nodes where two different boundary conditions meet.  ---*/
   const auto mixedBC = FindMixedBoundaryNodes(fine_grid, config);
 
@@ -142,7 +151,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   const auto firstLineCV = Index_CoarseCV;
   vector<unsigned long> neverGrewCV;
   if (config->GetMGOptions().MG_Implicit_Lines) {
-    pavingReport = PaveAdvancingFronts(Index_CoarseCV, fine_grid, config, iMesh, mixedBC, onPhysBoundary, neverGrewCV);
+    pavingReport =
+        PaveAdvancingFronts(Index_CoarseCV, fine_grid, config, iMesh, mixedBC, onPhysBoundary, onPeriodic, neverGrewCV);
   }
   const auto endLineCV = Index_CoarseCV;
 
@@ -565,7 +575,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++)
     for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
       const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-      if (mixedBC[iFinePoint]) mustStayAlone[iCoarsePoint] = true;
+      if (mixedBC[iFinePoint] || onPeriodic[iFinePoint]) mustStayAlone[iCoarsePoint] = true;
       if (onPhysBoundary[iFinePoint]) cvOnBoundary[iCoarsePoint] = true;
     }
 
@@ -1949,7 +1959,8 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
 
 string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
                                                const CConfig* config, unsigned short iMesh, const vector<char>& mixedBC,
-                                               const vector<char>& onPhysBoundary, vector<unsigned long>& neverGrewCV) {
+                                               const vector<char>& onPhysBoundary, const vector<char>& onPeriodic,
+                                               vector<unsigned long>& neverGrewCV) {
   /*--- Paving by advancing fronts. Each boundary patch rises into the domain keeping its footprint,
    *    stopping at a boundary or where the next layer is not isomorphic to the current one. ---*/
   const auto starting_Index_CoarseCV = Index_CoarseCV;
@@ -2044,6 +2055,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
       const su2double dot = GeometryToolbox::DotProduct(nDim, vec, marchDir);
       const bool admissible =
+          !onPeriodic[jPoint] &&
           !(onPhysBoundary[jPoint] && EntersBoundary(fine_grid, config, nDim, jPoint, vec, cos_boundary)) &&
           GeometricalCheck(jPoint, fine_grid, config);
 
