@@ -110,13 +110,21 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
   /* Update global flame thickness value. */
   if (calc_flame_thickness) {
-    su2double calc_thickness = GetOverallFlameThickness(geometry, solver_container);
-    su2double test_thickness = min(default_flame_thickness, calc_thickness);
-    if (test_thickness < global_flame_thickness) {
-      global_flame_thickness = test_thickness;
-    } else {
-      global_flame_thickness = 0.95*global_flame_thickness + 0.05*test_thickness;
+    /*--- Every thread takes part in this, it reduces over the points of the rank and over ranks,
+     * and so returns the same value on all of them. ---*/
+    const su2double calc_thickness = GetOverallFlameThickness(geometry, solver_container);
+    const su2double test_thickness = min(default_flame_thickness, calc_thickness);
+
+    /*--- Only one thread relaxes the stored value: the others would race on it, and would each
+     * apply the relaxation below again, so the result would depend on the size of the team. ---*/
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      if (test_thickness < global_flame_thickness) {
+        global_flame_thickness = test_thickness;
+      } else {
+        global_flame_thickness = 0.95*global_flame_thickness + 0.05*test_thickness;
+      }
     }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /* Flame thickness correction factors */
