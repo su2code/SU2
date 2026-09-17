@@ -1567,7 +1567,7 @@ history_header_map = {
     "TAVG_D_MAXIMUM_HEATFLUX": {
         "DESCRIPTION": "weighted time average derivative " "value",
         "GROUP": "TAVG_D_HEAT",
-        "HEADER": "dtavg[MaxHF]",
+        "HEADER": "dtavg[maxHF]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_MOMENT_X": {
@@ -1813,7 +1813,7 @@ history_header_map = {
     "TAVG_MAXIMUM_HEATFLUX": {
         "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_HEAT",
-        "HEADER": "tavg[MaxHF]",
+        "HEADER": "tavg[maxHF]",
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_MOMENT_X": {
