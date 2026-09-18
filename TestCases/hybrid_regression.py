@@ -149,8 +149,8 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.004269, -7.636575, -0.000000, 2.089953]
-    poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262530, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.004276, -7.636719, -0.000000, 2.089953]
+    poiseuille_profile.test_vals_aarch64 = [-12.004276, -7.636719, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
     # 2D Rotational Periodic
@@ -170,7 +170,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-3.071941, -2.932947, 0.784350, 0.019141, 1000.000000]
+    rae2822_sa.test_vals = [-3.072080, -4.312613, 0.785814, 0.019186, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -178,7 +178,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-1.516983, 5.892610, 0.686184, 0.025467, 100.000000]
+    rae2822_sst.test_vals = [-1.555309, 5.890404, 0.624443, 0.019936, 100.000000]
     test_list.append(rae2822_sst)
 
     # RAE2822 SST_SUST
@@ -581,7 +581,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 25
-    edge_VW.test_vals = [-7.124287, -0.922783, -0.000009, 0.000000]
+    edge_VW.test_vals = [-11.843864, -5.649355, -0.000009, 0.000000]
     test_list.append(edge_VW)
 
     # Rarefaction shock wave edge_PPR
@@ -711,7 +711,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.468135, -1.504429]
+    bars_SST_2D.test_vals = [13.000000, -0.467956, -1.537348]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 

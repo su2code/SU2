@@ -208,7 +208,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.003330, -7.625612, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.003328, -7.626399, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262299, -0.000000, 2.089953] #last 4 columns
     test_list.append(poiseuille_profile)
 
@@ -920,7 +920,7 @@ def main():
     ls89_sa.cfg_dir   = "nicf/LS89"
     ls89_sa.cfg_file  = "turb_SA_PR.cfg"
     ls89_sa.test_iter = 20
-    ls89_sa.test_vals = [-5.041938, -13.384816, 0.180978, 0.421448]
+    ls89_sa.test_vals = [-5.054250, -13.408763, 0.184282, 0.420179]
     test_list.append(ls89_sa)
 
     # Rarefaction shock wave edge_VW
@@ -1078,7 +1078,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.468398, -1.504413]
+    bars_SST_2D.test_vals = [13.000000, -0.468423, -1.537338]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 

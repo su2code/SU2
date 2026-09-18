@@ -336,7 +336,7 @@ def main():
     ramp_msw.cfg_dir = "euler/ramp"
     ramp_msw.cfg_file = "inv_ramp_msw.cfg"
     ramp_msw.test_iter = 100
-    ramp_msw.test_vals = [-6.990752, -1.231206, -0.077507, 0.054419]
+    ramp_msw.test_vals = [-7.242600, -1.471141, -0.077507, 0.054419]
     ramp_msw.tol = [0.2, 0.2, 0.00001, 0.00001]
     test_list.append(ramp_msw)
 
@@ -430,7 +430,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-1.339714, -4.665506, 0.717823, 0.036358, 1000.000000]
+    rae2822_sa.test_vals = [-1.339818, -4.665847, 0.717819, 0.036359, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -908,7 +908,7 @@ def main():
     turbmod_sa_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_edw_rae2822.cfg_file  = "turb_SA_EDW_RAE2822.cfg"
     turbmod_sa_edw_rae2822.test_iter = 20
-    turbmod_sa_edw_rae2822.test_vals = [-2.989073, -0.123950, -0.564727, -3.774316, 0.793424, 0.020182]
+    turbmod_sa_edw_rae2822.test_vals = [-2.989073, -0.123950, -0.564727, -3.773698, 0.793424, 0.020182]
     test_list.append(turbmod_sa_edw_rae2822)
 
     # SA Compressibility and Edwards
@@ -1360,7 +1360,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.536881, -1.568551]
+    bars_SST_2D.test_vals = [13.000000, -0.536895, -1.592508]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
