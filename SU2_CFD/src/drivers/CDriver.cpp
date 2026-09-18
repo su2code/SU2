@@ -800,11 +800,18 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   /*--- Loop over all the new grid ---*/
 
+  string pavingReports;
+  /*--- Coarse-CV volume ratio per level, held back with pavingReports so it does not interleave
+   *    with the multigrid table. ---*/
+  string volRatioReport;
+  constexpr passivedouble VOL_RATIO_WARN = 1e9;
+
   for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
     /*--- Create main agglomeration structure ---*/
 
-    geometry[iMGlevel] = new CMultiGridGeometry(geometry[iMGlevel-1], config, iMGlevel);
+    auto* coarse_grid = new CMultiGridGeometry(geometry[iMGlevel-1], config, iMGlevel);
+    geometry[iMGlevel] = coarse_grid;
 
     /*--- Protect against the situation that we were not able to complete
        the agglomeration for this level, i.e., there weren't enough points.
@@ -815,6 +822,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
       geometry[iMGlevel] = nullptr;
       break;
     }
+    pavingReports += coarse_grid->GetPavingReport();
 
     /*--- Compute points surrounding points. ---*/
 
@@ -828,7 +836,39 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     /*--- Create the control volume structures ---*/
 
     geometry[iMGlevel]->SetControlVolume(geometry[iMGlevel-1], ALLOCATE);
+
+    /*--- Largest-to-smallest coarse CV volume on this level, reduced across every rank. Not an
+     *    AD quantity -- a diagnostic ratio has nothing to differentiate. ---*/
+    {
+      const auto* g = geometry[iMGlevel];
+      passivedouble vmin = std::numeric_limits<passivedouble>::max(), vmax = 0.0;
+      for (auto i = 0ul; i < g->GetnPointDomain(); i++) {
+        const passivedouble v = SU2_TYPE::GetValue(g->nodes->GetVolume(i));
+        vmin = std::min(vmin, v);
+        vmax = std::max(vmax, v);
+      }
+      passivedouble vminGlobal = vmin, vmaxGlobal = vmax;
+#ifdef HAVE_MPI
+      /*--- SU2_MPI maps MPI_DOUBLE to the AD type, which does not fit these passive buffers. ---*/
+      MPI_Allreduce(&vmin, &vminGlobal, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+      MPI_Allreduce(&vmax, &vmaxGlobal, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+#endif
+
+      if (rank == MASTER_NODE) {
+        const passivedouble ratio = vmaxGlobal / std::max(std::numeric_limits<passivedouble>::min(), vminGlobal);
+        stringstream ss;
+        ss << "  MG level " << iMGlevel << " CV volume: min " << vminGlobal << ", max " << vmaxGlobal
+           << ", ratio " << ratio << "\n";
+        if (ratio > VOL_RATIO_WARN)
+          ss << "  WARNING: MG level " << iMGlevel << " has a coarse CV volume ratio of " << ratio
+             << " -- some coarse control volume is many orders of magnitude smaller than another\n"
+                "           on the same level. \n";
+        volRatioReport += ss.str();
+      }
+    }
+
     geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
+
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
     /*--- Find closest, most normal, neighbor to a surface point ---*/
@@ -839,6 +879,19 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
     geometry[iMGlevel]->SetMGLevel(iMGlevel);
 
+  }
+
+  /*--- Held back so they do not interleave with the multigrid level table. ---*/
+  if (rank == MASTER_NODE) cout << pavingReports << volRatioReport;
+
+  /*--- MG_MIN_MESHSIZE is a per-rank floor, so the levels actually built fall with rank count. ---*/
+  if ((rank == MASTER_NODE) && (requestedMGlevels > 0)) {
+    if (config->GetnMGLevels() == 0)
+      cout << "\nWARNING: no multigrid levels used, reduce MG_MIN_MESHSIZE or the number of MPI ranks\n"
+              "         if you want multigrid.\n" << endl;
+    else
+      cout << config->GetnMGLevels() << " multigrid levels used, maximum allowed is " << requestedMGlevels
+           << ". Change MGLEVEL or MG_MIN_MESHSIZE to use a different number." << endl;
   }
 
   if (config->GetWrt_MultiGrid()) geometry[MESH_0]->ColorMGLevels(config->GetnMGLevels(), geometry);
