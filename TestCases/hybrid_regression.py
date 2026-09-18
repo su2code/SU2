@@ -116,11 +116,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-<<<<<<< HEAD
     flatplate.test_vals = [-7.693071, -2.214908, 0.001084, 0.036279, 2.361500, -2.325300, 0.000000, 0.000000]
-=======
-    flatplate.test_vals = [-6.543292, -1.065161, 0.001196, 0.029390, 2.361500, -2.332100, 0.000000, 0.000000]
->>>>>>> develop
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -153,11 +149,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-<<<<<<< HEAD
     poiseuille_profile.test_vals         = [-12.004269, -7.636575, -0.000000, 2.089953]
-=======
-    poiseuille_profile.test_vals         = [-12.005123, -7.582375, -0.000000, 2.089953]
->>>>>>> develop
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262530, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
@@ -178,11 +170,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-<<<<<<< HEAD
     rae2822_sa.test_vals = [-3.071941, -2.932947, 0.784350, 0.019141, 1000.000000]
-=======
-    rae2822_sa.test_vals = [-2.190528, -5.335496, 0.383385, 0.077606, 0.000000]
->>>>>>> develop
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -500,11 +488,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-<<<<<<< HEAD
     spinning_cylinder.test_vals         = [-7.500185, -2.045380, 1.964884, 1.981909]
-=======
-    spinning_cylinder.test_vals         = [-7.533970, -2.066690, 1.832252, 1.843016]
->>>>>>> develop
     spinning_cylinder.test_vals_aarch64 = [-8.008023, -2.611064, 1.497308, 1.487483]
     test_list.append(spinning_cylinder)
 

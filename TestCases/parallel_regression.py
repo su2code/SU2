@@ -86,7 +86,7 @@ def main():
     flame_init_methods.new_output = True
     test_list.append(flame_init_methods)
 
-    # 2D laminar premixed ch4-air flame, transient flame propagation  
+    # 2D laminar premixed ch4-air flame, transient flame propagation
     cfd_flamelet_ch4_unsteady = TestCase('cfd_flamelet_ch4_unsteady')
     cfd_flamelet_ch4_unsteady.cfg_dir = "flamelet/09_laminar_premixed_ch4_flame_unsteady"
     cfd_flamelet_ch4_unsteady.cfg_file = "lam_prem_ch4_unsteady.cfg"
@@ -336,11 +336,7 @@ def main():
     ramp_msw.cfg_dir = "euler/ramp"
     ramp_msw.cfg_file = "inv_ramp_msw.cfg"
     ramp_msw.test_iter = 100
-<<<<<<< HEAD
     ramp_msw.test_vals = [-6.990752, -1.231206, -0.077507, 0.054419]
-=======
-    ramp_msw.test_vals = [-7.242600, -1.471141, -0.077507, 0.054419]
->>>>>>> develop
     ramp_msw.tol = [0.2, 0.2, 0.00001, 0.00001]
     test_list.append(ramp_msw)
 
@@ -420,11 +416,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-<<<<<<< HEAD
     poiseuille_profile.test_vals = [-12.006425, -7.518843, -0.000000, 2.089953]
-=======
-    poiseuille_profile.test_vals = [-12.004294, -7.578130, -0.000000, 2.089953]
->>>>>>> develop
     poiseuille_profile.test_vals_aarch64 = [-12.007498, -7.226926, -0.000000, 2.089953]
     poiseuille_profile.tol       = [0.001, 0.001, 1e-5, 1e-5, 1e-5]
     test_list.append(poiseuille_profile)
