@@ -39,6 +39,7 @@ private:
   enum class VTKDatatype {
     FLOAT32,
     INT32,
+    INT64,
     UINT8
   };
 
@@ -118,7 +119,11 @@ private:
         break;
       case VTKDatatype::INT32:
         typeStr = "\"Int32\"";
-        typeSize = sizeof(int);
+        typeSize = sizeof(int32_t);
+        break;
+      case VTKDatatype::INT64:
+        typeStr = "\"Int64\"";
+        typeSize = sizeof(int64_t);
         break;
       case VTKDatatype::UINT8:
         typeStr = "\"UInt8\"";

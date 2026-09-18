@@ -27,6 +27,8 @@
 
 #include "../../../include/output/filewriter/CParaviewXMLFileWriter.hpp"
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include <cstdint>
+#include <limits>
 
 const string CParaviewXMLFileWriter::fileExt = ".vtu";
 
@@ -64,7 +66,6 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   unsigned long iPoint, iElem;
 
-  char str_buf[255];
 
   OpenMPIFile(val_filename);
 
@@ -98,6 +99,12 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   GlobalElem        = dataSorter->GetnElemGlobal();
   GlobalElemStorage = dataSorter->GetnConnGlobal();
 
+  /*--- The offsets into the connectivity array go up to GlobalElemStorage, use 64-bit
+   integers for connectivity and offsets only when that does not fit in Int32. ---*/
+
+  const bool connInt64 = GlobalElemStorage > static_cast<unsigned long>(std::numeric_limits<int32_t>::max());
+  const auto connType = connInt64 ? VTKDatatype::INT64 : VTKDatatype::INT32;
+
   /* Write the ASCII XML header. Note that we use the appended format for the data,
   * which means that all data is appended at the end of the file in one binary blob.
   */
@@ -110,16 +117,14 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   WriteMPIString("<UnstructuredGrid>\n", MASTER_NODE);
 
-  SPRINTF(str_buf, "<Piece NumberOfPoints=\"%i\" NumberOfCells=\"%i\">\n",
-          SU2_TYPE::Int(GlobalPoint), SU2_TYPE::Int(GlobalElem));
-
-  WriteMPIString(std::string(str_buf), MASTER_NODE);
+  WriteMPIString("<Piece NumberOfPoints=\"" + std::to_string(GlobalPoint) + "\" NumberOfCells=\"" +
+                 std::to_string(GlobalElem) + "\">\n", MASTER_NODE);
   WriteMPIString("<Points>\n", MASTER_NODE);
   AddDataArray(VTKDatatype::FLOAT32, "", NCOORDS, myPoint*NCOORDS, GlobalPoint*NCOORDS);
   WriteMPIString("</Points>\n", MASTER_NODE);
   WriteMPIString("<Cells>\n", MASTER_NODE);
-  AddDataArray(VTKDatatype::INT32, "connectivity", 1, myElemStorage, GlobalElemStorage);
-  AddDataArray(VTKDatatype::INT32, "offsets", 1, myElem, GlobalElem);
+  AddDataArray(connType, "connectivity", 1, myElemStorage, GlobalElemStorage);
+  AddDataArray(connType, "offsets", 1, myElem, GlobalElem);
   AddDataArray(VTKDatatype::UINT8, "types", 1, myElem, GlobalElem);
   WriteMPIString("</Cells>\n", MASTER_NODE);
 
@@ -205,18 +210,18 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
 
-  vector<int> connBuf(myElemStorage);
-  vector<int> offsetBuf(myElem);
+  vector<int64_t> connBuf(myElemStorage);
+  vector<int64_t> offsetBuf(myElem);
   unsigned long iStorage = 0, iElemID = 0;
   unsigned short iNode = 0;
 
   auto copyToBuffer = [&](GEO_TYPE type, unsigned long nElem, unsigned short nPoints){
     for (iElem = 0; iElem < nElem; iElem++) {
       for (iNode = 0; iNode < nPoints; iNode++){
-        connBuf[iStorage+iNode] = int(dataSorter->GetElemConnectivity(type, iElem, iNode)-1);
+        connBuf[iStorage+iNode] = static_cast<int64_t>(dataSorter->GetElemConnectivity(type, iElem, iNode)) - 1;
       }
       iStorage += nPoints;
-      offsetBuf[iElemID++] = int(iStorage + dataSorter->GetnElemConnCumulative(rank));
+      offsetBuf[iElemID++] = static_cast<int64_t>(iStorage + dataSorter->GetnElemConnCumulative(rank));
     }
   };
 
@@ -228,9 +233,17 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   copyToBuffer(PRISM,         nParallel_Pris, N_POINTS_PRISM);
   copyToBuffer(PYRAMID,       nParallel_Pyra, N_POINTS_PYRAMID);
 
-  WriteDataArray(connBuf.data(), VTKDatatype::INT32, myElemStorage, GlobalElemStorage,
-                 dataSorter->GetnElemConnCumulative(rank));
-  WriteDataArray(offsetBuf.data(), VTKDatatype::INT32, myElem, GlobalElem, dataSorter->GetnElemCumulative(rank));
+  if (connInt64) {
+    WriteDataArray(connBuf.data(), connType, myElemStorage, GlobalElemStorage,
+                   dataSorter->GetnElemConnCumulative(rank));
+    WriteDataArray(offsetBuf.data(), connType, myElem, GlobalElem, dataSorter->GetnElemCumulative(rank));
+  } else {
+    vector<int32_t> connBuf32(connBuf.begin(), connBuf.end());
+    vector<int32_t> offsetBuf32(offsetBuf.begin(), offsetBuf.end());
+    WriteDataArray(connBuf32.data(), connType, myElemStorage, GlobalElemStorage,
+                   dataSorter->GetnElemConnCumulative(rank));
+    WriteDataArray(offsetBuf32.data(), connType, myElem, GlobalElem, dataSorter->GetnElemCumulative(rank));
+  }
 
   /*--- Load/write the cell type for all elements in the file. ---*/
 

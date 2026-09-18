@@ -59,8 +59,8 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
   nPoint_Recv = new int[size+1]();
   nElem_Send  = new int[size+1]();
   nElem_Cum  = new int[size+1]();
-  nElemConn_Send = new int[size+1]();
-  nElemConn_Cum = new int[size+1]();
+  nElemConn_Send = new unsigned long[size+1]();
+  nElemConn_Cum = new unsigned long[size+1]();
 
   nElemPerType.fill(0);
   nElemPerTypeGlobal.fill(0);
@@ -397,7 +397,7 @@ void CParallelDataSorter::SetTotalElements(){
   nElem_Cum[0] = 0; nElemConn_Cum[0] = 0;
   for (int ii=1; ii <= size; ii++) {
     nElem_Send[ii]     = int(nElem);
-    nElemConn_Send[ii] = int(nConn);
+    nElemConn_Send[ii] = nConn;
     nElem_Cum[ii] = 0;
     nElemConn_Cum[ii] = 0;
   }
@@ -407,8 +407,8 @@ void CParallelDataSorter::SetTotalElements(){
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                     &(nElem_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
-  SU2_MPI::Alltoall(&(nElemConn_Send[1]), 1, MPI_INT,
-                    &(nElemConn_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
+  SU2_MPI::Alltoall(&(nElemConn_Send[1]), 1, MPI_UNSIGNED_LONG,
+                    &(nElemConn_Cum[1]), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   /*--- Put the counters into cumulative storage format. ---*/
 
