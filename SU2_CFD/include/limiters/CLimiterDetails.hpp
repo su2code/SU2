@@ -138,37 +138,6 @@ struct LimiterHelpers
 
 
 /*!
- * \brief Barth-Jespersen specialization.
- * \ingroup FvmAlgos
- */
-template<>
-struct CLimiterDetails<LIMITER::BARTH_JESPERSEN>
-{
-  /*!
-   * \brief Nothing to precompute for this kind of limiter.
-   */
-  template<class... Ts>
-  inline void preprocess(Ts&...) {}
-
-  /*!
-   * \brief No geometric modification for this kind of limiter.
-   */
-  template<class... Ts>
-  inline su2double geometricFactor(Ts&...) const {return 1.0;}
-
-  /*!
-   * \brief Barth-Jespersen function, min(1, delta/proj).
-   * \note proj and delta have the same sign, without a projection there is nothing to limit.
-   */
-  inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
-  {
-    if (proj == 0.0) return 1.0;
-    return min(delta / proj, 1.0);
-  }
-};
-
-
-/*!
  * \brief Venkatakrishnan specialization.
  * \ingroup FvmAlgos
  */

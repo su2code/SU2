@@ -1030,7 +1030,6 @@ enum class LIMITER {
   NISHIKAWA_R4          , /*!< \brief Slope limiter using Nishikawa's R4 method (stencil formulation). */
   NISHIKAWA_R5          , /*!< \brief Slope limiter using Nishikawa's R5 method (stencil formulation). */
   VENKATAKRISHNAN_WANG , /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
-  BARTH_JESPERSEN      , /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
   VAN_ALBADA_EDGE      , /*!< \brief Slope limiter using Van Albada method (edge formulation). */
   SHARP_EDGES          , /*!< \brief Slope limiter using sharp edges. */
   WALL_DISTANCE          /*!< \brief Slope limiter using wall distance. */
@@ -1042,7 +1041,6 @@ static const MapType<std::string, LIMITER> Limiter_Map = {
   MakePair("NISHIKAWA_R4", LIMITER::NISHIKAWA_R4)
   MakePair("NISHIKAWA_R5", LIMITER::NISHIKAWA_R5)
   MakePair("VENKATAKRISHNAN_WANG", LIMITER::VENKATAKRISHNAN_WANG)
-  MakePair("BARTH_JESPERSEN", LIMITER::BARTH_JESPERSEN)
   MakePair("VAN_ALBADA_EDGE", LIMITER::VAN_ALBADA_EDGE)
   MakePair("SHARP_EDGES", LIMITER::SHARP_EDGES)
   MakePair("WALL_DISTANCE", LIMITER::WALL_DISTANCE)

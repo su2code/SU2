@@ -73,11 +73,6 @@ if (geometry.GetnDim() == 2) {\
       END_SU2_OMP_FOR
       break;
     }
-    case LIMITER::BARTH_JESPERSEN:
-    {
-      INSTANTIATE(LIMITER::BARTH_JESPERSEN);
-      break;
-    }
     case LIMITER::VENKATAKRISHNAN:
     {
       INSTANTIATE(LIMITER::VENKATAKRISHNAN);

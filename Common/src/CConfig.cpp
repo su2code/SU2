@@ -7302,9 +7302,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         case LIMITER::VENKATAKRISHNAN_WANG:
           cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff << "." << endl;
           break;
-        case LIMITER::BARTH_JESPERSEN:
-          cout << "Barth-Jespersen slope-limiting method." << endl;
-          break;
         case LIMITER::VAN_ALBADA_EDGE:
           cout << "Van Albada slope-limiting method implemented by edges." << endl;
           break;
