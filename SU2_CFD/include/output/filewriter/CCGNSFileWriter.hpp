@@ -34,6 +34,9 @@
 #include "cgnslib.h"
 #endif
 
+#include <cstdint>
+#include <limits>
+
 #include "CFileWriter.hpp"
 
 class CCGNSFileWriter final : public CFileWriter {
@@ -66,6 +69,9 @@ class CCGNSFileWriter final : public CFileWriter {
 
   /*--- Max bytes per MPI message, kept below INT_MAX so the int count of MPI never overflows. ---*/
   static constexpr size_t maxChunkBytes = size_t(1) << 30;
+
+  /*--- Max connectivity entries per section, so that readers using 32-bit sizes can read it. ---*/
+  static constexpr cgsize_t maxSectionEntries = std::numeric_limits<int32_t>::max();
 #endif
  public:
   /*!

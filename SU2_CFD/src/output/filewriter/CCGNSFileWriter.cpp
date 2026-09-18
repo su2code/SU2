@@ -169,16 +169,38 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
   const auto nTotElem = dataSorter->GetnElemGlobal(type);
   if (nTotElem == 0) return;
 
-  /*--- Create a new CGNS node to store connectivity. ---*/
+  /*--- Create new CGNS nodes to store connectivity. Some readers (e.g. the VTK/ParaView CGNS reader)
+   store the connectivity size of a section in a 32-bit int, so an element type with more than
+   maxSectionEntries connectivity entries is split into several sections with consecutive ranges. ---*/
   const auto elementType = GetCGNSType(type);
+  const auto nPointsElem = nPointsOfElementType(type);
+  const auto nTotElemCG = static_cast<cgsize_t>(nTotElem);
+  const auto maxElemSection = static_cast<cgsize_t>(maxSectionEntries / nPointsElem);
+  const auto nSections = (nTotElemCG + maxElemSection - 1) / maxElemSection;
 
-  cgsize_t firstElem = cumulative + 1;
-  cgsize_t endElem = cumulative + static_cast<cgsize_t>(nTotElem);
+  /*--- First and last element (CGNS numbering starts from 1 and ranges are inclusive) of a section. ---*/
+  auto sectionBegin = [&](cgsize_t iSec) { return cumulative + 1 + iSec * maxElemSection; };
+  auto sectionEnd = [&](cgsize_t iSec) { return cumulative + std::min(nTotElemCG, (iSec + 1) * maxElemSection); };
 
-  int cgnsSection;
-  if (rank == MASTER_NODE)
-    CallCGNS(cg_section_partial_write(cgnsFileID, cgnsBase, cgnsZone, SectionName.c_str(), elementType, firstElem,
-                                      endElem, 0, &cgnsSection));
+  vector<int> cgnsSections(nSections);
+  if (rank == MASTER_NODE) {
+    for (cgsize_t iSec = 0; iSec < nSections; ++iSec) {
+      const string name = nSections == 1 ? SectionName : SectionName + "_" + std::to_string(iSec + 1);
+      CallCGNS(cg_section_partial_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), elementType,
+                                        sectionBegin(iSec), sectionEnd(iSec), 0, &cgnsSections[iSec]));
+    }
+  }
+
+  /*--- Write the connectivity of the elements [first, last], which may span more than one section. ---*/
+  auto writeBlock = [&](cgsize_t first, cgsize_t last, const cgsize_t* conn) {
+    for (cgsize_t iSec = 0; iSec < nSections; ++iSec) {
+      const auto lo = std::max(first, sectionBegin(iSec));
+      const auto hi = std::min(last, sectionEnd(iSec));
+      if (lo > hi) continue;
+      CallCGNS(cg_elements_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsSections[iSec], lo, hi,
+                                         conn + (lo - first) * nPointsElem));
+    }
+  };
 
   /*--- Retrieve element distribution among processes. ---*/
   const auto nLocalElem = dataSorter->GetnElem(type);
@@ -187,11 +209,10 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
 
   SU2_MPI::Allgather(&nLocalElem, 1, MPI_UNSIGNED_LONG, distElem.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
-  firstElem = cumulative + 1;
-  endElem = cumulative + static_cast<cgsize_t>(distElem[rank]);
+  cgsize_t firstElem = cumulative + 1;
+  cgsize_t endElem = cumulative + static_cast<cgsize_t>(distElem[rank]);
 
   /*--- Connectivity is stored in send buffer. ---*/
-  const auto nPointsElem = nPointsOfElementType(type);
   sendBufferConnectivity.resize(nLocalElem * nPointsElem);
 
   for (unsigned long iElem = 0; iElem < nLocalElem; iElem++) {
@@ -207,9 +228,7 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
   }
 
   /*--- Connectivity vector is written in blocks, one for each process. ---*/
-  if (nLocalElem > 0)
-    CallCGNS(cg_elements_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsSection, firstElem, endElem,
-                                       sendBufferConnectivity.data()));
+  if (nLocalElem > 0) writeBlock(firstElem, endElem, sendBufferConnectivity.data());
 
   for (int i = 0; i < size; ++i) {
     if (i == MASTER_NODE) continue;
@@ -221,9 +240,7 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
 
     RecvChunked(recvBufferConnectivity.data(), recvBufferConnectivity.size() * sizeof(cgsize_t), i, 1);
 
-    if (!recvBufferConnectivity.empty())
-      CallCGNS(cg_elements_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsSection, firstElem, endElem,
-                                         recvBufferConnectivity.data()));
+    if (!recvBufferConnectivity.empty()) writeBlock(firstElem, endElem, recvBufferConnectivity.data());
   }
   cumulative += static_cast<cgsize_t>(nTotElem);
 }
