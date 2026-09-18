@@ -3340,13 +3340,13 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
           else if (!option_name.compare("DEAD_LOAD"))
             newString.append("DEAD_LOAD is deprecated. Use GRAVITY_FORCE or BODY_FORCE instead.\n\n");
           else if (!option_name.compare("RAMP_OUTLET_PRESSURE"))
-            newString.append("RAMP_OUTLET_PRESSURE is deprectaed. Use RAMP_OUTLET instead");
+            newString.append("RAMP_OUTLET_PRESSURE is deprecated. Use RAMP_OUTLET instead.\n\n");
           else if (!option_name.compare("RAMP_OUTLET_PRESSURE_COEFF"))
-            newString.append("RAMP_OUTLET_PRESSURE_COEFF is deprectaed. Use RAMP_OUTLET_COEFF instead");
+            newString.append("RAMP_OUTLET_PRESSURE_COEFF is deprecated. Use RAMP_OUTLET_COEFF instead.\n\n");
           else if (!option_name.compare("RAMP_ROTATION_FRAME"))
-            newString.append("RAMP_ROTATION_FRAME is deprectaed. Use RAMP_MOTION_FRAME instead");
+            newString.append("RAMP_ROTATION_FRAME is deprecated. Use RAMP_MOTION_FRAME instead.\n\n");
           else if (!option_name.compare("RAMP_ROTATION_FRAME_COEFF"))
-            newString.append("RAMP_ROTATION_FRAME_COEFF is deprectaed. Use RAMP_MOTION_FRAME_COEFF instead");
+            newString.append("RAMP_ROTATION_FRAME_COEFF is deprecated. Use RAMP_MOTION_FRAME_COEFF instead.\n\n");
           else if (!option_name.compare("INC_INLET_USENORMAL"))
             newString.append("INC_INLET_USENORMAL is deprecated. Use INLET_USE_NORMAL instead (compatible with all solvers).\n\n");
           else if (!option_name.compare("DATADRIVEN_INITIAL_ENERGY") || !option_name.compare("DATADRIVEN_INITIAL_DENSITY"))
