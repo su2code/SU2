@@ -61,25 +61,33 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
 
   startTime = SU2_MPI::Wtime();
 
-  MPI_Datatype filetype;
+  /*--- Prepare to write the actual data. MPI counts are int, so the local data
+   (which can exceed INT_MAX bytes) is described as a number of fixed-size blocks
+   plus a remainder, combined in a single datatype that is written with count 1. ---*/
 
-  /*--- Prepare to write the actual data ---*/
+  constexpr unsigned long blockBytes = 1ul << 20;
+  int blockLengths[2] = {static_cast<int>(sizeInBytes / blockBytes), static_cast<int>(sizeInBytes % blockBytes)};
+  MPI_Aint displacements[2] = {0, static_cast<MPI_Aint>(sizeInBytes - sizeInBytes % blockBytes)};
 
-  MPI_Type_contiguous(int(sizeInBytes), MPI_BYTE, &filetype);
-  MPI_Type_commit(&filetype);
+  MPI_Datatype blocktype, datatype;
+  MPI_Type_contiguous(static_cast<int>(blockBytes), MPI_BYTE, &blocktype);
+  MPI_Datatype types[2] = {blocktype, MPI_BYTE};
+  MPI_Type_create_struct(2, blockLengths, displacements, types, &datatype);
+  MPI_Type_commit(&datatype);
 
   /*--- Set the view for the MPI file write, i.e., describe the
  location in the file that this rank "sees" for writing its
- piece of the file. ---*/
+ piece of the file. The data is contiguous so a byte view is enough. ---*/
 
-  MPI_File_set_view(fhw, disp + offsetInBytes, MPI_BYTE, filetype,
+  MPI_File_set_view(fhw, disp + offsetInBytes, MPI_BYTE, MPI_BYTE,
                     (char*)"native", MPI_INFO_NULL);
 
   /*--- Collective call for all ranks to write simultaneously. ---*/
 
-  int ierr = MPI_File_write_all(fhw, data, int(sizeInBytes), MPI_BYTE, MPI_STATUS_IGNORE);
+  int ierr = MPI_File_write_all(fhw, data, 1, datatype, MPI_STATUS_IGNORE);
 
-  MPI_Type_free(&filetype);
+  MPI_Type_free(&datatype);
+  MPI_Type_free(&blocktype);
 
   disp      += totalSizeInBytes;
   fileSize  += sizeInBytes;
