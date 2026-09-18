@@ -171,6 +171,7 @@ else:
 rs_hub = rhub / R
 
 # Computation of the non-dimensional radial stations.
+i_hub = 0
 for i in range(1, stations + 1):
     r[i - 1] = i / float(stations)
     if r[i - 1] <= rs_hub:
