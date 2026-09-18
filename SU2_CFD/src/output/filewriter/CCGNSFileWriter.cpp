@@ -26,6 +26,11 @@
  */
 
 #include "../../../include/output/filewriter/CCGNSFileWriter.hpp"
+#include "../../../include/output/filewriter/CFVMDataSorter.hpp"
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
+
+#include <numeric>
 
 const string CCGNSFileWriter::fileExt = ".cgns";
 
@@ -40,6 +45,83 @@ void CCGNSFileWriter::WriteData(string val_filename) {
   val_filename.append(fileExt);
   /*--- Open the CGNS file for writing.  ---*/
   InitializeMeshFile(val_filename);
+
+  if (surfaceMarkers.empty()) {
+    WriteZone("Zone");
+  } else {
+    /*--- One zone per marker, the surface data is sorted again for each of them. ---*/
+    for (const auto& marker : surfaceMarkers) {
+      dataSorter->SortConnectivity(config, geometry, vector<string>{marker});
+      dataSorter->SortOutputData();
+      WriteZone(marker);
+    }
+  }
+
+  /*--- Close the CGNS file. ---*/
+  if (rank == MASTER_NODE) CallCGNS(cg_close(cgnsFileID));
+
+#endif
+}
+
+void CCGNSFileWriter::SetBoundaryMarkers(CConfig* valConfig, CGeometry* valGeometry,
+                                         const CFVMDataSorter* volumeSorter) {
+  boundaryMarkers.clear();
+
+  for (unsigned short iMarkerCfg = 0; iMarkerCfg < valConfig->GetnMarker_CfgFile(); iMarkerCfg++) {
+    const string tag = valConfig->GetMarker_CfgFile_TagBound(iMarkerCfg);
+    const auto kindBC = valConfig->GetMarker_CfgFile_KindBC(tag);
+    if (kindBC == SEND_RECEIVE) continue;
+
+    BoundaryMarker marker{tag, kindBC, {}};
+
+    for (unsigned short iMarker = 0; iMarker < valConfig->GetnMarker_All(); iMarker++) {
+      if (valConfig->GetMarker_All_TagBound(iMarker) != tag) continue;
+
+      for (unsigned long iElem = 0; iElem < valGeometry->GetnElem_Bound(iMarker); iElem++) {
+        const auto* elem = valGeometry->bound[iMarker][iElem];
+
+        /*--- Same rule as for the volume elements: keep the element on the rank where none of its nodes is a halo.
+         Also require a node owned by this rank, so that an element whose nodes are all owned by lower ranks is not
+         kept again by a higher rank that holds it as a halo element. ---*/
+        bool halo = false, owned = false;
+        for (unsigned short iNode = 0; iNode < elem->GetnNodes(); iNode++) {
+          halo |= volumeSorter->GetHalo(elem->GetNode(iNode));
+          owned |= valGeometry->nodes->GetDomain(elem->GetNode(iNode));
+        }
+        if (halo || !owned) continue;
+
+        marker.conn.push_back(elem->GetVTK_Type());
+        for (unsigned short iNode = 0; iNode < elem->GetnNodes(); iNode++)
+          marker.conn.push_back(valGeometry->nodes->GetGlobalIndex(elem->GetNode(iNode)) + 1);
+      }
+    }
+    boundaryMarkers.push_back(std::move(marker));
+  }
+}
+
+void CCGNSFileWriter::SetSurfaceMarkers(CConfig* valConfig, CGeometry* valGeometry) {
+  config = valConfig;
+  geometry = valGeometry;
+  surfaceMarkers.clear();
+
+  for (unsigned short iMarkerCfg = 0; iMarkerCfg < valConfig->GetnMarker_CfgFile(); iMarkerCfg++) {
+    const string tag = valConfig->GetMarker_CfgFile_TagBound(iMarkerCfg);
+    if (valConfig->GetMarker_CfgFile_Plotting(tag) != YES) continue;
+
+    /*--- Only keep the markers present on at least one rank. ---*/
+    int localFound = 0, globalFound = 0;
+    for (unsigned short iMarker = 0; iMarker < valConfig->GetnMarker_All(); iMarker++) {
+      if (valConfig->GetMarker_All_TagBound(iMarker) == tag && valConfig->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)
+        localFound = 1;
+    }
+    SU2_MPI::Allreduce(&localFound, &globalFound, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+    if (globalFound > 0) surfaceMarkers.push_back(tag);
+  }
+}
+
+#ifdef HAVE_CGNS
+void CCGNSFileWriter::WriteZone(const string& zoneName) {
+  InitializeZone(zoneName);
 
   /*--- Write point coordinates. ---*/
   WriteField(0, "CoordinateX");
@@ -61,6 +143,9 @@ void CCGNSFileWriter::WriteData(string val_filename) {
     WriteConnectivity(HEXAHEDRON, "Hexahedra");
   }
 
+  /*--- Write the boundaries of a volume file. ---*/
+  if (!isSurface) WriteBoundaries();
+
   /*--- Initialize and write fields. ---*/
   InitializeFields();
 
@@ -68,24 +153,10 @@ void CCGNSFileWriter::WriteData(string val_filename) {
   for (unsigned long i = nDim; i < fieldNames.size(); ++i) {
     WriteField(i, fieldNames[i]);
   }
-
-  /*--- Close the CGNS file. ---*/
-  if (rank == MASTER_NODE) CallCGNS(cg_close(cgnsFileID));
-
-#endif
 }
 
-#ifdef HAVE_CGNS
 void CCGNSFileWriter::InitializeMeshFile(const string& val_filename) {
-  if (!dataSorter->GetConnectivitySorted()) {
-    SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
-  }
-
-  nLocalPoints = dataSorter->GetnPoints();
   nDim = dataSorter->GetnDim();
-  GlobalElem = static_cast<cgsize_t>(dataSorter->GetnElemGlobal());
-  GlobalPoint = static_cast<cgsize_t>(dataSorter->GetnPointsGlobal());
-  cumulative = 0;
 
   /*--- If surface file cell dimension is decreased. ---*/
   const auto nCell = static_cast<int>(nDim - isSurface);
@@ -99,15 +170,124 @@ void CCGNSFileWriter::InitializeMeshFile(const string& val_filename) {
 
     /*--- Create Base. ---*/
     CallCGNS(cg_base_write(cgnsFileID, "Base", nCell, nDim, &cgnsBase));
+  }
+}
 
-    /*--- Create Zone. ---*/
+void CCGNSFileWriter::InitializeZone(const string& zoneName) {
+  if (!dataSorter->GetConnectivitySorted()) {
+    SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
+  }
+
+  nLocalPoints = dataSorter->GetnPoints();
+  GlobalElem = static_cast<cgsize_t>(dataSorter->GetnElemGlobal());
+  GlobalPoint = static_cast<cgsize_t>(dataSorter->GetnPointsGlobal());
+  cumulative = 0;
+
+  if (rank == MASTER_NODE) {
+    /*--- Create Zone. The number of cells does not include the boundary elements. ---*/
     array<cgsize_t, 3> zoneData;
 
     zoneData[0] = GlobalPoint;
     zoneData[1] = GlobalElem;
     zoneData[2] = 0;
 
-    CallCGNS(cg_zone_write(cgnsFileID, cgnsBase, "Zone", zoneData.data(), Unstructured, &cgnsZone));
+    CallCGNS(cg_zone_write(cgnsFileID, cgnsBase, zoneName.substr(0, 32).c_str(), zoneData.data(), Unstructured,
+                           &cgnsZone));
+  }
+}
+
+void CCGNSFileWriter::WriteBoundaries() {
+  for (const auto& marker : boundaryMarkers) {
+    /*--- Gather the boundary elements of this marker on the master node, in rank order. ---*/
+    const unsigned long localSize = marker.conn.size();
+    vector<unsigned long> sizes(size);
+    SU2_MPI::Allgather(&localSize, 1, MPI_UNSIGNED_LONG, sizes.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+    const auto totalSize = std::accumulate(sizes.begin(), sizes.end(), 0ul);
+    if (totalSize == 0) continue;
+
+    if (rank != MASTER_NODE) {
+      SendChunked(marker.conn.data(), localSize * sizeof(unsigned long), MASTER_NODE, 2);
+      continue;
+    }
+
+    vector<unsigned long> conn(totalSize);
+    std::copy(marker.conn.begin(), marker.conn.end(), conn.begin());
+    auto offset = localSize;
+    for (int i = 0; i < size; ++i) {
+      if (i == MASTER_NODE) continue;
+      RecvChunked(conn.data() + offset, sizes[i] * sizeof(unsigned long), i, 2);
+      offset += sizes[i];
+    }
+
+    /*--- Convert to the CGNS numbering: with a single element type the node ids of the elements, otherwise a MIXED
+     section, i.e. the CGNS element type followed by the node ids of each element, plus the start offsets. ---*/
+    vector<cgsize_t> elems, mixed, startOffsets{0};
+    bool singleType = true;
+    for (size_t pos = 0; pos < conn.size();) {
+      const auto type = static_cast<unsigned short>(conn[pos]);
+      const auto nNodes = nPointsOfElementType(type);
+      singleType &= (type == conn[0]);
+      mixed.push_back(GetCGNSType(type));
+      for (unsigned short iNode = 1; iNode <= nNodes; ++iNode) {
+        elems.push_back(static_cast<cgsize_t>(conn[pos + iNode]));
+        mixed.push_back(static_cast<cgsize_t>(conn[pos + iNode]));
+      }
+      startOffsets.push_back(static_cast<cgsize_t>(mixed.size()));
+      pos += nNodes + 1;
+    }
+    const auto nElem = static_cast<cgsize_t>(startOffsets.size() - 1);
+
+    const string name = marker.name.substr(0, 32);
+    cgsize_t range[2] = {cumulative + 1, cumulative + nElem};
+    int section;
+    if (singleType) {
+      CallCGNS(cg_section_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), GetCGNSType(conn[0]), range[0],
+                                range[1], 0, elems.data(), &section));
+    } else {
+      CallCGNS(cg_poly_section_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), MIXED, range[0], range[1], 0,
+                                     mixed.data(), startOffsets.data(), &section));
+    }
+    cumulative += nElem;
+
+    /*--- The BC points to the boundary elements and takes its type from a family with the name of the marker. ---*/
+    int bc, family, familyBC;
+    CallCGNS(cg_boco_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), FamilySpecified, PointRange, 2, range, &bc));
+    CallCGNS(cg_boco_gridlocation_write(cgnsFileID, cgnsBase, cgnsZone, bc, nDim == 3 ? FaceCenter : EdgeCenter));
+    CallCGNS(cg_goto(cgnsFileID, cgnsBase, "Zone_t", cgnsZone, "ZoneBC_t", 1, "BC_t", bc, "end"));
+    CallCGNS(cg_famname_write(name.c_str()));
+
+    CallCGNS(cg_family_write(cgnsFileID, cgnsBase, name.c_str(), &family));
+    CallCGNS(cg_fambc_write(cgnsFileID, cgnsBase, family, "FamBC", GetCGNSBCType(marker.kindBC), &familyBC));
+  }
+}
+
+BCType_t CCGNSFileWriter::GetCGNSBCType(unsigned short kindBC) {
+  switch (kindBC) {
+    case EULER_WALL:
+      return BCWallInviscid;
+    case HEAT_FLUX:
+      return BCWallViscousHeatFlux;
+    case ISOTHERMAL:
+      return BCWallViscousIsothermal;
+    case HEAT_TRANSFER:
+    case CHT_WALL_INTERFACE:
+    case SMOLUCHOWSKI_MAXWELL:
+      return BCWallViscous;
+    case FAR_FIELD:
+      return BCFarfield;
+    case SYMMETRY_PLANE:
+      return BCSymmetryPlane;
+    case INLET_FLOW:
+      return BCInflow;
+    case OUTLET_FLOW:
+      return BCOutflow;
+    case SUPERSONIC_INLET:
+      return BCInflowSupersonic;
+    case SUPERSONIC_OUTLET:
+      return BCOutflowSupersonic;
+    default:
+      return BCTypeUserDefined;
   }
 }
 

@@ -39,9 +39,27 @@
 
 #include "CFileWriter.hpp"
 
+class CConfig;
+class CGeometry;
+class CFVMDataSorter;
+
 class CCGNSFileWriter final : public CFileWriter {
  private:
   const bool isSurface; /*!< \brief True if surface file. */
+
+  /*!
+   * \brief Boundary elements of one marker owned by this rank, written as a boundary section of a volume file.
+   */
+  struct BoundaryMarker {
+    string name;                /*!< \brief Marker tag. */
+    unsigned short kindBC;      /*!< \brief SU2 boundary condition kind. */
+    vector<unsigned long> conn; /*!< \brief VTK type followed by the (1-based) output ids of the nodes, per element. */
+  };
+  vector<BoundaryMarker> boundaryMarkers; /*!< \brief Markers written as boundaries of a volume file. */
+
+  vector<string> surfaceMarkers; /*!< \brief Markers written as one zone each in a surface file. */
+  CConfig* config = nullptr;     /*!< \brief Config, to sort the surface data of each marker. */
+  CGeometry* geometry = nullptr; /*!< \brief Geometry, to sort the surface data of each marker. */
 
 #ifdef HAVE_CGNS
   int cgnsFileID; /*!< \brief CGNS file identifier. */
@@ -92,12 +110,46 @@ class CCGNSFileWriter final : public CFileWriter {
    */
   void WriteData(string val_filename) override ;
 
+  /*!
+   * \brief Add the boundaries to a volume file: one boundary section, BC and family per marker, named as the marker.
+   * \param[in] valConfig - Definition of the problem.
+   * \param[in] valGeometry - Geometrical definition of the problem.
+   * \param[in] volumeSorter - The volume data sorter, to find the boundary elements owned by this rank.
+   */
+  void SetBoundaryMarkers(CConfig* valConfig, CGeometry* valGeometry, const CFVMDataSorter* volumeSorter);
+
+  /*!
+   * \brief Write a surface file with one zone per plotted marker, named as the marker. The data of the surface
+   *        sorter is sorted again for each marker when the file is written.
+   * \param[in] valConfig - Definition of the problem.
+   * \param[in] valGeometry - Geometrical definition of the problem.
+   */
+  void SetSurfaceMarkers(CConfig* valConfig, CGeometry* valGeometry);
+
  private:
 #ifdef HAVE_CGNS
   /*!
-   * \brief Initialize CGNS mesh file.
+   * \brief Create the CGNS file and its base.
+   * \param[in] val_filename - The name of the file.
    */
   void InitializeMeshFile(const string& val_filename);
+
+  /*!
+   * \brief Write a zone with the data currently held by the data sorter.
+   * \param[in] zoneName - Name of the zone.
+   */
+  void WriteZone(const string& zoneName);
+
+  /*!
+   * \brief Create a zone for the data currently held by the data sorter.
+   * \param[in] zoneName - Name of the zone.
+   */
+  void InitializeZone(const string& zoneName);
+
+  /*!
+   * \brief Write the boundary sections, BCs and families of the markers set with SetBoundaryMarkers.
+   */
+  void WriteBoundaries();
 
   /*!
    * \brief Write i-th coordinate to file in CGNS file format.
@@ -143,6 +195,12 @@ class CCGNSFileWriter final : public CFileWriter {
   static inline void CallCGNS(const int& ier) {
     if (ier) cg_error_exit();
   }
+
+  /*!
+   * \brief Return the CGNS boundary condition type of an SU2 boundary condition kind.
+   * \param[in] kindBC - SU2 boundary condition kind.
+   */
+  static BCType_t GetCGNSBCType(unsigned short kindBC);
 
   /*!
    * \brief Return the CGNS element type (ElementType_t).

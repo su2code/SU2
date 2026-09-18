@@ -762,6 +762,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       LogOutputFiles("CGNS");
       fileWriter = new CCGNSFileWriter(volumeDataSorter);
 
+      /*--- Add the boundaries, named as the markers (the finite volume sorter knows which elements are halos). ---*/
+      if (const auto* fvmSorter = dynamic_cast<const CFVMDataSorter*>(volumeDataSorter))
+        static_cast<CCGNSFileWriter*>(fileWriter)->SetBoundaryMarkers(config, geometry, fvmSorter);
+
       break;
 
     case OUTPUT_TYPE::SURFACE_CGNS:
@@ -780,6 +784,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       LogOutputFiles("CGNS surface");
       fileWriter = new CCGNSFileWriter(surfaceDataSorter, true);
+
+      /*--- One zone per plotted marker, named as the marker. ---*/
+      static_cast<CCGNSFileWriter*>(fileWriter)->SetSurfaceMarkers(config, geometry);
 
       break;
 
