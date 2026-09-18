@@ -370,8 +370,8 @@ void CParallelDataSorter::SetTotalElements(){
 
   SU2_MPI::Allreduce(nElemPerType.data(), nElemPerTypeGlobal.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-  nElemGlobal = std::accumulate(nElemPerTypeGlobal.begin(), nElemPerTypeGlobal.end(), 0);
-  nElem  = std::accumulate(nElemPerType.begin(), nElemPerType.end(), 0);
+  nElemGlobal = std::accumulate(nElemPerTypeGlobal.begin(), nElemPerTypeGlobal.end(), 0ul);
+  nElem  = std::accumulate(nElemPerType.begin(), nElemPerType.end(), 0ul);
 
   nConn = 0;
   nConnGlobal   = 0;

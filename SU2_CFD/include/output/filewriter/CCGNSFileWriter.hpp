@@ -63,6 +63,9 @@ class CCGNSFileWriter final : public CFileWriter {
   vector<dataPrecision> sendBufferField;   /*!< \brief Receive buffer for field data. */
 
   cgsize_t cumulative; /*!< \brief Cumulative number of elements written. */
+
+  /*--- Max bytes per MPI message, kept below INT_MAX so the int count of MPI never overflows. ---*/
+  static constexpr size_t maxChunkBytes = size_t(1) << 30;
 #endif
  public:
   /*!
@@ -108,6 +111,24 @@ class CCGNSFileWriter final : public CFileWriter {
    * \brief Initialize flow solution in the CGNS file.
    */
   void InitializeFields();
+
+  /*!
+   * \brief Send a buffer of any size in chunks of at most maxChunkBytes (MPI counts are int).
+   * \param[in] buf - Data to send.
+   * \param[in] nBytes - Size of the data in bytes.
+   * \param[in] dest - Destination rank.
+   * \param[in] tag - Message tag.
+   */
+  static void SendChunked(const void* buf, size_t nBytes, int dest, int tag);
+
+  /*!
+   * \brief Receive a buffer sent with SendChunked.
+   * \param[out] buf - Receive buffer, must hold nBytes.
+   * \param[in] nBytes - Size of the data in bytes.
+   * \param[in] source - Source rank.
+   * \param[in] tag - Message tag.
+   */
+  static void RecvChunked(void* buf, size_t nBytes, int source, int tag);
 
   /*!
    * \brief Call a generic CGNS function.

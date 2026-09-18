@@ -123,8 +123,7 @@ void CCGNSFileWriter::WriteField(int iField, const string& FieldName) {
   }
 
   if (rank != MASTER_NODE) {
-    SU2_MPI::Send(sendBufferField.data(), nLocalPoints * sizeof(dataPrecision), MPI_CHAR, MASTER_NODE, 0,
-                  SU2_MPI::GetComm());
+    SendChunked(sendBufferField.data(), nLocalPoints * sizeof(dataPrecision), MASTER_NODE, 0);
     return;
   }
 
@@ -149,12 +148,11 @@ void CCGNSFileWriter::WriteField(int iField, const string& FieldName) {
     nodeBegin = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(i) + 1);
     nodeEnd = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(i + 1));
 
-    const auto recvSize = static_cast<int>(nodeEnd - nodeBegin + 1);
+    const auto recvSize = static_cast<size_t>(nodeEnd - nodeBegin + 1);
     recvBufferField.resize(recvSize);
 
-    SU2_MPI::Recv(recvBufferField.data(), recvSize * sizeof(dataPrecision), MPI_CHAR, i, 0, SU2_MPI::GetComm(),
-                  MPI_STATUS_IGNORE);
-    if (recvSize <= 0) continue;
+    RecvChunked(recvBufferField.data(), recvSize * sizeof(dataPrecision), i, 0);
+    if (recvSize == 0) continue;
     if (isCoord) {
       int CoordinateNumber;
       CallCGNS(cg_coord_partial_write(cgnsFileID, cgnsBase, cgnsZone, dataType, FieldName.c_str(), &nodeBegin, &nodeEnd,
@@ -203,9 +201,8 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
     }
   }
 
-  const auto bufferSize = static_cast<int>(nLocalElem * nPointsElem * sizeof(cgsize_t));
   if (rank != MASTER_NODE) {
-    SU2_MPI::Send(sendBufferConnectivity.data(), bufferSize, MPI_CHAR, MASTER_NODE, 1, SU2_MPI::GetComm());
+    SendChunked(sendBufferConnectivity.data(), sendBufferConnectivity.size() * sizeof(cgsize_t), MASTER_NODE, 1);
     return;
   }
 
@@ -219,17 +216,32 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
     /*--- In CGNS numbering starts form 1 and ranges are inclusive ---*/
     firstElem = endElem + 1;
     endElem += static_cast<cgsize_t>(distElem[i]);
-    const auto recvSize = static_cast<int>((endElem - firstElem + 1) * nPointsElem);
+    const auto recvSize = static_cast<size_t>(endElem - firstElem + 1) * nPointsElem;
     recvBufferConnectivity.resize(recvSize);
 
-    const auto recvByte = static_cast<int>(recvBufferConnectivity.size() * sizeof(cgsize_t));
-    SU2_MPI::Recv(recvBufferConnectivity.data(), recvByte, MPI_CHAR, i, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+    RecvChunked(recvBufferConnectivity.data(), recvBufferConnectivity.size() * sizeof(cgsize_t), i, 1);
 
     if (!recvBufferConnectivity.empty())
       CallCGNS(cg_elements_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsSection, firstElem, endElem,
                                          recvBufferConnectivity.data()));
   }
   cumulative += static_cast<cgsize_t>(nTotElem);
+}
+
+void CCGNSFileWriter::SendChunked(const void* buf, size_t nBytes, int dest, int tag) {
+  const auto* bytes = static_cast<const char*>(buf);
+  for (size_t offset = 0; offset < nBytes; offset += maxChunkBytes) {
+    const auto count = static_cast<int>(std::min(maxChunkBytes, nBytes - offset));
+    SU2_MPI::Send(bytes + offset, count, MPI_CHAR, dest, tag, SU2_MPI::GetComm());
+  }
+}
+
+void CCGNSFileWriter::RecvChunked(void* buf, size_t nBytes, int source, int tag) {
+  auto* bytes = static_cast<char*>(buf);
+  for (size_t offset = 0; offset < nBytes; offset += maxChunkBytes) {
+    const auto count = static_cast<int>(std::min(maxChunkBytes, nBytes - offset));
+    SU2_MPI::Recv(bytes + offset, count, MPI_CHAR, source, tag, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+  }
 }
 
 void CCGNSFileWriter::InitializeFields() {
