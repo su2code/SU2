@@ -821,6 +821,19 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
+  /*--- Name each coarse point by the smallest global index among the fine points it holds. The
+   *    fine grid carries real global indices only on the finest level, so without this every point
+   *    above level one is named zero and every tie-break that reaches for the name is decided
+   *    arbitrarily instead of in mesh order. ---*/
+
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
+    auto globalIndex = std::numeric_limits<unsigned long>::max();
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++)
+      globalIndex =
+          std::min(globalIndex, fine_grid->nodes->GetGlobalIndex(nodes->GetChildren_CV(iCoarsePoint, iChildren)));
+    if (globalIndex != std::numeric_limits<unsigned long>::max()) nodes->SetGlobalIndex(iCoarsePoint, globalIndex);
+  }
+
   /*--- Reset the neighbor information. ---*/
 
   nodes->ResetPoints();
@@ -1658,7 +1671,7 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
    *    not against another one. Both sides are an argmax over the same edges, so nothing is
    *    measured against a tolerance. The value returned is the local anisotropy, which orders the
    *    seeds, and is zero when the node does not seed. ---*/
-  auto layerStrength = [&](unsigned long iPoint, const su2double* unitNormal) {
+  auto layerStrength = [&](unsigned long iPoint, const su2double* unitNormal, bool& aligned) {
     su2double wMin = std::numeric_limits<su2double>::max(), wMax = 0.0, bestAlign = -1.0;
     auto jStiffest = NO_POINT, jAligned = NO_POINT;
 
@@ -1682,7 +1695,8 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
       }
     }
 
-    if ((jStiffest == NO_POINT) || (jStiffest != jAligned)) return su2double(0.0);
+    aligned = (jStiffest != NO_POINT) && (jStiffest == jAligned);
+    if (jStiffest == NO_POINT) return su2double(0.0);
     return (wMin > 0.0) ? wMax / wMin : su2double(1.0);
   };
 
@@ -1707,8 +1721,16 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
       su2double Normal[MAXNDIM] = {0.0};
       if (!VertexUnitNormal(fine_grid, nDim, iPoint, iMarker, Normal)) continue;
 
-      const su2double strength = layerStrength(iPoint, Normal);
+      bool aligned = false;
+      const su2double strength = layerStrength(iPoint, Normal, aligned);
       if (strength <= 0.0) continue;
+      /*--- A wall only bases a column where the mesh is layered against it. Where it is not, the
+       *    stiffest edge runs along the surface and a column started there sets off sideways; the
+       *    trailing edge of an aerofoil is the usual such node. The boundaries that pave last are
+       *    not held to this. By the time they run the walls have taken every layer, so what is
+       *    left for them is mesh that is layered against nothing, and refusing them there only
+       *    leaves it unpaved for the ordinary agglomeration to pick up. ---*/
+      if (!aligned && (tierOfBC(bc) < 2)) continue;
 
       /*--- A column claims its seed before the boundary pass runs, so the Euler wall curvature
        *    limit is applied here too, on the same terms. ---*/
