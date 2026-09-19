@@ -1630,14 +1630,6 @@ bool VertexUnitNormal(const CGeometry* grid, unsigned short nDim, unsigned long 
   return true;
 }
 
-/*--- Are a and b neighbours? Halo adjacency lists can be one sided, so both are asked. ---*/
-bool IsAdjacent(const CGeometry* grid, unsigned long a, unsigned long b) {
-  const auto& pa = grid->nodes->GetPoints(a);
-  if (std::find(pa.begin(), pa.end(), b) != pa.end()) return true;
-  const auto& pb = grid->nodes->GetPoints(b);
-  return std::find(pb.begin(), pb.end(), a) != pb.end();
-}
-
 /*--- Fine layers the next coarse CV of a column holds: two, or one if that would exceed the
  *    agglomeration size limit. ---*/
 unsigned long BlockFor(short int maxAgglomSize, size_t width) {
@@ -2082,23 +2074,15 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
           }
 
           /*--- A column advances only onto a whole layer of its own width, with one successor per
-           *    node, no two of them the same, and the same nodes touching each other as before.
-           *    Without that last part a layer whose way ahead is blocked can still "advance" onto
-           *    the free nodes to either side of itself, which is a column turning into two that
-           *    walk away sideways. Counting alone does not see that, and it is what stops a column
-           *    exactly at the boundary it runs into. All of it is topology, so no tolerance. ---*/
+           *    node and no two of them the same. A layer whose way ahead is closed cannot creep
+           *    onto the free nodes beside it, because each node asks for the one place it was
+           *    going before asking whether it may go there. That is a count, so no tolerance. ---*/
           auto complete = [&](vector<unsigned long>& set) {
             if (set.size() != width) return false;
             distinct = set;
             std::sort(distinct.begin(), distinct.end());
             distinct.erase(std::unique(distinct.begin(), distinct.end()), distinct.end());
             if (distinct.size() != width) return false;
-
-            for (size_t k = 0; k < width; ++k)
-              for (size_t l = k + 1; l < width; ++l)
-                if (IsAdjacent(fine_grid, layer[iColumn][k], layer[iColumn][l]) !=
-                    IsAdjacent(fine_grid, set[k], set[l]))
-                  return false;
             return true;
           };
 
