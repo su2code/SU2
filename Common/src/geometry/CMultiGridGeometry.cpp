@@ -1630,6 +1630,14 @@ bool VertexUnitNormal(const CGeometry* grid, unsigned short nDim, unsigned long 
   return true;
 }
 
+/*--- Are a and b neighbours? Halo adjacency lists can be one sided, so both are asked. ---*/
+bool IsAdjacent(const CGeometry* grid, unsigned long a, unsigned long b) {
+  const auto& pa = grid->nodes->GetPoints(a);
+  if (std::find(pa.begin(), pa.end(), b) != pa.end()) return true;
+  const auto& pb = grid->nodes->GetPoints(b);
+  return std::find(pb.begin(), pb.end(), a) != pb.end();
+}
+
 /*--- Fine layers the next coarse CV of a column holds: two, or one if that would exceed the
  *    agglomeration size limit. ---*/
 unsigned long BlockFor(short int maxAgglomSize, size_t width) {
@@ -1686,6 +1694,13 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
     return (wMin > 0.0) ? wMax / wMin : su2double(1.0);
   };
 
+  /*--- A wall that holds the flow to it carries the layer the coarse grid most needs to keep, so
+   *    it paves first; a slip wall next; everything else takes what is left. ---*/
+  auto tierOfBC = [](unsigned short bc) -> char {
+    if ((bc == HEAT_FLUX) || (bc == ISOTHERMAL) || (bc == CHT_WALL_INTERFACE) || (bc == SMOLUCHOWSKI_MAXWELL)) return 0;
+    return (bc == EULER_WALL) ? 1 : 2;
+  };
+
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
     const auto bc = config->GetMarker_All_KindBC(iMarker);
     /*--- Periodic boundaries have their own matching, and a halo marker is not a boundary. ---*/
@@ -1716,6 +1731,7 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
       seeds.node.push_back(iPoint);
       seeds.normal.push_back(n0);
       seeds.strength.push_back(strength);
+      seeds.tier.push_back(tierOfBC(bc));
       taken[iPoint] = 1;
     }
   }
@@ -1734,10 +1750,12 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
   sorted.node.reserve(order.size());
   sorted.normal.reserve(order.size());
   sorted.strength.reserve(order.size());
+  sorted.tier.reserve(order.size());
   for (auto i : order) {
     sorted.node.push_back(seeds.node[i]);
     sorted.normal.push_back(seeds.normal[i]);
     sorted.strength.push_back(seeds.strength[i]);
+    sorted.tier.push_back(seeds.tier[i]);
   }
   return sorted;
 }
@@ -1896,6 +1914,13 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   /*--- A column that started on a boundary patch opens with a boundary row, an inherited one
    *    continues in open mesh and has no such row. ---*/
   vector<char> isSeeded(patches.size(), 1);
+  /*--- A patch never straddles two markers, so its tier is that of any of its seeds. ---*/
+  vector<char> tierOf(patches.size(), 0);
+
+  /*--- Where each node of the current layer is travelling: the step it last took, and at the
+   *    boundary the inward normal there. A column keeps going the way it was going, which is what
+   *    holds it straight once the mesh stops being layered and the stiffest edge is a near tie. ---*/
+  vector<vector<std::array<su2double, MAXNDIM>>> dirOf(patches.size());
 
   for (auto iPatch : order) {
     for (auto si : patches[iPatch]) {
@@ -1905,8 +1930,9 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
       if (!GeometricalCheck(iPoint, fine_grid, config)) continue;
       columnOf[iPoint] = iPatch;
       layer[iPatch].push_back(iPoint);
+      dirOf[iPatch].push_back(seeds.normal[si]);
     }
-    alive[iPatch] = !layer[iPatch].empty();
+    tierOf[iPatch] = seeds.tier[patches[iPatch].front()];
   }
 
   /*--- A column may take a node only if it is free and carries no condition of its own. ---*/
@@ -1914,13 +1940,6 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     return (columnOf[jPoint] == NO_COLUMN) && fine_grid->nodes->GetDomain(jPoint) &&
            !fine_grid->nodes->GetAgglomerate(jPoint) && !onPhysBoundary[jPoint] && !onPeriodic[jPoint] &&
            !mixedBC[jPoint] && GeometricalCheck(jPoint, fine_grid, config);
-  };
-
-  /*--- Stiffness across an edge, the quantity whose argmax names a node's successor. ---*/
-  auto edgeWeight = [&](unsigned long iPoint, unsigned short iNeigh, unsigned long jPoint) {
-    const auto iEdge = fine_grid->nodes->GetEdge(iPoint, iNeigh);
-    const su2double area = GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(iEdge));
-    return 0.5 * area * (1.0 / fine_grid->nodes->GetVolume(iPoint) + 1.0 / fine_grid->nodes->GetVolume(jPoint));
   };
 
   /*--- The SEND_RECEIVE marker pairs, and where each halo node sits in the flat exchange buffer.
@@ -1983,155 +2002,226 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   ct[P_SEED_CURV] = seeds.nRefusedCurvature;
 
   vector<unsigned long> candidates, haloWanted, distinct;
+  vector<std::array<su2double, MAXNDIM>> stepDir, haloStep;
   vector<unsigned long> haloClaim(nPointFine, NO_COLUMN);
   vector<unsigned long> tagOut(nRecvTotal, 0), tagIn(nSendTotal, 0);
+  /*--- The direction a handed over column travels. It only steers discrete choices and is never
+   *    differentiated, so it crosses as a passive type. ---*/
+  using CPassiveMPI = SelectMPIWrapper<passivedouble>::W;
+  vector<passivedouble> dirOut(nRecvTotal * nDim, 0.0), dirIn(nSendTotal * nDim, 0.0);
 
-  /*--- Each sweep advances every column as far as it goes on this rank, then hands the ones that
+  /*--- One tier at a time, paved out before the next one wakes. The sweeps sit inside the tier so
+   *    that a column still crossing an interface finishes its tier everywhere before a lesser
+   *    boundary takes any mesh; that also means an inherited column belongs to the tier that is
+   *    running, and nothing about the tier has to be exchanged.
+   *
+   *    Each sweep advances every column as far as it goes on this rank, then hands the ones that
    *    stopped at an interface across it. Columns only ever take nodes, never give them back, so
    *    the sweeps run out. In serial there is nothing to exchange and one sweep is the whole of
    *    it, which is why the collective below sits behind a rank count. ---*/
-  for (;;) {
-    for (unsigned long iRound = 1;; ++iRound) {
-      bool advanced = false;
+  constexpr char N_TIER = 3;
+  for (char tier = 0; tier < N_TIER; ++tier) {
+    for (auto iColumn : order)
+      if ((iColumn < tierOf.size()) && (tierOf[iColumn] == tier)) alive[iColumn] = !layer[iColumn].empty();
 
-      for (auto iColumn : order) {
-        if (!alive[iColumn]) continue;
-        const auto width = layer[iColumn].size();
+    for (;;) {
+      for (unsigned long iRound = 1;; ++iRound) {
+        bool advanced = false;
 
-        /*--- The successor of a node is the free neighbour across its stiffest edge, an argmax and
-         *    not a threshold. Successors beyond the interface are tracked separately: this rank
-         *    cannot claim them, it can only offer the column to their owner. ---*/
-        candidates.clear();
-        haloWanted.clear();
-        for (auto iPoint : layer[iColumn]) {
-          auto bestLocal = NO_COLUMN, bestHalo = NO_COLUMN;
-          su2double weightLocal = -1.0, weightHalo = -1.0;
+        for (auto iColumn : order) {
+          if (!alive[iColumn]) continue;
+          const auto width = layer[iColumn].size();
 
-          for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
-            const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
-            const su2double w = edgeWeight(iPoint, iNeigh, jPoint);
+          /*--- The successor of a node is the free neighbour across its stiffest edge, an argmax and
+           *    not a threshold. Successors beyond the interface are tracked separately: this rank
+           *    cannot claim them, it can only offer the column to their owner. ---*/
+          candidates.clear();
+          haloWanted.clear();
+          haloStep.clear();
+          stepDir.clear();
+          for (size_t k = 0; k < layer[iColumn].size(); ++k) {
+            const auto iPoint = layer[iColumn][k];
+            const auto& marching = dirOf[iColumn][k];
 
-            if (admissible(jPoint)) {
-              if (w > weightLocal) {
-                weightLocal = w;
-                bestLocal = jPoint;
-              }
-            } else if (!fine_grid->nodes->GetDomain(jPoint) && (haloSlot[jPoint] >= 0) &&
-                       (haloClaim[jPoint] == NO_COLUMN)) {
-              if (w > weightHalo) {
-                weightHalo = w;
-                bestHalo = jPoint;
+            /*--- Where this node is going is decided before asking whether it may: the neighbour
+             *    that best carries on the way it was already travelling, an argmax over all of
+             *    them and so free of any tolerance. Only then is that one node examined. A column
+             *    therefore keeps going or stops; it never settles for second best and turns aside,
+             *    which is what let a front wander off once its way ahead was taken or closed. ---*/
+            auto best = NO_COLUMN;
+            su2double bestAlign = -2.0;
+            std::array<su2double, MAXNDIM> bestStep{};
+
+            for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
+              const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
+
+              su2double step[MAXNDIM] = {0.0};
+              GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(iPoint),
+                                        step);
+              const su2double len = GeometryToolbox::Norm(nDim, step);
+              if (len <= 0.0) continue;
+              for (unsigned short d = 0; d < nDim; ++d) step[d] /= len;
+
+              const su2double align = GeometryToolbox::DotProduct(nDim, step, marching.data());
+              if (align > bestAlign) {
+                bestAlign = align;
+                best = jPoint;
+                for (unsigned short d = 0; d < nDim; ++d) bestStep[d] = step[d];
               }
             }
+
+            if (best == NO_COLUMN) continue;
+
+            if (admissible(best)) {
+              candidates.push_back(best);
+              stepDir.push_back(bestStep);
+            } else if (!fine_grid->nodes->GetDomain(best) && (haloSlot[best] >= 0) && (haloClaim[best] == NO_COLUMN)) {
+              haloWanted.push_back(best);
+              haloStep.push_back(bestStep);
+            }
           }
-          if (bestLocal != NO_COLUMN) candidates.push_back(bestLocal);
-          if (bestHalo != NO_COLUMN) haloWanted.push_back(bestHalo);
+
+          /*--- A column advances only onto a whole layer of its own width, with one successor per
+           *    node, no two of them the same, and the same nodes touching each other as before.
+           *    Without that last part a layer whose way ahead is blocked can still "advance" onto
+           *    the free nodes to either side of itself, which is a column turning into two that
+           *    walk away sideways. Counting alone does not see that, and it is what stops a column
+           *    exactly at the boundary it runs into. All of it is topology, so no tolerance. ---*/
+          auto complete = [&](vector<unsigned long>& set) {
+            if (set.size() != width) return false;
+            distinct = set;
+            std::sort(distinct.begin(), distinct.end());
+            distinct.erase(std::unique(distinct.begin(), distinct.end()), distinct.end());
+            if (distinct.size() != width) return false;
+
+            for (size_t k = 0; k < width; ++k)
+              for (size_t l = k + 1; l < width; ++l)
+                if (IsAdjacent(fine_grid, layer[iColumn][k], layer[iColumn][l]) !=
+                    IsAdjacent(fine_grid, set[k], set[l]))
+                  return false;
+            return true;
+          };
+
+          if (complete(candidates)) {
+            for (auto jPoint : candidates) {
+              columnOf[jPoint] = iColumn;
+              layerOf[jPoint] = iRound;
+            }
+            depthOf[iColumn] = iRound;
+            layer[iColumn] = candidates;
+            dirOf[iColumn] = stepDir;
+            advanced = true;
+            continue;
+          }
+
+          /*--- Nothing left here. If the whole layer wants to step across an interface, offer the
+           *    column to the owner of that mesh; a layer split by the interface is let go. ---*/
+          alive[iColumn] = 0;
+          if ((size > 1) && complete(haloWanted)) {
+            /*--- An offer is named by the lowest interface position it covers. Both ranks read that
+             *    off the same matched vertex lists, so it needs no global numbering, which the
+             *    coarse levels do not carry. A footprint split between two neighbours is offered to
+             *    each of them on its own. ---*/
+            for (auto jPoint : haloWanted) haloClaim[jPoint] = iColumn;
+
+            for (auto iPair = 0ul; iPair < handPairs.size(); ++iPair) {
+              auto tag = std::numeric_limits<unsigned long>::max();
+              for (auto jPoint : haloWanted)
+                if (haloPair[jPoint] == iPair) tag = std::min(tag, haloVertex[jPoint]);
+              if (tag == std::numeric_limits<unsigned long>::max()) continue;
+
+              tag += 1; /*--- Zero means no offer. ---*/
+              for (auto jPoint : haloWanted)
+                if (haloPair[jPoint] == iPair) tagOut[haloSlot[jPoint]] = tag;
+              ct[P_HANDED]++;
+            }
+          }
         }
 
-        /*--- A column advances only onto a whole layer of its own width, with one successor per
-         *    node and no two of them the same. That is a count, so again no tolerance. ---*/
-        auto complete = [&](vector<unsigned long>& set) {
-          if (set.size() != width) return false;
-          distinct = set;
-          std::sort(distinct.begin(), distinct.end());
-          distinct.erase(std::unique(distinct.begin(), distinct.end()), distinct.end());
-          return distinct.size() == width;
-        };
+        if (!advanced) break;
+      }
 
-        if (complete(candidates)) {
-          for (auto jPoint : candidates) {
-            columnOf[jPoint] = iColumn;
-            layerOf[jPoint] = iRound;
-          }
-          depthOf[iColumn] = iRound;
-          layer[iColumn] = candidates;
-          advanced = true;
+      if (size <= 1) break;
+
+      /*--- Every rank reaches this exchange and the collective that follows it. ---*/
+      for (const auto& hp : handPairs) {
+        SU2_MPI::Sendrecv(tagOut.data() + hp.offR, hp.nVertexR, MPI_UNSIGNED_LONG, hp.receive_from, 0,
+                          tagIn.data() + hp.offS, hp.nVertexS, MPI_UNSIGNED_LONG, hp.send_to, 0, SU2_MPI::GetComm(),
+                          MPI_STATUS_IGNORE);
+        CPassiveMPI::Sendrecv(dirOut.data() + hp.offR * nDim, hp.nVertexR * nDim, MPI_DOUBLE, hp.receive_from, 1,
+                              dirIn.data() + hp.offS * nDim, hp.nVertexS * nDim, MPI_DOUBLE, hp.send_to, 1,
+                              SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      }
+
+      /*--- Offers arrive named by a tag both ranks compute the same way, so grouping by it rebuilds
+       *    the footprint the sender was standing on. The map orders the tags, which keeps the
+       *    adoption order the same everywhere. ---*/
+      map<std::pair<unsigned long, unsigned long>, vector<std::pair<unsigned long, unsigned long>>> adopted;
+      for (auto iPair = 0ul; iPair < handPairs.size(); ++iPair) {
+        const auto& hp = handPairs[iPair];
+        for (auto iVertex = 0ul; iVertex < hp.nVertexS; iVertex++) {
+          const auto tag = tagIn[hp.offS + iVertex];
+          if (tag != 0)
+            adopted[{iPair, tag}].push_back({fine_grid->vertex[hp.markerS][iVertex]->GetNode(), hp.offS + iVertex});
+        }
+      }
+
+      unsigned long nAdopted = 0;
+      vector<unsigned long> group;
+      vector<std::array<su2double, MAXNDIM>> inheritedDir;
+      for (auto& item : adopted) {
+        auto& arrivals = item.second;
+        std::sort(arrivals.begin(), arrivals.end());
+        arrivals.erase(std::unique(arrivals.begin(), arrivals.end(),
+                                   [](const std::pair<unsigned long, unsigned long>& a,
+                                      const std::pair<unsigned long, unsigned long>& b) { return a.first == b.first; }),
+                       arrivals.end());
+
+        group.clear();
+        for (const auto& arrival : arrivals) group.push_back(arrival.first);
+
+        /*--- The mesh may have been taken since the offer was made, and a footprint is adopted whole
+         *    or not at all. ---*/
+        bool free = !group.empty();
+        for (auto iPoint : group) free = free && admissible(iPoint);
+        if (!free) {
+          ct[P_DROPPED]++;
           continue;
         }
 
-        /*--- Nothing left here. If the whole layer wants to step across an interface, offer the
-         *    column to the owner of that mesh; a layer split by the interface is let go. ---*/
-        alive[iColumn] = 0;
-        if ((size > 1) && complete(haloWanted)) {
-          /*--- An offer is named by the lowest interface position it covers. Both ranks read that
-           *    off the same matched vertex lists, so it needs no global numbering, which the
-           *    coarse levels do not carry. A footprint split between two neighbours is offered to
-           *    each of them on its own. ---*/
-          for (auto jPoint : haloWanted) haloClaim[jPoint] = iColumn;
-
-          for (auto iPair = 0ul; iPair < handPairs.size(); ++iPair) {
-            auto tag = std::numeric_limits<unsigned long>::max();
-            for (auto jPoint : haloWanted)
-              if (haloPair[jPoint] == iPair) tag = std::min(tag, haloVertex[jPoint]);
-            if (tag == std::numeric_limits<unsigned long>::max()) continue;
-
-            tag += 1; /*--- Zero means no offer. ---*/
-            for (auto jPoint : haloWanted)
-              if (haloPair[jPoint] == iPair) tagOut[haloSlot[jPoint]] = tag;
-            ct[P_HANDED]++;
-          }
+        /*--- The column keeps travelling the way the rank that offered it was going. ---*/
+        inheritedDir.clear();
+        for (const auto& arrival : arrivals) {
+          std::array<su2double, MAXNDIM> dir{};
+          for (unsigned short d = 0; d < nDim; ++d) dir[d] = dirIn[arrival.second * nDim + d];
+          inheritedDir.push_back(dir);
         }
+
+        const auto iColumn = layer.size();
+        for (auto iPoint : group) {
+          columnOf[iPoint] = iColumn;
+          layerOf[iPoint] = 0;
+        }
+        layer.push_back(group);
+        dirOf.push_back(inheritedDir);
+        depthOf.push_back(0);
+        alive.push_back(1);
+        isSeeded.push_back(0);
+        tierOf.push_back(tier);
+        order.push_back(iColumn);
+        nAdopted++;
+        ct[P_ADOPTED]++;
       }
 
-      if (!advanced) break;
+      std::fill(tagOut.begin(), tagOut.end(), 0);
+      std::fill(tagIn.begin(), tagIn.end(), 0);
+      std::fill(dirOut.begin(), dirOut.end(), 0.0);
+      std::fill(dirIn.begin(), dirIn.end(), 0.0);
+
+      unsigned long nAdoptedGlobal = 0;
+      SU2_MPI::Allreduce(&nAdopted, &nAdoptedGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+      if (nAdoptedGlobal == 0) break;
     }
-
-    if (size <= 1) break;
-
-    /*--- Every rank reaches this exchange and the collective that follows it. ---*/
-    for (const auto& hp : handPairs) {
-      SU2_MPI::Sendrecv(tagOut.data() + hp.offR, hp.nVertexR, MPI_UNSIGNED_LONG, hp.receive_from, 0,
-                        tagIn.data() + hp.offS, hp.nVertexS, MPI_UNSIGNED_LONG, hp.send_to, 0, SU2_MPI::GetComm(),
-                        MPI_STATUS_IGNORE);
-    }
-
-    /*--- Offers arrive named by a tag both ranks compute the same way, so grouping by it rebuilds
-     *    the footprint the sender was standing on. The map orders the tags, which keeps the
-     *    adoption order the same everywhere. ---*/
-    map<std::pair<unsigned long, unsigned long>, vector<unsigned long>> adopted;
-    for (auto iPair = 0ul; iPair < handPairs.size(); ++iPair) {
-      const auto& hp = handPairs[iPair];
-      for (auto iVertex = 0ul; iVertex < hp.nVertexS; iVertex++) {
-        const auto tag = tagIn[hp.offS + iVertex];
-        if (tag != 0) adopted[{iPair, tag}].push_back(fine_grid->vertex[hp.markerS][iVertex]->GetNode());
-      }
-    }
-
-    unsigned long nAdopted = 0;
-    for (auto& item : adopted) {
-      auto& group = item.second;
-      std::sort(group.begin(), group.end());
-      group.erase(std::unique(group.begin(), group.end()), group.end());
-
-      /*--- The mesh may have been taken since the offer was made, and a footprint is adopted whole
-       *    or not at all. ---*/
-      bool free = !group.empty();
-      for (auto iPoint : group) free = free && admissible(iPoint);
-      if (!free) {
-        ct[P_DROPPED]++;
-        continue;
-      }
-
-      const auto iColumn = layer.size();
-      for (auto iPoint : group) {
-        columnOf[iPoint] = iColumn;
-        layerOf[iPoint] = 0;
-      }
-      layer.push_back(group);
-      depthOf.push_back(0);
-      alive.push_back(1);
-      isSeeded.push_back(0);
-      order.push_back(iColumn);
-      nAdopted++;
-      ct[P_ADOPTED]++;
-    }
-
-    std::fill(tagOut.begin(), tagOut.end(), 0);
-    std::fill(tagIn.begin(), tagIn.end(), 0);
-
-    unsigned long nAdoptedGlobal = 0;
-    SU2_MPI::Allreduce(&nAdopted, &nAdoptedGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-    if (nAdoptedGlobal == 0) break;
   }
 
   /*--- Gather each column by layer. ---*/
@@ -2242,13 +2332,13 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
   stringstream out;
   out << "  MG level " << iMesh << " paving: " << ctGlobal[P_COLUMNS] << " columns from " << ctGlobal[P_SEEDS]
-      << " seeds, " << ctGlobal[P_CVS] << " CVs covering " << ctGlobal[P_COVERED] << " nodes, depth "
-      << minDepthGlobal << " to " << maxDepthGlobal << "\n";
+      << " seeds, " << ctGlobal[P_CVS] << " CVs covering " << ctGlobal[P_COVERED] << " nodes, depth " << minDepthGlobal
+      << " to " << maxDepthGlobal << "\n";
   out << "    patches 1/2/3/4 wide: " << ctGlobal[P_PATCH1] << "/" << ctGlobal[P_PATCH2] << "/" << ctGlobal[P_PATCH3]
       << "/" << ctGlobal[P_PATCH4] << ", " << ctGlobal[P_SEED_CURV] << " seeds refused on curvature";
   if (ctGlobal[P_HANDED] != 0)
-    out << ", " << ctGlobal[P_HANDED] << " columns offered across a partition, " << ctGlobal[P_ADOPTED]
-        << " adopted, " << ctGlobal[P_DROPPED] << " dropped";
+    out << ", " << ctGlobal[P_HANDED] << " columns offered across a partition, " << ctGlobal[P_ADOPTED] << " adopted, "
+        << ctGlobal[P_DROPPED] << " dropped";
   out << "\n";
   return out.str();
 }

@@ -110,6 +110,10 @@ class CMultiGridGeometry final : public CGeometry {
     vector<unsigned long> node;                    /*!< \brief Seed node on the boundary. */
     vector<std::array<su2double, MAXNDIM>> normal; /*!< \brief Unit normal there, pointing into the domain. */
     vector<su2double> strength;                    /*!< \brief Local anisotropy, the ordering key. */
+    vector<char> tier;                             /*!< \brief 0 viscous wall, 1 Euler wall, 2 anything else.
+                                                        One tier is paved out before the next starts, so a
+                                                        wall is never blocked by mesh a farfield column
+                                                        reached first. */
     unsigned long nRefusedCurvature = 0;           /*!< \brief Euler wall nodes the curvature limit kept out. */
   };
 
