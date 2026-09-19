@@ -87,16 +87,16 @@ class CMultiGridGeometry final : public CGeometry {
   su2double ComputeLocalCurvature(const CGeometry* fine_grid, unsigned long iPoint, unsigned short iMarker) const;
 
   /*!
-   * \brief Pave the domain with advancing fronts extruded from the boundary patches.
+   * \brief Pave the domain with columns grown from the boundary patches by one breadth first walk,
+   *        so that every node goes to the patch that reaches it in the fewest steps.
    * \param[in,out] Index_CoarseCV - Current coarse CV index, incremented as new coarse CVs are created.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Configuration.
    * \param[in] iMesh - Multigrid level being built, used to label the summary.
    * \param[in] mixedBC - Nodes that must stay on their own, from FindMixedBoundaryNodes.
    * \param[in] onPhysBoundary - Nodes carrying a physical boundary condition, excluding SEND_RECEIVE.
-   * \param[in] onPeriodic - Nodes on a periodic marker, which a front never claims.
-   * \param[out] neverGrewCV - Coarse CV index of every front whose stack never advanced past its
-   *             seed layer.
+   * \param[in] onPeriodic - Nodes on a periodic marker, which a column never claims.
+   * \param[out] neverGrewCV - Coarse CV index of every column that never grew past its seed layer.
    * \return Summary of the paving, empty except on the master rank.
    */
   string PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
@@ -104,20 +104,21 @@ class CMultiGridGeometry final : public CGeometry {
                              const vector<char>& onPeriodic, vector<unsigned long>& neverGrewCV);
 
   /*!
-   * \brief Boundary nodes that seed a front, with the direction each starts marching in.
+   * \brief Boundary nodes that seed a column, ordered with the most anisotropic first.
    */
   struct CFrontSeeds {
     vector<unsigned long> node;                    /*!< \brief Seed node on the boundary. */
     vector<std::array<su2double, MAXNDIM>> normal; /*!< \brief Unit normal there, pointing into the domain. */
+    vector<su2double> strength;                    /*!< \brief Local anisotropy, the ordering key. */
     unsigned long nRefusedCurvature = 0;           /*!< \brief Euler wall nodes the curvature limit kept out. */
   };
 
   /*!
-   * \brief Collect the boundary nodes that seed an advancing front: those on a viscous wall, or on a
-   *        boundary carrying a stretched layer normal to itself.
+   * \brief Collect the boundary nodes that seed a column: those where the stiffest edge is also the
+   *        edge most nearly along the boundary normal, so the mesh is layered against this boundary.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Definition of the particular problem.
-   * \return Seed nodes and their inward boundary normals.
+   * \return Seed nodes and their inward boundary normals, most anisotropic first.
    */
   CFrontSeeds SeedFrontNodes(const CGeometry* fine_grid, const CConfig* config) const;
 
