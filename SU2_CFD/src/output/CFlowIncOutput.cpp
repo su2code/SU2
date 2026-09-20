@@ -162,8 +162,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the Enthalpy.
   if (heat)
-    AddHistoryOutput("BGS_ENTHALPY", "bgs[h]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the enthalpy.",
-                     HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_ENTHALPY", "bgs[h]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the enthalpy.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_ScalarBGS_RES(config);
 
