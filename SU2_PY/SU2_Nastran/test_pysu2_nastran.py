@@ -180,5 +180,104 @@ class TestReadNastranMesh(unittest.TestCase):
             np.testing.assert_allclose(system.GetRotMatrix(), np.eye(3), atol=1e-12)
 
 
+# Lines the solver prints when a new page starts in the middle of the sorted
+# bulk data echo of a .f06 file.
+PAGE_HEADER = [
+    "1    NX NASTRAN MODES ANALYSIS SET                                         NOVEMBER  15, 2022  MSC Nastran 11/19/16   PAGE  4257\n",
+    " " * 132 + "\n",
+    "0" + " " * 131 + "\n",
+    " " * 50 + "S O R T E D   B U L K   D A T A   E C H O" + " " * 40 + "\n",
+    " " * 17 + "ENTRY" + " " * 108 + "\n",
+    " " * 17
+    + "COUNT        .   1  ..   2  ..   3  ..   4  ..   5  ..   6  ..   7  ..   8  ..   9  ..  10  ."
+    + " " * 22
+    + "\n",
+]
+
+
+class TestReadSet1(unittest.TestCase):
+    """
+    Reads a SET1 entry which is longer than one line, with and without a page
+    header in the middle of the sorted bulk data echo.
+    """
+
+    N_GRID = 30
+
+    def echo(self, fields, count):
+        """Builds a line of the sorted echo, which starts with the entry count."""
+
+        line = card(fields, "left", prefix=8)
+        return "{:>21}-".format(count) + line
+
+    def mesh(self, page_break_after=None):
+        """
+        Writes 30 grid points and the SET1 entry with the identifiers 1 to 30,
+        seven on the first line and eight on each of the continuation lines.
+        A page header is inserted after the line with the given index.
+        """
+
+        lines = [
+            card(["GRID", str(i), "0", str(i), "0.", "0.", "0"], "left")
+            for i in range(1, self.N_GRID + 1)
+        ]
+        ids = [str(i) for i in range(1, self.N_GRID + 1)]
+        set1 = [["SET1", "7"] + ids[:7] + ["+"]]
+        rest = ids[7:]
+        while rest:
+            last = len(rest) <= 8
+            set1.append(["+"] + rest[:8] + ([] if last else ["+"]))
+            rest = rest[8:]
+        for index, fields in enumerate(set1):
+            lines.append(self.echo(fields, 1000 + index))
+            if index == page_break_after:
+                lines.extend(PAGE_HEADER)
+        lines.append(card(["SPC1", "1", "123456", "1"], "left"))
+
+        handle, path = tempfile.mkstemp(suffix=".f06")
+        with os.fdopen(handle, "w") as mesh_file:
+            mesh_file.writelines(lines)
+        self.addCleanup(os.remove, path)
+        return path
+
+    def read(self, page_break_after=None):
+        solver = Solver.__new__(Solver)
+        solver.Mesh_file = self.mesh(page_break_after)
+        solver.FSI_marker = "7"
+        solver.node = []
+        solver.markers = {}
+        solver.refsystems = []
+        solver._Solver__readNastranMesh()
+        return solver
+
+    def test_entry_on_several_lines(self):
+        solver = self.read()
+        self.assertEqual(solver.markers["7"], list(range(self.N_GRID)))
+        self.assertEqual(solver.nMarker, 1)
+
+    def test_page_header_between_continuation_lines(self):
+        # 30 identifiers are written on four lines, break after each of them.
+        for line in range(3):
+            solver = self.read(page_break_after=line)
+            self.assertEqual(solver.markers["7"], list(range(self.N_GRID)), msg=line)
+            self.assertEqual(solver.nMarker, 1)
+
+    def test_missing_continuation_line_is_reported(self):
+        solver = Solver.__new__(Solver)
+        handle, path = tempfile.mkstemp(suffix=".f06")
+        with os.fdopen(handle, "w") as mesh_file:
+            mesh_file.write(card(["GRID", "1", "0", "0.", "0.", "0."], "left"))
+            mesh_file.write(self.echo(["SET1", "7", "1", "+"], 1))
+            mesh_file.write(self.echo(["SPC1", "1", "123456", "1"], 2))
+        self.addCleanup(os.remove, path)
+        solver.Mesh_file = path
+        solver.FSI_marker = "7"
+        solver.node = []
+        solver.markers = {}
+        solver.refsystems = []
+        with self.assertRaises(Exception) as error:
+            solver._Solver__readNastranMesh()
+        self.assertIn("continuation", str(error.exception))
+
+
 if __name__ == "__main__":
     unittest.main()

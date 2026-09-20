@@ -29,6 +29,8 @@
 #  Imports
 # ----------------------------------------------------------------------
 
+import re
+
 import numpy as np
 import scipy.linalg as linalg
 from math import *
@@ -548,8 +550,7 @@ class Solver:
                     self.markers[markerTag] = []
                     while existValue:
                         if line[0] == "+":
-                            line = meshfile.readline()
-                            line = line.strip("\r\n")
+                            line = self.__readContinuation(meshfile)
                             line = line[37:]
                             line = line.split()
                         ID = int(line.pop(0))
@@ -583,6 +584,28 @@ class Solver:
                 len(self.markers[self.FSI_marker])
             )
         )
+
+    def __readContinuation(self, meshfile):
+        """
+        This method returns the next continuation line of a bulk data entry.
+
+        In the sorted bulk data echo of a .f06 file, a new page header can start
+        in the middle of an entry, so the continuation line does not necessarily
+        follow the line that announced it. The lines of the page header are skipped.
+        """
+
+        while 1:
+            line = meshfile.readline()
+            if not line:
+                raise Exception(
+                    "Unexpected end of file while looking for a continuation line"
+                )
+            if line[30:31] == "+":
+                return line.strip("\r\n")
+            if re.match(r"\s*\d+-", line):
+                raise Exception(
+                    "Expected a continuation line but found: {}".format(line.strip())
+                )
 
     def __checkBlankField(self, string):
         """
