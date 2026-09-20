@@ -32,8 +32,8 @@
 
 const string CParaviewXMLFileWriter::fileExt = ".vtu";
 
-CParaviewXMLFileWriter::CParaviewXMLFileWriter(CParallelDataSorter *valDataSorter) :
-  CFileWriter(valDataSorter, fileExt){
+CParaviewXMLFileWriter::CParaviewXMLFileWriter(CParallelDataSorter *valDataSorter, bool valDoublePrecision) :
+  CFileWriter(valDataSorter, fileExt), doublePrecision(valDoublePrecision){
 
   /* Check for big endian. We have to swap bytes otherwise.
    * Since size of character is 1 byte when the character pointer
@@ -105,6 +105,10 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   const bool connInt64 = GlobalElemStorage > static_cast<unsigned long>(std::numeric_limits<int32_t>::max());
   const auto connType = connInt64 ? VTKDatatype::INT64 : VTKDatatype::INT32;
 
+  /*--- Precision of the coordinates and fields. ---*/
+
+  const auto realType = doublePrecision ? VTKDatatype::FLOAT64 : VTKDatatype::FLOAT32;
+
   /* Write the ASCII XML header. Note that we use the appended format for the data,
   * which means that all data is appended at the end of the file in one binary blob.
   */
@@ -120,7 +124,7 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   WriteMPIString("<Piece NumberOfPoints=\"" + std::to_string(GlobalPoint) + "\" NumberOfCells=\"" +
                  std::to_string(GlobalElem) + "\">\n", MASTER_NODE);
   WriteMPIString("<Points>\n", MASTER_NODE);
-  AddDataArray(VTKDatatype::FLOAT32, "", NCOORDS, myPoint*NCOORDS, GlobalPoint*NCOORDS);
+  AddDataArray(realType, "", NCOORDS, myPoint*NCOORDS, GlobalPoint*NCOORDS);
   WriteMPIString("</Points>\n", MASTER_NODE);
   WriteMPIString("<Cells>\n", MASTER_NODE);
   AddDataArray(connType, "connectivity", 1, myElemStorage, GlobalElemStorage);
@@ -173,11 +177,11 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
       fieldname.erase(fieldname.end()-2,fieldname.end());
 
-      AddDataArray(VTKDatatype::FLOAT32, fieldname, NCOORDS, myPoint*NCOORDS, GlobalPoint*NCOORDS);
+      AddDataArray(realType, fieldname, NCOORDS, myPoint*NCOORDS, GlobalPoint*NCOORDS);
 
     } else if (output_variable) {
 
-      AddDataArray(VTKDatatype::FLOAT32, fieldname, 1, myPoint, GlobalPoint);
+      AddDataArray(realType, fieldname, 1, myPoint, GlobalPoint);
 
     }
 
@@ -193,20 +197,30 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   /*--- Load/write the 1D buffer of point coordinates. Note that we
    always have 3 coordinate dimensions, even for 2D problems. ---*/
 
-  vector<float> dataBufferFloat(myPoint*NCOORDS);
+  vector<double> dataBuffer(myPoint*NCOORDS);
+
+  /*--- Write the staged point data with the precision requested by the user. ---*/
+
+  auto writeRealArray = [&](unsigned long size, unsigned long globalSize, unsigned long offset) {
+    if (realType == VTKDatatype::FLOAT64) {
+      WriteDataArray(dataBuffer.data(), realType, size, globalSize, offset);
+    } else {
+      vector<float> buffer(dataBuffer.begin(), dataBuffer.begin() + size);
+      WriteDataArray(buffer.data(), realType, size, globalSize, offset);
+    }
+  };
+
   for (iPoint = 0; iPoint < myPoint; iPoint++) {
     for (iDim = 0; iDim < NCOORDS; iDim++) {
       if (nDim == 2 && iDim == 2) {
-        dataBufferFloat[iPoint*NCOORDS + iDim] = 0.0;
+        dataBuffer[iPoint*NCOORDS + iDim] = 0.0;
       } else {
-        auto val = (float)dataSorter->GetData(iDim, iPoint);
-        dataBufferFloat[iPoint*NCOORDS + iDim] = val;
+        dataBuffer[iPoint*NCOORDS + iDim] = SU2_TYPE::GetValue(dataSorter->GetData(iDim, iPoint));
       }
     }
   }
 
-  WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, NCOORDS*myPoint, GlobalPoint*NCOORDS,
-                 dataSorter->GetnPointCumulative(rank)*NCOORDS);
+  writeRealArray(NCOORDS*myPoint, GlobalPoint*NCOORDS, dataSorter->GetnPointCumulative(rank)*NCOORDS);
 
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
 
@@ -292,20 +306,17 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
       /*--- Load up the buffer for writing this rank's vector data. ---*/
 
-      float val = 0.0;
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
         for (iDim = 0; iDim < NCOORDS; iDim++) {
           if (nDim == 2 && iDim == 2) {
-            dataBufferFloat[iPoint*NCOORDS + iDim] = 0.0;
+            dataBuffer[iPoint*NCOORDS + iDim] = 0.0;
           } else {
-            val = (float)dataSorter->GetData(VarCounter+iDim,iPoint);
-            dataBufferFloat[iPoint*NCOORDS + iDim] = val;
+            dataBuffer[iPoint*NCOORDS + iDim] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+iDim,iPoint));
           }
         }
       }
 
-      WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, myPoint*NCOORDS, GlobalPoint*NCOORDS,
-                     dataSorter->GetnPointCumulative(rank)*NCOORDS);
+      writeRealArray(myPoint*NCOORDS, GlobalPoint*NCOORDS, dataSorter->GetnPointCumulative(rank)*NCOORDS);
 
       VarCounter++;
 
@@ -316,12 +327,10 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
        This will be replaced with a derived data type most likely. ---*/
 
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
-        auto val = (float)dataSorter->GetData(VarCounter,iPoint);
-        dataBufferFloat[iPoint] = val;
+        dataBuffer[iPoint] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter,iPoint));
       }
 
-      WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, myPoint, GlobalPoint,
-                     dataSorter->GetnPointCumulative(rank));
+      writeRealArray(myPoint, GlobalPoint, dataSorter->GetnPointCumulative(rank));
 
       VarCounter++;
     }

@@ -746,6 +746,7 @@ private:
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
   bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Wrt_Restart_Compact,                /*!< \brief Write compact restart files with minimum nr. of variables. */
+  Wrt_Output_Double_Precision,        /*!< \brief Write the fields of the volume and surface files in double. */
   Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
@@ -5673,6 +5674,12 @@ public:
    * \return Flag <code>TRUE</code> then the code will write compact restart files.
    */
   bool GetWrt_Restart_Compact(void) const { return Wrt_Restart_Compact; }
+
+  /*!
+   * \brief Flag for whether the fields of the volume and surface files are written in double precision.
+   * \return <code>TRUE</code> means that double precision is used.
+   */
+  bool GetWrt_Output_Double_Precision(void) const { return Wrt_Output_Double_Precision; }
 
   /*!
    * \brief Flag for whether restart solution files are overwritten.

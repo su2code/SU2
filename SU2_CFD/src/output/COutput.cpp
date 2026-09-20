@@ -556,7 +556,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
       LogOutputFiles("Paraview");
-      fileWriter = new CParaviewXMLFileWriter(volumeDataSorter);
+      fileWriter = new CParaviewXMLFileWriter(volumeDataSorter, config->GetWrt_Output_Double_Precision());
 
       break;
 
@@ -683,7 +683,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortOutputData();
 
       LogOutputFiles("Paraview surface");
-      fileWriter = new CParaviewXMLFileWriter(surfaceDataSorter);
+      fileWriter = new CParaviewXMLFileWriter(surfaceDataSorter, config->GetWrt_Output_Double_Precision());
 
       break;
 
@@ -760,7 +760,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
       LogOutputFiles("CGNS");
-      fileWriter = new CCGNSFileWriter(volumeDataSorter);
+      fileWriter = new CCGNSFileWriter(volumeDataSorter, false, config->GetWrt_Output_Double_Precision());
 
       /*--- Add the boundaries, named as the markers (the finite volume sorter knows which elements are halos). ---*/
       if (const auto* fvmSorter = dynamic_cast<const CFVMDataSorter*>(volumeDataSorter))
@@ -783,7 +783,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortOutputData();
 
       LogOutputFiles("CGNS surface");
-      fileWriter = new CCGNSFileWriter(surfaceDataSorter, true);
+      fileWriter = new CCGNSFileWriter(surfaceDataSorter, true, config->GetWrt_Output_Double_Precision());
 
       /*--- One zone per plotted marker, named as the marker. ---*/
       static_cast<CCGNSFileWriter*>(fileWriter)->SetSurfaceMarkers(config, geometry);

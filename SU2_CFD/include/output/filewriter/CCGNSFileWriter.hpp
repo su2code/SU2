@@ -45,7 +45,8 @@ class CFVMDataSorter;
 
 class CCGNSFileWriter final : public CFileWriter {
  private:
-  const bool isSurface; /*!< \brief True if surface file. */
+  const bool isSurface;             /*!< \brief True if surface file. */
+  const bool doublePrecisionFields; /*!< \brief True to write the fields in double precision instead of single. */
 
   /*!
    * \brief Boundary elements of one marker owned by this rank, written as a boundary section of a volume file.
@@ -75,13 +76,8 @@ class CCGNSFileWriter final : public CFileWriter {
   cgsize_t GlobalPoint;       /*!< \brief Total number of points. */
   cgsize_t GlobalElem;        /*!< \brief Total number of elements. */
 
-  typedef float dataPrecision;            /*!< \brief Define data precision of output (float or double). */
-  const DataType_t dataType = RealSingle; /*!< \brief Datatype of fields can be RealSingle or RealDouble. */
-
   vector<cgsize_t> sendBufferConnectivity; /*!< \brief Send buffer for connectivity data. */
   vector<cgsize_t> recvBufferConnectivity; /*!< \brief Receive buffer for connectivity data. */
-  vector<dataPrecision> recvBufferField;   /*!< \brief Send buffer for field data. */
-  vector<dataPrecision> sendBufferField;   /*!< \brief Receive buffer for field data. */
 
   cgsize_t cumulative; /*!< \brief Cumulative number of elements written. */
 
@@ -102,7 +98,7 @@ class CCGNSFileWriter final : public CFileWriter {
    * \param[in] valDataSorter - The parallel sorted data to write.
    * \param[in] isSurf - True if it is a surface file.
    */
-  CCGNSFileWriter(CParallelDataSorter* valDataSorter, bool isSurf = false);
+  CCGNSFileWriter(CParallelDataSorter* valDataSorter, bool isSurf = false, bool doublePrecision = false);
 
   /*!
    * \brief Write sorted data to file in CGNS file format.
@@ -152,11 +148,21 @@ class CCGNSFileWriter final : public CFileWriter {
   void WriteBoundaries();
 
   /*!
-   * \brief Write i-th coordinate to file in CGNS file format.
+   * \brief Write i-th coordinate to file in CGNS file format. Coordinates are always written in double precision,
+   *        the fields follow the precision requested by the user.
    * \param[in] iField - the output field ID.
    * \param[in] FieldName - Field name in the CGNS.
    */
   void WriteField(int iField, const string& FieldName);
+
+  /*!
+   * \brief Write i-th coordinate or field to file with the given data type.
+   * \param[in] iField - the output field ID.
+   * \param[in] FieldName - Field name in the CGNS.
+   * \param[in] dataType - CGNS data type matching T, i.e. RealSingle for float and RealDouble for double.
+   */
+  template <class T>
+  void WriteFieldOfType(int iField, const string& FieldName, DataType_t dataType);
 
   /*!
    * \brief Write connectivity to file for GEO_TYPE in CGNS file format.

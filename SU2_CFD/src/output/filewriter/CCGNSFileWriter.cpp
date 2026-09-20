@@ -34,8 +34,8 @@
 
 const string CCGNSFileWriter::fileExt = ".cgns";
 
-CCGNSFileWriter::CCGNSFileWriter(CParallelDataSorter* valDataSorter, bool isSurf)
-    : CFileWriter(valDataSorter, fileExt), isSurface(isSurf) {}
+CCGNSFileWriter::CCGNSFileWriter(CParallelDataSorter* valDataSorter, bool isSurf, bool doublePrecision)
+    : CFileWriter(valDataSorter, fileExt), isSurface(isSurf), doublePrecisionFields(doublePrecision) {}
 
 void CCGNSFileWriter::WriteData(string val_filename) {
 
@@ -292,20 +292,35 @@ BCType_t CCGNSFileWriter::GetCGNSBCType(unsigned short kindBC) {
 }
 
 void CCGNSFileWriter::WriteField(int iField, const string& FieldName) {
+  /*--- The coordinates define the mesh, so they are always written in double precision. Single precision would
+   move the points by up to ~1e-7 of the size of the domain, which can be larger than the smallest cells. ---*/
+
+  const bool isCoord = iField < nDim;
+
+  if (isCoord || doublePrecisionFields)
+    WriteFieldOfType<double>(iField, FieldName, RealDouble);
+  else
+    WriteFieldOfType<float>(iField, FieldName, RealSingle);
+}
+
+template <class T>
+void CCGNSFileWriter::WriteFieldOfType(int iField, const string& FieldName, DataType_t dataType) {
   /*--- Check if field is coordinate. ---*/
   const bool isCoord = iField < nDim;
 
   /*--- Create send buffer. ---*/
-  sendBufferField.resize(nLocalPoints);
+  vector<T> sendBufferField(nLocalPoints);
 
   for (unsigned long iPoint = 0; iPoint < nLocalPoints; iPoint++) {
-    sendBufferField[iPoint] = static_cast<dataPrecision>(dataSorter->GetData(iField, iPoint));
+    sendBufferField[iPoint] = static_cast<T>(dataSorter->GetData(iField, iPoint));
   }
 
   if (rank != MASTER_NODE) {
-    SendChunked(sendBufferField.data(), nLocalPoints * sizeof(dataPrecision), MASTER_NODE, 0);
+    SendChunked(sendBufferField.data(), nLocalPoints * sizeof(T), MASTER_NODE, 0);
     return;
   }
+
+  vector<T> recvBufferField;
 
   /*--- Coordinate vector is written in blocks, one for each process. ---*/
   cgsize_t nodeBegin = 1;
@@ -331,7 +346,7 @@ void CCGNSFileWriter::WriteField(int iField, const string& FieldName) {
     const auto recvSize = static_cast<size_t>(nodeEnd - nodeBegin + 1);
     recvBufferField.resize(recvSize);
 
-    RecvChunked(recvBufferField.data(), recvSize * sizeof(dataPrecision), i, 0);
+    RecvChunked(recvBufferField.data(), recvSize * sizeof(T), i, 0);
     if (recvSize == 0) continue;
     if (isCoord) {
       int CoordinateNumber;
