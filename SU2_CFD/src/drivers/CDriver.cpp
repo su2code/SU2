@@ -800,9 +800,8 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   /*--- Loop over all the new grid ---*/
 
-  string pavingReports;
-  /*--- Coarse-CV volume ratio per level, held back with pavingReports so it does not interleave
-   *    with the multigrid table. ---*/
+  /*--- Per level summaries, held back so they do not interleave with the multigrid table. ---*/
+  string levelReports;
   string volRatioReport;
   constexpr passivedouble VOL_RATIO_WARN = 1e9;
 
@@ -822,7 +821,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
       geometry[iMGlevel] = nullptr;
       break;
     }
-    pavingReports += coarse_grid->GetPavingReport();
+    levelReports += coarse_grid->GetLevelReport();
 
     /*--- Compute points surrounding points. ---*/
 
@@ -881,14 +880,13 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   }
 
-  /*--- Held back so they do not interleave with the multigrid level table. ---*/
-  if (rank == MASTER_NODE) cout << pavingReports << volRatioReport;
+  if (rank == MASTER_NODE) cout << levelReports << volRatioReport;
 
-  /*--- MG_MIN_MESHSIZE is a per-rank floor, so the levels actually built fall with rank count. ---*/
+  /*--- MG_MIN_MESHSIZE is a floor on the whole level, so the hierarchy does not vary with rank
+   *    count. ---*/
   if ((rank == MASTER_NODE) && (requestedMGlevels > 0)) {
     if (config->GetnMGLevels() == 0)
-      cout << "\nWARNING: no multigrid levels used, reduce MG_MIN_MESHSIZE or the number of MPI ranks\n"
-              "         if you want multigrid.\n" << endl;
+      cout << "\nWARNING: no multigrid levels used, lower MG_MIN_MESHSIZE if you want multigrid.\n" << endl;
     else
       cout << config->GetnMGLevels() << " multigrid levels used, maximum allowed is " << requestedMGlevels
            << ". Change MGLEVEL or MG_MIN_MESHSIZE to use a different number." << endl;

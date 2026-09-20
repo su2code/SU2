@@ -1213,7 +1213,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 struct CMGOptions {
   su2double MG_Smooth_Res_Threshold{0.0}; /*!< \brief RMS reduction threshold for MG smoothing early exit. */
   su2double MG_Smooth_Coeff{0.0};         /*!< \brief Jacobi smoother coefficient for coarse-grid correction. */
-  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level, per MPI rank. */
+  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level, over all ranks. */
   std::vector<unsigned short> MG_PreSmooth;    /*!< \brief Multigrid pre-smoothing iterations per level. */
   std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
   std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */

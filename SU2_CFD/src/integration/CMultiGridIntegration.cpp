@@ -34,13 +34,8 @@
 namespace {
 
 /*!\cond PRIVATE
- *  Global-trend damping update.  Uses the cross-cycle EMA ratio to detect
- *  long-term divergence or convergence and adjusts both damping factors
- *  from a single, smooth signal.
- *
- *  crossCycleRatio < LO  : SCALE_UP   (residual below EMA trend)
- *  crossCycleRatio >= HI : SCALE_DOWN (residual above EMA trend)
- *  [LO, HI)              : no change  (neutral zone)
+ *  Moves both damping factors from the cross-cycle EMA ratio: below LO scale up,
+ *  at or above HI scale down, in between leave them alone.
  \endcond */
 static su2double applyGlobalTrend(su2double factor, passivedouble crossCycleRatio) {
   constexpr passivedouble SCALE_DOWN = 0.92;
@@ -177,8 +172,8 @@ void CMultiGridIntegration::SetCoarseGridCFL(CGeometry ****geometry, CSolver ***
       CFL_target[lvl] = CFL_target[lvl-1] * scale;
     }
 
-    /*--- Ramp from the CFL the level below handed over at, which it may never have reached its
-     *    target. The coarsest level has none and starts from its own target scaled down once more. ---*/
+    /*--- Ramp from the CFL the level below handed over at. The coarsest level has none and starts
+     *    from its own target scaled down once more. ---*/
 
     const passivedouble CFL_handover =
         (mg_ramp_cfl_start > 0.0) ? mg_ramp_cfl_start : CFL_target[nMGLevels] * CFL_scale[nMGLevels];
