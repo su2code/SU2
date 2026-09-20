@@ -821,19 +821,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-  /*--- Name each coarse point by the smallest global index among the fine points it holds. The
-   *    fine grid carries real global indices only on the finest level, so without this every point
-   *    above level one is named zero and every tie-break that reaches for the name is decided
-   *    arbitrarily instead of in mesh order. ---*/
-
-  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
-    auto globalIndex = std::numeric_limits<unsigned long>::max();
-    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++)
-      globalIndex =
-          std::min(globalIndex, fine_grid->nodes->GetGlobalIndex(nodes->GetChildren_CV(iCoarsePoint, iChildren)));
-    if (globalIndex != std::numeric_limits<unsigned long>::max()) nodes->SetGlobalIndex(iCoarsePoint, globalIndex);
-  }
-
   /*--- Reset the neighbor information. ---*/
 
   nodes->ResetPoints();
@@ -978,6 +965,20 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   /*--- Update the number of points after the MPI agglomeration ---*/
 
   nPoint = Index_CoarseCV;
+
+  /*--- Name each coarse point by the smallest global index among the fine points it holds. The fine
+   *    grid carries real global indices only on the finest level, so without this every point above
+   *    level one is named zero and every tie-break that reaches for the name is decided arbitrarily
+   *    instead of in mesh order. Halo points are named too, so the name of a coarse cell is the same
+   *    on the rank that owns it and on the ranks that only see it. ---*/
+
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPoint; iCoarsePoint++) {
+    auto globalIndex = std::numeric_limits<unsigned long>::max();
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++)
+      globalIndex =
+          std::min(globalIndex, fine_grid->nodes->GetGlobalIndex(nodes->GetChildren_CV(iCoarsePoint, iChildren)));
+    if (globalIndex != std::numeric_limits<unsigned long>::max()) nodes->SetGlobalIndex(iCoarsePoint, globalIndex);
+  }
 
   /*--- Console output with the summary of the agglomeration ---*/
   unsigned long nPointFine = fine_grid->GetnPointDomain();
