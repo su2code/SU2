@@ -262,6 +262,8 @@ void CCGNSMeshReaderBase::ReadCGNSSectionMetadata() {
   elemOffset[0] = 0;
   connElems.resize(nSections);
   sectionNames.resize(nSections, vector<char>(CGNS_STRING_SIZE));
+  sectionStart.resize(nSections, 0);
+  sectionEnd.resize(nSections, 0);
   numberOfGlobalElements = 0;
 
   for (int s = 0; s < nSections; s++) {
@@ -277,6 +279,8 @@ void CCGNSMeshReaderBase::ReadCGNSSectionMetadata() {
     /*--- Compute the total element count in this section (global). ---*/
 
     unsigned long element_count = (endE - startE + 1);
+    sectionStart[s] = startE;
+    sectionEnd[s] = endE;
 
     /* Get the details for the CGNS element type in this section. */
 
@@ -369,6 +373,60 @@ void CCGNSMeshReaderBase::ReadCGNSSectionMetadata() {
       cout << "Section " << string(sectionNames[s].data());
       cout << " contains " << element_count << " elements";
       cout << " of type " << elem_name << "." << endl;
+    }
+  }
+}
+
+void CCGNSMeshReaderBase::ReadCGNSBoundaryMarkerNames() {
+  /*--- Without a matching boundary condition a section is a marker of its own, named after the section. ---*/
+
+  sectionMarkerNames.resize(nSections);
+  for (int s = 0; s < nSections; s++) sectionMarkerNames[s] = string(sectionNames[s].data());
+
+  int nBocos = 0;
+  if (cg_nbocos(cgnsFileID, cgnsBase, cgnsZone, &nBocos)) cg_error_exit();
+
+  for (int iBoco = 1; iBoco <= nBocos; iBoco++) {
+    char bocoName[CGNS_STRING_SIZE];
+    BCType_t bocoType;
+    PointSetType_t pointSetType;
+    cgsize_t nPoints, normalListSize;
+    int normalIndex, nDataset;
+    DataType_t normalDataType;
+
+    if (cg_boco_info(cgnsFileID, cgnsBase, cgnsZone, iBoco, bocoName, &bocoType, &pointSetType, &nPoints, &normalIndex,
+                     &normalListSize, &normalDataType, &nDataset))
+      cg_error_exit();
+
+    /*--- Only a boundary condition given by elements can be matched to a section, one given by points cannot. ---*/
+
+    GridLocation_t location = Vertex;
+    cg_boco_gridlocation_read(cgnsFileID, cgnsBase, cgnsZone, iBoco, &location);
+    if (location != FaceCenter && location != EdgeCenter && location != CellCenter) continue;
+
+    /*--- The marker takes the name of the family of the boundary condition, if it has one. ---*/
+
+    string markerName = string(bocoName);
+    if (cg_goto(cgnsFileID, cgnsBase, "Zone_t", cgnsZone, "ZoneBC_t", 1, "BC_t", iBoco, "end") == CG_OK) {
+      char familyName[CGNS_STRING_SIZE];
+      if (cg_famname_read(familyName) == CG_OK) markerName = string(familyName);
+    }
+
+    /*--- Give that name to every boundary section holding elements of this boundary condition. ---*/
+
+    vector<cgsize_t> points(nPoints);
+    if (cg_boco_read(cgnsFileID, cgnsBase, cgnsZone, iBoco, points.data(), nullptr)) cg_error_exit();
+
+    for (int s = 0; s < nSections; s++) {
+      if (isInterior[s]) continue;
+
+      bool covered = false;
+      if (pointSetType == PointRange || pointSetType == ElementRange) {
+        covered = (points[0] <= sectionEnd[s]) && (points[1] >= sectionStart[s]);
+      } else {
+        for (auto point : points) covered = covered || ((point >= sectionStart[s]) && (point <= sectionEnd[s]));
+      }
+      if (covered) sectionMarkerNames[s] = markerName;
     }
   }
 }

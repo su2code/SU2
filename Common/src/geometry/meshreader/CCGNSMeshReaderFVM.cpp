@@ -48,12 +48,11 @@ CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(const CConfig* val_config, unsigned short
    section together), the master node reads the boundary section.
    Otherwise, all ranks read and communicate the interior sections. ---*/
   ReadCGNSSectionMetadata();
-  numberOfMarkers = 0;
+  ReadCGNSBoundaryMarkerNames();
   for (int s = 0; s < nSections; s++) {
     if (isInterior[s]) {
       ReadCGNSVolumeSection(s);
     } else {
-      numberOfMarkers++;
       ReadCGNSSurfaceSection(s);
     }
   }
@@ -619,38 +618,56 @@ void CCGNSMeshReaderFVM::ReformatCGNSVolumeConnectivity() {
 }
 
 void CCGNSMeshReaderFVM::ReformatCGNSSurfaceConnectivity() {
-  /*--- Prepare the class data for the marker names and connectivity. ---*/
+  /*--- Group the boundary sections by marker name, a marker can be split over several sections, for example one
+   with triangles and one with quadrilaterals. Remove any whitespaces from the names to avoid any issues. ---*/
 
-  markerNames.resize(numberOfMarkers);
+  markerNames.clear();
+  vector<int> markerOfSection(nSections, -1);
+
+  for (int s = 0; s < nSections; s++) {
+    if (isInterior[s]) continue;
+
+    string Marker_Tag = sectionMarkerNames[s];
+    Marker_Tag.erase(remove(Marker_Tag.begin(), Marker_Tag.end(), ' '), Marker_Tag.end());
+
+    const auto it = find(markerNames.begin(), markerNames.end(), Marker_Tag);
+    markerOfSection[s] = static_cast<int>(distance(markerNames.begin(), it));
+    if (it == markerNames.end()) markerNames.push_back(Marker_Tag);
+  }
+
+  numberOfMarkers = markerNames.size();
+
+  /*--- Tell the user which sections were merged into one marker. ---*/
+
+  if (rank == MASTER_NODE) {
+    for (unsigned short iMarker = 0; iMarker < numberOfMarkers; iMarker++) {
+      vector<string> sections;
+      for (int s = 0; s < nSections; s++)
+        if (markerOfSection[s] == iMarker) sections.push_back(string(sectionNames[s].data()));
+
+      if (sections.size() > 1) {
+        cout << "Marker " << markerNames[iMarker] << " groups the sections";
+        for (const auto& section : sections) cout << " " << section;
+        cout << "." << endl;
+      }
+    }
+  }
+
+  /*--- Prepare the class data for the connectivity. The master node alone stores it. ---*/
+
+  surfaceElementConnectivity.clear();
   surfaceElementConnectivity.resize(numberOfMarkers);
 
-  int markerCount = 0;
-  int elementCount = 0;
+  if (rank != MASTER_NODE) return;
+
   for (int s = 0; s < nSections; s++) {
-    if (!isInterior[s]) {
-      /*--- Store the tag for this marker. Remove any whitespaces from
-       the marker names found in the CGNS file to avoid any issues. ---*/
+    if (isInterior[s]) continue;
 
-      string Marker_Tag = string(sectionNames[s].data());
-      Marker_Tag.erase(remove(Marker_Tag.begin(), Marker_Tag.end(), ' '), Marker_Tag.end());
-      markerNames[markerCount] = Marker_Tag;
+    auto& markerConnectivity = surfaceElementConnectivity[markerOfSection[s]];
+    for (unsigned long iNode = 0; iNode < nElems[s] * SU2_CONN_SIZE; iNode++)
+      markerConnectivity.push_back(static_cast<unsigned long>(connElems[s][iNode]));
 
-      /*--- The master node alone stores the connectivity. ---*/
-
-      if (rank == MASTER_NODE) {
-        surfaceElementConnectivity[markerCount].resize(nElems[s] * SU2_CONN_SIZE);
-        elementCount = 0;
-        for (unsigned long iElem = 0; iElem < nElems[s]; iElem++) {
-          for (unsigned long iNode = 0; iNode < SU2_CONN_SIZE; iNode++) {
-            unsigned long nn = iElem * SU2_CONN_SIZE + iNode;
-            surfaceElementConnectivity[markerCount][elementCount] = static_cast<unsigned long>(connElems[s][nn]);
-            elementCount++;
-          }
-        }
-        vector<cgsize_t>().swap(connElems[s]);
-      }
-      markerCount++;
-    }
+    vector<cgsize_t>().swap(connElems[s]);
   }
 }
 #endif
