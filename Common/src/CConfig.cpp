@@ -2094,8 +2094,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MG_SMOOTH_STAGNATION_TOL", MGOptions.MG_Smooth_StagnationTol, 0.99);
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_COEFF", MGOptions.MG_Smooth_Coeff, 1.25);
-  /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level, checked per MPI rank
-   * (i.e. on the smallest partition). Levels that would produce fewer CVs on any rank are not created. DEFAULT: 500 \ingroup Config*/
+  /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level, counted over the
+   * whole level rather than per rank, so the hierarchy does not change with the number of ranks. DEFAULT: 500 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Pave the coarse grid with advancing fronts raised from boundaries
    * that carry a stretched layer normal to themselves. DEFAULT: NO \ingroup Config*/

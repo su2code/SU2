@@ -982,11 +982,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   /*--- Console output with the summary of the agglomeration ---*/
   unsigned long nPointFine = fine_grid->GetnPointDomain();
-  unsigned long Global_nPointCoarse, Global_nPointFine, Min_nPointCoarse;
+  unsigned long Global_nPointCoarse, Global_nPointFine;
 
   SU2_MPI::Allreduce(&nPointDomain, &Global_nPointCoarse, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nPointFine, &Global_nPointFine, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&nPointDomain, &Min_nPointCoarse, 1, MPI_UNSIGNED_LONG, MPI_MIN, SU2_MPI::GetComm());
 
   SetGlobal_nPointDomain(Global_nPointCoarse);
 
@@ -999,13 +998,13 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   const su2double ratio = su2double(Global_nPointFine) / su2double(Global_nPointCoarse);
 
-  /*--- Stop coarsening once the smallest per-rank partition falls below the minimum, not just the
-        summed total. ---*/
-  if (Min_nPointCoarse < config->GetMGOptions().MG_Min_MeshSize) {
+  /*--- Stop coarsening on the size of the whole level, so the hierarchy a case gets does not
+        depend on how many ranks it happens to run on. ---*/
+  if (Global_nPointCoarse < config->GetMGOptions().MG_Min_MeshSize) {
     if (rank == MASTER_NODE)
-      cout << "MG level " << iMesh << " has only " << Min_nPointCoarse
-           << " CVs on the smallest partition (< MG_MIN_MESHSIZE=" << config->GetMGOptions().MG_Min_MeshSize
-           << "). Reducing MG levels to " << iMesh - 1 << "." << endl;
+      cout << "MG level " << iMesh << " has only " << Global_nPointCoarse
+           << " CVs (< MG_MIN_MESHSIZE=" << config->GetMGOptions().MG_Min_MeshSize << "). Reducing MG levels to "
+           << iMesh - 1 << "." << endl;
     config->SetMGLevels(iMesh - 1);
   } else if (rank == MASTER_NODE) {
     PrintingToolbox::CTablePrinter MGTable(&std::cout);
