@@ -32,6 +32,9 @@
 #include <basetsd.h>
 #endif
 #include "cgnslib.h"
+#ifdef HAVE_MPI
+#include "pcgnslib.h"
+#endif
 #endif
 
 #include <cstdint>
@@ -76,13 +79,7 @@ class CCGNSFileWriter final : public CFileWriter {
   cgsize_t GlobalPoint;       /*!< \brief Total number of points. */
   cgsize_t GlobalElem;        /*!< \brief Total number of elements. */
 
-  vector<cgsize_t> sendBufferConnectivity; /*!< \brief Send buffer for connectivity data. */
-  vector<cgsize_t> recvBufferConnectivity; /*!< \brief Receive buffer for connectivity data. */
-
   cgsize_t cumulative; /*!< \brief Cumulative number of elements written. */
-
-  /*--- Max bytes per MPI message, kept below INT_MAX so the int count of MPI never overflows. ---*/
-  static constexpr size_t maxChunkBytes = size_t(1) << 30;
 
   /*--- Max connectivity entries per section, so that readers using 32-bit sizes can read it. ---*/
   static constexpr cgsize_t maxSectionEntries = std::numeric_limits<int32_t>::max();
@@ -177,22 +174,25 @@ class CCGNSFileWriter final : public CFileWriter {
   void InitializeFields();
 
   /*!
-   * \brief Send a buffer of any size in chunks of at most maxChunkBytes (MPI counts are int).
-   * \param[in] buf - Data to send.
-   * \param[in] nBytes - Size of the data in bytes.
-   * \param[in] dest - Destination rank.
-   * \param[in] tag - Message tag.
+   * \brief Create an element section, collectively when built with MPI.
+   * \param[in] name - Name of the section.
+   * \param[in] type - CGNS element type of the section.
+   * \param[in] start - First element of the section.
+   * \param[in] end - Last element of the section.
+   * \param[out] section - Index of the section.
+   * \returns CGNS error code.
    */
-  static void SendChunked(const void* buf, size_t nBytes, int dest, int tag);
+  int SectionWrite(const string& name, ElementType_t type, cgsize_t start, cgsize_t end, int* section);
 
   /*!
-   * \brief Receive a buffer sent with SendChunked.
-   * \param[out] buf - Receive buffer, must hold nBytes.
-   * \param[in] nBytes - Size of the data in bytes.
-   * \param[in] source - Source rank.
-   * \param[in] tag - Message tag.
+   * \brief Write the connectivity of the elements [start, end] of a section, the elements of this rank.
+   * \param[in] section - Index of the section.
+   * \param[in] start - First element written by this rank.
+   * \param[in] end - Last element written by this rank.
+   * \param[in] elements - Connectivity, nullptr if this rank writes no element of the section.
+   * \returns CGNS error code.
    */
-  static void RecvChunked(void* buf, size_t nBytes, int source, int tag);
+  int ElementsWriteData(int section, cgsize_t start, cgsize_t end, const cgsize_t* elements);
 
   /*!
    * \brief Call a generic CGNS function.

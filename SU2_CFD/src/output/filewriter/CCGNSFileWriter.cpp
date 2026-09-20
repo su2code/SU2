@@ -58,7 +58,11 @@ void CCGNSFileWriter::WriteData(string val_filename) {
   }
 
   /*--- Close the CGNS file. ---*/
-  if (rank == MASTER_NODE) CallCGNS(cg_close(cgnsFileID));
+#ifdef HAVE_MPI
+  CallCGNS(cgp_close(cgnsFileID));
+#else
+  CallCGNS(cg_close(cgnsFileID));
+#endif
 
 #endif
 }
@@ -161,16 +165,24 @@ void CCGNSFileWriter::InitializeMeshFile(const string& val_filename) {
   /*--- If surface file cell dimension is decreased. ---*/
   const auto nCell = static_cast<int>(nDim - isSurface);
 
-  if (rank == MASTER_NODE) {
-    /*--- Remove the previous file if present. ---*/
-    remove(val_filename.c_str());
+  /*--- Remove the previous file if present, before any rank opens it. ---*/
+  if (rank == MASTER_NODE) remove(val_filename.c_str());
 
-    /*--- Create CGNS file and open in write mode. ---*/
-    CallCGNS(cg_open(val_filename.c_str(), CG_MODE_WRITE, &cgnsFileID));
+#ifdef HAVE_MPI
+  /*--- All ranks open the file and write their own part of the data with the parallel CGNS API. The nodes of the
+   file (base, zone, sections, solution, fields, boundary conditions) are metadata and must be created by all
+   ranks with the same arguments, only the data itself is written per rank. ---*/
 
-    /*--- Create Base. ---*/
-    CallCGNS(cg_base_write(cgnsFileID, "Base", nCell, nDim, &cgnsBase));
-  }
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
+  CallCGNS(cgp_mpi_comm(SU2_MPI::GetComm()));
+  CallCGNS(cgp_pio_mode(CGP_COLLECTIVE));
+  CallCGNS(cgp_open(val_filename.c_str(), CG_MODE_WRITE, &cgnsFileID));
+#else
+  CallCGNS(cg_open(val_filename.c_str(), CG_MODE_WRITE, &cgnsFileID));
+#endif
+
+  /*--- Create Base. ---*/
+  CallCGNS(cg_base_write(cgnsFileID, "Base", nCell, nDim, &cgnsBase));
 }
 
 void CCGNSFileWriter::InitializeZone(const string& zoneName) {
@@ -183,74 +195,109 @@ void CCGNSFileWriter::InitializeZone(const string& zoneName) {
   GlobalPoint = static_cast<cgsize_t>(dataSorter->GetnPointsGlobal());
   cumulative = 0;
 
-  if (rank == MASTER_NODE) {
-    /*--- Create Zone. The number of cells does not include the boundary elements. ---*/
-    array<cgsize_t, 3> zoneData;
+  /*--- Create Zone. The number of cells does not include the boundary elements. ---*/
+  array<cgsize_t, 3> zoneData;
 
-    zoneData[0] = GlobalPoint;
-    zoneData[1] = GlobalElem;
-    zoneData[2] = 0;
+  zoneData[0] = GlobalPoint;
+  zoneData[1] = GlobalElem;
+  zoneData[2] = 0;
 
-    CallCGNS(cg_zone_write(cgnsFileID, cgnsBase, zoneName.substr(0, 32).c_str(), zoneData.data(), Unstructured,
-                           &cgnsZone));
-  }
+  CallCGNS(
+      cg_zone_write(cgnsFileID, cgnsBase, zoneName.substr(0, 32).c_str(), zoneData.data(), Unstructured, &cgnsZone));
 }
 
 void CCGNSFileWriter::WriteBoundaries() {
   for (const auto& marker : boundaryMarkers) {
-    /*--- Gather the boundary elements of this marker on the master node, in rank order. ---*/
-    const unsigned long localSize = marker.conn.size();
-    vector<unsigned long> sizes(size);
-    SU2_MPI::Allgather(&localSize, 1, MPI_UNSIGNED_LONG, sizes.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    /*--- Count the elements of this rank and collect the element types it holds. The local connectivity holds the
+     VTK type of each element followed by the ids of its nodes. ---*/
 
-    const auto totalSize = std::accumulate(sizes.begin(), sizes.end(), 0ul);
-    if (totalSize == 0) continue;
-
-    if (rank != MASTER_NODE) {
-      SendChunked(marker.conn.data(), localSize * sizeof(unsigned long), MASTER_NODE, 2);
-      continue;
+    unsigned long nLocalElem = 0, typesMask = 0;
+    for (size_t pos = 0; pos < marker.conn.size();) {
+      const auto type = static_cast<unsigned short>(marker.conn[pos]);
+      typesMask |= 1ul << type;
+      nLocalElem++;
+      pos += nPointsOfElementType(type) + 1;
     }
+    const unsigned long nLocalEntries = marker.conn.size() - nLocalElem;
 
-    vector<unsigned long> conn(totalSize);
-    std::copy(marker.conn.begin(), marker.conn.end(), conn.begin());
-    auto offset = localSize;
-    for (int i = 0; i < size; ++i) {
-      if (i == MASTER_NODE) continue;
-      RecvChunked(conn.data() + offset, sizes[i] * sizeof(unsigned long), i, 2);
-      offset += sizes[i];
-    }
+    /*--- Sizes and offsets of the elements of each rank, which are written as a contiguous range. ---*/
 
-    /*--- Convert to the CGNS numbering: with a single element type the node ids of the elements, otherwise a MIXED
-     section, i.e. the CGNS element type followed by the node ids of each element, plus the start offsets. ---*/
-    vector<cgsize_t> elems, mixed, startOffsets{0};
-    bool singleType = true;
-    for (size_t pos = 0; pos < conn.size();) {
-      const auto type = static_cast<unsigned short>(conn[pos]);
-      const auto nNodes = nPointsOfElementType(type);
-      singleType &= (type == conn[0]);
-      mixed.push_back(GetCGNSType(type));
-      for (unsigned short iNode = 1; iNode <= nNodes; ++iNode) {
-        elems.push_back(static_cast<cgsize_t>(conn[pos + iNode]));
-        mixed.push_back(static_cast<cgsize_t>(conn[pos + iNode]));
-      }
-      startOffsets.push_back(static_cast<cgsize_t>(mixed.size()));
-      pos += nNodes + 1;
-    }
-    const auto nElem = static_cast<cgsize_t>(startOffsets.size() - 1);
+    vector<unsigned long> elemPerRank(size), entriesPerRank(size);
+    SU2_MPI::Allgather(&nLocalElem, 1, MPI_UNSIGNED_LONG, elemPerRank.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(&nLocalEntries, 1, MPI_UNSIGNED_LONG, entriesPerRank.data(), 1, MPI_UNSIGNED_LONG,
+                       SU2_MPI::GetComm());
+
+    const auto nTotElem = std::accumulate(elemPerRank.begin(), elemPerRank.end(), 0ul);
+    if (nTotElem == 0) continue;
+
+    auto elemOffset = std::accumulate(elemPerRank.begin(), elemPerRank.begin() + rank, 0ul);
+    auto entryOffset = std::accumulate(entriesPerRank.begin(), entriesPerRank.begin() + rank, 0ul);
+
+    /*--- A marker with a single element type is written as a section of that type, one with several types
+     (e.g. triangles and quadrilaterals) as a MIXED section. ---*/
+
+    unsigned long globalTypesMask = 0;
+    SU2_MPI::Allreduce(&typesMask, &globalTypesMask, 1, MPI_UNSIGNED_LONG, MPI_BOR, SU2_MPI::GetComm());
+    const bool singleType = (globalTypesMask & (globalTypesMask - 1)) == 0;
 
     const string name = marker.name.substr(0, 32);
-    cgsize_t range[2] = {cumulative + 1, cumulative + nElem};
+    const cgsize_t range[2] = {cumulative + 1, cumulative + static_cast<cgsize_t>(nTotElem)};
+    const cgsize_t first = range[0] + static_cast<cgsize_t>(elemOffset);
+    const cgsize_t last = first + static_cast<cgsize_t>(nLocalElem) - 1;
     int section;
-    if (singleType) {
-      CallCGNS(cg_section_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), GetCGNSType(conn[0]), range[0],
-                                range[1], 0, elems.data(), &section));
-    } else {
-      CallCGNS(cg_poly_section_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), MIXED, range[0], range[1], 0,
-                                     mixed.data(), startOffsets.data(), &section));
-    }
-    cumulative += nElem;
 
-    /*--- The BC points to the boundary elements and takes its type from a family with the name of the marker. ---*/
+    if (singleType) {
+      /*--- Only the ids of the nodes are stored, the type is that of the section. ---*/
+
+      vector<cgsize_t> elems;
+      elems.reserve(nLocalEntries);
+      for (size_t pos = 0; pos < marker.conn.size();) {
+        const auto nNodes = nPointsOfElementType(static_cast<unsigned short>(marker.conn[pos]));
+        for (unsigned short iNode = 1; iNode <= nNodes; ++iNode)
+          elems.push_back(static_cast<cgsize_t>(marker.conn[pos + iNode]));
+        pos += nNodes + 1;
+      }
+
+      unsigned short type = 0;
+      while ((globalTypesMask >> type) != 1) type++;
+
+      CallCGNS(SectionWrite(name, GetCGNSType(type), range[0], range[1], &section));
+      CallCGNS(ElementsWriteData(section, first, last, nLocalElem > 0 ? elems.data() : nullptr));
+
+    } else {
+      /*--- The CGNS element type of each element is stored before the ids of its nodes, and the start offset of
+       each element in the connectivity array is stored in a second array. ---*/
+
+      const auto nTotEntries = std::accumulate(entriesPerRank.begin(), entriesPerRank.end(), 0ul) + nTotElem;
+
+      vector<cgsize_t> elems, offsets{static_cast<cgsize_t>(entryOffset + elemOffset)};
+      elems.reserve(marker.conn.size());
+      for (size_t pos = 0; pos < marker.conn.size();) {
+        const auto type = static_cast<unsigned short>(marker.conn[pos]);
+        const auto nNodes = nPointsOfElementType(type);
+        elems.push_back(GetCGNSType(type));
+        for (unsigned short iNode = 1; iNode <= nNodes; ++iNode)
+          elems.push_back(static_cast<cgsize_t>(marker.conn[pos + iNode]));
+        offsets.push_back(offsets.back() + nNodes + 1);
+        pos += nNodes + 1;
+      }
+
+#ifdef HAVE_MPI
+      CallCGNS(cgp_poly_section_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), MIXED, range[0], range[1],
+                                      static_cast<cgsize_t>(nTotEntries), 0, &section));
+      CallCGNS(cgp_poly_elements_write_data(cgnsFileID, cgnsBase, cgnsZone, section, first, last,
+                                            nLocalElem > 0 ? elems.data() : nullptr,
+                                            nLocalElem > 0 ? offsets.data() : nullptr));
+#else
+      CallCGNS(cg_poly_section_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), MIXED, range[0], range[1], 0,
+                                     elems.data(), offsets.data(), &section));
+#endif
+    }
+    cumulative += static_cast<cgsize_t>(nTotElem);
+
+    /*--- The BC points to the boundary elements and takes its type from a family with the name of the marker.
+     These are metadata nodes, written by all ranks. ---*/
+
     int bc, family, familyBC;
     CallCGNS(cg_boco_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), FamilySpecified, PointRange, 2, range, &bc));
     CallCGNS(cg_boco_gridlocation_write(cgnsFileID, cgnsBase, cgnsZone, bc, nDim == 3 ? FaceCenter : EdgeCenter));
@@ -308,55 +355,38 @@ void CCGNSFileWriter::WriteFieldOfType(int iField, const string& FieldName, Data
   /*--- Check if field is coordinate. ---*/
   const bool isCoord = iField < nDim;
 
-  /*--- Create send buffer. ---*/
-  vector<T> sendBufferField(nLocalPoints);
+  /*--- Each rank writes the points it holds, which are a contiguous range of the points of the file. ---*/
+  vector<T> buffer(nLocalPoints);
 
   for (unsigned long iPoint = 0; iPoint < nLocalPoints; iPoint++) {
-    sendBufferField[iPoint] = static_cast<T>(dataSorter->GetData(iField, iPoint));
+    buffer[iPoint] = static_cast<T>(dataSorter->GetData(iField, iPoint));
   }
 
-  if (rank != MASTER_NODE) {
-    SendChunked(sendBufferField.data(), nLocalPoints * sizeof(T), MASTER_NODE, 0);
-    return;
-  }
+  cgsize_t nodeBegin = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(rank) + 1);
+  cgsize_t nodeEnd = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(rank + 1));
 
-  vector<T> recvBufferField;
+  /*--- A rank without points takes part in the collective call but writes nothing. ---*/
+  const T* data = nLocalPoints > 0 ? buffer.data() : nullptr;
 
-  /*--- Coordinate vector is written in blocks, one for each process. ---*/
-  cgsize_t nodeBegin = 1;
-  auto nodeEnd = static_cast<cgsize_t>(nLocalPoints);
-  if (nLocalPoints > 0) {
-    if (isCoord) {
-      int CoordinateNumber;
-      CallCGNS(cg_coord_partial_write(cgnsFileID, cgnsBase, cgnsZone, dataType, FieldName.c_str(), &nodeBegin, &nodeEnd,
-                                      sendBufferField.data(), &CoordinateNumber));
-    } else {
-      int fieldNumber;
-      CallCGNS(cg_field_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsFields, dataType, FieldName.c_str(), &nodeBegin,
-                                      &nodeEnd, sendBufferField.data(), &fieldNumber));
-    }
-  }
-
-  for (int i = 0; i < size; ++i) {
-    if (i == MASTER_NODE) continue;
-    /*--- In CGNS numbering starts form 1 and ranges are inclusive ---*/
-    nodeBegin = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(i) + 1);
-    nodeEnd = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(i + 1));
-
-    const auto recvSize = static_cast<size_t>(nodeEnd - nodeBegin + 1);
-    recvBufferField.resize(recvSize);
-
-    RecvChunked(recvBufferField.data(), recvSize * sizeof(T), i, 0);
-    if (recvSize == 0) continue;
-    if (isCoord) {
-      int CoordinateNumber;
-      CallCGNS(cg_coord_partial_write(cgnsFileID, cgnsBase, cgnsZone, dataType, FieldName.c_str(), &nodeBegin, &nodeEnd,
-                                      recvBufferField.data(), &CoordinateNumber));
-    } else {
-      int fieldNumber;
-      CallCGNS(cg_field_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsFields, dataType, FieldName.c_str(),
-                                      &nodeBegin, &nodeEnd, recvBufferField.data(), &fieldNumber));
-    }
+  if (isCoord) {
+    int coordinateNumber;
+#ifdef HAVE_MPI
+    CallCGNS(cgp_coord_write(cgnsFileID, cgnsBase, cgnsZone, dataType, FieldName.c_str(), &coordinateNumber));
+    CallCGNS(cgp_coord_write_data(cgnsFileID, cgnsBase, cgnsZone, coordinateNumber, &nodeBegin, &nodeEnd, data));
+#else
+    CallCGNS(cg_coord_partial_write(cgnsFileID, cgnsBase, cgnsZone, dataType, FieldName.c_str(), &nodeBegin, &nodeEnd,
+                                    data, &coordinateNumber));
+#endif
+  } else {
+    int fieldNumber;
+#ifdef HAVE_MPI
+    CallCGNS(cgp_field_write(cgnsFileID, cgnsBase, cgnsZone, cgnsFields, dataType, FieldName.c_str(), &fieldNumber));
+    CallCGNS(
+        cgp_field_write_data(cgnsFileID, cgnsBase, cgnsZone, cgnsFields, fieldNumber, &nodeBegin, &nodeEnd, data));
+#else
+    CallCGNS(cg_field_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsFields, dataType, FieldName.c_str(),
+                                    &nodeBegin, &nodeEnd, data, &fieldNumber));
+#endif
   }
 }
 
@@ -377,87 +407,64 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
   auto sectionBegin = [&](cgsize_t iSec) { return cumulative + 1 + iSec * maxElemSection; };
   auto sectionEnd = [&](cgsize_t iSec) { return cumulative + std::min(nTotElemCG, (iSec + 1) * maxElemSection); };
 
+  /*--- The sections are metadata, all ranks create them with the same arguments. ---*/
   vector<int> cgnsSections(nSections);
-  if (rank == MASTER_NODE) {
-    for (cgsize_t iSec = 0; iSec < nSections; ++iSec) {
-      const string name = nSections == 1 ? SectionName : SectionName + "_" + std::to_string(iSec + 1);
-      CallCGNS(cg_section_partial_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), elementType,
-                                        sectionBegin(iSec), sectionEnd(iSec), 0, &cgnsSections[iSec]));
-    }
+  for (cgsize_t iSec = 0; iSec < nSections; ++iSec) {
+    const string name = nSections == 1 ? SectionName : SectionName + "_" + std::to_string(iSec + 1);
+    CallCGNS(SectionWrite(name, elementType, sectionBegin(iSec), sectionEnd(iSec), &cgnsSections[iSec]));
   }
 
-  /*--- Write the connectivity of the elements [first, last], which may span more than one section. ---*/
-  auto writeBlock = [&](cgsize_t first, cgsize_t last, const cgsize_t* conn) {
-    for (cgsize_t iSec = 0; iSec < nSections; ++iSec) {
-      const auto lo = std::max(first, sectionBegin(iSec));
-      const auto hi = std::min(last, sectionEnd(iSec));
-      if (lo > hi) continue;
-      CallCGNS(cg_elements_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsSections[iSec], lo, hi,
-                                         conn + (lo - first) * nPointsElem));
-    }
-  };
-
-  /*--- Retrieve element distribution among processes. ---*/
+  /*--- Retrieve element distribution among processes, the elements of a rank are a contiguous range. ---*/
   const auto nLocalElem = dataSorter->GetnElem(type);
 
   vector<unsigned long> distElem(size);
-
   SU2_MPI::Allgather(&nLocalElem, 1, MPI_UNSIGNED_LONG, distElem.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   cgsize_t firstElem = cumulative + 1;
-  cgsize_t endElem = cumulative + static_cast<cgsize_t>(distElem[rank]);
+  for (int i = 0; i < rank; ++i) firstElem += static_cast<cgsize_t>(distElem[i]);
+  const cgsize_t endElem = firstElem + static_cast<cgsize_t>(nLocalElem) - 1;
 
-  /*--- Connectivity is stored in send buffer. ---*/
-  sendBufferConnectivity.resize(nLocalElem * nPointsElem);
+  /*--- Store the connectivity of this rank. ---*/
+  vector<cgsize_t> connectivity(nLocalElem * nPointsElem);
 
   for (unsigned long iElem = 0; iElem < nLocalElem; iElem++) {
     for (unsigned long iPoint = 0; iPoint < nPointsElem; iPoint++) {
-      sendBufferConnectivity[iPoint + nPointsElem * iElem] =
+      connectivity[iPoint + nPointsElem * iElem] =
           static_cast<cgsize_t>(dataSorter->GetElemConnectivity(type, iElem, iPoint));
     }
   }
 
-  if (rank != MASTER_NODE) {
-    SendChunked(sendBufferConnectivity.data(), sendBufferConnectivity.size() * sizeof(cgsize_t), MASTER_NODE, 1);
-    return;
+  /*--- Write the elements of this rank, which may span more than one section. A rank without elements takes
+   part in the collective calls but writes nothing. ---*/
+  for (cgsize_t iSec = 0; iSec < nSections; ++iSec) {
+    const auto lo = std::max(firstElem, sectionBegin(iSec));
+    const auto hi = std::min(endElem, sectionEnd(iSec));
+    const bool empty = (nLocalElem == 0) || (lo > hi);
+    CallCGNS(ElementsWriteData(cgnsSections[iSec], lo, hi, empty ? nullptr : &connectivity[(lo - firstElem) * nPointsElem]));
   }
 
-  /*--- Connectivity vector is written in blocks, one for each process. ---*/
-  if (nLocalElem > 0) writeBlock(firstElem, endElem, sendBufferConnectivity.data());
-
-  for (int i = 0; i < size; ++i) {
-    if (i == MASTER_NODE) continue;
-    /*--- In CGNS numbering starts form 1 and ranges are inclusive ---*/
-    firstElem = endElem + 1;
-    endElem += static_cast<cgsize_t>(distElem[i]);
-    const auto recvSize = static_cast<size_t>(endElem - firstElem + 1) * nPointsElem;
-    recvBufferConnectivity.resize(recvSize);
-
-    RecvChunked(recvBufferConnectivity.data(), recvBufferConnectivity.size() * sizeof(cgsize_t), i, 1);
-
-    if (!recvBufferConnectivity.empty()) writeBlock(firstElem, endElem, recvBufferConnectivity.data());
-  }
-  cumulative += static_cast<cgsize_t>(nTotElem);
+  cumulative += nTotElemCG;
 }
 
-void CCGNSFileWriter::SendChunked(const void* buf, size_t nBytes, int dest, int tag) {
-  const auto* bytes = static_cast<const char*>(buf);
-  for (size_t offset = 0; offset < nBytes; offset += maxChunkBytes) {
-    const auto count = static_cast<int>(std::min(maxChunkBytes, nBytes - offset));
-    SU2_MPI::Send(bytes + offset, count, MPI_CHAR, dest, tag, SU2_MPI::GetComm());
-  }
+int CCGNSFileWriter::SectionWrite(const string& name, ElementType_t type, cgsize_t start, cgsize_t end, int* section) {
+#ifdef HAVE_MPI
+  return cgp_section_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), type, start, end, 0, section);
+#else
+  return cg_section_partial_write(cgnsFileID, cgnsBase, cgnsZone, name.c_str(), type, start, end, 0, section);
+#endif
 }
 
-void CCGNSFileWriter::RecvChunked(void* buf, size_t nBytes, int source, int tag) {
-  auto* bytes = static_cast<char*>(buf);
-  for (size_t offset = 0; offset < nBytes; offset += maxChunkBytes) {
-    const auto count = static_cast<int>(std::min(maxChunkBytes, nBytes - offset));
-    SU2_MPI::Recv(bytes + offset, count, MPI_CHAR, source, tag, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
-  }
+int CCGNSFileWriter::ElementsWriteData(int section, cgsize_t start, cgsize_t end, const cgsize_t* elements) {
+#ifdef HAVE_MPI
+  return cgp_elements_write_data(cgnsFileID, cgnsBase, cgnsZone, section, start, end, elements);
+#else
+  if (elements == nullptr) return CG_OK;
+  return cg_elements_partial_write(cgnsFileID, cgnsBase, cgnsZone, section, start, end, elements);
+#endif
 }
 
 void CCGNSFileWriter::InitializeFields() {
   /*--- Create "Fields" node to store solution. ---*/
-  if (rank == MASTER_NODE) CallCGNS(cg_sol_write(cgnsFileID, cgnsBase, cgnsZone, "Fields", Vertex, &cgnsFields));
+  CallCGNS(cg_sol_write(cgnsFileID, cgnsBase, cgnsZone, "Fields", Vertex, &cgnsFields));
 }
 #endif  // HAVE_CGNS
