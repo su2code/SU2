@@ -34,11 +34,11 @@ def parLocator(keyWord, b, n, iDoNot, verbose):
     #
     keyWord = keyWord.lower()
     iFocus = -1
-    icol = -1
     for i in range(1, n):
 
         lineString = str(b[i]).lower()
         # check if : exist in line
+        icol = -1
         try:
             icol = lineString.index(":")
         except ValueError:
