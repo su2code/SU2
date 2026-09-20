@@ -363,6 +363,13 @@ def read_config(filename):
                 line = line.split("\\")[0]
                 line += " " + tmp_line
 
+        # remove the comment at the end of the line, and skip the lines which
+        # only have delimiters left, like the closing parenthesis of an option
+        # written over several lines. SU2_CFD does the same.
+        line = line.split("%")[0].strip()
+        if not line.strip(" (){}:,\t"):
+            continue
+
         # split across equals sign
         line = line.split("=", 1)
         this_param = line[0].strip()
