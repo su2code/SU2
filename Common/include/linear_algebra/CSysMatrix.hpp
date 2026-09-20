@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cassert>
+#include <optional>
 
 /*--- In forward mode the matrix is not of a built-in type. ---*/
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
@@ -719,15 +720,15 @@ class CSysMatrix {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] needTranspPtr - If the L/U transpose maps should be built, used for "SetDiagonalAsColumnSum".
-   * \param[in] grad_mode - Gradient smoothing mode, only used to detect the right preconditioner type.
    * \param[in] allow_quant - Quantization is only possible with solvers that "set and forget" the off-diagonal
    *            blocks of the matrix. Solvers that perform multiple updates would lose too much information, so
    *            that pattern is not supported with quantization (the code will hit null pointers). It is up to
    *            the solver to declare whether it will "set and forget".
+   * \param[in] override_prec - Decide if, and with what argument to override the preconditioner.
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
-                  bool grad_mode = false, bool allow_quant = false);
+                  bool allow_quant = false, std::optional<unsigned short> override_prec = std::nullopt);
 
   /*!
    * \brief Compresses off-diagonal blocks into quantized form for use with USE_QUANTIZATION.
@@ -1066,6 +1067,80 @@ class CSysMatrix {
   template <class MatrixType>
   inline void UpdateBlocksSub(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
     SetBlocks<MatrixType, ScalarType, false>(iEdge, block_i, block_j, -1);
+  }
+
+  /*!
+   * \brief Set the four blocks of an edge, for fluxes whose i and j contributions are independent.
+   * \note The diagonal blocks are accumulated, the off-diagonal blocks are set.
+   */
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void SetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& jac_ii,
+                        const MatrixType& jac_ij, const MatrixType& jac_ji, const MatrixType& jac_jj,
+                        OtherType mask = 1) {
+    const auto blkSz = nVar * nEqn;
+    auto* bii = &mat.d[iPoint * blkSz];
+    auto* bjj = &mat.d[jPoint * blkSz];
+    unsigned long iVar, jVar, offset = 0;
+
+    if (quantized_mode) {
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bii[offset] += PassiveAssign(jac_ii[iVar][jVar] * mask);
+          bjj[offset] += PassiveAssign(jac_jj[iVar][jVar] * mask);
+          bij_buf[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+          bji_buf[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        }
+      QuantizeBlock(bij_buf, &q_scale.u[iEdge * nVar], &q_blocks.u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+      return;
+    }
+
+    auto* bij = &mat.u[iEdge * blkSz];
+    auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bii[offset] += PassiveAssign(jac_ii[iVar][jVar] * mask);
+        bjj[offset] += PassiveAssign(jac_jj[iVar][jVar] * mask);
+        bij[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+        bji[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        ++offset;
+      }
+    }
+  }
+
+  /*!
+   * \brief Set the off-diagonal blocks of an edge, the diagonal being assembled elsewhere.
+   */
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void SetOffDiagBlocks(unsigned long iEdge, const MatrixType& jac_ij, const MatrixType& jac_ji,
+                               OtherType mask = 1) {
+    const auto blkSz = nVar * nEqn;
+    unsigned long iVar, jVar, offset = 0;
+
+    if (quantized_mode) {
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bij_buf[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+          bji_buf[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        }
+      QuantizeBlock(bij_buf, &q_scale.u[iEdge * nVar], &q_blocks.u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+      return;
+    }
+
+    auto* bij = &mat.u[iEdge * blkSz];
+    auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bij[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+        bji[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        ++offset;
+      }
+    }
   }
 
   /*!
