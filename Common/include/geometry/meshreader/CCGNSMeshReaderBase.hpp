@@ -58,6 +58,10 @@ class CCGNSMeshReaderBase : public CMeshReaderBase {
                                           CGNS section. First index is the section, second contains the connectivity in
                                           format [globalID VTK n1 n2 n3 n4 n5 n6 n7 n8] for each element. */
   vector<vector<char> > sectionNames;  /*!< \brief Vector for storing the names of each boundary section (marker). */
+  vector<cgsize_t> sectionStart;       /*!< \brief First element index of each CGNS section. */
+  vector<cgsize_t> sectionEnd;         /*!< \brief Last element index of each CGNS section. */
+  vector<string> sectionMarkerNames;   /*!< \brief Marker name of each boundary section, several sections can share
+                                          one name, e.g. one with triangles and one with quadrilaterals. */
 
   /*!
    * \brief Open the CGNS file and checks for errors.
@@ -85,6 +89,14 @@ class CCGNSMeshReaderBase : public CMeshReaderBase {
    * it is an interior or boundary section.
    */
   void ReadCGNSSectionMetadata();
+
+  /*!
+   * \brief Assign a marker name to each boundary section. The name of a section covered by a boundary condition of
+   * the zone (ZoneBC) is the family name of that boundary condition, or its name if it has no family. Sections that
+   * are not covered by any boundary condition keep the name of the section, which is the only option for files
+   * written without a ZoneBC node.
+   */
+  void ReadCGNSBoundaryMarkerNames();
 
   /*!
    * \brief Get the VTK type and string name for a CGNS element type.
