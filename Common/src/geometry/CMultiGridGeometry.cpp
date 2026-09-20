@@ -1649,6 +1649,53 @@ unsigned long BlockFor(short int maxAgglomSize, size_t width) {
   return (width * 2 > static_cast<size_t>(maxAgglomSize)) ? 1 : 2;
 }
 
+constexpr unsigned short NO_FACE = std::numeric_limits<unsigned short>::max();
+constexpr auto NO_ELEM = std::numeric_limits<unsigned long>::max();
+
+/*--- Face an element is left by when it is entered through the given one, from the face tables of
+ *    each type. Only the extruded types have one, which is what makes a column follow the mesh. ---*/
+unsigned short OppositeFace(unsigned short vtkType, unsigned short iFace) {
+  switch (vtkType) {
+    case QUADRILATERAL: {
+      static const unsigned short opposite[4] = {2, 3, 0, 1};
+      return opposite[iFace];
+    }
+    case HEXAHEDRON: {
+      static const unsigned short opposite[6] = {2, 3, 0, 1, 5, 4};
+      return opposite[iFace];
+    }
+    case PRISM: {
+      /*--- Only the two triangles pair; the quadrilateral sides are not crossed. ---*/
+      static const unsigned short opposite[5] = {NO_FACE, NO_FACE, NO_FACE, 4, 3};
+      return opposite[iFace];
+    }
+    default:
+      return NO_FACE;
+  }
+}
+
+/*--- Sorted nodes of a face, the key that names it in either element holding it. ---*/
+void FaceNodes(const CGeometry* grid, unsigned long iElem, unsigned short iFace, vector<unsigned long>& face) {
+  const auto* elem = grid->elem[iElem];
+  face.clear();
+  for (unsigned short k = 0; k < elem->GetnNodesFace(iFace); ++k)
+    face.push_back(elem->GetNode(elem->GetFaces(iFace, k)));
+  std::sort(face.begin(), face.end());
+}
+
+/*--- Local index of the face with these nodes, or NO_FACE. ---*/
+unsigned short LocalFace(const CGeometry* grid, unsigned long iElem, const vector<unsigned long>& face) {
+  vector<unsigned long> other;
+  for (unsigned short iFace = 0; iFace < grid->elem[iElem]->GetnFaces(); ++iFace) {
+    FaceNodes(grid, iElem, iFace, other);
+    if (other == face) return iFace;
+  }
+  return NO_FACE;
+}
+
+/*--- Whether the primal grid is available, which it is on the fine mesh only. ---*/
+bool HasElements(const CGeometry* grid) { return (grid->elem != nullptr) && (grid->GetnElem() > 0); }
+
 }  // namespace
 
 CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeometry* fine_grid,
@@ -1775,9 +1822,11 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
 }
 vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFrontSeeds& seeds,
                                                                     const CGeometry* fine_grid, const CConfig* config,
-                                                                    const vector<char>& mixedBC) const {
-  /*--- Repeated pairwise matching groups the seeds into connected patches of 1 to max_group seeds.
-   *    A patch is any connected shape: a square, a strip, a triangle or a single node. ---*/
+                                                                    const vector<char>& mixedBC,
+                                                                    vector<CWalkState>& walk) const {
+  /*--- A boundary face is already the footprint of one element strip, so where the primal grid has
+   *    one it is taken as the patch. Seeds it does not cover are grouped by repeated pairwise
+   *    matching into connected patches of 1 to max_group seeds. ---*/
   const auto nSeeds = seeds.node.size();
   const unsigned long max_group = (nDim == 2) ? 2 : 4;
 
@@ -1806,15 +1855,81 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
   vector<unsigned long> sgkey(nSeeds);
   for (unsigned long si = 0; si < nSeeds; ++si) sgkey[si] = fine_grid->nodes->GetGlobalIndex(seeds.node[si]);
 
-  vector<vector<unsigned long>> groups;
-  vector<unsigned long> groupOf(nSeeds);
-  groups.reserve(nSeeds);
+  /*--- Boundary faces whose nodes are all seeds, taken in a partitioning independent order and
+   *    claimed whole, so consecutive faces sharing a node cannot both become a patch. ---*/
+  vector<long> faceOfSeed(nSeeds, -1);
+  vector<CWalkState> faceWalk;
+  if (HasElements(fine_grid)) {
+    struct CFaceSeed {
+      unsigned long key;        /*!< \brief Lowest global index on the face. */
+      vector<unsigned long> si; /*!< \brief Its seeds. */
+      CWalkState walk;          /*!< \brief Element strip it opens. */
+    };
+    vector<CFaceSeed> candidates;
+    vector<unsigned long> face;
 
-  /*--- Every seed starts as its own group; the rounds below merge them. ---*/
-  for (unsigned long si = 0; si < nSeeds; ++si) {
-    groupOf[si] = si;
-    groups.push_back({si});
+    for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+      const auto bc = config->GetMarker_All_KindBC(iMarker);
+      if ((bc == SEND_RECEIVE) || (bc == PERIODIC_BOUNDARY)) continue;
+
+      for (auto iElem = 0ul; iElem < fine_grid->nElem_Bound[iMarker]; iElem++) {
+        const auto* bElem = fine_grid->bound[iMarker][iElem];
+        if (bElem->GetnNodes() > max_group) continue;
+
+        CFaceSeed cand;
+        cand.key = std::numeric_limits<unsigned long>::max();
+        face.clear();
+        bool ok = true;
+        for (unsigned short k = 0; (k < bElem->GetnNodes()) && ok; ++k) {
+          const auto iPoint = bElem->GetNode(k);
+          const auto si = seedOfNode[iPoint];
+          ok = (si >= 0) && !mixedBC[iPoint];
+          if (!ok) break;
+          face.push_back(iPoint);
+          cand.si.push_back(static_cast<unsigned long>(si));
+          cand.key = std::min(cand.key, sgkey[si]);
+        }
+        if (!ok) continue;
+        for (auto si : cand.si) ok = ok && (sig[si] == sig[cand.si.front()]);
+        if (!ok) continue;
+
+        std::sort(face.begin(), face.end());
+        const auto iVolume = bElem->GetDomainElement();
+        const auto iFace = LocalFace(fine_grid, iVolume, face);
+        if (iFace == NO_FACE) continue;
+        if (OppositeFace(fine_grid->elem[iVolume]->GetVTK_Type(), iFace) == NO_FACE) continue;
+
+        cand.walk = {iVolume, iFace};
+        candidates.push_back(std::move(cand));
+      }
+    }
+
+    std::sort(candidates.begin(), candidates.end(),
+              [](const CFaceSeed& a, const CFaceSeed& b) { return a.key < b.key; });
+    for (const auto& cand : candidates) {
+      bool free = true;
+      for (auto si : cand.si) free = free && (faceOfSeed[si] < 0);
+      if (!free) continue;
+      for (auto si : cand.si) faceOfSeed[si] = static_cast<long>(faceWalk.size());
+      faceWalk.push_back(cand.walk);
+    }
   }
+
+  vector<vector<unsigned long>> groups(faceWalk.size());
+  vector<unsigned long> groupOf(nSeeds);
+  /*--- A patch taken from a face is final and takes no part in the matching. ---*/
+  vector<char> frozen(faceWalk.size(), 1);
+  groups.reserve(nSeeds + faceWalk.size());
+
+  for (unsigned long si = 0; si < nSeeds; ++si)
+    if (faceOfSeed[si] >= 0) groups[faceOfSeed[si]].push_back(si);
+  for (unsigned long si = 0; si < nSeeds; ++si)
+    if (faceOfSeed[si] < 0) {
+      groups.push_back({si});
+      frozen.push_back(0);
+    }
+  for (unsigned long g = 0; g < groups.size(); ++g)
+    for (auto si : groups[g]) groupOf[si] = g;
 
   const unsigned nRounds = (max_group <= 2) ? 1 : 2;
 
@@ -1846,13 +1961,13 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
     for (unsigned long g = 0; g < nGroups; ++g) {
       /*--- A node where two different boundary conditions meet stays a patch of its own, so both
        *    sides of a merge are tested for it. ---*/
-      if (mixedBC[seeds.node[groups[g].front()]]) continue;
+      if (frozen[g] || mixedBC[seeds.node[groups[g].front()]]) continue;
       touched.clear();
       for (auto si : groups[g])
         for (auto sj : adj[si]) {
           const auto h = groupOf[sj];
           if (h <= g) continue;
-          if (mixedBC[seeds.node[groups[h].front()]]) continue;
+          if (frozen[h] || mixedBC[seeds.node[groups[h].front()]]) continue;
           if (groups[g].size() + groups[h].size() > max_group) continue;
           if (sig[groups[h].front()] != sig[groups[g].front()]) continue;
           if (nShared[h]++ == 0) touched.push_back(h);
@@ -1875,6 +1990,7 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
 
     consumed.assign(nGroups, 0);
     vector<vector<unsigned long>> merged;
+    vector<char> mergedFrozen;
     merged.reserve(nGroups);
 
     for (const auto& m : merges) {
@@ -1883,14 +1999,29 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
       auto group = groups[m.g];
       group.insert(group.end(), groups[m.h].begin(), groups[m.h].end());
       merged.push_back(std::move(group));
+      mergedFrozen.push_back(0);
     }
     /*--- Whatever found no partner passes through unchanged. ---*/
     for (unsigned long g = 0; g < nGroups; ++g)
-      if (!consumed[g]) merged.push_back(std::move(groups[g]));
+      if (!consumed[g]) {
+        merged.push_back(std::move(groups[g]));
+        mergedFrozen.push_back(frozen[g]);
+      }
 
     groups = std::move(merged);
+    frozen = std::move(mergedFrozen);
     for (unsigned long g = 0; g < groups.size(); ++g)
       for (auto si : groups[g]) groupOf[si] = g;
+  }
+
+  /*--- A patch keeps the strip it opened only while it is still exactly that face. ---*/
+  walk.assign(groups.size(), {NO_ELEM, NO_FACE});
+  for (unsigned long g = 0; g < groups.size(); ++g) {
+    const auto id = faceOfSeed[groups[g].front()];
+    if (id < 0) continue;
+    bool whole = true;
+    for (auto si : groups[g]) whole = whole && (faceOfSeed[si] == id);
+    if (whole) walk[g] = faceWalk[id];
   }
 
   return groups;
@@ -1908,7 +2039,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
   /*--- SeedFrontNodes returns the seeds ordered by anisotropy. ---*/
   const auto seeds = SeedFrontNodes(fine_grid, config);
-  const auto patches = BuildFrontPatches(seeds, fine_grid, config, mixedBC);
+  vector<CWalkState> walkOf;
+  const auto patches = BuildFrontPatches(seeds, fine_grid, config, mixedBC, walkOf);
 
   /*--- Patches take their seeds in seed order, so the most anisotropic boundary is served first
    *    both here and at every tie deeper in the walk. ---*/
@@ -1947,6 +2079,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
       dirOf[iPatch].push_back(seeds.normal[si]);
     }
     tierOf[iPatch] = seeds.tier[patches[iPatch].front()];
+    /*--- A strip is only followed from the whole face that opened it. ---*/
+    if (layer[iPatch].size() != patches[iPatch].size()) walkOf[iPatch] = {NO_ELEM, NO_FACE};
   }
 
   /*--- A column may take a node only if it is free and carries no condition of its own. ---*/
@@ -2015,7 +2149,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   ct[P_SEEDS] = seeds.node.size();
   ct[P_SEED_CURV] = seeds.nRefusedCurvature;
 
-  vector<unsigned long> candidates, haloWanted, distinct;
+  vector<unsigned long> candidates, haloWanted, distinct, faceAhead;
   vector<std::array<su2double, MAXNDIM>> stepDir, haloStep;
   vector<unsigned long> haloClaim(nPointFine, NO_COLUMN);
   vector<unsigned long> tagOut(nRecvTotal, 0), tagIn(nSendTotal, 0);
@@ -2053,47 +2187,104 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
           haloWanted.clear();
           haloStep.clear();
           stepDir.clear();
-          for (size_t k = 0; k < layer[iColumn].size(); ++k) {
-            const auto iPoint = layer[iColumn][k];
-            const auto& marching = dirOf[iColumn][k];
 
-            /*--- Where this node is going is decided before asking whether it may: the neighbour
-             *    that best carries on the way it was already travelling, an argmax over all of
-             *    them and so free of any tolerance. Only then is that one node examined. A column
-             *    therefore keeps going or stops; it never settles for second best and turns aside,
-             *    which is what let a front wander off once its way ahead was taken or closed. ---*/
-            auto best = NO_COLUMN;
-            su2double bestAlign = -2.0;
-            std::array<su2double, MAXNDIM> bestStep{};
+          /*--- While the primal grid still carries the column, the layer ahead is the far face of
+           *    the element it stands in. The mesh names it, so there is nothing to choose and
+           *    nothing to compare, and the column cannot leave the line it was extruded along. ---*/
+          bool walked = false;
+          if (walkOf[iColumn].elem != NO_ELEM) {
+            const auto iElem = walkOf[iColumn].elem;
+            const auto jFace = OppositeFace(fine_grid->elem[iElem]->GetVTK_Type(), walkOf[iColumn].face);
+            if (jFace != NO_FACE) {
+              FaceNodes(fine_grid, iElem, jFace, faceAhead);
+              if (faceAhead.size() == width) {
+                size_t nFree = 0, nHalo = 0;
+                for (auto jPoint : faceAhead) {
+                  if (admissible(jPoint))
+                    nFree++;
+                  else if (!fine_grid->nodes->GetDomain(jPoint) && (haloSlot[jPoint] >= 0) &&
+                           (haloClaim[jPoint] == NO_COLUMN))
+                    nHalo++;
+                }
 
-            for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
-              const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
+                /*--- One step for the whole layer, which steers it on if the strip runs out. ---*/
+                std::array<su2double, MAXNDIM> step{};
+                for (auto jPoint : faceAhead)
+                  for (unsigned short d = 0; d < nDim; ++d)
+                    step[d] += fine_grid->nodes->GetCoord(jPoint, d) / su2double(width);
+                for (auto iPoint : layer[iColumn])
+                  for (unsigned short d = 0; d < nDim; ++d)
+                    step[d] -= fine_grid->nodes->GetCoord(iPoint, d) / su2double(width);
+                const su2double len = GeometryToolbox::Norm(nDim, step.data());
+                if (len > 0.0)
+                  for (unsigned short d = 0; d < nDim; ++d) step[d] /= len;
 
-              su2double step[MAXNDIM] = {0.0};
-              GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(iPoint),
-                                        step);
-              const su2double len = GeometryToolbox::Norm(nDim, step);
-              if (len <= 0.0) continue;
-              for (unsigned short d = 0; d < nDim; ++d) step[d] /= len;
-
-              const su2double align = GeometryToolbox::DotProduct(nDim, step, marching.data());
-              if (align > bestAlign) {
-                bestAlign = align;
-                best = jPoint;
-                for (unsigned short d = 0; d < nDim; ++d) bestStep[d] = step[d];
+                if (nFree == width) {
+                  candidates = faceAhead;
+                  stepDir.assign(width, step);
+                  const auto jElem = fine_grid->elem[iElem]->GetNeighbor_Elements(jFace);
+                  walkOf[iColumn] = {NO_ELEM, NO_FACE};
+                  if (jElem >= 0) {
+                    const auto kFace = LocalFace(fine_grid, jElem, faceAhead);
+                    if (kFace != NO_FACE) walkOf[iColumn] = {static_cast<unsigned long>(jElem), kFace};
+                  }
+                  walked = true;
+                } else if (nHalo == width) {
+                  haloWanted = faceAhead;
+                  haloStep.assign(width, step);
+                  walked = true;
+                }
               }
             }
-
-            if (best == NO_COLUMN) continue;
-
-            if (admissible(best)) {
-              candidates.push_back(best);
-              stepDir.push_back(bestStep);
-            } else if (!fine_grid->nodes->GetDomain(best) && (haloSlot[best] >= 0) && (haloClaim[best] == NO_COLUMN)) {
-              haloWanted.push_back(best);
-              haloStep.push_back(bestStep);
-            }
           }
+
+          /*--- Off the strip the column carries on by the way it was going, which is what keeps it
+           *    paving where the mesh is not extruded. ---*/
+          if (!walked) walkOf[iColumn] = {NO_ELEM, NO_FACE};
+
+          if (!walked)
+            for (size_t k = 0; k < layer[iColumn].size(); ++k) {
+              const auto iPoint = layer[iColumn][k];
+              const auto& marching = dirOf[iColumn][k];
+
+              /*--- Where this node is going is decided before asking whether it may: the neighbour
+               *    that best carries on the way it was already travelling, an argmax over all of
+               *    them and so free of any tolerance. Only then is that one node examined. A column
+               *    therefore keeps going or stops; it never settles for second best and turns aside,
+               *    which is what let a front wander off once its way ahead was taken or closed. ---*/
+              auto best = NO_COLUMN;
+              su2double bestAlign = -2.0;
+              std::array<su2double, MAXNDIM> bestStep{};
+
+              for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
+                const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
+
+                su2double step[MAXNDIM] = {0.0};
+                GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(iPoint),
+                                          step);
+                const su2double len = GeometryToolbox::Norm(nDim, step);
+                if (len <= 0.0) continue;
+                for (unsigned short d = 0; d < nDim; ++d) step[d] /= len;
+
+                const su2double align = GeometryToolbox::DotProduct(nDim, step, marching.data());
+                if (align > bestAlign) {
+                  bestAlign = align;
+                  best = jPoint;
+                  for (unsigned short d = 0; d < nDim; ++d) bestStep[d] = step[d];
+                }
+              }
+
+              if (best == NO_COLUMN) continue;
+
+              if (admissible(best)) {
+                candidates.push_back(best);
+                stepDir.push_back(bestStep);
+              } else if (!fine_grid->nodes->GetDomain(best) && (haloSlot[best] >= 0) &&
+                         (haloClaim[best] == NO_COLUMN)) {
+                haloWanted.push_back(best);
+                haloStep.push_back(bestStep);
+              }
+            }
 
           /*--- A column advances only onto a whole layer of its own width, with one successor per
            *    node and no two of them the same. A layer whose way ahead is closed cannot creep
@@ -2203,12 +2394,45 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
           inheritedDir.push_back(dir);
         }
 
+        /*--- Pick the strip up again on this side: of the two elements holding the arriving face,
+         *    the column enters the one ahead of it. ---*/
+        CWalkState state{NO_ELEM, NO_FACE};
+        if (HasElements(fine_grid)) {
+          faceAhead = group;
+          std::sort(faceAhead.begin(), faceAhead.end());
+          su2double faceCentre[MAXNDIM] = {0.0};
+          for (auto iPoint : faceAhead)
+            for (unsigned short d = 0; d < nDim; ++d)
+              faceCentre[d] += fine_grid->nodes->GetCoord(iPoint, d) / su2double(faceAhead.size());
+
+          for (auto iElem = 0u; iElem < fine_grid->nodes->GetnElem(faceAhead.front()); ++iElem) {
+            const auto jElem = fine_grid->nodes->GetElem(faceAhead.front(), iElem);
+            const auto jFace = LocalFace(fine_grid, jElem, faceAhead);
+            if (jFace == NO_FACE) continue;
+            if (OppositeFace(fine_grid->elem[jElem]->GetVTK_Type(), jFace) == NO_FACE) continue;
+
+            const auto nNode = fine_grid->elem[jElem]->GetnNodes();
+            su2double ahead = 0.0;
+            for (unsigned short d = 0; d < nDim; ++d) {
+              su2double centre = 0.0;
+              for (unsigned short k = 0; k < nNode; ++k)
+                centre += fine_grid->nodes->GetCoord(fine_grid->elem[jElem]->GetNode(k), d) / su2double(nNode);
+              ahead += (centre - faceCentre[d]) * inheritedDir.front()[d];
+            }
+            if (ahead > 0.0) {
+              state = {jElem, jFace};
+              break;
+            }
+          }
+        }
+
         const auto iColumn = layer.size();
         for (auto iPoint : group) {
           columnOf[iPoint] = iColumn;
           layerOf[iPoint] = 0;
         }
         layer.push_back(group);
+        walkOf.push_back(state);
         dirOf.push_back(inheritedDir);
         depthOf.push_back(0);
         alive.push_back(1);

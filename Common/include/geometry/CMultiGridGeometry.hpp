@@ -127,16 +127,26 @@ class CMultiGridGeometry final : public CGeometry {
   CFrontSeeds SeedFrontNodes(const CGeometry* fine_grid, const CConfig* config) const;
 
   /*!
-   * \brief Partition the seed nodes into compact surface patches by repeated pairwise matching. Each
-   *        patch is the footprint of one front and fixes the shape of the stack above it.
+   * \brief Element strip a column follows while the mesh is extruded along it.
+   */
+  struct CWalkState {
+    unsigned long elem;  /*!< \brief Element the column stands in, or NO_ELEM once it is lost. */
+    unsigned short face; /*!< \brief Local face it entered that element through. */
+  };
+
+  /*!
+   * \brief Partition the seed nodes into compact surface patches. A patch is a boundary face where
+   *        the primal grid gives one, otherwise it is built by repeated pairwise matching.
    * \param[in] seeds - Seed nodes from SeedFrontNodes.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] config - Definition of the particular problem.
    * \param[in] mixedBC - Nodes that must stay on their own, from FindMixedBoundaryNodes.
+   * \param[out] walk - Element and face each patch starts from, NO_ELEM where it has none.
    * \return One vector of indices into seeds.node per patch, at most two entries in 2D, four in 3D.
    */
   vector<vector<unsigned long>> BuildFrontPatches(const CFrontSeeds& seeds, const CGeometry* fine_grid,
-                                                  const CConfig* config, const vector<char>& mixedBC) const;
+                                                  const CConfig* config, const vector<char>& mixedBC,
+                                                  vector<CWalkState>& walk) const;
 
   string pavingReport; /*!< \brief Paving summary for this level. */
 
