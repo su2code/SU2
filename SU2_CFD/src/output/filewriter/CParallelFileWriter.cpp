@@ -208,7 +208,7 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
 
 }
 
-bool CFileWriter::OpenMPIFile(string val_filename){
+bool CFileWriter::OpenMPIFile(string val_filename, bool append){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
@@ -216,6 +216,27 @@ bool CFileWriter::OpenMPIFile(string val_filename){
 #ifdef HAVE_MPI
   int ierr;
   disp     = 0.0;
+
+  /*--- Continue writing at the end of a file that exists, e.g. to add a zone to a multizone mesh file. ---*/
+
+  if (append) {
+    ierr = MPI_File_open(SU2_MPI::GetComm(), val_filename.c_str(), MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- If the file does not exist yet, for example the first zone written to a file of its own, it is
+     created below like any other new file. ---*/
+
+    if (ierr == MPI_SUCCESS) {
+      MPI_Offset fileEnd;
+      MPI_File_get_size(fhw, &fileEnd);
+      disp = fileEnd;
+
+      fileSize = 0.0;
+      usedTime = 0;
+
+      return true;
+    }
+    MPI_File_close(&fhw);
+  }
 
   /*--- All ranks open the file using MPI. Here, we try to open the file with
    exclusive so that an error is generated if the file exists. We always want
@@ -241,7 +262,7 @@ bool CFileWriter::OpenMPIFile(string val_filename){
                    val_filename, CURRENT_FUNCTION);
   }
 #else
-  fhw = fopen(val_filename.c_str(), "wb");
+  fhw = fopen(val_filename.c_str(), append ? "ab" : "wb");
   /*--- Error check for opening the file. ---*/
 
   if (!fhw) {

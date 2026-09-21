@@ -180,7 +180,7 @@ protected:
    * \param[in] val_filename - The name of the file
    * \return Boolean indicating whether the opening was successful.
    */
-  bool OpenMPIFile(string val_filename);
+  bool OpenMPIFile(string val_filename, bool append = false);
 
   /*!
    * \brief Close a file using MPI I/O.
