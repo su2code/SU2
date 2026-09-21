@@ -363,12 +363,12 @@ CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **so
   if (!adjoint){
     switch (TurbModelFamily(kindTurbModel)) {
       case TURB_FAMILY::SA:
-        turbSolver = new CTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());
+        turbSolver = new CTurbSASolver(geometry, config, solver[FLOW_SOL], iMGLevel, solver[FLOW_SOL]->GetFluidModel());
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         break;
       case TURB_FAMILY::KW:
-        turbSolver = new CTurbSSTSolver(geometry, config, iMGLevel);
+        turbSolver = new CTurbSSTSolver(geometry, config, solver[FLOW_SOL], iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
@@ -398,7 +398,7 @@ CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSol
   if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
     switch (kindTransModel) {
       case TURB_TRANS_MODEL::LM :
-        transSolver = new CTransLMSolver(geometry, config, iMGLevel);
+        transSolver = new CTransLMSolver(geometry, config, solver[FLOW_SOL], iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
         transSolver->Postprocessing(geometry, solver, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
@@ -420,9 +420,9 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
       speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
     } else {
       if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT)
-        speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+        speciesSolver = new CSpeciesSolver(geometry, config, solver[FLOW_SOL], iMGLevel);
       else if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)
-        speciesSolver = new CSpeciesFlameletSolver(geometry, config, iMGLevel);
+        speciesSolver = new CSpeciesFlameletSolver(geometry, config, solver[FLOW_SOL], iMGLevel);
     }
   }
   return speciesSolver;
@@ -445,7 +445,7 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
       }
     }
     else {
-      heatSolver = new CHeatSolver(geometry, config, iMGLevel);
+      heatSolver = new CHeatSolver(geometry, config, solver[FLOW_SOL], iMGLevel);
     }
   }
 
