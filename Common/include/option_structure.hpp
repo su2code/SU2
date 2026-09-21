@@ -2356,6 +2356,8 @@ enum class OUTPUT_TYPE {
   PARAVIEW_XML,            /*!< \brief Paraview XML with binary data format */
   SURFACE_PARAVIEW_XML,    /*!< \brief Surface Paraview XML with binary data format */
   PARAVIEW_MULTIBLOCK,     /*!< \brief Paraview XML Multiblock */
+  PARAVIEW_PARALLEL,       /*!< \brief Paraview parallel XML (.pvtu), one piece per rank. */
+  SURFACE_PARAVIEW_PARALLEL, /*!< \brief Surface Paraview parallel XML (.pvtu), one piece per rank. */
   CGNS,                    /*!< \brief CGNS format. */
   SURFACE_CGNS,            /*!< \brief CGNS format. */
   STL_ASCII,               /*!< \brief STL ASCII format for surface solution output. */
@@ -2375,6 +2377,8 @@ static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
   MakePair("PARAVIEW", OUTPUT_TYPE::PARAVIEW_XML)
   MakePair("SURFACE_PARAVIEW", OUTPUT_TYPE::SURFACE_PARAVIEW_XML)
   MakePair("PARAVIEW_MULTIBLOCK", OUTPUT_TYPE::PARAVIEW_MULTIBLOCK)
+  MakePair("PARAVIEW_PARALLEL", OUTPUT_TYPE::PARAVIEW_PARALLEL)
+  MakePair("SURFACE_PARAVIEW_PARALLEL", OUTPUT_TYPE::SURFACE_PARAVIEW_PARALLEL)
   MakePair("MESH", OUTPUT_TYPE::MESH)
   MakePair("MESH_BINARY", OUTPUT_TYPE::MESH_BINARY)
   MakePair("RESTART_ASCII", OUTPUT_TYPE::RESTART_ASCII)
@@ -2397,6 +2401,8 @@ inline bool isParaview(OUTPUT_TYPE format) {
     case OUTPUT_TYPE::PARAVIEW_XML:
     case OUTPUT_TYPE::SURFACE_PARAVIEW_XML:
     case OUTPUT_TYPE::PARAVIEW_MULTIBLOCK:
+    case OUTPUT_TYPE::PARAVIEW_PARALLEL:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_PARALLEL:
       return true;
     default:
       return false;
