@@ -587,6 +587,12 @@ history_header_map = {
         "HEADER": 'd[Avg_Species_" + ' "std::to_string(iVar]",
         "TYPE": "D_COEFFICIENT",
     },
+    "D_SURFACE_SPECIES_VARIANCE": {
+        "DESCRIPTION": "Derivative value",
+        "GROUP": "D_SPECIES_COEFF",
+        "HEADER": "d[Species_Variance]",
+        "TYPE": "D_COEFFICIENT",
+    },
     "D_SURFACE_STATIC_PRESSURE": {
         "DESCRIPTION": "Derivative value",
         "GROUP": "D_FLOW_COEFF",
@@ -1368,10 +1374,11 @@ history_header_map = {
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_SPECIES_VARIANCE": {
-        "DESCRIPTION": "Total species variance",
+        "DESCRIPTION": "Total species variance - measure for mixing quality. "
+        "On all markers set in MARKER_ANALYZE",
         "GROUP": "SPECIES_COEFF",
         "HEADER": "Species_Variance",
-        "TYPE": "DEFAULT",
+        "TYPE": "COEFFICIENT",
     },
     "SURFACE_STATIC_PRESSURE": {
         "DESCRIPTION": "Total average pressure on all " "markers set in MARKER_ANALYZE",
@@ -1696,6 +1703,12 @@ history_header_map = {
         "HEADER": 'dtavg[Avg_Species_" ' "+ " "std::to_string(iVar]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
+    "TAVG_D_SURFACE_SPECIES_VARIANCE": {
+        "DESCRIPTION": "weighted time average derivative value",
+        "GROUP": "TAVG_D_SPECIES_COEFF",
+        "HEADER": "dtavg[Species_Variance]",
+        "TYPE": "TAVG_D_COEFFICIENT",
+    },
     "TAVG_D_SURFACE_STATIC_PRESSURE": {
         "DESCRIPTION": "weighted time average " "derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
@@ -1940,6 +1953,12 @@ history_header_map = {
         "DESCRIPTION": "weighted " "time average " "value",
         "GROUP": "TAVG_SPECIES_COEFF",
         "HEADER": 'tavg[Avg_Species_" ' "+ " "std::to_string(iVar]",
+        "TYPE": "TAVG_COEFFICIENT",
+    },
+    "TAVG_SURFACE_SPECIES_VARIANCE": {
+        "DESCRIPTION": "weighted time average value",
+        "GROUP": "TAVG_SPECIES_COEFF",
+        "HEADER": "tavg[Species_Variance]",
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_SURFACE_STATIC_PRESSURE": {
