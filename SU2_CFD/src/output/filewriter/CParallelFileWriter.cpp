@@ -25,7 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <numeric>
 #include <utility>
+#include <vector>
 
 #include "../../../include/output/filewriter/CFileWriter.hpp"
 
@@ -252,6 +254,21 @@ bool CFileWriter::OpenMPIFile(string val_filename){
   usedTime = 0;
 
   return true;
+}
+
+bool CFileWriter::WriteMPIStringAll(const string &str){
+
+  /*--- Each rank writes its own text at the position that follows the text of the ranks before it. ---*/
+
+  const unsigned long sizeInBytes = str.size();
+  vector<unsigned long> sizes(size, sizeInBytes);
+
+  SU2_MPI::Allgather(&sizeInBytes, 1, MPI_UNSIGNED_LONG, sizes.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+  const auto offsetInBytes = std::accumulate(sizes.begin(), sizes.begin() + rank, 0ul);
+  const auto totalSizeInBytes = std::accumulate(sizes.begin(), sizes.end(), 0ul);
+
+  return WriteMPIBinaryDataAll(str.data(), sizeInBytes, totalSizeInBytes, offsetInBytes);
 }
 
 bool CFileWriter::CloseMPIFile(){

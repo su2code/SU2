@@ -37,9 +37,6 @@ CTecplotFileWriter::~CTecplotFileWriter()= default;
 
 void CTecplotFileWriter::WriteData(string val_filename){
 
-  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  val_filename.append(fileExt);
-
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
@@ -49,16 +46,6 @@ void CTecplotFileWriter::WriteData(string val_filename){
   unsigned short iVar;
 
   unsigned long iPoint, iElem;
-
-  int iProcessor;
-
-  ofstream Tecplot_File;
-
-  fileSize = 0.0;
-
-  /*--- Set a timer for the file writing. ---*/
-
-  startTime = SU2_MPI::Wtime();
 
   /*--- Reduce the total number of each element. ---*/
 
@@ -80,150 +67,126 @@ void CTecplotFileWriter::WriteData(string val_filename){
 
   /*--- Open Tecplot ASCII file and write the header. ---*/
 
-  if (rank == MASTER_NODE) {
-    Tecplot_File.open(val_filename.c_str(), ios::out);
-    Tecplot_File.precision(6);
-    Tecplot_File << "TITLE = \"Visualization of the solution\"" << endl;
+  OpenMPIFile(val_filename);
 
-    Tecplot_File << "VARIABLES = ";
-    for (iVar = 0; iVar < fieldNames.size()-1; iVar++) {
-      Tecplot_File << "\"" << fieldNames[iVar] << "\",";
-    }
-    Tecplot_File << "\"" << fieldNames[fieldNames.size()-1] << "\"" << endl;
+  ostringstream header;
+  header.precision(6);
+  header << "TITLE = \"Visualization of the solution\"" << endl;
 
-    /*--- Write the header ---*/
+  header << "VARIABLES = ";
+  for (iVar = 0; iVar < fieldNames.size()-1; iVar++) {
+    header << "\"" << fieldNames[iVar] << "\",";
+  }
+  header << "\"" << fieldNames[fieldNames.size()-1] << "\"" << endl;
 
-    Tecplot_File << "ZONE ";
+  header << "ZONE ";
 
-    if (timeStep > 0.0){
-      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(timeIter+1)<<", SOLUTIONTIME="<< timeIter*timeStep <<", ";
-    }
-
-    Tecplot_File << "NODES= "<< dataSorter->GetnPointsGlobal() <<", ELEMENTS= "<< dataSorter->GetnElemGlobal();
-
-    if (dataSorter->GetnDim() == 3){
-      if ((nTot_Quad > 0 || nTot_Tria > 0) && (nTot_Hexa + nTot_Pris + nTot_Pyra + nTot_Tetr == 0)){
-        Tecplot_File << ", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL" << endl;
-      }
-      else {
-        Tecplot_File <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
-      }
-    }
-    else {
-      if (nTot_Line > 0 && (nTot_Tria + nTot_Quad == 0)){
-        Tecplot_File << ", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
-      }
-      else{
-        Tecplot_File << ", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-      }
-    }
-    Tecplot_File.close();
+  if (timeStep > 0.0){
+    header << "STRANDID="<<SU2_TYPE::Int(timeIter+1)<<", SOLUTIONTIME="<< timeIter*timeStep <<", ";
   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
+  header << "NODES= "<< dataSorter->GetnPointsGlobal() <<", ELEMENTS= "<< dataSorter->GetnElemGlobal();
 
-  /*--- Each processor opens the file. ---*/
+  if (dataSorter->GetnDim() == 3){
+    if ((nTot_Quad > 0 || nTot_Tria > 0) && (nTot_Hexa + nTot_Pris + nTot_Pyra + nTot_Tetr == 0)){
+      header << ", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL" << endl;
+    }
+    else {
+      header <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+    }
+  }
+  else {
+    if (nTot_Line > 0 && (nTot_Tria + nTot_Quad == 0)){
+      header << ", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+    }
+    else{
+      header << ", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+    }
+  }
 
-  Tecplot_File.open(val_filename.c_str(), ios::out | ios::app);
+  WriteMPIString(header.str(), MASTER_NODE);
+
+  /*--- Each rank formats the data of its own points and elements into a string, and all ranks then write
+   their strings to the file at the same time, one after the other in rank order. ---*/
+
+  ostringstream data;
+  data.precision(6);
+  data << scientific;
 
   /*--- Write surface and volumetric solution data. ---*/
 
-  for (iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-
-      /*--- Write the node data from this proc ---*/
-
-
-      for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-        for (iVar = 0; iVar < fieldNames.size(); iVar++)
-          Tecplot_File << scientific << dataSorter->GetData(iVar, iPoint) << "\t";
-        Tecplot_File << endl;
-      }
-    }
-
-    Tecplot_File.flush();
-#ifdef HAVE_MPI
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
+  for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
+    for (iVar = 0; iVar < fieldNames.size(); iVar++)
+      data << dataSorter->GetData(iVar, iPoint) << "\t";
+    data << endl;
   }
+
+  WriteMPIStringAll(data.str());
+
+  data.str("");
+  data.clear();
 
 
   /*--- Write connectivity data. ---*/
 
-  for (iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
+  {
+    {
 
       for (iElem = 0; iElem < nParallel_Line; iElem++) {
-        Tecplot_File << dataSorter->GetElemConnectivity(LINE, iElem, 0) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(LINE, iElem, 1)<< "\n";
+        data << dataSorter->GetElemConnectivity(LINE, iElem, 0) << "\t";
+        data << dataSorter->GetElemConnectivity(LINE, iElem, 1)<< "\n";
       }
 
 
       for (iElem = 0; iElem < nParallel_Tria; iElem++) {
-        Tecplot_File << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 0) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2) << "\n";
+        data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 0) << "\t";
+        data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 1) << "\t";
+        data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2) << "\t";
+        data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2) << "\n";
       }
 
       for (iElem = 0; iElem < nParallel_Quad; iElem++) {
-        Tecplot_File << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 0) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 2) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 3) << "\n";
+        data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 0) << "\t";
+        data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 1) << "\t";
+        data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 2) << "\t";
+        data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 3) << "\n";
       }
 
       for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
-        Tecplot_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\n";
+        data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 1) << "\t";
+        data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2) << "\t";
+        data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t";
+        data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\n";
       }
 
       for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
-        Tecplot_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 3) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 5) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 6) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 7) << "\n";
+        data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 1) << "\t";
+        data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 3) << "\t";
+        data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 5) << "\t";
+        data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 6) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 7) << "\n";
       }
 
       for (iElem = 0; iElem < nParallel_Pris; iElem++) {
-        Tecplot_File << dataSorter->GetElemConnectivity(PRISM, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(PRISM, iElem, 1) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 2) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(PRISM, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 4) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(PRISM, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 5) << "\n";
+        data << dataSorter->GetElemConnectivity(PRISM, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 1) << "\t";
+        data << dataSorter->GetElemConnectivity(PRISM, iElem, 1) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 2) << "\t";
+        data << dataSorter->GetElemConnectivity(PRISM, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 4) << "\t";
+        data << dataSorter->GetElemConnectivity(PRISM, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 5) << "\n";
       }
 
       for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
-        Tecplot_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 3) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t";
-        Tecplot_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\n";
+        data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 1) << "\t";
+        data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 3) << "\t";
+        data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t";
+        data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\n";
       }
 
 
     }
-    Tecplot_File.flush();
-#ifdef HAVE_MPI
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
   }
 
-  Tecplot_File.close();
+  WriteMPIStringAll(data.str());
 
-  /*--- Compute and store the write time. ---*/
-
-  stopTime = SU2_MPI::Wtime();
-
-  usedTime = stopTime-startTime;
-
-  fileSize = DetermineFilesize(val_filename);
-
-  /*--- Compute and store the bandwidth ---*/
-
-  bandwidth = fileSize/(1.0e6)/usedTime;
+  CloseMPIFile();
 }
 
 
