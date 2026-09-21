@@ -42,6 +42,7 @@
 #include "../../include/output/filewriter/CSTLFileWriter.hpp"
 #include "../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CParaviewXMLFileWriter.hpp"
+#include "../../include/output/filewriter/CParaviewPVTUFileWriter.hpp"
 #include "../../include/output/filewriter/CParaviewVTMFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotBinaryFileWriter.hpp"
@@ -557,6 +558,46 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       LogOutputFiles("Paraview");
       fileWriter = new CParaviewXMLFileWriter(volumeDataSorter, config->GetWrt_Output_Double_Precision());
+
+      break;
+
+    case OUTPUT_TYPE::PARAVIEW_PARALLEL:
+
+      extension = CParaviewPVTUFileWriter::fileExt;
+
+      if (fileName.empty())
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+
+      if (!config->GetWrt_Volume_Overwrite())
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
+
+      /*--- Load the connectivity without sorting it: each rank then writes the elements of its own
+       partition, which are next to each other, so its piece needs few points of other ranks. ---*/
+
+      volumeDataSorter->SortConnectivity(config, geometry, false);
+
+      LogOutputFiles("Paraview parallel");
+      fileWriter = new CParaviewPVTUFileWriter(volumeDataSorter, config->GetWrt_Output_Double_Precision());
+
+      break;
+
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_PARALLEL:
+
+      extension = CParaviewPVTUFileWriter::fileExt;
+
+      if (fileName.empty())
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+
+      if (!config->GetWrt_Surface_Overwrite())
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+
+      surfaceDataSorter->SortConnectivity(config, geometry);
+      surfaceDataSorter->SortOutputData();
+
+      LogOutputFiles("Paraview parallel surface");
+      fileWriter = new CParaviewPVTUFileWriter(surfaceDataSorter, config->GetWrt_Output_Double_Precision());
 
       break;
 
