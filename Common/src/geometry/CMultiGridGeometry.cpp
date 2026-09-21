@@ -1605,8 +1605,6 @@ bool HasElements(const CGeometry* grid) { return (grid->elem != nullptr) && (gri
 
 CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeometry* fine_grid,
                                                                    const CConfig* config) const {
-  constexpr auto NO_POINT = std::numeric_limits<unsigned long>::max();
-
   CFrontSeeds seeds;
   vector<char> taken(fine_grid->GetnPoint(), 0);
 
@@ -1618,34 +1616,18 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
     return 0.5 * area * (1.0 / fine_grid->nodes->GetVolume(iPoint) + 1.0 / fine_grid->nodes->GetVolume(jPoint));
   };
 
-  /*--- Sets aligned where the stiffest edge at a boundary node is also the one lying most nearly
-   *    along its normal. Returns the local anisotropy, which orders the seeds. ---*/
-  auto layerStrength = [&](unsigned long iPoint, const su2double* unitNormal, bool& aligned) {
-    su2double wMin = std::numeric_limits<su2double>::max(), wMax = 0.0, bestAlign = -1.0;
-    auto jStiffest = NO_POINT, jAligned = NO_POINT;
+  /*--- Local anisotropy at a node, the stiffest edge over the slackest. It orders the seeds so
+   *    that the thinnest mesh is served first, and is zero where no edge is usable. ---*/
+  auto layerStrength = [&](unsigned long iPoint) {
+    su2double wMin = std::numeric_limits<su2double>::max(), wMax = 0.0;
 
     for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
-      const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
       const su2double w = edgeWeight(iPoint, iNeigh);
-      if (w > wMax) {
-        wMax = w;
-        jStiffest = jPoint;
-      }
+      wMax = std::max(wMax, w);
       wMin = std::min(wMin, w);
-
-      su2double vec[MAXNDIM] = {0.0};
-      GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(iPoint), vec);
-      const su2double len = GeometryToolbox::Norm(nDim, vec);
-      if (len <= 0.0) continue;
-      const su2double align = fabs(GeometryToolbox::DotProduct(nDim, vec, unitNormal)) / len;
-      if (align > bestAlign) {
-        bestAlign = align;
-        jAligned = jPoint;
-      }
     }
 
-    aligned = (jStiffest != NO_POINT) && (jStiffest == jAligned);
-    if (jStiffest == NO_POINT) return su2double(0.0);
+    if (wMax <= 0.0) return su2double(0.0);
     return (wMin > 0.0) ? wMax / wMin : su2double(1.0);
   };
 
@@ -1669,11 +1651,10 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
       su2double Normal[MAXNDIM] = {0.0};
       if (!VertexUnitNormal(fine_grid, nDim, iPoint, iMarker, Normal)) continue;
 
-      bool aligned = false;
-      const su2double strength = layerStrength(iPoint, Normal, aligned);
+      /*--- Every boundary node seeds. Seeding only part of a boundary leaves patches with no
+       *    neighbour to pair with, and a patch below full width coarsens worse than no paving. ---*/
+      const su2double strength = layerStrength(iPoint);
       if (strength <= 0.0) continue;
-      /*--- A boundary only bases a column where the mesh is layered against it. ---*/
-      if (!aligned) continue;
 
       /*--- A column claims its seed before the boundary pass runs, so the Euler wall curvature
        *    limit is applied here too, on the same terms. ---*/
