@@ -1075,6 +1075,8 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
         const auto& CV_name = flamelet_config_options.controlling_variable_names[iCV];
         AddHistoryOutput("RMS_"+CV_name, "rms["+CV_name+"]",ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean squared residual of " + CV_name + " controlling variable equation.", HistoryFieldType::RESIDUAL);
       }
+      if (flamelet_config_options.thickenedflame_correction)
+        AddHistoryOutput("THICKNESS","flamethickness",ScreenOutputFormat::FIXED, "FLAME_THICKNESS", "Flame thickness used for thickened flame correction model.", HistoryFieldType::COEFFICIENT);
 
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++){
@@ -1339,6 +1341,9 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
         }
       }
 
+      if (flamelet_config_options.thickenedflame_correction)
+        SetHistoryOutputValue("THICKNESS", solver[SPECIES_SOL]->GetFlameThickness());
+
       SetHistoryOutputValue("LINSOL_ITER_FLAMELET", solver[SPECIES_SOL]->GetIterLinSolver());
       SetHistoryOutputValue("LINSOL_RESIDUAL_FLAMELET", log10(solver[SPECIES_SOL]->GetResLinSolver()));
     }
@@ -1403,6 +1408,10 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case SPECIES_MODEL::NONE:
       break;
   }
+}
+
+void CFlowOutput::LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) {
+  LoadHistoryData(config, geometry, solver);
 }
 
 void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {

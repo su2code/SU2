@@ -128,6 +128,18 @@ def main():
     von_karman_cylinder.test_vals = [-7.845765, -7.681042, -8.736704, -0.002581, 1.423652]
     test_list.append(von_karman_cylinder)
 
+    # Lid Driven Cavity Flow (Re=400), pressure-based. Disabled: the config and mesh live in
+    # su2code/Tutorials#86, which had not landed as of this commit - ../Tutorials/incompressible_flow/
+    # Inc_Lid_Driven_Cavity/incomp_pb_liddrivencavity.cfg does not exist yet, and enabling this
+    # entry would fail CI outright rather than fail the regression check. Re-enable once that PR
+    # merges (test_vals recorded below were measured against the config in that PR).
+    # lid_driven_cavity = TestCase('lid_driven_cavity')
+    # lid_driven_cavity.cfg_dir = "../Tutorials/incompressible_flow/Inc_Lid_Driven_Cavity"
+    # lid_driven_cavity.cfg_file  = "incomp_pb_liddrivencavity.cfg"
+    # lid_driven_cavity.test_iter = 2
+    # lid_driven_cavity.test_vals = [-5.798956, -4.393539, -5.070494]
+    # test_list.append(lid_driven_cavity)
+
 
     ### Species Transport
 
@@ -153,7 +165,7 @@ def main():
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
     kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
     kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-7.490438, -6.823937, -6.838581, -6.383852, -7.879414, -3.004710, -7.452189, 5.000000, -1.857319, 4.000000, -5.336948, 3.000000, -6.369478, 0.025670, 0.000000, 0.025670, 0.000000, 62.718000, 8.462700, 46.726000, 7.529400]
+    kenics_mixer_tutorial.test_vals = [-7.490448, -6.823978, -6.838620, -6.383873, -7.878123, -3.003654, -7.452198, 5.000000, -1.857226, 4.000000, -5.336949, 3.000000, -6.363373, 0.025668, 0.000000, 0.025668, 0.000000, 62.717000, 8.462600, 46.725000, 7.529400]
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
@@ -237,7 +249,7 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.790137, -2.054834, -3.894659, -0.255074, -1.747087, 5.119341, -3.493237, 0.393262]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.790137, -2.054834, -3.894659, -0.255074, -1.747220, 5.119341, -3.493237, 0.393262]
     tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.808996, -2.070606, -3.969765, -0.277943, -1.953289, 1.708472, -3.514943, 0.357411]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
@@ -247,7 +259,7 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-5.587389, -1.700868, -3.093936, -0.102834, -3.750523, 3.287643, -2.394575, 1.119623]
+    tutorial_trans_flatplate_T3Am.test_vals  = [-5.587389, -1.700868, -3.093935, -0.102834, -3.750523, 3.287643, -2.394575, 1.119623]
     tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-5.540938, -1.681627, -2.878831, -0.058224, -3.695533, 3.413628, -2.385345, 1.103633]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
@@ -266,7 +278,7 @@ def main():
     tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sst.cfg_file   = "transitional_SST_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sst.test_iter  = 20
-    tutorial_trans_e387_sst.test_vals  = [-6.532415, -2.932984, 0.401484, 1.078294, 0.188167, 2.000000, -10.005786]
+    tutorial_trans_e387_sst.test_vals  = [-6.532415, -5.082018, -0.789469, 1.078293, 0.188166, 2.000000, -9.567996]
     tutorial_trans_e387_sst.no_restart = True
     test_list.append(tutorial_trans_e387_sst)
 
@@ -302,7 +314,7 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.293170, 0.000000, 0.301553, 0.773822, 0.001267, 0.007555]
+    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.292139, 0.000000, 0.306930, 0.787006, 0.001794, 0.011018]
     tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.292359, 0, 0.284720, 0.766329, 0.000954, 0.007565]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)

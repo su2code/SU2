@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cassert>
+#include <optional>
 
 /*--- In forward mode the matrix is not of a built-in type. ---*/
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
@@ -303,7 +304,7 @@ class CSysMatrix {
   LDU<ScalarType> gpu;          /*!< \brief Device matrix (all pointers to GPU memory). */
   LDU<ScalarType> ilu;          /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
   LDU<ScalarType> gpu_ilu;      /*!< \brief ILU factorization, device (values and pattern in GPU memory). */
-  ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi preconditioner. */
+  ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi or LU-SGS preconditioner. */
 
   /*--- Quantized off-diagonal storage (used when quantized_mode == true). ---*/
   using QuantType = int8_t;
@@ -356,7 +357,7 @@ class CSysMatrix {
    * rows in level k only depend on rows in levels < k. The same table drives the forward
    * (increasing level) and backward (decreasing level) substitution, because the U pattern is
    * the transpose of the L pattern. Used directly by the host/OMP substitution, and flattened
-   * into ilu_level_ptr / d_ilu_level_idx below for the GPU triangular solves. */
+   * into ilu_level_ptr / d_precond_level_idx below for the GPU triangular solves. */
   CCompressedSparsePatternUL levels_ilu;
 
   /*!< \brief Coloring of the (domain-only) ILU dependency graph, used only by the GPU iterative
@@ -373,29 +374,45 @@ class CSysMatrix {
   vector<su2uint> ilu_color_ptr;      /*!< \brief Start of each color in d_ilu_color_idx, size nColors+1. */
   su2uint* d_ilu_color_idx = nullptr; /*!< \brief Row indices, grouped by color. */
 
-  vector<su2uint> ilu_level_ptr;      /*!< \brief Start of each level in d_ilu_level_idx, size nLevels+1. */
-  su2uint* d_ilu_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
+  vector<su2uint> precond_level_ptr;      /*!< \brief Start of each level in d_precond_level_idx, size nLevels+1. */
+  su2uint* d_precond_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
 
   /*--- The per-color (factorization) and per-level (triangular solves) kernel launch sequences
    * are identical on every call: same grid/block sizes, same device pointers (all fixed members,
    * allocated once). Each is captured once into a CUDA graph and replayed to remove
    * host-side launch overhead without changing the parallelization. ---*/
   mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;
-  mutable struct CUgraphExec_st* ilu_apply_graph_exec = nullptr;
-  mutable const ScalarType* ilu_apply_graph_vec = nullptr; /*!< \brief Pointers the apply graph
-                                                            * was captured with, to detect when
-                                                            * it must be recaptured. */
-  mutable ScalarType* ilu_apply_graph_prod = nullptr;
-  /*--- Non-default stream, needed for two mutually exclusive uses that never overlap on a given
-   * matrix (quantized_mode and ILU are alternative preconditioner choices, decided once in
-   * Initialize()): (1) the ILU build/apply CUDA graphs below, since the legacy default stream
-   * cannot be captured into a graph; (2) HtDTransfer's async H2D transfer of the quantized L/U
-   * blocks, so that transfer can run concurrently (copy engine) with kernels issued on the
-   * default stream (e.g. QuantizeDiagonalBlocksGPU, on the SM) instead of queueing behind them on
-   * the same stream. Because the two uses are mutually exclusive, sharing one stream (rather than
-   * a dedicated one per use) needs no extra synchronization between them. htd_event marks the end
-   * of the H2D transfer specifically, so the default-stream kernel that first reads the result
-   * (the quantized SpMV) can wait on it without a host-side block. ---*/
+
+  /*!< \brief Whether a build may refine the factors already on the device instead of computing
+   * them exactly. TransposeInPlace() clears it for good: from then on this matrix is used in
+   * both orientations, and the factors of one are a bad starting point for the other, which the
+   * ilu_gpu_sweeps colored sweeps cannot recover from. It is not restored after a build because
+   * the orientation flips again on the next one (and the solver refills the matrix in between
+   * without going through TransposeInPlace). Only the discrete adjoint transposes, so the primal
+   * keeps refining as before. */
+  mutable bool ilu_can_refine = true;
+  mutable struct CUgraphExec_st* precond_fwd_graph_exec = nullptr;  // ILU or LU-SGS forward only
+  mutable struct CUgraphExec_st* precond_bwd_graph_exec = nullptr;  // LU-SGS backward only
+  mutable const ScalarType* precond_fwd_graph_vec = nullptr;        /*!< \brief Pointers the apply graph
+                                                                     * was captured with, to detect when
+                                                                     * it must be recaptured (the
+                                                                     * executable graph itself is then
+                                                                     * updated in place, not rebuilt,
+                                                                     * see InstantiateOrUpdateGraph). */
+  mutable ScalarType* precond_fwd_graph_prod = nullptr;
+  mutable ScalarType* precond_bwd_graph_prod = nullptr;
+
+  /*--- Non-default stream, needed for two uses: (1) the preconditioner build/apply CUDA graphs
+   * below, since the legacy default stream cannot be captured into a graph; (2) HtDTransfer's
+   * async H2D transfer of the quantized L/U blocks, so that transfer can run concurrently (copy
+   * engine) with kernels issued on the default stream (e.g. QuantizeDiagonalBlocksGPU, on the SM)
+   * instead of queueing behind them on the same stream. The two are mutually exclusive for ILU
+   * (never quantized) but not for Q_LU_SGS, which uses both; sharing one stream still needs no
+   * extra synchronization, and in fact gives the right answer for free: the apply graph is
+   * launched into aux_stream, hence ordered after the transfer of the quantized blocks its
+   * kernels read. htd_event marks the end of the H2D transfer specifically, so a *default*-stream
+   * kernel that reads the result (the quantized SpMV) can wait on it without a host-side
+   * block. ---*/
   mutable struct CUstream_st* aux_stream = nullptr;
   mutable struct CUevent_st* htd_event = nullptr;
 
@@ -657,6 +674,31 @@ class CSysMatrix {
    */
   void ComputeILUPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
 
+  /*!
+   * \brief Build the LU-SGS preconditioner on the device
+   */
+  void BuildLU_SGSPreconditionerGPU();
+
+  /*!
+   * \brief Apply the LU-SGS preconditioner forward pass on the device
+   */
+  void ComputeLU_SGSForwardGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
+
+  /*!
+   * \brief Apply the LU-SGS preconditioner backward pass on the device
+   */
+  void ComputeLU_SGSBackwardGPU(CSysVector<ScalarType>& prod) const;
+
+  /*!
+   * \brief Apply the forward pass of the LU-SGS preconditioner
+   */
+  void ComputeLU_SGSPreconditionerForward(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
+
+  /*!
+   * \brief Apply the backward pass of the LU-SGS preconditioner
+   */
+  void ComputeLU_SGSPreconditionerBackward(CSysVector<ScalarType>& prod) const;
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -678,15 +720,15 @@ class CSysMatrix {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] needTranspPtr - If the L/U transpose maps should be built, used for "SetDiagonalAsColumnSum".
-   * \param[in] grad_mode - Gradient smoothing mode, only used to detect the right preconditioner type.
    * \param[in] allow_quant - Quantization is only possible with solvers that "set and forget" the off-diagonal
    *            blocks of the matrix. Solvers that perform multiple updates would lose too much information, so
    *            that pattern is not supported with quantization (the code will hit null pointers). It is up to
    *            the solver to declare whether it will "set and forget".
+   * \param[in] override_prec - Decide if, and with what argument to override the preconditioner.
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
-                  bool grad_mode = false, bool allow_quant = false);
+                  bool allow_quant = false, std::optional<unsigned short> override_prec = std::nullopt);
 
   /*!
    * \brief Compresses off-diagonal blocks into quantized form for use with USE_QUANTIZATION.
@@ -1028,6 +1070,80 @@ class CSysMatrix {
   }
 
   /*!
+   * \brief Set the four blocks of an edge, for fluxes whose i and j contributions are independent.
+   * \note The diagonal blocks are accumulated, the off-diagonal blocks are set.
+   */
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void SetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& jac_ii,
+                        const MatrixType& jac_ij, const MatrixType& jac_ji, const MatrixType& jac_jj,
+                        OtherType mask = 1) {
+    const auto blkSz = nVar * nEqn;
+    auto* bii = &mat.d[iPoint * blkSz];
+    auto* bjj = &mat.d[jPoint * blkSz];
+    unsigned long iVar, jVar, offset = 0;
+
+    if (quantized_mode) {
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bii[offset] += PassiveAssign(jac_ii[iVar][jVar] * mask);
+          bjj[offset] += PassiveAssign(jac_jj[iVar][jVar] * mask);
+          bij_buf[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+          bji_buf[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        }
+      QuantizeBlock(bij_buf, &q_scale.u[iEdge * nVar], &q_blocks.u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+      return;
+    }
+
+    auto* bij = &mat.u[iEdge * blkSz];
+    auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bii[offset] += PassiveAssign(jac_ii[iVar][jVar] * mask);
+        bjj[offset] += PassiveAssign(jac_jj[iVar][jVar] * mask);
+        bij[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+        bji[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        ++offset;
+      }
+    }
+  }
+
+  /*!
+   * \brief Set the off-diagonal blocks of an edge, the diagonal being assembled elsewhere.
+   */
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void SetOffDiagBlocks(unsigned long iEdge, const MatrixType& jac_ij, const MatrixType& jac_ji,
+                               OtherType mask = 1) {
+    const auto blkSz = nVar * nEqn;
+    unsigned long iVar, jVar, offset = 0;
+
+    if (quantized_mode) {
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bij_buf[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+          bji_buf[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        }
+      QuantizeBlock(bij_buf, &q_scale.u[iEdge * nVar], &q_blocks.u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+      return;
+    }
+
+    auto* bij = &mat.u[iEdge * blkSz];
+    auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bij[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+        bji[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        ++offset;
+      }
+    }
+  }
+
+  /*!
    * \brief SIMD version, does the update for multiple edges.
    * \note Nothing is updated if the mask is 0.
    */
@@ -1229,6 +1345,11 @@ class CSysMatrix {
    */
   void ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                                 const CConfig* config) const;
+
+  /*!
+   * \brief Build the LU-SGS preconditioner.
+   */
+  void BuildLU_SGSPreconditioner();
 
   /*!
    * \brief Multiply CSysVector by the preconditioner

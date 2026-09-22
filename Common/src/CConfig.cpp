@@ -1202,6 +1202,11 @@ void CConfig::SetConfig_Options() {
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SA turbulence model options/corrections. \n Options: see \link SA_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumListOption("SA_OPTIONS", nSA_Options, SA_Options, SA_Options_Map);
 
+  /*!\brief KIND_INCOMP_SYSTEM \n DESCRIPTION: Incomp type \n OPTIONS: see \link Incomp_Map \endlink DEFAULT: NONE \ingroup Config*/
+  addEnumOption("KIND_INCOMP_SYSTEM", Kind_Incomp_System, Incomp_Map, INCOMP_SYSTEM::DENSITY_BASED);
+  /*!\brief KIND_PB_ITER \n  DESCRIPTION: Kind_PBIter \n OPTIONS: see \link PBIter_Map \endlink \ingroup Config*/
+  addEnumOption("KIND_PB_ITER", Kind_PBIter, PBIter_Map, PBITER::SIMPLE);
+
   /*!\brief ROUGHSST_OPTIONS \n DESCRIPTION: Specify type of boundary condition for rough walls for SST turbulence model. \n Options: see \link ROUGHSST_Options_Map \endlink \n DEFAULT: wilcox1998 \ingroup Config*/
   addEnumOption("KIND_ROUGHSST_MODEL", Kind_RoughSST_Model, RoughSST_Model_Map, ROUGHSST_MODEL::WILCOX1998);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
@@ -1420,6 +1425,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /*!\brief INIT_OPTION \n DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS \ingroup Config*/
   addEnumOption("INIT_OPTION", Kind_InitOption, InitOption_Map, REYNOLDS);
+  /*!\brief INIT_OPTION_INC \n DESCRIPTION: Init option for the incompressible solver to choose between the initial
+   * density and the operating pressure for initializing the solution \n OPTIONS: see \link InitOptionInc_Map \endlink
+   * \n DEFAULT: fluid model dependent \ingroup Config*/
+  addEnumOption("INIT_OPTION_INC", Kind_InitOption_Inc, InitOptionInc_Map, INIT_OPTION_INC::DENSITY_INIT);
   /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
   addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, FREESTREAM_OPTION::TEMPERATURE_FS);
   /*!\brief FREESTREAM_PRESSURE\n DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) \ingroup Config*/
@@ -1480,13 +1489,16 @@ void CConfig::SetConfig_Options() {
    scalars taken directly from MARKER_WALL_SPECIES or the Python wrapper (SetMarkerCustomScalar). \n DEFAULT: FLOW_MARKERS \ingroup Config */
   addEnumOption("FLAME_ENTHALPY_BC", flamelet_ParsedOptions.enthalpy_bc, Flamelet_Enthalpy_BC_Map, FLAMELET_ENTHALPY_BC::FLOW_MARKERS);
   /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
-  addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(), false, flamelet_ParsedOptions.flame_init.begin());
+  addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(), false, flamelet_ParsedOptions.flame_init.data());
 
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
-  addDoubleArrayOption("SPARK_INIT", flamelet_ParsedOptions.spark_init.size(), false, flamelet_ParsedOptions.spark_init.begin());
+  addDoubleArrayOption("SPARK_INIT", flamelet_ParsedOptions.spark_init.size(), false, flamelet_ParsedOptions.spark_init.data());
 
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
+
+  /*!\brief THICKENED_FLAME_CORRECTION \n DESCRIPTION: Coarse grid correction for source terms and diffusive fluxes in reacting flows. \ingroup Config*/
+  addBoolOption("THICKENED_FLAME_CORRECTION", flamelet_ParsedOptions.thickenedflame_correction, true);
 
   /*!\brief FLAME_INIT_IGNITION \n DESCRIPTION: Ignition temperature for the flame initialization \ingroup Config*/
   addDoubleOption("FLAME_INIT_IGNITION", flamelet_ParsedOptions.Flame_T_ignition, 5000.0);
@@ -1744,6 +1756,8 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief TURBULENT_MIXINGPLANE \n DESCRIPTION: Activate mixing plane also for turbulent quantities \ingroup Config*/
   addBoolOption("TURBULENT_MIXINGPLANE", turbMixingPlane, false);
+  /*!\brief RELATIVE_FRAME_SLIDINGPLANE \n DESCRIPTION: Activate sliding plane for relative frame \ingroup Config*/
+  addBoolOption("RELATIVE_FRAME_SLIDINGPLANE", RelFrame_SlidingPlane, false);
   /*!\brief MARKER_TURBOMACHINERY \n DESCRIPTION: Identify the boundaries for which the turbomachinery settings are  applied. \ingroup Config*/
   addTurboPerfOption("MARKER_TURBOMACHINERY", nMarker_Turbomachinery, Marker_TurboBoundIn, Marker_TurboBoundOut, Marker_Turbomachinery);
   /*!\brief NUM_SPANWISE_SECTIONS \n DESCRIPTION: Integer number of spanwise sections to compute 3D turbo BC and Performance for turbomachinery */
@@ -1968,6 +1982,16 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-6);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
+  /*!\brief LINEAR_SOLVER
+   *  \n DESCRIPTION: Linear solver for the poisson system \n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
+  addEnumOption("POISSON_LINEAR_SOLVER", Kind_Poisson_Linear_Solver, Linear_Solver_Map, FGMRES);
+  /*!\brief LINEAR_SOLVER_PREC
+   *  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
+  addEnumOption("POISSON_LINEAR_SOLVER_PREC", Kind_Poisson_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
+  /* DESCRIPTION: Minimum error threshold for the poisson linear solver */
+  addDoubleOption("POISSON_LINEAR_SOLVER_ERROR", Poisson_Linear_Solver_Error, 1E-6);
+  /* DESCRIPTION: Maximum number of iterations of the poisson linear solver */
+  addUnsignedLongOption("POISSON_LINEAR_SOLVER_ITER", Poisson_Linear_Solver_Iter, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", IluOptions.FillIn, 0);
   /* DESCRIPTION: Use level scheduling for OMP parallelization of the ILU preconditioner */
@@ -1984,6 +2008,14 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("LINEAR_SOLVER_PREC_THREADS", Linear_Solver_Prec_Threads, 0);
   /* DESCRIPTION: Use an inner linear solver. */
   addEnumOption("LINEAR_SOLVER_INNER", Kind_Linear_Solver_Inner, Inner_Linear_Solver_Map, LINEAR_SOLVER_INNER::NONE);
+  /* DESCRIPTION: Relaxation of the pressure corrections for the SIMPLE algorithm */
+  addDoubleOption("RELAXATION_FACTOR_PRESSURE", SIMPLE_Options.Relaxation_Factor_Pressure, 1.0);
+  /* DESCRIPTION: Removal factor for the transient term in the momentum coefficients for the poisson solver. */
+  addDoubleOption("TRANSIENT_TERM_REMOVAL_FACTOR", SIMPLE_Options.Transient_Term_Removal_Factor, 0.0);
+  /*!\DESCRIPTION: Automatically compute relaxation factors for flow corrections in the SIMPLE algorithm */
+  addBoolOption("USE_AUTOMATIC_RELAXATION_FACTORS", SIMPLE_Options.AutomaticRelaxationFactors, false);
+  /* DESCRIPTION: Number of corrections in the PISO algorithm (pressure based). */
+  addUnsignedShortOption("PISO_CORRECTIONS", SIMPLE_Options.nCorrections_PISO, 1);
   /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
   addDoubleOption("RELAXATION_FACTOR_ADJOINT", Relaxation_Factor_Adjoint, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
@@ -2071,6 +2103,20 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
   /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
+  /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
+   * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
+  addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
+  /*!\brief MG_STARTUP_CONVERGENCE\n DESCRIPTION: During the startup phase of Full-MG, leave the current level once
+   * CONV_FIELD has dropped by this many orders of magnitude relative to its value when the level became active.
+   * DEFAULT: -2 \ingroup Config*/
+  addDoubleOption("MG_STARTUP_CONVERGENCE", MGOptions.MG_Startup_Convergence, -2.0);
+  /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio
+   * between successive iterations exceeds this value for MG_STARTUP_STAGNATION_ITER consecutive iterations, promote to
+   * the next finer level without waiting out MG_STARTUP_ITER. 0 disables it. DEFAULT: 0.99 \ingroup Config*/
+  addDoubleOption("MG_STARTUP_STAGNATION", MGOptions.MG_Startup_Stagnation, 0.99);
+  /*!\brief MG_STARTUP_STAGNATION_ITER\n DESCRIPTION: Consecutive stalled iterations required before Full-MG promotes
+   * on stagnation. 0 disables it, as MG_STARTUP_STAGNATION= 0 does. DEFAULT: 5 \ingroup Config*/
+  addUnsignedLongOption("MG_STARTUP_STAGNATION_ITER", MGOptions.MG_Startup_Stagnation_Iter, 5);
   /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i). If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
 
@@ -3631,6 +3677,31 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Multizone_Problem = YES;
   }
 
+  /*--- The solver vectors stay on the device but the halo exchange is host-side, so more than
+   * one rank would use stale halos. Use OpenMP for the host parts instead. ---*/
+  if (Enable_Cuda && size > 1) {
+    SU2_MPI::Error("ENABLE_CUDA= YES is not supported with more than one MPI rank,\n"
+                   "       the halo exchange only happens on the host.\n"
+                   "       Use a single rank with OpenMP threads, e.g. 'SU2_CFD -t <threads> config.cfg'.",
+                   CURRENT_FUNCTION);
+  }
+
+  /*--- nvcc cannot compile the CoDiPack types, so the kernels are only built into the primal
+   * solver (see SU2_ENABLE_CUDA_KERNELS). Catch it here, not minutes into the run. ---*/
+  if (Enable_Cuda) {
+#ifndef SU2_ENABLE_CUDA_KERNELS
+#ifdef HAVE_CUDA
+    SU2_MPI::Error("ENABLE_CUDA= YES is not available in the AD and direct differentiation solvers,\n"
+                   "       the CUDA kernels are only built into SU2_CFD.",
+                   CURRENT_FUNCTION);
+#else
+    SU2_MPI::Error("ENABLE_CUDA= YES but SU2 was not compiled with CUDA support,\n"
+                   "       reconfigure the build with -Denable-cuda=true.",
+                   CURRENT_FUNCTION);
+#endif
+#endif
+  }
+
   /*--- Set the default output files ---*/
   if (!OptionIsSet("OUTPUT_FILES")){
     nVolumeOutputFiles = 3;
@@ -4157,6 +4228,46 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
 
+  /*--- The pressure-based solver's Poisson equation only runs on the finest grid, its Rhie-Chow
+   * mass flux has no pseudo-transient term, it has no adjoint, and its marker switches have no
+   * PERIODIC_BOUNDARY case. Fail here instead of silently ignoring the option or erroring deep
+   * inside the first iteration. Gated on the incompressible regime (not just the option's raw
+   * value) since KIND_INCOMP_SYSTEM is read regardless of solver family, and a compressible or
+   * SU2_DEF config that happens to carry a leftover PRESSURE_BASED line (e.g. copied from
+   * config_template.cfg before it defaulted to DENSITY_BASED) must not hard-error here. ---*/
+  if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE && Kind_Incomp_System == INCOMP_SYSTEM::PRESSURE_BASED) {
+    if (nMGLevels > 0) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support MGLEVEL > 0,\n"
+                     "       the Poisson solver is single-grid only.", CURRENT_FUNCTION);
+    }
+    if (Time_Domain) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES,\n"
+                     "       it converges to a physically wrong solution instead of failing.",
+                     CURRENT_FUNCTION);
+    }
+    if (DiscreteAdjoint || ContinuousAdjoint) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED has no adjoint formulation.", CURRENT_FUNCTION);
+    }
+    if (nMarker_PerBound > 0) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support MARKER_PERIODIC.", CURRENT_FUNCTION);
+    }
+    if (Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support streamwise periodicity.",
+                     CURRENT_FUNCTION);
+    }
+
+    /*--- A_p already carries Vol/dt when SIMPLEC's A_p-Sum_A_nb correction runs, so at the 0.0
+     * default that correction collapses to roughly Vol/dt and the pressure correction becomes
+     * vanishingly weak at low CFL. ---*/
+    if (Kind_PBIter == PBITER::SIMPLEC && !OptionIsSet("TRANSIENT_TERM_REMOVAL_FACTOR")) {
+      SIMPLE_Options.Transient_Term_Removal_Factor = 1.0;
+      if (rank == MASTER_NODE) {
+        cout << "WARNING: KIND_PB_ITER= SIMPLEC without TRANSIENT_TERM_REMOVAL_FACTOR set - "
+             << "defaulting it to 1.0, its intended companion value for SIMPLEC." << endl;
+      }
+    }
+  }
+
   /*--- Check for Fluid model consistency ---*/
 
   if (standard_air) {
@@ -4338,6 +4449,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     /* --- Check for NEMO compatibility issues ---*/
+    if (nemo && Kind_Turb_Model != TURB_MODEL::NONE) {
+      SU2_MPI::Error("A turbulence model is not yet available for the NEMO solver.", CURRENT_FUNCTION);
+    }
+
     if (Kind_FluidModel == SU2_NONEQ && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::SUTHERLAND && Kind_TransCoeffModel != TRANSCOEFFMODEL::GUPTAYOS) ) {
       SU2_MPI::Error("Transport model not available for NEMO solver using SU2TCLIB. Please use the WILKE, SUTHERLAND or GUPTAYOS transport model instead.", CURRENT_FUNCTION);
     }
@@ -4835,6 +4950,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  /*--- Only the direct problem promotes a Full-MG startup. Downgrade before FinestMesh is
+   *    derived from the cycle, or it stays on the coarsest level for the entire run. ---*/
+
+  if (Restart || ((Kind_MGCycle == MG_CYCLE::FULL) && ContinuousAdjoint)) Kind_MGCycle = MG_CYCLE::V;
+
   FinestMesh = MESH_0;
   if (Kind_MGCycle == MG_CYCLE::FULL) FinestMesh = nMGLevels;
 
@@ -4895,8 +5015,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   MGOptions.MG_PostSmooth[MESH_0] = 0;
   MGOptions.MG_PostSmooth[nMGLevels] = 0;
   MGOptions.MG_CorrecSmooth[nMGLevels] = 0;
-
-  if (Restart) Kind_MGCycle = MG_CYCLE::V;
 
   if (ContinuousAdjoint) {
     if (Kind_Solver == MAIN_SOLVER::EULER) Kind_Solver = MAIN_SOLVER::ADJ_EULER;
@@ -5282,6 +5400,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
+  }
+
+  /*--- Without an explicit INIT_OPTION_INC each fluid model keeps the density it used before the option existed. ---*/
+
+  if (!OptionIsSet("INIT_OPTION_INC")) {
+    if (Kind_FluidModel == FLUID_MIXTURE || Kind_FluidModel == FLUID_FLAMELET) {
+      Kind_InitOption_Inc = INIT_OPTION_INC::OPERATING_PRESSURE;
+    } else {
+      Kind_InitOption_Inc = INIT_OPTION_INC::DENSITY_INIT;
+    }
+  } else if (Kind_FluidModel == CONSTANT_DENSITY && Kind_InitOption_Inc == INIT_OPTION_INC::OPERATING_PRESSURE) {
+    SU2_MPI::Error("CONSTANT_DENSITY fluid model can only be used with INIT_OPTION_INC= DENSITY_INIT.", CURRENT_FUNCTION);
   }
 
   if (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS) {
@@ -8922,6 +9052,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_ADJSPECIES_SYS:return ADJSPECIES_SOL;
     case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
     case RUNTIME_RADIATION_SYS: return RAD_SOL;
+    case RUNTIME_POISSON_SYS:   return POISSON_SOL;
     case RUNTIME_MULTIGRID_SYS: return 0;
   }
   return 0;
@@ -9059,6 +9190,13 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
+
+    case MAIN_SOLVER::POISSON_EQUATION:
+    if (val_system == RUNTIME_POISSON_SYS) {
+      SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, 0.0, NONE);
+      SetKind_TimeIntScheme(EULER_IMPLICIT);
+    }
+    break;
 
     case MAIN_SOLVER::FEM_ELASTICITY:
     case MAIN_SOLVER::DISC_ADJ_FEM:

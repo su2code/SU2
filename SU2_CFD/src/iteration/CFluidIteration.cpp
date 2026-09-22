@@ -82,7 +82,42 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
 
+  /*--- Whether the Full-MG startup is still ramping the finest grid's CFL. ---*/
+
+  const bool fmg_cfl_ramp = integration[val_iZone][val_iInst][FLOW_SOL]->GetFullMG_CFLRamp();
+
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
+  CommonAuxiliarySolvers(integration, geometry, solver, numerics, config, val_iZone, val_iInst, main_solver, frozen_visc);
+
+  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
+        The Full-MG startup owns the CFL while it ramps, so leave it alone until then. ---*/
+  SU2_OMP_PARALLEL
+  if (!disc_adj && config[val_iZone]->GetFinestMesh() == MESH_0 && !fmg_cfl_ramp) {
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
+                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->IdentifySolutionOutliers(config[val_iZone], InnerIter);
+  }
+  END_SU2_OMP_PARALLEL
+
+  /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
+
+  if ((config[val_iZone]->GetGrid_Movement()) && (config[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
+    SetGrid_Movement(geometry[val_iZone][val_iInst], surface_movement[val_iZone], grid_movement[val_iZone][val_iInst],
+                     solver[val_iZone][val_iInst], config[val_iZone], InnerIter, TimeIter);
+
+    /*--- Apply a Wind Gust ---*/
+
+    if (config[val_iZone]->GetWind_Gust()) {
+      if (InnerIter % config[val_iZone]->GetAeroelasticIter() == 0 && InnerIter != 0)
+        SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
+    }
+  }
+}
+
+void CFluidIteration::CommonAuxiliarySolvers(CIntegration**** integration, CGeometry**** geometry,
+                              CSolver***** solver, CNumerics****** numerics, CConfig** config,
+                              unsigned short val_iZone, unsigned short val_iInst, MAIN_SOLVER main_solver, bool frozen_visc) {
+
 
   if (config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE && !frozen_visc) {
 
@@ -129,31 +164,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     integration[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
-
-  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
-        During Full-MG warmup (FinestMesh > MESH_0), skip adaptation entirely until the finest
-        mesh is active. ---*/
-  SU2_OMP_PARALLEL
-  if (!disc_adj && config[val_iZone]->GetFinestMesh() == MESH_0) {
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
-                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->IdentifySolutionOutliers(config[val_iZone], InnerIter);
-  }
-  END_SU2_OMP_PARALLEL
-
-  /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
-
-  if ((config[val_iZone]->GetGrid_Movement()) && (config[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
-    SetGrid_Movement(geometry[val_iZone][val_iInst], surface_movement[val_iZone], grid_movement[val_iZone][val_iInst],
-                     solver[val_iZone][val_iInst], config[val_iZone], InnerIter, TimeIter);
-
-    /*--- Apply a Wind Gust ---*/
-
-    if (config[val_iZone]->GetWind_Gust()) {
-      if (InnerIter % config[val_iZone]->GetAeroelasticIter() == 0 && InnerIter != 0)
-        SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
-    }
-  }
+  
 }
 
 void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
@@ -250,15 +261,30 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
   /*--- During Full-MG startup FinestMesh > 0: read residuals from the active (coarse) level. ---*/
   const unsigned short finestMesh = config[val_iZone]->GetFinestMesh();
+
+  /*--- The startup has just handed over to the finest grid, so restart the convergence history:
+   *    everything in it up to now was measured on a coarser mesh. ---*/
+
+  if ((config[val_iZone]->GetMGCycle() == MG_CYCLE::FULL) && (finestMesh == MESH_0) &&
+      (config[val_iZone]->GetInnerIter() ==
+       integration[val_iZone][val_iInst][FLOW_SOL]->GetLevelStartIter())) {
+    output->ResetConvergenceMonitoring(config[val_iZone]->GetInnerIter());
+  }
+
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][finestMesh], solver[val_iZone][val_iInst][finestMesh],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
 
   auto StopCalc = output->GetConvergence();
 
-  /*--- During Full-MG warmup the convergence criterion is evaluated against coarse-mesh residuals.
-   *    Never stop before the fine mesh is active. ---*/
+  /*--- Never stop before the fine mesh is active. ---*/
   if (finestMesh != MESH_0) StopCalc = false;
+
+  /*--- The history fields were just written from the active level, feed them to the startup. ---*/
+  if (config[val_iZone]->GetMGCycle() == MG_CYCLE::FULL && finestMesh != MESH_0) {
+    integration[val_iZone][val_iInst][FLOW_SOL]->MonitorFullMG_Startup(output->GetResidualConvFields(),
+                                                                      config[val_iZone]);
+  }
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 

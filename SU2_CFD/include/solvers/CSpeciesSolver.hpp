@@ -43,6 +43,14 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   vector<su2activematrix> Wall_SpeciesVars; /*!< \brief Species variables at  profiles. */
   vector<su2matrix<su2double>> CustomBoundaryScalar;
 
+  /*!
+   * \brief Resolve the compile-time parameters of CScalarFlux_Species and run one of this solver's
+   *        boundaries through the shared boundary flux pass.
+   * \param[in] opt - Flags of the boundary, from one of ScalarFluxOptions' named constructors.
+   */
+  void BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt,
+                    unsigned short val_marker);
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -55,7 +63,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh);
+  CSpeciesSolver(CGeometry* geometry, CConfig* config, const CSolver* flow_solver, unsigned short iMesh);
 
   /*!
    * \brief Load a solution from a restart file.
@@ -83,16 +91,16 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                      unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
-   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \brief Compute the spatial integration using the CScalarFlux_Species edge kernel, which
+   *        computes and writes both the convective and the diffusive term of every edge.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Unused, kept only for the boundary conditions.
    * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                        const CConfig* config) override;
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                       CConfig* config, unsigned short iMesh) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -147,6 +155,18 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
                  CConfig* config, unsigned short val_marker) final;
+
+  /*!
+   * \brief Impose the far-field boundary condition, via the CScalarFlux_Species edge kernel.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                    CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) final;
 
   /*!
    * \brief Impose the isothermal wall Dirichlet boundary condition (value).
@@ -214,24 +234,19 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                            unsigned long TimeIter) override;
 
   /*!
-   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \brief Impose the fluid interface (sliding mesh) boundary condition, via the
+   *        CScalarFlux_Species edge kernel. The convective term is a per-donor weighted average,
+   *        computed in the same pass that fills the ghost row of each donor; the diffusive term is
+   *        computed once per vertex, after the donor loop, from the interior point's own
+   *        diffusivity mirrored into the ghost row, so both sides of the edge diffuse with it.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Fluid_Interface(CGeometry *geometry,
-                          CSolver **solver_container,
-                          CNumerics *conv_numerics,
-                          CNumerics *visc_numerics,
-                          CConfig *config) final {
-    BC_Fluid_Interface_impl(
-      [&](unsigned long iPoint) {
-        visc_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nodes->GetDiffusivity(iPoint));
-      },
-      geometry, solver_container, conv_numerics, visc_numerics, config);
-  }
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                          CNumerics *visc_numerics, CConfig *config) final;
 
   /*!
    * \brief Set custom boundary scalar values from Python.
