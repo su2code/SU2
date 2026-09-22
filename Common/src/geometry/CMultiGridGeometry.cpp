@@ -43,6 +43,9 @@ namespace {
  *    degrees. ---*/
 constexpr passivedouble EULER_WALL_MAX_CURVATURE = 45.0;
 
+/*--- Fine points one coarse CV may hold: a quadrilateral in 2D, a hexahedron in 3D. ---*/
+constexpr short int MaxAgglomSize(unsigned short nDim) { return (nDim == 2) ? 4 : 8; }
+
 /*--- Equivalence-class id per entity for the set of physical markers it lies on: entities with the
  *    same set share an id, 0 means no marker. The pairs are consumed. ---*/
 vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<unsigned long, unsigned short>>& pairs) {
@@ -71,8 +74,7 @@ vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<u
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
   nDim = fine_grid->GetnDim();  // Write the number of dimensions of the coarse grid.
 
-  /*--- Maximum agglomeration size in 2D is 4 nodes, in 3D is 8 nodes. ---*/
-  const short int maxAgglomSize = (nDim == 2) ? 4 : 8;
+  const short int maxAgglomSize = MaxAgglomSize(nDim);
 
   /*--- Inherit boundary properties from fine grid ---*/
   boundIsStraight = fine_grid->boundIsStraight;
@@ -188,7 +190,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         nodes->SetChildren_CV(Index_CoarseCV, 0, iPoint);
         bool agglomerate_seed = false;
         auto counter = 0;
-        unsigned short copy_marker[3] = {};
+        unsigned short copy_marker[2] = {};
         marker_seed.push_back(iMarker);
 
         /*--- For a particular point in the fine grid we save all the physical markers that are in
@@ -197,8 +199,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
           if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) continue;
           if (fine_grid->nodes->GetVertex(iPoint, jMarker) != -1) {
-            /*--- Count every physical marker, but store only the first few. ---*/
-            if (counter < 3) copy_marker[counter] = jMarker;
+            /*--- Count every physical marker, only the first two are read back. ---*/
+            if (counter < 2) copy_marker[counter] = jMarker;
             counter++;
 
             if (jMarker != iMarker) {
@@ -306,7 +308,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
             Suitable_Indirect_Neighbors.clear();
 
             if (fine_grid->nodes->GetAgglomerate_Indirect(iPoint))
-              SetSuitableNeighbors(Suitable_Indirect_Neighbors, iPoint, Index_CoarseCV, fine_grid);
+              SetSuitableNeighbors(Suitable_Indirect_Neighbors, iPoint, fine_grid);
 
             /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
 
@@ -973,19 +975,13 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
 bool CMultiGridGeometry::GeometricalCheck(unsigned long iPoint, const CGeometry* fine_grid,
                                           const CConfig* config) const {
-  su2double max_dimension = 1.2;
+  /*--- A control volume whose edge exceeds MAX_DIMENSION times the domain's is not agglomerated.
+   *    Raising both sides to the power nDim gives the same test on volumes, without the roots. ---*/
+  constexpr passivedouble MAX_DIMENSION = 1.2;
+  su2double scale = MAX_DIMENSION * MAX_DIMENSION;
+  if (nDim == 3) scale *= MAX_DIMENSION;
 
-  /*--- Evaluate the total size of the element ---*/
-
-  bool Volume = true;
-  su2double ratio = pow(fine_grid->nodes->GetVolume(iPoint), 1.0 / su2double(nDim)) * max_dimension;
-  su2double limit = pow(config->GetDomainVolume(), 1.0 / su2double(nDim));
-  if (ratio > limit) {
-    Volume = false;
-    cout << "Volume limit reached!" << endl;
-  }
-
-  return (Volume);
+  return fine_grid->nodes->GetVolume(iPoint) * scale <= config->GetDomainVolume();
 }
 
 vector<char> CMultiGridGeometry::FindMixedBoundaryNodes(const CGeometry* fine_grid, const CConfig* config) const {
@@ -1025,7 +1021,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
     /*--- If the point belongs to a boundary, its type must be compatible with the seed marker. ---*/
 
     int counter = 0;
-    unsigned short copy_marker[3] = {};
+    unsigned short copy_marker[2] = {};
 
     if (fine_grid->nodes->GetBoundary(CVPoint)) {
       /*--- Identify the physical markers of the vertex that we want to agglomerate. A candidate whose
@@ -1034,7 +1030,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
       for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
         if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) continue;
         if (fine_grid->nodes->GetVertex(CVPoint, jMarker) != -1) {
-          if (counter < 3) copy_marker[counter] = jMarker;
+          if (counter < 2) copy_marker[counter] = jMarker;
           counter++;
         }
       }
@@ -1077,7 +1073,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
 }
 
 void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
-                                              unsigned long Index_CoarseCV, const CGeometry* fine_grid) const {
+                                              const CGeometry* fine_grid) const {
   /*--- Create a list with the first neighbors, including the seed. ---*/
 
   vector<unsigned long> First_Neighbor_Points;
@@ -1086,7 +1082,7 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_In
 
   /*--- Create a list with the second neighbors, without first, and seed neighbors. ---*/
 
-  vector<unsigned long> Second_Neighbor_Points, Second_Origin_Points, Suitable_Second_Neighbors;
+  vector<unsigned long> Second_Neighbor_Points, Second_Origin_Points;
 
   for (auto jPoint : fine_grid->nodes->GetPoints(iPoint)) {
     for (auto kPoint : fine_grid->nodes->GetPoints(jPoint)) {
@@ -1111,20 +1107,9 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_In
       if ((Second_Neighbor_Points[iNeighbor] == Second_Neighbor_Points[jNeighbor]) &&
           (Second_Origin_Points[iNeighbor] != Second_Origin_Points[jNeighbor])) {
         Suitable_Indirect_Neighbors.push_back(Second_Neighbor_Points[iNeighbor]);
-
-        /*--- Create a list of suitable second neighbors, that we will use
-         to compute the third neighbors. --*/
-
-        Suitable_Second_Neighbors.push_back(Second_Neighbor_Points[iNeighbor]);
       }
     }
   }
-
-  /*--- Remove duplicates ---*/
-
-  sort(Suitable_Second_Neighbors.begin(), Suitable_Second_Neighbors.end());
-  auto it1 = unique(Suitable_Second_Neighbors.begin(), Suitable_Second_Neighbors.end());
-  Suitable_Second_Neighbors.resize(it1 - Suitable_Second_Neighbors.begin());
 }
 
 void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
@@ -1589,11 +1574,11 @@ void FaceNodes(const CGeometry* grid, unsigned long iElem, unsigned short iFace,
 }
 
 /*--- Local index of the face with these nodes, or NO_FACE. ---*/
-unsigned short LocalFace(const CGeometry* grid, unsigned long iElem, const vector<unsigned long>& face) {
-  vector<unsigned long> other;
+unsigned short LocalFace(const CGeometry* grid, unsigned long iElem, const vector<unsigned long>& face,
+                         vector<unsigned long>& scratch) {
   for (unsigned short iFace = 0; iFace < grid->elem[iElem]->GetnFaces(); ++iFace) {
-    FaceNodes(grid, iElem, iFace, other);
-    if (other == face) return iFace;
+    FaceNodes(grid, iElem, iFace, scratch);
+    if (scratch == face) return iFace;
   }
   return NO_FACE;
 }
@@ -1742,7 +1727,7 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
       CWalkState walk;          /*!< \brief Element strip it opens. */
     };
     vector<CFaceSeed> candidates;
-    vector<unsigned long> face;
+    vector<unsigned long> face, faceScratch;
 
     for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
       const auto bc = config->GetMarker_All_KindBC(iMarker);
@@ -1771,7 +1756,7 @@ vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFront
 
         std::sort(face.begin(), face.end());
         const auto iVolume = bElem->GetDomainElement();
-        const auto iFace = LocalFace(fine_grid, iVolume, face);
+        const auto iFace = LocalFace(fine_grid, iVolume, face, faceScratch);
         if (iFace == NO_FACE) continue;
         if (OppositeFace(fine_grid->elem[iVolume]->GetVTK_Type(), iFace) == NO_FACE) continue;
 
@@ -1911,7 +1896,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
    *    partition interface is handed to the rank beyond it. ---*/
   const auto nPointFine = fine_grid->GetnPoint();
   constexpr auto NO_COLUMN = std::numeric_limits<unsigned long>::max();
-  const short int maxAgglomSize = (nDim == 2) ? 4 : 8;
+  const short int maxAgglomSize = MaxAgglomSize(nDim);
 
   /*--- SeedFrontNodes returns the seeds ordered by anisotropy. ---*/
   const auto seeds = SeedFrontNodes(fine_grid, config);
@@ -1990,15 +1975,16 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     handPairs.push_back(hp);
   }
 
+  /*--- Where a halo node sits in the flat receive buffer, and which pair owns each slot. The
+   *    vertex within the pair is the slot less that pair's offset. ---*/
   vector<long> haloSlot(nPointFine, -1);
-  vector<unsigned long> haloPair(nPointFine, 0), haloVertex(nPointFine, 0);
+  vector<unsigned short> pairOfSlot(nRecvTotal, 0);
   for (auto iPair = 0ul; iPair < handPairs.size(); ++iPair) {
     const auto& hp = handPairs[iPair];
     for (auto iVertex = 0ul; iVertex < hp.nVertexR; iVertex++) {
       const auto iPoint = fine_grid->vertex[hp.markerR][iVertex]->GetNode();
       haloSlot[iPoint] = static_cast<long>(hp.offR + iVertex);
-      haloPair[iPoint] = iPair;
-      haloVertex[iPoint] = iVertex;
+      pairOfSlot[hp.offR + iVertex] = static_cast<unsigned short>(iPair);
     }
   }
 
@@ -2022,7 +2008,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   ct[P_SEEDS] = seeds.node.size();
   ct[P_SEED_CURV] = seeds.nRefusedCurvature;
 
-  vector<unsigned long> candidates, haloWanted, distinct, faceAhead;
+  vector<unsigned long> candidates, haloWanted, distinct, faceAhead, faceScratch;
   vector<std::array<su2double, MAXNDIM>> stepDir, haloStep;
   vector<unsigned long> haloClaim(nPointFine, NO_COLUMN);
   vector<unsigned long> tagOut(nRecvTotal, 0), tagIn(nSendTotal, 0);
@@ -2034,16 +2020,23 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   /*--- One tier is paved out everywhere before the next starts, so an inherited column belongs to
    *    the tier that is running. ---*/
   constexpr char N_TIER = 3;
+  vector<unsigned long> active;
   for (char tier = 0; tier < N_TIER; ++tier) {
+    /*--- The columns of this tier still advancing, in seed order. A column that stops drops out at
+     *    the end of the round, so a deep mesh does not rescan the ones that finished early. ---*/
+    active.clear();
     for (auto iColumn : order)
-      if (tierOf[iColumn] == tier) alive[iColumn] = !layer[iColumn].empty();
+      if (tierOf[iColumn] == tier) {
+        alive[iColumn] = !layer[iColumn].empty();
+        if (alive[iColumn]) active.push_back(iColumn);
+      }
 
     /*--- Advance every column as far as it goes here, then offer the ones an interface stopped. ---*/
     for (;;) {
       for (unsigned long iRound = 1;; ++iRound) {
         bool advanced = false;
 
-        for (auto iColumn : order) {
+        for (auto iColumn : active) {
           if (!alive[iColumn]) continue;
           const auto width = layer[iColumn].size();
 
@@ -2090,7 +2083,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
                   const auto jElem = fine_grid->elem[iElem]->GetNeighbor_Elements(jFace);
                   walkOf[iColumn] = {NO_ELEM, NO_FACE};
                   if (jElem >= 0) {
-                    const auto kFace = LocalFace(fine_grid, jElem, faceAhead);
+                    const auto kFace = LocalFace(fine_grid, jElem, faceAhead, faceScratch);
                     if (kFace != NO_FACE) walkOf[iColumn] = {static_cast<unsigned long>(jElem), kFace};
                   }
                   walked = true;
@@ -2184,17 +2177,21 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
             for (auto iPair = 0ul; iPair < handPairs.size(); ++iPair) {
               auto tag = std::numeric_limits<unsigned long>::max();
               for (auto jPoint : haloWanted)
-                if (haloPair[jPoint] == iPair) tag = std::min(tag, haloVertex[jPoint]);
+                if (pairOfSlot[haloSlot[jPoint]] == iPair)
+                  tag = std::min(tag, static_cast<unsigned long>(haloSlot[jPoint]) - handPairs[iPair].offR);
               if (tag == std::numeric_limits<unsigned long>::max()) continue;
 
               tag += 1; /*--- Zero means no offer. ---*/
               for (auto jPoint : haloWanted)
-                if (haloPair[jPoint] == iPair) tagOut[haloSlot[jPoint]] = tag;
+                if (pairOfSlot[haloSlot[jPoint]] == iPair) tagOut[haloSlot[jPoint]] = tag;
               ct[P_HANDED]++;
             }
           }
         }
 
+        active.erase(
+            std::remove_if(active.begin(), active.end(), [&](unsigned long iColumn) { return !alive[iColumn]; }),
+            active.end());
         if (!advanced) break;
       }
 
@@ -2266,7 +2263,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
           for (auto iElem = 0u; iElem < fine_grid->nodes->GetnElem(faceAhead.front()); ++iElem) {
             const auto jElem = fine_grid->nodes->GetElem(faceAhead.front(), iElem);
-            const auto jFace = LocalFace(fine_grid, jElem, faceAhead);
+            const auto jFace = LocalFace(fine_grid, jElem, faceAhead, faceScratch);
             if (jFace == NO_FACE) continue;
             if (OppositeFace(fine_grid->elem[jElem]->GetVTK_Type(), jFace) == NO_FACE) continue;
 
@@ -2298,6 +2295,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
         isSeeded.push_back(0);
         tierOf.push_back(tier);
         order.push_back(iColumn);
+        active.push_back(iColumn);
         nAdopted++;
         ct[P_ADOPTED]++;
       }

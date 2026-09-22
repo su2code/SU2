@@ -71,11 +71,10 @@ class CMultiGridGeometry final : public CGeometry {
    * \brief Determine if a CVPoint can be agglomerated, if it has the same marker point as the seed.
    * \param[out] Suitable_Indirect_Neighbors - List of Indirect Neighbours that can be agglomerated.
    * \param[in] iPoint - Seed point.
-   * \param[in] Index_CoarseCV - Index of agglomerated point.
    * \param[in] fine_grid - Geometrical definition of the problem.
    */
   void SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
-                            unsigned long Index_CoarseCV, const CGeometry* fine_grid) const;
+                            const CGeometry* fine_grid) const;
 
   /*!
    * \brief Compute local curvature at a boundary vertex on Euler wall.
