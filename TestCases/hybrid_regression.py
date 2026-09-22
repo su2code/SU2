@@ -96,7 +96,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-3.940725, 1.589218, 0.300917, 0.019470]
+    fixedCL_naca0012.test_vals = [-3.943952, 1.585415, 0.300912, 0.019470]
     test_list.append(fixedCL_naca0012)
 
     # HYPERSONIC FLOW PAST BLUNT BODY

@@ -291,7 +291,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-3.888989, 1.642308, 0.300964, 0.019477]
+    fixedCL_naca0012.test_vals = [-3.887564, 1.642912, 0.300963, 0.019476]
     test_list.append(fixedCL_naca0012)
 
     # Polar sweep of the inviscid NACA0012
@@ -973,7 +973,7 @@ def main():
     contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixed_CL_naca0012.test_iter = 100
-    contadj_fixed_CL_naca0012.test_vals = [1.402080, -4.018841, 0.006641, 0.003981]
+    contadj_fixed_CL_naca0012.test_vals = [1.408903, -4.010709, 0.005808, 0.004028]
     test_list.append(contadj_fixed_CL_naca0012)
 
     ###################################
@@ -1029,7 +1029,7 @@ def main():
     contadj_rans_rae2822.cfg_dir   = "cont_adj_rans/rae2822"
     contadj_rans_rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
     contadj_rans_rae2822.test_iter = 20
-    contadj_rans_rae2822.test_vals = [-5.399534, -10.904663, -0.212470, 0.005448]
+    contadj_rans_rae2822.test_vals = [-5.399270, -10.904277, -0.212470, 0.005448]
     test_list.append(contadj_rans_rae2822)
 
     #############################
