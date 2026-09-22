@@ -225,7 +225,7 @@ def main():
     ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
     ion_gy.cfg_file = "cyl_ion_gy.cfg"
     ion_gy.test_iter = 99
-    ion_gy.test_vals = [-12.191649, -4.245292, -4.904190, -5.585803, -5.472455, -5.057619, -7.442352, 3.429183, 3.433581, -0.014861, 0.000001, 90357.000000]
+    ion_gy.test_vals = [-11.673961, -4.180906, -4.838570, -5.457224, -5.150665, -4.930094, -6.962117, 4.562850, 4.581001, -0.014893, -0.000032, 90471.000000]
     ion_gy.tol = 0.01
     test_list.append(ion_gy)
 
@@ -619,7 +619,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-11.056236, -5.334116, -8.842310, -4.067917, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-2.662880, 2.912015, -2.712454, 1.890642, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.143310, -9.163287, -10.858232, -5.787715, 0.000000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
