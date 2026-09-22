@@ -508,6 +508,7 @@ private:
   CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
   FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
+  INIT_OPTION_INC Kind_InitOption_Inc; /*!< \brief Kind of initialization of the incompressible solver. */
   MAIN_SOLVER Kind_Solver;         /*!< \brief Kind of solver: Euler, NS, Continuous adjoint, etc.  */
   LIMITER Kind_SlopeLimit,      /*!< \brief Slope limiter (for the runtime eq. system). */
   Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
@@ -4114,6 +4115,13 @@ public:
    * \return free stream option
    */
   unsigned short GetKind_InitOption(void) const { return Kind_InitOption; }
+
+  /*!
+   * \brief Get the initialization option of the incompressible solver.
+   * \return Initialization option of the incompressible solver.
+   */
+  INIT_OPTION_INC GetKind_InitOption_Inc() const { return Kind_InitOption_Inc; }
+
   /*!
    * \brief Get the value of the critical pressure.
    * \return Critical pressure.
