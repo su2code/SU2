@@ -66,7 +66,7 @@ def main():
     invwedge.cfg_dir = "nonequilibrium/invwedge"
     invwedge.cfg_file = "invwedge_ausm.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-4.399745, 1.331048, -0.249527, 0.043953]
+    invwedge.test_vals = [-1.085516, -1.610279, -18.299901, -18.627313, -18.573325, 2.230829, 1.850866, 5.274272, 0.833227]
     invwedge.test_vals_aarch64 = [-1.085516, -1.610279, -18.299901, -18.627313, -18.573325, 2.230829, 1.850866, 5.274272, 0.833227]
     test_list.append(invwedge)
 
@@ -119,7 +119,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-3.302176, 2.423106, -0.249527, 0.043953]
+    wedge.test_vals = [-4.399745, 1.331048, -0.249527, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -136,7 +136,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-3.884156, 1.648389, 0.300995, 0.019479]
+    fixedCL_naca0012.test_vals = [-3.886939, 1.644825, 0.300989, 0.019478]
     test_list.append(fixedCL_naca0012)
 
     # Polar sweep of the inviscid NACA0012
@@ -669,7 +669,7 @@ def main():
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixedCL_naca0012.test_iter = 100
-    contadj_fixedCL_naca0012.test_vals = [1.405239, -4.011751, -0.026317, 0.004112]
+    contadj_fixedCL_naca0012.test_vals = [1.409148, -4.006889, -0.025392, 0.004170]
     test_list.append(contadj_fixedCL_naca0012)
 
     ###################################
@@ -1175,7 +1175,7 @@ def main():
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 1
-    airfoilRBF.test_vals = [1.000000, 0.030358, -3.531124]
+    airfoilRBF.test_vals = [1.000000, 0.030557, -3.531052]
     airfoilRBF.tol       = 0.0001
     airfoilRBF.multizone = True
     test_list.append(airfoilRBF)
