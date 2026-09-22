@@ -1425,6 +1425,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /*!\brief INIT_OPTION \n DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS \ingroup Config*/
   addEnumOption("INIT_OPTION", Kind_InitOption, InitOption_Map, REYNOLDS);
+  /*!\brief INIT_OPTION_INC \n DESCRIPTION: Init option for the incompressible solver to choose between the initial
+   * density and the operating pressure for initializing the solution \n OPTIONS: see \link InitOptionInc_Map \endlink
+   * \n DEFAULT: fluid model dependent \ingroup Config*/
+  addEnumOption("INIT_OPTION_INC", Kind_InitOption_Inc, InitOptionInc_Map, INIT_OPTION_INC::DENSITY_INIT);
   /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
   addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, FREESTREAM_OPTION::TEMPERATURE_FS);
   /*!\brief FREESTREAM_PRESSURE\n DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) \ingroup Config*/
@@ -5398,6 +5402,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
+  }
+
+  /*--- Without an explicit INIT_OPTION_INC each fluid model keeps the density it used before the option existed. ---*/
+
+  if (!OptionIsSet("INIT_OPTION_INC")) {
+    if (Kind_FluidModel == FLUID_MIXTURE || Kind_FluidModel == FLUID_FLAMELET) {
+      Kind_InitOption_Inc = INIT_OPTION_INC::OPERATING_PRESSURE;
+    } else {
+      Kind_InitOption_Inc = INIT_OPTION_INC::DENSITY_INIT;
+    }
+  } else if (Kind_FluidModel == CONSTANT_DENSITY && Kind_InitOption_Inc == INIT_OPTION_INC::OPERATING_PRESSURE) {
+    SU2_MPI::Error("CONSTANT_DENSITY fluid model can only be used with INIT_OPTION_INC= DENSITY_INIT.", CURRENT_FUNCTION);
   }
 
   if (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS) {
