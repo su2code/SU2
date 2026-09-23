@@ -396,7 +396,7 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
 
   su2double Re_t;
   su2double Corr_Rec = 1.0;
-  su2double AuxVar;
+  su2double AuxVar = 0.0;  /*!< \brief Wall-normal derivative of the wall-normal velocity (Menter correlation). */
   su2double F2;
   su2double Tu_Here = 0.0;
   su2double duds_Here = 0.0;
@@ -445,8 +445,11 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
     /*--- dU/dx = PrimVar_Grad[1][0] ---*/
     AD::StartPreacc();
     AD::SetPreaccIn(StrainMag_i);
-    AD::SetPreaccIn(ScalarVar_i, nVar);
-    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+    /*--- ScalarVar_i holds the turbulence variables (k and omega for SST), nVar is the single transition variable. ---*/
+    const unsigned short nVarTurb = (TurbFamily == TURB_FAMILY::KW) ? 2 : 1;
+    AD::SetPreaccIn(ScalarVar_i, nVarTurb);
+    AD::SetPreaccIn(ScalarVar_Grad_i, nVarTurb, nDim);
+    AD::SetPreaccIn(AuxVar);
     AD::SetPreaccIn(TransVar_i, nVar);
     AD::SetPreaccIn(TransVar_Grad_i, nVar, nDim);
     AD::SetPreaccIn(Volume);
