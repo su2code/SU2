@@ -890,6 +890,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
     Residual[0] = 0.0;
     Residual[1] = 0.0;
+    for (auto& val : ProdDistr) val = 0.0;
     Jacobian_i[0][0] = 0.0;
     Jacobian_i[0][1] = 0.0;
     Jacobian_i[1][0] = 0.0;
