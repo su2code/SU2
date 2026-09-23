@@ -1016,7 +1016,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
 
-        const su2double omega = GeometryToolbox::Norm(3, Vorticity);
+        const su2double omega = max(GeometryToolbox::Norm(3, Vorticity), 1e-12);
 
         su2double ratioOmega[MAXNDIM] = {};
 
@@ -1056,12 +1056,15 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
 
         su2double delta = (ln_max/sqrt(3.0)) * f_kh;
-        if (f_d < 0.99){
+        /*--- Without vorticity the direction n_omega is undefined and Delta_omega vanishes, use h_max. ---*/
+        if (f_d < 0.99 || GeometryToolbox::Norm(3, Vorticity) < 1e-12){
           delta = h_max;
         }
 
         const su2double l_LES = C_DES * delta;
         DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
+
+        break;
       }
       case SST_EDDES_UNSTR: {
 
@@ -1114,12 +1117,15 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
 
         su2double delta = deltaOmega * f_kh;
-        if (f_d < 0.99){
+        /*--- Without vorticity the direction n_omega is undefined and Delta_omega vanishes, use h_max. ---*/
+        if (f_d < 0.99 || GeometryToolbox::Norm(3, Vorticity) < 1e-12){
           delta = h_max;
         }
 
         const su2double l_LES = C_DES * delta;
         DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
+
+        break;
       }
     }
 
