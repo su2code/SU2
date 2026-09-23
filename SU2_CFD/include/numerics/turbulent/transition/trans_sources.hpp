@@ -582,10 +582,11 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
 
       if (options.CrossFlow && TurbFamily == TURB_FAMILY::KW) {
 
-        // Taken from Vallinayagam Pillai, S., & Lardeau, S. (2017). "Accounting crossflow effects in one-equation
-        // local correlation-based transition model."" In 8th AIAA Theoretical Fluid Mechanics Conference (p. 3159).
+        /*--- Vallinayagam Pillai and Lardeau, "Accounting crossflow effects in one-equation local correlation-based
+         * transition model", AIAA 2017-3159 (equation numbers below). ---*/
 
-        // Computation of shape factor
+        // Shape factor, Eq. 3 with k = 0.25 - lambda (lambda_theta_L of the gamma model), limited to 2.7 above which
+        // the crossflow criterion does not apply (text after Eq. 3)
         const su2double k = 0.25 - lambda_theta;
         const su2double FirstTerm = 4.14 * k;
         const su2double SecondTerm = 83.5 * pow(k, 2.0);
@@ -594,30 +595,31 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
         const su2double FifthTerm = 4576.0 * pow(k, 5.0);
         const su2double H = min(2.0 + FirstTerm - SecondTerm + ThirdTerm - ForthTerm + FifthTerm, 2.7);
 
-        // Computation of critical cross flow Reynolds number
+        // Critical crossflow Reynolds number, Eq. 2
         su2double Re_Crit_CF = 0.0;
         if(H < 2.3) {
           Re_Crit_CF = 150.0;
         } else {
-          // Correct from paper since for H = 2.3 it was not continuous if a minus sign is added here
+          // Eq. 2 is printed with a minus sign, which gives -150 at H = 2.3 and negative critical Reynolds numbers;
+          // the positive sign makes it continuous with the value 150 below H = 2.3
           Re_Crit_CF = (300.0/PI_NUMBER) * atan(0.106/(pow(H-2.3, 2.05)));
         }
 
         const su2double H_CF = StreamwiseVorticity(vel_u, vel_v, vel_w, Velocity_Mag) * dist_i / Velocity_Mag;
 
-        // Computation of Delta_H_CF. Here I have included directly R_t as the ration between turb and lam viscosity
+        // Crossflow strength H_cf, Eqs. 4-6, and Delta_H_cf, Eq. 8
         const su2double Delta_H_CF = H_CF * (1.0 + min(Eddy_Viscosity_i / Laminar_Viscosity_i, 0.4));
 
-        // Take into account for roughness
+        // Roughness, Eq. 9, h0 = 0.25 micrometers (HROUGHNESS in meters)
         const su2double h_0 = 0.25e-6;
         const su2double C_r = 2.0 - pow(0.5, config->GethRoughness()/h_0);
 
-        // Construct Cross flow activation function
+        // f_cf, Eqs. 7 and 10, with C_cf = 1
         const su2double C_CF = 1.0;
         const su2double f_CF = (C_CF * C_r * Delta_H_CF * Corr_Rec) / Re_Crit_CF;
         const su2double F_onset_CF = min(max(0.0, f_CF - 1.0), 1.0);
 
-        // Adjust onset function for intermittency
+        // Eqs. 17-18
         F_onset = max(F_onset, F_onset_CF);
 
       }
