@@ -397,6 +397,7 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
   su2double Re_t;
   su2double Corr_Rec = 1.0;
   su2double AuxVar = 0.0;  /*!< \brief Wall-normal derivative of the wall-normal velocity (Menter correlation). */
+  su2double CrossFlowPsi = 0.0;  /*!< \brief Wall-normal change of the vorticity direction times the wall distance. */
   su2double F2;
   su2double Tu_Here = 0.0;
   su2double duds_Here = 0.0;
@@ -414,6 +415,41 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
   su2double Jacobian_Buffer;  // Static storage for the Jacobian (which needs to be pointer for return type).
 
   TransLMCorrelations TransCorrelations;
+
+  /*!
+   * \brief Magnitude of the streamwise vorticity, |U/|U| . Omega|.
+   */
+  su2double StreamwiseVorticity(su2double vel_u, su2double vel_v, su2double vel_w, su2double Velocity_Mag) const {
+    const su2double velocity[3] = {vel_u, vel_v, vel_w};
+    su2double streamwiseVort = 0.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) streamwiseVort += velocity[iDim] / Velocity_Mag * Vorticity_i[iDim];
+    return fabs(streamwiseVort);
+  }
+
+  /*!
+   * \brief Stationary cross-flow Reynolds number of Langtry et al., Lee and Baeder (AIAA 2021-1532), Eqs. 36-42.
+   *        Eq. 36 is implicit in theta_t and is solved by fixed-point iteration, as in the LM2015 option of
+   *        CSourcePieceWise_TransLM.
+   */
+  su2double StationaryCrossFlowReynolds(su2double vel_u, su2double vel_v, su2double vel_w, su2double Velocity_Mag,
+                                        su2double R_t, const CConfig* config) const {
+    const su2double H_CF = StreamwiseVorticity(vel_u, vel_v, vel_w, Velocity_Mag) * dist_i / Velocity_Mag;  // Eq. 37
+    const su2double DeltaH_CF = H_CF * (1.0 + min(R_t, 0.4));                                            // Eq. 38
+    const su2double DeltaH_CF_Plus = max(0.1066 - DeltaH_CF, 0.0);                                       // Eq. 39
+    const su2double fDeltaH_CF_Plus = 6200 * DeltaH_CF_Plus + 50000 * DeltaH_CF_Plus * DeltaH_CF_Plus;   // Eq. 40
+    const su2double DeltaH_CF_Minus = max(-(0.1066 - DeltaH_CF), 0.0);                                   // Eq. 41
+    const su2double fDeltaH_CF_Minus = 75.0 * tanh(DeltaH_CF_Minus / 0.0125);                            // Eq. 42
+
+    const su2double h = config->GethRoughness();
+    su2double reScf = 20.0, error = 1.0;
+    for (int iter = 0; iter < 100 && error > 1e-5; iter++) {
+      const su2double theta_t = max(1e-20, reScf * Laminar_Viscosity_i / (Density_i * Velocity_Mag / 0.82));
+      const su2double reScfNew = -35.088 * log(h / theta_t) + 319.51 + fDeltaH_CF_Plus - fDeltaH_CF_Minus;
+      error = fabs(reScfNew - reScf) / fabs(reScf);
+      reScf = reScfNew;
+    }
+    return max(reScf, 1e-20);
+  }
 
  public:
   /*!
@@ -450,6 +486,7 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
     AD::SetPreaccIn(ScalarVar_i, nVarTurb);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVarTurb, nDim);
     AD::SetPreaccIn(AuxVar);
+    AD::SetPreaccIn(CrossFlowPsi);
     AD::SetPreaccIn(TransVar_i, nVar);
     AD::SetPreaccIn(TransVar_Grad_i, nVar, nDim);
     AD::SetPreaccIn(Volume);
@@ -484,42 +521,40 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
       Tu_Here = Tu_L;
 
       /*--- F_length ---*/
-      su2double F_length = 100.0;
+      const su2double F_length = 100.0;  // Menter et al. (2015), Eq. 6, and Lee and Baeder (2021), Eq. 7.
 
       /*--- F_onset ---*/
       su2double R_t = 1.0;
       if (TurbFamily == TURB_FAMILY::KW) R_t = Density_i * ScalarVar_i[0] / (Laminar_Viscosity_i * ScalarVar_i[1]);
+      /*--- Lee and Baeder (AIAA 2021-1532), Eq. 6: k and omega are replaced by the viscosity ratio for SA. ---*/
       if (TurbFamily == TURB_FAMILY::SA) R_t = Eddy_Viscosity_i / Laminar_Viscosity_i;
 
+      /*--- Menter et al. (2015), Eqs. 12-13, and Lee and Baeder (2021), Eq. 9. ---*/
       const su2double lambda_theta = max(min(-7.57e-3 * AuxVar * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0128, 1.0), -1.0);
 
       duds_Here = AuxVar;
       lambda_theta_Here = lambda_theta;
-      
-      /*--- Corr_RetC correlation*/
-      Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, lambda_theta, dist_i, VorticityMag, Velocity_Mag);
-      Corr_Rec = Re_t;  // If the MENTER_SLM correlation is used then they are the same thing
 
-      if (options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::CODER_SLM || options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM) {
-        // If these correlations are used, then the value of Corr_Rec has to be used instead of the TransVar[1] of the original LM model 
-        F_length = TransCorrelations.FLength_Correlations(Tu_L, Re_t);
-        Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu_L, Re_t);
-      }
-
+      /*--- Critical Reynolds number, Menter et al. (2015), Eq. 14, and Lee and Baeder (2021), Eqs. 10-13. ---*/
+      Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, lambda_theta, dist_i, VorticityMag, Velocity_Mag,
+                                                          TurbFamily == TURB_FAMILY::SA);
+      Corr_Rec = Re_t;
 
       const su2double Re_v = Density_i * dist_i * dist_i * StrainMag_i / Laminar_Viscosity_i;
       Re_v_Here = Re_v;
-      const su2double F_onset1 = Re_v / (2.2 * Corr_Rec);
-      su2double F_onset2 = 1.0;
-      su2double F_onset3 = 1.0;
-      if (TurbFamily == TURB_FAMILY::KW) {
-        F_onset2 = min(F_onset1, 2.0);
-        F_onset3 = max(1.0 - pow(R_t / 3.5, 3.0), 0.0);
+
+      /*--- Menter et al. (2015), Eqs. 4-5, and Lee and Baeder (2021), Eqs. 4-5 (the same for SST and SA). ---*/
+      su2double F_onset1 = Re_v / (2.2 * Corr_Rec);
+
+      if (options.CrossFlow && TurbFamily == TURB_FAMILY::SA) {
+        /*--- Langtry et al. stationary cross-flow criterion, Lee and Baeder (2021), Eqs. 36-43. ---*/
+        const su2double Re_scf = StationaryCrossFlowReynolds(vel_u, vel_v, vel_w, Velocity_Mag, R_t, config);
+        const su2double c_scf = 0.94;
+        F_onset1 = max(F_onset1, c_scf * Re_v / (2.2 * Re_scf));
       }
-      if (TurbFamily == TURB_FAMILY::SA) {
-        F_onset2 = min(max(F_onset1, pow(F_onset1, 4.0)), 4.0);
-        F_onset3 = max(2.0 - pow(R_t / 2.5, 3.0), 0.0);
-      }
+
+      const su2double F_onset2 = min(F_onset1, 2.0);
+      const su2double F_onset3 = max(1.0 - pow(R_t / 3.5, 3.0), 0.0);
       su2double F_onset = max(F_onset2 - F_onset3, 0.0);
 
       F_onset1_Here = F_onset1;
@@ -527,11 +562,22 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
       F_onset3_Here = F_onset3;
       F_onset_Here = F_onset;
 
-      if (options.CrossFlow) {
+      if (options.CrossFlow && TurbFamily == TURB_FAMILY::SA) {
+        /*--- Menter and Smirnov C1-based cross-flow criterion, Lee and Baeder (2021), Eqs. 25-35. ---*/
+        const su2double lambda_CF = min(max(-7.57e-3 * AuxVar * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0174, 0.0), 0.0477);
+        const su2double g_CF = min(max(27864.0 * pow(lambda_CF, 3) - 1962.0 * pow(lambda_CF, 2) + 54.3 * lambda_CF + 1.0, 1.0), 2.3);
+        const su2double G_CF = 0.684 / g_CF;
+        const su2double C_RSF = 1.35;  // Calibrated for SA by Lee and Baeder (1.0 in the original model).
+        const su2double T_C1 = C_RSF / 150.0 * G_CF * CrossFlowPsi * Re_v;
+        const su2double F_onset_CF = min(max(100.0 * (T_C1 - 1.0), 0.0), 1.0);
+        F_onset = max(F_onset, F_onset_CF);
+      }
 
-        // Taken from Vallinayagam Pillai, S., & Lardeau, S. (2017). "Accounting crossflow effects in one-equation 
+      if (options.CrossFlow && TurbFamily == TURB_FAMILY::KW) {
+
+        // Taken from Vallinayagam Pillai, S., & Lardeau, S. (2017). "Accounting crossflow effects in one-equation
         // local correlation-based transition model."" In 8th AIAA Theoretical Fluid Mechanics Conference (p. 3159).
-        
+
         // Computation of shape factor
         const su2double k = 0.25 - lambda_theta;
         const su2double FirstTerm = 4.14 * k;
@@ -550,23 +596,11 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
           Re_Crit_CF = (300.0/PI_NUMBER) * atan(0.106/(pow(H-2.3, 2.05)));
         }
 
-        // Helicity computation
-        su2double VelocityNormalized[3];
-        VelocityNormalized[0] = vel_u / Velocity_Mag;
-        VelocityNormalized[1] = vel_v / Velocity_Mag;
-        if (nDim == 3) VelocityNormalized[2] = vel_w / Velocity_Mag;
-
-        su2double StreamwiseVort = 0.0;
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          StreamwiseVort += VelocityNormalized[iDim] * Vorticity_i[iDim];
-        }
-        StreamwiseVort = abs(StreamwiseVort); 
-
-        const su2double H_CF = StreamwiseVort * dist_i / Velocity_Mag;
+        const su2double H_CF = StreamwiseVorticity(vel_u, vel_v, vel_w, Velocity_Mag) * dist_i / Velocity_Mag;
 
         // Computation of Delta_H_CF. Here I have included directly R_t as the ration between turb and lam viscosity
         const su2double Delta_H_CF = H_CF * (1.0 + min(Eddy_Viscosity_i / Laminar_Viscosity_i, 0.4));
-        
+
         // Take into account for roughness
         const su2double h_0 = 0.25e-6;
         const su2double C_r = 2.0 - pow(0.5, config->GethRoughness()/h_0);
@@ -580,26 +614,33 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
         F_onset = max(F_onset, F_onset_CF);
 
       }
-     
+
+      /*--- Menter et al. (2015), Eq. 5, and Lee and Baeder (2021), Eq. 6. ---*/
       const su2double f_turb = exp(-pow(R_t / 2, 4));
 
-      /*-- production term of Intermeittency(Gamma) --*/
-      const su2double Pg =
-          F_length * Density_i * StrainMag_i * F_onset * TransVar_i[0] * (1.0 - TransVar_i[0]);
+      /*--- Production and destruction of the intermittency, Menter et al. (2015), Eqs. 2-3, and Lee and Baeder
+       * (2021), Eqs. 2-3, written as gamma*(P - D) with (Eqs. 22-23) ---*/
+      const su2double P = F_length * StrainMag_i * (1.0 - TransVar_i[0]) * F_onset;
+      const su2double D = c_a2 * VorticityMag * f_turb * (c_e2 * TransVar_i[0] - 1.0);
+      const su2double Pg = Density_i * TransVar_i[0] * P;
+      const su2double Dg = Density_i * TransVar_i[0] * D;
 
-      /*-- destruction term of Intermeittency(Gamma) --*/
-      const su2double Dg = c_a2 * Density_i * VorticityMag * TransVar_i[0] * f_turb * (c_e2 * TransVar_i[0] - 1.0);
-      
       Prod_Here = Pg;
       Destr_Here = Dg;
 
       /*--- Source ---*/
       Residual += (Pg - Dg) * Volume;
 
-      /*--- Implicit part ---*/
-      Jacobian_i[0] = (F_length * StrainMag_i * F_onset * (1 - 2*TransVar_i[0]) -
-                          c_a2 * VorticityMag * f_turb * (2.0 * c_e2 * TransVar_i[0] - 1.0)) *
-                         Volume;
+      /*--- Implicit part, per unit rho*gamma. ---*/
+      if (TurbFamily == TURB_FAMILY::SA) {
+        /*--- Positivity of the implicit operator, Lee and Baeder (2021), Eq. 24. ---*/
+        const su2double dP = -F_length * StrainMag_i * F_onset;
+        const su2double dD = c_a2 * VorticityMag * f_turb * c_e2;
+        Jacobian_i[0] = -(max(D - P, 0.0) + max(dD - dP, 0.0) * TransVar_i[0]) * Volume;
+      } else {
+        Jacobian_i[0] = (F_length * StrainMag_i * F_onset * (1 - 2*TransVar_i[0]) -
+                         c_a2 * VorticityMag * f_turb * (2.0 * c_e2 * TransVar_i[0] - 1.0)) * Volume;
+      }
 
     }
 
@@ -623,6 +664,7 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
   inline su2double GetF_onset3() override {return F_onset3_Here;} 
   inline su2double GetF_onset() override {return F_onset_Here;} 
   inline void SetAuxVar(su2double val_AuxVar) override { AuxVar = val_AuxVar;}
+  inline void SetCrossFlowStrength(su2double val_Psi) override { CrossFlowPsi = val_Psi; }
   // non serve più
   inline void SetF2(su2double val_F2) override { F2 = val_F2;}
 

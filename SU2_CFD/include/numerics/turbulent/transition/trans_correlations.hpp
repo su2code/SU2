@@ -197,7 +197,9 @@ class TransLMCorrelations {
    * \param[in] du_ds - Streamwise velocity gradient.
    * \param[out] rethetac - Corrected value for Re_theta.
    */
-  su2double ReThetaC_Correlations_SLM(const su2double Tu_L, const su2double lambda_theta, const su2double wall_dist, const su2double VorticityMag, const su2double VelocityMag) const {
+  su2double ReThetaC_Correlations_SLM(const su2double Tu_L, const su2double lambda_theta, const su2double wall_dist,
+                                      const su2double VorticityMag, const su2double VelocityMag,
+                                      const bool spalartAllmaras = false) const {
 
     su2double rethetac = 0.0;
 
@@ -224,9 +226,18 @@ class TransLMCorrelations {
 
         FPG = max(FPG, 0.0);
 
-        const su2double C_TU1 = 100.0;
-        const su2double C_TU2 = 1000.0;
+        /*--- Menter et al. (2015), Eq. 14. ---*/
+        su2double C_TU1 = 100.0;
+        su2double C_TU2 = 1000.0;
         const su2double C_TU3 = 1.0;
+
+        if (spalartAllmaras) {
+          /*--- Lee and Baeder, AIAA 2021-1532, Eqs. 11-13: the constants of Colonia et al. (Eq. 12) below Tu = 0.51%,
+           * the original ones (Eq. 11) above Tu = 2%, linearly blended in between. Tu_L is the freestream Tu. ---*/
+          const su2double Tu_blend = min(max(Tu_L, 0.51), 2.0);
+          C_TU1 = (100.0 - 163.0) / (2.0 - 0.51) * (Tu_blend - 2.0) + 100.0;
+          C_TU2 = (1000.0 - 1002.25) / (2.0 - 0.51) * (Tu_blend - 2.0) + 1000.0;
+        }
         rethetac = C_TU1 + C_TU2 * exp(-C_TU3 * Tu_L * FPG);
 
         break;

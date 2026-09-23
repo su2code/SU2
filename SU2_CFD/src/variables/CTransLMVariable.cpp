@@ -55,7 +55,9 @@ CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, 
   if (options.SLM) {
     Re_t.resize(nPoint) = ReThetaT;
 
-    nAuxVar = 1;
+    /*--- Wall-normal velocity, and with cross-flow for SA the three components of the vorticity direction. ---*/
+    const bool crossFlowSA = options.CrossFlow && TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::SA;
+    nAuxVar = crossFlowSA ? 4 : 1;
     Grad_AuxVar.resize(nPoint, nAuxVar, nDim, su2double(0.0));
     AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
     Tu.resize(nPoint) = su2double(0.0);

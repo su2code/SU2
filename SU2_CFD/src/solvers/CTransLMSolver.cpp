@@ -210,12 +210,22 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   if (options.SLM && options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) {
 
+    /*--- With cross-flow and SA, the auxiliary variables 1-3 are the direction of the vorticity, e_omega, of which
+     * the gradient gives the cross-flow strength of Lee and Baeder (AIAA 2021-1532), Eqs. 31-33. ---*/
+    const bool crossFlowSA = options.CrossFlow && TurbFamily == TURB_FAMILY::SA;
+
     auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {    
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
       auto Normal = geometry->nodes->GetNormal(iPoint);
       nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, Normal));
       nodes->SetNormal(iPoint, Normal[0], Normal[1], Normal[2]);
+      if (crossFlowSA) {
+        const auto Vorticity = flowNodes->GetVorticity(iPoint);
+        const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity);
+        for (auto iDim = 0u; iDim < 3; iDim++)
+          nodes->SetAuxVar(iPoint, 1 + iDim, VorticityMag > 1e-12 ? Vorticity[iDim] / VorticityMag : 0.0);
+      }
     }
     END_SU2_OMP_FOR
 
@@ -227,6 +237,8 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     }
 
 
+    /*--- After the gradients, auxiliary variable 0 becomes dV/dy = grad(n . V) . n and, with cross-flow and SA,
+     * auxiliary variable 1 becomes Psi = |n . grad(e_omega)| d_w (Lee and Baeder, Eqs. 32-33). ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
       su2double AuxVarHere = 0.0;
@@ -234,6 +246,14 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       for (auto iDim = 0u; iDim < nDim; iDim++)
         AuxVarHere += Normal[iDim] * nodes->GetAuxVarGradient(iPoint, 0, iDim);
       nodes->SetAuxVar(iPoint, 0, AuxVarHere);
+
+      if (crossFlowSA) {
+        su2double phi[3] = {0.0, 0.0, 0.0};
+        for (auto iVar = 0u; iVar < 3; iVar++)
+          for (auto iDim = 0u; iDim < nDim; iDim++)
+            phi[iVar] += Normal[iDim] * nodes->GetAuxVarGradient(iPoint, 1 + iVar, iDim);
+        nodes->SetAuxVar(iPoint, 1, GeometryToolbox::Norm(3, phi) * geometry->nodes->GetWall_Distance(iPoint));
+      }
     }
     END_SU2_OMP_FOR
 
@@ -434,6 +454,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     if(options.SLM) {
       if (options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) numerics->SetAuxVar(nodes->GetAuxVar(iPoint, 0));
+      if (options.CrossFlow && TurbFamily == TURB_FAMILY::SA) numerics->SetCrossFlowStrength(nodes->GetAuxVar(iPoint, 1));
       numerics->SetF2(turbNodes->GetF2blending(iPoint));
     }
 

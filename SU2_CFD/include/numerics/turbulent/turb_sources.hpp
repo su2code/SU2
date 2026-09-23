@@ -80,6 +80,7 @@ class CSourceBase_TurbSA : public CNumerics {
   const bool axisymmetric = false;
 
   bool transition_LM;
+  bool transition_SLM;  /*!< \brief One-equation (simplified) LM model. */
 
   /*!
    * \brief Add contribution from diffusion due to axisymmetric formulation to 2D residual
@@ -195,7 +196,8 @@ class CSourceBase_TurbSA : public CNumerics {
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
         axisymmetric(config->GetAxisymmetric()),
-        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM),
+        transition_SLM(transition_LM && config->GetLMParsedOptions().SLM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     /*--- Setup the Jacobian pointer (size increased for Stochastic Backscatter Model). ---*/
@@ -322,6 +324,15 @@ class CSourceBase_TurbSA : public CNumerics {
         intermittency_eff_i = 1.0 - exp(-term_exponential);
         var.intermittency = intermittency_eff_i;
         var.interDestrFactor = 1;
+
+      } else if (transition_SLM) {
+
+        /*--- Lee and Baeder (AIAA 2021-1532), Eqs. 17-18: the scaled intermittency, which is zero in the laminar
+         * boundary layer, multiplies the production, and max(gamma_s, 0.1) the destruction. ---*/
+        const su2double c_e2 = 50.0;
+        const su2double gamma_s = max(min((min(intermittency_i, 1.0) - 1.0 / c_e2) / (1.0 - 1.0 / c_e2), 1.0), 0.0);
+        var.intermittency = gamma_s;
+        var.interDestrFactor = max(gamma_s, 0.1);
 
       } else if (transition_LM){
 
