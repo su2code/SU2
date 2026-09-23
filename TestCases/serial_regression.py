@@ -865,9 +865,26 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714713, -5.763293, -0.214960, 0.023758, 0.000000]
+    ddes_flatplate.test_vals = [-2.714713, -5.938404, -0.214960, 0.023758, 0.000000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
+
+    # Hybrid RANS/LES models on the ONERA M6 wing, restarting from a RANS solution
+    ddes_oneram6_vals = {"sst_ddes": [-3.562792, -0.782226, 1.862936, 0.262000, 0.023186],
+                         "sst_iddes": [-3.548909, 3.066218, 2.094562, 0.262015, 0.023189],
+                         "sst_siddes": [-3.548929, 3.066218, 2.094596, 0.262000, 0.023186],
+                         "sst_eddes": [-3.562372, 0.233599, 1.862554, 0.262000, 0.023186],
+                         "sst_eddes_unstr": [-3.562052, 0.324632, 1.863094, 0.262000, 0.023186],
+                         "sa_eddes": [-3.510025, -3.696808, 0.266420, 0.023471],
+                         "sa_eddes_unstr": [-3.509614, -3.494624, 0.266419, 0.023470]}
+    for model, vals in ddes_oneram6_vals.items():
+        ddes_oneram6 = TestCase('ddes_oneram6_' + model)
+        ddes_oneram6.cfg_dir = "ddes/oneram6"
+        ddes_oneram6.cfg_file = "ddes_oneram6_" + model + ".cfg"
+        ddes_oneram6.test_iter = 5
+        ddes_oneram6.test_vals = vals
+        ddes_oneram6.unsteady = True
+        test_list.append(ddes_oneram6)
 
     # unsteady pitching NACA0015, SA
     unst_inc_turb_naca0015_sa           = TestCase('unst_inc_turb_naca0015_sa')

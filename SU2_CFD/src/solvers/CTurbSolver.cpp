@@ -316,3 +316,73 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(CSolver** solver_container,
   }
   END_SU2_OMP_FOR
 }
+
+su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, unsigned long iPoint,
+                                                    const su2double* vorticity, bool unstructured,
+                                                    bool shielded) const {
+  const su2double hMax = geometry->nodes->GetMaxLength(iPoint);
+  const su2double omega = GeometryToolbox::Norm(3, vorticity);
+
+  /*--- Without vorticity its direction is undefined and Delta_omega vanishes, use the standard DES length-scale. ---*/
+  if (omega < 1e-12) return hMax;
+
+  su2double direction[3];
+  for (auto iDim = 0u; iDim < 3; iDim++) direction[iDim] = vorticity[iDim] / omega;
+
+  /*--- Delta_omega = max_{n,m} |l_n - l_m| / sqrt(3), with l_n = n_omega x r_n and r_n the vertices of the cell. ---*/
+  su2double lnMax = 0.0;
+  auto updateMax = [&](const su2double* delta) {
+    su2double cross[3];
+    GeometryToolbox::CrossProduct(delta, direction, cross);
+    lnMax = max(lnMax, GeometryToolbox::Norm(3, cross));
+  };
+
+  const auto coord_i = geometry->nodes->GetCoord(iPoint);
+
+  if (unstructured) {
+    /*--- The vertices of the dual cell are approximated by the midpoints of the edges, r_j - r_k = (x_j - x_k) / 2. ---*/
+    for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+      const auto coord_j = geometry->nodes->GetCoord(jPoint);
+      for (const auto kPoint : geometry->nodes->GetPoints(iPoint)) {
+        const auto coord_k = geometry->nodes->GetCoord(kPoint);
+        su2double delta[3] = {0.0, 0.0, 0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++) delta[iDim] = 0.5 * (coord_j[iDim] - coord_k[iDim]);
+        updateMax(delta);
+      }
+    }
+  } else {
+    /*--- The dual cell is a box with the width of the grid spacing in each coordinate direction. The differences of its
+     vertices fill the box [-w, w], so the maximum of |n_omega x (r_n - r_m)| is at one of its corners. ---*/
+    su2double spanPlus[3] = {0.0, 0.0, 0.0}, spanMinus[3] = {0.0, 0.0, 0.0};
+    for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+      const auto coord_j = geometry->nodes->GetCoord(jPoint);
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        spanPlus[iDim] = max(spanPlus[iDim], coord_j[iDim] - coord_i[iDim]);
+        spanMinus[iDim] = max(spanMinus[iDim], coord_i[iDim] - coord_j[iDim]);
+      }
+    }
+    su2double width[3];
+    for (auto iDim = 0u; iDim < 3; iDim++) width[iDim] = 0.5 * (spanPlus[iDim] + spanMinus[iDim]);
+
+    for (const su2double sign1 : {-1.0, 1.0}) {
+      for (const su2double sign2 : {-1.0, 1.0}) {
+        const su2double delta[3] = {width[0], sign1 * width[1], sign2 * width[2]};
+        updateMax(delta);
+      }
+    }
+  }
+  const su2double deltaOmega = lnMax / sqrt(3.0);
+
+  /*--- In the RANS region F_KH is set to 1 to shield the boundary layer (Eq. 6, epsilon = 0.01). ---*/
+  if (shielded) return deltaOmega;
+
+  /*--- F_KH of the vortex tilting measure averaged over the point and its neighbors (Eq. 4). ---*/
+  su2double vortexTilting = nodes->GetVortex_Tilting(iPoint);
+  for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) vortexTilting += nodes->GetVortex_Tilting(jPoint);
+  vortexTilting /= geometry->nodes->GetnPoint(iPoint) + 1;
+
+  const su2double fMax = 1.0, fMin = 0.1, a1 = 0.15, a2 = 0.3;
+  const su2double fKH = max(fMin, min(fMax, fMin + (fMax - fMin) / (a2 - a1) * (vortexTilting - a1)));
+
+  return deltaOmega * fKH;
+}

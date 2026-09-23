@@ -207,8 +207,34 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   SU2_ZONE_SCOPED
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
+  const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
+
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
+
+  if (kind_hybridRANSLES != NO_HYBRIDRANSLES) {
+
+    /*--- Set the vortex tilting coefficient at every node if required ---*/
+
+    if (kind_hybridRANSLES == SST_EDDES || kind_hybridRANSLES == SST_EDDES_UNSTR){
+      auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+        auto Vorticity = flowNodes->GetVorticity(iPoint);
+        auto PrimGrad_Flow = flowNodes->GetGradient_Primitive(iPoint);
+        auto Laminar_Viscosity = flowNodes->GetLaminarViscosity(iPoint);
+        nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+      }
+      END_SU2_OMP_FOR
+    }
+
+    /*--- Compute the DES length scale ---*/
+
+    SetDES_LengthScale(solver_container, geometry, config);
+
+  }
+
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -384,12 +410,16 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
+    if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
+      numerics->SetLengthScale(nodes->GetDES_LengthScale(iPoint), 0.0);
+    }
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Store the intermittency ---*/
-
+    
     if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
     }
@@ -873,6 +903,132 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
     }
   }
 
+}
+
+
+void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
+
+  const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
+
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+
+
+    const su2double StrainMag = max(flowNodes->GetStrainMag(iPoint), 1e-12);
+    const auto Vorticity      = flowNodes->GetVorticity(iPoint);
+    const su2double VortMag   = max(GeometryToolbox::Norm(3, Vorticity), 1e-12);
+
+    const su2double KolmConst2 = 0.41*0.41;
+    const su2double wallDist2 = geometry->nodes->GetWall_Distance(iPoint)*geometry->nodes->GetWall_Distance(iPoint); 
+    
+    const su2double eddyVisc = nodes->GetmuT(iPoint)/flowNodes->GetDensity(iPoint);
+    const su2double lamVisc = nodes->GetLaminarViscosity(iPoint)/flowNodes->GetDensity(iPoint);
+
+    const su2double C_DES1 = 0.78;
+    const su2double C_DES2 = 0.61;
+
+    const su2double h_max = geometry->nodes->GetMaxLength(iPoint);
+    const su2double C_DES = C_DES1 * nodes->GetF1blending(iPoint) + C_DES2 * (1-nodes->GetF1blending(iPoint));
+    const su2double l_RANS = sqrt(nodes->GetSolution(iPoint, 0)) / (constants[6] * nodes->GetSolution(iPoint, 1));
+
+    su2double DES_lengthScale = 0.0;
+
+    switch(kind_hybridRANSLES){
+      /*--- Every model is taken from "Development of DDES and IDDES Formulations for the k-ω Shear Stress Transport Model"
+                                      Mikhail S. Gritskevich et al. (DOI:10.1007/s10494-011-9378-4)
+        ---*/
+      case SST_DDES: {
+
+        const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
+        const su2double C_d1 = 20.0;
+        const su2double C_d2 = 3.0;
+
+        const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
+
+        const su2double l_LES = C_DES * h_max;
+        
+        DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
+
+        break;
+      }
+      case SST_IDDES: {
+        
+        // Constants
+        const su2double C_w = 0.15;
+        const su2double C_dt1 = 20.0;
+        const su2double C_dt2 = 3.0;
+        const su2double C_l = 5.0;
+        const su2double C_t = 1.87;
+
+        const su2double alpha = 0.25 - sqrt(wallDist2) / h_max;
+        const su2double f_b = min(2.0 * exp(-9.0 * alpha*alpha), 1.0);
+        const su2double r_dt = eddyVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
+        const su2double f_dt = 1 - tanh(pow(C_dt1 * r_dt, C_dt2));
+        const su2double ftilda_d = max(1.0 - f_dt, f_b);
+
+        const su2double r_dl = lamVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
+        const su2double f_l = tanh(pow(C_l*C_l*r_dl, 10.0));
+        const su2double f_t = tanh(pow(C_t*C_t*r_dt, 3.0));
+        const su2double f_e2 = 1.0 - max(f_t, f_l);
+        const su2double f_e1 = alpha >= 0.0 ? 2.0 * exp(-11.09*alpha*alpha) : 2.0 * exp(-9.0*alpha*alpha);
+        const su2double f_e = f_e2 * max((f_e1 - 1.0), 0.0);
+          
+
+        const su2double Delta = min(C_w * max(sqrt(wallDist2), h_max), h_max);
+        const su2double l_LES = C_DES * Delta;
+
+        DES_lengthScale = ftilda_d *(1.0+f_e)*l_RANS + (1.0 - ftilda_d) * l_LES;
+
+        break;
+      }
+      case SST_SIDDES: {
+        
+        // Constants
+        const su2double C_w = 0.15;
+        const su2double C_dt1 = 20.0;
+        const su2double C_dt2 = 3.0;
+
+        const su2double alpha = 0.25 - sqrt(wallDist2) / h_max;
+        const su2double f_b = min(2.0 * exp(-9.0 * alpha*alpha), 1.0);
+        const su2double r_dt = eddyVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
+        const su2double f_dt = 1 - tanh(pow(C_dt1 * r_dt, C_dt2));
+        const su2double ftilda_d = max(1.0 - f_dt, f_b);
+
+        const su2double Delta = min(C_w * max(sqrt(wallDist2), h_max), h_max);
+        const su2double l_LES = C_DES * Delta;
+
+        DES_lengthScale = ftilda_d*l_RANS + (1.0 - ftilda_d) * l_LES;
+
+        break;
+      }
+      case SST_EDDES:
+      case SST_EDDES_UNSTR: {
+        /*--- DDES with the shear-layer-adapted subgrid length-scale of Shur et al. (An Enhanced Version of DES with
+         Rapid Transition from RANS to LES in Separated Flows, Flow Turbulence Combust 95, 2015), applied to the SST model
+         as in Guseva et al. (Flow Turbulence Combust 98, 2017) and Xiao et al. (Int. J. Heat Fluid Flow 85, 2020). ---*/
+
+        const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
+        const su2double C_d1 = 20.0;
+        const su2double C_d2 = 3.0;
+
+        const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
+
+        const su2double delta = ShearLayerAdaptedLengthScale(geometry, iPoint, Vorticity,
+                                                             kind_hybridRANSLES == SST_EDDES_UNSTR, f_d < 0.99);
+
+        const su2double l_LES = C_DES * delta;
+        DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
+
+        break;
+      }
+    }
+
+    nodes->SetDES_LengthScale(iPoint, DES_lengthScale);
+
+  }
+  END_SU2_OMP_FOR
 }
 
 void CTurbSSTSolver::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) {

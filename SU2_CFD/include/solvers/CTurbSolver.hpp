@@ -42,6 +42,21 @@ protected:
 
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
 
+  /*!
+   * \brief Shear-layer-adapted subgrid length-scale of the EDDES models, Delta_SLA = Delta_omega * F_KH(<VTM>).
+   * \note Shur et al., An Enhanced Version of DES with Rapid Transition from RANS to LES in Separated Flows,
+   *       Flow Turbulence Combust 95, 2015, Eqs. (1)-(6).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - Point index.
+   * \param[in] vorticity - Vorticity vector at the point.
+   * \param[in] unstructured - Take the vertices of the dual cell at the edge midpoints, otherwise use a box with the
+   *            grid spacings of the point in each coordinate direction.
+   * \param[in] shielded - True in the RANS region (f_d < 0.99), where F_KH is set to 1 (Eq. 6).
+   * \return Delta_SLA, or the maximum edge length where the vorticity vanishes.
+   */
+  su2double ShearLayerAdaptedLengthScale(const CGeometry* geometry, unsigned long iPoint, const su2double* vorticity,
+                                         bool unstructured, bool shielded) const;
+
 public:
   /*!
    * \brief Destructor of the class.
