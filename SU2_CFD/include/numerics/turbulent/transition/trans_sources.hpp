@@ -29,12 +29,6 @@
 #include "../../scalar/scalar_sources.hpp"
 #include "./trans_correlations.hpp"
 
-/*--- Lower limit of the RMS roughness height in the log(h / theta_t) of the Langtry et al. stationary cross-flow
- * correlation, which diverges for h = 0: 0.25 micrometers, the smallest roughness for which the correlation was
- * validated by Lee and Baeder (AIAA 2021-1532, Radeztsky et al. data) and the reference height h0 of Vallinayagam
- * Pillai and Lardeau (AIAA 2017-3159, Eq. 9). Smoother surfaces are treated as this one. HROUGHNESS is in meters. ---*/
-constexpr passivedouble LANGTRY_CF_MIN_ROUGHNESS = 0.25e-6;
-
 /*!
  * \class CSourcePieceWise_TranLM
  * \brief Class for integrating the source terms of the LM transition model equations.
@@ -307,7 +301,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
           thetat_SCF = rethetat_SCF_old * Laminar_Viscosity_i / (Density_i * (Velocity_Mag / 0.82));
           thetat_SCF = max(1e-20, thetat_SCF);
 
-          ReThetat_SCF = -35.088 * log(max(hRoughness, su2double(LANGTRY_CF_MIN_ROUGHNESS)) / thetat_SCF) + 319.51 +
+          ReThetat_SCF = -35.088 * log(max(hRoughness, su2double(LM_CROSSFLOW_MIN_ROUGHNESS)) / thetat_SCF) + 319.51 +
                          fDeltaH_CF_Plus - fDeltaH_CF_Minus;
 
           error = abs(ReThetat_SCF - rethetat_SCF_old) / rethetat_SCF_old;
@@ -447,7 +441,7 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
     const su2double DeltaH_CF_Minus = max(-(0.1066 - DeltaH_CF), 0.0);                                   // Eq. 41
     const su2double fDeltaH_CF_Minus = 75.0 * tanh(DeltaH_CF_Minus / 0.0125);                            // Eq. 42
 
-    const su2double h = max(config->GethRoughness(), su2double(LANGTRY_CF_MIN_ROUGHNESS));
+    const su2double h = max(config->GethRoughness(), su2double(LM_CROSSFLOW_MIN_ROUGHNESS));
     su2double reScf = 20.0, error = 1.0;
     for (int iter = 0; iter < 100 && error > 1e-5; iter++) {
       const su2double theta_t = max(1e-20, reScf * Laminar_Viscosity_i / (Density_i * Velocity_Mag / 0.82));
@@ -610,9 +604,9 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
         // Crossflow strength H_cf, Eqs. 4-6, and Delta_H_cf, Eq. 8
         const su2double Delta_H_CF = H_CF * (1.0 + min(Eddy_Viscosity_i / Laminar_Viscosity_i, 0.4));
 
-        // Roughness, Eq. 9, h0 = 0.25 micrometers (HROUGHNESS in meters)
+        // Roughness, Eq. 9, h0 = 0.25 micrometers: HROUGHNESS and the mesh must be in meters
         const su2double h_0 = 0.25e-6;
-        const su2double C_r = 2.0 - pow(0.5, config->GethRoughness()/h_0);
+        const su2double C_r = 2.0 - pow(0.5, max(config->GethRoughness(), LM_CROSSFLOW_MIN_ROUGHNESS)/h_0);
 
         // f_cf, Eqs. 7 and 10, with C_cf = 1
         const su2double C_CF = 1.0;

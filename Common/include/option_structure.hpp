@@ -1433,6 +1433,15 @@ enum class TURB_TRANS_CORRELATION_SLM {
 };
 
 /*!
+ * \brief Lower limit of the roughness height (HROUGHNESS, same units) in the cross-flow corrections of the LM models,
+ *        where it enters a logarithm (Langtry et al., log(h/theta_t)) or a ratio (Vallinayagam Pillai and Lardeau,
+ *        h/h0). The papers give no calibration limit for small heights, so a small value keeps these terms finite
+ *        for smooth surfaces (h = 0). h and theta_t are both in mesh length units (the reference length of the
+ *        non-dimensionalization is 1), so log(h/theta_t) is consistent for any REF_DIMENSIONALIZATION.
+ */
+constexpr double LM_CROSSFLOW_MIN_ROUGHNESS = 1e-8;
+
+/*!
  * \brief Structure containing parsed LM options.
  */
 struct LM_ParsedOptions {

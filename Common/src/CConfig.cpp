@@ -6736,10 +6736,18 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 cout << " (2015)";
               }
               cout << endl;
+              cout << "Roughness height of the cross-flow model (HROUGHNESS, in mesh length units): limited to at least "
+                   << LM_CROSSFLOW_MIN_ROUGHNESS << " to keep log(h/theta_t) and h/h0 finite (the papers give no\n"
+                   << "calibration limit for small heights); ";
+              if (hRoughness < LM_CROSSFLOW_MIN_ROUGHNESS)
+                cout << "the given value " << hRoughness << " is below it, " << LM_CROSSFLOW_MIN_ROUGHNESS << " is used." << endl;
+              else
+                cout << "the given value " << hRoughness << " is used." << endl;
             } else {
               if (!lmParsedOptions.SLM) {
-                cout << " (2009)" << endl;
+                cout << " (2009)";
               }
+              cout << endl;
             }
             break;
           }
