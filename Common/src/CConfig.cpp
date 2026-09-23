@@ -6753,6 +6753,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               case TURB_TRANS_CORRELATION_SLM::MENTER_SLM:
               case TURB_TRANS_CORRELATION_SLM::DEFAULT: cout << "Menter et al. (2015)" << endl;  break;
             }
+            const bool menterSLM = lmParsedOptions.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM ||
+                                   lmParsedOptions.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::DEFAULT;
+            if (menterSLM && Kind_Turb_Model == TURB_MODEL::SST) {
+              cout << "WARNING: Menter et al. (2015, Eq. 24) compute the k production of the SST model with the\n"
+                      "         Kato-Launder form P_k = mu_t*S*Omega and without the SST production limiter.\n";
+              if (sstParsedOptions.production != SST_OPTIONS::KL)
+                cout << "         The selected SST options do not use Kato-Launder, add KATO-LAUNDER to SST_OPTIONS.\n";
+              cout << "         The SST production limiter is active." << endl;
+            }
           }
         }
         cout << "Hybrid RANS/LES: ";
