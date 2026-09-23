@@ -43,6 +43,10 @@ void CCGNSFileWriter::WriteData(string val_filename) {
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
+
+  /*--- Set a timer for the file writing. ---*/
+  startTime = SU2_MPI::Wtime();
+
   /*--- Open the CGNS file for writing.  ---*/
   InitializeMeshFile(val_filename);
 
@@ -63,6 +67,12 @@ void CCGNSFileWriter::WriteData(string val_filename) {
 #else
   CallCGNS(cg_close(cgnsFileID));
 #endif
+
+  /*--- Compute and store the write time and the bandwidth. ---*/
+  stopTime = SU2_MPI::Wtime();
+  usedTime = stopTime - startTime;
+  fileSize = DetermineFilesize(val_filename);
+  bandwidth = fileSize / (1.0e6) / usedTime;
 
 #endif
 }
