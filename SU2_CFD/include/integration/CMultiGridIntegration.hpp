@@ -321,12 +321,17 @@ private:
 
   static constexpr int MAX_MG_LEVELS = 10;
 
+  /*--- Bounds the fixed-size stack buffers in the restriction and prolongation kernels,
+   *    independently of the CSysMatrix limit of the same name. ---*/
+  static constexpr unsigned short MAXNVAR = 25;
+  static constexpr unsigned short MAXNDIM = 3;
+
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
-  bool mg_early_exit_flag = false;              /*!< \brief Shared flag for early exit across OMP threads. */
+  bool mg_early_exit_flag = false;           /*!< \brief Shared flag for early exit across OMP threads. */
   passivedouble mg_initial_smooth_rms = 0.0; /*!< \brief Initial RMS residual before current smoothing phase (FAS). */
   passivedouble mg_prev_smooth_rms = 0.0;    /*!< \brief RMS residual from previous smoothing step; used for stagnation detection. */
-  passivedouble mg_fine_rms_ema = 0.0;      /*!< \brief EMA of fine-grid pre-smooth RMS across cycles; cross-cycle trend signal. */
-  passivedouble last_crossCycleRatio = 1.0; /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
+  passivedouble mg_fine_rms_ema = 0.0;       /*!< \brief EMA of fine-grid pre-smooth RMS across cycles; cross-cycle trend signal. */
+  passivedouble last_crossCycleRatio = 1.0;  /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};

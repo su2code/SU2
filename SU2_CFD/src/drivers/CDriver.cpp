@@ -800,11 +800,43 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   /*--- Loop over all the new grid ---*/
 
+  /*--- Per level summaries, held back so they do not interleave with the multigrid table. ---*/
+  string levelReports;
+  string volRatioReport;
+
+  /*--- Smallest and largest CV volume on a level and their ratio, reduced over the ranks. A
+   *    diagnostic ratio is not an AD quantity, so it crosses as a passive type. ---*/
+  using CPassiveMPI = SelectMPIWrapper<passivedouble>::W;
+  auto volumeRange = [](const CGeometry* grid) {
+    passivedouble vmin = std::numeric_limits<passivedouble>::max(), vmax = 0.0;
+    for (auto iPoint = 0ul; iPoint < grid->GetnPointDomain(); iPoint++) {
+      const passivedouble vol = SU2_TYPE::GetValue(grid->nodes->GetVolume(iPoint));
+      vmin = std::min(vmin, vol);
+      vmax = std::max(vmax, vol);
+    }
+    std::array<passivedouble, 3> range{};
+    CPassiveMPI::Allreduce(&vmin, range.data(), 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+    CPassiveMPI::Allreduce(&vmax, range.data() + 1, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    range[2] = range[1] / std::max(std::numeric_limits<passivedouble>::min(), range[0]);
+    return range;
+  };
+
+  /*--- Agglomeration should not spread the CV volumes far wider than the fine grid already does.
+   *    An absolute limit cannot tell a coarsened mesh from a badly stretched input one. ---*/
+  constexpr passivedouble VOL_RATIO_GROWTH_WARN = 10.0;
+  const passivedouble fineVolRatio = volumeRange(geometry[MESH_0])[2];
+  if ((rank == MASTER_NODE) && (config->GetnMGLevels() > 0)) {
+    stringstream ss;
+    ss << "  MG level 0 CV volume ratio " << fineVolRatio << ", the baseline the levels below are judged against\n";
+    volRatioReport += ss.str();
+  }
+
   for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
     /*--- Create main agglomeration structure ---*/
 
-    geometry[iMGlevel] = new CMultiGridGeometry(geometry[iMGlevel-1], config, iMGlevel);
+    auto* coarse_grid = new CMultiGridGeometry(geometry[iMGlevel-1], config, iMGlevel);
+    geometry[iMGlevel] = coarse_grid;
 
     /*--- Protect against the situation that we were not able to complete
        the agglomeration for this level, i.e., there weren't enough points.
@@ -815,6 +847,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
       geometry[iMGlevel] = nullptr;
       break;
     }
+    levelReports += coarse_grid->GetLevelReport();
 
     /*--- Compute points surrounding points. ---*/
 
@@ -828,7 +861,24 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     /*--- Create the control volume structures ---*/
 
     geometry[iMGlevel]->SetControlVolume(geometry[iMGlevel-1], ALLOCATE);
+
+    /*--- Every rank reaches the reduction inside volumeRange. ---*/
+    {
+      const auto range = volumeRange(geometry[iMGlevel]);
+
+      if (rank == MASTER_NODE) {
+        stringstream ss;
+        ss << "  MG level " << iMGlevel << " CV volume: min " << range[0] << ", max " << range[1] << ", ratio "
+           << range[2] << "\n";
+        if (range[2] > VOL_RATIO_GROWTH_WARN * fineVolRatio)
+          ss << "  WARNING: MG level " << iMGlevel << " spreads CV volumes " << range[2] / fineVolRatio
+             << " times wider than the fine grid does.\n";
+        volRatioReport += ss.str();
+      }
+    }
+
     geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
+
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
     /*--- Find closest, most normal, neighbor to a surface point ---*/
@@ -839,6 +889,18 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
     geometry[iMGlevel]->SetMGLevel(iMGlevel);
 
+  }
+
+  if (rank == MASTER_NODE) cout << levelReports << volRatioReport;
+
+  /*--- MG_MIN_MESHSIZE is a floor on the whole level, so the hierarchy does not vary with rank
+   *    count. ---*/
+  if ((rank == MASTER_NODE) && (requestedMGlevels > 0)) {
+    if (config->GetnMGLevels() == 0)
+      cout << "\nWARNING: no multigrid levels used, lower MG_MIN_MESHSIZE if you want multigrid.\n" << endl;
+    else
+      cout << config->GetnMGLevels() << " multigrid levels used, maximum allowed is " << requestedMGlevels
+           << ". Change MGLEVEL or MG_MIN_MESHSIZE to use a different number." << endl;
   }
 
   if (config->GetWrt_MultiGrid()) geometry[MESH_0]->ColorMGLevels(config->GetnMGLevels(), geometry);
