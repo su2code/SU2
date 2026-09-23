@@ -256,13 +256,13 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
         auto nElemBoundConn = static_cast<conn_t>(nElem_Bound_);
         AppendBytes(buffer, nElemBoundConn);
 
-        unsigned long running = 0;
+        unsigned long boundOffset = 0;
         for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
-          conn_t value = running;
+          conn_t value = boundOffset;
           AppendBytes(buffer, value);
-          running += nPointsOfElementType(vtkTypes[iElem_Bound]) + 1;
+          boundOffset += nPointsOfElementType(vtkTypes[iElem_Bound]) + 1;
         }
-        conn_t sentinel = running;
+        conn_t sentinel = boundOffset;
         AppendBytes(buffer, sentinel);
 
         for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {

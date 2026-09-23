@@ -43,7 +43,7 @@ void CTecplotFileWriter::WriteData(string val_filename){
 
   const vector<string> fieldNames = dataSorter->GetFieldNames();
 
-  unsigned short iVar;
+  unsigned long iVar;
 
   unsigned long iPoint, iElem;
 
