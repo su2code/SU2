@@ -2,14 +2,14 @@
  * \file CNearestNeighbor.cpp
  * \brief Implementation of nearest neighbor interpolation.
  * \author H. Kline
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
 CNearestNeighbor::CNearestNeighbor(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
                                    unsigned int jZone)
     : CInterpolator(geometry_container, config, iZone, jZone) {
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
 void CNearestNeighbor::PrintStatistics() const {
@@ -41,7 +41,7 @@ void CNearestNeighbor::PrintStatistics() const {
   cout << "  Avg/max distance to closest donor point: " << AvgDistance << "/" << MaxDistance << endl;
 }
 
-void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
+void CNearestNeighbor::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
   /*--- Desired number of donor points. ---*/
   const auto nDonor = max<unsigned long>(config[donorZone]->GetNumNearestNeighbors(), 1);
 
@@ -111,15 +111,75 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         /*--- Coordinates of the target point. ---*/
         const su2double* Coord_i = target_geometry->nodes->GetCoord(Point_Target);
 
+        /*--- If the relative-frame sliding plane is active, precompute (once per target vertex, not per
+         *    donor candidate) the rotated target coordinate and the donor-zone rotation matrix: both are
+         *    invariant across every donor candidate visited in the loop below. ---*/
+        const bool relframe_sp =
+            config[targetZone]->GetBoolRelFrame_SlidingPlane() || config[donorZone]->GetBoolRelFrame_SlidingPlane();
+        su2double rotCoord_i[3] = {0.0, 0.0, 0.0};
+        su2double donorRotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+        bool rotate_donor = false;
+        const su2double zeros[3] = {0.0};
+
+        if (relframe_sp) {
+          for (unsigned short iDim = 0; iDim < 3; iDim++) rotCoord_i[iDim] = Coord_i[iDim];
+
+          if (config[targetZone]->GetRotating_Frame() == YES) {
+            su2double Omega_i[3] = {0.0, 0.0, 0.0};
+            su2double dt = config[targetZone]->GetDelta_UnstTimeND();
+            unsigned long TimeIter = config[targetZone]->GetTimeIter();
+            for (unsigned short iDim = 0; iDim < 3; iDim++) {
+              Omega_i[iDim] = config[targetZone]->GetRotation_Rate(iDim) / config[targetZone]->GetOmega_Ref();
+            }
+
+            /*--- Compute the rotation matrix. Note that the implicit
+            ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            su2double Theta = Omega_i[0] * dt * TimeIter;
+            su2double Phi = Omega_i[1] * dt * TimeIter;
+            su2double Psi = Omega_i[2] * dt * TimeIter;
+            su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+            GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+
+            /*--- Compute transformed point coordinates. ---*/
+            GeometryToolbox::Rotate(rotMatrix, zeros, Coord_i, rotCoord_i);
+          }
+
+          if (config[donorZone]->GetRotating_Frame() == YES) {
+            rotate_donor = true;
+            su2double Omega_j[3] = {0.0, 0.0, 0.0};
+            su2double dt = config[donorZone]->GetDelta_UnstTimeND();
+            unsigned long TimeIter = config[donorZone]->GetTimeIter();
+            for (unsigned short iDim = 0; iDim < 3; iDim++) {
+              Omega_j[iDim] = config[donorZone]->GetRotation_Rate(iDim) / config[donorZone]->GetOmega_Ref();
+            }
+
+            /*--- Compute the rotation matrix. Note that the implicit
+            ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            su2double Theta = Omega_j[0] * dt * TimeIter;
+            su2double Phi = Omega_j[1] * dt * TimeIter;
+            su2double Psi = Omega_j[2] * dt * TimeIter;
+            GeometryToolbox::RotationMatrix(Theta, Phi, Psi, donorRotMatrix);
+          }
+        }
+
         /*--- Compute all distances. ---*/
         for (int iProcessor = 0, iDonor = 0; iProcessor < nProcessor; ++iProcessor) {
           for (auto jVertex = 0ul; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++jVertex) {
             const auto idx = iProcessor * MaxLocalVertex_Donor + jVertex;
             const auto pGlobalPoint = Buffer_Receive_GlobalPoint[idx];
             const su2double* Coord_j = Buffer_Receive_Coord[idx];
-            const auto dist2 = GeometryToolbox::SquaredDistance(nDim, Coord_i, Coord_j);
 
-            donorInfo[iDonor++] = DonorInfo(dist2, pGlobalPoint, iProcessor);
+            /*--- Rotate the donor point before matching if sliding plane for relative frame is activated. ---*/
+            if (relframe_sp) {
+              su2double rotCoord_j[3] = {Coord_j[0], Coord_j[1], Coord_j[2]};
+              if (rotate_donor) GeometryToolbox::Rotate(donorRotMatrix, zeros, Coord_j, rotCoord_j);
+
+              const auto dist2 = GeometryToolbox::SquaredDistance(nDim, rotCoord_i, rotCoord_j);
+              donorInfo[iDonor++] = DonorInfo(dist2, pGlobalPoint, iProcessor);
+            } else {
+              const auto dist2 = GeometryToolbox::SquaredDistance(nDim, Coord_i, Coord_j);
+              donorInfo[iDonor++] = DonorInfo(dist2, pGlobalPoint, iProcessor);
+            }
           }
         }
 
@@ -153,12 +213,9 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         }
       }
       END_SU2_OMP_FOR
-      SU2_OMP_CRITICAL {
-        totalTargetPoints += numTarget;
-        AvgDistance += avgDist;
-        MaxDistance = max(MaxDistance, maxDist);
-      }
-      END_SU2_OMP_CRITICAL
+      atomicAdd(numTarget, totalTargetPoints);
+      atomicAdd(avgDist, AvgDistance);
+      atomicMax(maxDist, MaxDistance);
     }
     END_SU2_OMP_PARALLEL
   }

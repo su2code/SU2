@@ -2,14 +2,14 @@
  * \file CFlowIncOutput.hpp
  * \brief  Headers of the incompressible flow output.
  * \author T. Albring, R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,6 +42,7 @@ private:
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
   bool flamelet;  /*!< \brief Boolean indicating whether we solve the flamelet equations */
+  bool pressure_based;       /*!< Boolean indicating whether running the pressure based version */
   unsigned short streamwisePeriodic;   /*!< \brief Boolean indicating whether it is a streamwise periodic simulation. */
   bool streamwisePeriodic_temperature; /*!< \brief Boolean indicating streamwise periodic temperature is used. */
 

@@ -3,14 +3,14 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,6 +73,22 @@ class CFluidIteration : public CIteration {
                unsigned short val_iInst) override;
 
   /*!
+   * \brief Perform auxiliary solvers iterations after the main flow solver.
+   * \param[in] integration - Container vector with all the integration methods.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instance layer.
+   * \param[in] main_solver - Main solver.
+   * \param[in] frozen_visc - Flag for frozen viscosity.
+   */
+  void CommonAuxiliarySolvers(CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
+               CNumerics****** numerics, CConfig** config, unsigned short val_iZone,
+               unsigned short val_iInst, MAIN_SOLVER main_solver, bool frozen_visc);
+
+  /*!
    * \brief Iterate the fluid system for a number of Inner_Iter iterations.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration - Container vector with all the integration methods.
@@ -108,18 +124,14 @@ class CFluidIteration : public CIteration {
                unsigned short val_iInst) override;
 
   /*!
-   * \brief Monitors turbo computation (pressure and turbo ramps).
+   * \brief Monitors and updates ramps
    * \param[in] geometry_container - Geometrical definition of the problem
    * \param[in] config_container - Defintion of the particular problem
    * \param[in] ExtIter - The current iteration of the problem
    * \param[in] iZone - The current zone
+   * \param[in] ramp_flag - Flag indicating type of ramp (grid or boundary)
    */
-  void TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter, unsigned short iZone);
-
-  /*!
-   * \brief Computes turboperformance.
-   */
-  void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter);
+  void UpdateRamps(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag);
 
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.

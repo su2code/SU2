@@ -2,14 +2,14 @@
  * \file CNumericsSIMD.hpp
  * \brief Vectorized (SIMD) numerics classes.
  * \author P. Gomes
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,14 +28,7 @@
 #pragma once
 
 #include "../../../Common/include/parallelization/vectorization.hpp"
-
-/*!
- * \enum UpdateType
- * \brief Ways to update vectors and system matrices.
- * COLORING is the typical i/j update, whereas for REDUCTION
- * the fluxes are stored and the matrix diagonal is not modified.
- */
-enum class UpdateType {COLORING, REDUCTION};
+#include "../numerics/util.hpp"
 
 /*!
  * \brief Define Double and Int SIMD types.
@@ -44,17 +37,9 @@ using Double = simd::Array<su2double>;
 using Int = simd::Array<unsigned long, Double::Size>;
 
 /*--- Forward declare a few classes used in name only by the interface. ---*/
-template<class T> class CSysVector;
-template<class T> class CSysMatrix;
 class CConfig;
 class CGeometry;
 class CVariable;
-
-#ifdef CODI_FORWARD_TYPE
-using SparseMatrixType = CSysMatrix<su2double>;
-#else
-using SparseMatrixType = CSysMatrix<su2mixedfloat>;
-#endif
 
 /*!
  * \class CNumericsSIMD
@@ -74,6 +59,8 @@ public:
    * \param[in] updateMask - SIMD array of 1's and 0's, the latter prevent the update.
    * \param[in,out] vector - Target for the fluxes.
    * \param[in,out] matrix - Target for the flux Jacobians.
+   * \param[out] edgeMassFluxes - Optional, per-edge mass flux (density-equation flux),
+   *             used by "bounded scalar" discretization of transported scalars (turbulence, species).
    * \note The update mask is used to handle "remainder" edges (nEdge mod simdSize).
    */
   virtual void ComputeFlux(Int iEdge,
@@ -83,7 +70,8 @@ public:
                            UpdateType updateType,
                            Double updateMask,
                            CSysVector<su2double>& vector,
-                           SparseMatrixType& matrix) const = 0;
+                           SparseMatrixType& matrix,
+                           su2activevector* edgeMassFluxes) const = 0;
 
   /*! \brief Destructor of the class. */
   virtual ~CNumericsSIMD(void) = default;

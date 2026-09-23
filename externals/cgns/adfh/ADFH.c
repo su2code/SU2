@@ -21,7 +21,9 @@ freely, subject to the following restrictions:
 /*-------------------------------------------------------------------
  * HDF5 interface to ADF
  *-------------------------------------------------------------------*/
-
+#ifndef _WIN32
+  #define _POSIX_C_SOURCE 200112L
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -2180,33 +2182,13 @@ void ADFH_Database_Open(const char   *name,
   for (i = 0; buff[i]; i++)
     buff[i] = TO_UPPER(buff[i]);
 
-  if (0 == strcmp(buff, "UNKNOWN")) {
-    if (ACCESS(name, 0))
-      mode = ADFH_MODE_NEW;
-    else if (ACCESS(name, 2))
-      mode = ADFH_MODE_RDO;
-    else
-      mode = ADFH_MODE_OLD;
-  }
-  else if (0 == strcmp(buff, "NEW")) {
-    if (!ACCESS(name, 0)) {
-      set_error(REQUESTED_NEW_FILE_EXISTS, err);
-      return;
-    }
+  if (0 == strcmp(buff, "NEW")) {
     mode = ADFH_MODE_NEW;
   }
   else if (0 == strcmp(buff, "READ_ONLY")) {
-    if (ACCESS(name, 0)) {
-      set_error(REQUESTED_OLD_FILE_NOT_FOUND, err);
-      return;
-    }
     mode = ADFH_MODE_RDO;
   }
   else if (0 == strcmp(buff, "OLD")) {
-    if (ACCESS(name, 0)) {
-      set_error(REQUESTED_OLD_FILE_NOT_FOUND, err);
-      return;
-    }
     mode = ADFH_MODE_OLD;
   }
   else {

@@ -2,14 +2,14 @@
  * \file CVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,25 @@
 #include "../../include/variables/CVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
+namespace {
+/*!
+ * \brief Variable containers are allocated once, by one thread. Some constructors down the
+ *        hierarchy use OpenMP work-sharing loops (e.g. CFlowVariable seeds the BGS solution of a
+ *        multizone problem), whose barrier, if this ran in a master or single region, would take
+ *        an arrival of the team barrier the other threads are waiting on and leave them out of
+ *        step.
+ */
+void CheckNotInParallelRegion() {
+  if (omp_in_parallel()) {
+    assert(false);
+    SU2_MPI::Error("Variables cannot be constructed inside a parallel region.", CURRENT_FUNCTION);
+  }
+}
+}  // namespace
+
 CVariable::CVariable(unsigned long npoint, unsigned long nvar, const CConfig *config) {
+
+  CheckNotInParallelRegion();
 
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
@@ -47,6 +65,8 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, const CConfig *co
 CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar,
                      const CConfig *config, bool adjoint) {
 
+  CheckNotInParallelRegion();
+
   /*--- Initializate the number of dimension and number of variables ---*/
   nPoint = npoint;
   nDim = ndim;
@@ -64,13 +84,16 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
     Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
 
+  /*--- User defined source terms ---*/
+  if (config->GetPyCustomSource()) UserDefinedSource.resize(nPoint,nVar) = su2double(0.0);
+
   if (config->GetDiscrete_Adjoint()) {
     if (adjoint && config->GetMultizone_Problem())
       External.resize(nPoint,nVar) = su2double(0.0);
 
     if (!adjoint) {
-      AD_InputIndex.resize(nPoint,nVar) = -1;
-      AD_OutputIndex.resize(nPoint,nVar) = -1;
+      AD_InputIndex.resize(nPoint,nVar) = AD::GetPassiveIndex();
+      AD_OutputIndex.resize(nPoint,nVar) = AD::GetPassiveIndex();
     }
   }
 
@@ -126,4 +149,7 @@ void CVariable::RegisterSolution_time_n() {
 
 void CVariable::RegisterSolution_time_n1() {
   RegisterContainer(true, Solution_time_n1);
+}
+void CVariable::RegisterUserDefinedSource() {
+  RegisterContainer(true, UserDefinedSource);
 }

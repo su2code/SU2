@@ -3,14 +3,14 @@
  * \brief Collection of small classes that decorate C2DContainer to
  * augment its functionality, e.g. give it extra dimensions.
  * \author P. Gomes
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,6 +61,33 @@ class CMatrixView {
 
   const Scalar* operator[](Index i) const noexcept { return &m_ptr[i * m_cols]; }
   const Scalar& operator()(Index i, Index j) const noexcept { return m_ptr[i * m_cols + j]; }
+
+  /*!
+   * \brief Return copy of data in a static size container (see C2DContainer::get).
+   * \param[in] i - Row of the view (e.g. point index, whole-mesh usage).
+   * \param[in] start - Starting column to copy the data (amount determined by container size).
+   */
+  template <class StaticContainer>
+  StaticContainer get(Index i, Index start = 0) const noexcept {
+    constexpr size_t Size = StaticContainer::StaticSize;
+    static_assert(Size, "This method requires a static output type.");
+    StaticContainer ret;
+    for (size_t k = 0; k < Size; ++k) ret.data()[k] = m_ptr[i * m_cols + start + k];
+    return ret;
+  }
+
+  /*!
+   * \brief SIMD gather version of get, one row per lane.
+   */
+  template <class StaticContainer, class U, size_t N>
+  StaticContainer get(simd::Array<U, N> i, Index start = 0) const noexcept {
+    constexpr size_t Size = StaticContainer::StaticSize;
+    static_assert(Size, "This method requires a static output type.");
+    StaticContainer ret;
+    for (size_t lane = 0; lane < N; ++lane)
+      for (size_t k = 0; k < Size; ++k) ret.data()[k][lane] = m_ptr[i[lane] * m_cols + start + k];
+    return ret;
+  }
 
   template <class U = T, su2enable_if<!std::is_const<U>::value> = 0>
   Scalar* operator[](Index i) noexcept {
@@ -165,6 +192,11 @@ class C3DContainerDecorator {
   FORCEINLINE StaticContainer get(Int i, Index j = 0) const noexcept {
     return m_storage.template get<StaticContainer>(i, j * m_innerSz);
   }
+
+  /*!
+   * \brief Raw data access, for Python wrapper.
+   */
+  FORCEINLINE Scalar* data() { return m_storage.data(); }
 };
 
 /*!

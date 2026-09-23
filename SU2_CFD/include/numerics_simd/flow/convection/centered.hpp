@@ -2,14 +2,14 @@
  * \file centered.hpp
  * \brief Centered convective schemes.
  * \author P. Gomes, F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,8 +53,6 @@ protected:
   const bool dynamicGrid;
   const su2double stretchParam = 0.3;
 
-  using Base::turbVars;
-
   /*!
    * \brief Constructor, store some constants and forward args to base.
    */
@@ -69,7 +67,7 @@ protected:
    * \brief Special treatment needed to fetch integer data.
    */
   template<class T, size_t N>
-  FORCEINLINE static Double numNeighbor(simd::Array<T,N> idx, const CGeometry& geometry) {
+  FORCEINLINE static Double numNeighbor(const simd::Array<T,N>& idx, const CGeometry& geometry) {
     Double n;
     for (size_t k=0; k<N; ++k) n[k] = geometry.nodes->GetnNeighbor(idx[k]);
     return n;
@@ -82,14 +80,15 @@ public:
   /*!
    * \brief Implementation of the base centered flux.
    */
-  void ComputeFlux(Int iEdge,
+  void ComputeFlux(const Int iEdge,
                    const CConfig& config,
                    const CGeometry& geometry,
                    const CVariable& solution_,
-                   UpdateType updateType,
-                   Double updateMask,
+                   const UpdateType updateType,
+                   const Double updateMask,
                    CSysVector<su2double>& vector,
-                   SparseMatrixType& matrix) const final {
+                   SparseMatrixType& matrix,
+                   su2activevector* edgeMassFluxes) const final {
 
     /*--- Start preaccumulation, inputs are registered
      *    automatically in "gatherVariables". ---*/
@@ -97,8 +96,6 @@ public:
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
-
-    const bool tkeNeeded = config.GetKind_Turb_Model() == TURB_MODEL::SST;
 
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
     const auto jPoint = geometry.edges->GetNode(iEdge,1);
@@ -121,13 +118,6 @@ public:
     CCompressiblePrimitives<nDim,nPrimVar> avgV;
     for (size_t iVar = 0; iVar < nPrimVar; ++iVar) {
       avgV.all(iVar) = 0.5 * (V.i.all(iVar) + V.j.all(iVar));
-    }
-
-    if (tkeNeeded) {
-      V.i.allTurb = gatherVariables<1>(iPoint, turbVars->GetSolution());
-      V.j.allTurb = gatherVariables<1>(jPoint, turbVars->GetSolution());
-
-      avgV.allTurb(0) = 0.5*(V.i.allTurb(0)+V.j.allTurb(0));
     }
 
     /*--- Compute conservative variables. ---*/
@@ -193,6 +183,10 @@ public:
 
     updateLinearSystem(iEdge, iPoint, jPoint, implicit, updateType,
                        updateMask, flux, jac_i, jac_j, vector, matrix);
+
+    /*--- Store the mass flux (density-equation flux) for bounded-scalar transport. ---*/
+
+    updateEdgeMassFlux(iEdge, flux(0), edgeMassFluxes);
   }
 };
 
@@ -231,14 +225,14 @@ public:
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
-                                bool implicit,
-                                Double area,
-                                Double projVel,
+                                const bool implicit,
+                                const Double& area,
+                                const Double& projVel,
                                 const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
-                                Int iPoint,
-                                Int jPoint,
+                                const Int& iPoint,
+                                const Int& jPoint,
                                 const CGeometry& geometry,
                                 const CEulerVariable& solution,
                                 Ts&...) const {
@@ -312,14 +306,14 @@ public:
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
-                                bool implicit,
-                                Double area,
-                                Double projVel,
+                                const bool implicit,
+                                const Double& area,
+                                const Double& projVel,
                                 const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
-                                Int iPoint,
-                                Int jPoint,
+                                const Int& iPoint,
+                                const Int& jPoint,
                                 const CGeometry& geometry,
                                 const CEulerVariable& solution,
                                 const VectorDbl<nDim>& unitNormal,
@@ -436,14 +430,14 @@ public:
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
-                                bool implicit,
-                                Double area,
-                                Double projVel,
+                                const bool implicit,
+                                const Double& area,
+                                const Double& projVel,
                                 const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
-                                Int iPoint,
-                                Int jPoint,
+                                const Int& iPoint,
+                                const Int& jPoint,
                                 const CGeometry& geometry,
                                 const CEulerVariable& solution,
                                 Ts&...) const {
@@ -507,14 +501,14 @@ public:
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
-                                bool implicit,
-                                Double area,
-                                Double projVel,
+                                const bool implicit,
+                                const Double& area,
+                                const Double& projVel,
                                 const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
-                                Int iPoint,
-                                Int jPoint,
+                                const Int& iPoint,
+                                const Int& jPoint,
                                 const CGeometry& geometry,
                                 const CEulerVariable& solution,
                                 Ts&...) const {

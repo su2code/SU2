@@ -2,14 +2,14 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  */
 class CHeatSolver final : public CScalarSolver<CHeatVariable> {
 protected:
@@ -42,7 +42,6 @@ protected:
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
 
   const bool flow; /*!< \brief Use solver as a scalar transport equation of Temperature for the inc solver. */
-  const bool heat_equation; /*!< \brief use solver for heat conduction in solids. */
 
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0;
 
@@ -68,7 +67,6 @@ protected:
     if (!geometry->nodes->GetDomain(iPoint)) return;
 
     const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-    const su2double prandtl_lam = config->GetPrandtl_Lam();
     const su2double const_diffusivity = config->GetThermalDiffusivity();
 
     const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
@@ -84,50 +82,15 @@ protected:
 
     su2double thermal_diffusivity = const_diffusivity;
     if (flow) {
-      thermal_diffusivity = flow_solver->GetNodes()->GetLaminarViscosity(iPoint) / prandtl_lam;
+      thermal_diffusivity =
+          flow_solver->GetNodes()->GetThermalConductivity(iPoint) / flow_solver->GetNodes()->GetSpecificHeatCp(iPoint);
     }
     LinSysRes(iPoint, 0) -= thermal_diffusivity * dTdn * Area;
 
     if (implicit) {
-      su2double Jacobian_i[] = {-thermal_diffusivity / dist_ij * Area};
-      Jacobian.SubtractBlock2Diag(iPoint, &Jacobian_i);
+      su2double Jacobian_i[1][1] = {{-thermal_diffusivity / dist_ij * Area}};
+      Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     }
-  }
-
-  /*!
-   * \brief Compute the viscous flux for the scalar equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
-   */
-  inline void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                                       CNumerics* numerics, const CConfig* config) override {
-    const CVariable* flow_nodes = flow ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
-
-    const su2double const_diffusivity = config->GetThermalDiffusivity();
-    const su2double pr_lam = config->GetPrandtl_Lam();
-    const su2double pr_turb = config->GetPrandtl_Turb();
-
-    su2double thermal_diffusivity_i{}, thermal_diffusivity_j{};
-
-    /*--- Computes the thermal diffusivity to use in the viscous numerics. ---*/
-    auto compute_thermal_diffusivity = [&](unsigned long iPoint, unsigned long jPoint) {
-      if (flow) {
-        thermal_diffusivity_i = flow_nodes->GetLaminarViscosity(iPoint) / pr_lam +
-                                flow_nodes->GetEddyViscosity(iPoint) / pr_turb;
-        thermal_diffusivity_j = flow_nodes->GetLaminarViscosity(jPoint) / pr_lam +
-                                flow_nodes->GetEddyViscosity(jPoint) / pr_turb;
-        numerics->SetDiffusionCoeff(&thermal_diffusivity_i, &thermal_diffusivity_j);
-      }
-      else {
-        numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);
-      }
-    };
-    /*--- Compute residual and Jacobians. ---*/
-    Viscous_Residual_impl(compute_thermal_diffusivity, iEdge, geometry, solver_container, numerics, config);
   }
 
 public:
@@ -135,7 +98,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  CHeatSolver(CGeometry *geometry, CConfig *config, const CSolver* flow_solver, unsigned short iMesh);
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -184,13 +147,16 @@ public:
                       unsigned short iMesh) override;
 
   /*!
-   * \brief Compute the viscous residuals for the turbulent equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \brief Resolve the compile-time parameters of CScalarFlux_Heat and run one of this solver's
+   *        boundaries through the shared boundary flux pass.
+   * \param[in] opt - Flags of the boundary, from one of ScalarFluxOptions' named constructors.
+   */
+  void BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt,
+                    unsigned short val_marker);
+
+  /*!
+   * \brief Diffusion for solid conduction, called unconditionally unlike Upwind_Residual. A no-op
+   *        for a fluid zone, where diffusion was already computed together with convection.
    */
   void Viscous_Residual(CGeometry *geometry,
                         CSolver **solver_container,
@@ -198,6 +164,17 @@ public:
                         CConfig *config,
                         unsigned short iMesh,
                         unsigned short iRKStep) override;
+
+ /*!
+   * \brief Source term computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container,  CNumerics **numerics_container,
+                       CConfig *config, unsigned short iMesh) override ;
 
 
   void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) override;
@@ -264,6 +241,34 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose the far-field boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CNumerics *conv_numerics,
+                    CNumerics *visc_numerics,
+                    CConfig *config,
+                    unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose the fluid interface (sliding mesh) boundary condition, via the
+   *        CScalarFlux_Heat edge kernel.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] visc_numerics - Unused, kept only for the boundary condition dispatch.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                          CNumerics *visc_numerics, CConfig *config) override;
 
   /*!
    * \brief Impose the (received) conjugate heat variables.

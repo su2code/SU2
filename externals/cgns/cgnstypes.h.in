@@ -29,21 +29,20 @@
 #ifndef CGNSTYPES_H
 #define CGNSTYPES_H
 
-#define CG_BUILD_HDF5   1
-#define CG_BUILD_LEGACY 0
-#define CG_BUILD_64BIT  1
-#define CG_BUILD_SCOPE  0
-#define CG_BUILD_BASESCOPE 0
+#define CG_BUILD_HDF5   @BUILDHDF5@
+#define CG_BUILD_LEGACY @BUILDLEGACY@
+#define CG_BUILD_64BIT  @BUILD64BIT@
+#define CG_BUILD_SCOPE  @BUILDSCOPE@
+#define CG_BUILD_BASESCOPE @BUILDBASESCOPE@
 #define CG_BUILD_PARALLEL  @BUILDPARALLEL@
-#define CG_BUILD_COMPLEX_C99_EXT 1
-
+#define CG_BUILD_COMPLEX_C99_EXT @HAVE_COMPLEX_C99_EXT@
 
 #define CG_MAX_INT32 0x7FFFFFFF
-#ifdef _WIN32
-# define CG_LONG_T __int64
-#else
-# define CG_LONG_T long
-#endif
+
+#include <stdint.h>   /* For C9x types */
+#include <inttypes.h> /* C99/POSIX.1 header for uint64_t, PRIu64 */
+#define CG_LONG_T @CGLONGT@
+#define CG_U_LONG_T @CGULONGT@
 
 #if CG_BUILD_HDF5
 
@@ -56,7 +55,7 @@
 
 /* Determine if hdf5 has multi-dataset read/write capabilities */
 
-#define HDF5_HAVE_MULTI_DATASETS 0
+#define HDF5_HAVE_MULTI_DATASETS @HDF5_HAVE_MULTI_DATASETS@
 
 /* Determine if hdf5 has collective metadata APIs  */
 
@@ -64,28 +63,35 @@
 
 /* Determine if hdf5 H5Pset_file_space_strategy */
 
-#define HDF5_HAVE_FILE_SPACE_STRATEGY 0
+#define HDF5_HAVE_FILE_SPACE_STRATEGY @HDF5_HAVE_FILE_SPACE_STRATEGY@
 
 #endif
 
-#define  CG_HAVE_STAT64_STRUCT 0
+#define  CG_HAVE_STAT64_STRUCT @HAVE_STAT64_STRUCT@
 
 #if CG_BUILD_LEGACY
+#include <limits.h>
 # define CG_SIZEOF_SIZE    32
 # define CG_SIZE_DATATYPE "I4"
 # define cgerr_t  int
 # define cgint_t  int
 # define cgsize_t int
 # define cgid_t   double
+# define PRIdCGSIZE "d"
+# define CG_SIZE_MAX INT_MAX
 #else
 # if CG_BUILD_64BIT
 #  define CG_SIZEOF_SIZE    64
 #  define CG_SIZE_DATATYPE "I8"
-   typedef CG_LONG_T cgsize_t;
+#  define PRIdCGSIZE PRId64
+   typedef int64_t cgsize_t;
+#  define CG_SIZE_MAX INT64_MAX
 # else
 #  define CG_SIZEOF_SIZE    32
 #  define CG_SIZE_DATATYPE "I4"
-   typedef int cgsize_t;
+#  define PRIdCGSIZE PRId32
+   typedef int32_t cgsize_t;
+#  define CG_SIZE_MAX INT32_MAX
 # endif
   typedef int cgerr_t;
   typedef int cgint_t;
@@ -93,7 +99,7 @@
 #endif
 
 /* Define an int type that is interoperabable with Fortran's INTEGER */
-#define FORTRAN_DEFAULT_INTEGER_C_INT64_T 0
+#define FORTRAN_DEFAULT_INTEGER_C_INT64_T @FORTRAN_DEFAULT_INTEGER_C_INT64_T@
 #if FORTRAN_DEFAULT_INTEGER_C_INT64_T == 1
   typedef CG_LONG_T cgint_f;
 #else
@@ -102,6 +108,6 @@
 
 
 typedef CG_LONG_T cglong_t;
-typedef unsigned CG_LONG_T cgulong_t;
+typedef CG_U_LONG_T cgulong_t;
 
 #endif

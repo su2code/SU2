@@ -2,14 +2,14 @@
  * \file CTurbVariable.hpp
  * \brief Base class for defining the variables of the turbulence model.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ protected:
   VectorType muT; /*!< \brief Eddy viscosity. */
 
 public:
-  static constexpr size_t MAXNVAR = 2;
+  static constexpr size_t MAXNVAR = 4;
   VectorType turb_index;
   VectorType intermittency;         /*!< \brief Value of the intermittency for the trans. model. */
   VectorType Pk;
@@ -138,5 +138,61 @@ public:
   inline su2double GetPkLim(unsigned long iPoint) const final { 
     return PkLim(iPoint); 
   }
-};
 
+  /*!
+   * \brief Set the Diffusion Coefficients of TKE and omega equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_DC_kw - diffusion coefficient value
+   */
+
+  /*!
+   * \brief Register eddy viscosity (muT) as Input or Output of an AD recording.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   */
+  void RegisterEddyViscosity(bool input);
+
+    /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   */
+  inline virtual su2double GetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource_old - Old value of source term in Langevin equations.
+   */
+  inline virtual void SetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim, su2double val_stochSource_old) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
+  inline virtual int8_t GetSbsInBox(unsigned long iPoint) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_sbsInBox - 1.0 if the Stochastic Backscatter Model must be applied only in a confined box.
+   */
+  inline virtual void SetSbsInBox(unsigned long iPoint, int8_t val_sbsInBox) {}
+
+  /*!
+   * \brief Write the first blending function of the SST model, for a ghost row: SetBlendingFunc
+   *        derives F1 from the wall distance and viscous state, neither of which a ghost point
+   *        has, so its ghost row is written directly with the interior point's own F1 instead.
+   */
+  inline virtual void SetF1blending(unsigned long iPoint, su2double val) {}
+
+  /*!
+   * \brief Container backing GetF1blending/SetF1blending, for the edge-flux kernels to read
+   *        through gatherVariables the way they do GetSolution and GetGradient, rather than one
+   *        virtual call per point.
+   * \note Not an overload of the per-point CVariable::GetF1blending: brought back into scope so
+   *       that name is not hidden here.
+   */
+  using CVariable::GetF1blending;
+  inline virtual const VectorType& GetF1blending() const { return EmptyVector; }
+};

@@ -18,28 +18,43 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 -------------------------------------------------------------------------*/
 
-/***********************************************************************
- * Revisions:
+/*-------------------------------------------------------------------------
+ *   _____ _____ _   _  _____
+ *  / ____/ ____| \ | |/ ____|
+ * | |   | |  __|  \| | (___
+ * | |   | | |_ | . ` |\___ \
+ * | |___| |__| | |\  |____) |
+ *  \_____\_____|_| \_|_____/
  *
- ***********************************************************************/
+ *  PURPOSE:
+ *    Provides Mid-Level Library (MLL) CGNS interfaces and
+ *    various supporting APIs.
+ *
+ *  DOCUMENTATION DESIGN
+ *    * Document all new public APIs with Doxygen entries.
+ *    * Keep descriptive text line lengths between 60-75 characters optimally,
+ *      with a maximum of 90 characters.
+ *    * Consider using Doxygen aliases for recurring entries.
+ */
+
 /**
  * \defgroup AccessingANode  Accessing a node
  * \defgroup ArbitraryGridMotion Arbitrary Grid Motion
  * \defgroup AuxiliaryModel Auxiliary Model
  * \defgroup Axisymmetry   Axisymmetry
  * \defgroup BCData  Boundary Condition Data
- * \defgroup BCDataset  Boundary Condition Datasets
  * \defgroup BaseIterativeData Base Iterative Data
  * \defgroup BoundaryConditionDatasets Boundary Condition Datasets
  * \defgroup BoundaryConditionType  Boundary Condition Type and Location
  * \defgroup CGNSBaseInformation CGNS Base Information
- * \defgroup CGNSFamilyBoundaryDefinition Family Boundary Condition
+ * \defgroup CGNSFamilyBoundaryCondition Family Boundary Condition
  * \defgroup CGNSFamilyDefinition  Family Definition
  * \defgroup CGNSFamilyHierarchyTreeDefinition Family Hierarchy Tree
  * \defgroup CGNSFile File Operations
  * \defgroup CGNSGeometryReference Geometry Reference
  * \defgroup CGNSInterfaceCGIO Interfacing with CGIO
  * \defgroup CGNSInternals Configuring CGNS Internals
+ * \defgroup CGNSInternals_FNC_CG_CONFIG Configuring CGNS Internals
  * \defgroup CGNSZoneInformation CGNS Zone Information
  * \defgroup ConvergenceHistory Convergence History
  * \defgroup DataArrays Data Arrays
@@ -71,16 +86,27 @@ freely, subject to the following restrictions:
  * \defgroup RindLayers Rind Layers
  * \defgroup RotatingCoordinates Rotating Coordinates
  * \defgroup SimulationType Simulation Type
- * \defgroup SpecialBoundaryConditionProperty  Special Boundary Condition Property
- * \defgroup SpecialGridConnectivityProperty  Special Grid Connectivity Property
+ * \defgroup SpecialBoundaryConditionProperty Special Boundary Condition Property
+ * \defgroup SpecialGridConnectivityProperty Special Grid Connectivity Property
  * \defgroup UserDefinedData User Defined Data
  * \defgroup ZoneGridConnectivity  Zone Grid Connectivity
  * \defgroup ZoneGridCoordinates  Zone Grid Coordinates
  * \defgroup ZoneIterativeData Zone Iterative Data
  * \defgroup ZoneSubregions  Zone Subregions
+ * \defgroup CGNS_Navigation Explanation of Navigation of a CGNS File
+ * \defgroup ParticleIterativeData Particle Iterative Data
+ * \defgroup ParticleZoneInformation Particle Zone Information
+ * \defgroup ParticleCoordinates Particle Coordinates
+ * \defgroup ParticleSolution Particle Solution
+ * \defgroup ParticleSolutionData Particle Solution Data
+ * \defgroup ParticleEquationSet Particle Equation Set
+ * \defgroup ParticleGoverningEquations Particle Governing Equations
+ * \defgroup ParticleModel Particle Model
  *
- **/ 
-
+ */
+#ifndef _WIN32
+  #define _POSIX_C_SOURCE 200112L
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -226,7 +252,8 @@ const char * GoverningEquationsTypeName[NofValidGoverningEquationsTypes]=
     {"Null", "UserDefined",
      "FullPotential", "Euler", "NSLaminar",
      "NSTurbulent", "NSLaminarIncompressible",
-     "NSTurbulentIncompressible"
+     "NSTurbulentIncompressible",
+     "LatticeBoltzmann"
     };
 const char * ModelTypeName[NofValidModelTypes]=
     {"Null", "UserDefined",
@@ -243,6 +270,22 @@ const char * ModelTypeName[NofValidModelTypes]=
      "ChemicalNonequilib",
      "EMElectricField", "EMMagneticField", "EMConductivity",
      "Voltage", "Interpolated", "Equilibrium_LinRessler", "Chemistry_LinRessler"
+    };
+const char * ParticleGoverningEquationsTypeName[NofValidParticleGoverningEquationsTypes]=
+    {"Null", "UserDefined",
+     "DEM", "DSMC", "SPH"
+    };
+const char * ParticleModelTypeName[NofValidParticleModelTypes]=
+    {"Null", "UserDefined",
+     "Linear", "NonLinear", "HardSphere", "SoftSphere", "LinearSpringDashpot",
+     "Pair", "HertzMindlin", "HertzKuwabaraKono", "ORourke", "Stochastic",
+     "NonStochastic", "NTC", "KelvinHelmholtz", "KelvinHelmholtzACT",
+     "RayleighTaylor", "KelvinHelmholtzRayleighTaylor", "ReitzKHRT", "TAB", "ETAB",
+     "LISA", "SHF", "PilchErdman", "ReitzDiwakar", "Sphere", "NonSphere", "Tracer",
+     "BeetstraVanDerHoefKuipers", "Ergun", "CliftGrace", "Gidaspow", "HaiderLevenspiel",
+     "PlessisMasliyah", "SyamlalOBrien", "SaffmanMei", "TennetiGargSubramaniam",
+     "Tomiyama", "Stokes", "StokesCunningham", "WenYu", "BaiGosman", "Kunkhe",
+     "Boil", "Condense", "Flash", "Nucleate", "Chiang", "Frossling", "FuchsKnudsen"
     };
 const char * BCTypeName[NofValidBCTypes] =
     {"Null", "UserDefined",
@@ -381,16 +424,16 @@ void objlist_status(char *tag)
  *
  * \brief Check for a valid CGNS file.
  *
- * \param[in] filename \FILE_filename
- * \param[in] file_type \FILE_file_type
+ * \param[in]  filename  \FILE_filename
+ * \param[out] file_type \FILE_file_type
  * \return \ier
  *
- * \details For existing files, the function /e cg_is_cgns may be used to determine if a file is a CGNS file or not, and
- *  the type of file (\p CG_FILE_ADF or \p CG_FILE_HDF5). If the file is a CGNS file, \e cg_is_cgns returns \p CG_OK,
- *  otherwise \p CG_ERROR is returned and file_type is set to \p CG_FILE_NONE.
+ * \details For existing files, the function cg_is_cgns() may be used to determine if a file
+ *          is a CGNS file or not, and the type of file (`CG_FILE_ADF` or `CG_FILE_HDF5`). If
+ *          the file is a CGNS file, cg_is_cgns() returns `CG_OK`, otherwise, `CG_ERROR` is
+ *          returned and file_type is set to `CG_FILE_NONE`.
  *
  */
-
 int cg_is_cgns(const char *filename, int *file_type)
 {
     int cgio, ierr;
@@ -412,35 +455,42 @@ int cg_is_cgns(const char *filename, int *file_type)
  * \brief Open a CGNS file.
  *
  * \param[in]  filename \FILE_filename
- * \param[in]  mode \FILE_mode
- * \param[out] fn \FILE_fn
+ * \param[in]  mode     \FILE_mode
+ * \param[out] fn       \FILE_fn
  * \return \ier
  *
- * \details The function \e cg_open must always be the first one called. It opens a CGNS file for reading and/or writing and returns 
- * an index number \e file_number. 
- * The index number serves to identify the CGNS file in subsequent function calls. Several CGNS files can be opened simultaneously. The current 
- * limit on the number of files opened at once depends on the platform. On an SGI workstation, this limit is set at 100 (parameter FOPEN_MAX in stdio.h).
- * The file can be opened in one of the following modes:
+ * \details The function cg_open() must always be called first. It opens a CGNS file for
+ *          reading and/or writing and returns an index number \e file_number. The index number
+ *          serves to identify the CGNS file in subsequent function calls. Several CGNS files
+ *          can be opened simultaneously. The current limit on the number of files opened simultaneously
+ *          depends on the platform. On an SGI workstation, this limit is set at 100 (parameter
+ *          FOPEN_MAX in stdio.h).
  *
- *|   |   |
- *|---|---|
- *|__CG_MODE_READ__ | Read only mode.  |
- *|__CG_MODE_WRITE__| Write only mode. |
- *|__CG_MODE_MODIFY__| Reading and/or writing is allowed.|
+ *          The file can be opened in one of the following modes:
  *
- * When the file is opened, if no \e CGNSLibraryVersion_t node is found, a default value of 1.05 is assumed for the CGNS version number. Note that this 
- * corresponds to an old version of the CGNS standard, that doesn't include many data structures supported by the current standard.
+ *          |   |   |
+ *          |---|---|
+ *          |__CG_MODE_READ__ | Read only mode.  |
+ *          |__CG_MODE_WRITE__| Write only mode. |
+ *          |__CG_MODE_MODIFY__| Reading and/or writing is allowed.|
  *
- * In order to reduce memory usage and improve execution speed, large arrays such as grid coordinates or flow solutions are not actually 
- * stored in memory. Instead, only basic information about the node is kept, while reads and writes of the data is directly to and from 
- * the application's memory. An attempt is also made to do the same with unstructured mesh element data.
+ *          When the file is opened, if no \e CGNSLibraryVersion_t node is found, a default value
+ *          of 1.05 is assumed for the CGNS version number. Note that this corresponds to an old
+ *          version of the CGNS standard that doesn't include many data structures supported by
+ *          the current standard.
  *
- * \note CGNS maintains one-way forward compatibility insofar as any file open and modified by, for example, version major.minor.patch
- *  will be readable with major.minor.patch< b>+< /b>. It can't be guaranteed the reverse major.minor.patch< b>-< /b>
- *  compatibility for that file will be true.
+ *          To reduce memory usage and improve execution speed, large arrays such as grid
+ *          coordinates or flow solutions are not stored in memory. Instead, only basic
+ *          information about the node is kept, while reads and writes of the data are direct to
+ *          and from the application's memory. An attempt is made to do the same with
+ *          unstructured mesh element data.
+ *
+ * \note CGNS maintains one-way forward compatibility insofar as any file open and modified by,
+ *       for example, version major.minor.patch will be readable with major.minor.patch\b +.
+ *       It can't be guaranteed the reverse major.minor.patch\b - compatibility for that file
+ *       will be true.
  *
  */
-
 int cg_open(const char *filename, int mode, int *fn)
 {
     int cgio, filetype;
@@ -496,8 +546,9 @@ int cg_open(const char *filename, int mode, int *fn)
 
     /* Keep in-memory copy of cgns file 'header' information */
     cg->mode = mode;
-    cg->filename = CGNS_NEW(char,strlen(filename) + 1);
-    strcpy(cg->filename, filename);
+    int filename_length = strlen(filename) + 1;
+    cg->filename = CGNS_NEW(char,filename_length);
+    snprintf(cg->filename, filename_length, "%s", filename);
     cg->filetype = filetype;
     cg->cgio = cgio;
     cgio_get_root_id(cgio, &cg->rootid);
@@ -533,7 +584,7 @@ int cg_open(const char *filename, int mode, int *fn)
 
         if (cg->version > CGNSLibVersion) {
 
-        /* This code allows reading version newer than the lib,
+        /* This code allows reading versions newer than the lib,
                as long as the 1st digit of the versions are equal */
             if ((cg->version / 1000) > (CGNSLibVersion / 1000)) {
                 cgi_error("A more recent version of the CGNS library created the file. Therefore, the CGNS library needs updating before reading the file '%s'.",filename);
@@ -618,14 +669,13 @@ int cg_open(const char *filename, int mode, int *fn)
  *
  * \brief Get CGNS file version.
  *
- * \param[in]  fn \FILE_fn
+ * \param[in]  fn      \FILE_fn
  * \param[out] version \FILE_version
  * \return \ier
  *
- * \details The function \e cg_version returns the CGNS version number.
+ * \details The function cg_version() returns the CGNS version number.
  *
  */
-
 int cg_version(int fn, float *version)
 {
     int nnod;
@@ -677,7 +727,7 @@ int cg_version(int fn, float *version)
         free(data);
         cg->version = (int)(1000.0*(*version)+0.5);
 
-     /* To prevent round off error in version number for file of older or current version */
+     /* To prevent round-off errors in version number for files of older or current version */
         temp_version = cg->version;
      /* cg->version = 0;  Commented for fwd compatibility */
         for (vers=0; vers<nVersions; vers++) {
@@ -706,14 +756,14 @@ int cg_version(int fn, float *version)
  *
  * \brief Get CGNS file precision.
  *
- * \param[in]  fn \FILE_fn
+ * \param[in]  fn        \FILE_fn
  * \param[out] precision \FILE_precision
  * \return \ier
  *
- * \details Precision used to write the CGNS file. The \e precision value will be one of 32 (32-bit), 64 (64-bit), or 0 if not known. 
+ * \details Precision used to write the CGNS file. The \c precision value will be one of
+ *          32 (32-bit), 64 (64-bit), or 0 if unknown.
  *
  */
-
 int cg_precision(int fn, int *precision)
 {
     int nb, nz;
@@ -747,15 +797,16 @@ int cg_precision(int fn, int *precision)
  *
  * \brief Close a CGNS file.
  *
- * \param[in] fn \FILE_fn
+ * \param[in]  fn \FILE_fn
  * \return \ier
  *
- * \details The function \e cg_close must always be the last one called. It closes the CGNS file designated by the index number \e fn 
- * and frees the memory where the CGNS data was kept. When a file is opened for writing, \e cg_close writes all the CGNS data in 
- * memory onto disk prior to closing the file. Consequently, if is omitted, the CGNS file is not written properly.
+ * \details The function cg_close() must always be called last. It closes the CGNS file
+ *          designated by the index number \e fn and frees the memory where the CGNS data was
+ *          kept. When a file is opened for writing, cg_close() writes all the CGNS data in
+ *          memory onto disk before closing the file. Consequently, if omitted, the CGNS file
+ *          will not be written properly.
  *
  */
-
 int cg_close(int fn)
 {
 
@@ -813,20 +864,21 @@ int cg_close(int fn)
  *
  * \brief Save the open CGNS file.
  *
- * \param[in] fn \FILE_fn
- * \param[in] filename \FILE_filename
- * \param[in] file_type \FILE_file_type
- * \param[in] follow_links \FILE_follow_links
+ * \param[in]  fn           \FILE_fn
+ * \param[in]  filename     \FILE_filename
+ * \param[in]  file_type    \FILE_file_type
+ * \param[in]  follow_links \FILE_follow_links
  * \return \ier
  *
- * \details The CGNS file identified by \e fn may be saved to a different filename and type using cg_save_as(). 
- * In order to save as an HDF5 file, the library must have been built with HDF5 support. ADF support is always built. 
- * The function cg_set_file_type() sets the default file type for newly created CGNS files. The function
- * cg_get_file_type() returns the file type for the CGNS file identified by \e fn. If the CGNS library is built 
- * as 32-bit, the additional file type, \p CG_FILE_ADF2, is available. This allows creation of a 2.5 compatible CGNS file.  
+ * \details The CGNS file identified by \c fn may be saved to a different filename and type
+ *          using cg_save_as(). To save as an HDF5 file, the library must have been
+ *          built with HDF5 support. ADF support is always built. The function cg_set_file_type()
+ *          sets the default file type for newly created CGNS files. The function
+ *          cg_get_file_type() returns the file type for the CGNS file identified by \c fn.
+ *          If the CGNS library is built as 32-bit, the additional file type, `CG_FILE_ADF2`, is
+ *          available. This allows the creation of a 2.5-compatible CGNS file.
  *
  */
-
 int cg_save_as(int fn, const char *filename, int file_type,
                int follow_links)
 {
@@ -863,15 +915,17 @@ int cg_save_as(int fn, const char *filename, int file_type,
  * \param[in]  file_type \FILE_file_type
  * \return \ier
  *
- * \details When a CGNS file is newly created using \p CG_MODE_WRITE, the default type of database manager used is determined 
- * at compile time. If the CGNS library was built with HDF5 version 1.8 or later support, the file type will be \p CG_FILE_HDF5,
- * otherwise \p CG_FILE_ADF is used. This may be changed either by setting an environment variable, \p CGNS_FILETYPE, to one
- * of \e adf, \e hdf5, or \e adf2, or by calling the routine cg_set_file_type() prior to the cg_open() call. Calling
- * cg_set_file_type() with the argument \p CG_FILE_NONE will reset the library to use the default file type. 
- * \b Note: If the environment variable \p CGNS_FILETYPE is set, it takes precedence. 
+ * \details When a CGNS file is newly created using `CG_MODE_WRITE`, the default type of database
+ *          manager used is determined at compile time. If the CGNS library was built with HDF5
+ *          version 1.8 or later support, the file type will be `CG_FILE_HDF5`, otherwise
+ *          `CG_FILE_ADF` is used. This may be changed either by setting an environment variable,
+ *          `CGNS_FILETYPE`, to one of \e adf, \e hdf5, or \e adf2, or by calling the routine
+ *          cg_set_file_type() prior to the cg_open() call. Calling cg_set_file_type() with the
+ *          argument `CG_FILE_NONE` will reset the library to use the default file type.
+ *
+ * \note If the environment variable `CGNS_FILETYPE` is set, it takes precedence.
  *
  */
-
 int cg_set_file_type(int file_type)
 {
     if (file_type == CG_FILE_NONE) {
@@ -915,14 +969,14 @@ int cg_set_file_type(int file_type)
  *
  * \brief Get file type for open CGNS file.
  *
- * \param[in]  fn \FILE_fn
+ * \param[in]  fn        \FILE_fn
  * \param[out] file_type \FILE_file_type
  * \return \ier
  *
- * \details The function \p cg_get_file_type gets the file type (\e adf, \e hdf5, or \e adf2) for an open CGNS file.
+ * \details The function cg_get_file_type() gets the file type (\e adf, \e hdf5, or \e adf2)
+ *          for an open CGNS file.
  *
  */
-
 int cg_get_file_type(int fn, int *file_type)
 {
     cg = cgi_get_file(fn);
@@ -933,18 +987,17 @@ int cg_get_file_type(int fn, int *file_type)
     }
     return CG_OK;
 }
-
 /**
  * \ingroup CGNSInterfaceCGIO
  *
  * \brief Get the CGIO root node identifier for the CGNS file.
  *
- * \param[in]  fn \FILE_fn
+ * \param[in]  fn     \FILE_fn
  * \param[out] rootid Root node identifier for the CGNS file
  * \return \ier
  *
- * \details The function \p cg_root_id allow the use of the low-level CGIO function
- * in conjunction with the Mid Level Library. It returns the root node identifier for the CGNS file.
+ * \details The function cg_root_id() allows the use of the low-level CGIO function in conjunction
+ *          with the Mid Level Library. It returns the root node identifier for the CGNS file.
  *
  */
 int cg_root_id(int fn, double *rootid)
@@ -963,12 +1016,13 @@ int cg_root_id(int fn, double *rootid)
  *
  * \brief Get the CGIO database identifier for the specified CGNS file.
  *
- * \param[in]  fn \FILE_fn
+ * \param[in]  fn       \FILE_fn
  * \param[out] cgio_num CGIO identifier for the CGNS file
  * \return \ier
  *
- * \details The function \p cg_get_cgio allow the use of the low-level CGIO function
- * in conjunction with the Mid Level Library. It returns the CGIO database identifier for the CGNS file.
+ * \details The function cg_get_cgio() allows using the low-level CGIO function in
+ *          conjunction with the Mid Level Library. It returns the CGIO database identifier
+ *          for the CGNS file.
  *
  */
 int cg_get_cgio(int fn, int *cgio_num)
@@ -981,35 +1035,18 @@ int cg_get_cgio(int fn, int *cgio_num)
 
 /* configure stuff */
 /**
- * \ingroup CGNSInternals
+ * \ingroup CGNSInternals_FNC_CG_CONFIG
  *
- * \brief Configure CGNS library internal options. 
+ * \brief Configure CGNS library internal options.
  *
- * \param[in] option The option to configure, currently one of \p CG_CONFIG_ERROR, \p CG_CONFIG_COMPRESS, \p CG_CONFIG_SET_PATH, \p CG_CONFIG_ADD_PATH, \p CG_CONFIG_FILE_TYPE, \p CG_CONFIG_RIND_INDEX, \p CG_CONFIG_HDF5_DISKLESS, \p CG_CONFIG_HDF5_DISKLESS_INCR, \p CG_CONFIG_HDF5_DISKLESS_WRITE, \p CG_CONFIG_HDF5_COMPRESS, or \p CG_CONFIG_HDF5_MPI_COMM as defined in cgnslib.h. 
- * \param[in] value The value to set, type cast as \e void * . In Fortran the type is \e TYPE(C_PTR).
+ * \param[in]  option The configuration options are defined in \e cgnslib.h. For the list, please refer to
+ *                    the list below.
+ * \param[in]  value  The value to set, type cast as \e void * . In Fortran, the type is \e TYPE(C_PTR), or
+ *                    \e TYPE(C_FUNPTR) for \e CG_CONFIG_ERROR.
  * \return \ier
  *
- *
- * \details The function \p cg_configure allows particular CGNS library internal options to be configured. The currently supported options and expected values are:
- * 
- *|   |   |
- *|---|---|
- *|__CG_CONFIG_ERROR__| This allows an error call-back function to be defined by the user. The value should be a pointer to a function to receive the error. The function is defined as `void err_callback(int is_error, char *errmsg)`, and will be called for errors and warnings. The first argument, is_error, will be 0 for warning messages, 1 for error messages, and −1 if the program is going to terminate (i.e., a call to `cg_error_exit()`). The second argument is the error or warning message. If this is defined, warning and error messages will go to the function, rather than the terminal. A value of `NULL` will remove the call-back function.
- *|__CG_CONFIG_COMPRESS__| This is the rewrite-upon-close setting. Note: Prior versions of the library would automatically rewrite the CGNS file when it was closed after being opened in modify mode if there was unused space. This is no longer done, due to possible conflicts when using parallel I/O. The previous behavior may be recovered by setting value to a positive integer. In this case the file will be rewritten if the number of node deletions or modifications are equal to or exceed this number. Setting value to a negative number will force the rewrite when the file is closed. The default value is 0 (no rewrite).
- *|__CG_CONFIG_SET_PATH__| Sets the search path for locating linked-to files. The argument value should be a character string containing one or more directories, formatted the same as for the `PATH` environment variable. This will replace any current settings. Setting value to `NULL` will remove all paths.
- *|__CG_CONFIG_ADD_PATH__| Adds a directory, or list of directories, to the linked-to file search path. This is the same as `CG_CONFIG_SET_PATH`, but adds to the path instead of replacing it.
- *|__CG_CONFIG_FILE_TYPE__| Sets the default file type for newly created CGNS files. The argument, value should be set to one of `CG_FILE_NONE`, `CG_FILE_ADF`, `CG_FILE_HDF5`, or `CG_FILE_ADF2`. See the discussion above for `cg_set_file_type`.
- *|__CG_CONFIG_RIND_INDEX__| This option affects index bounds on structured arrays with rind planes. By default (`CG_CONFIG_RIND_CORE`), the core array locations always begin at index 1. Lower rind planes, if present, would have an index less than 1. For backward compatibility, `CG_CONFIG_RIND_ZERO` is provided and the index 1 will then locate the start of the array and not necessarily the start the core array. Note: Use of this option does not change the cgns file in any way; it only modifies the API to the library. The API changed for versions of the Mid-Level Library greater than 3.4. Before, it did not produce this behavior. Index 1 always represented the start of an array: in an array with no rind planes, the core location would have index 1; in an array with 1 rind plane, the core location would have index 2. In version 3.4 of the Mid-Level Library, the behavior of the API was fixed to match that specified in the SIDS: core array locations always begin at index 1. This option allows for configuring the library to pre-3.4 indexing behavior (set value to `CG_CONFIG_RIND_ZERO`) or the new default behavior (set value to `CG_CONFIG_RIND_CORE`). Note that using `CG_CONFIG_RIND_ZERO` is considered obsolete, but is provided for backwards compatibility. Most users should not set this option and use the default. Values used for this option do not need to be explicitly cast as `void*`.
- *|__CG_CONFIG_HDF5_COMPRESS__| Sets the compression level for data written from HDF5. The default is no compression. Setting value to -1, will use the default compression level of 6. The acceptable values are 0 to 9, corresponding to gzip compression levels.
- *|__CG_CONFIG_HDF5_MPI_COMM__| Sets the MPI communicator for parallel I/O. The default is `MPI_COMM_WORLD`. The new communicator is given by typecasting it to a `void *`. This is generally used internally - see `cgp_mpi_comm` instead.
- *|__CG_CONFIG_HDF5_DISKLESS_INCR__| Value specifies the increment by which allocated memory is to be increased each time more memory is required, in bytes. The default is 10MiB. Ideally, value should be set large enough to minimize repeated increases. The type of value is size_t in C and C_SIZE_T in Fortran. Due to a bug with gfortran, it is advisable to use C_LOC or C_FUNLOC in-line of the call instead of using a variable.
- *|__CG_CONFIG_HDF5_DISKLESS_WRITE__| Value indicates whether to write (value=1) the memory contents to disk when the file is closed. Otherwise, value=0 does not persist the memory to disk.
- *|__CG_CONFIG_HDF5_ALIGNMENT__| Configures HDF5's H5Pset_alignment and sets the alignment, value[1], properties of a file access property list so that any file object greater than or equal in size to a threshold, value[0], bytes will be aligned on an address which is a multiple of alignment.
- *|__CG_CONFIG_HDF5_MD_BLOCK_SIZE__| Configures HDF5's H5Pset_meta_block_size and sets the minimum size, value (in bytes), of metadata block allocations.
- *|__CG_CONFIG_HDF5_BUFFER__| Configures HDF5's H5Pset_buffer and sets the maximum size, value (in bytes), for the type conversion buffer and background buffer.
- *|__CG_CONFIG_HDF5_SIEVE_BUF_SIZE__| Configures HDF5's H5Pset_sieve_buf_size and sets the maximum size, value (in bytes), of the data sieve buffer.
- *|__CG_CONFIG_RESET__| Value indicates the configuration values to reset to their default values. Currently, only CG_CONFIG_RESET_HDF5 is a valid value and will reset all the CG_CONFIG_HDF5_* parameters, excluding CG_CONFIG_HDF5_MPI_COMM and CG_CONFIG_HDF5_DISKLESS, to their default values.
- *
+ * \details The function cg_configure() allows particular CGNS library internal options to be
+ *          configured. The currently supported options and expected values are listed below.
  *
  */
 int cg_configure(int option, void *value)
@@ -1060,9 +1097,18 @@ int cg_configure(int option, void *value)
 /**
  * \ingroup CGNSInternals
  *
- * \brief Set CGNS error handler 
+ * \brief Set CGNS error handler
  *
  * \param[in] func error handler function
+ *
+ * \note The routine cg_error_handler() is a convenience function built on top of cg_configure().
+ *
+ * \note There is no Fortran counterpart for function cg_error_handler(). The Fortran function
+ *       cg_exit_on_error_f() routine can be used instead of cg_error_handler(). If `flag` is
+ *       non-zero, the library will print the error message and exit with a code of 1 when an
+ *       error is encountered. Setting `flag` to zero (the default) prevents this, and the error
+ *       is returned to the user code.
+ *
  * \return \ier
  */
 int cg_error_handler(void (*func)(int, char *))
@@ -1076,8 +1122,10 @@ int cg_error_handler(void (*func)(int, char *))
  *
  * \brief Set CGNS compression mode
  *
- * \param[in] compress  CGNS compress (rewrite) setting
+ * \param[in] compress CGNS compress (rewrite) setting
  * \return \ier
+ *
+ * \note The routine cg_set_compress() is a convenience function built on top of cg_configure().
  */
 int cg_set_compress(int compress)
 {
@@ -1090,7 +1138,7 @@ int cg_set_compress(int compress)
  *
  * \brief Get CGNS compression mode
  *
- * \param[out] compress  CGNS compress (rewrite) setting
+ * \param[out] compress CGNS compress (rewrite) setting
  * \return \ier
  */
 int cg_get_compress(int *compress)
@@ -1104,8 +1152,10 @@ int cg_get_compress(int *compress)
  *
  * \brief Set the CGNS link search path
  *
- * \param[in] path to search for linked to files when opening a file with external links.
+ * \param[in]  path Path to search for links to files when opening a file with external links.
  * \return \ier
+ *
+ * \note The routine cg_set_path() is a convenience function built on top of cg_configure().
  */
 int cg_set_path(const char *path)
 {
@@ -1124,8 +1174,10 @@ int cg_set_path(const char *path)
  *
  * \brief Add to the CGNS link search path
  *
- * \param[in] path to search for linked to files when opening a file with external links.
+ * \param[in]  path Path to search for links to files when opening a file with external links.
  * \return \ier
+ *
+ * \note The routine cg_add_path() is a convenience function built on top of cg_configure().
  */
 int cg_add_path(const char *path)
 {
@@ -1248,6 +1300,14 @@ const char *cg_AverageInterfaceTypeName(CGNS_ENUMT( AverageInterfaceType_t )  ty
 {
     return cg_get_name(NofValidAverageInterfaceTypes,AverageInterfaceTypeName,(int)type);
 }
+const char *cg_ParticleGoverningEquationsTypeName(CGNS_ENUMT( ParticleGoverningEquationsType_t )  type)
+{
+    return cg_get_name(NofValidParticleGoverningEquationsTypes, ParticleGoverningEquationsTypeName,(int)type);
+}
+const char *cg_ParticleModelTypeName(CGNS_ENUMT( ParticleModelType_t )  type)
+{
+    return cg_get_name(NofValidParticleModelTypes,ParticleModelTypeName,(int)type);
+}
 
 /*****************************************************************************\
  *         Read and Write CGNSBase_t Nodes
@@ -1255,10 +1315,10 @@ const char *cg_AverageInterfaceTypeName(CGNS_ENUMT( AverageInterfaceType_t )  ty
 /**
  * \ingroup CGNSBaseInformation
  *
- * \brief Get number of CGNS base nodes in file
+ * \brief Get the number of CGNS base nodes in the file
  *
- * \param[in] fn  \FILE_fn
- * \param[out] nbases  Number of bases present in the CGNS file fn. 
+ * \param[in]  fn     \FILE_fn
+ * \param[out] nbases Number of bases in the CGNS file \p fn.
  * \return \ier
  *
  */
@@ -1279,11 +1339,12 @@ int cg_nbases(int fn, int *nbases)
  *
  * \brief Read CGNS base information
  *
- * \param[in] fn \FILE_fn
- * \param[in] B 	\B_Base
- * \param[out] basename  Name of the base
- * \param[out] cell_dim  Dimension of the cells; 3 for volume cells, 2 for surface cells and 1 for line cells. 
- * \param[out] phys_dim  Number of coordinates required to define a vector in the field. 
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[out] basename Name of the base
+ * \param[out] cell_dim Dimension of the cells; 3 for volume cells, 2 for surface cells and 1 for
+ *                      line cells.
+ * \param[out] phys_dim Number of coordinates required to define a vector in the field.
  * \return \ier
  *
  */
@@ -1313,9 +1374,9 @@ int cg_base_read(int fn, int B, char *basename, int *cell_dim,
  *
  * \brief Get the CGIO identifier of the CGNS base
  *
- * \param[in] fn \FILE_fn
- * \param[in] B 	\B_Base
- * \param[out] base_id  CGIO node identifier for the base
+ * \param[in]  fn      \FILE_fn
+ * \param[in]  B       \B_Base
+ * \param[out] base_id CGIO node identifier for the base.
  * \return \ier
  *
  */
@@ -1340,9 +1401,10 @@ int cg_base_id(int fn, int B, double *base_id)
  *
  * \brief Get the cell dimension for the CGNS base
  *
- * \param[in] fn \FILE_fn
- * \param[in] B   \B_Base
- * \param[out] cell_dim Dimension of the cells; 3 for volume cells, 2 for surface cells and 1 for line cells. 
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[out] cell_dim Dimension of the cells; 3 for volume cells, 2 for surface cells and 1 for
+ *                      line cells.
  * \return \ier
  *
  */
@@ -1364,11 +1426,12 @@ int cg_cell_dim(int fn, int B, int *cell_dim)
  *
  * \brief Create and/or write to a CGNS base node
  *
- * \param[in] fn \FILE_fn
- * \param[in] basename Name of the base.
- * \param[in] cell_dim Dimension of the cells; 3 for volume cells, 2 for surface cells and 1 for line cells. 
- * \param[in] phys_dim Number of coordinates required to define a vector in the field. 
- * \param[out] B   \B_Base
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  basename Name of the base.
+ * \param[in]  cell_dim Dimension of the cells; 3 for volume cells, 2 for surface cells and 1 for
+ *                      line cells.
+ * \param[in]  phys_dim Number of coordinates required to define a vector in the field.
+ * \param[out] B        \B_Base
  * \return \ier
  *
  */
@@ -1427,7 +1490,7 @@ int cg_base_write(int fn, const char * basename, int cell_dim,
 
      /* save data in memory and initialize base data structure */
     memset(base, 0, sizeof(cgns_base));
-    strcpy(base->name, basename);
+    snprintf(base->name, sizeof(base->name), "%s", basename);
     base->cell_dim = cell_dim;
     base->phys_dim = phys_dim;
 
@@ -1448,10 +1511,10 @@ int cg_base_write(int fn, const char * basename, int cell_dim,
 /**
  * \ingroup CGNSZoneInformation
  *
- * \brief Get number of zone in base
+ * \brief Get the number of zones in the base
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
  * \param[out] nzones Number of zones present in base B.
  * \return \ier
  *
@@ -1477,10 +1540,11 @@ int cg_nzones(int fn, int B, int *nzones)
  *
  * \brief Get type of zone (structured or unstructured)
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[out] zonetype Type of the zone. The admissible types are Structured and Unstructured.
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[out] zonetype Type of the zone. The admissible types are \e Structured and \e
+ *                      Unstructured.
  * \return \ier
  *
  */
@@ -1504,26 +1568,35 @@ int cg_zone_type(int fn, int B, int Z, CGNS_ENUMT(ZoneType_t) *zonetype)
 /**
  * \ingroup CGNSZoneInformation
  *
- * \brief Read zone information 
+ * \brief Read zone information
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
  * \param[out] zonename Name of the zone
- * \param[out] size 	Number of vertices, cells, and boundary vertices in each (index)-dimension. For structured grids, the dimensions have unit stride in the array (e.g., `[NVertexI, NVertexJ, NVertexK, NCellI, NCellJ, NCellK, NBoundVertexI, NBoundVertexJ, NBoundVertexK]`).
-Note that for unstructured grids, the number of cells is the number of highest order elements. Thus, in three dimensions it's the number of 3-D cells, and in two dimensions it's the number of 2-D cells.
-Also for unstructured grids, if the nodes are sorted between internal nodes and boundary nodes, the optional parameter `NBoundVertex` must be set equal to the number of boundary nodes. By default, `NBoundVertex` equals zero, meaning that the nodes are unsorted.
-Note that a non-zero value for `NBoundVertex` only applies to unstructured grids. For structured grids, the `NBoundVertex` parameter always equals 0 in all directions.
- *|Mesh Type      | Size|   
- *|---------------|-----|
- *| 3D structured | `NVertexI`, `NVertexJ`, `NVertexK`
- *| ^             | `NCellI`, `NCellJ`, `NCellK`
- *| ^             | `NBoundVertexI = 0`, `NBoundVertexJ = 0`, `NBoundVertexK = 0`
- *| 2D structured | `NVertexI`, `NVertexJ`
- *| ^             | `NCellI`, `NCellJ`
- *| ^             | `NBoundVertexI = 0`, `NBoundVertexJ = 0`
- *|3D unstructured| `NVertex`, `NCell3D`, `NBoundVertex`
- *|2D unstructured| `NVertex`, `NCell2D`, `NBoundVertex`
+ * \param[out] size     Number of vertices, cells, and boundary vertices in each (index)-dimension.
+ *                      For structured grids, the dimensions have unit stride in the array (e.g.,
+ *                      `[NVertexI', `NVertexJ`, `NVertexK`, `NCellI`, `NCellJ`, `NCellK`,
+ *                      `NBoundVertexI`, `NBoundVertexJ`, `NBoundVertexK]`). Note that for
+ *                      unstructured grids, the number of cells is the number of highest order
+ *                      elements. Thus, in three dimensions, it's the number of 3-D cells; in two
+ *                      dimensions, it's the number of 2-D cells. Also, for unstructured grids, if the
+ *                      nodes are sorted between internal nodes and boundary nodes, the optional parameter
+ *                      `NBoundVertex` must be set equal to the number of boundary nodes. By
+ *                      default, `NBoundVertex` equals zero, meaning that the nodes are unsorted.
+ *                      Note that a non-zero `NBoundVertex` value only applies to unstructured
+ *                      grids. For structured grids, the `NBoundVertex` parameter always equals 0 in
+ *                      all directions.
+ *                      |Mesh Type      | Size|
+ *                      |---------------|-----|
+ *                      | 3D structured | `NVertexI`, `NVertexJ`, `NVertexK`
+ *                      | ^             | `NCellI`, `NCellJ`, `NCellK`
+ *                      | ^             | `NBoundVertexI = 0`,`NBoundVertexJ = 0`,`NBoundVertexK = 0`
+ *                      | 2D structured | `NVertexI`, `NVertexJ`
+ *                      | ^             | `NCellI`, `NCellJ`
+ *                      | ^             | `NBoundVertexI = 0`, `NBoundVertexJ = 0`
+ *                      |3D unstructured| `NVertex`, `NCell3D`, `NBoundVertex`
+ *                      |2D unstructured| `NVertex`, `NCell2D`, `NBoundVertex`
  * \return \ier
  *
  */
@@ -1547,7 +1620,17 @@ int cg_zone_read(int fn, int B, int Z, char *zonename, cgsize_t *size)
     return CG_OK;
 }
 
-
+/**
+ * \ingroup CGNSZoneInformation
+ *
+ * \brief Get the CGIO identifier of the CGNS zone
+ *
+ * \param[in]  fn      \FILE_fn
+ * \param[in]  B       \B_Base
+ * \param[in]  Z       \Z_Zone
+ * \param[out] zone_id CGIO node identifier for the zone
+ * \return \ier
+ */
 int cg_zone_id(int fn, int B, int Z, double *zone_id)
 {
     cgns_zone *zone;
@@ -1567,12 +1650,13 @@ int cg_zone_id(int fn, int B, int Z, double *zone_id)
 /**
  * \ingroup CGNSZoneInformation
  *
- * \brief Get the index dimension of the CGNS zone 
+ * \brief Get the index dimension of the CGNS zone
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[out] index_dim Index dimension for the zone. For Structured zones, this will be the base cell dimension and for Unstructured zones it will be 1
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[out] index_dim Index dimension for the zone. For Structured zones, this will be the base
+ *                       cell dimension, and for Unstructured zones, it will be 1.
  * \return \ier
  */
 int cg_index_dim(int fn, int B, int Z, int *index_dim)
@@ -1591,27 +1675,36 @@ int cg_index_dim(int fn, int B, int Z, int *index_dim)
 /**
  * \ingroup CGNSZoneInformation
  *
- * \brief Create and/or write to a CGNS zone 
+ * \brief Create and/or write to a CGNS zone
  *
- * \param[in] fn \FILE_fn
- * \param[in] B   \B_Base
- * \param[in] zonename   Name of the zone.
- * \param[in] size 	Number of vertices, cells, and boundary vertices in each (index)-dimension. For structured grids, the dimensions have unit stride in the array (e.g., [NVertexI, NVertexJ, NVertexK, NCellI, NCellJ, NCellK, NBoundVertexI, NBoundVertexJ, NBoundVertexK]).
- *Note that for unstructured grids, the number of cells is the number of highest order elements. Thus, in three dimensions it's the number of 3-D cells, and in two dimensions it's the number of 2-D cells.
- *Also for unstructured grids, if the nodes are sorted between internal nodes and boundary nodes, the optional parameter NBoundVertex must be set equal to the number of boundary nodes. By default, NBoundVertex equals zero, meaning that the nodes are unsorted.
- *Note that a non-zero value for NBoundVertex only applies to unstructured grids. For structured grids, the NBoundVertex parameter always equals 0 in all directions.
- *|Mesh Type      | Size|
- *|---------------|-----|
- *| 3D structured | NVertexI, NVertexJ, NVertexK
- *|               | NCellI, NCellJ, NCellK
- *|               | NBoundVertexI = 0, NBoundVertexJ = 0, NBoundVertexK = 0
- *|2D structured  | NVertexI, NVertexJ
- *|               | NCellI, NCellJ
- *|               | NBoundVertexI = 0, NBoundVertexJ = 0
- *|3D unstructured| NVertex, NCell3D, NBoundVertex
- *|2D unstructured| NVertex, NCell2D, NBoundVertex
- * \param[in] zonetype   Type of the zone. The admissible types are Structured and Unstructured.
- * \param[out] Z         \Z_Zone
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  zonename Name of the zone.
+ * \param[in]  size     Number of vertices, cells, and boundary vertices in each (index)-dimension.
+ *                      For structured grids, the dimensions have unit stride in the array (e.g.,
+ *                      `[NVertexI`, `NVertexJ`, `NVertexK`, `NCellI`, `NCellJ`, `NCellK`, `NBoundVertexI`,
+ *                      `NBoundVertexJ`, `NBoundVertexK]`). Note that for unstructured grids, the number
+ *                      of cells is the number of highest-order elements. Thus, in three dimensions,
+ *                      it's the number of 3-D cells; in two dimensions, it's the number of 2-D
+ *                      cells. Also, for unstructured grids, if the nodes are sorted between internal
+ *                      nodes and boundary nodes, the optional parameter NBoundVertex must be set
+ *                      equal to the number of boundary nodes. By default, NBoundVertex equals zero,
+ *                      meaning that the nodes are unsorted. Note that a non-zero value for
+ *                      NBoundVertex only applies to unstructured grids. For structured grids, the
+ *                      NBoundVertex parameter always equals 0 in all directions.
+ *                      |Mesh Type      | Size|
+ *                      |---------------|-----|
+ *                      | 3D structured | `NVertexI`, `NVertexJ`, `NVertexK`
+ *                      |               | `NCellI`, `NCellJ`, `NCellK`
+ *                      |               | `NBoundVertexI = 0`, `NBoundVertexJ = 0`, `NBoundVertexK = 0`
+ *                      |2D structured  | `NVertexI`, `NVertexJ`
+ *                      |               | `NCellI`, `NCellJ`
+ *                      |               | `NBoundVertexI = 0`, `NBoundVertexJ = 0`
+ *                      |3D unstructured| `NVertex`, `NCell3D`, `NBoundVertex`
+ *                      |2D unstructured| `NVertex`, `NCell2D`, `NBoundVertex`
+ * \param[in]  zonetype Type of the zone. The admissible types are \e Structured and \e Unstructured.
+ * \param[out] Z        \Z_Zone
+ *
  * \return \ier
  */
 int cg_zone_write(int fn, int B, const char *zonename, const cgsize_t * size,
@@ -1649,11 +1742,11 @@ int cg_zone_write(int fn, int B, const char *zonename, const cgsize_t * size,
 
     for (i=0; i<index_dim; i++) {
         if (size[i]<=0) {
-            cgi_error("Invalid input:  nijk[%d]=%ld", i, size[i]);
+            cgi_error("Invalid input:  nijk[%d]=%" PRIdCGSIZE, i, size[i]);
             return CG_ERROR;
         }
         if (zonetype == CGNS_ENUMV( Structured ) && size[i]!=size[i+index_dim]+1) {
-            cgi_error("Invalid input:  VertexSize[%d]=%ld and CellSize[%d]=%ld",
+            cgi_error("Invalid input:  VertexSize[%d]=%" PRIdCGSIZE " and CellSize[%d]=%" PRIdCGSIZE,
                    i, size[i], i, size[i+index_dim]);
             return CG_ERROR;
         }
@@ -1673,7 +1766,7 @@ int cg_zone_write(int fn, int B, const char *zonename, const cgsize_t * size,
             }
         }
     }
-  
+
     index = (int) cgi_map_get_item(base->zonemap, zonename);
     /* */
     if (index != -1) {
@@ -1700,7 +1793,7 @@ int cg_zone_write(int fn, int B, const char *zonename, const cgsize_t * size,
         }
         zone = &(base->zone[base->nzones]);
         index = base->nzones;
-        
+
         if (cgi_map_set_item(base->zonemap, zonename, index) != 0) {
             cgi_error("Error while adding zonename %s to zonemap hashtable", zonename);
             return CG_ERROR;
@@ -1711,7 +1804,7 @@ int cg_zone_write(int fn, int B, const char *zonename, const cgsize_t * size,
 
     /* save data to zone */
     memset(zone, 0, sizeof(cgns_zone));
-    strcpy(zone->name, zonename);
+    snprintf(zone->name, sizeof(zone->name), "%s", zonename);
     if ((zone->nijk = (cgsize_t *)malloc((size_t)(index_dim*3*sizeof(cgsize_t))))==NULL) {
         cgi_error("Error allocating zone->nijk");
         return CG_ERROR;
@@ -1740,11 +1833,11 @@ int cg_zone_write(int fn, int B, const char *zonename, const cgsize_t * size,
 /**
  * \ingroup CGNSFamilyDefinition
  *
- * \brief Get number of Family_t node at CGNSBase_t level
+ * \brief Get number of \e Family_t node at \e CGNSBase_t level
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[out] nfamilies Number of families in base B
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[out] nfamilies Number of families in base \p B
  * \return \ier
  *
  */
@@ -1769,12 +1862,13 @@ int cg_nfamilies(int fn, int B, int *nfamilies)
  *
  * \brief Read family information (CGNSBase_t level)
  *
- * \param[in] fn   \FILE_fn
- * \param[in] B    \B_Base
- * \param[in] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[out] family_name Name of the family
- * \param[out] nboco  Number of boundary conditions for this family. This should be either 0 or 1.
- * \param[out] ngeos  Number of geometry references for this family.
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Fam         \Fam
+ * \param[out] family_name \family_name
+ * \param[out] nboco       Number of boundary conditions for this family. This should be
+ *                         either 0 or 1.
+ * \param[out] ngeos       Number of geometry references for this family.
  * \return \ier
  *
  */
@@ -1805,10 +1899,10 @@ int cg_family_read(int fn, int B, int Fam, char *family_name,
  *
  * \brief Read family information (CGNSBase_t level)
  *
- * \param[in] fn   \FILE_fn
- * \param[in] B    \B_Base
- * \param[in] family_name Name of the family
- * \param[out] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  family_name \family_name
+ * \param[out] Fam         \Fam
  * \return \ier
  *
  */
@@ -1853,7 +1947,7 @@ int cg_family_write(int fn, int B, const char * family_name, int *Fam)
             return CG_ERROR;
         }
 
-        /* Check that specified base's name matches beginning of family tree path */
+        /* Check that the specified base's name matches the beginning of the family tree path */
         pch = strstr( family_name, base->name );
         if( pch != family_name+1 ) {
             cgi_error( "Incompatible basename (%s) and family tree (%s)", base->name, family_name );
@@ -1867,7 +1961,7 @@ int cg_family_write(int fn, int B, const char * family_name, int *Fam)
         pch = (char*) family_name;
     }
 
-    /* Make a copy of family tree path (need non const string for tokenization loop) */
+    /* Make a copy of the family tree path (need non-const string for tokenization loop) */
     strcpy( family_name_path, pch );
 
     /* Init tokenization loop:
@@ -1964,12 +2058,12 @@ int cg_family_write(int fn, int B, const char * family_name, int *Fam)
 /**
  * \ingroup CGNSFamilyDefinition
  *
- * \brief Get number of family names under Family_t (CGNSBase_t level)
+ * \brief Get number of family names under \e Family_t (CGNSBase_t level)
  *
- * \param[in] fn   \FILE_fn
- * \param[in] B    \B_Base
- * \param[in] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[out] nnames Number of FamilyName_t nodes for this family.
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Fam    \Fam
+ * \param[out] nnames Number of \e FamilyName_t nodes for this family.
  * \return \ier
  *
  */
@@ -1992,14 +2086,15 @@ int cg_nfamily_names(int fn, int B, int Fam, int *nnames)
 /**
  * \ingroup CGNSFamilyDefinition
  *
- * \brief Read multiple family names under Family_t (CGNSBase_t level)
+ * \brief Read multiple family names under \e Family_t (CGNSBase_t level)
  *
- * \param[in] fn   \FILE_fn
- * \param[in] B    \B_Base
- * \param[in] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[in] N    Family name index number, where 1 ≤ N ≤ nNames. 
- * \param[out] node_name    Name of the FamilyName_t node. FamilyParent is used to refer to the parent family of the Family_t node.
- * \param[out] family_name  Name of the family
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Fam         \Fam
+ * \param[in]  N           Family name index number, where 1 ≤ N ≤ nNames.
+ * \param[out] node_name   Name of the \e FamilyName_t node. FamilyParent is used to refer to the parent
+ *                         family of the \e Family_t node.
+ * \param[out] family_name \family_name
  * \return \ier
  *
  */
@@ -2029,13 +2124,14 @@ int cg_family_name_read(int fn, int B, int Fam, int N, char *node_name, char *fa
 /**
  * \ingroup CGNSFamilyDefinition
  *
- * \brief  Write multiple family names under Family_t (CGNSBase_t level) 
+ * \brief Write multiple family names under \e Family_t (CGNSBase_t level)
  *
- * \param[in] fn   \FILE_fn
- * \param[in] B    \B_Base
- * \param[in] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[out] node_name    Name of the FamilyName_t node. FamilyParent is used to refer to the parent family of the Family_t node.
- * \param[out] family_name  Name of the family
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Fam         \Fam
+ * \param[out] node_name   Name of the \e FamilyName_t node. FamilyParent refers to the parent
+ *                         family of the \e Family_t node.
+ * \param[out] family_name \family_name
  * \return \ier
  *
  */
@@ -2099,10 +2195,10 @@ int cg_family_name_write(int fn, int B, int Fam,
 /**
  * \ingroup CGNSFamilyHierarchyTreeDefinition
  *
- * \brief  Create a Family_t node (Family_t level)
+ * \brief Create a \e Family_t node (\e Family_t level)
  *
- * \param[in] family_name  Name of the family
- * \param[out] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
+ * \param[in]  family_name \family_name
+ * \param[out] Fam         \Fam
  * \return \ier
  *
  */
@@ -2178,9 +2274,9 @@ int cg_node_family_write( const char* family_name, int* Fam)
 /**
  * \ingroup CGNSFamilyHierarchyTreeDefinition
  *
- * \brief  Get number of families (Family_t level)
+ * \brief Get number of families (Family_t level)
  *
- * \param[out] nfamilies  Number of families in current node (CGNSBase_t or Family_t).
+ * \param[out] nfamilies Number of families in current node (\e CGNSBase_t or \e Family_t).
  * \return \ier
  *
  */
@@ -2213,12 +2309,13 @@ int cg_node_nfamilies( int* nfamilies )
 /**
  * \ingroup CGNSFamilyHierarchyTreeDefinition
  *
- * \brief  Read family info (Family_t level)
+ * \brief Read family info (Family_t level)
  *
- * \param[in] Fam Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[out] family_name  Name of the family. 
- * \param[out] nFamBC  Number of boundary conditions for this family. This should be either 0 or 1.
- * \param[out] nGeo    Number of geometry references for this family.
+ * \param[in]  Fam         \Fam
+ * \param[out] family_name \family_name.
+ * \param[out] nFamBC      Number of boundary conditions for this family.
+ *                         This should be either 0 or 1.
+ * \param[out] nGeo        Number of geometry references for this family.
  * \return \ier
  *
  */
@@ -2245,10 +2342,11 @@ int cg_node_family_read( int Fam, char* family_name, int* nFamBC, int *nGeo )
 /**
  * \ingroup CGNSFamilyHierarchyTreeDefinition
  *
- * \brief  Write multiple family names under Family_t (Family_t level) 
+ * \brief Write multiple family names under \e Family_t (\e Family_t level)
  *
- * \param[in] node_name Name of the FamilyName_t node. FamilyParent is used to refer to the parent family of the Family_t node. 
- * \param[in] family_name  Name of the family. 
+ * \param[in]  node_name   Name of the \e FamilyName_t node. FamilyParent refers to the parent
+ *                         family of the \e Family_t node.
+ * \param[in]  family_name \family_name.
  * \return \ier
  *
  */
@@ -2318,9 +2416,9 @@ int cg_node_family_name_write( const char* node_name, const char* family_name )
 /**
  * \ingroup CGNSFamilyHierarchyTreeDefinition
  *
- * \brief  Get number of family names under Family_t (Family_t level) 
+ * \brief Get number of family names under \e Family_t (\e Family_t level)
  *
- * \param[out] nnames Number of FamilyName_t nodes for this family.
+ * \param[out] nnames Number of \e FamilyName_t nodes for this family.
  * \return \ier
  *
  */
@@ -2351,11 +2449,12 @@ int cg_node_nfamily_names( int* nnames )
 /**
  * \ingroup CGNSFamilyHierarchyTreeDefinition
  *
- * \brief  Read family info (Family_t level)
+ * \brief Read family info (\e Family_t level)
  *
- * \param[in] N Family name index number, where 1 ≤ N ≤ nNames.
- * \param[out] node_name Name of the FamilyName_t node. FamilyParent is used to refer to the parent family of the Family_t node. 
- * \param[out] family_name  Name of the family. 
+ * \param[in]  N           Family name index number, where 1 ≤ N ≤ nNames.
+ * \param[out] node_name   Name of the \e FamilyName_t node. FamilyParent refers to the parent
+ *                         family of the \e Family_t node.
+ * \param[out] family_name \family_name.
  * \return \ier
  *
  */
@@ -2382,20 +2481,20 @@ int cg_node_family_name_read(int N, char* node_name, char* family_name )
 /*----------------------------------------------------------------------*/
 
 /**
- * \ingroup CGNSFamilyBoundaryDefinition
+ * \ingroup CGNSFamilyBoundaryCondition
  *
- * \brief  Read boundary condition type for a family
+ * \brief Read boundary condition type for a family
  *
- * \param[in] fn   \FILE_fn 
- * \param[in] B    \B_Base 
- * \param[in] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[in] BC   Family boundary condition index number. This must be equal to 1. 
- * \param[out] fambc_name  Name of the FamilyBC_t node.
- * \param[out] bocotype  Boundary condition type for the family. See the eligible types for BCType_t in the Typedefs section.
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Fam        \Fam
+ * \param[in]  BC_idx     \BC_idx
+ * \param[out] fambc_name Name of the \e FamilyBC_t node.
+ * \param[out] bocotype   Boundary condition type for the family. See the eligible types for \e BCType_t
+ *                        in the Typedefs section.
  * \return \ier
  */
-
-int cg_fambc_read(int fn, int B, int Fam, int BC,
+int cg_fambc_read(int fn, int B, int Fam, int BC_idx,
               char *fambc_name, CGNS_ENUMT(BCType_t) *bocotype)
 {
     cgns_family *family;
@@ -2408,32 +2507,33 @@ int cg_fambc_read(int fn, int B, int Fam, int BC,
     family = cgi_get_family(cg, B, Fam);
     if (family==0) return CG_ERROR;
 
-    if (BC<=0 || BC>family->nfambc) {
+    if (BC_idx<=0 || BC_idx>family->nfambc) {
         cgi_error("Invalid family b.c. number");
         return CG_ERROR;
     }
-    strcpy(fambc_name,family->fambc[BC-1].name);
-    *bocotype = family->fambc[BC-1].type;
+    strcpy(fambc_name,family->fambc[BC_idx-1].name);
+    *bocotype = family->fambc[BC_idx-1].type;
 
     return CG_OK;
 }
 
 /**
- * \ingroup CGNSFamilyBoundaryDefinition
+ * \ingroup CGNSFamilyBoundaryCondition
  *
- * \brief  Write boundary condition type for a family
+ * \brief Write boundary condition type for a family
  *
- * \param[in] fn   \FILE_fn 
- * \param[in] B    \B_Base 
- * \param[in] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[in] fambc_name  Name of the FamilyBC_t node.
- * \param[in] bocotype  Boundary condition type for the family. See the eligible types for BCType_t in the Typedefs section.
- * \param[out] BC   Family boundary condition index number. This must be equal to 1. 
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Fam        \Fam
+ * \param[in]  fambc_name Name of the \e FamilyBC_t node.
+ * \param[in]  bocotype   Boundary condition type for the family. See the eligible types for \e BCType_t
+ *                        in the Typedefs section.
+ * \param[out] BC_idx     \BC_idx
  * \return \ier
  *
  */
 int cg_fambc_write(int fn, int B, int Fam, const char * fambc_name,
-           CGNS_ENUMT( BCType_t )  bocotype, int *BC)
+           CGNS_ENUMT( BCType_t )  bocotype, int *BC_idx)
 {
     int index;
     cgsize_t length;
@@ -2487,7 +2587,7 @@ int cg_fambc_write(int fn, int B, int Fam, const char * fambc_name,
         fambc = &(family->fambc[family->nfambc]);
         family->nfambc++;
     }
-    (*BC) = index+1;
+    (*BC_idx) = index+1;
 
     memset(fambc, 0, sizeof(cgns_fambc));
     strcpy(fambc->name, fambc_name);
@@ -2503,17 +2603,18 @@ int cg_fambc_write(int fn, int B, int Fam, const char * fambc_name,
 
 /*----------------------------------------------------------------------*/
 /**
- * \ingroup CGNSFamilyBoundaryDefinition
+ * \ingroup CGNSFamilyBoundaryCondition
  *
- * \brief  Read boundary condition information (Family_t level)
+ * \brief Read boundary condition information (\e Family_t level)
  *
- * \param[in] BC  Family boundary condition index number. This must be equal to 1. 
- * \param[out] fambc_name  Name of the FamilyBC_t node.
- * \param[out] bocotype  Boundary condition type for the family. See the eligible types for BCType_t in the Typedefs section.
+ * \param[in]  BC_idx     \BC_idx
+ * \param[out] fambc_name Name of the \e FamilyBC_t node.
+ * \param[out] bocotype   Boundary condition type for the family. See the eligible types for \e BCType_t
+ *                        in the Typedefs section.
  * \return \ier
  *
  */
-int cg_node_fambc_read( int BC, char* fambc_name,
+int cg_node_fambc_read( int BC_idx, char* fambc_name,
         CGNS_ENUMT(BCType_t) *bocotype)
 {
     cgns_family*  family  = 0;
@@ -2539,30 +2640,31 @@ int cg_node_fambc_read( int BC, char* fambc_name,
         return CG_ERROR;
     }
 
-    if (BC<=0 || BC>family->nfambc) {
+    if (BC_idx<=0 || BC_idx>family->nfambc) {
         cgi_error("Invalid family b.c. number");
         return CG_ERROR;
     }
-    strcpy(fambc_name,family->fambc[BC-1].name);
-    *bocotype = family->fambc[BC-1].type;
+    strcpy(fambc_name,family->fambc[BC_idx-1].name);
+    *bocotype = family->fambc[BC_idx-1].type;
 
     return CG_OK;
 }
 
 /*----------------------------------------------------------------------*/
 /**
- * \ingroup CGNSFamilyBoundaryDefinition
+ * \ingroup CGNSFamilyBoundaryCondition
  *
- * \brief  Write boundary condition information (Family_t level)
+ * \brief Write boundary condition information (\e Family_t level)
  *
- * \param[in] fambc_name  Name of the FamilyBC_t node.
- * \param[in] bocotype  Boundary condition type for the family. See the eligible types for BCType_t in the Typedefs section.
- * \param[out] BC  Family boundary condition index number. This must be equal to 1. 
+ * \param[in]  fambc_name Name of the \e FamilyBC_t node.
+ * \param[in]  bocotype   Boundary condition type for the family. See the eligible types for \e BCType_t
+ *                        in the Typedefs section.
+ * \param[out] BC_idx     \BC_idx
  * \return \ier
  *
  */
 int cg_node_fambc_write( const char* fambc_name,
-        CGNS_ENUMT(BCType_t) bocotype, int *BC )
+        CGNS_ENUMT(BCType_t) bocotype, int *BC_idx )
 {
     int index;
     cgsize_t length;
@@ -2629,7 +2731,7 @@ int cg_node_fambc_write( const char* fambc_name,
         family->nfambc++;
     }
 
-    (*BC) = index+1;
+    (*BC_idx) = index+1;
 
     memset(fambc, 0, sizeof(cgns_fambc));
     strcpy(fambc->name, fambc_name);
@@ -2648,16 +2750,16 @@ int cg_node_fambc_write( const char* fambc_name,
 /**
  * \ingroup CGNSGeometryReference
  *
- * \brief  Read geometry reference information
+ * \brief Read geometry reference information
  *
- * \param[in] fn   \FILE_fn
- * \param[in] B    \B_Base 
- * \param[in] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[in] G    Geometry reference index number, where 1 ≤ G ≤ nGeo. 
- * \param[out] geo_name  Name of GeometryReference_t node.
- * \param[out] geo_file  Name of geometry file
- * \param[out] CAD_name  Geometry format
- * \param[out] npart Number of geometry entities
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Fam      \Fam
+ * \param[in]  G        Geometry reference index number, where 1 ≤ G ≤ nGeo.
+ * \param[out] geo_name Name of \e GeometryReference_t node.
+ * \param[out] geo_file Name of geometry file.
+ * \param[out] CAD_name Geometry format.
+ * \param[out] npart    Number of geometry entities.
  * \return \ier
  *
  */
@@ -2694,15 +2796,15 @@ int cg_geo_read(int fn, int B, int Fam, int G, char *geo_name,
 /**
  * \ingroup CGNSGeometryReference
  *
- * \brief  Create a GeometryReference_t node
+ * \brief Create a \e GeometryReference_t node
  *
- * \param[in] fn   \FILE_fn
- * \param[in] B    \B_Base 
- * \param[in] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[in] geo_name  Name of GeometryReference_t node.
- * \param[in] geo_file  Name of geometry file
- * \param[in] CAD_name  Geometry format
- * \param[out] G   Geometry reference index number, where 1 ≤ G ≤ nGeo. 
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Fam      \Fam
+ * \param[in]  geo_name Name of \e GeometryReference_t node.
+ * \param[in]  geo_file Name of geometry file.
+ * \param[in]  CAD_name Geometry format.
+ * \param[out] G        Geometry reference index number, where 1 ≤ G ≤ nGeo.
  * \return \ier
  *
  */
@@ -2796,13 +2898,13 @@ int cg_geo_write(int fn, int B, int Fam, const char * geo_name,
 /**
  * \ingroup CGNSGeometryReference
  *
- * \brief  Read geometry reference information (Family_t level)
+ * \brief Read geometry reference information (Family_t level)
  *
- * \param[in] G    Geometry reference index number, where 1 ≤ G ≤ nGeo. 
- * \param[out] geo_name  Name of GeometryReference_t node.
- * \param[out] geo_file  Name of geometry file
- * \param[out] CAD_name  Geometry format
- * \param[out] npart Number of geometry entities
+ * \param[in]  G        Geometry reference index number, where 1 ≤ G ≤ nGeo.
+ * \param[out] geo_name Name of \e GeometryReference_t node.
+ * \param[out] geo_file Name of geometry file.
+ * \param[out] CAD_name Geometry format.
+ * \param[out] npart    Number of geometry entities.
  * \return \ier
  *
  */
@@ -2853,12 +2955,12 @@ int cg_node_geo_read( int G, char *geo_name,
 /**
  * \ingroup CGNSGeometryReference
  *
- * \brief  Create GeometryReference_t node (Family_t level)
+ * \brief Create GeometryReference_t node (Family_t level)
  *
- * \param[in] geo_name  Name of GeometryReference_t node.
- * \param[in] geo_file  Name of geometry file
- * \param[in] CAD_name  Geometry format
- * \param[out] G  Geometry reference index number, where 1 ≤ G ≤ nGeo. 
+ * \param[in]  geo_name Name of GeometryReference_t node.
+ * \param[in]  geo_file Name of geometry file.
+ * \param[in]  CAD_name Geometry format.
+ * \param[out] G        Geometry reference index number, where 1 ≤ G ≤ nGeo.
  *
  * \return \ier
  *
@@ -2965,14 +3067,14 @@ int cg_node_geo_write( const char *geo_name,
 /**
  * \ingroup CGNSGeometryReference
  *
- * \brief  Get geometry entity name
+ * \brief Get geometry entity name
  *
- * \param[in] fn   \FILE_fn
- * \param[in] B    \B_Base 
- * \param[in] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[in] G   Geometry reference index number, where 1 ≤ G ≤ nGeo.
- * \param[in] P   Geometry entity index number, where 1 ≤ P ≤ nparts
- * \param[out] part_name  Name of a geometry entity in the file FileName. 
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Fam       \Fam
+ * \param[in]  G         Geometry reference index number, where 1 ≤ G ≤ nGeo.
+ * \param[in]  P         Geometry entity index number, where 1 ≤ P ≤ nparts.
+ * \param[out] part_name Name of a geometry entity in the file FileName.
  * \return \ier
  *
  */
@@ -2999,14 +3101,14 @@ int cg_part_read(int fn, int B, int Fam, int G, int P, char *part_name)
 /**
  * \ingroup CGNSGeometryReference
  *
- * \brief  Write geometry entity name
+ * \brief Write geometry entity name
  *
- * \param[in] fn   \FILE_fn
- * \param[in] B    \B_Base 
- * \param[in] Fam  Family index number, where 1 ≤ Fam ≤ nfamilies.
- * \param[in] G   Geometry reference index number, where 1 ≤ G ≤ nGeo.
- * \param[in] part_name  Name of a geometry entity in the file FileName.
- * \param[out] P   Geometry entity index number, where 1 ≤ P ≤ nparts
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Fam       \Fam
+ * \param[in]  G         Geometry reference index number, where 1 ≤ G ≤ nGeo.
+ * \param[in]  part_name Name of a geometry entity in the file FileName.
+ * \param[out] P         Geometry entity index number, where 1 ≤ P ≤ nparts.
  * \return \ier
  *
  */
@@ -3083,11 +3185,11 @@ int cg_part_write(int fn, int B, int Fam, int G, const char * part_name,
 /**
  * \ingroup CGNSGeometryReference
  *
- * \brief  Get geometry entity name (Family_t level)
+ * \brief Get geometry entity name (Family_t level)
  *
- * \param[in] G   Geometry reference index number, where 1 ≤ G ≤ nGeo.
- * \param[in] P   Geometry entity index number, where 1 ≤ P ≤ nparts
- * \param[out] part_name  Name of a geometry entity in the file FileName. 
+ * \param[in]  G         Geometry reference index number, where 1 ≤ G ≤ nGeo.
+ * \param[in]  P         Geometry entity index number, where 1 ≤ P ≤ nparts.
+ * \param[out] part_name Name of a geometry entity in the file FileName.
  * \return \ier
  *
  */
@@ -3128,11 +3230,11 @@ int cg_node_part_read(int G, int P, char *part_name)
 /**
  * \ingroup CGNSGeometryReference
  *
- * \brief  Write geometry entity name (Family_t level)
+ * \brief Write geometry entity name (Family_t level)
  *
- * \param[in] G   Geometry reference index number, where 1 ≤ G ≤ nGeo.
- * \param[in] part_name  Name of a geometry entity in the file FileName.
- * \param[out] P   Geometry entity index number, where 1 ≤ P ≤ nparts
+ * \param[in]  G         Geometry reference index number, where 1 ≤ G ≤ nGeo.
+ * \param[in]  part_name Name of a geometry entity in the file FileName.
+ * \param[out] P         Geometry entity index number, where 1 ≤ P ≤ nparts.
  * \return \ier
  *
  */
@@ -3221,11 +3323,11 @@ int cg_node_part_write(int G, const char * part_name, int *P)
 /**
  * \ingroup DiscreteData
  *
- * \brief Get number of `DiscreteData_t` nodes
+ * \brief Get the number of `DiscreteData_t` nodes
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
  * \param[out] ndiscrete Number of `DiscreteData_t` data structures under zone Z.
  * \return \ier
  *
@@ -3249,12 +3351,12 @@ int cg_ndiscrete(int fn, int B, int Z, int *ndiscrete)
 /**
  * \ingroup DiscreteData
  *
- * \brief Get name of `DiscreteData_t` node
+ * \brief Get the name of `DiscreteData_t` node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] D  Discrete data index number, where 1 ≤ D ≤ ndiscrete.
+ * \param[in]  fn            \FILE_fn
+ * \param[in]  B             \B_Base
+ * \param[in]  Z             \Z_Zone
+ * \param[in]  D             Discrete data index number, where 1 ≤ D ≤ ndiscrete.
  * \param[out] discrete_name Name of `DiscreteData_t` data structures.
  * \return \ier
  *
@@ -3281,11 +3383,11 @@ int cg_discrete_read(int fn, int B, int Z, int D, char *discrete_name)
  *
  * \brief Create a `DiscreteData_t` node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] discrete_name Name of `DiscreteData_t` data structures.
- * \param[out] D  Discrete data index number, where 1 ≤ D ≤ ndiscrete.
+ * \param[in]  fn            \FILE_fn
+ * \param[in]  B             \B_Base
+ * \param[in]  Z             \Z_Zone
+ * \param[in]  discrete_name Name of `DiscreteData_t` data structures.
+ * \param[out] D             Discrete data index number, where 1 ≤ D ≤ ndiscrete.
  * \return \ier
  *
  */
@@ -3358,12 +3460,14 @@ int cg_discrete_write(int fn, int B, int Z,  const char * discrete_name,
  *
  * \brief Get the dimensions of `DiscreteData_t` node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] D  Discrete data index number, where 1 ≤ D ≤ ndiscrete.
- * \param[out] data_dim  Number of dimensions defining the discrete data. If a point set has been defined, this will be 1, otherwise this will be the current zone index dimension.
- * \param[out] dim_vals  The array of data_dim dimensions for the discrete data.
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  D        Discrete data index number, where 1 ≤ D ≤ ndiscrete.
+ * \param[out] data_dim Number of dimensions defining the discrete data. If a point set has been
+ *                      defined, this will be 1, otherwise this will be the current zone index
+ *                      dimension.
+ * \param[out] dim_vals The array of data_dim dimensions for the discrete data.
  * \return \ier
  *
  */
@@ -3400,12 +3504,15 @@ int cg_discrete_size(int fn, int B, int Z, int D,
  *
  * \brief Get info about a point set `DiscreteData_t` node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] D  Discrete data index number, where 1 ≤ D ≤ ndiscrete.
- * \param[out] ptset_type Type of point set defining the interface for the discrete data; either PointRange or PointList.
- * \param[out] npnts  Number of points defining the interface for the discrete data. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points in the list.
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  D          Discrete data index number, where 1 ≤ D ≤ ndiscrete.
+ * \param[out] ptset_type Type of point set defining the interface for the discrete data; either
+ *                        PointRange or PointList.
+ * \param[out] npnts      Number of points defining the interface for the discrete data. For a
+ *                        ptset_type of PointRange, \p npnts is always two. For a ptset_type of
+ *                        PointList, \p npnts is the number of points in the list.
  * \return \ier
  *
  */
@@ -3437,11 +3544,11 @@ int cg_discrete_ptset_info(int fn, int B, int Z, int D,
  *
  * \brief Read a point set `DiscreteData_t` node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] D  Discrete data index number, where 1 ≤ D ≤ ndiscrete.
- * \param[out] pnts  Array of points defining the interface for the discrete data. 
+ * \param[in]  fn   \FILE_fn
+ * \param[in]  B    \B_Base
+ * \param[in]  Z    \Z_Zone
+ * \param[in]  D    Discrete data index number, where 1 ≤ D ≤ ndiscrete.
+ * \param[out] pnts Array of points defining the interface for the discrete data.
  * \return \ier
  *
  */
@@ -3473,15 +3580,19 @@ int cg_discrete_ptset_read(int fn, int B, int Z, int D, cgsize_t *pnts)
  *
  * \brief Create a point set `DiscreteData_t` node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] discrete_name  Name of `DiscreteData_t` data structures.
- * \param[in] location  Grid location where the discrete data is recorded. The current admissible locations are Vertex, CellCenter, IFaceCenter, JFaceCenter, and KFaceCenter.
- * \param[in] ptset_type  Type of point set defining the interface for the discrete data; either PointRange or PointList.
- * \param[in] npnts 	Number of points defining the interface for the discrete data. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points in the list.
- * \param[in] pnts  Array of points defining the interface for the discrete data.
- * \param[out] D  Discrete data index number, where 1 ≤ D ≤ ndiscrete.
+ * \param[in]  fn            \FILE_fn
+ * \param[in]  B             \B_Base
+ * \param[in]  Z             \Z_Zone
+ * \param[in]  discrete_name Name of `DiscreteData_t` data structures.
+ * \param[in]  location      Grid location where the discrete data is recorded. The permissible
+ *                           locations are \e Vertex, \e CellCenter, \e IFaceCenter, \e JFaceCenter, and \e KFaceCenter.
+ * \param[in]  ptset_type    Type of point set defining the interface for the discrete data; either
+ *                           \e PointRange or \e PointList.
+ * \param[in]  npnts         Number of points defining the interface for the discrete data. For a
+ *                           \p ptset_type of \e PointRange, \p npnts is always two. For a \p ptset_type of
+ *                           \e PointList, \p npnts is the number of points in the list.
+ * \param[in]  pnts          Array of points defining the interface for the discrete data.
+ * \param[out] D             Discrete data index number, where 1 ≤ D ≤ ndiscrete.
  * \return \ier
  *
  */
@@ -3549,12 +3660,12 @@ int cg_discrete_ptset_write(int fn, int B, int Z,
 /**
  * \ingroup ZoneGridCoordinates
  *
- * \brief Get number of `GridCoordinates_t` nodes
+ * \brief Get the number of `GridCoordinates_t` nodes
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] ngrids 	Number of `GridCoordinates_t` nodes for zone Z.
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[out] ngrids Number of `GridCoordinates_t` nodes for zone Z.
  * \return \ier
  *
  */
@@ -3580,11 +3691,13 @@ int cg_ngrids(int fn, int B, int Z, int *ngrids)
  *
  * \brief Get Name of a `GridCoordinates_t` node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] G  \G_Grid
- * \param[out] grid_coord_name Name of the GridCoordinates_t node. Note that the name "GridCoordinates" is reserved for the original grid and must be the first GridCoordinates_t node to be defined.
+ * \param[in]  fn              \FILE_fn
+ * \param[in]  B               \B_Base
+ * \param[in]  Z               \Z_Zone
+ * \param[in]  G               \G_Grid
+ * \param[out] grid_coord_name Name of the GridCoordinates_t node. Note that the name "GridCoordinates" is
+ *                             reserved for the original grid and must be the first GridCoordinates_t node
+ *                             to be defined.
  * \return \ier
  *
  */
@@ -3611,11 +3724,13 @@ int cg_grid_read(int fn, int B, int Z, int G, char *grid_coord_name)
  *
  * \brief Create a `GridCoordinates_t` nodes
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] grid_coord_name Name of the GridCoordinates_t node. Note that the name "GridCoordinates" is reserved for the original grid and must be the first GridCoordinates_t node to be defined.
- * \param[out] G  \G_Grid
+ * \param[in]  fn              \FILE_fn
+ * \param[in]  B               \B_Base
+ * \param[in]  Z               \Z_Zone
+ * \param[in]  grid_coord_name Name of the GridCoordinates_t node. Note that the name "GridCoordinates" is
+ *                             reserved for the original grid and must be the first GridCoordinates_t node
+ *                             to be defined.
+ * \param[out] G               \G_Grid
  * \return \ier
  *
  */
@@ -3699,15 +3814,19 @@ int cg_grid_write(int fn, int B, int Z, const char * grid_coord_name, int *G)
  *
  * \brief Get bounding box associated with a `GridCoordinates_t` node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] G  \G_Grid
- * \param[in] datatype 	Data type of the bounding box array written to the file or read. Admissible data types for a coordinate bounding box are RealSingle and RealDouble. 
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  G           \G_Grid
+ * \param[in]  datatype    Data type of the bounding box array written to the file or read. Admissible
+ *                         data types for a coordinate bounding box are \e RealSingle and \e RealDouble.
  * \param[out] boundingbox Data Array with bounding box values.
  * \return \ier
  *
- * \details When reading a bounding box, if the information is missing from the file, the boundingbox array will remain untouched, and the CG_NODE_NOT_FOUND status is returned. The CGNS MLL relies on the user to compute the bounding box and ensure that the bounding box being stored is coherent with the coordinates under GridCoordinates_t node.
+ * \details When reading a bounding box, if the information is missing from the file, the \p boundingbox
+ *          array will remain untouched, and the CG_NODE_NOT_FOUND status will be returned. The CGNS MLL
+ *          relies on the user to compute the bounding box and ensure that the bounding box being
+ *          stored is coherent with the coordinates under the GridCoordinates_t node.
  *
  */
 int cg_grid_bounding_box_read(int fn, int B, int Z, int G, CGNS_ENUMT(DataType_t) datatype, void* boundingbox)
@@ -3780,16 +3899,18 @@ int cg_grid_bounding_box_read(int fn, int B, int Z, int G, CGNS_ENUMT(DataType_t
  *
  * \brief Write bounding box associated with a `GridCoordinates_t` node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] G  \G_Grid
- * \param[in] datatype 	Data type of the bounding box array written to the file or read. Admissible data types for a coordinate bounding box are RealSingle and RealDouble. 
- * \param[in] boundingbox Data Array with bounding box values.
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  G           \G_Grid
+ * \param[in]  datatype    Data type of the bounding box array written to the file or read. Admissible
+ *                         data types for a coordinate bounding box are RealSingle and RealDouble.
+ * \param[in]  boundingbox Data Array with bounding box values.
  * \return \ier
  *
- * \details  The CGNS MLL relies on the user to compute the bounding box and ensure that the bounding box being stored is coherent with the coordinates under GridCoordinates_t node.
- 
+ * \details  The CGNS MLL relies on the user to compute the bounding box and ensure that the bounding
+ *           box being stored is coherent with the coordinates under the GridCoordinates_t node.
+
  */
 int cg_grid_bounding_box_write(int fn, int B, int Z, int G, CGNS_ENUMT(DataType_t) datatype, void* boundingbox)
 {
@@ -3853,11 +3974,11 @@ int cg_grid_bounding_box_write(int fn, int B, int Z, int G, CGNS_ENUMT(DataType_
 /**
  * \ingroup ZoneGridCoordinates
  *
- * \brief  Get number of coordinate arrays
+ * \brief Get the number of coordinate arrays
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
+ * \param[in]  fn      \FILE_fn
+ * \param[in]  B       \B_Base
+ * \param[in]  Z       \Z_Zone
  * \param[out] ncoords Number of coordinate arrays for zone Z.
  * \return \ier
  *
@@ -3881,14 +4002,17 @@ int cg_ncoords(int fn, int B, int Z, int *ncoords)
 /**
  * \ingroup ZoneGridCoordinates
  *
- * \brief  Get info about a coordinate array
+ * \brief Get info about a coordinate array
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] C  \C_Coordinate 
- * \param[out] datatype   Data type of the coordinate array written to the file. Admissible data types for a coordinate array are RealSingle and RealDouble. 
- * \param[out] coordname   Name of the coordinate array. It is strongly advised to use the SIDS nomenclature conventions when naming the coordinate arrays to insure file compatibility.
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  C         \C_Coordinate
+ * \param[out] datatype  Data type of the coordinate array written to the file. Admissible data types
+ *                       for a coordinate array are RealSingle and RealDouble.
+ * \param[out] coordname Name of the coordinate array. It is strongly advised to use the SIDS
+ *                       nomenclature conventions when naming the coordinate arrays to ensure file
+ *                       compatibility.
  * \return \ier
  *
  */
@@ -3919,16 +4043,19 @@ int cg_coord_info(int fn, int B, int Z, int C, CGNS_ENUMT(DataType_t)  *datatype
 /**
  * \ingroup ZoneGridCoordinates
  *
- * \brief  Read grid coordinate array
+ * \brief Read grid coordinate array
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] coordname  Name of the coordinate array. It is strongly advised to use the SIDS nomenclature conventions when naming the coordinate arrays to insure file compatibility.
- * \param[in] mem_datatype  Data type of an array in memory. Admissible data types for a coordinate array are RealSingle and RealDouble.
- * \param[in] s_rmin  Lower range index in file (eg., imin, jmin, kmin).
- * \param[in] s_rmax  Upper range index in file (eg., imax, jmax, kmax).
- * \param[out] coord_array   Array of coordinate values.
+ * \param[in]  fn           \FILE_fn
+ * \param[in]  B            \B_Base
+ * \param[in]  Z            \Z_Zone
+ * \param[in]  coordname    Name of the coordinate array. It is strongly advised to use the SIDS
+ *                          nomenclature conventions when naming the coordinate arrays to ensure file
+ *                          compatibility.
+ * \param[in]  mem_datatype Data type of an array in memory. Admissible data types for a coordinate
+ *                          array are RealSingle and RealDouble.
+ * \param[in]  s_rmin       Lower range index in file (eg., imin, jmin, kmin).
+ * \param[in]  s_rmax       Upper range index in file (eg., imax, jmax, kmax).
+ * \param[out] coord_array  Array of coordinate values.
  * \return \ier
  *
  */
@@ -3971,20 +4098,23 @@ int cg_coord_read(int fn, int B, int Z, const char *coordname,
 /**
  * \ingroup ZoneGridCoordinates
  *
- * \brief  Read subset of grid coordinates to a shaped array
+ * \brief Read subset of grid coordinates to a shaped array
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] coordname  Name of the coordinate array. It is strongly advised to use the SIDS nomenclature conventions when naming the coordinate arrays to insure file compatibility.
- * \param[in] m_type   Data type of an array in memory. Admissible data types for a coordinate array are RealSingle and RealDouble.
- * \param[in] s_rmin   Lower range index in file (eg., imin, jmin, kmin).
- * \param[in] s_rmax   Upper range index in file (eg., imax, jmax, kmax).
- * \param[in] m_numdim   Number of dimensions of array in memory. 
- * \param[in] m_dimvals   Dimensions of array in memory.
- * \param[in] m_rmin   Lower range index in memory (eg., imin, jmin, kmin). 
- * \param[in] m_rmax   Upper range index in memory (eg., imax, jmax, kmax).
- * \param[out] coord_ptr   Array of coordinate values.
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  coordname Name of the coordinate array. It is strongly advised to use the SIDS
+ *                       nomenclature conventions when naming the coordinate arrays to ensure file
+ *                       compatibility.
+ * \param[in]  m_type    Data type of an array in memory. Admissible data types for a coordinate
+ *                       array are RealSingle and RealDouble.
+ * \param[in]  s_rmin    Lower range index in file (eg., imin, jmin, kmin).
+ * \param[in]  s_rmax    Upper range index in file (eg., imax, jmax, kmax).
+ * \param[in]  m_numdim  Number of dimensions of the array in memory.
+ * \param[in]  m_dimvals Dimensions of array in memory.
+ * \param[in]  m_rmin    Lower range index in memory (eg., imin, jmin, kmin).
+ * \param[in]  m_rmax    Upper range index in memory (eg., imax, jmax, kmax).
+ * \param[out] coord_ptr Array of coordinate values.
  * \return \ier
  *
  */
@@ -4037,6 +4167,20 @@ int cg_coord_general_read(int fn, int B, int Z, const char *coordname,
                                   coord_ptr);
 }
 
+/**
+* \ingroup ZoneGridCoordinates
+*
+* \brief Get coordinate id
+*
+* \param[in]  fn       \FILE_fn
+* \param[in]  B        \B_Base
+* \param[in]  Z        \Z_Zone
+* \param[in]  C        \C_Coordinate
+* \param[out] coord_id Coordinate id.
+* \return \ier
+*
+*/
+
 int cg_coord_id(int fn, int B, int Z, int C, double *coord_id)
 {
     cgns_zcoor *zcoor;
@@ -4062,15 +4206,18 @@ int cg_coord_id(int fn, int B, int Z, int C, double *coord_id)
 /**
  * \ingroup ZoneGridCoordinates
  *
- * \brief  Write grid coordinates
+ * \brief Write grid coordinates
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] datatype Data type of the coordinate array written to the file. Admissible data types for a coordinate array are RealSingle and RealDouble. 
- * \param[in] coordname  Name of the coordinate array. It is strongly advised to use the SIDS nomenclature conventions when naming the coordinate arrays to insure file compatibility.
- * \param[in] coord_ptr   Array of coordinate values.
- * \param[out] C    \C_Coordinate 
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  datatype  Data type of the coordinate array written to the file. Admissible data types
+ *                       for a coordinate array are RealSingle and RealDouble.
+ * \param[in]  coordname Name of the coordinate array. It is strongly advised to use the SIDS
+ *                       nomenclature conventions when naming the coordinate arrays to ensure file
+ *                       compatibility.
+ * \param[in]  coord_ptr Array of coordinate values.
+ * \param[out] C         \C_Coordinate
  * \return \ier
  *
  */
@@ -4134,17 +4281,20 @@ int cg_coord_write(int fn, int B, int Z, CGNS_ENUMT(DataType_t) datatype,
 /**
  * \ingroup ZoneGridCoordinates
  *
- * \brief  Write subset of grid coordinates
+ * \brief Write subset of grid coordinates
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] datatype Data type of the coordinate array written to the file. Admissible data types for a coordinate array are RealSingle and RealDouble. 
- * \param[in] coordname  Name of the coordinate array. It is strongly advised to use the SIDS nomenclature conventions when naming the coordinate arrays to insure file compatibility.
- * \param[in] s_rmin   Lower range index in file (eg., imin, jmin, kmin).
- * \param[in] s_rmax   Upper range index in file (eg., imax, jmax, kmax).
- * \param[in] coord_ptr   Array of coordinate values.
- * \param[out] C    \C_Coordinate 
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  datatype  Data type of the coordinate array written to the file. Admissible data types
+ *                       for a coordinate array are RealSingle and RealDouble.
+ * \param[in]  coordname Name of the coordinate array. It is strongly advised to use the SIDS
+ *                       nomenclature conventions when naming the coordinate arrays to ensure file
+ *                       compatibility.
+ * \param[in]  s_rmin    Lower range index in file (eg., imin, jmin, kmin).
+ * \param[in]  s_rmax    Upper range index in file (eg., imax, jmax, kmax).
+ * \param[in]  coord_ptr Array of coordinate values.
+ * \param[out] C         \C_Coordinate
  * \return \ier
  *
  */
@@ -4190,22 +4340,26 @@ int cg_coord_partial_write(int fn, int B, int Z,
 /**
  * \ingroup ZoneGridCoordinates
  *
- * \brief  Write shaped array to a subset of grid coordinates
+ * \brief Write shaped array to a subset of grid coordinates
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] coordname  Name of the coordinate array. It is strongly advised to use the SIDS nomenclature conventions when naming the coordinate arrays to insure file compatibility.
- * \param[in] s_type   Data type of the coordinate array written to the file. Admissible data types for a coordinate array are RealSingle and RealDouble.
- * \param[in] m_type   Data type of an array in memory. Admissible data types for a coordinate array are RealSingle and RealDouble.
- * \param[in] s_rmin   Lower range index in file (eg., imin, jmin, kmin).
- * \param[in] s_rmax   Upper range index in file (eg., imax, jmax, kmax).
- * \param[in] m_numdim   Number of dimensions of array in memory. 
- * \param[in] m_dimvals   Dimensions of array in memory.
- * \param[in] m_rmin   Lower range index in memory (eg., imin, jmin, kmin). 
- * \param[in] m_rmax   Upper range index in memory (eg., imax, jmax, kmax).
- * \param[in] coord_ptr   Array of coordinate values.
- * \param[out] C    \C_Coordinate 
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  coordname Name of the coordinate array. It is strongly advised to use the SIDS
+ *                       nomenclature conventions when naming the coordinate arrays to ensure file
+ *                       compatibility.
+ * \param[in]  s_type    Data type of the coordinate array written to the file. Admissible data types
+ *                       for a coordinate array are RealSingle and RealDouble.
+ * \param[in]  m_type    Data type of an array in memory. Admissible data types for a coordinate
+ *                       array are RealSingle and RealDouble.
+ * \param[in]  s_rmin    Lower range index in file (eg., imin, jmin, kmin).
+ * \param[in]  s_rmax    Upper range index in file (eg., imax, jmax, kmax).
+ * \param[in]  m_numdim  Number of dimensions of the array in memory.
+ * \param[in]  m_dimvals Dimensions of array in memory.
+ * \param[in]  m_rmin    Lower range index in memory (eg., imin, jmin, kmin).
+ * \param[in]  m_rmax    Upper range index in memory (eg., imax, jmax, kmax).
+ * \param[in]  coord_ptr Array of coordinate values.
+ * \param[out] C         \C_Coordinate
  * \return \ier
  *
  */
@@ -4442,11 +4596,11 @@ static int read_parent_data(cgns_section *section)
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Get number of element sections
+ * \brief Get the number of element sections
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
  * \param[out] nsections Number of element sections.
  * \return \ier
  *
@@ -4471,18 +4625,21 @@ int cg_nsections(int fn, int B, int Z, int *nsections)
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Get info for an element section
+ * \brief Get info for an element section
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S 
- * \param[in] type  Type of element. See the eligible types for ElementType_t in the Typedefs section.
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  S           \CONN_S
+ * \param[in]  type        Type of element. See the eligible types for ElementType_t in the Typedefs
+ *                         section.
  * \param[out] SectionName Name of the Elements_t node.
- * \param[out] start  	Index of first element in the section.
- * \param[out] end  Index of last element in the section. 
- * \param[out] nbndry 	Index of last boundary element in the section. Set to zero if the elements are unsorted. 
- * \param[out] parent_flag  Flag indicating if the parent data are defined. If the parent data exist, parent_flag is set to 1; otherwise it is set to 0.
+ * \param[out] start       Index of the first element in the section.
+ * \param[out] end         Index of the last element in the section.
+ * \param[out] nbndry      Index of last boundary element in the section. Set to zero if the elements
+ *                         are unsorted.
+ * \param[out] parent_flag Flag indicating if the parent data are defined. If the parent data exists,
+ *                         parent_flag is set to 1; otherwise, it is set to 0.
  * \return \ier
  *
  */
@@ -4515,21 +4672,24 @@ int cg_section_read(int fn, int B, int Z, int S, char *SectionName,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Write fixed size element data
+ * \brief Write fixed-size element data
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] type  Type of element. See the eligible types for ElementType_t in the Typedefs section.
- * \param[in] SectionName Name of the Elements_t node.
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section. 
- * \param[in] nbndry 	Index of last boundary element in the section. Set to zero if the elements are unsorted. 
- * \param[in] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions. 
- * \param[out] S  \CONN_S 
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  type        Type of element. See the eligible types for ElementType_t in the Typedefs
+ *                         section.
+ * \param[in]  SectionName Name of the Elements_t node.
+ * \param[in]  start       Index of the first element in the section.
+ * \param[in]  end         Index of the last element in the section.
+ * \param[in]  nbndry      Index of last boundary element in the section. Set to zero if the elements
+ *                         are unsorted.
+ * \param[in]  elements    Element connectivity data. The element connectivity order is given in
+ *                         Element Numbering Conventions.
+ * \param[out] S           \CONN_S
  * \return \ier
  *
- * \details This writing function only works with fixed size elements.
+ * \details This writing function only works with fixed-size elements.
  *
  */
 int cg_section_write(int fn, int B, int Z, const char * SectionName,
@@ -4567,19 +4727,23 @@ int cg_section_write(int fn, int B, int Z, const char * SectionName,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Write element data
+ * \brief Write element data
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] type  Type of element. See the eligible types for ElementType_t in the Typedefs section.
- * \param[in] SectionName Name of the Elements_t node.
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section. 
- * \param[in] nbndry 	Index of last boundary element in the section. Set to zero if the elements are unsorted. 
- * \param[in] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
- * \param[in] connect_offset 	Element connectivity offset data. This is required for NGON_n, NFACE_n and MIXED according to Elements_t Structure Definition. 
- * \param[out] S  \CONN_S 
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  type           Type of element. See the eligible types for ElementType_t in the Typedefs
+ *                            section.
+ * \param[in]  SectionName    Name of the Elements_t node.
+ * \param[in]  start          Index of the first element in the section.
+ * \param[in]  end            Index of the last element in the section.
+ * \param[in]  nbndry         Index of last boundary element in the section. Set to zero if the elements
+ *                            are unsorted.
+ * \param[in]  elements       Element connectivity data. The element connectivity order is given in
+ *                            Element Numbering Conventions.
+ * \param[in]  connect_offset Element connectivity offset data. This is required for NGON_n, NFACE_n and
+ *                            MIXED according to Elements_t Structure Definition.
+ * \param[out] S              \CONN_S
  * \return \ier
  *
  */
@@ -4643,17 +4807,19 @@ int cg_poly_section_write(int fn, int B, int Z, const char * SectionName,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Write subset of element data
+ * \brief Write subset of element data
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] type  Type of element. See the eligible types for ElementType_t in the Typedefs section.
- * \param[in] SectionName Name of the Elements_t node.
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section. 
- * \param[in] nbndry 	Index of last boundary element in the section. Set to zero if the elements are unsorted. 
- * \param[out] S  \CONN_S 
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  type        Type of element. See the eligible types for ElementType_t in the Typedefs
+ *                         section.
+ * \param[in]  SectionName Name of the Elements_t node.
+ * \param[in]  start       Index of the first element in the section.
+ * \param[in]  end         Index of the last element in the section.
+ * \param[in]  nbndry      Index of last boundary element in the section. Set to zero if the elements
+ *                         are unsorted.
+ * \param[out] S           \CONN_S
  * \return \ier
  *
  */
@@ -4686,19 +4852,21 @@ int cg_section_partial_write(int fn, int B, int Z, const char * SectionName,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Write section data without element data
+ * \brief Write section data without element data
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] type  Type of element. See the eligible types for ElementType_t in the Typedefs section.
- * \param[in] elementDataType Data type of an array. Admissible data types are Integer and LongInteger.
- * \param[in] SectionName Name of the Elements_t node.
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[in] elementDataSize 	Number of element connectivity data values.
- * \param[in] nbndry 	Index of last boundary element in the section. Set to zero if the elements are unsorted. 
- * \param[out] S  \CONN_S 
+ * \param[in]  fn              \FILE_fn
+ * \param[in]  B               \B_Base
+ * \param[in]  Z               \Z_Zone
+ * \param[in]  type            Type of element. See the eligible types for ElementType_t in the Typedefs
+ *                             section.
+ * \param[in]  elementDataType Data type of an array. Admissible data types are Integer and LongInteger.
+ * \param[in]  SectionName     Name of the Elements_t node.
+ * \param[in]  start           Index of the first element in the section.
+ * \param[in]  end             Index of the last element in the section.
+ * \param[in]  elementDataSize Number of element connectivity data values.
+ * \param[in]  nbndry          Index of last boundary element in the section. Set to zero if the elements
+ *                             are unsorted.
+ * \param[out] S               \CONN_S
  * \return \ier
  *
  */
@@ -4810,7 +4978,7 @@ int cg_section_general_write(int fn, int B, int Z, const char * SectionName,
     (*S) = index+1;
 
     /* initialize ... */
-    strcpy(section->name, SectionName);
+    snprintf(section->name, sizeof(section->name), "%s", SectionName);
     section->el_type = type;
     section->range[0] = start;
     section->range[1] = end;
@@ -4904,17 +5072,17 @@ int cg_section_general_write(int fn, int B, int Z, const char * SectionName,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Initialize element data for not fixed size elements
+ * \brief Initialize element data for not fixed size elements
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] S  \CONN_S 
+ * \param[in]  fn \FILE_fn
+ * \param[in]  B  \B_Base
+ * \param[in]  Z  \Z_Zone
+ * \param[out] S  \CONN_S
  * \return \ier
  *
- * \details This function is a kind of helper to be used after a cg_section_general_write
- * cg_section_general_write reserve enough space while this function put
- * coherent init data. Then cg_poly_elements_partial_write would run safely.
+ * \details This function is a kind of helper to be used after a cg_section_general_write().
+ *          cg_section_general_write() reserves enough space while this function puts coherent
+ *          init data. Then cg_poly_elements_partial_write() would run safely.
  */
 int cg_section_initialize(int fn, int B, int Z, int S)
 {
@@ -5133,17 +5301,17 @@ int cg_section_initialize(int fn, int B, int Z, int S)
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Get size of element connectivity data array
+ * \brief Get size of element connectivity data array
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S 
+ * \param[in]  fn              \FILE_fn
+ * \param[in]  B               \B_Base
+ * \param[in]  Z               \Z_Zone
+ * \param[in]  S               \CONN_S
  * \param[out] ElementDataSize Number of element connectivity data values.
  * \return \ier
  *
  * \details This function was created for revision 1.2 to return the size of the
- *          connectivity vector, which can't be known without it *when type=MIXED*
+ *          connectivity vector, which can't be known without it *when type=MIXED*.
  */
 int cg_ElementDataSize(int fn, int B, int Z, int S,
                        cgsize_t *ElementDataSize)
@@ -5166,19 +5334,19 @@ int cg_ElementDataSize(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Get size of element connectivity data array for partial read
+ * \brief Get size of element connectivity data array for partial read
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
+ * \param[in]  fn              \FILE_fn
+ * \param[in]  B               \B_Base
+ * \param[in]  Z               \Z_Zone
+ * \param[in]  S               \CONN_S
+ * \param[in]  start           Index of the first element in the section.
+ * \param[in]  end             Index of the last element in the section.
  * \param[out] ElementDataSize Number of element connectivity data values.
  * \return \ier
  *
  * \details This function was created for revision 1.2 to return the size of the
- *          connectivity vector, which can't be known without it *when type=MIXED*
+ *          connectivity vector, which can't be known without it *when type=MIXED*.
  */
 int cg_ElementPartialSize(int fn, int B, int Z, int S,
                           cgsize_t start, cgsize_t end, cgsize_t *ElementDataSize)
@@ -5215,7 +5383,7 @@ int cg_ElementPartialSize(int fn, int B, int Z, int S,
     if (section->connect_offset->data == NULL) {
         // Only read a slice of the ElementStartOffset array
         cnt = end - start + 2;
-        // Handle different compilation configuration for cgsize_t
+        // Handle different compilation configurations for cgsize_t
 #if CG_SIZEOF_SIZE == 64
         if (0 == strcmp(section->connect_offset->data_type, "I4")) {
             int* offsets = (int*)malloc((size_t)(cnt * sizeof(int)));
@@ -5281,14 +5449,17 @@ int cg_ElementPartialSize(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Read fixed size element data
+ * \brief Read fixed size element data
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[out] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
- * \param[out] parent_data  For boundary or interface elements, this array contains information on the cell(s) and cell face(s) sharing the element. If you do not need to read the ParentData when reading the ElementData, you may set the value to NULL.
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  S           \CONN_S
+ * \param[out] elements    Element connectivity data. The element connectivity order is given in
+ *                         Element Numbering Conventions.
+ * \param[out] parent_data For boundary or interface elements, this array contains information on the
+ *                         cell(s) and cell face(s) sharing the element. If you do not need to read the
+ *                         ParentData when reading the ElementData, you may set the value to NULL.
  * \return \ier
  *
  */
@@ -5354,15 +5525,19 @@ int cg_elements_read(int fn, int B, int Z, int S, cgsize_t *elements,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Read element data
+ * \brief Read element data
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[out] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
- * \param[out] connect_offset 	Element connectivity offset data. This is required for NGON_n, NFACE_n and MIXED according to Elements_t Structure Definition. 
- * \param[out] parent_data  For boundary or interface elements, this array contains information on the cell(s) and cell face(s) sharing the element. If you do not need to read the ParentData when reading the ElementData, you may set the value to NULL.
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  S              \CONN_S
+ * \param[out] elements       Element connectivity data. The element connectivity order is given in
+ *                            Element Numbering Conventions.
+ * \param[out] connect_offset Element connectivity offset data. This is required for NGON_n, NFACE_n and
+ *                            MIXED according to Elements_t Structure Definition.
+ * \param[out] parent_data    For boundary or interface elements, this array contains information on the
+ *                            cell(s) and cell face(s) sharing the element. If you do not need to read the
+ *                            ParentData when reading the ElementData, you may set the value to NULL.
  * \return \ier
  *
  */
@@ -5442,16 +5617,19 @@ int cg_poly_elements_read(int fn, int B, int Z, int S, cgsize_t *elements,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Read subset of fixed size element data
+ * \brief Read subset of fixed size element data
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[out] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
- * \param[out] parent_data  For boundary or interface elements, this array contains information on the cell(s) and cell face(s) sharing the element. If you do not need to read the ParentData when reading the ElementData, you may set the value to NULL.
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  S           \CONN_S
+ * \param[in]  start       Index of the first element in the section.
+ * \param[in]  end         Index of the last element in the section.
+ * \param[out] elements    Element connectivity data. The element connectivity order is given in
+ *                         Element Numbering Conventions.
+ * \param[out] parent_data For boundary or interface elements, this array contains information on the
+ *                         cell(s) and cell face(s) sharing the element. If you do not need to read the
+ *                         ParentData when reading the ElementData, you may set the value to NULL.
  * \return \ier
  *
  */
@@ -5632,16 +5810,18 @@ int cg_elements_partial_read(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Read subset of fixed size element data to a typed array
+ * \brief Read subset of fixed size element data to a typed array
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[in] m_type Data type of an array in memory. Admissible data types are Integer and LongInteger. 
- * \param[out] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  S        \CONN_S
+ * \param[in]  start    Index of the first element in the section.
+ * \param[in]  end      Index of the last element in the section.
+ * \param[in]  m_type   Data type of an array in memory. Admissible data types are Integer and
+ *                      LongInteger.
+ * \param[out] elements Element connectivity data. The element connectivity order is given in
+ *                      Element Numbering Conventions.
  * \return \ier
  *
  */
@@ -5649,7 +5829,7 @@ int cg_elements_general_read(int fn, int B, int Z, int S,
       cgsize_t start, cgsize_t end, CGNS_ENUMT(DataType_t) m_type, void* elements)
 {
     cgns_section* section;
-    cgsize_t size = 0;
+    cgsize_t size;
     cgsize_t s_start[1], s_end[1], s_stride[1];
     cgsize_t m_start[1], m_end[1], m_stride[1], m_dim[1];
     CGNS_ENUMT(DataType_t) s_type;
@@ -5719,7 +5899,7 @@ int cg_elements_general_read(int fn, int B, int Z, int S,
     }
     else if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) {
         void* conv_data = NULL;
-        conv_data = malloc((size_t)(size * size_of(cgi_adf_datatype(s_type))));
+        conv_data = malloc(((size_t)size) * size_of(cgi_adf_datatype(s_type)));
         if (conv_data == NULL) {
             cgi_error("Error allocating conv_data");
             return CG_ERROR;
@@ -5772,16 +5952,18 @@ int cg_elements_general_read(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Read parent info for an element section
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[in] m_type Data type of an array in memory. Admissible data types are Integer and LongInteger. 
- * \param[out] ParentElement  For boundary or interface elements, this array contains information on the cell(s) sharing the element. 
+ * \brief Read parent info for an element section
+ *
+ * \param[in]  fn            \FILE_fn
+ * \param[in]  B             \B_Base
+ * \param[in]  Z             \Z_Zone
+ * \param[in]  S             \CONN_S
+ * \param[in]  start         Index of the first element in the section.
+ * \param[in]  end           Index of the last element in the section.
+ * \param[in]  m_type        Data type of an array in memory. Admissible data types are Integer and
+ *                           LongInteger.
+ * \param[out] ParentElement For boundary or interface elements, this array contains information on the
+ *                           cell(s) sharing the element.
  * \return \ier
  *
  */
@@ -5861,7 +6043,7 @@ int cg_parent_elements_general_read(int fn, int B, int Z, int S,
     }
     else if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) {
         void* conv_data = NULL;
-        conv_data = malloc((size_t)(m_dim[0] * 2 * size_of(cgi_adf_datatype(s_type))));
+        conv_data = malloc(((size_t)(m_dim[0] * 2)) * size_of(cgi_adf_datatype(s_type)));
         if (conv_data == NULL) {
             cgi_error("Error allocating conv_data");
             return CG_ERROR;
@@ -5916,16 +6098,18 @@ int cg_parent_elements_general_read(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Read parent position info for an element section
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[in] m_type Data type of an array in memory. Admissible data types are Integer and LongInteger. 
- * \param[out] ParentFace For boundary or interface elements, this array contains information on the cell face(s) sharing the element.  
+ * \brief Read parent position info for an element section
+ *
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  S          \CONN_S
+ * \param[in]  start      Index of the first element in the section.
+ * \param[in]  end        Index of the last element in the section.
+ * \param[in]  m_type     Data type of an array in memory. Admissible data types are Integer and
+ *                        LongInteger.
+ * \param[out] ParentFace For boundary or interface elements, this array contains information on the
+ *                        cell face(s) sharing the element.
  * \return \ier
  *
  */
@@ -6005,7 +6189,7 @@ int cg_parent_elements_position_general_read(int fn, int B, int Z, int S,
     }
     else if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) {
         void* conv_data = NULL;
-        conv_data = malloc((size_t)(m_dim[0] * 2 * size_of(cgi_adf_datatype(s_type))));
+        conv_data = malloc(((size_t)(m_dim[0] * 2)) * size_of(cgi_adf_datatype(s_type)));
         if (conv_data == NULL) {
             cgi_error("Error allocating conv_data");
             return CG_ERROR;
@@ -6059,17 +6243,21 @@ int cg_parent_elements_position_general_read(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Read subset of element data
+ * \brief Read subset of element data
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[out] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
- * \param[out] connect_offset Element connectivity offset data. This is required for NGON_n, NFACE_n and MIXED according to Elements_t Structure Definition. 
- * \param[out] parent_data For boundary or interface elements, this array contains information on the cell(s) and cell face(s) sharing the element. If you do not need to read the ParentData when reading the ElementData, you may set the value to NULL.
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  S              \CONN_S
+ * \param[in]  start          Index of the first element in the section.
+ * \param[in]  end            Index of the last element in the section.
+ * \param[out] elements       Element connectivity data. The element connectivity order is given in
+ *                            Element Numbering Conventions.
+ * \param[out] connect_offset Element connectivity offset data. This is required for NGON_n, NFACE_n and
+ *                            MIXED according to Elements_t Structure Definition.
+ * \param[out] parent_data    For boundary or interface elements, this array contains information on the
+ *                            cell(s) and cell face(s) sharing the element. If you do not need to read the
+ *                            ParentData when reading the ElementData, you may set the value to NULL.
  * \return \ier
  *
  */
@@ -6255,17 +6443,20 @@ int cg_poly_elements_partial_read(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Read subset of element data to typed arrays
+ * \brief Read subset of element data to typed arrays
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[in] m_type Data type of an array in memory. Admissible data types are Integer and LongInteger. 
- * \param[out] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
- * \param[out] connect_offset Element connectivity offset data. This is required for NGON_n, NFACE_n and MIXED according to Elements_t Structure Definition. 
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  S              \CONN_S
+ * \param[in]  start          Index of the first element in the section.
+ * \param[in]  end            Index of the last element in the section.
+ * \param[in]  m_type         Data type of an array in memory. Admissible data types are Integer and
+ *                            LongInteger.
+ * \param[out] elements       Element connectivity data. The element connectivity order is given in
+ *                            Element Numbering Conventions.
+ * \param[out] connect_offset Element connectivity offset data. This is required for NGON_n, NFACE_n and
+ *                            MIXED according to Elements_t Structure Definition.
  * \return \ier
  *
  */
@@ -6373,7 +6564,7 @@ int cg_poly_elements_general_read(int fn, int B, int Z, int S,
     }
     else if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) {
         void* conv_data = NULL;
-        conv_data = malloc((size_t)(size * size_of(cgi_adf_datatype(s_type))));
+        conv_data = malloc(((size_t)size) * size_of(cgi_adf_datatype(s_type)));
         if (conv_data == NULL) {
             cgi_error("Error allocating conv_data");
             return CG_ERROR;
@@ -6406,15 +6597,16 @@ int cg_poly_elements_general_read(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Write element data for a fixed size element section 
+ * \brief Write element data for a fixed-size element section
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[in] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  S        \CONN_S
+ * \param[in]  start    Index of the first element in the section.
+ * \param[in]  end      Index of the last element in the section.
+ * \param[in]  elements Element connectivity data. The element connectivity order is given in
+ *                      Element Numbering Conventions.
  * \return \ier
  *
  */
@@ -6444,8 +6636,8 @@ int cg_elements_partial_write(int fn, int B, int Z, int S,
     } \
     else if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2){ \
     void *conv_data=NULL; \
-    conv_data = malloc((size_t)((m_end-m_start+1) \
-    *size_of(ARRAY->data_type))); \
+    conv_data = malloc(((size_t)(m_end-m_start+1)) \
+    *size_of(ARRAY->data_type)); \
     if (conv_data == NULL) { \
     cgi_error("Error allocating conv_data"); \
     STATUS = CG_ERROR; \
@@ -6484,8 +6676,8 @@ int cg_elements_partial_write(int fn, int B, int Z, int S,
     } \
     else if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2){ \
     void *conv_data; \
-    conv_data = malloc((size_t)((m_end[0]-m_start[0]+1)*(m_end[1]-m_start[1]+1) \
-    *size_of(ARRAY->data_type))); \
+    conv_data = malloc((size_t)((m_end[0]-m_start[0]+1)*(m_end[1]-m_start[1]+1)) \
+    *size_of(ARRAY->data_type)); \
     if (conv_data == NULL) { \
     cgi_error("Error allocating conv_data"); \
     return CG_ERROR; \
@@ -6526,8 +6718,8 @@ int cg_elements_partial_write(int fn, int B, int Z, int S,
     void *conv_data; \
     cgsize_t conv_size=1; \
     for (int ii=0; ii<S_DIM; ii++){ conv_size *= ARRAY->dim_vals[ii]; } \
-    conv_data = malloc((size_t)(conv_size \
-    *size_of(ARRAY->data_type))); \
+    conv_data = malloc(((size_t)conv_size) \
+    *size_of(ARRAY->data_type)); \
     if (conv_data == NULL) { \
     cgi_error("Error allocating conv_data"); \
     return CG_ERROR; \
@@ -6564,7 +6756,7 @@ int cg_elements_partial_write(int fn, int B, int Z, int S,
     } \
     } else if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) { \
     void *conv_data = NULL; \
-    conv_data = malloc((size_t)(SIZE*size_of(cgi_adf_datatype(S_TYPE)))); \
+    conv_data = malloc(((size_t)SIZE)*size_of(cgi_adf_datatype(S_TYPE))); \
     if (conv_data==NULL){ \
     cgi_error("Error allocating conv_data"); \
     STATUS = CG_ERROR; \
@@ -6592,16 +6784,18 @@ int cg_elements_partial_write(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Write element data for a fixed size element section
+ * \brief Write element data for a fixed-size element section
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[in] m_type Data type of an array in memory. Admissible data types are Integer and LongInteger. 
- * \param[in] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  S        \CONN_S
+ * \param[in]  start    Index of the first element in the section.
+ * \param[in]  end      Index of the last element in the section.
+ * \param[in]  m_type   Data type of an array in memory. Admissible data types are Integer and
+ *                      LongInteger.
+ * \param[in]  elements Element connectivity data. The element connectivity order is given in
+ *                      Element Numbering Conventions.
  * \return \ier
  *
  */
@@ -6726,6 +6920,10 @@ int cg_elements_general_write(int fn, int B, int Z, int S,
 
         /* create new element connectivity array */
 
+        if (newsize > CG_SIZE_MAX / sizeof(cgsize_t)) {
+            cgi_error("Error in allocation size for new connectivity data");
+            return CG_ERROR;
+        }
         newelems = (cgsize_t *) malloc ((size_t)(newsize * sizeof(cgsize_t)));
         if (NULL == newelems) {
             cgi_error("Error allocating new connectivity data");
@@ -6840,6 +7038,10 @@ int cg_elements_general_write(int fn, int B, int Z, int S,
 
         if (read_parent_data(section)) return CG_ERROR;
 
+        if((cnt*newsize) > CG_SIZE_MAX/sizeof(cgsize_t) ) {
+            cgi_error("Error in allocation size for new ParentElements data");
+            return CG_ERROR;
+        }
         newelems = (cgsize_t *)malloc((size_t)(cnt * newsize * sizeof(cgsize_t)));
         if (NULL == newelems) {
             cgi_error("Error allocating new ParentElements data");
@@ -6907,16 +7109,18 @@ int cg_elements_general_write(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Write element data for an element section
+ * \brief Write element data for an element section
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[in] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
- * \param[in] connect_offset Element connectivity offset data. This is required for NGON_n, NFACE_n and MIXED according to Elements_t Structure Definition.
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  S              \CONN_S
+ * \param[in]  start          Index of the first element in the section.
+ * \param[in]  end            Index of the last element in the section.
+ * \param[in]  elements       Element connectivity data. The element connectivity order is given in
+ *                            Element Numbering Conventions.
+ * \param[in]  connect_offset Element connectivity offset data. This is required for NGON_n, NFACE_n and
+ *                            MIXED according to Elements_t Structure Definition.
  * \return \ier
  *
  */
@@ -6935,17 +7139,20 @@ int cg_poly_elements_partial_write(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Write element data for an element section
+ * \brief Write element data for an element section
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start  	Index of first element in the section.
- * \param[in] end  Index of last element in the section.
- * \param[in] m_type Data type of an array in memory. Admissible data types are Integer and LongInteger. 
- * \param[in] elements  Element connectivity data. The element connectivity order is given in Element Numbering Conventions.
- * \param[in] input_connect_offset Element connectivity offset data. This is required for NGON_n, NFACE_n and MIXED according to Elements_t Structure Definition. 
+ * \param[in]  fn                   \FILE_fn
+ * \param[in]  B                    \B_Base
+ * \param[in]  Z                    \Z_Zone
+ * \param[in]  S                    \CONN_S
+ * \param[in]  start                Index of the first element in the section.
+ * \param[in]  end                  Index of the last element in the section.
+ * \param[in]  m_type               Data type of an array in memory. Admissible data types are \e Integer and
+ *                                  \e LongInteger.
+ * \param[in]  elements             Element connectivity data. The element connectivity order is given in
+ *                                  Element Numbering Conventions.
+ * \param[in]  input_connect_offset Element connectivity offset data. This is required for NGON_n, NFACE_n and
+ *                                  MIXED according to Elements_t Structure Definition.
  * \return \ier
  *
  */
@@ -7114,6 +7321,10 @@ int cg_poly_elements_general_write(int fn, int B, int Z, int S,
 
             if (m_trail_size > 0){
                 /* partial load trailing elements that will be relocated */
+                if (m_trail_size > CG_SIZE_MAX / sizeof(cgsize_t)) {
+                  cgi_error("Error in allocation size for trail_elements");
+                  return CG_ERROR;
+                }
                 trail_elements = (cgsize_t *) malloc((size_t)m_trail_size * sizeof(cgsize_t));
                 if (trail_elements == NULL) {
                     if (alloc_offset) free(alloc_offset);
@@ -7138,7 +7349,7 @@ int cg_poly_elements_general_write(int fn, int B, int Z, int S,
                     }
                 } else if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) {
                     void *conv_data = NULL;
-                    conv_data = malloc((size_t)(m_trail_size*size_of(section->connect->data_type)));
+                    conv_data = malloc(((size_t)m_trail_size)*size_of(section->connect->data_type));
                     if (conv_data == NULL) {
                         cgi_error("Error allocating conv_data");
                         ier = CG_ERROR;
@@ -7273,7 +7484,10 @@ int cg_poly_elements_general_write(int fn, int B, int Z, int S,
             }
         }
         /* create new element connectivity array and offsets*/
-
+        if (newsize > CG_SIZE_MAX / sizeof(cgsize_t)) {
+            cgi_error("Error in allocation size for new connectivity data");
+            return CG_ERROR;
+        }
         newelems = (cgsize_t *) malloc (((size_t)newsize) * sizeof(cgsize_t));
         if (NULL == newelems) {
             if (alloc_offset) free(alloc_offset);
@@ -7537,13 +7751,15 @@ int cg_poly_elements_general_write(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Write parent info for an element section
+ * \brief Write parent info for an element section
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] parent_data  For boundary or interface elements, this array contains information on the cell(s) and cell face(s) sharing the element. If you do not need to read the ParentData when reading the ElementData, you may set the value to NULL. 
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  S           \CONN_S
+ * \param[in]  parent_data For boundary or interface elements, this array contains information on the
+ *                         cell(s) and cell face(s) sharing the element. If you do not need to read the
+ *                         ParentData when reading the ElementData, you may set the value to NULL.
  * \return \ier
  *
  */
@@ -7640,15 +7856,17 @@ int cg_parent_data_write(int fn, int B, int Z, int S,
 /**
  * \ingroup ElementConnectivity
  *
- * \brief  Write subset of parent info for an element section
+ * \brief Write a subset of parent info for an element section
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \CONN_S
- * \param[in] start Index of first element in the section.
- * \param[in] end  Index of last element in the section. 
- * \param[in] parent_data  For boundary or interface elements, this array contains information on the cell(s) and cell face(s) sharing the element. If you do not need to read the ParentData when reading the ElementData, you may set the value to NULL. 
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  S           \CONN_S
+ * \param[in]  start       Index of the first element in the section.
+ * \param[in]  end         Index of the last element in the section.
+ * \param[in]  parent_data For boundary or interface elements, this array contains information on the
+ *                         cell(s) and cell face(s) sharing the element. If you do not need to read the
+ *                         ParentData when reading the ElementData, you may set the value to NULL.
  * \return \ier
  *
  */
@@ -7778,12 +7996,12 @@ int cg_parent_data_partial_write(int fn, int B, int Z, int S,
 /**
  * \ingroup FlowSolution
  *
- * \brief  Get number of FlowSolution_t nodes 
+ * \brief Get the number of FlowSolution_t nodes
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] nsols  Number of flow solutions for zone Z. 
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  Z     \Z_Zone
+ * \param[out] nsols Number of flow solutions for zone Z.
  * \return \ier
  *
  */
@@ -7806,14 +8024,15 @@ int cg_nsols(int fn, int B, int Z, int *nsols)
 /**
  * \ingroup FlowSolution
  *
- * \brief  Get information about a FlowSolution_t node
+ * \brief Get information about a FlowSolution_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  S        \SOL_S
  * \param[out] solname  Name of the flow solution.
- * \param[out] location  Grid location where the solution is recorded. The current admissible locations are Vertex, CellCenter, IFaceCenter, JFaceCenter, and KFaceCenter.
+ * \param[out] location Grid location where the solution is recorded. The current permissible
+ *                      locations are \e Vertex, \e CellCenter, \e IFaceCenter, \e JFaceCenter, and \e KFaceCenter.
  * \return \ier
  *
  */
@@ -7835,6 +8054,19 @@ int cg_sol_info(int fn, int B, int Z, int S, char *solname,
     return CG_OK;
 }
 
+/**
+ * \ingroup FlowSolution
+ *
+ * \brief Get ADF Solution ID number (address) of node
+ *
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[in]  S      \SOL_S
+ * \param[out] sol_id ADF Solution ID number (address) of node.
+ * \return \ier
+ *
+ */
 int cg_sol_id(int fn, int B, int Z, int S, double *sol_id)
 {
     cgns_sol *sol;
@@ -7854,14 +8086,15 @@ int cg_sol_id(int fn, int B, int Z, int S, double *sol_id)
 /**
  * \ingroup FlowSolution
  *
- * \brief  Create and/or write to a FlowSolution_t node
+ * \brief Create and/or write to a FlowSolution_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] solname  Name of the flow solution.
- * \param[in] location  Grid location where the solution is recorded. The current admissible locations are Vertex, CellCenter, IFaceCenter, JFaceCenter, and KFaceCenter.
- * \param[out] S  \SOL_S
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  solname  Name of the flow solution.
+ * \param[in]  location Grid location where the solution is recorded. The current permissible
+ *                      locations are \e Vertex, \e CellCenter, \e IFaceCenter, \e JFaceCenter, and \e KFaceCenter.
+ * \param[out] S        \SOL_S
  * \return \ier
  *
  */
@@ -7966,14 +8199,16 @@ int cg_sol_write(int fn, int B, int Z, const char * solname,
 /**
  * \ingroup FlowSolution
  *
- * \brief  Get the dimensions of a FlowSolution_t node 
+ * \brief Get the dimensions of a FlowSolution_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
- * \param[out] data_dim  Number of dimensions defining the solution data. If a point set has been defined, this will be 1, otherwise this will be the current zone index dimension.
- * \param[out] dim_vals The array of data_dim dimensions for the solution data. 
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  S        \SOL_S
+ * \param[out] data_dim Number of dimensions defining the solution data. If a point set has been
+ *                      defined, this will be 1, otherwise this will be the current zone index
+ *                      dimension.
+ * \param[out] dim_vals The array of data_dim dimensions for the solution data.
  * \return \ier
  *
  */
@@ -8007,14 +8242,17 @@ int cg_sol_size(int fn, int B, int Z, int S,
 /**
  * \ingroup FlowSolution
  *
- * \brief  Get info about a point set FlowSolution_t node 
+ * \brief Get info about a point set FlowSolution_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
- * \param[out] ptset_type Type of point set defining the interface in the current solution; either PointRange or PointList. 
- * \param[out] npnts Number of points defining the interface in the current solution. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points in the PointList. 
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  S          \SOL_S
+ * \param[out] ptset_type Type of point set defining the interface in the current solution; either
+ *                        \e PointRange or \e PointList.
+ * \param[out] npnts      Number of points defining the interface in the current solution. For a
+ *                        ptset_type of \e PointRange, \p npnts is always two. For a ptset_type of
+ *                        \e PointList, \p npnts is the number of points in the PointList.
  * \return \ier
  *
  */
@@ -8044,13 +8282,13 @@ int cg_sol_ptset_info(int fn, int B, int Z, int S,
 /**
  * \ingroup FlowSolution
  *
- * \brief  Read a point set FlowSolution_t node 
+ * \brief Read a point set FlowSolution_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
- * \param[out] pnts  Array of points defining the interface in the current solution.  
+ * \param[in]  fn   \FILE_fn
+ * \param[in]  B    \B_Base
+ * \param[in]  Z    \Z_Zone
+ * \param[in]  S    \SOL_S
+ * \param[out] pnts Array of points defining the interface in the current solution.
  * \return \ier
  *
  */
@@ -8080,17 +8318,21 @@ int cg_sol_ptset_read(int fn, int B, int Z, int S, cgsize_t *pnts)
 /**
  * \ingroup FlowSolution
  *
- * \brief  Create a point set FlowSolution_t node 
+ * \brief Create a point set FlowSolution_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] solname  Name of the flow solution.
- * \param[in] location  Grid location where the solution is recorded. The current admissible locations are Vertex, CellCenter, IFaceCenter, JFaceCenter, and KFaceCenter.
- * \param[in] ptset_type  Type of point set defining the interface in the current solution; either PointRange or PointList. 
- * \param[in] npnts  Number of points defining the interface in the current solution. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points in the PointList.
- * \param[in] pnts  Array of points defining the interface in the current solution.
- * \param[out] S  \SOL_S
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  solname    Name of the flow solution.
+ * \param[in]  location   Grid location where the solution is recorded. The permissible
+ *                        locations are \e Vertex, \e CellCenter, \e IFaceCenter, \e JFaceCenter, and \e KFaceCenter.
+ * \param[in]  ptset_type Type of point set defining the interface in the current solution; either
+ *                        \e PointRange or \e PointList.
+ * \param[in]  npnts      Number of points defining the interface in the current solution. For a
+ *                        ptset_type of \e PointRange, \p npnts is always two. For a ptset_type of
+ *                        \e PointList, \p npnts is the number of points in the \e PointList.
+ * \param[in]  pnts       Array of points defining the interface in the current solution.
+ * \param[out] S          \SOL_S
  * \return \ier
  *
  */
@@ -8157,13 +8399,13 @@ int cg_sol_ptset_write(int fn, int B, int Z, const char *solname,
 /**
  * \ingroup FlowSolutionData
  *
- * \brief  Get number of flow solution arrays
+ * \brief Get the number of flow solution arrays
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
- * \param[out] nfields  Number of data arrays in flow solution S.
+ * \param[in]  fn      \FILE_fn
+ * \param[in]  B       \B_Base
+ * \param[in]  Z       \Z_Zone
+ * \param[in]  S       \SOL_S
+ * \param[out] nfields Number of data arrays in flow solution S.
  * \return \ier
  *
  */
@@ -8186,15 +8428,18 @@ int cg_nfields(int fn, int B, int Z, int S, int *nfields)
 /**
  * \ingroup FlowSolutionData
  *
- * \brief  Get info about a flow solution array
+ * \brief Get info about a flow solution array
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
- * \param[in] F  Solution array index number, where 1 ≤ F ≤ nfields.
- * \param[out] datatype  Data type of the solution array written to the file. Admissible data types for a solution array are Integer, LongInteger, RealSingle, and RealDouble. 
- * \param[out] fieldname  Name of the solution array. It is strongly advised to use the SIDS nomenclature conventions when naming the solution arrays to insure file compatibility.
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  S         \SOL_S
+ * \param[in]  F         \PSOL_F
+ * \param[out] datatype  Data type of the solution array written to the file. Admissible data types
+ *                       for a solution array are \e Integer, \e LongInteger, \e RealSingle, and \e RealDouble.
+ * \param[out] fieldname Name of the solution array. It is strongly advised to use the SIDS
+ *                       nomenclature conventions when naming the solution arrays to ensure file
+ *                       compatibility.
  * \return \ier
  *
  */
@@ -8220,17 +8465,20 @@ int cg_field_info(int fn, int B, int Z, int S, int F,
 /**
  * \ingroup FlowSolutionData
  *
- * \brief  Read flow solution
+ * \brief Read flow solution
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
- * \param[in] fieldname  Name of the solution array. It is strongly advised to use the SIDS nomenclature conventions when naming the solution arrays to insure file compatibility.
- * \param[in] mem_datatype  Data type of an array in memory. Admissible data types for a solution array are Integer, LongInteger, RealSingle, and RealDouble.  
- * \param[in] s_rmin  Lower range index in file (eg., imin, jmin, kmin).
- * \param[in] s_rmax  Upper range index in file (eg., imax, jmax, kmax). 
- * \param[out] field_ptr  Array of solution values.
+ * \param[in]  fn           \FILE_fn
+ * \param[in]  B            \B_Base
+ * \param[in]  Z            \Z_Zone
+ * \param[in]  S            \SOL_S
+ * \param[in]  fieldname    Name of the solution array. It is strongly advised to use the SIDS
+ *                          nomenclature conventions when naming the solution arrays to ensure file
+ *                          compatibility.
+ * \param[in]  mem_datatype Data type of an array in memory. Admissible data types for a solution array
+ *                          are Integer, LongInteger, RealSingle, and RealDouble.
+ * \param[in]  s_rmin       Lower range index in file (eg., imin, jmin, kmin).
+ * \param[in]  s_rmax       Upper range index in file (eg., imax, jmax, kmax).
+ * \param[out] field_ptr    Array of solution values.
  * \return \ier
  *
  */
@@ -8278,21 +8526,24 @@ int cg_field_read(int fn, int B, int Z, int S, const char *fieldname,
 /**
  * \ingroup FlowSolutionData
  *
- * \brief  Read subset of flow solution to a shaped array
+ * \brief Read subset of flow solution to a shaped array
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
- * \param[in] fieldname  Name of the solution array. It is strongly advised to use the SIDS nomenclature conventions when naming the solution arrays to insure file compatibility.
- * \param[in] s_rmin  Lower range index in file (eg., imin, jmin, kmin).
- * \param[in] s_rmax  Upper range index in file (eg., imax, jmax, kmax).
- * \param[in] m_type  Data type of an array in memory. Admissible data types for a solution array are Integer, LongInteger, RealSingle, and RealDouble.  
- * \param[in] m_numdim  Number of dimensions of array in memory.
- * \param[in] m_dimvals Dimensions of array in memory.
- * \param[in] m_rmin  Lower range index in memory (eg., imin, jmin, kmin). 
- * \param[in] m_rmax  Upper range index in memory (eg., imax, jmax, kmax).
- * \param[out] field_ptr  Array of solution values.
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  S         \SOL_S
+ * \param[in]  fieldname Name of the solution array. It is strongly advised to use the SIDS
+ *                       nomenclature conventions when naming the solution arrays to ensure file
+ *                       compatibility.
+ * \param[in]  s_rmin    Lower range index in file (eg., imin, jmin, kmin).
+ * \param[in]  s_rmax    Upper range index in file (eg., imax, jmax, kmax).
+ * \param[in]  m_type    Data type of an array in memory. Admissible data types for a solution array
+ *                       are Integer, LongInteger, RealSingle, and RealDouble.
+ * \param[in]  m_numdim  Number of dimensions of the array in memory.
+ * \param[in]  m_dimvals Dimensions of array in memory.
+ * \param[in]  m_rmin    Lower range index in memory (eg., imin, jmin, kmin).
+ * \param[in]  m_rmax    Upper range index in memory (eg., imax, jmax, kmax).
+ * \param[out] field_ptr Array of solution values.
  * \return \ier
  *
  */
@@ -8349,6 +8600,21 @@ int cg_field_general_read(int fn, int B, int Z, int S, const char *fieldname,
                                   field_ptr);
 }
 
+/**
+ * \ingroup FlowSolutionData
+ *
+ * \brief Get the field solution ADF ID number (address) of node
+ *
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  S         \SOL_S
+ * \param[in]  F         \PSOL_F
+ * \param[out] field_id  Field solution ADF ID number (address) of node
+ * \return \ier
+ *
+ */
+
 int cg_field_id(int fn, int B, int Z, int S, int F, double *field_id)
 {
     cgns_array *field;
@@ -8368,16 +8634,19 @@ int cg_field_id(int fn, int B, int Z, int S, int F, double *field_id)
 /**
  * \ingroup FlowSolutionData
  *
- * \brief  Write flow solution
+ * \brief Write flow solution
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
- * \param[in] fieldname  Name of the solution array. It is strongly advised to use the SIDS nomenclature conventions when naming the solution arrays to insure file compatibility.
- * \param[in] type  Data type of the solution array written to the file. Admissible data types for a solution array are Integer, LongInteger, RealSingle, and RealDouble. 
- * \param[in] field_ptr  Array of solution values.
- * \param[out] F \SOL_F
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  S         \SOL_S
+ * \param[in]  fieldname Name of the solution array. It is strongly advised to use the SIDS
+ *                       nomenclature conventions when naming the solution arrays to ensure file
+ *                       compatibility.
+ * \param[in]  type      Data type of the solution array written to the file. Admissible data types
+ *                       for a solution array are Integer, LongInteger, RealSingle, and RealDouble.
+ * \param[in]  field_ptr Array of solution values.
+ * \param[out] F         \SOL_F
  * \return \ier
  *
  */
@@ -8448,24 +8717,27 @@ int cg_field_write(int fn, int B, int Z, int S,
 /**
  * \ingroup FlowSolutionData
  *
- * \brief  Write subset of flow solution
+ * \brief Write subset of flow solution
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
- * \param[in] fieldname  Name of the solution array. It is strongly advised to use the SIDS nomenclature conventions when naming the solution arrays to insure file compatibility.
- * \param[in] type  Data type of the solution array written to the file. Admissible data types for a solution array are Integer, LongInteger, RealSingle, and RealDouble. 
- * \param[in] s_rmin  Lower range index in file (eg., imin, jmin, kmin).
- * \param[in] s_rmax  Upper range index in file (eg., imax, jmax, kmax).
- * \param[in] field_ptr  Array of solution values.
- * \param[out] F \SOL_F
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  S         \SOL_S
+ * \param[in]  fieldname Name of the solution array. It is strongly advised to use the SIDS
+ *                       nomenclature conventions when naming the solution arrays to ensure file
+ *                       compatibility.
+ * \param[in]  type      Data type of the solution array written to the file. Admissible data types
+ *                       for a solution array are Integer, LongInteger, RealSingle, and RealDouble.
+ * \param[in]  s_rmin    Lower range index in file (eg., imin, jmin, kmin).
+ * \param[in]  s_rmax    Upper range index in file (eg., imax, jmax, kmax).
+ * \param[in]  field_ptr Array of solution values.
+ * \param[out] F         \SOL_F
  * \return \ier
  *
  */
 int cg_field_partial_write(int fn, int B, int Z, int S,
-			   CGNS_ENUMT( DataType_t ) type, const char *fieldname,
-			   const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+               CGNS_ENUMT( DataType_t ) type, const char *fieldname,
+               const cgsize_t *s_rmin, const cgsize_t *s_rmax,
                            const void *field_ptr, int *F)
 {
     cgns_zone *zone;
@@ -8518,24 +8790,28 @@ int cg_field_partial_write(int fn, int B, int Z, int S,
 /**
  * \ingroup FlowSolutionData
  *
- * \brief  Write shaped array to a subset of flow solution
+ * \brief Write shaped array to a subset of the flow solution
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  \SOL_S
- * \param[in] fieldname  Name of the solution array. It is strongly advised to use the SIDS nomenclature conventions when naming the solution arrays to insure file compatibility.
- * \param[in] s_type  Data type of the solution array written to the file. Admissible data types for a solution array are Integer, LongInteger, RealSingle, and RealDouble. 
- * \param[in] s_rmin  Lower range index in file (eg., imin, jmin, kmin).
- * \param[in] s_rmax  Upper range index in file (eg., imax, jmax, kmax).
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  S         \SOL_S
+ * \param[in]  fieldname Name of the solution array. It is strongly advised to use the SIDS
+ *                       nomenclature conventions when naming the solution arrays to ensure file
+ *                       compatibility.
+ * \param[in]  s_type    Data type of the solution array written to the file. Admissible data types
+ *                       for a solution array are Integer, LongInteger, RealSingle, and RealDouble.
+ * \param[in]  s_rmin    Lower range index in file (eg., imin, jmin, kmin).
+ * \param[in]  s_rmax    Upper range index in file (eg., imax, jmax, kmax).
  *
- * \param[in] m_type  Data type of an array in memory. Admissible data types for a solution array are Integer, LongInteger, RealSingle, and RealDouble.  
- * \param[in] m_numdim  Number of dimensions of array in memory.
- * \param[in] m_dimvals Dimensions of array in memory.
- * \param[in] m_rmin  Lower range index in memory (eg., imin, jmin, kmin). 
- * \param[in] m_rmax  Upper range index in memory (eg., imax, jmax, kmax).
- * \param[in] field_ptr  Array of solution values.
- * \param[out] F \SOL_F
+ * \param[in]  m_type    Data type of an array in memory. Admissible data types for a solution array
+ *                       are Integer, LongInteger, RealSingle, and RealDouble.
+ * \param[in]  m_numdim  Number of dimensions of the array in memory.
+ * \param[in]  m_dimvals Dimensions of array in memory.
+ * \param[in]  m_rmin    Lower range index in memory (eg., imin, jmin, kmin).
+ * \param[in]  m_rmax    Upper range index in memory (eg., imax, jmax, kmax).
+ * \param[in]  field_ptr Array of solution values.
+ * \param[out] F         \SOL_F
  * \return \ier
  *
  */
@@ -8614,12 +8890,12 @@ int cg_field_general_write(int fn, int B, int Z, int S, const char *fieldname,
 /**
  * \ingroup ZoneSubregions
  *
- * \brief  Get number of ZoneSubRegion_t nodes
+ * \brief Get the number of ZoneSubRegion_t nodes
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] nsubregs  Number of ZoneSubRegion_t nodes under Zone Z.
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[out] nsubregs Number of ZoneSubRegion_t nodes under Zone Z.
  * \return \ier
  *
  */
@@ -8652,19 +8928,23 @@ static cgns_subreg *cg_subreg_read(int fn, int B, int Z, int S)
 /**
  * \ingroup ZoneSubregions
  *
- * \brief  Get info about a ZoneSubRegion_t node
+ * \brief Get info about a ZoneSubRegion_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
- * \param[out] regname  Name of the ZoneSubRegion_t node.
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  S          ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
+ * \param[out] regname    Name of the ZoneSubRegion_t node.
  * \param[out] dimension  Dimensionality of the subregion, 1 for lines, 2 for faces, 3 for volumes.
- * \param[out] location  Grid location used in the definition of the point set. The currently admissible locations are Vertex and CellCenter.
- * \param[out] ptset_type  Type of point set defining the interface for the subregion data; either PointRange or PointList.
- * \param[out] npnts  Number of points defining the interface for the subregion data. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points in the PointList.
- * \param[out] bcname_len  String length of bcname.
- * \param[out] gcname_len  String length of gcname.
+ * \param[out] location   Grid location used in the definition of the point set. The currently
+ *                        admissible locations are Vertex and CellCenter.
+ * \param[out] ptset_type Type of point set defining the interface for the subregion data; either
+ *                        PointRange or PointList.
+ * \param[out] npnts      Number of points defining the interface for the subregion data. For a
+ *                        \p ptset_type of \e PointRange, \p npnts is always two. For a \p ptset_type of
+ *                        \e PointList, \p npnts is the number of points in the \e PointList.
+ * \param[out] bcname_len String length of bcname.
+ * \param[out] gcname_len String length of gcname.
  * \return \ier
  *
  */
@@ -8703,13 +8983,13 @@ int cg_subreg_info(int fn, int B, int Z, int S, char *regname, int *dimension,
 /**
  * \ingroup ZoneSubregions
  *
- * \brief   Read point set data for a ZoneSubRegion_t node
+ * \brief Read point set data for a ZoneSubRegion_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
- * \param[out] pnts  Array of points defining the interface for the subregion data. 
+ * \param[in]  fn   \FILE_fn
+ * \param[in]  B    \B_Base
+ * \param[in]  Z    \Z_Zone
+ * \param[in]  S    ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
+ * \param[out] pnts Array of points defining the interface for the subregion data.
  * \return \ier
  *
  */
@@ -8733,13 +9013,13 @@ int cg_subreg_ptset_read(int fn, int B, int Z, int S, cgsize_t *pnts)
 /**
  * \ingroup ZoneSubregions
  *
- * \brief   Read the BC_t node name for a ZoneSubRegion_t node
+ * \brief Read the BC_t node name for a ZoneSubRegion_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
- * \param[out] bcname  The name of a BC_t node which defines the subregion. 
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[in]  S      ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
+ * \param[out] bcname The name of a BC_t node which defines the subregion.
  * \return \ier
  *
  */
@@ -8760,13 +9040,14 @@ int cg_subreg_bcname_read(int fn, int B, int Z, int S, char *bcname)
 /**
  * \ingroup ZoneSubregions
  *
- * \brief   Read the GridConnectivity_t node name for a ZoneSubRegion_t node
+ * \brief Read the GridConnectivity_t node name for a ZoneSubRegion_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] S  ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
- * \param[out] gcname 	The name of a GridConnectivity_t or GridConnectivity1to1_t node which defines the subregion.
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[in]  S      ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
+ * \param[out] gcname The name of a GridConnectivity_t or GridConnectivity1to1_t node which
+ *                    defines the subregion.
  * \return \ier
  *
  */
@@ -8854,16 +9135,20 @@ static cgns_subreg *cg_subreg_write(int fn, int B, int Z, const char *name,
  *
  * \brief Create a point set ZoneSubRegion_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] regname  Name of the ZoneSubRegion_t node.
- * \param[in] dimension  Dimensionality of the subregion, 1 for lines, 2 for faces, 3 for volumes.
- * \param[in] location  Grid location used in the definition of the point set. The currently admissible locations are Vertex and CellCenter.
- * \param[in] ptset_type  Type of point set defining the interface for the subregion data; either PointRange or PointList.
- * \param[in] npnts  Number of points defining the interface for the subregion data. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points in the PointList.
- * \param[in] pnts  Array of points defining the interface for the subregion data. 
- * \param[out] S  ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  regname    Name of the ZoneSubRegion_t node.
+ * \param[in]  dimension  Dimensionality of the subregion, 1 for lines, 2 for faces, 3 for volumes.
+ * \param[in]  location   Grid location used in the definition of the point set. The currently
+ *                        admissible locations are \e Vertex and \e CellCenter.
+ * \param[in]  ptset_type Type of point set defining the interface for the subregion data; either
+ *                        PointRange or PointList.
+ * \param[in]  npnts      Number of points defining the interface for the subregion data. For a
+ *                        \p ptset_type of \e PointRange, \p npnts is always two. For a \p ptset_type of
+ *                        \e PointList, \p npnts is the number of points in the \e PointList.
+ * \param[in]  pnts       Array of points defining the interface for the subregion data.
+ * \param[out] S          ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
  * \return \ier
  *
  */
@@ -8914,6 +9199,8 @@ int cg_subreg_ptset_write(int fn, int B, int Z, const char *regname,
     /* save data in file */
 
     zone = cgi_get_zone(cg, B, Z);
+    if (zone == NULL) return CG_ERROR;
+
     if (cgi_new_node(zone->id, subreg->name, "ZoneSubRegion_t",
             &subreg->id, "I4", 1, &dim_vals, &subreg->reg_dim))
         return CG_ERROR;
@@ -8933,15 +9220,15 @@ int cg_subreg_ptset_write(int fn, int B, int Z, const char *regname,
 /**
  * \ingroup ZoneSubregions
  *
- * \brief   Create a ZoneSubRegion_t node that references a BC_t node
+ * \brief Create a ZoneSubRegion_t node that references a BC_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] regname  Name of the ZoneSubRegion_t node.
- * \param[in] dimension  Dimensionality of the subregion, 1 for lines, 2 for faces, 3 for volumes.
- * \param[in]  bcname  The name of a BC_t node which defines the subregion.
- * \param[out] S  ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  regname   Name of the ZoneSubRegion_t node.
+ * \param[in]  dimension Dimensionality of the subregion, 1 for lines, 2 for faces, 3 for volumes.
+ * \param[in]  bcname    The name of a BC_t node which defines the subregion.
+ * \param[out] S         ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
  * \return \ier
  *
  */
@@ -8972,6 +9259,8 @@ int cg_subreg_bcname_write(int fn, int B, int Z, const char *regname, int dimens
     /* save data in file */
 
     zone = cgi_get_zone(cg, B, Z);
+    if (zone == NULL) return CG_ERROR;
+
     if (cgi_new_node(zone->id, subreg->name, "ZoneSubRegion_t",
             &subreg->id, "I4", 1, &dim_vals, &subreg->reg_dim))
         return CG_ERROR;
@@ -8983,15 +9272,16 @@ int cg_subreg_bcname_write(int fn, int B, int Z, const char *regname, int dimens
 /**
  * \ingroup ZoneSubregions
  *
- * \brief   Create a ZoneSubRegion_t node that references a GridConnectivity_t node
+ * \brief Create a ZoneSubRegion_t node that references a GridConnectivity_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] regname  Name of the ZoneSubRegion_t node.
- * \param[in] dimension  Dimensionality of the subregion, 1 for lines, 2 for faces, 3 for volumes.
- * \param[in] gcname  The name of a GridConnectivity_t or GridConnectivity1to1_t node which defines the subregion.
- * \param[out] S  ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  regname   Name of the ZoneSubRegion_t node.
+ * \param[in]  dimension Dimensionality of the subregion, 1 for lines, 2 for faces, 3 for volumes.
+ * \param[in]  gcname    The name of a GridConnectivity_t or GridConnectivity1to1_t node which
+ *                       defines the subregion.
+ * \param[out] S         ZoneSubRegion index number, where 1 ≤ S ≤ nsubregs.
  * \return \ier
  *
  */
@@ -9012,12 +9302,13 @@ int cg_subreg_gcname_write(int fn, int B, int Z, const char *regname, int dimens
 
     subreg->gcname = CGNS_NEW(cgns_descr, 1);
     strcpy(subreg->gcname->name, "GridConnectivityRegionName");
-    subreg->gcname->text = (char *)malloc(strlen(gcname)+1);
+    int gcname_length = strlen(gcname)+1;
+    subreg->gcname->text = (char *)malloc(gcname_length);
     if (subreg->gcname->text == NULL) {
         cgi_error("malloc failed for GridConnectivityRegionName name");
         return CG_ERROR;
     }
-    strcpy(subreg->gcname->text, gcname);
+    snprintf(subreg->gcname->text, gcname_length, "%s", gcname);
 
     /* save data in file */
 
@@ -9037,12 +9328,12 @@ int cg_subreg_gcname_write(int fn, int B, int Z, const char *regname, int dimens
 /**
  * \ingroup ZoneGridConnectivity
  *
- * \brief   Get number of ZoneGridConnectivity_t nodes 
+ * \brief Get the number of ZoneGridConnectivity_t nodes
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] nzconns  Number of ZoneGridConnectivity_t nodes under Zone Z.
+ * \param[in]  fn      \FILE_fn
+ * \param[in]  B       \B_Base
+ * \param[in]  Z       \Z_Zone
+ * \param[out] nzconns Number of ZoneGridConnectivity_t nodes under Zone Z.
  * \return \ier
  *
  */
@@ -9066,13 +9357,13 @@ int cg_nzconns(int fn, int B, int Z, int *nzconns)
 /**
  * \ingroup ZoneGridConnectivity
  *
- * \brief   Read ZoneGridConnectivity_t node 
+ * \brief Read ZoneGridConnectivity_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] ZC Zone grid connectivity index number, where 1 ≤ ZC ≤ nzconns.
- * \param[out] zcname Name of the ZoneGridConnectivity_t node
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[in]  ZC     Zone grid connectivity index number, where 1 ≤ ZC ≤ nzconns.
+ * \param[out] zcname Name of the ZoneGridConnectivity_t node.
  * \return \ier
  *
  */
@@ -9098,13 +9389,13 @@ int cg_zconn_read(int fn, int B, int Z, int ZC, char *zcname)
 /**
  * \ingroup ZoneGridConnectivity
  *
- * \brief   Create ZoneGridConnectivity_t node 
+ * \brief Create ZoneGridConnectivity_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] zcname Name of the ZoneGridConnectivity_t node
- * \param[out] ZC Zone grid connectivity index number, where 1 ≤ ZC ≤ nzconns.
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[in]  zcname Name of the ZoneGridConnectivity_t node.
+ * \param[out] ZC     Zone grid connectivity index number, where 1 ≤ ZC ≤ nzconns.
  * \return \ier
  *
  */
@@ -9174,11 +9465,11 @@ int cg_zconn_write(int fn, int B, int Z, const char *zcname, int *ZC)
 /**
  * \ingroup ZoneGridConnectivity
  *
- * \brief   Get the current ZoneGridConnectivity_t node
+ * \brief Get the current ZoneGridConnectivity_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
+ * \param[in]  fn \FILE_fn
+ * \param[in]  B  \B_Base
+ * \param[in]  Z  \Z_Zone
  * \param[out] ZC Zone grid connectivity index number, where 1 ≤ ZC ≤ nzconns.
  * \return \ier
  *
@@ -9209,12 +9500,12 @@ int cg_zconn_get(int fn, int B, int Z, int *ZC)
 /**
  * \ingroup ZoneGridConnectivity
  *
- * \brief   Set the current ZoneGridConnectivity_t node 
+ * \brief Set the current ZoneGridConnectivity_t node
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] ZC Zone grid connectivity index number, where 1 ≤ ZC ≤ nzconns.
+ * \param[in]  fn \FILE_fn
+ * \param[in]  B  \B_Base
+ * \param[in]  Z  \Z_Zone
+ * \param[in]  ZC Zone grid connectivity index number, where 1 ≤ ZC ≤ nzconns.
  * \return \ier
  *
  */
@@ -9239,12 +9530,12 @@ int cg_zconn_set(int fn, int B, int Z, int ZC)
 /**
  * \ingroup OversetHoles
  *
- * \brief  Get number of overset holes in a zone
+ * \brief Get the number of overset holes in a zone
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] nholes  Number of overset holes in zone Z.
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[out] nholes Number of overset holes in zone Z.
  * \return \ier
  *
  */
@@ -9266,17 +9557,25 @@ int cg_nholes(int fn, int B, int Z, int *nholes)
 /**
  * \ingroup OversetHoles
  *
- * \brief  Get info about an overset hole
+ * \brief Get info about an overset hole
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] J  Overset hole index number, where 1 ≤ J ≤ nholes. 
- * \param[out] holename  Name of the overset hole. 
- * \param[out] location  Grid location used in the definition of the point set. The currently admissible locations are Vertex and CellCenter.
- * \param[out] ptset_type  The extent of the overset hole may be defined using a range of points or cells, or using a discrete list of all points or cells in the overset hole. If a range of points or cells is used, ptset_type is set to PointRange. When a discrete list of points or cells is used, ptset_type equals PointList.
- * \param[out] nptsets  Number of point sets used to define the hole. If ptset_type is PointRange, several point sets may be used. If ptset_type is PointList, only one point set is allowed. 
- * \param[out] npnts  	Number of points (or cells) in the point set. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points or cells in the PointList. 
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  J          Overset hole index number, where 1 ≤ J ≤ nholes.
+ * \param[out] holename   Name of the overset hole.
+ * \param[out] location   Grid location used in the definition of the point set. The currently
+ *                        admissible locations are Vertex and CellCenter.
+ * \param[out] ptset_type The extent of the overset hole may be defined using a range of points or
+ *                        cells, or using a discrete list of all points or cells in the overset hole.
+ *                        If a range of points or cells is used, ptset_type is set to PointRange. When
+ *                        a discrete list of points or cells is used, ptset_type equals PointList.
+ * \param[out] nptsets    Number of point sets used to define the hole. If ptset_type is PointRange,
+ *                        several point sets may be used. If ptset_type is PointList, only one point
+ *                        set is allowed.
+ * \param[out] npnts      Number of points (or cells) in the point set. For a ptset_type of
+ *                        PointRange, npnts is always two. For a ptset_type of PointList, npnts is the
+ *                        number of points or cells in the PointList.
  * \return \ier
  *
  */
@@ -9308,12 +9607,12 @@ int cg_hole_info(int fn, int B, int Z, int J, char *holename,
 /**
  * \ingroup OversetHoles
  *
- * \brief  Read overset hole data
+ * \brief Read overset hole data
  *
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] J  Overset hole index number, where 1 ≤ J ≤ nholes. 
+ * \param[in]  fn   \FILE_fn
+ * \param[in]  B    \B_Base
+ * \param[in]  Z    \Z_Zone
+ * \param[in]  J    Overset hole index number, where 1 ≤ J ≤ nholes.
  * \param[out] pnts Array of points or cells in the point set.
  * \return \ier
  *
@@ -9383,18 +9682,26 @@ int cg_hole_id(int fn, int B, int Z, int J, double *hole_id)
 /**
  * \ingroup OversetHoles
  *
- * \brief   Write overset hole data
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] holename  Name of the overset hole. 
- * \param[in] location  Grid location used in the definition of the point set. The currently admissible locations are Vertex and CellCenter.
- * \param[in] ptset_type  The extent of the overset hole may be defined using a range of points or cells, or using a discrete list of all points or cells in the overset hole. If a range of points or cells is used, ptset_type is set to PointRange. When a discrete list of points or cells is used, ptset_type equals PointList.
- * \param[in] nptsets  Number of point sets used to define the hole. If ptset_type is PointRange, several point sets may be used. If ptset_type is PointList, only one point set is allowed. 
- * \param[in] npnts  	Number of points (or cells) in the point set. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points or cells in the PointList. 
- * \param[in] pnts Array of points or cells in the point set.
- * \param[out] J  Overset hole index number, where 1 ≤ J ≤ nholes. 
+ * \brief Write overset hole data
+ *
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  holename   Name of the overset hole.
+ * \param[in]  location   Grid location used in the definition of the point set. The currently
+ *                        admissible locations are Vertex and CellCenter.
+ * \param[in]  ptset_type The extent of the overset hole may be defined using a range of points or
+ *                        cells, or using a discrete list of all points or cells in the overset hole.
+ *                        If a range of points or cells is used, ptset_type is set to PointRange. When
+ *                        a discrete list of points or cells is used, ptset_type equals PointList.
+ * \param[in]  nptsets    Number of point sets used to define the hole. If ptset_type is PointRange,
+ *                        several point sets may be used. If ptset_type is PointList, only one point
+ *                        set is allowed.
+ * \param[in]  npnts      Number of points (or cells) in the point set. For a ptset_type of
+ *                        PointRange, npnts is always two. For a ptset_type of PointList, npnts is the
+ *                        number of points or cells in the PointList.
+ * \param[in]  pnts       Array of points or cells in the point set.
+ * \param[out] J          Overset hole index number, where 1 ≤ J ≤ nholes.
  * \return \ier
  *
  */
@@ -9427,7 +9734,7 @@ int cg_hole_write(int fn, int B, int Z, const char * holename,
           npnts == 2*nptsets && nptsets > 0) &&
         !(ptset_type == CGNS_ENUMV(PointList) &&
           npnts >= 0 && nptsets == 1)) {
-        cgi_error("Invalid input:  nptsets=%d, npoint=%ld, point set type=%s",
+        cgi_error("Invalid input:  nptsets=%d, npoint=%" PRIdCGSIZE ", point set type=%s",
                nptsets, npnts, PointSetTypeName[ptset_type]);
         return CG_ERROR;
     }
@@ -9564,12 +9871,12 @@ int cg_hole_write(int fn, int B, int Z, const char * holename,
 /**
  * \ingroup GeneralizedConnectivity
  *
- * \brief  Get number of generalized connectivity interfaces in a zone
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] nconns  Number of interfaces for zone Z.
+ * \brief Get the number of generalized connectivity interfaces in a zone
+ *
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[out] nconns Number of interfaces for zone Z.
  * \return \ier
  *
  */
@@ -9591,27 +9898,38 @@ int cg_nconns(int fn, int B, int Z, int *nconns)
 /**
  * \ingroup GeneralizedConnectivity
  *
- * \brief  Get info about a generalized connectivity interface 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] J  Interface index number, where 1 ≤ J ≤ nconns.
- * \param[out] connectname  Name of the interface.
- * \param[out] location  Grid location used in the definition of the point set. The currently admissible locations are Vertex and CellCenter.
- * \param[out] connect_type  Type of interface being defined. The admissible types are Overset, Abutting, and Abutting1to1.
- * \param[out] ptset_type  Type of point set defining the interface in the current zone; either PointRange or PointList.
- * \param[out] npnts  Number of points defining the interface in the current zone. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points in the PointList.
- * \param[out] donorname  Name of the zone interfacing with the current zone. 
- * \param[out] donor_zonetype  Type of the donor zone. The admissible types are Structured and Unstructured.
- * \param[out] donor_ptset_type  Type of point set defining the interface in the donor zone; either PointListDonor or CellListDonor.
- * \param[out] donor_datatype  Data type in which the donor points are stored in the file. As of Version 3.0, this value is ignored when writing, and on reading it will return either Integer or LongInteger depending on whether the file was written using 32 or 64-bit. The donor_datatype argument was left in these functions only for backward compatibility. The donor data is always read as cgsize_t.
- * \param[out] ndata_donor  Number of points or cells in the current zone. These are paired with points, cells, or fractions thereof in the donor zone.
+ * \brief Get info about a generalized connectivity interface
+ *
+ * \param[in]  fn               \FILE_fn
+ * \param[in]  B                \B_Base
+ * \param[in]  Z                \Z_Zone
+ * \param[in]  J                Interface index number, where 1 ≤ J ≤ nconns.
+ * \param[out] connectname      Name of the interface.
+ * \param[out] location         Grid location used in the definition of the point set. The currently
+ *                              admissible locations are Vertex and CellCenter.
+ * \param[out] connect_type     Type of interface being defined. The admissible types are Overset, Abutting,
+ *                              and Abutting1to1.
+ * \param[out] ptset_type       Type of point set defining the interface in the current zone; either
+ *                              PointRange or PointList.
+ * \param[out] npnts            Number of points defining the interface in the current zone. For a
+ *                              ptset_type of PointRange, npnts is always two. For a ptset_type of
+ *                              PointList, npnts is the number of points in the PointList.
+ * \param[out] donorname        Name of the zone interfacing with the current zone.
+ * \param[out] donor_zonetype   Type of the donor zone. The admissible types are Structured and
+ *                              Unstructured.
+ * \param[out] donor_ptset_type Type of point set defining the interface in the donor zone; either
+ *                              PointListDonor or CellListDonor.
+ * \param[out] donor_datatype   Data type in which the donor points are stored in the file. As of Version
+ *                              3.0, this value is ignored when writing, and on reading, it will return
+ *                              either Integer or LongInteger depending on whether the file was written
+ *                              using 32 or 64-bit. The donor_datatype argument was left in these functions
+ *                              only for backward compatibility. The donor data is always read as cgsize_t.
+ * \param[out] ndata_donor      Number of points or cells in the current zone. These are paired with points,
+ *                              cells, or fractions thereof in the donor zone.
  * \return \ier
  *
- * \details In cg_conn_info, donor_datatype is useless starting with version 1.27, because
- *  it's always I4.  However this arg. is left for backward compatibility of API
- *  and to be able to read old files
+ * \details In cg_conn_info, donor_datatype is useless starting with version 1.27, because it's always I4.
+ *          However, this arg. is left for backward compatibility of API and to be able to read old files
  *
  */
 int cg_conn_info(int fn, int B, int Z, int J, char *connectname,
@@ -9652,7 +9970,7 @@ int cg_conn_info(int fn, int B, int Z, int J, char *connectname,
     if (separator != NULL) {
         /* get ending zoneName */
         strcpy(zonedonorname, separator + sizeof(char));
-	/* get base but do not use path syntax */
+        /* get base but do not use path syntax */
         memcpy(basedonorname, donorname, (separator - donorname)*sizeof(char));
         basedonorname[separator - donorname] = '\0';
         /* Find donor base index */
@@ -9664,9 +9982,9 @@ int cg_conn_info(int fn, int B, int Z, int J, char *connectname,
     }
     else {
         /* zoneName is in current base */
-	strcpy(basedonorname, cg->base[B-1].name);
+        strcpy(basedonorname, cg->base[B-1].name);
         strcpy(zonedonorname, donorname);
-	dB = B-1;
+        dB = B-1;
     }
 
      /* Find ZoneType_t of DonorZone given its name */
@@ -9688,20 +10006,24 @@ int cg_conn_info(int fn, int B, int Z, int J, char *connectname,
 /**
  * \ingroup GeneralizedConnectivity
  *
- * \brief  Read generalized connectivity data
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] J  Interface index number, where 1 ≤ J ≤ nconns.
- * \param[out] pnts   Array of points defining the interface in the current zone.
- * \param[out] donor_datatype  Data type in which the donor points are stored in the file. As of Version 3.0, this value is ignored when writing, and on reading it will return either Integer or LongInteger depending on whether the file was written using 32 or 64-bit. The donor_datatype argument was left in these functions only for backward compatibility. The donor data is always read as cgsize_t.
- * \param[out] donor_data  Array of donor points or cells corresponding to ndata_donor. Note that it is possible that the same donor point or cell may be used multiple times.
+ * \brief Read generalized connectivity data
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  J              Interface index number, where 1 ≤ J ≤ nconns.
+ * \param[out] pnts           Array of points defining the interface in the current zone.
+ * \param[out] donor_datatype Data type in which the donor points are stored in the file. As of Version
+ *                            3.0, this value is ignored when writing, and on reading, it will return
+ *                            either Integer or LongInteger depending on whether the file was written
+ *                            using 32 or 64-bit. The donor_datatype argument was left in these functions
+ *                            only for backward compatibility. The donor data is always read as cgsize_t.
+ * \param[out] donor_data     Array of donor points or cells corresponding to ndata_donor. Note that it is
+ *                            possible that the same donor point or cell may be used multiple times.
  * \return \ier
  *
- * \details in cg_conn_read, donor_datatype is useless starting with version 1.27, because
- *  it's always I4.  However this arg. is left for backward compatibility of API
- *  and to be able to read old files
+ * \details In cg_conn_read, donor_datatype is useless starting with version 1.27, because it's always I4.
+ *          However, this arg. is left for backward compatibility of API and to be able to read old files
  */
 int cg_conn_read(int fn, int B, int Z, int J, cgsize_t *pnts,
                  CGNS_ENUMT(DataType_t) donor_datatype, cgsize_t *donor_data)
@@ -9770,13 +10092,13 @@ int cg_conn_read(int fn, int B, int Z, int J, cgsize_t *pnts,
 /**
  * \ingroup GeneralizedConnectivity
  *
- * \brief  Read generalized connectivity data without donor information
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] J  Interface index number, where 1 ≤ J ≤ nconns.
- * \param[out] pnts   Array of points defining the interface in the current zone.
+ * \brief Read generalized connectivity data without donor information
+ *
+ * \param[in]  fn   \FILE_fn
+ * \param[in]  B    \B_Base
+ * \param[in]  Z    \Z_Zone
+ * \param[in]  J    Interface index number, where 1 ≤ J ≤ nconns.
+ * \param[out] pnts Array of points defining the interface in the current zone.
  * \return \ier
  *
  */
@@ -9804,24 +10126,37 @@ int cg_conn_id(int fn, int B, int Z, int J, double *conn_id)
 /**
  * \ingroup GeneralizedConnectivity
  *
- * \brief  Write generalized connectivity data 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] connectname  Name of the interface.
- * \param[in] location  Grid location used in the definition of the point set. The currently admissible locations are Vertex and CellCenter.
- * \param[in] connect_type  Type of interface being defined. The admissible types are Overset, Abutting, and Abutting1to1.
- * \param[in] ptset_type  Type of point set defining the interface in the current zone; either PointRange or PointList.
- * \param[in] npnts  Number of points defining the interface in the current zone. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points in the PointList.
- * \param[in] pnts   Array of points defining the interface in the current zone.
- * \param[in] donorname  Name of the zone interfacing with the current zone. 
- * \param[in] donor_zonetype  Type of the donor zone. The admissible types are Structured and Unstructured.
- * \param[in] donor_ptset_type  Type of point set defining the interface in the donor zone; either PointListDonor or CellListDonor.
- * \param[in] donor_datatype  Data type in which the donor points are stored in the file. As of Version 3.0, this value is ignored when writing, and on reading it will return either Integer or LongInteger depending on whether the file was written using 32 or 64-bit. The donor_datatype argument was left in these functions only for backward compatibility. The donor data is always read as cgsize_t.
- * \param[in] ndata_donor  Number of points or cells in the current zone. These are paired with points, cells, or fractions thereof in the donor zone.
- * \param[in] donor_data  Array of donor points or cells corresponding to ndata_donor. Note that it is possible that the same donor point or cell may be used multiple times.
- * \param[out] J  Interface index number, where 1 ≤ J ≤ nconns.
+ * \brief Write generalized connectivity data
+ *
+ * \param[in]  fn               \FILE_fn
+ * \param[in]  B                \B_Base
+ * \param[in]  Z                \Z_Zone
+ * \param[in]  connectname      Name of the interface.
+ * \param[in]  location         Grid location used in the definition of the point set. The currently
+ *                              admissible locations are Vertex and CellCenter.
+ * \param[in]  connect_type     Type of interface being defined. The admissible types are Overset, Abutting,
+ *                              and Abutting1to1.
+ * \param[in]  ptset_type       Type of point set defining the interface in the current zone; either
+ *                              PointRange or PointList.
+ * \param[in]  npnts            Number of points defining the interface in the current zone. For a
+ *                              ptset_type of PointRange, npnts is always two. For a ptset_type of
+ *                              PointList, npnts is the number of points in the PointList.
+ * \param[in]  pnts             Array of points defining the interface in the current zone.
+ * \param[in]  donorname        Name of the zone interfacing with the current zone.
+ * \param[in]  donor_zonetype   Type of the donor zone. The admissible types are Structured and
+ *                              Unstructured.
+ * \param[in]  donor_ptset_type Type of point set defining the interface in the donor zone; either
+ *                              PointListDonor or CellListDonor.
+ * \param[in]  donor_datatype   Data type in which the donor points are stored in the file. As of Version
+ *                              3.0, this value is ignored when writing, and on reading it will return
+ *                              either Integer or LongInteger depending on whether the file was written
+ *                              using 32 or 64-bit. The donor_datatype argument was left in these functions
+ *                              only for backward compatibility. The donor data is always read as cgsize_t.
+ * \param[in]  ndata_donor      Number of points or cells in the current zone. These are paired with points,
+ *                              cells, or fractions thereof in the donor zone.
+ * \param[in]  donor_data       Array of donor points or cells corresponding to ndata_donor. Note that it is
+ *                              possible that the same donor point or cell may be used multiple times.
+ * \param[out] J                Interface index number, where 1 ≤ J ≤ nconns.
  * \return \ier
  *
  */
@@ -10115,19 +10450,24 @@ int cg_conn_write(int fn, int B, int Z,  const char * connectname,
 /**
  * \ingroup GeneralizedConnectivity
  *
- * \brief  Write generalized connectivity data without donor information
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] connectname  Name of the interface.
- * \param[in] location  Grid location used in the definition of the point set. The currently admissible locations are Vertex and CellCenter.
- * \param[in] connect_type  Type of interface being defined. The admissible types are Overset, Abutting, and Abutting1to1.
- * \param[in] ptset_type  Type of point set defining the interface in the current zone; either PointRange or PointList.
- * \param[in] npnts  Number of points defining the interface in the current zone. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points in the PointList.
- * \param[in] pnts   Array of points defining the interface in the current zone.
- * \param[in] donorname  Name of the zone interfacing with the current zone. 
- * \param[out] J  Interface index number, where 1 ≤ J ≤ nconns.
+ * \brief Write generalized connectivity data without donor information
+ *
+ * \param[in]  fn           \FILE_fn
+ * \param[in]  B            \B_Base
+ * \param[in]  Z            \Z_Zone
+ * \param[in]  connectname  Name of the interface.
+ * \param[in]  location     Grid location used in the definition of the point set. The currently
+ *                          admissible locations are Vertex and CellCenter.
+ * \param[in]  connect_type Type of interface being defined. The admissible types are Overset, Abutting,
+ *                          and Abutting1to1.
+ * \param[in]  ptset_type   Type of point set defining the interface in the current zone; either
+ *                          PointRange or PointList.
+ * \param[in]  npnts        Number of points defining the interface in the current zone. For a
+ *                          ptset_type of PointRange, npnts is always two. For a ptset_type of
+ *                          PointList, npnts is the number of points in the PointList.
+ * \param[in]  pnts         Array of points defining the interface in the current zone.
+ * \param[in]  donorname    Name of the zone interfacing with the current zone.
+ * \param[out] J            Interface index number, where 1 ≤ J ≤ nconns.
  * \return \ier
  *
  */
@@ -10151,12 +10491,15 @@ int cg_conn_write_short(int fn, int B, int Z,  const char * connectname,
 /**
  * \ingroup OneToOneConnectivity
  *
- * \brief  Get number of 1-to-1 interfaces in a zone
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] n1to1  Number of one-to-one interfaces in zone Z, stored under GridConnectivity1to1_t nodes. (I.e., this does not include one-to-one interfaces that may be stored under GridConnectivity_t nodes, used for generalized zone interfaces.)
+ * \brief Get number of 1-to-1 interfaces in a zone
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  Z     \Z_Zone
+ * \param[out] n1to1 Number of one-to-one interfaces in zone Z, stored under
+ *                   GridConnectivity1to1_t nodes. (I.e., this does not include one-to-one
+ *                   interfaces that may be stored under GridConnectivity_t nodes, used for
+ *                   generalized zone interfaces.)
  * \return \ier
  *
  */
@@ -10178,11 +10521,16 @@ int cg_n1to1(int fn, int B, int Z, int *n1to1)
 /**
  * \ingroup  OneToOneConnectivity
  *
- * \brief  Get total number of 1-to-1 interfaces in a database
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] n1to1_global  Total number of one-to-one interfaces in base B, stored under GridConnectivity1to1_t nodes. (I.e., this does not include one-to-one interfaces that may be stored under GridConnectivity_t nodes, used for generalized zone interfaces.) Note that the function cg_n1to1 (described below) may be used to get the number of one-to-one interfaces in a specific zone.
+ * \brief Get total number of 1-to-1 interfaces in a database
+ *
+ * \param[in]  fn           \FILE_fn
+ * \param[in]  B            \B_Base
+ * \param[in]  n1to1_global Total number of one-to-one interfaces in base B, stored under
+ *                          GridConnectivity1to1_t nodes. (I.e., this does not include one-to-one
+ *                          interfaces that may be stored under GridConnectivity_t nodes, used for
+ *                          generalized zone interfaces.) Note that the function cg_n1to1 (described
+ *                          below) may be used to get the number of one-to-one interfaces in a specific
+ *                          zone.
  * \return \ier
  *
  */
@@ -10245,17 +10593,18 @@ int cg_n1to1_global(int fn, int B, int *n1to1_global)
 /**
  * \ingroup OneToOneConnectivity
  *
- * \brief  Read 1-to-1 connectivity data for a zone 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] J  Interface index number, where 1 ≤ J ≤ n1to1.
+ * \brief Read 1-to-1 connectivity data for a zone
+ *
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  J           Interface index number, where 1 ≤ J ≤ n1to1.
  * \param[out] connectname Name of the interface.
- * \param[out] donorname  Name of the zone interfacing with the current zone.
- * \param[out] range  Range of points for the current zone.
- * \param[out] donor_range  Range of points for the donor zone.
- * \param[out] transform  Short hand notation for the transformation matrix defining the relative orientation of the two zones.
+ * \param[out] donorname   Name of the zone interfacing with the current zone.
+ * \param[out] range       Range of points for the current zone.
+ * \param[out] donor_range Range of points for the donor zone.
+ * \param[out] transform   Shorthand notation for the transformation matrix defining the relative
+ *                         orientation of the two zones.
  * \return \ier
  *
  */
@@ -10309,16 +10658,18 @@ int cg_1to1_read(int fn, int B, int Z, int J, char *connectname,
 /**
  * \ingroup OneToOneConnectivity
  *
- * \brief  Read data for all 1-to-1 interfaces in a database
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[out] connectname  Name of the interface.
- * \param[out] zonename  Name of the first zone, for all one-to-one interfaces in base B.
- * \param[out] donorname  Name of the second zone, for all one-to-one interfaces in base B.
- * \param[out] range  Range of points for the first zone, for all one-to-one interfaces in base B.
- * \param[out] donor_range  Range of points for the current zone, for all one-to-one interfaces in base B.
- * \param[out] transform  Short hand notation for the transformation matrix defining the relative orientation of the two zones. This transformation is given for all one-to-one interfaces in base B.
+ * \brief Read data for all 1-to-1 interfaces in a database
+ *
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[out] connectname Name of the interface.
+ * \param[out] zonename    Name of the first zone, for all one-to-one interfaces in base B.
+ * \param[out] donorname   Name of the second zone, for all one-to-one interfaces in base B.
+ * \param[out] range       Range of points for the first zone, for all one-to-one interfaces in base B.
+ * \param[out] donor_range Range of points for the current zone, for all one-to-one interfaces in base B.
+ * \param[out] transform   Shorthand notation for the transformation matrix defining the relative
+ *                         orientation of the two zones. This transformation is given for all
+ *                         one-to-one interfaces in base B.
  * \return \ier
  *
  */
@@ -10402,17 +10753,18 @@ int cg_1to1_id(int fn, int B, int Z, int J, double *one21_id)
 /**
  * \ingroup OneToOneConnectivity
  *
- * \brief  Write 1-to-1 connectivity data for a zone
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] connectname  Name of the interface.
- * \param[in] donorname  Name of the zone interfacing with the current zone. 
- * \param[in] range  Range of points for the current zone. 
- * \param[in] donor_range  Range of points for the donor zone.
- * \param[in] transform  Short hand notation for the transformation matrix defining the relative orientation of the two zones. 
- * \param[out] J  Interface index number, where 1 ≤ J ≤ n1to1. 
+ * \brief Write 1-to-1 connectivity data for a zone
+ *
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  connectname Name of the interface.
+ * \param[in]  donorname   Name of the zone interfacing with the current zone.
+ * \param[in]  range       Range of points for the current zone.
+ * \param[in]  donor_range Range of points for the donor zone.
+ * \param[in]  transform   Shorthand notation for the transformation matrix defining the relative
+ *                         orientation of the two zones.
+ * \param[out] J           Interface index number, where 1 ≤ J ≤ n1to1.
  * \return \ier
  *
  */
@@ -10581,12 +10933,12 @@ int cg_1to1_write(int fn, int B, int Z, const char * connectname,
 /**
  * \ingroup BoundaryConditionType
  *
- * \brief  Get number of boundary condition in zone
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] nbocos  Number of boundary conditions in zone Z.
+ * \brief Get the number of boundary conditions in the zone
+ *
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[out] nbocos Number of boundary conditions in zone Z.
  * \return \ier
  *
  */
@@ -10608,20 +10960,39 @@ int cg_nbocos(int fn, int B, int Z, int *nbocos)
 /**
  * \ingroup BoundaryConditionType
  *
- * \brief  Get boundary condition info
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos.
- * \param[out] boconame  Name of the boundary condition.
- * \param[out] bocotype  Type of boundary condition defined. See the eligible types for BCType_t in the Typedefs section. Note that if bocotype is FamilySpecified the boundary condition type is being specified for the family to which the boundary belongs. The boundary condition type for the family may be read and written using cg_fambc_read and cg_fambc_write. 
- * \param[out] ptset_type The extent of the boundary condition may be defined using a range of points or elements using PointRange, or using a discrete list of all points or elements at which the boundary condition is applied using PointList. When the boundary condition is to be applied anywhere other than points, then GridLocation_t under the BC_t node must be used to indicate this. The value of GridLocation_t may be read or written by cg_boco_gridlocation_read and cg_boco_gridlocation_write. As in previous versions of the library, this may also be done by first using cg_goto to access the BC_t node, then using cg_gridlocation_read or cg_gridlocation_write.
- * \param[out] npnts  Number of points or elements defining the boundary condition region. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points or elements in the list. 
- * \param[out] NormalIndex  Index vector indicating the computational coordinate direction of the boundary condition patch normal.
- * \param[out] NormalListSize  If the normals are defined in NormalList, NormalListSize is the number of points in the patch times phys_dim, the number of coordinates required to define a vector in the field. If the normals are not defined in NormalList, NormalListSize is 0.
- * \param[out] NormalDataType  	Data type used in the definition of the normals. Admissible data types for the normals are RealSingle and RealDouble.
- * \param[out] ndataset  Number of boundary condition datasets for the current boundary condition.
+ * \brief Get boundary condition info
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  BC             \BC
+ * \param[out] boconame       Name of the boundary condition.
+ * \param[out] bocotype       Type of boundary condition defined. See the eligible types for BCType_t in
+ *                            the Typedefs section. Note that if \p bocotype is FamilySpecified the boundary
+ *                            condition type is being specified for the family to which the boundary
+ *                            belongs. The boundary condition type for the family may be read and written
+ *                            using cg_fambc_read() and cg_fambc_write().
+ * \param[out] ptset_type     The extent of the boundary condition may be defined using a range of points
+ *                            or elements using \e PointRange, or using a discrete list of all points or
+ *                            elements at which the boundary condition is applied using \e PointList. When
+ *                            the boundary condition is to be applied anywhere other than points, then
+ *                            GridLocation_t under the BC_t node must be used to indicate this. The value
+ *                            of GridLocation_t may be read or written by cg_boco_gridlocation_read() and
+ *                            cg_boco_gridlocation_write(). As in previous versions of the library, this may
+ *                            also be done by first using cg_goto() to access the BC_t node, then using
+ *                            cg_gridlocation_read() or cg_gridlocation_write().
+ * \param[out] npnts          Number of points or elements defining the boundary condition region. For a
+ *                            ptset_type of PointRange, \p npnts is always two. For a ptset_type of
+ *                            PointList, npnts is the number of points or elements in the list.
+ * \param[out] NormalIndex    Index vector indicating the computational coordinate direction of the
+ *                            boundary condition patch normal.
+ * \param[out] NormalListSize If the normals are defined in NormalList, NormalListSize is the number of
+ *                            points in the patch times phys_dim, the number of coordinates required to
+ *                            define a vector in the field. If the normals are not defined in NormalList,
+ *                            NormalListSize is 0.
+ * \param[out] NormalDataType Data type used in defining the normals. Admissible data types for
+ *                            the normals are \e RealSingle and \e RealDouble.
+ * \param[out] ndataset       Number of boundary condition datasets for the current boundary condition.
  * \return \ier
  *
  */
@@ -10677,14 +11048,18 @@ int cg_boco_info(int fn, int B, int Z, int BC, char *boconame,
 /**
  * \ingroup BoundaryConditionType
  *
- * \brief  Read boundary condition data and normals
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos.
- * \param[out] pnts  Array of point or element indices defining the boundary condition region. There should be npnts values, each of dimension IndexDimension (i.e., 1 for unstructured grids, and 2 or 3 for structured grids with 2-D or 3-D elements, respectively).
- * \param[out] NormalList List of vectors normal to the boundary condition patch pointing into the interior of the zone.
+ * \brief Read boundary condition data and normals
+ *
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  BC         \BC
+ * \param[out] pnts       Array of point or element indices defining the boundary condition region.
+ *                        There should be npnts values, each of dimension IndexDimension (i.e., 1 for
+ *                        unstructured grids, and 2 or 3 for structured grids with 2-D or 3-D
+ *                        elements, respectively).
+ * \param[out] NormalList List of vectors normal to the boundary condition patch pointing into the
+ *                        interior of the zone.
  * \return \ier
  *
  */
@@ -10715,7 +11090,7 @@ int cg_boco_read(int fn, int B, int Z, int BC, cgsize_t *pnts, void *NormalList)
     dim = cg->base[B-1].phys_dim;
     if (NormalList && boco->normal && boco->ptset && boco->ptset->npts>0) {
         memcpy(NormalList, boco->normal->data,
-        (size_t)(boco->ptset->size_of_patch*dim*size_of(boco->normal->data_type)));
+        ((size_t)(boco->ptset->size_of_patch*dim))*size_of(boco->normal->data_type));
     }
 
     return CG_OK;
@@ -10740,13 +11115,20 @@ int cg_boco_id(int fn, int B, int Z, int BC, double *boco_id)
 /**
  * \ingroup BoundaryConditionType
  *
- * \brief  Read boundary condition location
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos.
- * \param[out] location  Grid location used in the definition of the point set. The currently admissible locations are Vertex (the default if not given), and CellCenter. Interpretation of CellCenter, and additional allowable values of grid location depends on the base cell dimension. For CellDim=1, CellCenter refers to line elements. For CellDim=2, CellCenter refers to area elements, and the additional value EdgeCenter is allowed. For CellDim=3, CellCenter refers to volume elements, and in addition to EdgeCenter, the values of FaceCenter, IFaceCenter, JFaceCenter, and KFaceCenter may be used.
+ * \brief Read boundary condition location
+ *
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  BC       \BC
+ * \param[out] location Grid location used in the definition of the point set. The currently
+ *                      admissible locations are Vertex (the default if not given), and CellCenter.
+ *                      Interpretation of CellCenter, and additional allowable values of grid
+ *                      location depends on the base cell dimension. For CellDim=1, CellCenter
+ *                      refers to line elements. For CellDim=2, CellCenter refers to area elements,
+ *                      and the additional value EdgeCenter is allowed. For CellDim=3, CellCenter
+ *                      refers to volume elements, and in addition to EdgeCenter, the values of
+ *                      FaceCenter, IFaceCenter, JFaceCenter, and KFaceCenter may be used.
  * \return \ier
  *
  */
@@ -10770,17 +11152,34 @@ int cg_boco_gridlocation_read(int fn, int B, int Z,
 /**
  * \ingroup BoundaryConditionType
  *
- * \brief   Write boundary condition type and data
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone
- * \param[in] boconame  Name of the boundary condition.
- * \param[in] bocotype  Type of boundary condition defined. See the eligible types for BCType_t in the Typedefs section. Note that if bocotype is FamilySpecified the boundary condition type is being specified for the family to which the boundary belongs. The boundary condition type for the family may be read and written using cg_fambc_read and cg_fambc_write.
- * \param[in] ptset_type The extent of the boundary condition may be defined using a range of points or elements using PointRange, or using a discrete list of all points or elements at which the boundary condition is applied using PointList. When the boundary condition is to be applied anywhere other than points, then GridLocation_t under the BC_t node must be used to indicate this. The value of GridLocation_t may be read or written by cg_boco_gridlocation_read and cg_boco_gridlocation_write. As in previous versions of the library, this may also be done by first using cg_goto to access the BC_t node, then using cg_gridlocation_read or cg_gridlocation_write.
- * \param[in] npnts  Number of points or elements defining the boundary condition region. For a ptset_type of PointRange, npnts is always two. For a ptset_type of PointList, npnts is the number of points or elements in the list.
- * \param[in] pnts Array of point or element indices defining the boundary condition region. There should be npnts values, each of dimension IndexDimension (i.e., 1 for unstructured grids, and 2 or 3 for structured grids with 2-D or 3-D elements, respectively).
- * \param[out] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos.
+ * \brief Write boundary condition type and data
+ *
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  boconame   Name of the boundary condition.
+ * \param[in]  bocotype   Type of boundary condition defined. See the eligible types for BCType_t in
+ *                        the Typedefs section. Note that if bocotype is FamilySpecified the boundary
+ *                        condition type is being specified for the family to which the boundary
+ *                        belongs. The boundary condition type for the family may be read and written
+ *                        using cg_fambc_read() and cg_fambc_write().
+ * \param[in]  ptset_type The extent of the boundary condition may be defined using a range of points
+ *                        or elements using PointRange, or using a discrete list of all points or
+ *                        elements at which the boundary condition is applied using PointList. When
+ *                        the boundary condition is to be applied anywhere other than points, then
+ *                        GridLocation_t under the BC_t node must be used to indicate this. The value
+ *                        of GridLocation_t may be read or written by cg_boco_gridlocation_read() and
+ *                        cg_boco_gridlocation_write(). As in previous versions of the library, this may
+ *                        also be done by first using cg_goto() to access the BC_t node, then using
+ *                        cg_gridlocation_read() or cg_gridlocation_write().
+ * \param[in]  npnts      Number of points or elements defining the boundary condition region. For a
+ *                        ptset_type of PointRange, \p npnts is always two. For a ptset_type of
+ *                        PointList, npnts is the number of points or elements in the list.
+ * \param[in]  pnts       Array of point or element indices defining the boundary condition region.
+ *                        There should be \p npnts values, each of dimension IndexDimension (i.e., 1 for
+ *                        unstructured grids, and 2 or 3 for structured grids with 2-D or 3-D
+ *                        elements, respectively).
+ * \param[out] BC         \BC
  * \return \ier
  *
  */
@@ -10961,13 +11360,20 @@ int cg_boco_write(int fn, int B, int Z, const char * boconame,
 /**
  * \ingroup BoundaryConditionType
  *
- * \brief  Write boundary condition location
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos.
- * \param[in] location  Grid location used in the definition of the point set. The currently admissible locations are Vertex (the default if not given), and CellCenter. Interpretation of CellCenter, and additional allowable values of grid location depends on the base cell dimension. For CellDim=1, CellCenter refers to line elements. For CellDim=2, CellCenter refers to area elements, and the additional value EdgeCenter is allowed. For CellDim=3, CellCenter refers to volume elements, and in addition to EdgeCenter, the values of FaceCenter, IFaceCenter, JFaceCenter, and KFaceCenter may be used.
+ * \brief Write boundary condition location
+ *
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  BC       \BC
+ * \param[in]  location Grid location used in the definition of the point set. The currently
+ *                      admissible locations are Vertex (the default if not given), and CellCenter.
+ *                      Interpretation of CellCenter, and additional allowable values of grid
+ *                      location depends on the base cell dimension. For CellDim=1, CellCenter
+ *                      refers to line elements. For CellDim=2, CellCenter refers to area elements,
+ *                      and the additional value EdgeCenter is allowed. For CellDim=3, CellCenter
+ *                      refers to volume elements, and in addition to EdgeCenter, the values of
+ *                      FaceCenter, IFaceCenter, JFaceCenter, and KFaceCenter may be used.
  * \return \ier
  *
  */
@@ -11006,16 +11412,20 @@ int cg_boco_gridlocation_write(int fn, int B, int Z,
 /**
  * \ingroup BoundaryConditionType
  *
- * \brief  Write boundary condition normals 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos.
- * \param[in] NormalIndex  Index vector indicating the computational coordinate direction of the boundary condition patch normal.
- * \param[in] NormalListFlag  Flag indicating if the normals are defined in NormalList and are to be written out; 1 if they are defined, 0 if they're not.
- * \param[in] NormalDataType  Data type used in the definition of the normals. Admissible data types for the normals are RealSingle and RealDouble.
- * \param[in] NormalList  List of vectors normal to the boundary condition patch pointing into the interior of the zone.
+ * \brief Write boundary condition normals
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  BC             \BC
+ * \param[in]  NormalIndex    Index vector indicating the computational coordinate direction of the
+ *                            boundary condition patch normal.
+ * \param[in]  NormalListFlag Flag indicating if the normals are defined in NormalList and are to be
+ *                            written out; 1 if they are defined, 0 if they're not.
+ * \param[in]  NormalDataType Data type used in defining the normals. Admissible data types for
+ *                            the normals are RealSingle and RealDouble.
+ * \param[in]  NormalList     List of vectors normal to the boundary condition patch pointing into the
+ *                            interior of the zone.
  * \return \ier
  *
  */
@@ -11058,12 +11468,12 @@ int cg_boco_normal_write(int fn, int B, int Z, int BC, const int * NormalIndex,
         normal = boco->normal;
 
         strcpy(normal->data_type, cgi_adf_datatype(NormalDataType));
-        normal->data = (void *)malloc((size_t)(npnts*phys_dim*size_of(normal->data_type)));
+        normal->data = (void *)malloc(((size_t)(npnts*phys_dim))*size_of(normal->data_type));
         if (normal->data == NULL) {
             cgi_error("Error allocating normal->data");
             return CG_ERROR;
         }
-        memcpy(normal->data, NormalList, (size_t)(npnts*phys_dim*size_of(normal->data_type)));
+        memcpy(normal->data, NormalList, ((size_t)(npnts*phys_dim))*size_of(normal->data_type));
         strcpy(normal->name, "InwardNormalList");
         normal->data_dim =2;
         normal->dim_vals[0]=phys_dim;
@@ -11103,19 +11513,21 @@ int cg_boco_normal_write(int fn, int B, int Z, int BC, const int * NormalIndex,
 \*****************************************************************************/
 
 /**
- * \ingroup BCDataset
+ * \ingroup BoundaryConditionDatasets
  *
- * \brief  Read boundary condition dataset info 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos.
- * \param[in] DSet Dataset index number, where 1 ≤ Dset ≤ ndataset.
- * \param[out] DatasetName  Name of dataset.
- * \param[out] BCType  Simple boundary condition type for the dataset. The supported types are listed in the table of Simple Boundary Condition Types in the SIDS manual, but note that FamilySpecified does not apply here.
- * \param[out] DirichletFlag  Flag indicating if the dataset contains Dirichlet data.
- * \param[out] NeumannFlag  Flag indicating if the dataset contains Neumann data.
+ * \brief Read boundary condition dataset info
+ *
+ * \param[in]  fn            \FILE_fn
+ * \param[in]  B             \B_Base
+ * \param[in]  Z             \Z_Zone
+ * \param[in]  BC            \BC
+ * \param[in]  DSet          \DSet
+ * \param[out] DatasetName   Name of dataset.
+ * \param[out] BCType        Simple boundary condition type for the dataset. The supported types are
+ *                           listed in the table of Simple Boundary Condition Types in the SIDS manual,
+ *                           but note that FamilySpecified does not apply here.
+ * \param[out] DirichletFlag Flag indicating if the dataset contains Dirichlet data.
+ * \param[out] NeumannFlag   Flag indicating if the dataset contains Neumann data.
  * \return \ier
  *
  */
@@ -11144,17 +11556,19 @@ int cg_dataset_read(int fn, int B, int Z, int BC, int DSet, char *DatasetName,
 }
 
 /**
- * \ingroup BCDataset
+ * \ingroup BoundaryConditionDatasets
  *
- * \brief  Write boundary condition dataset info
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos.
- * \param[in] DatasetName  Name of dataset.
- * \param[in] BCType  Simple boundary condition type for the dataset. The supported types are listed in the table of Simple Boundary Condition Types in the SIDS manual, but note that FamilySpecified does not apply here.
- * \param[out] Dset Dataset index number, where 1 ≤ Dset ≤ ndataset.
+ * \brief Write boundary condition dataset info
+ *
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  BC          \BC
+ * \param[in]  DatasetName Name of dataset.
+ * \param[in]  BCType      Simple boundary condition type for the dataset. The supported types are
+ *                         listed in the table of Simple Boundary Condition Types in the SIDS manual,
+ *                         but note that FamilySpecified does not apply here.
+ * \param[out] Dset        \DSet
  * \return \ier
  *
  */
@@ -11234,17 +11648,22 @@ int cg_dataset_write(int fn, int B, int Z, int BC, const char * DatasetName,
 /**
  * \ingroup BCData
  *
- * \brief  Write boundary condition data  
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos.
- * \param[in] Dset Dataset index number, where 1 ≤ Dset ≤ ndataset.
- * \param[in] BCDataType Type of boundary condition in the dataset. Admissible boundary condition types are Dirichlet and Neumann. 
+ * \brief Write boundary condition data
+ *
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  Z          \Z_Zone
+ * \param[in]  BC         \BC
+ * \param[in]  Dset       \DSet
+ * \param[in]  BCDataType Type of boundary condition in the dataset. Admissible boundary condition
+ *                        types are \e Dirichlet and \e Neumann.
  * \return \ier
  *
- * \details  To write the boundary condition data itself, after creating the BCData_t node using the function cg_bcdata_write, use cg_goto to access the node, then cg_array_write to write the data. Note that when using cg_goto to access a BCData_t node, the node index should be specified as either Dirichlet or Neumann, depending on the type of boundary condition. See the description of cg_goto for details.
+ * \details To write the boundary condition data itself, after creating the BCData_t node using
+ *          the function cg_bcdata_write(), use cg_goto() to access the node, then cg_array_write() to
+ *          write the data. Note that when using cg_goto() to access a BCData_t node, the node index
+ *          should be specified as either Dirichlet or Neumann, depending on the type of boundary
+ *          condition. See the description of cg_goto() for details.
  *
  */
 int cg_bcdata_write(int fn, int B, int Z, int BC, int Dset,
@@ -11314,12 +11733,12 @@ int cg_bcdata_write(int fn, int B, int Z, int BC, int Dset,
 /**
  * \ingroup RigidGridMotion
  *
- * \brief  Get number of RigidGridMotion_t nodes
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] n_rigid_motions  Number of RigidGridMotion_t nodes under zone Z. 
+ * \brief Get the number of RigidGridMotion_t nodes
+ *
+ * \param[in]  fn              \FILE_fn
+ * \param[in]  B               \B_Base
+ * \param[in]  Z               \Z_Zone
+ * \param[out] n_rigid_motions Number of RigidGridMotion_t nodes under zone Z.
  * \return \ier
  *
  */
@@ -11343,14 +11762,15 @@ int cg_n_rigid_motions(int fn, int B, int Z, int *n_rigid_motions)
 /**
  * \ingroup RigidGridMotion
  *
- * \brief  Read RigidGridMotion_t node
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] R  Rigid rotation index number, where 1 ≤ R ≤ n_rigid_motions. 
- * \param[out] name  Name of the RigidGridMotion_t node.
- * \param[out] type  Type of rigid grid motion. The admissible types are CG_Null, CG_UserDefined, ConstantRate, and VariableRate. 
+ * \brief Read RigidGridMotion_t node
+ *
+ * \param[in]  fn   \FILE_fn
+ * \param[in]  B    \B_Base
+ * \param[in]  Z    \Z_Zone
+ * \param[in]  R    Rigid rotation index number, where 1 ≤ R ≤ n_rigid_motions.
+ * \param[out] name Name of the RigidGridMotion_t node.
+ * \param[out] type Type of rigid grid motion. The admissible types are CG_Null, CG_UserDefined,
+ *                  ConstantRate, and VariableRate.
  * \return \ier
  *
  */
@@ -11377,14 +11797,15 @@ int cg_rigid_motion_read(int fn, int B, int Z, int R, char *name,
 /**
  * \ingroup RigidGridMotion
  *
- * \brief  Create RigidGridMotion_t node
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] rmotionname  Name of the RigidGridMotion_t node.
- * \param[in] type  Type of rigid grid motion. The admissible types are CG_Null, CG_UserDefined, ConstantRate, and VariableRate.
- * \param[out] R  Rigid rotation index number, where 1 ≤ R ≤ n_rigid_motions. 
+ * \brief Create RigidGridMotion_t node
+ *
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  rmotionname Name of the RigidGridMotion_t node.
+ * \param[in]  type        Type of rigid grid motion. The admissible types are \e CG_Null, \e CG_UserDefined,
+ *                         \e ConstantRate, and \e VariableRate.
+ * \param[out] R           Rigid rotation index number, where 1 ≤ R ≤ n_rigid_motions.
  * \return \ier
  *
  */
@@ -11466,12 +11887,12 @@ int cg_rigid_motion_write(int fn, int B, int Z, const char * rmotionname,
 /**
  * \ingroup ArbitraryGridMotion
  *
- * \brief  Get number of ArbitraryGridMotion_t nodes
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[out] n_arbitrary_motions  Number of ArbitraryGridMotion_t nodes under zone Z.
+ * \brief Get the number of ArbitraryGridMotion_t nodes
+ *
+ * \param[in]  fn                  \FILE_fn
+ * \param[in]  B                   \B_Base
+ * \param[in]  Z                   \Z_Zone
+ * \param[out] n_arbitrary_motions Number of ArbitraryGridMotion_t nodes under zone Z.
  * \return \ier
  *
  */
@@ -11495,14 +11916,15 @@ int cg_n_arbitrary_motions(int fn, int B, int Z, int *n_arbitrary_motions)
 /**
  * \ingroup ArbitraryGridMotion
  *
- * \brief  Read ArbitraryGridMotion_t node 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] A  Arbitrary grid motion index number, where 1 ≤ A ≤ n_arbitrary_motions.
- * \param[out] name  Name of the ArbitraryGridMotion_t node.
- * \param[out] type  Type of arbitrary grid motion. The admissible types are CG_Null, CG_UserDefined, NonDeformingGrid, and DeformingGrid.
+ * \brief Read ArbitraryGridMotion_t node
+ *
+ * \param[in]  fn   \FILE_fn
+ * \param[in]  B    \B_Base
+ * \param[in]  Z    \Z_Zone
+ * \param[in]  A    \A_grid
+ * \param[out] name Name of the ArbitraryGridMotion_t node.
+ * \param[out] type Type of arbitrary grid motion. The admissible types are CG_Null,
+ *                  CG_UserDefined, NonDeformingGrid, and DeformingGrid.
  * \return \ier
  *
  */
@@ -11529,14 +11951,15 @@ int cg_arbitrary_motion_read(int fn, int B, int Z, int A, char *name,
 /**
  * \ingroup ArbitraryGridMotion
  *
- * \brief  Write ArbitraryGridMotion_t node 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] Z  \Z_Zone
- * \param[in] amotionname  Name of the ArbitraryGridMotion_t node.
- * \param[in] type  Type of arbitrary grid motion. The admissible types are CG_Null, CG_UserDefined, NonDeformingGrid, and DeformingGrid.
- * \param[out] A  Arbitrary grid motion index number, where 1 ≤ A ≤ n_arbitrary_motions.
+ * \brief Write ArbitraryGridMotion_t node
+ *
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  amotionname Name of the ArbitraryGridMotion_t node.
+ * \param[in]  type        Type of arbitrary grid motion. The admissible types are \e CG_Null,
+ *                         \e CG_UserDefined, \e NonDeformingGrid, and \e DeformingGrid.
+ * \param[out] A           \A_grid
  * \return \ier
  *
  */
@@ -11618,11 +12041,12 @@ int cg_arbitrary_motion_write(int fn, int B, int Z, const char * amotionname,
 /**
  * \ingroup SimulationType
  *
- * \brief  Read simulation type
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[out] SimulationType  Type of simulation. Valid types are CG_Null, CG_UserDefined, TimeAccurate, and NonTimeAccurate.
+ * \brief Read simulation type
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[out] SimulationType Type of simulation. Valid types are \e CG_Null, \e CG_UserDefined, \e TimeAccurate,
+ *                            and \e NonTimeAccurate.
  * \return \ier
  *
  */
@@ -11646,11 +12070,12 @@ int cg_simulation_type_read(int fn, int B, CGNS_ENUMT(SimulationType_t) *Simulat
 /**
  * \ingroup SimulationType
  *
- * \brief  Write simulation type
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] SimulationType  Type of simulation. Valid types are CG_Null, CG_UserDefined, TimeAccurate, and NonTimeAccurate.
+ * \brief Write simulation type
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  SimulationType Type of simulation. Valid types are \e CG_Null, \e CG_UserDefined, \e TimeAccurate,
+ *                            and \e NonTimeAccurate.
  * \return \ier
  *
  */
@@ -11703,12 +12128,12 @@ int cg_simulation_type_write(int fn, int B, CGNS_ENUMT(SimulationType_t) Simulat
 /**
  * \ingroup BaseIterativeData
  *
- * \brief  Read BaseIterativeData_t node 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[out] bitername  Name of the BaseIterativeData_t node.
- * \param[out] nsteps Number of time steps or iterations.
+ * \brief Read BaseIterativeData_t node
+ *
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[out] bitername Name of the BaseIterativeData_t node.
+ * \param[out] nsteps    Number of time steps or iterations.
  * \return \ier
  *
  */
@@ -11733,12 +12158,12 @@ int cg_biter_read(int fn, int B, char *bitername, int *nsteps)
 /**
  * \ingroup BaseIterativeData
  *
- * \brief  Write BaseIterativeData_t node 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base 
- * \param[in] bitername  Name of the BaseIterativeData_t node.
- * \param[in] nsteps Number of time steps or iterations.
+ * \brief Write BaseIterativeData_t node
+ *
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  bitername Name of the BaseIterativeData_t node.
+ * \param[in]  nsteps    Number of time steps or iterations.
  * \return \ier
  *
  */
@@ -11802,12 +12227,12 @@ int cg_biter_write(int fn, int B,  const char * bitername, int nsteps)
 /**
  * \ingroup ZoneIterativeData
  *
- * \brief  Read ZontIterativeData_t node 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone
- * \param[out] zitername  Name of the ZoneIterativeData_t node.
+ * \brief Read ZontIterativeData_t node
+ *
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[out] zitername Name of the ZoneIterativeData_t node.
  * \return \ier
  *
  */
@@ -11831,12 +12256,12 @@ int cg_ziter_read(int fn, int B, int Z, char *zitername)
 /**
  * \ingroup ZoneIterativeData
  *
- * \brief  Write ZontIterativeData_t node 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone
- * \param[in] zitername  Name of the ZoneIterativeData_t node.
+ * \brief Write ZontIterativeData_t node
+ *
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  zitername Name of the ZoneIterativeData_t node.
  * \return \ier
  *
  */
@@ -11887,17 +12312,109 @@ int cg_ziter_write(int fn, int B, int Z, const char * zitername)
 }
 
 /*****************************************************************************\
+ *      read and write ParticleIterativeData_t Node
+\*****************************************************************************/
+
+/**
+ * \ingroup ParticleIterativeData
+ *
+ * \brief  Read ParticleIterativeData_t node
+ *
+ * \param[in]  fn         \FILE_fn
+ * \param[in]  B          \B_Base
+ * \param[in]  P          \P_ParticleZone
+ * \param[out] pitername  Name of the ParticleIterativeData_t node.
+ * \return \ier
+ *
+ */
+int cg_piter_read(int fn, int B, int P, char *pitername)
+{
+    cgns_ziter *piter;
+
+    cg = cgi_get_file(fn);
+    if (cg == 0) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    piter = cgi_get_piter(cg, B, P);
+    if (piter==0) return CG_NODE_NOT_FOUND;
+
+    strcpy(pitername, piter->name);
+
+    return CG_OK;
+}
+
+/**
+ * \ingroup ParticleIterativeData
+ *
+ * \brief  Write ParticleIterativeData_t node
+ *
+ * \param[in] fn         \FILE_fn
+ * \param[in] B          \B_Base
+ * \param[in] P          \P_ParticleZone
+ * \param[in] pitername  Name of the ParticleIterativeData_t node.
+ * \return \ier
+ *
+ */
+int cg_piter_write(int fn, int B, int P, const char * pitername)
+{
+    cgns_pzone *pzone;
+    cgns_ziter *piter;
+
+     /* verify input */
+    if (cgi_check_strlen(pitername)) return CG_ERROR;
+
+     /* get memory address for ParticleIterativeData_t node */
+    cg = cgi_get_file(fn);
+    if (cg == 0) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+    pzone = cgi_get_particle(cg, B, P);
+    if (pzone==0) return CG_ERROR;
+
+     /* Overwrite the ParticleIterativeData_t Node: */
+    if (pzone->piter) {
+        if (cg->mode==CG_MODE_WRITE) {
+            cgi_error("Error:  ParticleIterativeData_t already defined");
+            return CG_ERROR;
+        }
+     /* overwrite an existing ParticleIterativeData_t Node */
+         /* delete the existing piter from file */
+        if (cgi_delete_node(pzone->id, pzone->piter->id))
+            return CG_ERROR;
+         /* save the old in-memory address to overwrite */
+        piter = pzone->piter;
+         /* free memory */
+        cgi_free_ziter(piter);
+    } else {
+        pzone->piter = CGNS_NEW(cgns_ziter, 1);
+        piter = pzone->piter;
+    }
+
+     /* save data for cgns_ziter *piter */
+    memset(piter, 0, sizeof(cgns_ziter));
+    strcpy(piter->name,pitername);
+
+     /* Create node ParticleIterativeData_t */
+    if (cgi_new_node(pzone->id, piter->name, "ParticleIterativeData_t", &piter->id,
+        "MT", 0, 0, 0)) return CG_ERROR;
+    return CG_OK;
+}
+
+/*****************************************************************************\
  *      read and write Gravity_t Node
 \*****************************************************************************/
 
 /**
  * \ingroup Gravity
  *
- * \brief  Read Gravity_t node 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] gravity_vector  Components of the gravity vector. The number of components must equal PhysicalDimension. (In Fortran, this is an array of Real*4 values.)
+ * \brief Read Gravity_t node
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  gravity_vector Components of the gravity vector. The number of components must equal
+ *                            PhysicalDimension. (In Fortran, this is an array of Real*4 values.)
  * \return \ier
  *
  */
@@ -11927,11 +12444,12 @@ int cg_gravity_read(int fn, int B, float *gravity_vector)
 /**
  * \ingroup Gravity
  *
- * \brief  Write Gravity_t node 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] gravity_vector  Components of the gravity vector. The number of components must equal PhysicalDimension. (In Fortran, this is an array of Real*4 values.)
+ * \brief Write Gravity_t node
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  gravity_vector Components of the gravity vector. The number of components must equal
+ *                            PhysicalDimension. (In Fortran, this is an array of Real*4 values.)
  * \return \ier
  *
  */
@@ -11994,15 +12512,17 @@ int cg_gravity_write(int fn, int B, float const *gravity_vector)
 /**
  * \ingroup Axisymmetry
  *
- * \brief  Read Axisymmetry_t node 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[out] ref_point  Origin used for defining the axis of rotation. (In Fortran, this is an array of Real*4 values.)
- * \param[out] axis Direction cosines of the axis of rotation, through the reference point. (In Fortran, this is an array of Real*4 values.)
+ * \brief Read Axisymmetry_t node
+ *
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[out] ref_point Origin used for defining the axis of rotation. (In Fortran, this is an array
+ *                       of Real*4 values.)
+ * \param[out] axis      Direction cosines of the axis of rotation, through the reference point. (In
+ *                       Fortran, this is an array of Real*4 values.)
  * \return \ier
  *
- * \details  This node can only be used for a bi-dimensional model, i.e., PhysicalDimension must equal two.
+ * \details This node can only be used for a bi-dimensional model, i.e., PhysicalDimension must equal two.
  *
  */
 int cg_axisym_read(int fn, int B, float *ref_point, float *axis)
@@ -12037,12 +12557,14 @@ int cg_axisym_read(int fn, int B, float *ref_point, float *axis)
 /**
  * \ingroup Axisymmetry
  *
- * \brief  Create axisymmetry data
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] ref_point  Origin used for defining the axis of rotation. (In Fortran, this is an array of Real*4 values.)
- * \param[in] axis Direction cosines of the axis of rotation, through the reference point. (In Fortran, this is an array of Real*4 values.)
+ * \brief Create axisymmetry data
+ *
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  ref_point Origin used for defining the axis of rotation. (In Fortran, this is an array
+ *                       of Real*4 values.)
+ * \param[in]  axis      Direction cosines of the axis of rotation, through the reference point. (In
+ *                       Fortran, this is an array of Real*4 values.)
  * \return \ier
  *
  * \details Axisymmetry_t node can only be used for a bi-dimensional model, i.e., PhysicalDimension must equal two.
@@ -12117,16 +12639,18 @@ int cg_axisym_write(int fn, int B, float const *ref_point, float const *axis)
 /**
  * \ingroup SpecialBoundaryConditionProperty
  *
- * \brief  Read wall function data
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos. 
- * \param[out] WallFunctionType  The wall function type. Valid types are CG_Null, CG_UserDefined, and Generic.
+ * \brief Read wall function data
+ *
+ * \param[in]  fn               \FILE_fn
+ * \param[in]  B                \B_Base
+ * \param[in]  Z                \Z_Zone
+ * \param[in]  BC               \BC
+ * \param[out] WallFunctionType The wall function type. Valid types are CG_Null, CG_UserDefined, and
+ *                              Generic.
  * \return \ier
  *
- * \details The "read" functions will return with ier = 2 = CG_NODE_NOT_FOUND if the requested boundary condition property, or the BCProperty_t node itself, doesn't exist.
+ * \details The "read" functions will return with \p ier = 2 = CG_NODE_NOT_FOUND if the requested boundary
+ *          condition property, or the BCProperty_t node itself, doesn't exist.
  *
  */
 int cg_bc_wallfunction_read(int fn, int B, int Z, int BC,
@@ -12156,16 +12680,19 @@ int cg_bc_wallfunction_read(int fn, int B, int Z, int BC,
 /**
  * \ingroup SpecialBoundaryConditionProperty
  *
- * \brief  Write wall function data
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos. 
- * \param[in] WallFunctionType  The wall function type. Valid types are CG_Null, CG_UserDefined, and Generic.
+ * \brief Write wall function data
+ *
+ * \param[in]  fn               \FILE_fn
+ * \param[in]  B                \B_Base
+ * \param[in]  Z                \Z_Zone
+ * \param[in]  BC               \BC
+ * \param[in]  WallFunctionType The wall function type. Valid types are \e CG_Null, \e CG_UserDefined, and
+ *                              \e Generic.
  * \return \ier
  *
- * \details The "write" functions will create the BCProperty_t node if it doesn't already exist, then add the appropriate boundary condition property. Multiple boundary condition properties may be recorded under the same BCProperty_t node.
+ * \details The "write" functions will create the BCProperty_t node if it doesn't already exist, then
+ *          add the appropriate boundary condition property. Multiple boundary condition properties
+ *          may be recorded under the same BCProperty_t node.
  *
  */
 int cg_bc_wallfunction_write(int fn, int B, int Z, int BC,
@@ -12260,18 +12787,20 @@ int cg_bc_wallfunction_write(int fn, int B, int Z, int BC,
 /**
  * \ingroup SpecialBoundaryConditionProperty
  *
- * \brief  Read area related data
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos. 
- * \param[out]  AreaType  The type of area. Valid types are CG_Null, CG_UserDefined, BleedArea, and CaptureArea. 
- * \param[out]  SurfaceArea  The size of the area. (In Fortran, this is a Real*4 value.)
+ * \brief Read area-related data
+ *
+ * \param[in]  fn           \FILE_fn
+ * \param[in]  B            \B_Base
+ * \param[in]  Z            \Z_Zone
+ * \param[in]  BC           \BC
+ * \param[out]  AreaType    The type of area. Valid types are CG_Null, CG_UserDefined, BleedArea, and
+ *                          CaptureArea.
+ * \param[out]  SurfaceArea The size of the area. (In Fortran, this is a Real*4 value.)
  * \param[out]  RegionName  The name of the region, 32 characters max.
  * \return \ier
  *
- * \details The "read" functions will return with ier = 2 = CG_NODE_NOT_FOUND if the requested boundary condition property, or the BCProperty_t node itself, doesn't exist.
+ * \details The "read" functions will return with \p ier = 2 = CG_NODE_NOT_FOUND if the requested boundary
+ *          condition property, or the BCProperty_t node itself, doesn't exist.
  *
  */
 int cg_bc_area_read(int fn, int B, int Z, int BC,
@@ -12311,18 +12840,21 @@ int cg_bc_area_read(int fn, int B, int Z, int BC,
 /**
  * \ingroup SpecialBoundaryConditionProperty
  *
- * \brief  Write area related data
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] BC  Boundary condition index number, where 1 ≤ BC ≤ nbocos.
- * \param[in] AreaType  The type of area. Valid types are CG_Null, CG_UserDefined, BleedArea, and CaptureArea. 
- * \param[in] SurfaceArea  The size of the area. (In Fortran, this is a Real*4 value.)
- * \param[in] RegionName  The name of the region, 32 characters max.
+ * \brief Write area related data
+ *
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  BC          \BC
+ * \param[in]  AreaType    The type of area. Valid types are CG_Null, CG_UserDefined, BleedArea, and
+ *                         CaptureArea.
+ * \param[in]  SurfaceArea The size of the area. (In Fortran, this is a Real*4 value.)
+ * \param[in]  RegionName  The region's name, 32 characters max.
  * \return \ier
  *
- * \details The "write" functions will create the BCProperty_t node if it doesn't already exist, then add the appropriate boundary condition property. Multiple boundary condition properties may be recorded under the same BCProperty_t node.
+ * \details The "write" functions will create the BCProperty_t node if it doesn't already exist, then
+ *          add the appropriate boundary condition property. Multiple boundary condition properties
+ *          may be recorded under the same BCProperty_t node.
  *
  */
 int cg_bc_area_write(int fn, int B, int Z, int BC,
@@ -12458,18 +12990,28 @@ int cg_bc_area_write(int fn, int B, int Z, int BC,
 /**
  * \ingroup SpecialGridConnectivityProperty
  *
- * \brief  Read data for periodic interface
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] J  Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn" functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions. 
- * \param[out] RotationCenter  An array of size phys_dim defining the coordinates of the origin for defining the rotation angle between the periodic interfaces. (phys_dim is the number of coordinates required to define a vector in the field.) (In Fortran, this is an array of Real*4 values.)
- * \param[out] RotationAngle  An array of size phys_dim defining the rotation angle from the current interface to the connecting interface. If rotating about more than one axis, the rotation is performed first about the x-axis, then the y-axis, then the z-axis. (In Fortran, this is an array of Real*4 values.) 
- * \param[out] Translation  An array of size phys_dim defining the translation from the current interface to the connecting interface. (In Fortran, this is an array of Real*4 values.) 
+ * \brief Read data for periodic interface
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  J              Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn"
+ *                            functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions.
+ * \param[out] RotationCenter An array of size phys_dim defining the coordinates of the origin for
+ *                            defining the rotation angle between the periodic interfaces. (phys_dim is
+ *                            the number of coordinates required to define a vector in the field.) (In
+ *                            Fortran, this is an array of Real*4 values.)
+ * \param[out] RotationAngle  An array of size phys_dim defining the rotation angle from the current
+ *                            interface to the connecting interface. If rotating about more than one axis,
+ *                            the rotation is performed first about the x-axis, then the y-axis, then the
+ *                            z-axis. (In Fortran, this is an array of Real*4 values.)
+ * \param[out] Translation    An array of size phys_dim defining the translation from the current
+ *                            interface to the connecting interface. (In Fortran, this is an array of
+ *                            Real*4 values.)
  * \return \ier
  *
- * \details The "read" functions will return with ier = 2 = CG_NODE_NOT_FOUND if the requested connectivity property, or the GridConnectivityProperty_t node itself, doesn't exist.
+ * \details The "read" functions will return with \p ier = 2 = CG_NODE_NOT_FOUND if the requested connectivity
+ *          property, or the GridConnectivityProperty_t node itself, doesn't exist.
  *
  */
 int cg_conn_periodic_read(int fn, int B, int Z, int J,
@@ -12517,18 +13059,29 @@ int cg_conn_periodic_read(int fn, int B, int Z, int J,
 /**
  * \ingroup SpecialGridConnectivityProperty
  *
- * \brief  Write data for periodic interface
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] J  Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn" functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions. 
- * \param[in] RotationCenter  An array of size phys_dim defining the coordinates of the origin for defining the rotation angle between the periodic interfaces. (phys_dim is the number of coordinates required to define a vector in the field.) (In Fortran, this is an array of Real*4 values.)
- * \param[in] RotationAngle  An array of size phys_dim defining the rotation angle from the current interface to the connecting interface. If rotating about more than one axis, the rotation is performed first about the x-axis, then the y-axis, then the z-axis. (In Fortran, this is an array of Real*4 values.) 
- * \param[in] Translation  An array of size phys_dim defining the translation from the current interface to the connecting interface. (In Fortran, this is an array of Real*4 values.) 
+ * \brief Write data for periodic interface
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  J              Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn"
+ *                            functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions.
+ * \param[in]  RotationCenter An array of size phys_dim defining the coordinates of the origin for
+ *                            defining the rotation angle between the periodic interfaces. (phys_dim is
+ *                            the number of coordinates required to define a vector in the field.) (In
+ *                            Fortran, this is an array of Real*4 values.)
+ * \param[in]  RotationAngle  An array of size phys_dim defining the rotation angle from the current
+ *                            interface to the connecting interface. If rotating about more than one axis,
+ *                            the rotation is performed first about the x-axis, then the y-axis, then the
+ *                            z-axis. (In Fortran, this is an array of Real*4 values.)
+ * \param[in]  Translation    An array of size phys_dim defining the translation from the current
+ *                            interface to the connecting interface. (In Fortran, this is an array of
+ *                            Real*4 values.)
  * \return \ier
  *
- * \details  The "write" functions will create the GridConnectivityProperty_t node if it doesn't already exist, then add the appropriate connectivity property. Multiple grid connectivity properties may be recorded under the same GridConnectivityProperty_t node.
+ * \details The "write" functions will create the GridConnectivityProperty_t node if it doesn't already
+ *          exist, then add the appropriate connectivity property. Multiple grid connectivity properties
+ *          may be recorded under the same GridConnectivityProperty_t node.
  *
  */
 int cg_conn_periodic_write(int fn, int B, int Z, int J,
@@ -12639,16 +13192,20 @@ int cg_conn_periodic_write(int fn, int B, int Z, int J,
 /**
  * \ingroup SpecialGridConnectivityProperty
  *
- * \brief  Read data for averaging interface
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] J  Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn" functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions. 
- * \param[out] 	AverageInterfaceType  The type of averaging to be done. Valid types are CG_Null, CG_UserDefined, AverageAll, AverageCircumferential, AverageRadial, AverageI, AverageJ, and AverageK.
+ * \brief Read data for averaging interface
+ *
+ * \param[in]  fn                   \FILE_fn
+ * \param[in]  B                    \B_Base
+ * \param[in]  Z                    \Z_Zone
+ * \param[in]  J                    Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn"
+ *                                  functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions.
+ * \param[out] AverageInterfaceType The type of averaging to be done. Valid types are CG_Null, CG_UserDefined,
+ *                                  AverageAll, AverageCircumferential, AverageRadial, AverageI, AverageJ, and
+ *                                  AverageK.
  * \return \ier
  *
- * \details The "read" functions will return with ier = 2 = CG_NODE_NOT_FOUND if the requested connectivity property, or the GridConnectivityProperty_t node itself, doesn't exist.
+ * \details The "read" functions will return with \p ier = 2 = CG_NODE_NOT_FOUND if the requested
+ *          connectivity property, or the GridConnectivityProperty_t node itself, doesn't exist.
  *
  */
 int cg_conn_average_read(int fn, int B, int Z, int J,
@@ -12678,16 +13235,21 @@ int cg_conn_average_read(int fn, int B, int Z, int J,
 /**
  * \ingroup SpecialGridConnectivityProperty
  *
- * \brief  Write data for averaging interface
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] J  Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn" functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions. 
- * \param[in] 	AverageInterfaceType  The type of averaging to be done. Valid types are CG_Null, CG_UserDefined, AverageAll, AverageCircumferential, AverageRadial, AverageI, AverageJ, and AverageK.
+ * \brief Write data for averaging interface
+ *
+ * \param[in]  fn                   \FILE_fn
+ * \param[in]  B                    \B_Base
+ * \param[in]  Z                    \Z_Zone
+ * \param[in]  J                    Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn"
+ *                                  functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions.
+ * \param[in]  AverageInterfaceType The type of averaging to be done. Valid types are CG_Null, CG_UserDefined,
+ *                                  AverageAll, AverageCircumferential, AverageRadial, AverageI, AverageJ, and
+ *                                  AverageK.
  * \return \ier
  *
- * \details  The "write" functions will create the GridConnectivityProperty_t node if it doesn't already exist, then add the appropriate connectivity property. Multiple grid connectivity properties may be recorded under the same GridConnectivityProperty_t node.
+ * \details The "write" functions will create the GridConnectivityProperty_t node if it doesn't already
+ *          exist, then add the appropriate connectivity property. Multiple grid connectivity properties
+ *          may be recorded under the same GridConnectivityProperty_t node.
  *
  */
 int cg_conn_average_write(int fn, int B, int Z, int J,
@@ -12780,18 +13342,28 @@ int cg_conn_average_write(int fn, int B, int Z, int J,
 /**
  * \ingroup SpecialGridConnectivityProperty
  *
- * \brief  Read data for periodic interface
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] J  Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn" functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions.
- * \param[out]  RotationCenter   An array of size phys_dim defining the coordinates of the origin for defining the rotation angle between the periodic interfaces. (phys_dim is the number of coordinates required to define a vector in the field.) (In Fortran, this is an array of Real*4 values.) 
- * \param[out]  RotationAngle   An array of size phys_dim defining the rotation angle from the current interface to the connecting interface. If rotating about more than one axis, the rotation is performed first about the x-axis, then the y-axis, then the z-axis. (In Fortran, this is an array of Real*4 values.)
- * \param[out]  Translation   An array of size phys_dim defining the translation from the current interface to the connecting interface. (In Fortran, this is an array of Real*4 values.)
+ * \brief Read data for periodic interface
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  J              Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn"
+ *                            functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions.
+ * \param[out] RotationCenter An array of size phys_dim defining the coordinates of the origin for
+ *                            defining the rotation angle between the periodic interfaces. (phys_dim is
+ *                            the number of coordinates required to define a vector in the field.) (In
+ *                            Fortran, this is an array of Real*4 values.)
+ * \param[out]  RotationAngle An array of size phys_dim defining the rotation angle from the current
+ *                            interface to the connecting interface. If rotating about more than one axis,
+ *                            the rotation is performed first about the x-axis, then the y-axis, then the
+ *                            z-axis. (In Fortran, this is an array of Real*4 values.)
+ * \param[out] Translation    An array of size phys_dim defining the translation from the current
+ *                            interface to the connecting interface. (In Fortran, this is an array of
+ *                            Real*4 values.)
  * \return \ier
  *
- * \details The "read" functions will return with ier = 2 = CG_NODE_NOT_FOUND if the requested connectivity property, or the GridConnectivityProperty_t node itself, doesn't exist.
+ * \details The "read" functions will return with \p ier = 2 = CG_NODE_NOT_FOUND if the requested
+ *          connectivity property, or the GridConnectivityProperty_t node itself, doesn't exist.
  *
  */
 int cg_1to1_periodic_read(int fn, int B, int Z, int J,
@@ -12842,18 +13414,29 @@ int cg_1to1_periodic_read(int fn, int B, int Z, int J,
 /**
  * \ingroup SpecialGridConnectivityProperty
  *
- * \brief  Write data for periodic interface
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] J  Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn" functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions.
- * \param[in]  RotationCenter   An array of size phys_dim defining the coordinates of the origin for defining the rotation angle between the periodic interfaces. (phys_dim is the number of coordinates required to define a vector in the field.) (In Fortran, this is an array of Real*4 values.) 
- * \param[in]  RotationAngle   An array of size phys_dim defining the rotation angle from the current interface to the connecting interface. If rotating about more than one axis, the rotation is performed first about the x-axis, then the y-axis, then the z-axis. (In Fortran, this is an array of Real*4 values.)
- * \param[in]  Translation   An array of size phys_dim defining the translation from the current interface to the connecting interface. (In Fortran, this is an array of Real*4 values.)
+ * \brief Write data for periodic interface
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  J              Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn"
+ *                            functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions.
+ * \param[in]  RotationCenter An array of size phys_dim defining the coordinates of the origin for
+ *                            defining the rotation angle between the periodic interfaces. (phys_dim is
+ *                            the number of coordinates required to define a vector in the field.) (In
+ *                            Fortran, this is an array of Real*4 values.)
+ * \param[in]  RotationAngle  An array of size phys_dim defining the rotation angle from the current
+ *                            interface to the connecting interface. If rotating about more than one axis,
+ *                            the rotation is performed first about the x-axis, then the y-axis, then the
+ *                            z-axis. (In Fortran, this is an array of Real*4 values.)
+ * \param[in]  Translation    An array of size phys_dim defining the translation from the current
+ *                            interface to the connecting interface. (In Fortran, this is an array of
+ *                            Real*4 values.)
  * \return \ier
  *
- * \details  The "write" functions will create the GridConnectivityProperty_t node if it doesn't already exist, then add the appropriate connectivity property. Multiple grid connectivity properties may be recorded under the same GridConnectivityProperty_t node.
+ * \details The "write" functions will create the GridConnectivityProperty_t node if it doesn't already
+ *          exist, then add the appropriate connectivity property. Multiple grid connectivity properties
+ *          may be recorded under the same GridConnectivityProperty_t node.
  *
  */
 int cg_1to1_periodic_write(int fn, int B, int Z, int J,
@@ -12967,16 +13550,20 @@ int cg_1to1_periodic_write(int fn, int B, int Z, int J,
 /**
  * \ingroup SpecialGridConnectivityProperty
  *
- * \brief  Read data for averaging interface
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] J  Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn" functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions. 
- * \param[out] 	AverageInterfaceType  The type of averaging to be done. Valid types are CG_Null, CG_UserDefined, AverageAll, AverageCircumferential, AverageRadial, AverageI, AverageJ, and AverageK.
+ * \brief Read data for averaging interface
+ *
+ * \param[in]  fn                   \FILE_fn
+ * \param[in]  B                    \B_Base
+ * \param[in]  Z                    \Z_Zone
+ * \param[in]  J                    Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn"
+ *                                  functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions.
+ * \param[out] AverageInterfaceType The type of averaging to be done. Valid types are CG_Null, CG_UserDefined,
+ *                                  AverageAll, AverageCircumferential, AverageRadial, AverageI, AverageJ, and
+ *                                  AverageK.
  * \return \ier
  *
- * \details The "read" functions will return with ier = 2 = CG_NODE_NOT_FOUND if the requested connectivity property, or the GridConnectivityProperty_t node itself, doesn't exist.
+ * \details The "read" functions will return with \p ier = 2 = CG_NODE_NOT_FOUND if the requested
+ *          connectivity property, or the GridConnectivityProperty_t node itself, doesn't exist.
  *
  */
 int cg_1to1_average_read(int fn, int B, int Z, int J,
@@ -13009,16 +13596,21 @@ int cg_1to1_average_read(int fn, int B, int Z, int J,
 /**
  * \ingroup SpecialGridConnectivityProperty
  *
- * \brief  Write data for averaging interface
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] Z  \Z_Zone 
- * \param[in] J  Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn" functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions. 
- * \param[in] 	AverageInterfaceType  The type of averaging to be done. Valid types are CG_Null, CG_UserDefined, AverageAll, AverageCircumferential, AverageRadial, AverageI, AverageJ, and AverageK.
+ * \brief Write data for averaging interface
+ *
+ * \param[in]  fn                   \FILE_fn
+ * \param[in]  B                    \B_Base
+ * \param[in]  Z                    \Z_Zone
+ * \param[in]  J                    Grid connectivity index number, where 1 ≤ J ≤ nconns for the "cg_conn"
+ *                                  functions, and 1 ≤ J ≤ n1to1 for the "cg_1to1" functions.
+ * \param[in]  AverageInterfaceType The type of averaging to be done. Valid types are CG_Null, CG_UserDefined,
+ *                                  AverageAll, AverageCircumferential, AverageRadial, AverageI, AverageJ, and
+ *                                  AverageK.
  * \return \ier
  *
- * \details  The "write" functions will create the GridConnectivityProperty_t node if it doesn't already exist, then add the appropriate connectivity property. Multiple grid connectivity properties may be recorded under the same GridConnectivityProperty_t node.
+ * \details The "write" functions will create the GridConnectivityProperty_t node if it doesn't
+ *          already exist, then add the appropriate connectivity property. Multiple grid connectivity
+ *          properties may be recorded under the same GridConnectivityProperty_t node.
  *
  */
 int cg_1to1_average_write(int fn, int B, int Z, int J,
@@ -13113,6 +13705,1754 @@ int cg_1to1_average_write(int fn, int B, int Z, int J,
 }
 
 /*****************************************************************************\
+ *           Particle Functions
+\*****************************************************************************/
+/**
+ * \ingroup ParticleZoneInformation
+ *
+ * \brief Get the number of a particle zone in the base
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[out] nparticlezones Number of particle zones present in base B.
+ * \return \ier
+ *
+ */
+int cg_nparticle_zones(int fn, int B, int *nparticlezones)
+{
+   cgns_base *base;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   base = cgi_get_base(cg, B);
+   if (base==0) return CG_ERROR;
+
+   *nparticlezones = base->npzones;
+   return CG_OK;
+}
+
+/**
+ * \ingroup ParticleZoneInformation
+ *
+ * \brief Get the CGIO identifier of the CGNS Particle zone
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[in] P \P_ParticleZone
+ * \param[out] particle_id CGIO node identifier for the particle zone
+ * \return \ier
+ *
+ */
+int cg_particle_id(int fn, int B, int P, double *particle_id)
+{
+   cgns_pzone *pzone;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone==0) return CG_ERROR;
+
+   *particle_id = pzone->id;
+   return CG_OK;
+}
+
+/**
+ * \ingroup ParticleZoneInformation
+ *
+ * \brief Read particle zone information
+ *
+ * \param[in] fn            \FILE_fn
+ * \param[in] B             \B_Base
+ * \param[in] P             \P_ParticleZone
+ * \param[out] particlename Name of the particle zone
+ * \param[out] size         Number of particles in this ParticleZone (i.e. ParticleSize)
+ * \return \ier
+ */
+int cg_particle_read(int fn, int B, int P, char *particlename, cgsize_t *size)
+{
+    cgns_pzone *pzone;
+
+    cg = cgi_get_file(fn);
+    if (cg == 0) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    pzone = cgi_get_particle(cg, B, P);
+    if (pzone==0) return CG_ERROR;
+
+    strcpy(particlename, pzone->name);
+
+    (*size) = pzone->nparticles;
+
+    return CG_OK;
+}
+
+/**
+ * \ingroup ParticleZoneInformation
+ *
+ * \brief Create and/or write to a CGNS particle zone
+ *
+ * \param[in] fn           \FILE_fn
+ * \param[in] B            \B_Base
+ * \param[in] particlename Name of the particle zone.
+ * \param[in] size         Number of particles in this particle zone.
+ * \param[out] P           \P_ParticleZone
+ * \return \ier
+ */
+int cg_particle_write(int fn, int B, const char *particlename, const cgsize_t size, int *P)
+{
+   cgns_base *base;
+   cgns_pzone *pzone = NULL;
+   int index;
+   cgsize_t dim_vals[1];
+
+   /* verify input */
+   if (cgi_check_strlen(particlename)) return CG_ERROR;
+
+   /* get memory address file */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   /* verify input */
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+   /* get memory address for base */
+   base = cgi_get_base(cg, B);
+   if (base==0) return CG_ERROR;
+
+   /* Verify the particle count - We allow 0-sized ParticleZone_t nodes, but they cannot have solution/coordinate arrays */
+   if (size < 0) {
+      cgi_error("Invalid particle size %d", size);
+      return CG_ERROR;
+   }
+
+   /* Overwrite a ParticleZone_t Node: */
+   if (base->pzonemap == 0) {
+      base->pzonemap = cgi_new_presized_hashmap(base->npzones);
+      if (base->pzonemap == NULL) {
+         cgi_error("Could not allocate particlemap");
+         return CG_ERROR;
+      }
+      for (index = 0; index < base->npzones; index++) {
+         if (cgi_map_set_item(base->pzonemap, base->pzone[index].name, index) != 0) {
+            cgi_error("Can not set particle %s into hashmap", base->pzone[index].name);
+            return CG_ERROR;
+         }
+      }
+   }
+
+   index = (int) cgi_map_get_item(base->pzonemap, particlename);
+   /* */
+   if (index != -1) {
+      pzone = &(base->pzone[index]);
+      /* in CG_MODE_WRITE, children names must be unique */
+      if (cg->mode == CG_MODE_WRITE) {
+         cgi_error("Duplicate child name found: %s", pzone->name);
+         return CG_ERROR;
+      }
+
+      /* overwrite an existing particle zone*/
+      /* delete the existing particle zone from file */
+      if (cgi_delete_node(base->id, pzone->id))
+         return CG_ERROR;
+      cgi_free_particle(pzone);
+   } else {
+      if (base->npzones == 0) {
+         base->pzone = CGNS_NEW(cgns_pzone, base->npzones + 1);
+      }
+      else {
+         base->pzone = CGNS_RENEW(cgns_pzone, base->npzones + 1, base->pzone);
+      }
+      pzone = &(base->pzone[base->npzones]);
+      index = base->npzones;
+
+      if (cgi_map_set_item(base->pzonemap, particlename, index) != 0) {
+         cgi_error("Error while adding particlename %s to particlemap hashtable", particlename);
+         return CG_ERROR;
+      }
+      base->npzones++;
+   }
+   (*P) = index + 1;
+
+   /* save data to particle */
+   memset(pzone, 0, sizeof(cgns_pzone));
+   strcpy(pzone->name, particlename);
+   pzone->nparticles = size;
+
+   /* save data in file */
+   dim_vals[0]=1;
+   if (cgi_new_node(base->id, pzone->name, "ParticleZone_t", &pzone->id,
+                    CG_SIZE_DATATYPE, 1, dim_vals, &pzone->nparticles)) return CG_ERROR;
+
+   return CG_OK;
+}
+
+/*****************************************************************************\
+*    Read and Write ParticleCoordinates_t Nodes                              *
+\*****************************************************************************/
+
+/**
+* \ingroup ParticleCoordinates
+*
+* \brief Get number of \e ParticleCoordinates_t nodes
+*
+* \param[in] fn            \FILE_fn
+* \param[in] B             \B_Base
+* \param[in] P             \P_ParticleZone
+* \param[out] ncoord_nodes Number of \e ParticleCoordinates_t nodes for ParticleZone \p P.
+* \return \ier
+*
+*/
+int cg_particle_ncoord_nodes(int fn, int B, int P, int *ncoord_nodes)
+{
+   cgns_pzone *pzone;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    /* Get memory address for particle zone*/
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone==0) return CG_ERROR;
+
+   (*ncoord_nodes) = pzone->npcoor;
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleCoordinates
+*
+* \brief Get Name of a \e ParticleCoordinates_t node
+*
+* \param[in] fn           \FILE_fn
+* \param[in] B            \B_Base
+* \param[in] P            \P_ParticleZone
+* \param[in] C            \C_Coordinate
+* \param[out] pcoord_name Name of the \e ParticleCoordinates_t node. Note that
+*                         the name "ParticleCoordinates" is reserved for the
+*                         original particle location and must be the first
+*                         \e ParticleCoordinates_t node to be defined.
+* \return \ier
+*
+*/
+int cg_particle_coord_node_read(int fn, int B, int P, int C, char *pcoord_name)
+{
+   cgns_pcoor *pcoor;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    /* Get memory address for ParticleCoordinates_t node */
+   pcoor = cgi_get_particle_pcoor(cg, B, P, C);
+   if (pcoor==0) return CG_ERROR;
+
+    /* Return ADF name for the ParticleCoordinates_t node */
+   strcpy(pcoord_name,pcoor->name);
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleCoordinates
+*
+* \brief Create a `ParticleCoordinates_t` nodes
+*
+* \param[in] fn           \FILE_fn
+* \param[in] B            \B_Base
+* \param[in] P            \P_ParticleZone
+* \param[in] pcoord_name  Name of the \e ParticleCoordinates_t node.
+*                         Note that the name "ParticleCoordinates" is reserved
+*                         for the original particle location and must be the first
+*                         \e ParticleCoordinates_t node to be defined.
+* \param[out] C           \C_Coordinate
+* \return \ier
+*
+*/
+int cg_particle_coord_node_write(int fn, int B, int P, const char * pcoord_name, int *C)
+{
+   cgns_pzone *pzone;
+   cgns_pcoor *pcoor = NULL;
+   int index;
+
+    /* verify input */
+   if (cgi_check_strlen(pcoord_name)) return CG_ERROR;
+
+    /* get memory address */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone==0) return CG_ERROR;
+
+    /* Overwrite a ParticleCoordinates_t Node: */
+   for (index=0; index<pzone->npcoor; index++) {
+       if (strcmp(pcoord_name, pzone->pcoor[index].name)==0) {
+
+            /* in CG_MODE_WRITE, children names must be unique */
+           if (cg->mode==CG_MODE_WRITE) {
+               cgi_error("Duplicate child name found: %s",pcoord_name);
+               return CG_ERROR;
+           }
+
+            /* overwrite an existing ParticleCoordinates_t node */
+            /* delete the existing ParticleCoordinates_t from file */
+           if (cgi_delete_node(pzone->id, pzone->pcoor[index].id))
+               return CG_ERROR;
+            /* save the old in-memory address to overwrite */
+           pcoor = &(pzone->pcoor[index]);
+            /* free memory */
+           cgi_free_pcoor(pcoor);
+           break;
+       }
+   }
+    /* ... or add a ParticleCoordinates_t Node: */
+   if (index==pzone->npcoor) {
+       if (pzone->npcoor == 0) {
+           pzone->pcoor = CGNS_NEW(cgns_pcoor, 1);
+       } else {
+           pzone->pcoor = CGNS_RENEW(cgns_pcoor, pzone->npcoor+1, pzone->pcoor);
+       }
+       pcoor = &(pzone->pcoor[pzone->npcoor]);
+       pzone->npcoor++;
+   }
+   (*C) = index+1;
+
+    /* save data in memory */
+   memset(pcoor, 0, sizeof(cgns_pcoor));
+   strcpy(pcoor->name,pcoord_name);
+
+    /* save data in file */
+   if (cgi_new_node(pzone->id, pcoor->name, "ParticleCoordinates_t", &pcoor->id,
+       "MT", 0, 0, 0)) return CG_ERROR;
+
+   return CG_OK;
+}
+
+/*****************************************************************************\
+ *    Read and Write ParticleCoordinates_t bounding box
+\*****************************************************************************/
+
+/**
+ * \ingroup ParticleCoordinates
+ *
+ * \brief Get bounding box associated with a \e ParticleCoordinates_t node
+ *
+ * \param[in] fn           \FILE_fn
+ * \param[in] B            \B_Base
+ * \param[in] P            \P_ParticleZone
+ * \param[in] C            \C_Coordinate
+ * \param[in] datatype     Data type of the bounding box array written to the file
+ *                         or read. Admissible data types for a coordinate bounding
+ *                         box are \e RealSingle and \e RealDouble.
+ * \param[out] boundingbox Data Array with bounding box values.
+ * \return \ier
+ *
+ * \details When reading a bounding box, if the information is missing from the
+ *          file, the \p boundingbox array will remain untouched, and the CG_NODE_NOT_FOUND
+ *          status is returned. The CGNS MLL relies on the user to compute the bounding
+ *          box and ensure that the bounding box being stored is coherent with the
+ *          coordinates under \e GridCoordinates_t node.
+ *
+ */
+int cg_particle_bounding_box_read(int fn, int B, int P, int C, CGNS_ENUMT(DataType_t) datatype, void* boundingbox)
+{
+    cgns_pcoor *pcoor;
+    cgns_base *base;
+    char_33 name;
+    char_33 data_type;
+    int ndim;
+    void * vdata;
+    cgsize_t dim_vals[12];
+    cgsize_t num;
+
+    cg = cgi_get_file(fn);
+    if (cg == 0) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+     /* Get memory address for ParticleCoordinates_t node */
+    pcoor = cgi_get_particle_pcoor(cg, B, P, C);
+    if (pcoor==0) return CG_ERROR;
+
+    /* Read Bounding box from ParticleCoordinates node data */
+    if (cgi_read_node(pcoor->id, name, data_type, &ndim, dim_vals, &vdata, READ_DATA)){
+        cgi_error("Error reading node ParticleCoordinates_t");
+        return CG_ERROR;
+    }
+
+    /* check bounding box is not an empty array*/
+    if (strcmp(data_type,"MT")==0) {
+        cgi_error("No bounding box found for reading");
+        return CG_NODE_NOT_FOUND;
+    }
+
+    if (strcmp(data_type,"R4") &&
+        strcmp(data_type,"R8")) {
+        cgi_error("Datatype %s not supported for coordinates bounding box", data_type);
+        return CG_ERROR;
+    }
+
+    if (ndim != 2) {
+        cgi_error("Particle coordinates bounding box is %d dimensional. It should be 2.", ndim);
+        return CG_ERROR;
+    }
+
+    base = cgi_get_base(cg, B);
+    if (base==0) return CG_ERROR;
+    num = 2*base->phys_dim;
+
+    if (dim_vals[0]*dim_vals[1] != num){
+        cgi_error("Particle coordinates bounding box is not coherent with physical dimension.");
+        return CG_ERROR;
+    }
+
+     /* verify input */
+    if (datatype != CGNS_ENUMV(RealSingle) && datatype != CGNS_ENUMV(RealDouble)) {
+        cgi_error("Invalid data type for bounding box array: %d", datatype);
+        return CG_ERROR;
+    }
+
+    /* transfer small bounding box data to user with correct data type */
+    cgi_convert_data(num, cgi_datatype(data_type), vdata, datatype, boundingbox);
+    CGNS_FREE(vdata);
+
+    return CG_OK;
+}
+
+/**
+ * \ingroup ParticleCoordinates
+ *
+ * \brief Write bounding box associated with a `ParticleCoordinates_t` node
+ *
+ * \param[in] fn          \FILE_fn
+ * \param[in] B           \B_Base
+ * \param[in] P           \P_ParticleZone
+ * \param[in] C           \C_Coordinate
+ * \param[in] datatype    Data type of the bounding box array written to the file
+ *                        or read. Admissible data types for a coordinate bounding
+ *                        box are \e RealSingle and \e RealDouble.
+ * \param[in] boundingbox Data Array with bounding box values.
+ * \return \ier
+ *
+ * \details  The CGNS MLL relies on the user to compute the bounding box and ensure
+ *           that the bounding box being stored is coherent with the coordinates under
+ *           \e ParticleCoordinates_t node.
+ */
+int cg_particle_bounding_box_write(int fn, int B, int P, int C, CGNS_ENUMT(DataType_t) datatype, void* boundingbox)
+{
+    cgns_base *base;
+    cgns_pcoor *pcoor;
+    cgsize_t dim_vals[2];
+
+    cg = cgi_get_file(fn);
+    if (cg == 0) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+    /* Get memory address for ParticleCoordinates_t node */
+    pcoor = cgi_get_particle_pcoor(cg, B, P, C);
+    if (pcoor==0) return CG_ERROR;
+
+    if ((cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) && pcoor->id == 0) {
+       cgi_error("Impossible to write coordinates bounding box to unwritten node");
+       return CG_ERROR;
+    }
+#if CG_BUILD_HDF5
+    else if (cg->filetype == CGIO_FILE_HDF5) {
+        hid_t hid;
+        to_HDF_ID(pcoor->id, hid);
+        if (hid == 0) {
+           cgi_error("Impossible to write coordinates bounding box to unwritten node HDF5");
+           return CG_ERROR;
+        }
+    }
+#endif
+    base = cgi_get_base(cg, B);
+    if (base==0) return CG_ERROR;
+    dim_vals[0] = base->phys_dim;
+    dim_vals[1] = 2;
+
+    /* Check input */
+    if (boundingbox == NULL) return CG_OK;
+
+    if (datatype != CGNS_ENUMV(RealSingle) && datatype != CGNS_ENUMV(RealDouble)) {
+        cgi_error("Invalid data type for bounding box array: %d", datatype);
+        return CG_ERROR;
+    }
+
+    /* Write Bounding box into existing ParticleCoordinates_t node */
+    if (cgio_set_dimensions(cg->cgio, pcoor->id, cgi_adf_datatype(datatype), 2, dim_vals)) {
+       cg_io_error("cgio_set_dimensions");
+       return CG_ERROR;
+    }
+    if (cgio_write_all_data(cg->cgio, pcoor->id, boundingbox)){
+       cg_io_error("cgio_write_all_data");
+       return CG_ERROR;
+    }
+
+    return CG_OK;
+}
+
+/**
+* \ingroup ParticleCoordinates
+*
+* \brief  Get the number of coordinate arrays
+*
+* \param[in] fn       \FILE_fn
+* \param[in] B        \B_Base
+* \param[in] P        \P_ParticleZone
+* \param[out] ncoords Number of coordinate arrays for particle zone \p P.
+* \return \ier
+*
+*/
+int cg_particle_ncoords(int fn, int B, int P, int *ncoords)
+{
+   cgns_pcoor *pcoor;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    /* Get memory address for node "ParticleCoordinates" */
+   pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+   if (pcoor==0) *ncoords = 0;     /* if ParticleCoordinates_t is undefined */
+   else          *ncoords = pcoor->ncoords;
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleCoordinates
+*
+* \brief  Get info about a coordinate array
+*
+* \param[in] fn         \FILE_fn
+* \param[in] B          \B_Base
+* \param[in] P          \P_ParticleZone
+* \param[in] C          \C_Coordinate
+* \param[out] datatype  Data type of the coordinate array written to the file.
+*                       Admissible data types for a coordinate array are RealSingle and RealDouble.
+* \param[out] coordname Name of the coordinate array. It is strongly advised to use the
+*                       SIDS nomenclature conventions when naming the coordinate arrays
+*                       to ensure file compatibility.
+* \return \ier
+*
+*/
+int cg_particle_coord_info(int fn, int B, int P, int C, CGNS_ENUMT(DataType_t)  *datatype, char *coordname)
+{
+   cgns_pcoor *pcoor;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    /* Get memory address for node "ParticleCoordinates" */
+   pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+   if (pcoor==0) return CG_ERROR;
+
+   if (C>pcoor->ncoords || C<=0) {
+       cgi_error("Particle coord number %d invalid",C);
+       return CG_ERROR;
+   }
+   *datatype = cgi_datatype(pcoor->coord[C-1].data_type);
+   strcpy(coordname, pcoor->coord[C-1].name);
+
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleCoordinates
+*
+* \brief  Read particle coordinate array
+*
+* \param[in] fn           \FILE_fn
+* \param[in] B            \B_Base
+* \param[in] P            \P_ParticleZone
+* \param[in] coordname    Name of the coordinate array. It is strongly advised to use the
+*                         SIDS nomenclature conventions when naming the coordinate arrays
+*                         to ensure file compatibility.
+* \param[in] mem_datatype Data type of an array in memory. Admissible data types for a
+*                         coordinate array are RealSingle and RealDouble.
+* \param[in] s_rmin       Lower range index in file.
+* \param[in] s_rmax       Upper range index in file.
+* \param[out] coord_array Array of coordinate values.
+* \return \ier
+*
+*/
+int cg_particle_coord_read(int fn, int B, int P, const char *coordname,
+                          CGNS_ENUMT(DataType_t) mem_datatype, const cgsize_t *s_rmin,
+                          const cgsize_t *s_rmax, void *coord_array)
+{
+   cgns_pzone *pzone;
+
+    /* get memory addresses */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone == 0) return CG_ERROR;
+
+   /* verify that range requested is not NULL */
+   if (s_rmin == NULL || s_rmax == NULL) {
+       cgi_error("NULL range value.");
+       return CG_ERROR;
+   }
+
+   cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+   cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+
+   m_rmin[0] = 1;
+   m_rmax[0] = s_rmax[0] - s_rmin[0] + 1;
+   m_dimvals[0] = m_rmax[0];
+
+   return cg_particle_coord_general_read(fn, B, P, coordname,
+                                         s_rmin, s_rmax, mem_datatype,
+                                         m_dimvals, m_rmin, m_rmax,
+                                         coord_array);
+}
+
+/**
+* \ingroup ParticleCoordinates
+*
+* \brief  Read subset of  coordinates to a shaped array
+*
+* \param[in] fn         \FILE_fn
+* \param[in] B          \B_Base
+* \param[in] P          \P_ParticleZone
+* \param[in] coordname  Name of the coordinate array. It is strongly advised to use
+*                       the SIDS nomenclature conventions when naming the coordinate
+*                       arrays to ensure file compatibility.
+* \param[in] m_type     Data type of an array in memory. Admissible data types for a
+*                       coordinate array are RealSingle and RealDouble.
+* \param[in] s_rmin     Lower range index in file.
+* \param[in] s_rmax     Upper range index in file.
+* \param[in] m_dimvals  Dimensions of array in memory.
+* \param[in] m_rmin     Lower range index in memory.
+* \param[in] m_rmax     Upper range index in memory.
+* \param[out] coord_ptr Array of coordinate values.
+* \return \ier
+*
+*/
+int cg_particle_coord_general_read(int fn, int B, int P, const char *coordname,
+                                  const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                                  CGNS_ENUMT(DataType_t) m_type, const cgsize_t *m_dimvals,
+                                  const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                                  void *coord_ptr)
+{
+    /* s_ prefix is file space, m_ prefix is memory space */
+   cgns_pcoor *pcoor;
+   cgns_array *coord;
+   int c, s_numdim, m_numdim;
+
+    /* verify input */
+   if (m_type != CGNS_ENUMV(RealSingle) && m_type != CGNS_ENUMV(RealDouble)) {
+       cgi_error("Invalid data type for coord. array: %d", m_type);
+       return CG_ERROR;
+   }
+    /* find address */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    /* get memory address for node "ParticleCoordinates" */
+   pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+   if (pcoor == 0) return CG_ERROR;
+
+    /* find the coord address in the database */
+   coord = 0;
+   for (c=0; c<pcoor->ncoords; c++) {
+       if (strcmp(pcoor->coord[c].name, coordname) == 0) {
+           coord = &pcoor->coord[c];
+           break;
+       }
+   }
+   if (coord==0) {
+       cgi_error("Particle coordinate %s not found.",coordname);
+       return CG_NODE_NOT_FOUND;
+   }
+
+   /* ParticleZone_t is analogous to Unstructured Zone_t*/
+   s_numdim = 1;
+   m_numdim = 1;
+
+   return cgi_array_general_read(coord, cgns_rindindex, NULL, s_numdim, s_rmin, s_rmax,
+                                 m_type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                 coord_ptr);
+}
+
+/**
+* \ingroup ZoneGridCoordinates
+*
+* \brief  Get particle coordinate ids
+*
+* \param[in]  fn       \FILE_fn
+* \param[in]  B        \B_Base
+* \param[in]  P        \P_ParticleZone
+* \param[in]  C        \C_Coordinate
+* \param[out] coord_id Particle coordinate id.
+* \return \ier
+*
+*/
+
+int cg_particle_coord_id(int fn, int B, int P, int C, double *coord_id)
+{
+   cgns_pcoor *pcoor;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    /* Get memory address for node "ParticleCoordinates" */
+   pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+   if (pcoor==0) return CG_ERROR;
+
+   if (C>pcoor->ncoords || C<=0) {
+       cgi_error("Particle coord number %d invalid",C);
+       return CG_ERROR;
+   }
+
+   *coord_id = pcoor->coord[C-1].id;
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleCoordinates
+*
+* \brief  Write particle coordinates
+*
+* \param[in] fn         \FILE_fn
+* \param[in] B          \B_Base
+* \param[in] P          \P_ParticleZone
+* \param[in] datatype   Data type of the coordinate array written to the file.
+*                       Admissible data types for a coordinate array are
+*                       RealSingle and RealDouble.
+* \param[in] coordname  Name of the coordinate array. It is strongly advised to
+*                       use the SIDS nomenclature conventions when naming the
+*                       coordinate arrays to ensure file compatibility.
+* \param[in] coord_ptr  Array of coordinate values.
+* \param[out] C         \C_Coordinate
+* \return \ier
+*
+*/
+int cg_particle_coord_write(int fn, int B, int P, CGNS_ENUMT(DataType_t) datatype,
+                           const char *coordname, const void *coord_ptr, int *C)
+{
+   cgns_pzone *pzone;
+   cgns_pcoor *pcoor;
+   int status;
+
+   HDF5storage_type = CG_CONTIGUOUS;
+
+    /* verify input */
+   if (cgi_check_strlen(coordname)) return CG_ERROR;
+   if (datatype!=CGNS_ENUMV( RealSingle ) && datatype!=CGNS_ENUMV( RealDouble )) {
+       cgi_error("Invalid datatype for particle coord. array:  %d", datatype);
+       return CG_ERROR;
+   }
+    /* get memory addresses */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone == 0) return CG_ERROR;
+
+    /* Get memory address for node "ParticleCoordinates" */
+   pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+   if (pcoor == 0) return CG_ERROR;
+
+   cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+   cgsize_t s_rmin[CGIO_MAX_DIMENSIONS], s_rmax[CGIO_MAX_DIMENSIONS];
+   cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+
+   m_dimvals[0] = pzone->nparticles;
+   s_rmin[0] = 1;
+   s_rmax[0] = s_rmin[0] + m_dimvals[0] - 1;
+   m_rmin[0] = 1;
+   m_rmax[0] = m_dimvals[0];
+   status = cg_particle_coord_general_write(fn, B, P, coordname,
+                                            datatype, s_rmin, s_rmax,
+                                            datatype, m_dimvals, m_rmin, m_rmax,
+                                            coord_ptr, C);
+
+   HDF5storage_type = CG_COMPACT;
+   return status;
+}
+
+/**
+* \ingroup ParticleCoordinates
+*
+* \brief  Write subset of particle coordinates
+*
+* \param[in] fn        \FILE_fn
+* \param[in] B         \B_Base
+* \param[in] P         \P_ParticleZone
+* \param[in] datatype  Data type of the coordinate array written to the file.
+*                      Admissible data types for a coordinate array are
+*                      RealSingle and RealDouble.
+* \param[in] coordname Name of the coordinate array. It is strongly advised
+*                      to use the SIDS nomenclature conventions when naming
+*                      the coordinate arrays to ensure file compatibility.
+* \param[in] s_rmin    Lower range index in file (eg., imin, jmin, kmin).
+* \param[in] s_rmax    Upper range index in file (eg., imax, jmax, kmax).
+* \param[in] coord_ptr Array of coordinate values.
+* \param[out] C        \C_Coordinate
+* \return \ier
+*
+*/
+int cg_particle_coord_partial_write(int fn, int B, int P,
+                                   CGNS_ENUMT(DataType_t) datatype,
+                                   const char *coordname, const cgsize_t *s_rmin,
+                                   const cgsize_t *s_rmax, const void *coord_ptr,
+                                   int *C)
+{
+   cgns_pzone *pzone;
+   int status;
+
+    /* get memory addresses */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone == 0) return CG_ERROR;
+
+
+   if (s_rmin == NULL || s_rmax == NULL) {
+       cgi_error("NULL range value.");
+       return CG_ERROR;
+   }
+
+   cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+   cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+   m_rmin[0] = 1;
+   m_rmax[0] = s_rmax[0] - s_rmin[0] + 1;
+   m_dimvals[0] = m_rmax[0];
+
+
+   status = cg_particle_coord_general_write(fn, B, P, coordname,
+                                            datatype, s_rmin, s_rmax,
+                                            datatype, m_dimvals, m_rmin, m_rmax,
+                                            coord_ptr, C);
+   return status;
+}
+
+/**
+* \ingroup ParticleCoordinates
+*
+* \brief  Write shaped array to a subset of particle coordinates
+*
+* \param[in] fn         \FILE_fn
+* \param[in] B          \B_Base
+* \param[in] P          \P_ParticleZone
+* \param[in] coordname  Name of the coordinate array. It is strongly advised to
+*                       use the SIDS nomenclature conventions when naming the
+*                       coordinate arrays to ensure file compatibility.
+* \param[in] s_type     Data type of the coordinate array written to the file.
+*                       Admissible data types for a coordinate array are
+*                       \e RealSingle and \e RealDouble.
+* \param[in] m_type     Data type of an array in memory. Admissible data types for
+*                       a coordinate array are \e RealSingle and \e RealDouble.
+* \param[in] s_rmin     Lower range index in file (eg., imin, jmin, kmin).
+* \param[in] s_rmax     Upper range index in file (eg., imax, jmax, kmax).
+* \param[in] m_dimvals  Dimensions of array in memory.
+* \param[in] m_rmin     Lower range index in memory (eg., imin, jmin, kmin).
+* \param[in] m_rmax     Upper range index in memory (eg., imax, jmax, kmax).
+* \param[in] coord_ptr  Array of coordinate values.
+* \param[out] C         \C_Coordinate
+* \return \ier
+*
+*/
+int cg_particle_coord_general_write(int fn, int B, int P, const char *coordname,
+                                   CGNS_ENUMT(DataType_t) s_type,
+                                   const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                                   CGNS_ENUMT(DataType_t) m_type,
+                                   const cgsize_t *m_dimvals,
+                                   const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                                   const void *coord_ptr, int *C)
+{
+    /* s_ prefix is file space, m_ prefix is memory space */
+   cgns_pzone *pzone;
+   cgns_pcoor *pcoor;
+   int n, s_numdim, m_numdim;
+   int status;
+
+   HDF5storage_type = CG_CONTIGUOUS;
+
+    /* verify input */
+   if (cgi_check_strlen(coordname)) return CG_ERROR;
+   if (s_type!=CGNS_ENUMV(RealSingle) && s_type!=CGNS_ENUMV(RealDouble)) {
+       cgi_error("Invalid file data type for coord. array: %d", s_type);
+       return CG_ERROR;
+   }
+   if (m_type != CGNS_ENUMV(RealSingle) && m_type != CGNS_ENUMV(RealDouble) &&
+       m_type != CGNS_ENUMV(Integer) && m_type != CGNS_ENUMV(LongInteger)) {
+       cgi_error("Invalid input data type for coord. array: %d", m_type);
+       return CG_ERROR;
+   }
+
+    /* get memory addresses */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone == 0) return CG_ERROR;
+
+    /* Get memory address for node "ParticleCoordinates" */
+   pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+   if (pcoor == 0) return CG_ERROR;
+
+   cgsize_t s_dimvals[CGIO_MAX_DIMENSIONS];
+   s_numdim = 1;
+   m_numdim = 1;
+   s_dimvals[0] = pzone->nparticles;
+
+    /* Create ParticleCoordinates_t node if not already created */
+   if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) {
+       if (pcoor->id == 0) {
+           if (cgi_new_node(pzone->id, "ParticleCoordinates", "ParticleCoordinates_t",
+                            &pcoor->id, "MT", 0, 0, 0)) return CG_ERROR;
+       }
+   }
+#if CG_BUILD_HDF5
+   else if (cg->filetype == CGIO_FILE_HDF5) {
+       hid_t hid;
+       to_HDF_ID(pcoor->id, hid);
+       if (hid == 0) {
+           if (cgi_new_node(pzone->id, "ParticleCoordinates", "ParticleCoordinates_t",
+                            &pcoor->id, "MT", 0, 0, 0)) return CG_ERROR;
+       }
+   }
+#endif
+   else {
+       return CG_ERROR;
+   }
+
+   status = cgi_array_general_write(pcoor->id, &(pcoor->ncoords),
+                                  &(pcoor->coord), coordname,
+                                  cgns_rindindex, NULL,
+                                  s_type, s_numdim, s_dimvals, s_rmin, s_rmax,
+                                  m_type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                  coord_ptr, C);
+   HDF5storage_type = CG_COMPACT;
+   return status;
+}
+
+/*****************************************************************************\
+*    Read and Write ParticleSolution_t Nodes
+\*****************************************************************************/
+
+/**
+* \ingroup ParticleSolution
+*
+* \brief  Get the number of ParticleSolution_t nodes
+*
+* \param[in] fn     \FILE_fn
+* \param[in] B      \B_Base
+* \param[in] P      \P_ParticleZone
+* \param[out] nsols Number of solutions for particle \p P.
+* \return \ier
+*
+*/
+int cg_particle_nsols(int fn, int B, int P, int *nsols)
+{
+   cgns_pzone *pzone;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone==0) return CG_ERROR;
+
+   *nsols = pzone->nsols;
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleSolution
+*
+* \brief  Get information about a ParticleSolution_t node
+*
+* \param[in] fn       \FILE_fn
+* \param[in] B        \B_Base
+* \param[in] P        \P_ParticleZone
+* \param[in] S        \SOL_S
+* \param[out] solname Name of the particle solution.
+* \return \ier
+*
+*/
+int cg_particle_sol_info(int fn, int B, int P, int S, char *solname)
+{
+   cgns_psol *sol;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol==0) return CG_ERROR;
+
+   strcpy(solname, sol->name);
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleSolution
+*
+* \brief  Get the CGIO node identifier for a ParticleSolution_t node
+*
+* \param[in] fn      \FILE_fn
+* \param[in] B       \B_Base
+* \param[in] P       \P_ParticleZone
+* \param[in] S       \SOL_S
+* \param[out] sol_id CGIO node identifier of the particle solution node
+* \return \ier
+*
+*/
+int cg_particle_sol_id(int fn, int B, int P, int S, double *sol_id)
+{
+   cgns_psol *sol;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol==0) return CG_ERROR;
+
+   *sol_id = sol->id;
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleSolution
+*
+* \brief  Create and/or write to a ParticleSolution_t node
+*
+* \param[in] fn      \FILE_fn
+* \param[in] B       \B_Base
+* \param[in] P       \P_ParticleZone
+* \param[in] solname Name of the particle solution.
+* \param[out] S      \SOL_S
+* \return \ier
+*
+*/
+int cg_particle_sol_write(int fn, int B, int P, const char * solname, int *S)
+{
+   cgns_pzone *pzone;
+   cgns_psol *sol = NULL;
+   int index;
+
+    /* verify input */
+   if (cgi_check_strlen(solname)) return CG_ERROR;
+
+    /* get memory address for ParticleSolution node */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone==0) return CG_ERROR;
+
+
+    /* Overwrite a ParticleSolution_t Node: */
+   for (index=0; index<pzone->nsols; index++) {
+       if (strcmp(solname, pzone->sol[index].name)==0) {
+
+            /* in CG_MODE_WRITE, children names must be unique */
+           if (cg->mode==CG_MODE_WRITE) {
+               cgi_error("Duplicate child name found: %s",solname);
+               return CG_ERROR;
+           }
+
+            /* overwrite an existing solution */
+            /* delete the existing solution from file */
+           if (cgi_delete_node(pzone->id, pzone->sol[index].id))
+               return CG_ERROR;
+            /* save the old in-memory address to overwrite */
+           sol = &(pzone->sol[index]);
+            /* free memory */
+           cgi_free_psol(sol);
+           break;
+       }
+   }
+    /* ... or add a ParticleSolution_t Node: */
+   if (index==pzone->nsols) {
+       if (pzone->nsols == 0) {
+           pzone->sol = CGNS_NEW(cgns_psol, pzone->nsols+1);
+       } else {
+           pzone->sol = CGNS_RENEW(cgns_psol, pzone->nsols+1, pzone->sol);
+       }
+       sol = &(pzone->sol[pzone->nsols]);
+       pzone->nsols++;
+   }
+   (*S) = index+1;
+
+    /* save data in memory */
+   memset(sol, 0, sizeof(cgns_psol));
+   strcpy(sol->name,solname);
+
+    /* save data in file */
+   if (cgi_new_node(pzone->id, sol->name, "ParticleSolution_t", &sol->id,
+       "MT", 0, 0, 0)) return CG_ERROR;
+
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleSolution
+*
+* \brief  Get the dimensions of a ParticleSolution_t node
+*
+* \param[in] fn    \FILE_fn
+* \param[in] B     \B_Base
+* \param[in] P     \P_ParticleZone
+* \param[in] S     \SOL_S
+* \param[out] size Number of particles for which solutions are defined.
+* \return \ier
+*
+*/
+int cg_particle_sol_size(int fn, int B, int P, int S, cgsize_t *size)
+{
+   cgns_psol *sol;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol==0) return CG_ERROR;
+
+   if (sol->ptset == NULL) {
+      cgns_pzone *pzone = cgi_get_particle(cg, B, P);
+       *size = pzone->nparticles;
+   } else {
+       *size = sol->ptset->size_of_patch;
+   }
+
+   return CG_OK;
+}
+
+/*----------------------------------------------------------------------*/
+/**
+* \ingroup ParticleSolution
+*
+* \brief  Get info about a point set ParticleSolution_t node
+*
+* \param[in] fn          \FILE_fn
+* \param[in] B           \B_Base
+* \param[in] P           \P_ParticleZone
+* \param[in] S           \SOL_S
+* \param[out] ptset_type Type of point set defining the interface in the
+*                        current solution; either \e PointRange or \e PointList.
+* \param[out] npnts      Number of points defining the interface in the
+*                        current solution. For a ptset_type of PointRange,
+*                        npnts is always two. For a ptset_type of PointList,
+*                        npnts is the number of points in the PointList.
+* \return \ier
+*
+*/
+int cg_particle_sol_ptset_info(int fn, int B, int P, int S,
+   CGNS_ENUMT(PointSetType_t) *ptset_type, cgsize_t *npnts)
+{
+   cgns_psol *sol;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol==0) return CG_ERROR;
+
+   if (sol->ptset == NULL) {
+       *ptset_type = CGNS_ENUMV(PointSetTypeNull);
+       *npnts = 0;
+   } else {
+       *ptset_type = sol->ptset->type;
+       *npnts = sol->ptset->npts;
+   }
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleSolution
+*
+* \brief  Read a point set ParticleSolution_t node
+*
+* \param[in] fn    \FILE_fn
+* \param[in] B     \B_Base
+* \param[in] P     \P_ParticleZone
+* \param[in] S     \SOL_S
+* \param[out] pnts Array of points defining the interface in the current solution.
+* \return \ier
+*
+*/
+int cg_particle_sol_ptset_read(int fn, int B, int P, int S, cgsize_t *pnts)
+{
+   cgns_psol *sol;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol==0) return CG_ERROR;
+
+   if (sol->ptset == 0 || sol->ptset->npts <= 0) {
+       cgi_error("PointSet not defined for ParticleSolution node %d\n", S);
+       return CG_ERROR;
+   }
+
+   if (cgi_read_int_data(sol->ptset->id, sol->ptset->data_type,
+           sol->ptset->npts, pnts)) return CG_ERROR;
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleSolution
+*
+* \brief  Create a point set ParticleSolution_t node
+*
+* \param[in] fn         \FILE_fn
+* \param[in] B          \B_Base
+* \param[in] P          \P_ParticleZone
+* \param[in] solname    Name of the particle solution.
+* \param[in] ptset_type Type of point set defining the interface in the current
+*                       solution; either PointRange or PointList.
+* \param[in] npnts      Number of points defining the interface in the current solution.
+*                       For a \p ptset_type of \e PointRange, \p npnts is always two. For a
+*                       \p ptset_type of \e PointList, \p npnts is the number of points in the \e PointList.
+* \param[in] pnts       Array of points defining the interface in the current solution.
+* \param[out] S         \SOL_S
+* \return \ier
+*
+*/
+int cg_particle_sol_ptset_write(int fn, int B, int P, const char *solname,
+   CGNS_ENUMT(PointSetType_t) ptset_type, cgsize_t npnts,
+   const cgsize_t *pnts, int *S)
+{
+   cgsize_t cnt;
+   cgns_psol *sol;
+   char_33 PointSetName;
+   double id;
+
+   /* verify input */
+   if (!((ptset_type == CGNS_ENUMV(PointList) && npnts > 0) ||
+         (ptset_type == CGNS_ENUMV(PointRange) && npnts == 2))) {
+       cgi_error("Invalid input:  npoint=%ld, point set type=%s",
+           (long)npnts, PointSetTypeName[ptset_type]);
+       return CG_ERROR;
+   }
+
+   if (cg_particle_sol_write(fn, B, P, solname, S))
+       return CG_ERROR;
+   sol = cgi_get_particle_sol(cg, B, P, *S);
+   if (sol == 0) return CG_ERROR;
+
+   sol->ptset = CGNS_NEW(cgns_ptset, 1);
+   sol->ptset->type = ptset_type;
+   strcpy(sol->ptset->data_type,CG_SIZE_DATATYPE);
+   sol->ptset->npts = npnts;
+
+   if (ptset_type == CGNS_ENUMV(PointList)) {
+       sol->ptset->size_of_patch = npnts;
+   }
+   else {
+      cnt = pnts[1] - pnts[0];
+      if (cnt < 0) cnt = -cnt;
+      sol->ptset->size_of_patch = (cnt + 1);
+   }
+
+   strcpy(PointSetName, PointSetTypeName[ptset_type]);
+   if (cgi_write_ptset(sol->id, PointSetName, sol->ptset, 1,
+           (void *)pnts)) return CG_ERROR;
+
+   return CG_OK;
+}
+
+/*****************************************************************************\
+*    Read and Write particle field DataArray_t Nodes
+\*****************************************************************************/
+/**
+* \ingroup ParticleSolutionData
+*
+* \brief  Get the number of particle solution arrays
+*
+* \param[in] fn        \FILE_fn
+* \param[in] B         \B_Base
+* \param[in] P         \P_ParticleZone
+* \param[in] S         \SOL_S
+* \param[out] nfields  Number of data arrays in particle solution S.
+* \return \ier
+*
+*/
+int cg_particle_nfields(int fn, int B, int P, int S, int *nfields)
+{
+   cgns_psol *sol;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol==0) return CG_ERROR;
+
+   *nfields = sol->nfields;
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleSolutionData
+*
+* \brief  Get info about a particle solution array
+*
+* \param[in] fn         \FILE_fn
+* \param[in] B          \B_Base
+* \param[in] P          \P_ParticleZone
+* \param[in] S          \SOL_S
+* \param[in] F          \PSOL_F
+* \param[out] datatype  Data type of the solution array written to the file.
+*                       Admissible data types for a solution array are \e Integer,
+*                       \e LongInteger, \e RealSingle, and \e RealDouble.
+* \param[out] fieldname Name of the solution array. It is strongly advised to use
+*                       the SIDS nomenclature conventions when naming the solution
+*                       arrays to ensure file compatibility.
+* \return \ier
+*
+*/
+int cg_particle_field_info(int fn, int B, int P, int S, int F,
+                 CGNS_ENUMT(DataType_t) *datatype, char *fieldname)
+{
+   cgns_array *field;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   field = cgi_get_particle_field(cg, B, P, S, F);
+   if (field==0) return CG_ERROR;
+
+   strcpy(fieldname, field->name);
+   *datatype = cgi_datatype(field->data_type);
+
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleSolutionData
+*
+* \brief  Read particle solution
+*
+* \param[in] fn            \FILE_fn
+* \param[in] B             \B_Base
+* \param[in] P             \P_ParticleZone
+* \param[in] S             \SOL_S
+* \param[in] fieldname     Name of the solution array. It is strongly advised to use the
+*                          SIDS nomenclature conventions when naming the solution arrays
+*                          to ensure file compatibility.
+* \param[in] mem_datatype  Data type of an array in memory. Admissible data types for
+*                          a solution array are Integer, LongInteger, RealSingle,
+*                          and RealDouble.
+* \param[in] s_rmin  Lower range index in file
+* \param[in] s_rmax  Upper range index in file
+* \param[out] field_ptr    Array of solution values.
+* \return \ier
+*
+*/
+int cg_particle_field_read(int fn, int B, int P, int S, const char *fieldname,
+                          CGNS_ENUMT(DataType_t) mem_datatype, const cgsize_t *s_rmin,
+                          const cgsize_t *s_rmax, void *field_ptr)
+{
+   cgns_psol *sol;
+   int n, m_numdim;
+
+    /* get memory addresses */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+    /* get memory address for solution */
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol == 0) return CG_ERROR;
+
+    /* verify that range requested does not exceed range stored */
+   if (s_rmin == NULL || s_rmax == NULL) {
+       cgi_error("NULL range value.");
+       return CG_ERROR;
+   }
+
+   cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+   cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+   m_rmin[0] = 1;
+   m_rmax[0] = s_rmax[0] - s_rmin[0] + 1;
+   m_dimvals[0] = m_rmax[0];
+
+   return cg_particle_field_general_read(fn, B, P, S, fieldname,
+                                         s_rmin, s_rmax, mem_datatype,
+                                         m_dimvals, m_rmin, m_rmax,
+                                         field_ptr);
+}
+
+/**
+* \ingroup ParticleSolutionData
+*
+* \brief  Read subset of particle solution to a shaped array
+*
+* \param[in] fn         \FILE_fn
+* \param[in] B          \B_Base
+* \param[in] P          \P_ParticleZone
+* \param[in] S          \SOL_S
+* \param[in] fieldname  Name of the solution array. It is strongly advised to use the
+*                       SIDS nomenclature conventions when naming the solution arrays
+*                       to ensure file compatibility.
+* \param[in] s_rmin     Lower range index in file.
+* \param[in] s_rmax     Upper range index in file.
+* \param[in] m_type     Data type of an array in memory. Admissible data types for a solution
+*                       array are Integer, LongInteger, RealSingle, and RealDouble.
+* \param[in] m_dimvals  Dimensions of array in memory.
+* \param[in] m_rmin     Lower range index in memory.
+* \param[in] m_rmax     Upper range index in memory.
+* \param[out] field_ptr Array of solution values.
+* \return \ier
+*
+*/
+int cg_particle_field_general_read(int fn, int B, int P, int S, const char *fieldname,
+                         const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                         CGNS_ENUMT(DataType_t) m_type,
+                         const cgsize_t *m_dimvals,
+                         const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                         void *field_ptr)
+{
+    /* s_ prefix is file space, m_ prefix is memory space */
+   cgns_psol *sol;
+   cgns_array *field;
+   int f, s_numdim, m_numdim = 1;
+
+    /* verify input */
+   if (INVALID_ENUM(m_type, NofValidDataTypes)) {
+       cgi_error("Invalid data type requested for flow solution: %d", m_type);
+       return CG_ERROR;
+   }
+
+    /* find address */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    /* get memory address for solution */
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol == 0) return CG_ERROR;
+
+    /* find the field address in the database */
+   field = 0;
+   for (f=0; f<sol->nfields; f++) {
+       if (strcmp(sol->field[f].name, fieldname) == 0) {
+           field = cgi_get_particle_field(cg, B, P, S, f+1);
+           if (field == 0) return CG_ERROR;
+           break;
+       }
+   }
+   if (field == 0) {
+       cgi_error("Flow solution array %s not found",fieldname);
+       return CG_NODE_NOT_FOUND;
+   }
+
+   s_numdim = 1;
+
+   return cgi_array_general_read(field, cgns_rindindex, NULL,
+                                 s_numdim, s_rmin, s_rmax,
+                                 m_type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                 field_ptr);
+}
+
+/**
+ * \ingroup FlowSolutionData
+ *
+ * \brief Get the particle field solution ADF ID number (address) of node
+ *
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  S         \SOL_S
+ * \param[in]  F         \PSOL_F
+ * \param[out] field_id  Field particle solution ADF ID number (address) of node
+ * \return \ier
+ *
+ */
+int cg_particle_field_id(int fn, int B, int P, int S, int F, double *field_id)
+{
+   cgns_array *field;
+
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+   field = cgi_get_particle_field(cg, B, P, S, F);
+   if (field==0) return CG_ERROR;
+
+   *field_id = field->id;
+   return CG_OK;
+}
+
+/**
+* \ingroup ParticleSolutionData
+*
+* \brief  Write Particle solution
+*
+* \param[in]  fn         \FILE_fn
+* \param[in]  B          \B_Base
+* \param[in]  P          \P_ParticleZone
+* \param[in]  S          \SOL_S
+* \param[in]  fieldname  Name of the solution array. It is strongly advised to use
+*                        the SIDS nomenclature conventions when naming the solution
+*                        arrays to ensure file compatibility.
+* \param[in]  type       Data type of the solution array written to the file. Admissible
+*                        data types for a solution array are Integer, LongInteger,
+*                        RealSingle, and RealDouble.
+* \param[in]  field_ptr  Array of solution values.
+* \param[out] F          \SOL_F
+* \return \ier
+*
+*/
+int cg_particle_field_write(int fn, int B, int P, int S,
+                  CGNS_ENUMT(DataType_t) type, const char *fieldname,
+                  const void *field_ptr, int *F)
+{
+   cgns_pzone *pzone;
+   cgns_psol *sol;
+   int n, m_numdim;
+
+   HDF5storage_type = CG_CONTIGUOUS;
+
+    /* verify input */
+   if (cgi_check_strlen(fieldname)) return CG_ERROR;
+   if (type != CGNS_ENUMV(RealSingle) && type != CGNS_ENUMV(RealDouble) &&
+       type != CGNS_ENUMV(ComplexSingle) && type != CGNS_ENUMV(ComplexDouble) &&
+       type != CGNS_ENUMV(Integer) && type != CGNS_ENUMV(LongInteger)) {
+       cgi_error("Invalid datatype for solution array %s: %d",fieldname, type);
+       return CG_ERROR;
+   }
+
+    /* get memory addresses */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone == 0) return CG_ERROR;
+
+    /* get memory address for solution */
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol == 0) return CG_ERROR;
+
+    /* dimension is dependent on multidim or ptset */
+   cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+   if (sol->ptset == NULL) {
+       m_dimvals[0] = pzone->nparticles;
+   }
+   else {
+       m_dimvals[0] = sol->ptset->size_of_patch;
+   }
+
+   cgsize_t s_rmin[CGIO_MAX_DIMENSIONS], s_rmax[CGIO_MAX_DIMENSIONS];
+   cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+
+   s_rmin[0] = 1 ;
+   s_rmax[0] = s_rmin[0] + m_dimvals[0] - 1;
+   m_rmin[0] = 1;
+   m_rmax[0] = m_dimvals[0];
+
+   return cg_particle_field_general_write(fn, B, P, S, fieldname,
+                                          type, s_rmin, s_rmax,
+                                          type, m_dimvals, m_rmin, m_rmax,
+                                          field_ptr, F);
+}
+
+/**
+* \ingroup ParticleSolutionData
+*
+* \brief  Write subset of particle solution
+*
+* \param[in] fn        \FILE_fn
+* \param[in] B         \B_Base
+* \param[in] P         \P_ParticleZone
+* \param[in] S         \SOL_S
+* \param[in] fieldname Name of the solution array. It is strongly advised to use the
+*                      SIDS nomenclature conventions when naming the solution arrays
+*                      to ensure file compatibility.
+* \param[in] type      Data type of the solution array written to the file. Admissible data
+*                      types for a solution array are Integer, LongInteger, RealSingle,
+*                      and RealDouble.
+* \param[in] s_rmin    Lower range index in file
+* \param[in] s_rmax    Upper range index in file
+* \param[in] field_ptr Array of solution values.
+* \param[out] F        \SOL_F
+* \return \ier
+*
+*/
+int cg_particle_field_partial_write(int fn, int B, int P, int S,
+                                   CGNS_ENUMT( DataType_t ) type, const char *fieldname,
+                                   const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                                   const void *field_ptr, int *F)
+{
+   cgns_pzone *pzone;
+   cgns_psol *sol;
+   int n, m_numdim;
+   int status;
+
+    /* get memory addresses */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone == 0) return CG_ERROR;
+
+    /* get memory address for solution */
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol == 0) return CG_ERROR;
+
+   if (s_rmin == NULL || s_rmax == NULL) {
+       cgi_error("NULL range value.");
+       return CG_ERROR;
+   }
+
+   cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+   cgsize_t m_rmin[CGIO_MAX_DIMENSIONS], m_rmax[CGIO_MAX_DIMENSIONS];
+   m_rmin[0] = 1;
+   m_rmax[0] = s_rmax[0] - s_rmin[0] + 1;
+   m_dimvals[0] = m_rmax[0];
+
+
+   status = cg_particle_field_general_write(fn, B, P, S, fieldname,
+                                            type, s_rmin, s_rmax,
+                                            type, m_dimvals, m_rmin, m_rmax,
+                                            field_ptr, F);
+
+   HDF5storage_type = CG_COMPACT;
+   return status;
+
+}
+
+/**
+* \ingroup ParticleSolutionData
+*
+* \brief  Write shaped array to a subset of the flow solution
+*
+* \param[in] fn         \FILE_fn
+* \param[in] B          \B_Base
+* \param[in] P          \P_ParticleZone
+* \param[in] S          \SOL_S
+* \param[in] fieldname  Name of the solution array. It is strongly advised to use the
+*                       SIDS nomenclature conventions when naming the solution arrays
+*                       to ensure file compatibility.
+* \param[in] s_type     Data type of the solution array written to the file. Admissible
+*                       data types for a solution array are Integer, LongInteger,
+*                       RealSingle, and RealDouble.
+* \param[in] s_rmin     Lower range index in file
+* \param[in] s_rmax     Upper range index in file
+*
+* \param[in] m_type     Data type of an array in memory. Admissible data types for a solution
+*                       array are Integer, LongInteger, RealSingle, and RealDouble.
+* \param[in] m_dimvals  Dimensions of array in memory.
+* \param[in] m_rmin     Lower range index in memory
+* \param[in] m_rmax     Upper range index in memory
+* \param[in] field_ptr  Array of solution values.
+* \param[out] F         \SOL_F
+* \return \ier
+*
+*/
+int cg_particle_field_general_write(int fn, int B, int P, int S, const char *fieldname,
+                          CGNS_ENUMT(DataType_t) s_type,
+                          const cgsize_t *s_rmin, const cgsize_t *s_rmax,
+                          CGNS_ENUMT(DataType_t) m_type,
+                          const cgsize_t *m_dimvals,
+                          const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                          const void *field_ptr, int *F)
+{
+    /* s_ prefix is file space, m_ prefix is memory space */
+   cgns_pzone *pzone;
+   cgns_psol *sol;
+   int s_numdim;
+   int status;
+
+   HDF5storage_type = CG_CONTIGUOUS;
+
+    /* verify input */
+   if (cgi_check_strlen(fieldname)) return CG_ERROR;
+   if (s_type != CGNS_ENUMV(RealSingle) && s_type != CGNS_ENUMV(RealDouble) &&
+       s_type != CGNS_ENUMV(ComplexSingle) && s_type != CGNS_ENUMV(ComplexDouble) &&
+       s_type != CGNS_ENUMV(Integer) && s_type != CGNS_ENUMV(LongInteger)) {
+       cgi_error("Invalid file data type for solution array %s: %d",
+                 fieldname, s_type);
+       return CG_ERROR;
+   }
+   if (m_type != CGNS_ENUMV(RealSingle) && m_type != CGNS_ENUMV(RealDouble) &&
+       m_type != CGNS_ENUMV(ComplexSingle) && m_type != CGNS_ENUMV(ComplexDouble) &&
+       m_type != CGNS_ENUMV(Integer) && m_type != CGNS_ENUMV(LongInteger)) {
+       cgi_error("Invalid input data type for solution array %s: %d",
+                 fieldname, m_type);
+       return CG_ERROR;
+   }
+
+    /* get memory addresses */
+   cg = cgi_get_file(fn);
+   if (cg == 0) return CG_ERROR;
+
+   if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+   pzone = cgi_get_particle(cg, B, P);
+   if (pzone == 0) return CG_ERROR;
+
+    /* get memory address for solution */
+   sol = cgi_get_particle_sol(cg, B, P, S);
+   if (sol == 0) return CG_ERROR;
+
+    /* file dimension is dependent on multidim or ptset */
+   cgsize_t s_dimvals[CGIO_MAX_DIMENSIONS];
+   s_numdim = 1;
+   int m_numdim = 1;
+   if (sol->ptset == NULL) {
+      s_dimvals[0] = pzone->nparticles;
+   } else {
+       s_numdim = 1;
+       s_dimvals[0] = sol->ptset->size_of_patch;
+   }
+
+   status= cgi_array_general_write(sol->id, &(sol->nfields),
+                                  &(sol->field), fieldname,
+                                  cgns_rindindex, NULL,
+                                  s_type, s_numdim, s_dimvals, s_rmin, s_rmax,
+                                  m_type, m_numdim, m_dimvals, m_rmin, m_rmax,
+                                  field_ptr, F);
+
+   HDF5storage_type = CG_COMPACT;
+   return status;
+}
+
+/*****************************************************************************\
  *           Go - To Function
 \*****************************************************************************/
 
@@ -13142,28 +15482,35 @@ int vcg_goto(int fn, int B, va_list ap)
 /**
  * \ingroup AccessingANode
  *
- * \brief  Access a node via label/name, index pairs
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] ...  Variable argument list used to specify the path to a node. It is composed of an unlimited list of pair-arguments identifying each node in the path. Nodes may be identified by their label or name. Thus, a pair-argument may be of the form
-
-   "CGNS_NodeLabel", NodeIndex
-
-where CGNS_NodeLabel is the node label and NodeIndex is the node index, or
-
-   "CGNS_NodeName", 0
-
-where CGNS_NodeName is the node name. The 0 in the second form is required, to indicate that a node name is being specified rather than a node label. In addition, a pair-argument may be specified as
-
-   "..", 0
-
-indicating the parent of the current node. The different pair-argument forms may be intermixed in the same function call.
-
-There is one exception to this rule. When accessing a BCData_t node, the index must be set to either Dirichlet or Neumann since only these two types are allowed. (Note that Dirichlet and Neumann are defined in the include files cgnslib.h and cgnslib_f.h). Since "Dirichlet" and "Neuman" are also the names for these nodes, you may also use the "Dirichlet", 0 or "Neuman", 0 to access the node. See the example below. 
+ * \brief Access a node via label/name, index pairs
+ *
+ * \param[in]  fn  \FILE_fn
+ * \param[in]  B   \B_Base
+ * \param[in]  ... Variable argument list used to specify the path to a node. It comprises
+ *                 an unlimited list of paired arguments identifying each node in the path. Nodes
+ *                 may be identified by their label or name. Thus, a paired argument may be of
+ *                 the form
+ *                    \code{C} "CGNS_NodeLabel", NodeIndex \endcode
+ *                 where \e CGNS_NodeLabel is the node label and \e NodeIndex is the node index, or
+ *                    \code{C}  "CGNS_NodeName", 0 \endcode
+ *                 where \e CGNS_NodeName is the node name. The \e 0 in the second form is required to indicate
+ *                 that a node name is being specified rather than a node label. In addition, a
+ *                 pair-argument may be specified as
+ *                    \code{C}  "..", 0 \endcode
+ *                 indicating the parent of the current node. The different pair-argument forms may be
+ *                 intermixed in the same function call.\n
+ *                 There is one exception to this rule. When accessing a \e BCData_t node, the index must be set
+ *                 to either \e Dirichlet or \e Neumann since only these two types are allowed. (Note that
+ *                 \e Dirichlet and \e Neumann are defined in the include files cgnslib.h, cgnslib_f.h and the CGNS module).
+ *                 Since \e "Dirichlet" and \e "Neuman" are also the names for these nodes, you may also use
+ *                 the \e "Dirichlet", \e 0 or \e "Neuman", \e 0 to access the node. See \ref CGNS_Navigation_Ill
+ *                 "CGNS Navigation Illustration" for example usage.
  * \return \ier
  *
- * \details   The character string "end" (or 'end' for the Fortran function) must be the last argument. It is used to indicate the end of the argument list. You may also use the empty string, "" ('' for Fortran), or the NULL string in C, to terminate the list.
+ * \details The character string "end" (or 'end' for the Fortran function) must be the last argument. It
+ *          is used to indicate the end of the argument list. You may also use the empty string,
+ *          "" ('' for Fortran), or the NULL string in C, to terminate the list.
+ *
  */
 int cg_goto(int fn, int B, ...)
 {
@@ -13181,11 +15528,10 @@ int cg_goto(int fn, int B, ...)
  *      cg_goto function which is compatible with F2008 and TS 29113
  *      "Further Interoperability of Fortran with C WG5/N1942"  and
  *      allows optional function parameters to be passed to a C function
- *      which has variable number of arguments. This function is
+ *      which has a variable number of arguments. This function is
  *      directly callable from FORTRAN.
  *
  */
-
 int cg_goto_f08(int fn, int B, ...)
 {
 
@@ -13245,27 +15591,33 @@ int vcg_gorel(int fn, va_list ap)
 /**
  * \ingroup AccessingANode
  *
- * \brief  Access a node via relative path
- * 
- * \param[in] fn \FILE_fn
- * \param[in] ...  Variable argument list used to specify the path to a node. It is composed of an unlimited list of pair-arguments identifying each node in the path. Nodes may be identified by their label or name. Thus, a pair-argument may be of the form
-
-   "CGNS_NodeLabel", NodeIndex
-
-where CGNS_NodeLabel is the node label and NodeIndex is the node index, or
-
-   "CGNS_NodeName", 0
-
-where CGNS_NodeName is the node name. The 0 in the second form is required, to indicate that a node name is being specified rather than a node label. In addition, a pair-argument may be specified as
-
-   "..", 0
-
-indicating the parent of the current node. The different pair-argument forms may be intermixed in the same function call.
-
-There is one exception to this rule. When accessing a BCData_t node, the index must be set to either Dirichlet or Neumann since only these two types are allowed. (Note that Dirichlet and Neumann are defined in the include files cgnslib.h and cgnslib_f.h). Since "Dirichlet" and "Neuman" are also the names for these nodes, you may also use the "Dirichlet", 0 or "Neuman", 0 to access the node. See the example below. 
+ * \brief Access a node via relative path
+ *
+ * \param[in]  fn  \FILE_fn
+ * \param[in]  ... Variable argument list used to specify the path to a node. It comprises
+ *                 an unlimited list of paired arguments identifying each node in the path. Nodes
+ *                 may be identified by their label or name. Thus, a paired argument may be of
+ *                 the form
+ *                    \code{C}  "CGNS_NodeLabel", NodeIndex \endcode
+ *                 where \e  CGNS_NodeLabel is the node label and NodeIndex is the node index, or
+ *                    \code{C} "CGNS_NodeName", 0 \endcode
+ *                 where \e CGNS_NodeName is the node name. The \e 0 in the second form is required,
+ *                 to indicate that a node name is being specified rather than a node label. In
+ *                 addition, a paired argument may be specified as
+ *                    \code{C} "..", 0 \endcode
+ *                 indicating the parent of the current node. The different pair-argument forms
+ *                 may be intermixed in the same function call.\n
+ *                 There is one exception to this rule. When accessing a \e BCData_t node, the index
+ *                 must be set to either \e Dirichlet or \e Neumann since only these two types are allowed.
+ *                 (Note that \e Dirichlet and \e Neumann are defined in the include files cgnslib.h and
+ *                 cgnslib_f.h, and the CGNS module). Since \e "Dirichlet" and \e "Neuman" are also the names for these nodes,
+ *                 you may also use the \e "Dirichlet", \e 0 or \e "Neuman", \e 0 to access the node. See
+ *                 \ref CGNS_Navigation_Ill "CGNS Navigation Illustration" for example usage.
  * \return \ier
  *
- * \details   The character string "end" (or 'end' for the Fortran function) must be the last argument. It is used to indicate the end of the argument list. You may also use the empty string, "" ('' for Fortran), or the NULL string in C, to terminate the list.
+ * \details The character string "end" (or 'end' for the Fortran function) must be the last argument.
+ *          It is used to indicate the end of the argument list. You may also use the empty string,
+ *          "" ('' for Fortran), or the NULL string in C, to terminate the list.
  */
 int cg_gorel(int fn, ...)
 {
@@ -13283,7 +15635,7 @@ int cg_gorel(int fn, ...)
  *      cg_gorel function which is compatible with F2008 and TS 29113
  *      "Further Interoperability of Fortran with C WG5/N1942"  and
  *      allows optional function parameters to be passed to a C function
- *      which has variable number of arguments. This function is
+ *      which has a variable number of arguments. This function is
  *      directly callable from FORTRAN.
  *
  */
@@ -13319,11 +15671,12 @@ int cg_gorel_f08(int fn, ...)
 /**
  * \ingroup AccessingANode
  *
- * \brief  Access a node via pathname 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] path  The pathname for the node to go to. If a position has been already set, this may be a relative path, otherwise it is an absolute path name, starting with "/Basename", where Basename is the base under which you wish to move.
-
+ * \brief Access a node via pathname
+ *
+ * \param[in]  fn   \FILE_fn
+ * \param[in]  path The pathname for the node to go to. If a position has been already set, this
+ *                  may be a relative path; otherwise, it is an absolute path name, starting with
+ *                  \e "/Basename", where \e Basename is the base under which you wish to move.
  * \return \ier
  *
  */
@@ -13429,13 +15782,22 @@ int cg_gopath(int fn, const char *path)
 /**
  * \ingroup AccessingANode
  *
- * \brief  Access a node via arrays of labels and indices 
- * 
- * \param[in] fn \FILE_fn
- * \param[in] B  \B_Base
- * \param[in] depth  Depth of the path list. The maximum depth is defined in cgnslib.h by CG_MAX_GOTO_DEPTH, and is currently equal to 20.
- * \param[in] label  Array of node labels for the path. This argument may be passed as NULL to cg_where(), otherwise it must be dimensioned by the calling program. The maximum size required is label[MAX_GO_TO_DEPTH][33]. You may call cg_where() with both label and index set to NULL in order to get the current depth, then dimension to that value.
- * \param[in] index  Array of node indices for the path. This argument may be passed as NULL to cg_where(), otherwise it must be dimensioned by the calling program. The maximum size required is index[MAX_GO_TO_DEPTH]. You may call cg_where() with both label and index set to NULL in order to get the current depth, then dimension to that value.
+ * \brief Access a node via arrays of labels and indices
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  depth Depth of the path list. The maximum depth is defined in cgnslib.h by
+ *                   CG_MAX_GOTO_DEPTH, and is currently equal to 20.
+ * \param[in]  label Array of node labels for the path. This argument may be passed as NULL to
+ *                   cg_where(), otherwise it must be dimensioned by the calling program. The
+ *                   maximum size required is label[MAX_GO_TO_DEPTH][33]. You may call cg_where()
+ *                   with both label and index set to NULL to get the current depth,
+ *                   then dimension to that value.
+ * \param[in]  index Array of node indices for the path. This argument may be passed as NULL to
+ *                   cg_where(), otherwise it must be dimensioned by the calling program. The
+ *                   maximum size required is \c index[MAX_GO_TO_DEPTH]. You may call cg_where()
+ *                   with both label and index set to NULL to get the current depth,
+ *                   then dimension to that value.
  * \return \ier
  *
  */
@@ -13452,13 +15814,22 @@ int cg_golist(int fn, int B, int depth, char **label, int *index)
 /**
  * \ingroup AccessingANode
  *
- * \brief  Get path to current node 
- * 
- * \param[out] fn \FILE_fn
- * \param[out] B  \B_Base
- * \param[out] depth  Depth of the path list. The maximum depth is defined in cgnslib.h by CG_MAX_GOTO_DEPTH, and is currently equal to 20.
- * \param[out] label  Array of node labels for the path. This argument may be passed as NULL to cg_where(), otherwise it must be dimensioned by the calling program. The maximum size required is label[MAX_GO_TO_DEPTH][33]. You may call cg_where() with both label and index set to NULL in order to get the current depth, then dimension to that value.
- * \param[out] num  Array of node indices for the path. This argument may be passed as NULL to cg_where(), otherwise it must be dimensioned by the calling program. The maximum size required is index[MAX_GO_TO_DEPTH]. You may call cg_where() with both label and index set to NULL in order to get the current depth, then dimension to that value.
+ * \brief Get path to current node
+ *
+ * \param[out] fn    \FILE_fn
+ * \param[out] B     \B_Base
+ * \param[out] depth Depth of the path list. The maximum depth is defined in cgnslib.h by
+ *                   CG_MAX_GOTO_DEPTH, and is currently equal to 20.
+ * \param[out] label Array of node labels for the path. This argument may be passed as NULL to
+ *                   cg_where(), otherwise it must be dimensioned by the calling program. The
+ *                   maximum size required is label[MAX_GO_TO_DEPTH][33]. You may call cg_where()
+ *                   with both label and index set to NULL to get the current depth,
+ *                   then dimension to that value.
+ * \param[out] num   Array of node indices for the path. This argument may be passed as NULL to
+ *                   cg_where(), otherwise it must be dimensioned by the calling program. The
+ *                   maximum size required is index[MAX_GO_TO_DEPTH]. You may call cg_where()
+ *                   with both label and index set to NULL to get the current depth,
+ *                   then dimension to that value.
  * \return \ier
  *
  */
@@ -13492,9 +15863,9 @@ int cg_where(int *fn, int *B, int *depth, char **label, int *num)
 /**
  * \ingroup FamilyName
  *
- * \brief  Read family name
- * 
- * \param[out] family_name  Family name.
+ * \brief Read family name
+ *
+ * \param[out] family_name \family_name
  * \return \ier
  *
  */
@@ -13519,9 +15890,9 @@ int cg_famname_read(char *family_name)
 /**
  * \ingroup FamilyName
  *
- * \brief  Write family name
- * 
- * \param[in] family_name  Family name.
+ * \brief Write family name
+ *
+ * \param[in]  family_name \family_name
  * \return \ier
  *
  */
@@ -13558,9 +15929,9 @@ int cg_famname_write(const char * family_name)
 /**
  * \ingroup FamilyName
  *
- * \brief  Get Number of family names
- *  
- * \param[out] nfams  Number of additional family names. 
+ * \brief Get the number of family names
+ *
+ * \param[out] nfams Number of additional family names.
  * \return \ier
  *
  */
@@ -13597,11 +15968,11 @@ int cg_nmultifam(int *nfams)
 /**
  * \ingroup FamilyName
  *
- * \brief  Read multiple family names
- *  
- * \param[in] N Family name index number, where 1 ≤ N ≤ nNames.
- * \param[out] name Node name.
- * \param[out] family 	Family name
+ * \brief Read multiple family names
+ *
+ * \param[in]  N      Family name index number, where 1 ≤ N ≤ nNames.
+ * \param[out] name   Node name.
+ * \param[out] family Family name
  * \return \ier
  *
  */
@@ -13626,13 +15997,14 @@ int cg_multifam_read(int N, char *name, char *family)
 /**
  * \ingroup FamilyName
  *
- * \brief  Write multiple family names
- * 
- * \param[in] name  Node name.
- * \param[in] family  Family name
+ * \brief Write multiple family names
+ *
+ * \param[in]  name   Node name.
+ * \param[in]  family Family name
  * \return \ier
  *
- * \details The additional family names written with cg_multifam_write are stored in AdditionalFamilyName_t nodes.
+ * \details The additional family names written with cg_multifam_write are stored in
+ *          AdditionalFamilyName_t nodes.
  */
 int cg_multifam_write(const char *name, const char *family)
 {
@@ -13672,13 +16044,18 @@ int cg_multifam_write(const char *name, const char *family)
 /**
  * \ingroup ConvergenceHistory
  *
- * \brief  Read ConvergenceHistory_t node
- * 
- * \param[out] iterations  Number of iterations for which convergence information is recorded.
+ * \brief Read ConvergenceHistory_t node
+ *
+ * \param[out] iterations      Number of iterations for which convergence information is recorded.
  * \param[out] NormDefinitions Description of the convergence information recorded in the data arrays.
  * \return \ier
  *
- * \details  The function cg_convergence_read reads a ConvergenceHistory_t node. If NormDefinitions is not defined in the CGNS database, this function returns a null string. If NormDefinitions exists, the library will allocate the space to store the description string, and return the description string to the application. It is the responsibility of the application to free this space when it is no longer needed by a call to cg_free(NormDefinitions).
+ * \details The function cg_convergence_read() reads a ConvergenceHistory_t node. If NormDefinitions
+ *          is not defined in the CGNS database, this function returns a null string. If
+ *          NormDefinitions exists, and then the library will allocate the space to store the description
+ *          string and return the description string to the application. It is the responsibility
+ *          of the application to free this space when it is no longer needed by a call
+ *          to cg_free(NormDefinitions).
  *
  */
 int cg_convergence_read(int *iterations, char **NormDefinitions)
@@ -13710,13 +16087,17 @@ int cg_convergence_read(int *iterations, char **NormDefinitions)
 /**
  * \ingroup ConvergenceHistory
  *
- * \brief  Write ConvergenceHistory_t node
- * 
- * \param[in] iterations  Number of iterations for which convergence information is recorded.
- * \param[in] NormDefinitions Description of the convergence information recorded in the data arrays.
+ * \brief Write ConvergenceHistory_t node
+ *
+ * \param[in]  iterations      Number of iterations for which convergence information is recorded.
+ * \param[in]  NormDefinitions Description of the convergence information recorded in the data arrays.
  * \return \ier
  *
- * \details  The function cg_convergence_write creates a ConvergenceHistory_t node. It must be the first one called when recording convergence history data. The NormDefinitions may be left undefined (i.e., a blank string). After creation of this node, the descriptors, data arrays, data class, and dimensional units characterizing the ConvergenceHistory_t data structure may be added. 
+ * \details The function cg_convergence_write creates a ConvergenceHistory_t node. It must be
+ *          the first one called when recording convergence history data. The NormDefinitions
+ *          may be left undefined (i.e., a blank string). After the creation of this node, the descriptors,
+ *          data arrays, data class, and dimensional units characterizing the ConvergenceHistory_t data
+ *          structure may be added.
  *
  */
 int cg_convergence_write(int iterations, const char * NormDefinitions)
@@ -13772,12 +16153,16 @@ int cg_convergence_write(int iterations, const char * NormDefinitions)
 /**
  * \ingroup ReferenceState
  *
- * \brief  Read text description of reference state.
- * 
- * \param[in] StateDescription  Text description of reference state.
+ * \brief Read text description of reference state.
+ *
+ * \param[in]  StateDescription Text description of reference state.
  * \return \ier
  *
- * \details  The function cg_state_read reads the StateDescription of the local ReferenceState_t node. If StateDescription is undefined in the CGNS database, this function returns a null string. If StateDescription exists, the library will allocate the space to store the description string, and return the description string to the application. It is the responsibility of the application to free this space when it is no longer needed by a call to cg_free(StateDescription). 
+ * \details The function cg_state_read reads the StateDescription of the local ReferenceState_t node.
+ *          If StateDescription is undefined in the CGNS database, this function returns a null string.
+ *          If StateDescription exists, the library will allocate the space to store the description string,
+ *          and return the description string to the application. It is the responsibility of the application
+ *          to free this space when it is no longer needed by a call to cg_free(StateDescription).
  *
  */
 int cg_state_read(char **StateDescription)
@@ -13808,12 +16193,15 @@ int cg_state_read(char **StateDescription)
 /**
  * \ingroup ReferenceState
  *
- * \brief  Create ReferenceState_t node
- * 
- * \param[in] StateDescription  Text description of reference state.
+ * \brief Create ReferenceState_t node
+ *
+ * \param[in] StateDescription Text description of reference state.
  * \return \ier
  *
- * \details   The function cg_state_write creates the ReferenceState_t node and must be called even if StateDescription is undefined (i.e., a blank string). The descriptors, data arrays, data class, and dimensional units characterizing the ReferenceState_t data structure may be added to this data structure after its creation.
+ * \details The function cg_state_write creates the ReferenceState_t node and must be called even if
+ *          StateDescription is undefined (i.e., a blank string). The descriptors, data arrays,
+ *          data class, and dimensional units characterizing the ReferenceState_t data structure
+ *          may be added to this data structure after its creation.
  *
  */
 int cg_state_write(const char * StateDescription)
@@ -13867,16 +16255,23 @@ int cg_state_write(const char * StateDescription)
 /*----------------------------------------------------------------------*/
 /**
  * \ingroup FlowEquationSet
- * 
- * \brief  Read Flow equation set info
- * 
- * \param[out]  EquationDimension  Dimensionality of the governing equations; it is the number of spatial variables describing the flow.
- * \param[out]  GoverningEquationsFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of the governing equations; 0 if it doesn't, 1 if it does.
- * \param[out]  GasModelFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of a gas model; 0 if it doesn't, 1 if it does.
- * \param[out]  ViscosityModelFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of a viscosity model; 0 if it doesn't, 1 if it does.
- * \param[out]  ThermalConductivityModelFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of a thermal conductivity model; 0 if it doesn't, 1 if it does.
- * \param[out]  TurbulenceClosureFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of the turbulence closure; 0 if it doesn't, 1 if it does.
- * \param[out]  TurbulenceModelFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of a turbulence model; 0 if it doesn't, 1 if it does.
+ *
+ * \brief Read Flow equation set info
+ *
+ * \param[out]  EquationDimension            Dimensionality of the governing equations; it is the number of spatial
+ *                                           variables describing the flow.
+ * \param[out]  GoverningEquationsFlag       Flag indicates whether this FlowEquationSet_t node includes the
+ *                                           definition of the governing equations; 0 if it doesn't, 1 if it does.
+ * \param[out]  GasModelFlag                 Flag indicates whether this FlowEquationSet_t node includes the
+ *                                           definition of a gas model; 0 if it doesn't, 1 if it does.
+ * \param[out]  ViscosityModelFlag           Flag indicates whether this FlowEquationSet_t node includes the
+ *                                           definition of a viscosity model; 0 if it doesn't, 1 if it does.
+ * \param[out]  ThermalConductivityModelFlag Flag indicates whether this FlowEquationSet_t node includes the
+ *                                           definition of a thermal conductivity model; 0 if it doesn't, 1 if it does.
+ * \param[out]  TurbulenceClosureFlag        Flag indicates whether this FlowEquationSet_t node includes the
+ *                                           definition of the turbulence closure; 0 if it doesn't, 1 if it does.
+ * \param[out]  TurbulenceModelFlag          Flag indicates whether this FlowEquationSet_t node includes the
+ *                                           definition of a turbulence model; 0 if it doesn't, 1 if it does.
  * \return \ier
  *
  */
@@ -13923,11 +16318,13 @@ int cg_equationset_read(int *EquationDimension,
 
 /**
  * \ingroup FlowEquationSet
- * 
- * \brief  Read chemistry equation set info
- * 
- * \param[out]  ThermalRelaxationFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of a thermal relaxation model; 0 if it doesn't, 1 if it does.
- * \param[out]  ChemicalKineticsFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of a chemical kinetics model; 0 if it doesn't, 1 if it does.
+ *
+ * \brief Read chemistry equation set info
+ *
+ * \param[out]  ThermalRelaxationFlag Flag indicates whether this FlowEquationSet_t node includes the
+ *                                    definition of a thermal relaxation model; 0 if it doesn't, 1 if it does.
+ * \param[out]  ChemicalKineticsFlag  Flag indicates whether this FlowEquationSet_t node includes the
+ *                                    definition of a chemical kinetics model; 0 if it doesn't, 1 if it does.
  * \return \ier
  *
  */
@@ -13956,12 +16353,18 @@ int cg_equationset_chemistry_read(int *ThermalRelaxationFlag,
 
 /**
  * \ingroup FlowEquationSet
- * 
- * \brief  Read electromagnetic equation set info
  *
- * \param[out]  ElecFldModelFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of an electric field model for electromagnetic flows;; 0 if it doesn't, 1 if it does.
- * \param[out]  MagnFldModelFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of a magnetic field model for electromagnetic flows;; 0 if it doesn't, 1 if it does.
- * \param[out]  ConductivityModelFlag  Flag indicating whether or not this FlowEquationSet_t node includes the definition of a conductivity model for electromagnetic flows; 0 if it doesn't, 1 if it does.
+ * \brief Read electromagnetic equation set info
+ *
+ * \param[out]  ElecFldModelFlag      Flag indicates whether this FlowEquationSet_t node includes the
+ *                                    definition of an electric field model for electromagnetic flows; 0 if it
+ *                                    doesn't, 1 if it does.
+ * \param[out]  MagnFldModelFlag      Flag indicates whether this FlowEquationSet_t node includes the
+ *                                    definition of a magnetic field model for electromagnetic flows; 0 if it
+ *                                    doesn't, 1 if it does.
+ * \param[out]  ConductivityModelFlag Flag indicating whether or not this FlowEquationSet_t node includes the
+ *                                    definition of a conductivity model for electromagnetic flows; 0 if it
+ *                                    doesn't, 1 if it does.
  * \return \ier
  *
  */
@@ -13993,10 +16396,11 @@ int cg_equationset_elecmagn_read(int *ElecFldModelFlag, int *MagnFldModelFlag,
 
 /**
  * \ingroup FlowEquationSet
- * 
- * \brief  Write dimensionality of flow equations
  *
- * \param[in]  EquationDimension  Dimensionality of the governing equations; it is the number of spatial variables describing the flow.
+ * \brief Write dimensionality of flow equations
+ *
+ * \param[in]  EquationDimension Dimensionality of the governing equations; it is the number of spatial
+ *                               variables describing the flow.
  * \return \ier
  *
  */
@@ -14044,13 +16448,116 @@ int cg_equationset_write(int EquationDimension)
 }
 
 /*----------------------------------------------------------------------*/
+/**
+ * \ingroup ParticleEquationSet
+ *
+ * \brief  Read particle equation set info
+ *
+ * \param[out]  EquationDimension  Dimensionality of the governing equations; it is the number of spatial variables describing the flow.
+ * \param[out]  ParticleGoverningEquationsFlag    Flag indicates whether this ParticleEquationSet_t node includes the definition of the particle governing equations; 0 if it doesn't, 1 if it does.
+ * \param[out]  CollisionModelFlag                Flag indicates whether or not this ParticleEquationSet_t node includes the definition of a collision model; 0 if it doesn't, 1 if it does.
+ * \param[out]  BreakupModelFlag                  Flag indicates whether this ParticleEquationSet_t node includes the definition of a breakup model; 0 if it doesn't, 1 if it does.
+ * \param[out]  ForceModelFlag                    Flag indicates whether or not this ParticleEquationSet_t node includes the definition of a force model; 0 if it doesn't, 1 if it does.
+ * \param[out]  WallInteractionModelFlag          Flag indicates whether or not this ParticleEquationSet_t node includes the definition of a wall interaction model; 0 if it doesn't, 1 if it does.
+ * \param[out]  PhaseChangeModelFlag              Flag indicates whether or not this ParticleEquationSet_t node includes the definition of a phase change model; 0 if it doesn't, 1 if it does.
+ * \return \ier
+ *
+ */
+int cg_particle_equationset_read(int *EquationDimension,
+                                 int *ParticleGoverningEquationsFlag, int *CollisionModelFlag,
+                                 int *BreakupModelFlag, int *ForceModelFlag,
+                                 int *WallInteractionModelFlag, int *PhaseChangeModelFlag)
+{
+    cgns_pequations *eq;
+    int ier=0;
+
+    CHECK_FILE_OPEN
+
+     /* verify input */
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    eq = cgi_particle_equations_address(CG_MODE_READ, &ier);
+    if (eq==0) return ier;
+
+    (*EquationDimension) = eq->equation_dim;
+    if (eq->governing) (*ParticleGoverningEquationsFlag)=1;
+    else           (*ParticleGoverningEquationsFlag)=0;
+
+    if (eq->collision) (*CollisionModelFlag)=1;
+    else               (*CollisionModelFlag)=0;
+
+    if (eq->breakup) (*BreakupModelFlag)=1;
+    else             (*BreakupModelFlag)=0;
+
+    if (eq->force) (*ForceModelFlag)=1;
+    else           (*ForceModelFlag)=0;
+
+    if (eq->wallinteract) (*WallInteractionModelFlag)=1;
+    else                  (*WallInteractionModelFlag)=0;
+
+    if (eq->phasechange) (*PhaseChangeModelFlag)=1;
+    else                 (*PhaseChangeModelFlag)=0;
+
+    return CG_OK;
+}
+
+/**
+ * \ingroup ParticleEquationSet
+ *
+ * \brief  Write dimensionality of particle equations
+ *
+ * \param[in]  EquationDimension  Dimensionality of the governing equations; it is the number of spatial variables describing the particle flow.
+ * \return \ier
+ *
+ */
+int cg_particle_equationset_write(int EquationDimension)
+{
+    cgns_pequations *equations;
+    int ier=0;
+    double posit_id;
+
+    CHECK_FILE_OPEN
+
+     /* verify input */
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+    equations=cgi_particle_equations_address(CG_MODE_WRITE, &ier);
+    if (equations==0) return ier;
+
+     /* Save data */
+    equations->equation_dim=EquationDimension;
+
+     /* initialize other fields */
+    strcpy(equations->name, "ParticleEquationSet");
+    equations->id=0;
+    equations->link=0;
+    equations->ndescr=0;
+    equations->governing=0;
+    equations->collision=0;
+    equations->breakup=0;
+    equations->force=0;
+    equations->wallinteract=0;
+    equations->phasechange=0;
+    equations->data_class=CGNS_ENUMV( DataClassNull );
+    equations->units=0;
+    equations->nuser_data=0;
+
+     /* save data in file */
+    if (cgi_posit_id(&posit_id)) return CG_ERROR;
+    if (cgi_write_particle_equations(posit_id, equations)) return CG_ERROR;
+    return CG_OK;
+}
+
+/*----------------------------------------------------------------------*/
 
 /**
  * \ingroup GoverningEquations
- * 
- * \brief  Read type of governing equation 
  *
- * \param[out]  EquationsType  Type of governing equations. The admissible types are CG_Null, CG_UserDefined, FullPotential, Euler, NSLaminar, NSTurbulent, NSLaminarIncompressible, and NSTurbulentIncompressible. 
+ * \brief Read type of governing equation
+ *
+ * \param[out]  EquationsType Type of governing equations. The admissible types are \e CG_Null,
+ *                            \e CG_UserDefined, \e FullPotential, \e Euler, \e NSLaminar, \e NSTurbulent,
+ *                            \e NSLaminarIncompressible, and \e NSTurbulentIncompressible.
  * \return \ier
  *
  */
@@ -14074,10 +16581,12 @@ int cg_governing_read(CGNS_ENUMT(GoverningEquationsType_t) *EquationsType)
 
 /**
  * \ingroup GoverningEquations
- * 
- * \brief  Write type of governing equation 
  *
- * \param[in]  Equationstype  Type of governing equations. The admissible types are CG_Null, CG_UserDefined, FullPotential, Euler, NSLaminar, NSTurbulent, NSLaminarIncompressible, and NSTurbulentIncompressible. 
+ * \brief Write the type of governing equation
+ *
+ * \param[in]  Equationstype Type of governing equations. The admissible types are \e CG_Null,
+ *                           \e CG_UserDefined, \e FullPotential, \e Euler, \e NSLaminar, \e NSTurbulent,
+ *                           \e NSLaminarIncompressible, and \e NSTurbulentIncompressible.
  * \return \ier
  *
  */
@@ -14139,10 +16648,12 @@ int cg_governing_write(CGNS_ENUMT(GoverningEquationsType_t) Equationstype)
 
 /**
  * \ingroup GoverningEquations
- * 
- * \brief  Read flags for diffusion terms 
  *
- * \param[out]  diffusion_model  Flags defining which diffusion terms are included in the governing equations. This is only applicable to the Navier-Stokes equations with structured grids. See the discussion in the SIDS manual for details.
+ * \brief Read flags for diffusion terms
+ *
+ * \param[out]  diffusion_model Flags defining which diffusion terms are included in the governing
+ *                              equations. This is only applicable to the Navier-Stokes equations with
+ *                              structured grids. See the discussion in the SIDS manual for details.
  * \return \ier
  *
  */
@@ -14185,10 +16696,12 @@ int cg_diffusion_read(int *diffusion_model)
 
 /**
  * \ingroup GoverningEquations
- * 
- * \brief  Write flags for diffusion terms 
  *
- * \param[in]  diffusion_model  Flags defining which diffusion terms are included in the governing equations. This is only applicable to the Navier-Stokes equations with structured grids. See the discussion in the SIDS manual for details.
+ * \brief Write flags for diffusion terms
+ *
+ * \param[in]  diffusion_model Flags defining which diffusion terms are included in the governing
+ *                             equations. This is only applicable to the Navier-Stokes equations with
+ *                             structured grids. See the discussion in the SIDS manual for details.
  * \return \ier
  *
  */
@@ -14242,32 +16755,48 @@ int cg_diffusion_write(const int * diffusion_model)
 
 /**
  * \ingroup AuxiliaryModel
- * 
- * \brief  Read auxiliary model types
  *
- * \param[out]  ModelLabel  The CGNS label for the model being defined. The models supported by CGNS are:
- *   - GasModel_t
- *   - ViscosityModel_t
- *   - ThermalConductivityModel_t
- *   - TurbulenceClosure_t
- *   - TurbulenceModel_t
- *   - ThermalRelaxationModel_t
- *   - ChemicalKineticsModel_t
- *   - EMElectricFieldModel_t
- *   - EMMagneticFieldModel_t
- *   - EMConductivityModel_t 
- * \param[out] 	ModelType  One of the model types (listed below) allowed for the ModelLabel selected.
- *   The types allowed for the various models are:
- *   	GasModel_t	   	CG_Null, CG_UserDefined, Ideal, VanderWaals, CaloricallyPerfect, ThermallyPerfect, ConstantDensity, RedlichKwong
- *	ViscosityModel_t		CG_Null, CG_UserDefined, Constant, PowerLaw, SutherlandLaw
- *	ThermalConductivityModel_t		CG_Null, CG_UserDefined, PowerLaw, SutherlandLaw, ConstantPrandtl
- *	TurbulenceModel_t		CG_Null, CG_UserDefined, Algebraic_BaldwinLomax, Algebraic_CebeciSmith, HalfEquation_JohnsonKing, OneEquation_BaldwinBarth, OneEquation_SpalartAllmaras, TwoEquation_JonesLaunder, TwoEquation_MenterSST, TwoEquation_Wilcox
- *	TurbulenceClosure_t		CG_Null, CG_UserDefined, EddyViscosity, ReynoldsStress, ReynoldsStressAlgebraic
- *	ThermalRelaxationModel_t		CG_Null, CG_UserDefined, Frozen, ThermalEquilib, ThermalNonequilib
- *	ChemicalKineticsModel_t		CG_Null, CG_UserDefined, Frozen, ChemicalEquilibCurveFit, ChemicalEquilibMinimization, ChemicalNonequilib
- *	EMElectricFieldModel_t		CG_Null, CG_UserDefined, Constant, Frozen, Interpolated, Voltage
- *	EMMagneticFieldModel_t		CG_Null, CG_UserDefined, Constant, Frozen, Interpolated
- *	EMConductivityModel_t		CG_Null, CG_UserDefined, Constant, Frozen, Equilibrium_LinRessler, Chemistry_LinRessler
+ * \brief Read auxiliary model types
+ *
+ * \param[out]  ModelLabel   The CGNS label for the model being defined. The models supported by CGNS
+ *                           are:
+ *                           - GasModel_t
+ *                           - ViscosityModel_t
+ *                           - ThermalConductivityModel_t
+ *                           - TurbulenceClosure_t
+ *                           - TurbulenceModel_t
+ *                           - ThermalRelaxationModel_t
+ *                           - ChemicalKineticsModel_t
+ *                           - EMElectricFieldModel_t
+ *                           - EMMagneticFieldModel_t
+ *                           - EMConductivityModel_t
+ * \param[out]  ModelType    One of the model types (listed below) allowed for the ModelLabel selected.
+ *
+ * \details The types allowed for the various models are:
+ *  <table>
+ *   	<tr><td> <b>GasModel_t</b> <td> CG_Null, CG_UserDefined, Ideal, VanderWaals, CaloricallyPerfect,
+ *                                      ThermallyPerfect, ConstantDensity, RedlichKwong
+ *	<tr><td> <b>ViscosityModel_t</b> <td> CG_Null, CG_UserDefined, Constant,
+ *                                            PowerLaw, SutherlandLaw
+ *	<tr><td> <b>ThermalConductivityModel_t</b> <td> CG_Null, CG_UserDefined, PowerLaw,
+ *                                                      SutherlandLaw, ConstantPrandtl
+ *	<tr><td> <b>TurbulenceModel_t</b> <td> CG_Null, CG_UserDefined, Algebraic_BaldwinLomax,
+ *                                             Algebraic_CebeciSmith, HalfEquation_JohnsonKing,
+ *                                             OneEquation_BaldwinBarth, OneEquation_SpalartAllmaras,
+ *                                             TwoEquation_JonesLaunder, TwoEquation_MenterSST,
+ *                                             TwoEquation_Wilcox
+ *	<tr><td> <b>TurbulenceClosure_t</b> <td> CG_Null, CG_UserDefined, EddyViscosity,
+ *                                               ReynoldsStress, ReynoldsStressAlgebraic
+ *	<tr><td> <b>ThermalRelaxationModel_t</b> <td> CG_Null, CG_UserDefined, Frozen,
+ *                                                    ThermalEquilib, ThermalNonequilib
+ *	<tr><td> <b>ChemicalKineticsModel_t</b> <td> CG_Null, CG_UserDefined, Frozen, ChemicalEquilibCurveFit,
+ *                                                    ChemicalEquilibMinimization, ChemicalNonequilib
+ *	<tr><td> <b>EMElectricFieldModel_t</b> <td> CG_Null, CG_UserDefined, Constant, Frozen,
+ *                                                  Interpolated, Voltage
+ *	<tr><td> <b>EMMagneticFieldModel_t</b> <td> CG_Null, CG_UserDefined, Constant, Frozen, Interpolated
+ *	<tr><td> <b>EMConductivityModel_t</b> <td> CG_Null, CG_UserDefined, Constant, Frozen,
+ *                                                 Equilibrium_LinRessler, Chemistry_LinRessler
+ *  </table>
  * \return \ier
  */
 int cg_model_read(const char *ModelLabel, CGNS_ENUMT(ModelType_t) *ModelType)
@@ -14290,10 +16819,11 @@ int cg_model_read(const char *ModelLabel, CGNS_ENUMT(ModelType_t) *ModelType)
 
 /**
  * \ingroup AuxiliaryModel
- * 
- * \brief  Write auxiliary model types
  *
- * \param[in]  ModelLabel  The CGNS label for the model being defined. The models supported by CGNS are:
+ * \brief Write auxiliary model types
+ *
+ * \param[in]  ModelLabel The CGNS label for the model being defined. The models supported by CGNS
+ *                        are:
  *   - GasModel_t
  *   - ViscosityModel_t
  *   - ThermalConductivityModel_t
@@ -14303,19 +16833,35 @@ int cg_model_read(const char *ModelLabel, CGNS_ENUMT(ModelType_t) *ModelType)
  *   - ChemicalKineticsModel_t
  *   - EMElectricFieldModel_t
  *   - EMMagneticFieldModel_t
- *   - EMConductivityModel_t 
- * \param[in] 	ModelType  One of the model types (listed below) allowed for the ModelLabel selected.
- *   The types allowed for the various models are:
- *   	GasModel_t	   	CG_Null, CG_UserDefined, Ideal, VanderWaals, CaloricallyPerfect, ThermallyPerfect, ConstantDensity, RedlichKwong
- *	ViscosityModel_t		CG_Null, CG_UserDefined, Constant, PowerLaw, SutherlandLaw
- *	ThermalConductivityModel_t		CG_Null, CG_UserDefined, PowerLaw, SutherlandLaw, ConstantPrandtl
- *	TurbulenceModel_t		CG_Null, CG_UserDefined, Algebraic_BaldwinLomax, Algebraic_CebeciSmith, HalfEquation_JohnsonKing, OneEquation_BaldwinBarth, OneEquation_SpalartAllmaras, TwoEquation_JonesLaunder, TwoEquation_MenterSST, TwoEquation_Wilcox
- *	TurbulenceClosure_t		CG_Null, CG_UserDefined, EddyViscosity, ReynoldsStress, ReynoldsStressAlgebraic
- *	ThermalRelaxationModel_t		CG_Null, CG_UserDefined, Frozen, ThermalEquilib, ThermalNonequilib
- *	ChemicalKineticsModel_t		CG_Null, CG_UserDefined, Frozen, ChemicalEquilibCurveFit, ChemicalEquilibMinimization, ChemicalNonequilib
- *	EMElectricFieldModel_t		CG_Null, CG_UserDefined, Constant, Frozen, Interpolated, Voltage
- *	EMMagneticFieldModel_t		CG_Null, CG_UserDefined, Constant, Frozen, Interpolated
- *	EMConductivityModel_t		CG_Null, CG_UserDefined, Constant, Frozen, Equilibrium_LinRessler, Chemistry_LinRessler
+ *   - EMConductivityModel_t
+ * \param[in]  ModelType  One of the model types (listed below) allowed for the ModelLabel selected.
+ *
+ * \details 
+ *      The types allowed for the various models are:
+ *  <table>
+ *   	<tr><td> <b>GasModel_t</b> <td> CG_Null, CG_UserDefined, Ideal, VanderWaals, CaloricallyPerfect,
+ *                                      ThermallyPerfect, ConstantDensity, RedlichKwong
+ *	<tr><td> <b>ViscosityModel_t</b> <td> CG_Null, CG_UserDefined, Constant,
+ *                                            PowerLaw, SutherlandLaw
+ *	<tr><td> <b>ThermalConductivityModel_t</b> <td> CG_Null, CG_UserDefined, PowerLaw,
+ *                                                      SutherlandLaw, ConstantPrandtl
+ *	<tr><td> <b>TurbulenceModel_t</b> <td> CG_Null, CG_UserDefined, Algebraic_BaldwinLomax,
+ *                                             Algebraic_CebeciSmith, HalfEquation_JohnsonKing,
+ *                                             OneEquation_BaldwinBarth, OneEquation_SpalartAllmaras,
+ *                                             TwoEquation_JonesLaunder, TwoEquation_MenterSST,
+ *                                             TwoEquation_Wilcox
+ *	<tr><td> <b>TurbulenceClosure_t</b> <td> CG_Null, CG_UserDefined, EddyViscosity,
+ *                                               ReynoldsStress, ReynoldsStressAlgebraic
+ *	<tr><td> <b>ThermalRelaxationModel_t</b> <td> CG_Null, CG_UserDefined, Frozen,
+ *                                                    ThermalEquilib, ThermalNonequilib
+ *	<tr><td> <b>ChemicalKineticsModel_t</b> <td> CG_Null, CG_UserDefined, Frozen, ChemicalEquilibCurveFit,
+ *                                                    ChemicalEquilibMinimization, ChemicalNonequilib
+ *	<tr><td> <b>EMElectricFieldModel_t</b> <td> CG_Null, CG_UserDefined, Constant, Frozen,
+ *                                                  Interpolated, Voltage
+ *	<tr><td> <b>EMMagneticFieldModel_t</b> <td> CG_Null, CG_UserDefined, Constant, Frozen, Interpolated
+ *	<tr><td> <b>EMConductivityModel_t</b> <td> CG_Null, CG_UserDefined, Constant, Frozen,
+ *                                                 Equilibrium_LinRessler, Chemistry_LinRessler
+ *  </table>
  * \return \ier
  */
 int cg_model_write(const char * ModelLabel, CGNS_ENUMT(ModelType_t) ModelType)
@@ -14483,12 +17029,275 @@ int cg_model_write(const char * ModelLabel, CGNS_ENUMT(ModelType_t) ModelType)
 }
 
 /*----------------------------------------------------------------------*/
+
+/**
+ * \ingroup ParticleGoverningEquations
+ *
+ * \brief  Read type of particle governing equation
+ *
+ * \param[out]  ParticleEquationsType  Type of particle governing equations. The
+ *              admissible types are \e CG_Null, \e CG_UserDefined, \e DEM, \e DSMC and \e SPH.
+ * \return \ier
+ *
+ */
+int cg_particle_governing_read(CGNS_ENUMT(ParticleGoverningEquationsType_t) *ParticleEquationsType)
+{
+    cgns_pgoverning *governing;
+    int ier=0;
+
+    CHECK_FILE_OPEN
+
+     /* verify input */
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    governing = cgi_particle_governing_address(CG_MODE_READ, &ier);
+    if (governing==0) return ier;
+
+    (*ParticleEquationsType) = governing->type;
+    return CG_OK;
+}
+
+
+/**
+ * \ingroup ParticleGoverningEquations
+ *
+ * \brief  Write the type of particle governing equation
+ *
+ * \param[in]  ParticleEquationstype  Type of particle governing equations. The
+ *             admissible types are \e CG_Null, \e CG_UserDefined, \e DEM, \e DSMC and \e SPH.
+ * \return \ier
+ *
+ */
+int cg_particle_governing_write(CGNS_ENUMT(ParticleGoverningEquationsType_t) ParticleEquationstype)
+{
+    cgns_pgoverning *governing;
+    int ier=0, index_dim;
+    cgsize_t dim_vals;
+    double posit_id;
+
+    CHECK_FILE_OPEN
+
+     /* verify input */
+    if (INVALID_ENUM(ParticleEquationstype,NofValidParticleGoverningEquationsTypes)) {
+        cgi_error("Invalid Particle Governing Equations Type: %d",ParticleEquationstype);
+        return CG_ERROR;
+    }
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+    governing = cgi_particle_governing_address(CG_MODE_WRITE, &ier);
+    if (governing==0) return ier;
+
+     /* Save data */
+    governing->type=ParticleEquationstype;
+
+     /* initialize other fields */
+    strcpy(governing->name, "ParticleGoverningEquations");
+    governing->id=0;
+    governing->link=0;
+    governing->ndescr=0;
+    governing->nuser_data=0;
+
+     /* save data in file */
+    if (cgi_posit_id(&posit_id)) return CG_ERROR;
+    dim_vals = (cgsize_t)strlen(ParticleGoverningEquationsTypeName[governing->type]);
+    if (cgi_new_node(posit_id, "ParticleGoverningEquations",
+        "ParticleGoverningEquations_t", &governing->id, "C1", 1, &dim_vals,
+        ParticleGoverningEquationsTypeName[governing->type])) return CG_ERROR;
+    return CG_OK;
+}
+
+/*----------------------------------------------------------------------*/
+
+/**
+ * \ingroup ParticleModel
+ *
+ * \brief  Read particle model types
+ *
+ * \param[out]  ModelLabel  The CGNS label for the particle model being defined. The particle models supported by CGNS are:
+ *   - ParticleCollisionModel_t
+ *   - ParticleBreakupModel_t
+ *   - ParticleForceModel_t
+ *   - ParticleWallInteractionModel_t
+ *   - ParticlePhaseChangeModel_t
+ *
+ * \param[out] 	ModelType  One of the particle model types (listed below) allowed for the ModelLabel selected.
+ *
+ * The types allowed for the various models are:
+ * ParticleCollisionModel_t  	     CG_Null, CG_UserDefined, Linear, NonLinear, HardSphere, SoftSphere,
+ *                                 LinearSpringDashpot, Pair, HertzMindlin, HertzKuwabaraKono, ORourke, Stochastic, NonStochastic, NTC
+ *	ParticleBreakupModel_t		     CG_Null, CG_UserDefined, KelvinHelmholtz, KelvinHelmholtzACT, RayleighTaylor,
+ *                                 KelvinHelmholtzRayleighTaylor, ReitzKHRT, TAB, ETAB, LISA, SHF, PilchErdman, ReitzDiwakar
+ *	ParticleForceModel_t		        CG_Null, CG_UserDefined, Sphere, NonShpere, Tracer, BeetstraVanDerHoefKuipers, Ergun,
+ *                                 CliftGrace, Gidaspow, HaiderLevenspiel, PlessisMasliyah, SyamlalOBrien, SaffmanMei,
+ *                                 TennetiGargSubramaniam, Tomiyama, Stokes, StokesCunningham, WenYu
+ *	ParticleWallInteractionModel_t  CG_Null, CG_UserDefined, Linear, NonLinear, HardSphere, SoftSphere,
+ *                                 LinearSpringDashpot, BaiGosman, HertzMindlin, HertzKuwabaraKono, Khunke, ORourke, NTC
+ *	ParticlePhaseChangeModel_t		  CG_Null, CG_UserDefined, Boil, Chiang, Frossling, FuchsKnudsen
+ * \return \ier
+ */
+int cg_particle_model_read(const char *ModelLabel, CGNS_ENUMT(ParticleModelType_t) *ModelType)
+{
+    cgns_pmodel *model;
+    int ier=0;
+
+    CHECK_FILE_OPEN
+
+     /* verify input */
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    model = cgi_particle_model_address(CG_MODE_READ, ModelLabel, &ier);
+    if (model==0) return ier;
+
+    (*ModelType) = model->type;
+
+    return CG_OK;
+}
+
+/**
+ * \ingroup ParticleModel
+ *
+ * \brief  Write particle model types
+ *
+ * \param[in]  ModelLabel  The CGNS label for the particle model being defined. The particle models supported by CGNS are:
+ *   - ParticleCollisionModel_t
+ *   - ParticleBreakupModel_t
+ *   - ParticleForceModel_t
+ *   - ParticleWallInteractionModel_t
+ *   - ParticlePhaseChangeModel_t
+ *
+ * \param[in] 	ModelType  One of the particle model types (listed below) allowed for the ModelLabel selected.
+ *
+ * The types allowed for the various models are:
+ * ParticleCollisionModel_t  	     CG_Null, CG_UserDefined, Linear, NonLinear, HardSphere, SoftSphere, LinearSpringDashpot,
+ *                                 Pair, HertzMindlin, HertzKuwabaraKono, ORourke, Stochastic, NonStochastic, NTC
+ *	ParticleBreakupModel_t		     CG_Null, CG_UserDefined, KelvinHelmholtz, KelvinHelmholtzACT, RayleighTaylor,
+ *                                 KelvinHelmholtzRayleighTaylor, ReitzKHRT, TAB, ETAB, LISA, SHF, PilchErdman, ReitzDiwakar
+ *	ParticleForceModel_t		        CG_Null, CG_UserDefined, Sphere, NonShpere, Tracer, BeetstraVanDerHoefKuipers, Ergun,
+ *                                 CliftGrace, Gidaspow, HaiderLevenspiel, PlessisMasliyah, SyamlalOBrien, SaffmanMei,
+ *                                 TennetiGargSubramaniam, Tomiyama, Stokes, StokesCunningham, WenYu
+ *	ParticleWallInteractionModel_t  CG_Null, CG_UserDefined, Linear, NonLinear, HardSphere, SoftSphere,
+ *                                 LinearSpringDashpot, BaiGosman, HertzMindlin, HertzKuwabaraKono, Khunke, ORourke, NTC
+ *	ParticlePhaseChangeModel_t		  CG_Null, CG_UserDefined, Boil, Chiang, Frossling, FuchsKnudsen
+ * \return \ier
+ */
+int cg_particle_model_write(const char * ModelLabel, CGNS_ENUMT(ParticleModelType_t) ModelType)
+{
+    cgns_pmodel *model;
+    char ModelName[33];
+    int ier=0, index_dim;
+    double posit_id;
+
+    CHECK_FILE_OPEN
+
+     /* verify input */
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+    if (INVALID_ENUM(ModelType,NofValidParticleModelTypes)) {
+        cgi_error("Invalid %s Type: %d",ModelLabel,ModelType);
+        return CG_ERROR;
+    }
+
+     /* Validate enums for each model type. */
+    if (strcmp(ModelLabel, "ParticleCollisionModel_t")==0) {
+      if (ModelType!=CGNS_ENUMV( ParticleModelTypeNull ) && ModelType!=CGNS_ENUMV( ParticleModelTypeUserDefined ) &&
+      ModelType!=CGNS_ENUMV( Linear ) && ModelType!=CGNS_ENUMV( NonLinear ) &&
+      ModelType!=CGNS_ENUMV( SoftSphere ) && ModelType!=CGNS_ENUMV( HardSphere ) &&
+      ModelType!=CGNS_ENUMV( LinearSpringDashpot ) && ModelType!=CGNS_ENUMV( Pair ) &&
+      ModelType!=CGNS_ENUMV( HertzMindlin ) && ModelType!=CGNS_ENUMV( HertzKuwabaraKono ) &&
+      ModelType!=CGNS_ENUMV( ORourke ) && ModelType!=CGNS_ENUMV( Stochastic ) &&
+      ModelType!=CGNS_ENUMV( NonStochastic ) && ModelType!=CGNS_ENUMV( NTC )) {
+            cgi_error("Particle Model Type '%s' is not supported for %s",
+                ParticleModelTypeName[ModelType],ModelLabel);
+            return CG_ERROR;
+        }
+    } else if (strcmp(ModelLabel, "ParticleBreakupModel_t")==0) {
+      if (ModelType!=CGNS_ENUMV( ParticleModelTypeNull ) && ModelType!=CGNS_ENUMV( ParticleModelTypeUserDefined ) &&
+      ModelType!=CGNS_ENUMV( KelvinHelmholtz ) && ModelType!=CGNS_ENUMV( KelvinHelmholtzACT ) &&
+      ModelType!=CGNS_ENUMV( RayleighTaylor ) && ModelType!=CGNS_ENUMV( KelvinHelmholtzRayleighTaylor ) &&
+      ModelType!=CGNS_ENUMV( ReitzKHRT ) && ModelType!=CGNS_ENUMV( TAB ) && ModelType!= CGNS_ENUMV( ETAB ) &&
+      ModelType!=CGNS_ENUMV( LISA ) && ModelType!=CGNS_ENUMV( SHF ) && ModelType!= CGNS_ENUMV( PilchErdman ) &&
+      ModelType!=CGNS_ENUMV( ReitzDiwakar )) {
+            cgi_error("Particle Model Type '%s' is not supported for %s",
+                ParticleModelTypeName[ModelType],ModelLabel);
+            return CG_ERROR;
+        }
+    } else if (strcmp(ModelLabel, "ParticleForceModel_t")==0) {
+      if (ModelType!=CGNS_ENUMV( ParticleModelTypeNull ) && ModelType!=CGNS_ENUMV( ParticleModelTypeUserDefined ) &&
+          ModelType!=CGNS_ENUMV( Sphere ) && ModelType!=CGNS_ENUMV( NonSphere ) &&
+          ModelType!=CGNS_ENUMV( Tracer ) && ModelType!=CGNS_ENUMV( BeetstraVanDerHoefKuipers ) &&
+          ModelType!=CGNS_ENUMV( Ergun ) && ModelType!=CGNS_ENUMV( CliftGrace ) && ModelType!= CGNS_ENUMV( Gidaspow ) &&
+          ModelType!=CGNS_ENUMV( HaiderLevenspiel ) && ModelType!=CGNS_ENUMV( PlessisMasliyah ) &&
+          ModelType!=CGNS_ENUMV( SyamlalOBrien ) && ModelType!=CGNS_ENUMV( SaffmanMei ) &&
+          ModelType!=CGNS_ENUMV( TennetiGargSubramaniam ) && ModelType!=CGNS_ENUMV( Tomiyama ) &&
+          ModelType!=CGNS_ENUMV( Stokes ) && ModelType!=CGNS_ENUMV( StokesCunningham ) &&
+          ModelType!=CGNS_ENUMV( WenYu )) {
+            cgi_error("Particle Model Type '%s' is not supported for %s",
+                ParticleModelTypeName[ModelType],ModelLabel);
+            return CG_ERROR;
+        }
+    } else if (strcmp(ModelLabel, "ParticleWallInteractionModel_t")==0) {
+      if (ModelType!=CGNS_ENUMV( ParticleModelTypeNull ) && ModelType!=CGNS_ENUMV( ParticleModelTypeUserDefined ) &&
+          ModelType!=CGNS_ENUMV( Linear ) && ModelType!=CGNS_ENUMV( NonLinear ) &&
+          ModelType!=CGNS_ENUMV( SoftSphere ) && ModelType!=CGNS_ENUMV( HardSphere ) &&
+          ModelType!=CGNS_ENUMV( LinearSpringDashpot ) && ModelType!=CGNS_ENUMV( Pair ) &&
+          ModelType!=CGNS_ENUMV( HertzMindlin ) && ModelType!=CGNS_ENUMV( HertzKuwabaraKono ) &&
+          ModelType!=CGNS_ENUMV( ORourke ) && ModelType!=CGNS_ENUMV( Khunke ) &&
+          ModelType!=CGNS_ENUMV( BaiGosman ) && ModelType!=CGNS_ENUMV( NTC )) {
+            cgi_error("Particle Model Type '%s' is not supported for %s",
+                ParticleModelTypeName[ModelType],ModelLabel);
+            return CG_ERROR;
+        }
+    } else if (strcmp(ModelLabel, "ParticlePhaseChangeModel_t")==0) {
+      if (ModelType!=CGNS_ENUMV( ParticleModelTypeNull ) && ModelType!=CGNS_ENUMV( ParticleModelTypeUserDefined ) &&
+      ModelType!=CGNS_ENUMV( Boil )  && ModelType!=CGNS_ENUMV( Chiang ) &&
+      ModelType!=CGNS_ENUMV( Frossling ) && ModelType!=CGNS_ENUMV( FuchsKnudsen )) {
+            cgi_error("Particle Model Type '%s' is not supported for %s",
+                ParticleModelTypeName[ModelType],ModelLabel);
+            return CG_ERROR;
+        }
+    }
+
+    if (strcmp(ModelLabel, "ParticleCollisionModel_t") &&
+        strcmp(ModelLabel, "ParticleBreakupModel_t") &&
+        strcmp(ModelLabel, "ParticleForceModel_t") &&
+        strcmp(ModelLabel, "ParticleWallInteractionModel_t") &&
+        strcmp(ModelLabel, "ParticlePhaseChangeModel_t")) {
+        cgi_error("Invalid Particle Model Label: %s",ModelLabel);
+        return CG_ERROR;
+    }
+
+     /* get address */
+    model = cgi_particle_model_address(CG_MODE_WRITE, ModelLabel, &ier);
+    if (model==0) return ier;
+
+     /* Save data */
+    model->type = ModelType;
+    strcpy(ModelName,ModelLabel);
+    ModelName[strlen(ModelLabel)-2]='\0';
+    strcpy(model->name, ModelName);
+
+     /* initialize other fields */
+    model->id=0;
+    model->link=0;
+    model->ndescr=0;
+    model->narrays=0;
+    model->data_class=CGNS_ENUMV( DataClassNull );
+    model->units=0;
+    model->dim_vals=0;
+    model->nuser_data=0;
+
+    /* save data in file */
+    if (cgi_posit_id(&posit_id)) return CG_ERROR;
+    if (cgi_write_particle_model(posit_id, model)) return CG_ERROR;
+    return CG_OK;
+}
+
+/*----------------------------------------------------------------------*/
 /**
  * \ingroup DataArrays
- * 
- * \brief  Get number of data arrays under current node
  *
- * \param[out]  narrays  Number of DataArray_t nodes under the current node.
+ * \brief Get the number of data arrays under the current node
+ *
+ * \param[out]  narrays Number of DataArray_t nodes under the current node.
  *
  * \return \ier
  */
@@ -14503,7 +17312,9 @@ int cg_narrays(int *narrays)
  *  ConvergenceHistory_t, IntegralData_t, ReferenceState_t,
  *  RigidGridMotion_t, ArbitraryGridMotion_t, BaseIterativeData_t, ZoneIterativeData_t
  *  GridConnectivity_t, UserDefinedData_t, Gravity_t, Axisymmetry_t, RotatingCoordinates_t,
- *  Area_t, Periodic_t, ZoneSubRegion_t
+ *  Area_t, Periodic_t, ZoneSubRegion_t, ParticleCoordinates_t, ParticleSolution_t,
+ *  ParticleIterativeData_t, ParticleCollisionModel_t, ParticleBreakupModel_t, ParticleWallInteractionModel_t,
+ *  ParticleForceModel_t, ParticlePhaseChangeModel_t
  */
 
     CHECK_FILE_OPEN
@@ -14521,9 +17332,17 @@ int cg_narrays(int *narrays)
         cgns_zcoor *zcoor= (cgns_zcoor *)posit->posit;
         (*narrays) = zcoor->ncoords;
 
+    } else if (strcmp(posit->label,"ParticleCoordinates_t")==0) {
+       cgns_pcoor *pcoor= (cgns_pcoor *)posit->posit;
+       (*narrays) = pcoor->ncoords;
+
     } else if (strcmp(posit->label,"FlowSolution_t")==0) {
         cgns_sol *sol = (cgns_sol *)posit->posit;
         (*narrays) = sol->nfields;
+
+    } else if (strcmp(posit->label,"ParticleSolution_t")==0) {
+       cgns_psol *sol = (cgns_psol *)posit->posit;
+       (*narrays) = sol->nfields;
 
     } else if (strcmp(posit->label,"DiscreteData_t")==0) {
         cgns_discrete *discrete = (cgns_discrete *)posit->posit;
@@ -14578,7 +17397,8 @@ int cg_narrays(int *narrays)
         cgns_biter *biter = (cgns_biter *)posit->posit;
         (*narrays) = biter->narrays;
 
-    } else if (strcmp(posit->label,"ZoneIterativeData_t")==0) {
+    } else if (strcmp(posit->label,"ZoneIterativeData_t")==0 ||
+               strcmp(posit->label,"ParticleIterativeData_t")==0) {
         cgns_ziter *ziter = (cgns_ziter *)posit->posit;
         (*narrays) = ziter->narrays;
 
@@ -14610,7 +17430,15 @@ int cg_narrays(int *narrays)
         cgns_subreg *subreg = (cgns_subreg *)posit->posit;
         (*narrays) = subreg->narrays;
 
-    } else {
+    } else if (strcmp(posit->label,"ParticleCollisionModel_t")==0 ||
+               strcmp(posit->label,"ParticleBreakupModel_t")==0 ||
+               strcmp(posit->label,"ParticleWallInteractionModel_t")==0 ||
+               strcmp(posit->label,"ParticleForceModel_t")==0 ||
+               strcmp(posit->label,"ParticlePhaseChangeModel_t")==0) {
+               cgns_pmodel *model = (cgns_pmodel *)posit->posit;
+               (*narrays) = model->narrays;
+
+    }else {
         cgi_error("User defined DataArray_t node not supported under '%s' type node",posit->label);
         (*narrays) = 0;
         return CG_INCORRECT_PATH;
@@ -14620,14 +17448,16 @@ int cg_narrays(int *narrays)
 
 /**
  * \ingroup DataArrays
- * 
- * \brief  Get data array info
  *
- * \param[in]  A  Data array index, where 1 ≤ A ≤ narrays.
- * \param[out]  ArrayName  Name of the DataArray_t node.
- * \param[out] 	DataType  Type of data held in the DataArray_t node. The admissible types are Integer, LongInteger, RealSingle, RealDouble, and Character.
- * \param[out]	DataDimension  Number of dimensions of array in file (max 12). See Node Management Routines in CGIO User's Guide.
- * \param[out]  DimensionVector  Dimensions of array in file.
+ * \brief Get data array info
+ *
+ * \param[in]  A               \A
+ * \param[out] ArrayName       Name of the DataArray_t node.
+ * \param[out] DataType        Type of data held in the DataArray_t node. The admissible types are \e Integer,
+ *                             \e LongInteger, \e RealSingle, \e RealDouble, and \e Character.
+ * \param[out] DataDimension   Number of dimensions of array in file (max 12). See Node Management Routines
+ *                             in CGIO User's Guide.
+ * \param[out] DimensionVector Dimensions of array in file.
  *
  * \return \ier
  */
@@ -14656,11 +17486,11 @@ int cg_array_info(int A, char *ArrayName, CGNS_ENUMT(DataType_t) *DataType,
 
 /**
  * \ingroup DataArrays
- * 
- * \brief  Read data array
  *
- * \param[in]  A  Data array index, where 1 ≤ A ≤ narrays.
- * \param[out]  Data  The data array in memory.
+ * \brief Read data array
+ *
+ * \param[in]  A     \A
+ * \param[out] Data  The data array in memory.
  *
  * \return \ier
  */
@@ -14682,7 +17512,7 @@ int cg_array_read(int A, void *Data)
     for (n=0; n<array->data_dim; n++) num *= array->dim_vals[n];
 
     if (array->data)
-        memcpy(Data, array->data, (size_t)(num*size_of(array->data_type)));
+        memcpy(Data, array->data, ((size_t)num)*size_of(array->data_type));
     else {
         if (cgio_read_all_data_type(cg->cgio, array->id, array->data_type, Data)) {
             cg_io_error("cgio_read_all_data_type");
@@ -14696,12 +17526,13 @@ int cg_array_read(int A, void *Data)
 
 /**
  * \ingroup DataArrays
- * 
- * \brief  Read data array as a certain type
  *
- * \param[in]  A  Data array index, where 1 ≤ A ≤ narrays.
- * \param[in]  type  Type of data held in the DataArray_t node. The admissible types are Integer, LongInteger, RealSingle, RealDouble, and Character. 
- * \param[out]  Data  The data array in memory.
+ * \brief Read data array as a certain type
+ *
+ * \param[in]  A     \A
+ * \param[in]  type  Type of data held in the DataArray_t node. The admissible types are \e Integer,
+ *                   \e LongInteger, \e RealSingle, \e RealDouble, and \e Character.
+ * \param[out]  Data The data array in memory.
  *
  * \return \ier
  */
@@ -14733,7 +17564,7 @@ int cg_array_read_as(int A, CGNS_ENUMT(DataType_t) type, void *Data)
     }
     if (type==CGNS_ENUMV(Character)) {
         if (array->data)
-            memcpy(Data, array->data, (size_t)(num*size_of(array->data_type)));
+            memcpy(Data, array->data, ((size_t)num)*size_of(array->data_type));
         else {
             if (cgio_read_all_data_type(cg->cgio, array->id, array->data_type, Data)) {
                 cg_io_error("cgio_read_all_data_type");
@@ -14747,7 +17578,7 @@ int cg_array_read_as(int A, CGNS_ENUMT(DataType_t) type, void *Data)
     if (array->data)
         array_data = array->data;
     else {
-        array_data = malloc((size_t)(num*size_of(array->data_type)));
+        array_data = malloc(((size_t)num)*size_of(array->data_type));
         if (array_data == NULL) {
             cgi_error("Error allocating array_data");
             return CG_ERROR;
@@ -14768,23 +17599,31 @@ int cg_array_read_as(int A, CGNS_ENUMT(DataType_t) type, void *Data)
 
 /**
  * \ingroup DataArrays
- * 
- * \brief  Read subset of data array to a shaped memory
  *
- * \param[in]  A  Data array index, where 1 ≤ A ≤ narrays.
- * \param[in]  s_rmin  	Lower range index in file (eg., imin, jmin, kmin).
- * \param[in]  s_rmax   Upper range index in file (eg., imax, jmax, kmax).
- * \param[in]  m_type   The type of data held in memory. The admissible types are Integer, LongInteger, RealSingle, RealDouble, and Character.
- * \param[in]  m_numdim  Number of dimensions of array in memory (max 12). 
- * \param[in]  m_dimvals  Dimensions of array in memory.
- * \param[in]  m_rmin  	Lower range index in memory (eg., imin, jmin, kmin).
- * \param[in]  m_rmax  	Upper range index in memory (eg., imax, jmax, kmax).
- * \param[out]  data The data array in memory.
+ * \brief Read subset of data array to a shaped memory
+ *
+ * \param[in]  A         \A
+ * \param[in]  s_rmin    Lower range index in file (eg., imin, jmin, kmin).
+ * \param[in]  s_rmax    Upper range index in file (eg., imax, jmax, kmax).
+ * \param[in]  m_type    The type of data held in memory. The admissible types are \e Integer,
+ *                       \e LongInteger, \e RealSingle, \e RealDouble, and \e Character.
+ * \param[in]  m_numdim  Number of dimensions of array in memory (max 12).
+ * \param[in]  m_dimvals Dimensions of array in memory.
+ * \param[in]  m_rmin    Lower range index in memory (eg., imin, jmin, kmin).
+ * \param[in]  m_rmax    Upper range index in memory (eg., imax, jmax, kmax).
+ * \param[out]  data     The data array in memory.
  *
  * \return \ier
  *
- * \details   The functions cg_array_general_read allow for type conversion when reading from the file.
- *            When using cg_array_general_read, the lower core elements in the file have index 1 for defining range_min and range_max; whereas for the array in memory, defined by mem_rank and mem_dimensions, the lower array elements in memory have index 1 for defining mem_range_min and mem_range_max. The actual lower and upper bounds of the array in memory can be anything. For example, to fully read a two-dimensional 6 × 6 data array with 1 rind plane on each side in the file to an 8 × 8 array in memory (mem_rank = 2 and mem_dimensions = (8,8)), set range_min and range_max to (0,0) and (7,7), and set mem_range_min and mem_range_max to (1,1) and (8,8). 
+ * \details The functions cg_array_general_read allow for type conversion when reading from the file.
+ *          When using cg_array_general_read, the lower core elements in the file have index 1 for
+ *          defining range_min and range_max; whereas for the array in memory, defined by mem_rank
+ *          and mem_dimensions, the lower array elements in memory have index 1 for defining
+ *          mem_range_min and mem_range_max. The actual lower and upper bounds of the array in
+ *          memory can be anything. For example, to fully read a two-dimensional 6 × 6 data array
+ *          with 1 rind plane on each side in the file to an 8 × 8 array in memory (mem_rank = 2
+ *          and mem_dimensions = (8,8)), set range_min and range_max to (0,0) and (7,7), and set
+ *          mem_range_min and mem_range_max to (1,1) and (8,8).
  */
 int cg_array_general_read(int A,
                           const cgsize_t *s_rmin, const cgsize_t *s_rmax,
@@ -14828,14 +17667,16 @@ int cg_array_general_read(int A,
 
 /**
  * \ingroup DataArrays
- * 
- * \brief  Write data array
  *
- * \param[in]  ArrayName  Name of the DataArray_t node.
- * \param[in]  DataType  Type of data held in the DataArray_t node. The admissible types are Integer, LongInteger, RealSingle, RealDouble, and Character. 
- * \param[in]  DataDimension  Number of dimensions of array in file (max 12). See Node Management Routines in CGIO User's Guide.
- * \param[in]  DimensionVector  Dimensions of array in file.
- * \param[in]  Data  The data array in memory.
+ * \brief Write data array
+ *
+ * \param[in]  ArrayName       Name of the DataArray_t node.
+ * \param[in]  DataType        Type of data held in the DataArray_t node. The admissible types are \e Integer,
+ *                             \e LongInteger, \e RealSingle, \e RealDouble, and \e Character.
+ * \param[in]  DataDimension   Number of dimensions of array in file (max 12). See Node Management Routines
+ *                             in CGIO User's Guide.
+ * \param[in]  DimensionVector Dimensions of array in file.
+ * \param[in]  Data            The data array in memory.
  *
  * \return \ier
  */
@@ -14906,27 +17747,38 @@ int cg_array_write(const char * ArrayName, CGNS_ENUMT(DataType_t) DataType,
 
 /**
  * \ingroup DataArrays
- * 
- * \brief  Write shaped array to a subset of data array
  *
- * \param[in]  arrayname  Name of the DataArray_t node.
- * \param[in]  s_type   Type of data held in the DataArray_t node. The admissible types are Integer, LongInteger, RealSingle, RealDouble, and Character.
- * \param[in]  s_numdim   Number of dimensions of array in file (max 12). See Node Management Routines in CGIO User's Guide.
- * \param[in]  s_dimvals   Dimensions of array in file.
- * \param[in]  s_rmin  	Lower range index in file (eg., imin, jmin, kmin).
- * \param[in]  s_rmax   Upper range index in file (eg., imax, jmax, kmax).
- * \param[in]  m_type   The type of data held in memory. The admissible types are Integer, LongInteger, RealSingle, RealDouble, and Character.
- * \param[in]  m_numdim  Number of dimensions of array in memory (max 12). 
- * \param[in]  m_dimvals  Dimensions of array in memory.
- * \param[in]  m_rmin  	Lower range index in memory (eg., imin, jmin, kmin).
- * \param[in]  m_rmax  	Upper range index in memory (eg., imax, jmax, kmax).
- * \param[in]  data The data array in memory.
+ * \brief Write shaped array to a subset of data array
+ *
+ * \param[in]  arrayname Name of the DataArray_t node.
+ * \param[in]  s_type    Type of data held in the DataArray_t node. The admissible types are Integer,
+ *                       LongInteger, RealSingle, RealDouble, and Character.
+ * \param[in]  s_numdim  Number of dimensions of array in file (max 12). See Node Management Routines
+ *                       in CGIO User's Guide.
+ * \param[in]  s_dimvals Dimensions of array in file.
+ * \param[in]  s_rmin    Lower range index in file (eg., imin, jmin, kmin).
+ * \param[in]  s_rmax    Upper range index in file (eg., imax, jmax, kmax).
+ * \param[in]  m_type    The type of data held in memory. The admissible types are Integer,
+ *                       LongInteger, RealSingle, RealDouble, and Character.
+ * \param[in]  m_numdim  Number of dimensions of array in memory (max 12).
+ * \param[in]  m_dimvals Dimensions of array in memory.
+ * \param[in]  m_rmin    Lower range index in memory (eg., imin, jmin, kmin).
+ * \param[in]  m_rmax    Upper range index in memory (eg., imax, jmax, kmax).
+ * \param[in]  data      The data array in memory.
  *
  * \return \ier
  *
- * \details   The function cg_array_general_write may be used to write from a subset of the array in memory to a subset of the array in the file. When using the partial write, any existing data from range_min to range_max will be overwritten by the new values. All other values will not be affected.
- *            The functions cg_array_general_write allow for type conversion when reading to the file.
- *            When using cg_array_general_write, the lower core elements in the file have index 1 for defining range_min and range_max; whereas for the array in memory, defined by mem_rank and mem_dimensions, the lower array elements in memory have index 1 for defining mem_range_min and mem_range_max. The actual lower and upper bounds of the array in memory can be anything. For example, to fully read a two-dimensional 6 × 6 data array with 1 rind plane on each side in the file to an 8 × 8 array in memory (mem_rank = 2 and mem_dimensions = (8,8)), set range_min and range_max to (0,0) and (7,7), and set mem_range_min and mem_range_max to (1,1) and (8,8). 
+ * \details The function cg_array_general_write may be used to write from a subset of the array in memory to a
+ *          subset of the array in the file. When using the partial write, the new values will overwrite any
+ *          existing data from \p range_min to \p range_max. All other values will not be affected.
+ *          The functions cg_array_general_write allow for type conversion when reading to the file.
+ *          When using cg_array_general_write, the lower core elements in the file have index 1 for
+ *          defining range_min and range_max; whereas for the array in memory, defined by mem_rank
+ *          and mem_dimensions, the lower array elements in memory have index 1 for defining mem_range_min
+ *          and mem_range_max. The actual lower and upper bounds of the array in memory can be anything.
+ *          For example, to fully read a two-dimensional 6 × 6 data array with 1 rind plane on each side in the
+ *          file to an 8 × 8 array in memory (mem_rank = 2 and mem_dimensions = (8,8)), set range_min and range_max
+ *          to (0,0) and (7,7), and set mem_range_min and mem_range_max to (1,1) and (8,8).
  */
 int cg_array_general_write(const char *arrayname,
                            CGNS_ENUMT(DataType_t) s_type,
@@ -14995,10 +17847,10 @@ int cg_array_general_write(const char *arrayname,
 /*----------------------------------------------------------------------*/
 /**
  * \ingroup  IntegralData
- * 
- * \brief  Get number of IntegralData_t nodes
  *
- * \param[out]  nintegrals  Number of IntegralData_t nodes under current node.
+ * \brief Get the number of IntegralData_t nodes
+ *
+ * \param[out]  nintegrals Number of IntegralData_t nodes under current node.
  *
  * \return \ier
  */
@@ -15033,11 +17885,11 @@ int cg_nintegrals(int *nintegrals)
 
 /**
  * \ingroup  IntegralData
- * 
- * \brief  Get name of an IntegralData_t node
  *
- * \param[in]   IntegralDataIndex  Integral data index number, where 1 ≤ IntegralDataIndex ≤ nintegrals. 
- * \param[out]  IntegralDataName  Name of the IntegralData_t data structure. 
+ * \brief Get the name of an IntegralData_t node
+ *
+ * \param[in]  IntegralDataIndex Integral data index number, where 1 ≤ IntegralDataIndex ≤ nintegrals.
+ * \param[out] IntegralDataName  Name of the IntegralData_t data structure.
  *
  * \return \ier
  */
@@ -15061,10 +17913,10 @@ int cg_integral_read(int IntegralDataIndex, char *IntegralDataName)
 
 /**
  * \ingroup  IntegralData
- * 
- * \brief  Create IntegralData_t node
  *
- * \param[in]  IntegralDataName  Name of the IntegralData_t data structure. 
+ * \brief Create IntegralData_t node
+ *
+ * \param[in] IntegralDataName Name of the IntegralData_t data structure.
  *
  * \return \ier
  */
@@ -15104,10 +17956,13 @@ int cg_integral_write(const char * IntegralDataName)
 /*----------------------------------------------------------------------*/
 /**
  * \ingroup  RindLayers
- * 
- * \brief  Read number of rind layers
  *
- * \param[out] RindData  Number of rind layers for each computational direction (structured grid) or number of rind points or elements (unstructured grid). For structured grids, the low/high sides have unit stride in the array (e.g., [NRindLowI, NRindHighI, NRindLowJ, NRindHighJ, NRindLowK, NRindHighK]).
+ * \brief Read the number of rind layers
+ *
+ * \param[out] RindData Number of rind layers for each computational direction (structured grid) or
+ *                      number of rind points or elements (unstructured grid). For structured grids,
+ *                      the low/high sides have unit stride in the array (e.g., [NRindLowI,
+ *                      NRindHighI, NRindLowJ, NRindHighJ, NRindLowK, NRindHighK]).
  *
  * \return \ier
  */
@@ -15137,14 +17992,18 @@ int cg_rind_read(int *RindData)
 
 /**
  * \ingroup  RindLayers
- * 
- * \brief  Write number of rind layers
  *
- * \param[in] RindData   Number of rind layers for each computational direction (structured grid) or number of rind points or elements (unstructured grid). For structured grids, the low/high sides have unit stride in the array (e.g., [NRindLowI, NRindHighI, NRindLowJ, NRindHighJ, NRindLowK, NRindHighK]).
+ * \brief Write the number of rind layers
+ *
+ * \param[in]  RindData Number of rind layers for each computational direction (structured grid) or
+ *                      number of rind points or elements (unstructured grid). For structured grids,
+ *                      the low/high sides have unit stride in the array (e.g., [NRindLowI,
+ *                      NRindHighI, NRindLowJ, NRindHighJ, NRindLowK, NRindHighK]).
  *
  * \return \ier
  *
- * \details  When writing rind data for elements, cg_section_write must be called first, followed by cg_goto to access the Elements_t node, and then cg_rind_write.
+ * \details When writing rind data for elements, cg_section_write() must be called first, followed
+ *          by cg_goto() to access the Elements_t node, and then cg_rind_write().
  */
 int cg_rind_write(const int * RindData)
 {
@@ -15188,8 +18047,8 @@ int cg_rind_write(const int * RindData)
 /*----------------------------------------------------------------------*/
 /**
  * \ingroup  DescriptiveText
- * 
- * \brief  Get number of descriptors in file
+ *
+ * \brief Get the number of descriptors in the file
  *
  * \param[out] ndescriptors Number of Descriptor_t nodes under the current node.
  * \return \ier
@@ -15212,7 +18071,10 @@ int cg_ndescriptors(int *ndescriptors)
  *  UserDefinedData_t, Gravity_t, Axisymmetry_t, RotatingCoordinates_t,
  *  BCProperty_t, WallFunction_t, Area_t, ZoneSubRegion_t,
  *  GridConnectivityProperty_t, Periodic_t, AverageInterface_t
- *  FamilyBCDataSet_t
+ *  FamilyBCDataSet_t,  ParticleZone_t, ParticleCoordinates_t, ParticleSolution_t,
+ *  ParticleIterativeData_t, ParticleEquationSet_t, ParticleGoverningEquations_t,
+ *  ParticleCollisionModel_t,  ParticleBreakupModel_t, ParticleForceModel_t,
+ *  ParticleWallInteractionModel_t,  ParticlePhaseChangeModel_t, ParticleGoverningEquations_t
  */
 
     CHECK_FILE_OPEN
@@ -15233,10 +18095,14 @@ int cg_ndescriptors(int *ndescriptors)
         NDESCRIPTOR(cgns_zone)
     else if (strcmp(posit->label,"GridCoordinates_t")==0)
         NDESCRIPTOR(cgns_zcoor)
+    else if (strcmp(posit->label,"ParticleCoordinates_t")==0)
+        NDESCRIPTOR(cgns_pcoor)
     else if (strcmp(posit->label,"Elements_t")==0)
         NDESCRIPTOR(cgns_section)
     else if (strcmp(posit->label,"FlowSolution_t")==0)
         NDESCRIPTOR(cgns_sol)
+    else if (strcmp(posit->label,"ParticleSolution_t")==0)
+        NDESCRIPTOR(cgns_psol)
     else if (strcmp(posit->label,"DiscreteData_t")==0)
         NDESCRIPTOR(cgns_discrete)
     else if (strcmp(posit->label,"ZoneGridConnectivity_t")==0)
@@ -15289,7 +18155,8 @@ int cg_ndescriptors(int *ndescriptors)
         NDESCRIPTOR(cgns_amotion)
     else if (strcmp(posit->label,"BaseIterativeData_t")==0)
         NDESCRIPTOR(cgns_biter)
-    else if (strcmp(posit->label,"ZoneIterativeData_t")==0)
+    else if (strcmp(posit->label,"ZoneIterativeData_t")==0 ||
+             strcmp(posit->label,"ParticleIterativeData_t")==0)
         NDESCRIPTOR(cgns_ziter)
     else if (strcmp(posit->label,"UserDefinedData_t")==0)
         NDESCRIPTOR(cgns_user_data)
@@ -15313,6 +18180,18 @@ int cg_ndescriptors(int *ndescriptors)
         NDESCRIPTOR(cgns_caverage)
     else if (strcmp(posit->label,"ZoneSubRegion_t")==0)
         NDESCRIPTOR(cgns_subreg)
+    else if (strcmp(posit->label,"ParticleZone_t")==0)
+        NDESCRIPTOR(cgns_pzone)
+    else if (strcmp(posit->label,"ParticleEquationSet_t")==0)
+        NDESCRIPTOR(cgns_pequations)
+    else if (strcmp(posit->label,"ParticleGoverningEquations_t")==0)
+        NDESCRIPTOR(cgns_pgoverning)
+    else if (strcmp(posit->label,"ParticleCollisionModel_t")==0 ||
+             strcmp(posit->label,"ParticleBreakupModel_t")==0 ||
+             strcmp(posit->label,"ParticleForceModel_t")==0 ||
+             strcmp(posit->label,"ParticleWallInteractionModel_t")==0 ||
+             strcmp(posit->label,"ParticlePhaseChangeModel_t")==0)
+        NDESCRIPTOR(cgns_pmodel)
     else {
         cgi_error("Descriptor_t node not supported under '%s' type node",posit->label);
         (*ndescriptors)=0;
@@ -15323,16 +18202,17 @@ int cg_ndescriptors(int *ndescriptors)
 
 /**
  * \ingroup  DescriptiveText
- * 
- * \brief  Read descriptive text
  *
- * \param[in] descr_no  Descriptor index number, where 1 ≤ descr_no ≤ ndescriptors.
- * \param[out]  descr_name  Name of the Descriptor_t node.
- * \param[out]  descr_text  Description held in the Descriptor_t node.
+ * \brief Read descriptive text
+ *
+ * \param[in]  descr_no    Descriptor index number, where 1 ≤ descr_no ≤ ndescriptors.
+ * \param[out]  descr_name Name of the Descriptor_t node.
+ * \param[out]  descr_text Description held in the Descriptor_t node.
  * \return \ier
  *
- *
- * \details  Note that with cg_descriptor_read the memory for the descriptor character string, text, will be allocated by the Mid-Level Library. The application code is responsible for releasing this memory when it is no longer needed by calling cg_free(text).
+ * \details Note that with cg_descriptor_read(), the memory for the descriptor character string,
+ *          text, will be allocated by the Mid-Level Library. The application code is responsible
+ *          for releasing this memory when it is no longer needed by calling cg_free(text).
  *
  */
 int cg_descriptor_read(int descr_no, char *descr_name, char **descr_text)
@@ -15359,11 +18239,11 @@ int cg_descriptor_read(int descr_no, char *descr_name, char **descr_text)
 
 /**
  * \ingroup  DescriptiveText
- * 
- * \brief  Write descriptive text
  *
- * \param[in]  descr_name  Name of the Descriptor_t node.
- * \param[in]  descr_text  Description held in the Descriptor_t node.
+ * \brief Write descriptive text
+ *
+ * \param[in]  descr_name Name of the Descriptor_t node.
+ * \param[in]  descr_text Description held in the Descriptor_t node.
  * \return \ier
  */
 int cg_descriptor_write(const char * descr_name, const char * descr_text)
@@ -15402,10 +18282,10 @@ int cg_descriptor_write(const char * descr_name, const char * descr_text)
 /*----------------------------------------------------------------------*/
 /**
  * \ingroup  DimensionalUnits
- * 
- * \brief  Get number of dimensional units
  *
- * \param[out]  nunits  Number of units used in the file (i.e., either 5 or 8). 
+ * \brief Get the number of dimensional units
+ *
+ * \param[out]  nunits Number of units used in the file (i.e., either 5 or 8).
  * \return \ier
  */
 int cg_nunits(int *nunits)
@@ -15428,13 +18308,17 @@ int cg_nunits(int *nunits)
 /**
  * \ingroup  DimensionalUnits
  *
- * \brief   Read first five dimensional units
+ * \brief Read first five dimensional units
  *
- * \param[out] mass  Mass units. Admissible values are CG_Null, CG_UserDefined, Kilogram, Gram, Slug, and PoundMass.
- * \param[out] length  	Length units. Admissible values are CG_Null, CG_UserDefined, Meter, Centimeter, Millimeter, Foot, and Inch.
- * \param[out] time  Time units. Admissible values are CG_Null, CG_UserDefined, and Second.
- * \param[out] temperature  Temperature units. Admissible values are CG_Null, CG_UserDefined, Kelvin, Celsius, Rankine, and Fahrenheit.
- * \param[out] angle  Angle units. Admissible values are CG_Null, CG_UserDefined, Degree, and Radian.
+ * \param[out] mass        Mass units. Admissible values are CG_Null, CG_UserDefined, Kilogram, Gram,
+ *                         Slug, and PoundMass.
+ * \param[out] length      Length units. Admissible values are CG_Null, CG_UserDefined, Meter,
+ *                         Centimeter, Millimeter, Foot, and Inch.
+ * \param[out] time        Time units. Admissible values are CG_Null, CG_UserDefined, and Second.
+ * \param[out] temperature Temperature units. Admissible values are CG_Null, CG_UserDefined, Kelvin,
+ *                         Celsius, Rankine, and Fahrenheit.
+ * \param[out] angle       Angle units. Admissible values are CG_Null, CG_UserDefined, Degree, and
+ *                         Radian.
  *
  * \return \ier
  */
@@ -15466,13 +18350,17 @@ int cg_units_read(CGNS_ENUMT(MassUnits_t) *mass,
 /**
  * \ingroup  DimensionalUnits
  *
- * \brief   Write first five dimensional units
+ * \brief Write first five dimensional units
  *
- * \param[in]  mass  Mass units. Admissible values are CG_Null, CG_UserDefined, Kilogram, Gram, Slug, and PoundMass.
- * \param[in]  length  	Length units. Admissible values are CG_Null, CG_UserDefined, Meter, Centimeter, Millimeter, Foot, and Inch.
- * \param[in]  time  Time units. Admissible values are CG_Null, CG_UserDefined, and Second.
- * \param[in]  temperature  Temperature units. Admissible values are CG_Null, CG_UserDefined, Kelvin, Celsius, Rankine, and Fahrenheit.
- * \param[in]  angle  Angle units. Admissible values are CG_Null, CG_UserDefined, Degree, and Radian.
+ * \param[in]  mass        Mass units. Admissible values are CG_Null, CG_UserDefined, Kilogram, Gram,
+ *                         Slug, and PoundMass.
+ * \param[in]  length      Length units. Admissible values are CG_Null, CG_UserDefined, Meter,
+ *                         Centimeter, Millimeter, Foot, and Inch.
+ * \param[in]  time        Time units. Admissible values are CG_Null, CG_UserDefined, and Second.
+ * \param[in]  temperature Temperature units. Admissible values are CG_Null, CG_UserDefined, Kelvin,
+ *                         Celsius, Rankine, and Fahrenheit.
+ * \param[in]  angle       Angle units. Admissible values are CG_Null, CG_UserDefined, Degree, and
+ *                         Radian.
  *
  * \return \ier
  */
@@ -15537,16 +18425,23 @@ int cg_units_write(CGNS_ENUMT(MassUnits_t) mass,
 /**
  * \ingroup  DimensionalUnits
  *
- * \brief   Read all eight dimensional units
+ * \brief Read all eight dimensional units
  *
- * \param[out] mass  Mass units. Admissible values are CG_Null, CG_UserDefined, Kilogram, Gram, Slug, and PoundMass.
- * \param[out] length  	Length units. Admissible values are CG_Null, CG_UserDefined, Meter, Centimeter, Millimeter, Foot, and Inch.
- * \param[out] time  Time units. Admissible values are CG_Null, CG_UserDefined, and Second.
- * \param[out] temperature  Temperature units. Admissible values are CG_Null, CG_UserDefined, Kelvin, Celsius, Rankine, and Fahrenheit.
- * \param[out] angle  Angle units. Admissible values are CG_Null, CG_UserDefined, Degree, and Radian.
- * \param[out] current  Electric current units. Admissible values are CG_Null, CG_UserDefined, Ampere, Abampere, Statampere, Edison, and auCurrent.
- * \param[out] amount  Substance amount units. Admissible values are CG_Null, CG_UserDefined, Mole, Entities, StandardCubicFoot, and StandardCubicMeter.
- * \param[out] intensity  Luminous intensity units. Admissible values are CG_Null, CG_UserDefined, Candela, Candle, Carcel, Hefner, and Violle.
+ * \param[out] mass        Mass units. Admissible values are CG_Null, CG_UserDefined, Kilogram, Gram,
+ *                         Slug, and PoundMass.
+ * \param[out] length      Length units. Admissible values are CG_Null, CG_UserDefined, Meter,
+ *                         Centimeter, Millimeter, Foot, and Inch.
+ * \param[out] time        Time units. Admissible values are CG_Null, CG_UserDefined, and Second.
+ * \param[out] temperature Temperature units. Admissible values are CG_Null, CG_UserDefined, Kelvin,
+ *                         Celsius, Rankine, and Fahrenheit.
+ * \param[out] angle       Angle units. Admissible values are CG_Null, CG_UserDefined, Degree, and
+ *                         Radian.
+ * \param[out] current     Electric current units. Admissible values are CG_Null, CG_UserDefined,
+ *                         Ampere, Abampere, Statampere, Edison, and auCurrent.
+ * \param[out] amount      Substance amount units. Admissible values are CG_Null, CG_UserDefined, Mole,
+ *                         Entities, StandardCubicFoot, and StandardCubicMeter.
+ * \param[out] intensity   Luminous intensity units. Admissible values are CG_Null, CG_UserDefined,
+ *                         Candela, Candle, Carcel, Hefner, and Violle.
  * \return \ier
  */
 int cg_unitsfull_read(CGNS_ENUMT(MassUnits_t) *mass,
@@ -15583,17 +18478,24 @@ int cg_unitsfull_read(CGNS_ENUMT(MassUnits_t) *mass,
 /**
  * \ingroup  DimensionalUnits
  *
- * \brief   Write all eight dimensional units
+ * \brief Write all eight dimensional units
  *
- * \param[in] mass  Mass units. Admissible values are CG_Null, CG_UserDefined, Kilogram, Gram, Slug, and PoundMass.
- * \param[in] length  	Length units. Admissible values are CG_Null, CG_UserDefined, Meter, Centimeter, Millimeter, Foot, and Inch.
- * \param[in] time  Time units. Admissible values are CG_Null, CG_UserDefined, and Second.
- * \param[in] temperature  Temperature units. Admissible values are CG_Null, CG_UserDefined, Kelvin, Celsius, Rankine, and Fahrenheit.
- * \param[in] angle  Angle units. Admissible values are CG_Null, CG_UserDefined, Degree, and Radian.
- * \param[in] current  Electric current units. Admissible values are CG_Null, CG_UserDefined, Ampere, Abampere, Statampere, Edison, and auCurrent.
- * \param[in] amount  Substance amount units. Admissible values are CG_Null, CG_UserDefined, Mole, Entities, StandardCubicFoot, and StandardCubicMeter.
- * \param[in] intensity  Luminous intensity units. Admissible values are CG_Null, CG_UserDefined, Candela, Candle, Carcel, Hefner, and Violle.
- * 
+ * \param[in]  mass        Mass units. Admissible values are CG_Null, CG_UserDefined, Kilogram, Gram,
+ *                         Slug, and PoundMass.
+ * \param[in]  length      Length units. Admissible values are CG_Null, CG_UserDefined, Meter,
+ *                         Centimeter, Millimeter, Foot, and Inch.
+ * \param[in]  time        Time units. Admissible values are CG_Null, CG_UserDefined, and Second.
+ * \param[in]  temperature Temperature units. Admissible values are CG_Null, CG_UserDefined, Kelvin,
+ *                         Celsius, Rankine, and Fahrenheit.
+ * \param[in]  angle       Angle units. Admissible values are CG_Null, CG_UserDefined, Degree, and
+ *                         Radian.
+ * \param[in]  current     Electric current units. Admissible values are CG_Null, CG_UserDefined,
+ *                         Ampere, Abampere, Statampere, Edison, and auCurrent.
+ * \param[in]  amount      Substance amount units. Admissible values are CG_Null, CG_UserDefined, Mole,
+ *                         Entities, StandardCubicFoot, and StandardCubicMeter.
+ * \param[in]  intensity   Luminous intensity units. Admissible values are CG_Null, CG_UserDefined,
+ *                         Candela, Candle, Carcel, Hefner, and Violle.
+ *
  *  \return \ier
  */
 int cg_unitsfull_write(CGNS_ENUMT(MassUnits_t) mass,
@@ -15677,8 +18579,9 @@ int cg_unitsfull_write(CGNS_ENUMT(MassUnits_t) mass,
 /**
  * \ingroup  DimensionalExponents
  *
- * \brief  Get exponent data type
- * \param[out] DataType  Data type in which the exponents are recorded. Admissible data types for the exponents are RealSingle and RealDouble.
+ * \brief Get exponent data type
+ * \param[out] DataType Data type in which the exponents are recorded. Admissible data types for the
+ *                      exponents are RealSingle and RealDouble.
  * \return \ier
  */
 int cg_exponents_info(CGNS_ENUMT(DataType_t) *DataType)
@@ -15701,8 +18604,8 @@ int cg_exponents_info(CGNS_ENUMT(DataType_t) *DataType)
 /**
  * \ingroup  DimensionalExponents
  *
- * \brief  Get number of dimensional exponents
- * \param[out] numexp  Number of exponents used in the file (i.e., either 5 or 8).
+ * \brief Get the number of dimensional exponents
+ * \param[out] numexp Number of exponents used in the file (i.e., either 5 or 8).
  * \return \ier
  */
 int cg_nexponents(int *numexp)
@@ -15725,11 +18628,18 @@ int cg_nexponents(int *numexp)
 /**
  * \ingroup  DimensionalExponents
  *
- * \brief  Read first five dimensional exponents
- * \param[out] exponents  Exponents for the dimensional units for mass, length, time, temperature, angle, electric current, substance amount, and luminous intensity, in that order.
+ * \brief Read first five dimensional exponents
+ * \param[out] exponents Exponents for the dimensional units for mass, length, time, temperature,
+ *                       angle, electric current, substance amount, and luminous intensity, in that
+ *                       order.
  * \return \ier
  *
- * \details  When reading exponent data, either cg_exponents_read or cg_expfull_read may be used, regardless of the number of exponents used in the file. If cg_exponents_read is used, but all eight exponents are used in the file, only the first five exponents are returned. If cg_expfull_read is used, but only five exponents are used in the file, the returned values of the exponents for electric current, substance amount, and luminous intensity will be zero.
+ * \details When reading exponent data, either cg_exponents_read() or cg_expfull_read() may be used,
+ *          regardless of the number of exponents used in the file. If cg_exponents_read() is used,
+ *          but all eight exponents are used in the file, only the first five exponents are returned.
+ *          If cg_expfull_read() is used, but only five exponents are used in the file, the returned
+ *          values of the exponents for electric current, substance amount, and luminous intensity
+ *          will be zero.
  */
 int cg_exponents_read(void *exponents)
 {
@@ -15765,9 +18675,12 @@ int cg_exponents_read(void *exponents)
 /**
  * \ingroup  DimensionalExponents
  *
- * \brief  Write first five dimensional exponents
- * \param[in] DataType   Data type in which the exponents are recorded. Admissible data types for the exponents are RealSingle and RealDouble.
- * \param[in] exponents  Exponents for the dimensional units for mass, length, time, temperature, angle, electric current, substance amount, and luminous intensity, in that order.
+ * \brief Write first five dimensional exponents
+ * \param[in]  DataType  Data type in which the exponents are recorded. Admissible data types for the
+ *                       exponents are RealSingle and RealDouble.
+ * \param[in]  exponents Exponents for the dimensional units for mass, length, time, temperature,
+ *                       angle, electric current, substance amount, and luminous intensity, in that
+ *                       order.
  * \return \ier
  */
 int cg_exponents_write(CGNS_ENUMT(DataType_t) DataType, const void * exponents)
@@ -15822,11 +18735,18 @@ int cg_exponents_write(CGNS_ENUMT(DataType_t) DataType, const void * exponents)
 /**
  * \ingroup  DimensionalExponents
  *
- * \brief  Read all eight dimensional exponents
- * \param[out] exponents  Exponents for the dimensional units for mass, length, time, temperature, angle, electric current, substance amount, and luminous intensity, in that order.
+ * \brief Read all eight dimensional exponents
+ * \param[out] exponents Exponents for the dimensional units for mass, length, time, temperature,
+ *                       angle, electric current, substance amount, and luminous intensity, in that
+ *                       order.
  * \return \ier
  *
- * \details  When reading exponent data, either cg_exponents_read or cg_expfull_read may be used, regardless of the number of exponents used in the file. If cg_exponents_read is used, but all eight exponents are used in the file, only the first five exponents are returned. If cg_expfull_read is used, but only five exponents are used in the file, the returned values of the exponents for electric current, substance amount, and luminous intensity will be zero. 
+ * \details When reading exponent data, either cg_exponents_read() or cg_expfull_read() may be used,
+ *          regardless of the number of exponents used in the file. If cg_exponents_read() is used,
+ *          but all eight exponents are used in the file, only the first five exponents are returned.
+ *          If cg_expfull_read() is used, but only five exponents are used in the file, the returned
+ *          values of the exponents for electric current, substance amount, and luminous intensity
+ *          will be zero.
  */
 int cg_expfull_read(void *exponents)
 {
@@ -15888,9 +18808,12 @@ int cg_expfull_read(void *exponents)
 /**
  * \ingroup  DimensionalExponents
  *
- * \brief  Write all eight dimensional exponents
- * \param[in] DataType   Data type in which the exponents are recorded. Admissible data types for the exponents are RealSingle and RealDouble.
- * \param[in] exponents  Exponents for the dimensional units for mass, length, time, temperature, angle, electric current, substance amount, and luminous intensity, in that order.
+ * \brief Write all eight dimensional exponents
+ * \param[in]  DataType  Data type in which the exponents are recorded. Admissible data types for the
+ *                       exponents are RealSingle and RealDouble.
+ * \param[in]  exponents Exponents for the dimensional units for mass, length, time, temperature,
+ *                       angle, electric current, substance amount, and luminous intensity, in that
+ *                       order.
  * \return \ier
  */
 int cg_expfull_write(CGNS_ENUMT(DataType_t) DataType, const void * exponents)
@@ -15952,8 +18875,10 @@ int cg_expfull_write(CGNS_ENUMT(DataType_t) DataType, const void * exponents)
 /**
  * \ingroup  DataConversionFactors
  *
- * \brief  Get conversion factors data type
- * \param[out] DataType   Data type in which the conversion factors are recorded. Admissible data types for the exponents are RealSingle and RealDouble.
+ * \brief Get conversion factors data type
+ * \param[out] DataType Data type in which the conversion factors are recorded.
+ *                      Admissible data types for the exponents are RealSingle
+ *                      and RealDouble.
  * \return \ier
  */
 int cg_conversion_info(CGNS_ENUMT(DataType_t) *DataType)
@@ -15977,15 +18902,19 @@ int cg_conversion_info(CGNS_ENUMT(DataType_t) *DataType)
  * \ingroup  DataConversionFactors
  *
  * \brief Read conversion factors
- * \param[out] ConversionFactors  Two-element array containing the scaling and offset factors. 
+ * \param[out] ConversionFactors Two-element array containing the scaling and offset factors.
  * \return \ier
  *
- * \details   The DataConversion_t data structure contains factors to convert the nondimensional data to "raw" dimensional data. The scaling and offset factors are contained in the two-element array ConversionFactors. In pseudo-Fortran, the conversion process is as follows:
-
-   ConversionScale  = ConversionFactors(1)
-   ConversionOffset = ConversionFactors(2)
-   Data(raw) = Data(nondimensional)*ConversionScale + ConversionOffset
-
+ * \details The DataConversion_t data structure contains factors to convert the nondimensional
+ *          data to "raw" dimensional data. The scaling and offset factors are contained in the
+ *          two-element array ConversionFactors. In pseudo-Fortran, the conversion process is as follows:
+ *
+ *          \code{C}
+ *            ConversionScale  = ConversionFactors(1)
+ *            ConversionOffset = ConversionFactors(2)
+ *            Data(raw) = Data(nondimensional)*ConversionScale + ConversionOffset
+ *          \endcode
+ *
  */
 int cg_conversion_read(void *ConversionFactors)
 {
@@ -16014,9 +18943,10 @@ int cg_conversion_read(void *ConversionFactors)
 /**
  * \ingroup  DataConversionFactors
  *
- * \brief  Write conversion factors
- * \param[in] DataType   Data type in which the conversion factors are recorded. Admissible data types for the exponents are RealSingle and RealDouble.
- * \param[in] ConversionFactors  Two-element array containing the scaling and offset factors. 
+ * \brief Write conversion factors
+ * \param[in]  DataType          Data type in which the conversion factors are recorded. Admissible data
+ *                               types for the exponents are `RealSingle` and `RealDouble`.
+ * \param[in]  ConversionFactors Two-element array containing the scaling and offset factors.
  * \return \ier
  */
 int cg_conversion_write(CGNS_ENUMT(DataType_t) DataType,
@@ -16069,19 +18999,22 @@ int cg_conversion_write(CGNS_ENUMT(DataType_t) DataType,
 /**
  * \ingroup  DataClass
  *
- * \brief  Read data class
- * \param[out] dataclass  Data class for the nodes at this level. See below for the data classes currently supported in CGNS.
+ * \brief Read data class
+ * \param[out] dataclass Data class for the nodes at this level. See below for the data classes
+ *                       currently supported in CGNS.
  * \return \ier
  *
  * \details The data classes currently supported in CGNS are:
-
-    	Dimensional	   	Regular dimensional data.
-	NormalizedByDimensional		Nondimensional data that is normalized by dimensional reference quantities.
-	NormalizedByUnknownDimensional		All fields and reference data are nondimensional.
-	NondimensionalParameter		Nondimensional parameters such as Mach number and lift coefficient.
-	DimensionlessConstant		Constant such as π.
-
-These classes are declared within typedef DataClass_t in cgnslib.h, and as parameters in cgnslib_f.h. 
+ *
+ *  <table>
+ *    <tr><td> <b>Dimensional</b> <td>Regular dimensional data.
+ *    <tr><td> <b>NormalizedByDimensional</b>  <td>Nondimensional data that is normalized by dimensional reference quantities.
+ *    <tr><td> <b>NormalizedByUnknownDimensional</b> <td>All fields and reference data are nondimensional.
+ *    <tr><td> <b>NondimensionalParameter</b>  <td>Nondimensional parameters such as Mach number and lift coefficient.
+ *    <tr><td> <b>DimensionlessConstant</b>   <td>Constant such as π.
+ *  </table>
+ *
+ * These classes are declared within typedef DataClass_t in cgnslib.h, and as parameters in cgnslib_f.h.
  */
 int cg_dataclass_read(CGNS_ENUMT(DataClass_t) *dataclass)
 {
@@ -16104,19 +19037,22 @@ int cg_dataclass_read(CGNS_ENUMT(DataClass_t) *dataclass)
 /**
  * \ingroup  DataClass
  *
- * \brief  Write data class
- * \param[in] dataclass  Data class for the nodes at this level. See below for the data classes currently supported in CGNS.
+ * \brief Write data class
+ * \param[in]  dataclass Data class for the nodes at this level. See below for the data classes
+ *                       currently supported in CGNS.
  * \return \ier
  *
  * \details The data classes currently supported in CGNS are:
-
-    	Dimensional	   	Regular dimensional data.
-	NormalizedByDimensional		Nondimensional data that is normalized by dimensional reference quantities.
-	NormalizedByUnknownDimensional		All fields and reference data are nondimensional.
-	NondimensionalParameter		Nondimensional parameters such as Mach number and lift coefficient.
-	DimensionlessConstant		Constant such as π.
-
-These classes are declared within typedef DataClass_t in cgnslib.h, and as parameters in cgnslib_f.h. 
+ *
+ *  <table>
+ *    <tr><td> <b>Dimensional</b> <td>Regular dimensional data.
+ *    <tr><td> <b>NormalizedByDimensional</b>  <td>Nondimensional data that is normalized by dimensional reference quantities.
+ *    <tr><td> <b>NormalizedByUnknownDimensional</b> <td>All fields and reference data are nondimensional.
+ *    <tr><td> <b>NondimensionalParameter</b>  <td>Nondimensional parameters such as Mach number and lift coefficient.
+ *    <tr><td> <b>DimensionlessConstant</b>   <td>Constant such as π.
+ *  </table>
+ *
+ *  These classes are declared within typedef \e DataClass_t in cgnslib.h, and as parameters in cgnslib_f.h.
  */
 int cg_dataclass_write(CGNS_ENUMT(DataClass_t) dataclass)
 {
@@ -16144,8 +19080,11 @@ int cg_dataclass_write(CGNS_ENUMT(DataClass_t) dataclass)
 /**
  * \ingroup  GridLocation
  *
- * \brief  Read grid location
- * \param[out] GridLocation  Location in the grid. The admissible locations are CG_Null, CG_UserDefined, Vertex, CellCenter, FaceCenter, IFaceCenter, JFaceCenter, KFaceCenter, and EdgeCenter.
+ * \brief Read grid location
+ * \param[out] GridLocation Location in the grid. The admissible locations
+ *                          are `CG_Null`, `CG_UserDefined`, `Vertex`,
+ *                          `CellCenter`, `FaceCenter`, `IFaceCenter`,
+ *                          `JFaceCenter`, `KFaceCenter`, and `EdgeCenter`.
  * \return \ier
  *
  */
@@ -16181,8 +19120,11 @@ int cg_gridlocation_read(CGNS_ENUMT(GridLocation_t) *GridLocation)
 /**
  * \ingroup  GridLocation
  *
- * \brief  Write grid location
- * \param[in] GridLocation  Location in the grid. The admissible locations are CG_Null, CG_UserDefined, Vertex, CellCenter, FaceCenter, IFaceCenter, JFaceCenter, KFaceCenter, and EdgeCenter.
+ * \brief Write grid location
+ * \param[in] GridLocation Location in the grid. The admissible locations
+ *                         are `CG_Null`, `CG_UserDefined`, `Vertex`,
+ *                         `CellCenter`, `FaceCenter`, `IFaceCenter`,
+ *                         `JFaceCenter`, `KFaceCenter`, and `EdgeCenter`.
  * \return \ier
  *
  */
@@ -16272,8 +19214,8 @@ int cg_gridlocation_write(CGNS_ENUMT(GridLocation_t) GridLocation)
 /**
  * \ingroup  OrdinalValue
  *
- * \brief  Read ordinal value
- * \param[out] Ordinal  Any integer value. 
+ * \brief Read ordinal value
+ * \param[out] Ordinal Any integer value.
  * \return \ier
  *
  */
@@ -16297,8 +19239,8 @@ int cg_ordinal_read(int *Ordinal)
 /**
  * \ingroup  OrdinalValue
  *
- * \brief  Write ordinal value
- * \param[in] Ordinal  Any integer value. 
+ * \brief Write ordinal value
+ * \param[in]  Ordinal Any integer value.
  * \return \ier
  *
  */
@@ -16328,8 +19270,9 @@ int cg_ordinal_write(int Ordinal)
 /**
  * \ingroup  Links
  *
- * \brief  Test if a node is a link
- * \param[out] path_length  Length of the path name of the linked node. The value 0 is returned if the node is not a link
+ * \brief Test if a node is a link
+ * \param[out] path_length Length of the path name of the linked node. The
+ *                         value 0 is returned if the node is not a link
  * \return \ier
  *
  */
@@ -16358,14 +19301,19 @@ int cg_is_link(int *path_length)
 /**
  * \ingroup  Links
  *
- * \brief  Get path information for a link at the current location
- * \param[out] filename  Name of the linked file, or empty string if the link is within the same file.
- * \param[out] link_path  Path name of the node which the link points to.
+ * \brief Get path information for a link at the current location
+ *
+ * \param[out] filename  Name of the linked file, or an empty string if the
+ *                       link is within the same file.
+ * \param[out] link_path Path name of the node the link points to.
  *
  * \return \ier
  *
- * \details  Use cg_goto(_f) to position to a location in the file prior to calling these routines.
- *           Memory is allocated by the library for the return values of the C function cg_link_read. This memory should be freed by the user when no longer needed by calling cg_free(filename) and cg_free(link_path).
+ * \details Use cg_goto() to position to a location in the file prior
+ *          to calling these routines. Memory is allocated by the library
+ *          for the return values of the C function cg_link_read().
+ *          This memory should be freed by the user when no longer needed
+ *          by calling \p cg_free(filename) and \p cg_free(link_path).
  *
  */
 int cg_link_read(char **filename, char **link_path)
@@ -16400,21 +19348,24 @@ int cg_link_read(char **filename, char **link_path)
 /**
  * \ingroup  Links
  *
- * \brief   Create a link at the current location
- * 
- * \param[in] nodename  Name of the link node to create, e.g., GridCoordinates.
- * \param[in] filename  Name of the linked file, or empty string if the link is within the same file.
- * \param[in] name_in_file  Path name of the node which the link points to. This can be a simple or a compound name, e.g., Base/Zone 1/GridCoordinates.
+ * \brief Create a link at the current location
+ *
+ * \param[in]  nodename     Name of the link node to create, e.g., GridCoordinates.
+ * \param[in]  filename     Name of the linked file, or an empty string if the link is within the same
+ *                          file.
+ * \param[in]  name_in_file Path name of the node the link points to. This can be a simple or a
+ *                          compound name, e.g., Base/Zone 1/GridCoordinates.
  *
  * \return \ier
  *
- * \details  Use cg_goto(_f) to position to a location in the file prior to calling these routines.
-
-When using cg_link_write, the node being linked to does not have to exist when the link is created. However, when the link is used, an error will occur if the linked-to node does not exist.
-
-Only nodes that support child nodes will support links.
-
-It is assumed that the CGNS version for the file containing the link, as determined by the CGNSLibraryVersion_t node, is also applicable to filename, the file containing the linked node.
+ * \details Use cg_goto() to position to a location in the file prior to calling these routines.
+ *          When using cg_link_write(), the node being linked to does not have to exist when the link
+ *          is created. However, when the link is used, an error will occur if the linked-to node does not exist.
+ *
+ *          Only nodes that support child nodes will support links.
+ *
+ *          It is assumed that the CGNS version for the file containing the link, as determined by the
+ *          CGNSLibraryVersion_t node, is also applicable to \p filename, the file containing the linked node.
  *
  */
 int cg_link_write(const char * nodename, const char * filename, const char * name_in_file)
@@ -16475,7 +19426,18 @@ int cg_link_write(const char * nodename, const char * filename, const char * nam
         strcmp(posit->label,"Area_t") &&
         strcmp(posit->label,"GridConnectivityProperty_t") &&
         strcmp(posit->label,"Periodic_t") &&
-        strcmp(posit->label,"AverageInterface_t")) {
+        strcmp(posit->label,"AverageInterface_t") &&
+        strcmp(posit->label,"ParticleZone_t") &&
+        strcmp(posit->label,"ParticleCoordinates_t") &&
+        strcmp(posit->label,"ParticleSolution_t") &&
+        strcmp(posit->label,"ParticleIterativeData_t") &&
+        strcmp(posit->label,"ParticleEquationSet_t") &&
+        strcmp(posit->label,"ParticleGoverningEquations_t") &&
+        strcmp(posit->label,"ParticleCollisionModel_t") &&
+        strcmp(posit->label,"ParticleBreakupModel_t") &&
+        strcmp(posit->label,"ParticleForceModel_t") &&
+        strcmp(posit->label,"ParticleWallInteractionModel_t") &&
+        strcmp(posit->label,"ParticlePhaseChangeModel_t")) {
         cgi_error("Links not supported under '%s' type node",posit->label);
         return CG_INCORRECT_PATH;
     }
@@ -16505,20 +19467,23 @@ int cg_link_write(const char * nodename, const char * filename, const char * nam
  * \ingroup  UserDefinedData
  *
  *
- * \brief  Get number of UserDefinedData_t nodes
- * 
- * \param[out] nuser_data  Number of UserDefinedData_t nodes under current node.
+ * \brief Get the number of UserDefinedData_t nodes
+ *
+ * \param[out] nuser_data Number of UserDefinedData_t nodes under current node.
  *
  * \return \ier
  *
- * \details    After accessing a particular UserDefinedData_t node using cg_goto,
+ * \details After accessing a particular UserDefinedData_t node using cg_goto(),
  *             the Point Set functions may be used to read or write point set information for the node.
- *             The function cg_gridlocation_write may also be used to specify the location of the data with respect to the grid (e.g., Vertex or FaceCenter).
+ *             The function cg_gridlocation_write() may also be used to specify the location of the data
+ *             with respect to the grid (e.g., Vertex or FaceCenter).
  *
- *  Multiple levels of UserDefinedData_t nodes may be written and retrieved by positioning via cg_goto. E.g.,
- *
- *   ier = cg_goto(fn, B, "Zone_t", Z, "UserDefinedData_t", ud1, 
+ *             Multiple levels of UserDefinedData_t nodes may be written and retrieved by positioning
+ *             via cg_goto(). E.g.,
+ *  \code{C}
+ *  ier = cg_goto(fn, B, "Zone_t", Z, "UserDefinedData_t", ud1,
  *                "UserDefinedData_t", ud2, "UserDefinedData_t", ud3, "end");
+ *  \endcode
  *
  */
 int cg_nuser_data(int *nuser_data)
@@ -16534,7 +19499,10 @@ int cg_nuser_data(int *nuser_data)
  *  Family_t, CGNSBase_t, Gravity_t, Axisymmetry_t, RotatingCoordinates_t,
  *  BCProperty_t, WallFunction_t, Area_t, UserDefinedData_t,
  *  GridConnectivityProperty_t, Periodic_t, AverageInterface_t
- *  FamilyBCDataSet_t
+ *  FamilyBCDataSet_t,  ParticleZone_t, ParticleCoordinates_t, ParticleSolution_t,
+ *  ParticleIterativeData_t, ParticleEquationSet_t, ParticleGoverningEquations_t,
+ *  ParticleCollisionModel_t,  ParticleBreakupModel_t, ParticleForceModel_t,
+ *  ParticleWallInteractionModel_t,  ParticlePhaseChangeModel_t, ParticleGoverningEquations_t
  */
 
      /* This is valid and used during write as well as read mode. */
@@ -16592,13 +19560,18 @@ int cg_nuser_data(int *nuser_data)
         (*nuser_data) = ((cgns_zconn *)posit->posit)->nuser_data;
     else if (strcmp(posit->label,"FlowSolution_t")==0)
         (*nuser_data) = ((cgns_sol *)posit->posit)->nuser_data;
+    else if (strcmp(posit->label,"ParticleSolution_t")==0)
+       (*nuser_data) = ((cgns_psol *)posit->posit)->nuser_data;
     else if (strcmp(posit->label,"GridCoordinates_t")==0)
         (*nuser_data) = ((cgns_zcoor *)posit->posit)->nuser_data;
+    else if (strcmp(posit->label,"ParticleCoordinates_t")==0)
+       (*nuser_data) = ((cgns_pcoor *)posit->posit)->nuser_data;
     else if (strcmp(posit->label,"RigidGridMotion_t")==0)
         (*nuser_data) = ((cgns_rmotion *)posit->posit)->nuser_data;
     else if (strcmp(posit->label,"ArbitraryGridMotion_t")==0)
         (*nuser_data) = ((cgns_amotion *)posit->posit)->nuser_data;
-    else if (strcmp(posit->label,"ZoneIterativeData_t")==0)
+    else if (strcmp(posit->label,"ZoneIterativeData_t")==0 ||
+             strcmp(posit->label,"ParticleIterativeData_t")==0)
         (*nuser_data) = ((cgns_ziter *)posit->posit)->nuser_data;
     else if (strcmp(posit->label,"BaseIterativeData_t")==0)
         (*nuser_data) = ((cgns_biter *)posit->posit)->nuser_data;
@@ -16632,6 +19605,18 @@ int cg_nuser_data(int *nuser_data)
          (*nuser_data) = ((cgns_caverage *)posit->posit)->nuser_data;
     else if (strcmp(posit->label,"ZoneSubRegion_t")==0)
          (*nuser_data) = ((cgns_subreg *)posit->posit)->nuser_data;
+    else if (strcmp(posit->label,"ParticleZone_t")==0)
+         (*nuser_data) = ((cgns_pzone *)posit->posit)->nuser_data;
+    else if (strcmp(posit->label,"ParticleEquationSet_t")==0)
+         (*nuser_data) = ((cgns_pequations *)posit->posit)->nuser_data;
+    else if (strcmp(posit->label,"ParticleGoverningEquations_t")==0)
+         (*nuser_data) = ((cgns_pgoverning *)posit->posit)->nuser_data;
+    else if (strcmp(posit->label,"ParticleCollisionModel_t")==0 ||
+             strcmp(posit->label,"ParticleBreakupModel_t")==0 ||
+             strcmp(posit->label,"ParticleForceModel_t")==0 ||
+             strcmp(posit->label,"ParticleWallInteractionModel_t")==0 ||
+             strcmp(posit->label,"ParticlePhaseChangeModel_t")==0)
+         (*nuser_data) = ((cgns_pmodel *)posit->posit)->nuser_data;
 
     else {
         cgi_error("UserDefinedData_t node not supported under '%s' type node",posit->label);
@@ -16645,10 +19630,10 @@ int cg_nuser_data(int *nuser_data)
  * \ingroup  UserDefinedData
  *
  *
- * \brief  Get name of an UserDefinedData_t node
- * 
- * \param[in]  Index  	User-defined data index number, where 1 ≤ Index ≤ nuser_data.
- * \param[out] UserDataName  Name of the UserDefinedData_t node. 
+ * \brief Get name of an UserDefinedData_t node
+ *
+ * \param[in]  Index        User-defined data index number, where 1 ≤ Index ≤ nuser_data.
+ * \param[out] UserDataName Name of the UserDefinedData_t node.
  *
  * \return \ier
  *
@@ -16675,9 +19660,9 @@ int cg_user_data_read(int Index, char *UserDataName)
  * \ingroup  UserDefinedData
  *
  *
- * \brief  Create UserDefinedData_t node
- * 
- * \param[in] UserDataName  Name of the UserDefinedData_t node. 
+ * \brief Create UserDefinedData_t node
+ *
+ * \param[in]  UserDataName Name of the UserDefinedData_t node.
  *
  * \return \ier
  *
@@ -16717,10 +19702,12 @@ int cg_user_data_write(const char * UserDataName)
  * \ingroup  RotatingCoordinates
  *
  *
- * \brief  Read rotating coordinates data
- * 
- * \param[out] rot_rate   Components of the angular velocity of the grid about the center of rotation. (In Fortran, this is an array of Real*4 values.)
- * \param[out] rot_center   Coordinates of the center of rotation. (In Fortran, this is an array of Real*4 values.)
+ * \brief Read rotating coordinates data
+ *
+ * \param[out] rot_rate   Components of the angular velocity of the grid about the center of rotation.
+ *                        (In Fortran, this is an array of Real*4 values.)
+ * \param[out] rot_center Coordinates of the center of rotation. (In Fortran, this is an array of
+ *                        Real*4 values.)
  *
  * \return \ier
  *
@@ -16760,9 +19747,11 @@ int cg_rotating_read(float *rot_rate, float *rot_center)
  *
  *
  * \brief Create rotating coordinates data
- * 
- * \param[in] rot_rate   Components of the angular velocity of the grid about the center of rotation. (In Fortran, this is an array of Real*4 values.)
- * \param[in] rot_center   Coordinates of the center of rotation. (In Fortran, this is an array of Real*4 values.)
+ *
+ * \param[in]  rot_rate   Components of the angular velocity of the grid about the center of rotation.
+ *                        (In Fortran, this is an array of Real*4 values.)
+ * \param[in]  rot_center Coordinates of the center of rotation. (In Fortran, this is an array of
+ *                        Real*4 values.)
  *
  * \return \ier
  *
@@ -16840,10 +19829,13 @@ int cg_rotating_write(float const *rot_rate, float const *rot_center)
  * \ingroup  PointSets
  *
  *
- * \brief   Get point set information
- * 
- * \param[out] ptset_type   The point set type; either PointRange for a range of points or cells, or PointList for a list of discrete points or cells.
- * \param[out] npnts  The number of points or cells in the point set. For a point set type of PointRange, npnts is always two. For a point set type of PointList, npnts is the number of points or cells in the list.
+ * \brief Get point set information
+ *
+ * \param[out] ptset_type The point set type; either PointRange for a range of points or cells, or
+ *                        PointList for a list of discrete points or cells.
+ * \param[out] npnts      The number of points or cells in the point set. For a point set type of
+ *                        PointRange, npnts is always two. For a point set type of PointList, npnts is
+ *                        the number of points or cells in the list.
  *
  * \return \ier
  *
@@ -16872,9 +19864,12 @@ int cg_ptset_info(CGNS_ENUMT(PointSetType_t) *ptset_type, cgsize_t *npnts)
  * \ingroup  PointSets
  *
  *
- * \brief  Read point set data
- *  
- * \param[out] pnts  The array of point or cell indices defining the point set. There should be npnts values, each of dimension IndexDimension (i.e., 1 for unstructured grids, and 2 or 3 for structured grids with 2-D or 3-D elements, respectively).
+ * \brief Read point set data
+ *
+ * \param[out] pnts The array of point or cell indices defining the point set. There should be
+ *                  npnts values, each of dimension IndexDimension (i.e., 1 for unstructured
+ *                  grids, and 2 or 3 for structured grids with 2-D or 3-D elements,
+ *                  respectively).
  *
  * \return \ier
  *
@@ -16910,11 +19905,17 @@ int cg_ptset_read(cgsize_t *pnts)
  * \ingroup  PointSets
  *
  *
- * \brief   Write point set data
- * 
- * \param[in] ptset_type   The point set type; either PointRange for a range of points or cells, or PointList for a list of discrete points or cells.
- * \param[in] npnts  The number of points or cells in the point set. For a point set type of PointRange, npnts is always two. For a point set type of PointList, npnts is the number of points or cells in the list.
- * \param[in] pnts The array of point or cell indices defining the point set. There should be npnts values, each of dimension IndexDimension (i.e., 1 for unstructured grids, and 2 or 3 for structured grids with 2-D or 3-D elements, respectively).
+ * \brief Write point set data
+ *
+ * \param[in]  ptset_type The point set type; either PointRange for a range of points or cells, or
+ *                        PointList for a list of discrete points or cells.
+ * \param[in]  npnts      The number of points or cells in the point set. For a point set type of
+ *                        PointRange, npnts is always two. For a point set type of PointList, npnts is
+ *                        the number of points or cells in the list.
+ * \param[in]  pnts       The array of point or cell indices defining the point set. There should be
+ *                        npnts values, each of dimension IndexDimension (i.e., 1 for unstructured
+ *                        grids, and 2 or 3 for structured grids with 2-D or 3-D elements,
+ *                        respectively).
  *
  * \return \ier
  *
@@ -17008,15 +20009,17 @@ int cg_ptset_write(CGNS_ENUMT(PointSetType_t) ptset_type, cgsize_t npnts,
 \*****************************************************************************/
 
 /**
- * \ingroup  BoundaryConditionDatasets
+ * \ingroup BoundaryConditionDatasets
  *
  *
- * \brief   Get number of family boundary condition datasets
- * 
+ * \brief Get the number of family boundary condition datasets
+ *
  * \param[out] n_dataset Number of BCDataSet nodes under the current FamilyBC_t node.
  * \return \ier
  *
- * \details  The above functions are applicable to BCDataSet_t nodes that are used to define boundary conditions for a CFD family, and thus are children of a FamilyBC_t node. The FamilyBC_t node must first be accessed using cg_goto.
+ * \details The above functions apply to BCDataSet_t nodes that are used to
+ *          define boundary conditions for a CFD family and thus are children of a
+ *          FamilyBC_t node. The FamilyBC_t node must first be accessed using cg_goto().
  */
 int cg_bcdataset_info(int *n_dataset)
 {
@@ -17043,19 +20046,23 @@ int cg_bcdataset_info(int *n_dataset)
 
 
 /**
- * \ingroup  BoundaryConditionDatasets
+ * \ingroup BoundaryConditionDatasets
  *
  *
- * \brief  Read family boundary condition dataset info
- * 
- * \param[in] index  Dataset index number, where 1 ≤ index ≤ ndataset. 
- * \param[out] name  Name of dataset.
- * \param[out] BCType  Simple boundary condition type for the dataset. The supported types are listed in the table of Simple Boundary Condition Types in the SIDS manual, but note that FamilySpecified does not apply here. 
- * \param[out] DirichletFlag  Flag indicating if the dataset contains Dirichlet data.
- * \param[out] NeumannFlag   Flag indicating if the dataset contains Neumann data. 
+ * \brief Read family boundary condition dataset info
+ *
+ * \param[in]  index         Dataset index number, where 1 ≤ index ≤ ndataset.
+ * \param[out] name          Name of dataset.
+ * \param[out] BCType        Simple boundary condition type for the dataset. The supported types are
+ *                           listed in the table of Simple Boundary Condition Types in the SIDS manual,
+ *                           but note that FamilySpecified does not apply here.
+ * \param[out] DirichletFlag Flag indicating if the dataset contains Dirichlet data.
+ * \param[out] NeumannFlag   Flag indicating if the dataset contains Neumann data.
  * \return \ier
  *
- * \details The above functions are applicable to BCDataSet_t nodes that are used to define boundary conditions for a CFD family, and thus are children of a FamilyBC_t node. The FamilyBC_t node must first be accessed using cg_goto. 
+ * \details The above functions apply to BCDataSet_t nodes that define boundary
+ *          conditions for a CFD family and thus are children of a FamilyBC_t node. The FamilyBC_t
+ *          node must first be accessed using cg_goto().
  */
 int cg_bcdataset_read(int index, char *name, CGNS_ENUMT(BCType_t) *BCType,
               int *DirichletFlag, int *NeumannFlag)
@@ -17082,18 +20089,25 @@ int cg_bcdataset_read(int index, char *name, CGNS_ENUMT(BCType_t) *BCType,
 
 
 /**
- * \ingroup  BoundaryConditionDatasets
+ * \ingroup BoundaryConditionDatasets
  *
  *
- * \brief  Write family boundary condition dataset info 
- * 
- * \param[in] name  Name of dataset.
- * \param[in] BCType  Simple boundary condition type for the dataset. The supported types are listed in the table of Simple Boundary Condition Types in the SIDS manual, but note that FamilySpecified does not apply here.
- * \param[in] BCDataType  Type of boundary condition in the dataset (i.e., for a BCData_t child node). Admissible types are Dirichlet and Neumann.
+ * \brief Write family boundary condition dataset info
+ *
+ * \param[in]  name       Name of dataset.
+ * \param[in]  BCType     Simple boundary condition type for the dataset. The supported types are
+ *                        listed in the table of Simple Boundary Condition Types in the SIDS manual,
+ *                        but note that FamilySpecified does not apply here.
+ * \param[in]  BCDataType Type of boundary condition in the dataset (i.e., for a BCData_t child node).
+ *                        Admissible types are Dirichlet and Neumann.
  * \return \ier
  *
- * \details The above functions are applicable to BCDataSet_t nodes that are used to define boundary conditions for a CFD family, and thus are children of a FamilyBC_t node. The FamilyBC_t node must first be accessed using cg_goto. 
- *  The first time cg_bcdataset_write is called with a particular DatasetName, BCType, and BCDataType, a new BCDataSet_t node is created, with a child BCData_t node. Subsequent calls with the same DatasetName and BCType may be made to add additional BCData_t nodes, of type BCDataType, to the existing BCDataSet_t node. 
+ * \details The above functions apply to BCDataSet_t nodes that define
+ *          boundary conditions for a CFD family, and thus are children of a FamilyBC_t node.
+ *          The FamilyBC_t node must first be accessed using cg_goto(). The first time cg_bcdataset_write()
+ *          is called with a particular DatasetName, BCType, and BCDataType, a new BCDataSet_t node is
+ *          created, with a child BCData_t node. Subsequent calls with the same DatasetName and BCType
+ *          may be made to add additional BCData_t nodes, of type BCDataType, to the existing BCDataSet_t node.
  */
 int cg_bcdataset_write(const char *name, CGNS_ENUMT(BCType_t) BCType,
                        CGNS_ENUMT(BCDataType_t) BCDataType)
@@ -17219,16 +20233,17 @@ int cg_bcdataset_write(const char *name, CGNS_ENUMT(BCType_t) BCType,
  * \ingroup  ElementConnectivity
  *
  *
- * \brief Get number of nodes for an element type.
- * 
- * \param[in] type  Type of element. See the eligible types for ElementType_t in the Typedefs section.
- * \param[out] npe  Number of nodes for an element of type type. 
+ * \brief Get the number of nodes for an element type.
+ *
+ * \param[in]  type Type of element. See the eligible types for ElementType_t in the Typedefs
+ *                  section.
+ * \param[out] npe  Number of nodes for an element of type type.
  * \return \ier
  *
  */
 int cg_npe(CGNS_ENUMT( ElementType_t )  type, int *npe)
 {
-/* the index in this list IS the cgnslib.h/ElementType_t index */
+/* the index in this list IS the cgnslib.h ElementType_t index */
     static int el_size[NofValidElementTypes] = {
         0,  /* ElementTypeNull */
         0,  /* ElementTypeUserDefined */
@@ -17362,34 +20377,48 @@ int cg_npe(CGNS_ENUMT( ElementType_t )  type, int *npe)
 /**
  * \ingroup DeletingANode
  *
- * \brief  Delete a node
+ * \brief Delete a node
  *
- * \param[in] node_name  Name of the child to be deleted.
+ * \param[in]  node_name Name of the child to be deleted.
  * \return \ier
  *
- * \details   The function cg_delete_node is used is conjunction with cg_goto. Once positioned at a parent node with cg_goto, a child of this node can be deleted with cg_delete_node. This function requires a single argument, NodeName, which is the name of the child to be deleted.
-
-Since the highest level that can be pointed to with cg_goto is a base node for a CGNS database (CGNSBase_t), the highest-level nodes that can be deleted are the children of a CGNSBase_t node. In other words, nodes located directly under the ADF (or HDF) root node (CGNSBase_t and CGNSLibraryVersion_t) can not be deleted with cg_delete.
-
-A few other nodes are not allowed to be deleted from the database because these are required nodes as defined by the SIDS, and deleting them would make the file non-CGNS compliant. These are:
-
-    Under Zone_t: ZoneType
-    Under GridConnectivity1to1_t: PointRange, PointRangeDonor, Transform
-    Under OversetHoles_t: PointList and any IndexRange_t
-    Under GridConnectivity_t: PointRange, PointList, CellListDonor, PointListDonor
-    Under BC_t: PointList, PointRange
-    Under GeometryReference_t: GeometryFile, GeometryFormat
-    Under Elements_t: ElementRange, ElementConnectivity
-    Under Gravity_t: GravityVector
-    Under Axisymmetry_t: AxisymmetryReferencePoint, AxisymmetryAxisVector
-    Under RotatingCoordinates_t: RotationCenter, RotationRateVector
-    Under Periodic_t: RotationCenter, RotationAngle, Translation
-    Under AverageInterface_t: AverageInterfaceType
-    Under WallFunction_t: WallFunctionType
-    Under Area_t: AreaType, SurfaceArea, RegionName 
-
-When a child node is deleted, both the database and the file on disk are updated to remove the node. One must be careful not to delete a node from within a loop of that node type. For example, if the number of zones below a CGNSBase_t node is nzones, a zone should never be deleted from within a zone loop! By deleting a zone, the total number of zones (nzones) changes, as well as the zone indexing. Suppose for example that nzones is 5, and that the third zone is deleted. After calling cg_delete_node, nzones is changed to 4, and the zones originally indexed 4 and 5 are now indexed 3 and 4.
+ * \details The function cg_delete_node() is used is conjunction with cg_goto(). Once
+ *          positioned at a parent node with cg_goto(), a child of this node can be
+ *          deleted with cg_delete_node(). This function requires a single argument,
+ *          \e NodeName, which is the name of the child to be deleted.
  *
+ *          Since the highest level that can be pointed to with cg_goto() is a base node
+ *          for a CGNS database (CGNSBase_t), the highest-level nodes that can be deleted
+ *          are the children of a CGNSBase_t node. In other words, nodes located directly
+ *          under the ADF (or HDF) root node (CGNSBase_t and CGNSLibraryVersion_t) can not
+ *          be deleted with cg_delete().
+ *
+ *          A few other nodes are not allowed to be deleted from the database because these
+ *          are required nodes as defined by the SIDS, and deleting them would make the file
+ *          non-CGNS compliant. These are:
+ *
+ *          - Under Zone_t: ZoneType
+ *          - Under GridConnectivity1to1_t: PointRange, PointRangeDonor, Transform
+ *          - Under OversetHoles_t: PointList and any IndexRange_t
+ *          - Under GridConnectivity_t: PointRange, PointList, CellListDonor, PointListDonor
+ *          - Under BC_t: PointList, PointRange
+ *          - Under GeometryReference_t: GeometryFile, GeometryFormat
+ *          - Under Elements_t: ElementRange, ElementConnectivity
+ *          - Under Gravity_t: GravityVector
+ *          - Under Axisymmetry_t: AxisymmetryReferencePoint, AxisymmetryAxisVector
+ *          - Under RotatingCoordinates_t: RotationCenter, RotationRateVector
+ *          - Under Periodic_t: RotationCenter, RotationAngle, Translation
+ *          - Under AverageInterface_t: AverageInterfaceType
+ *          - Under WallFunction_t: WallFunctionType
+ *          - Under Area_t: AreaType, SurfaceArea, RegionName
+ *
+ *          When a child node is deleted, both the database and the file on disk are updated to remove
+ *          the node. One must be careful not to delete a node from within a loop of that node type.
+ *          For example, if the number of zones below a CGNSBase_t node is nzones, a zone should never
+ *          be deleted from within a zone loop! By deleting a zone, the total number of zones (nzones)
+ *          changes, as well as the zone indexing. Suppose for example that nzones is 5, and that the
+ *          third zone is deleted. After calling cg_delete_node(), nzones is changed to 4, and the zones
+ *          originally indexed 4 and 5 are now indexed 3 and 4.
  *
  */
 int cg_delete_node(const char *node_name)
@@ -17509,6 +20538,15 @@ int cg_delete_node(const char *node_name)
                 }
             }
         }
+        else if (strcmp(node_label, "ParticleZone_t") == 0) {
+           CGNS_DELETE_SHIFT(npzones, pzone, cgi_free_particle)
+           if (parent->pzonemap) {
+               /* It is costly since indexing is recomputed */
+               if (cgi_map_contains(parent->pzonemap, node_name) == 1) {
+                   cgi_map_del_shift_item(parent->pzonemap, node_name);
+               }
+           }
+       }
         else if (strcmp(node_label,"Family_t")==0)
             CGNS_DELETE_SHIFT(nfamilies, family, cgi_free_family)
         else if (strcmp(node_label,"IntegralData_t")==0)
@@ -17529,6 +20567,8 @@ int cg_delete_node(const char *node_name)
             CGNS_DELETE_CHILD(converg, cgi_free_converg)
         else if (strcmp(node_name,"FlowEquationSet")==0)
             CGNS_DELETE_CHILD(equations, cgi_free_equations)
+        else if (strcmp(node_name,"ParticleEquationSet")==0)
+            CGNS_DELETE_CHILD(pequations, cgi_free_particle_equations)
         else if (strcmp(node_name,"DimensionalUnits")==0)
             CGNS_DELETE_CHILD(units, cgi_free_units)
         else if (strcmp(node_name,"ReferenceState")==0)
@@ -17591,8 +20631,37 @@ int cg_delete_node(const char *node_name)
             CGNS_DELETE_CHILD(rotating, cgi_free_rotating)
      /* ZoneType can not be deleted */
 
-/* Children of ZoneSubRegion_t */
-    } else if (strcmp(posit->label,"ZoneSubRegion_t")==0) {
+    }
+    else if(strcmp(posit->label,"ParticleZone_t")==0){
+       cgns_pzone *parent = (cgns_pzone *)posit->posit;
+       if (strcmp(node_label,"ParticleCoordinates_t")==0)
+           CGNS_DELETE_SHIFT(npcoor, pcoor, cgi_free_pcoor)
+       else if (strcmp(node_label,"ParticleSolution_t")==0)
+           CGNS_DELETE_SHIFT(nsols, sol, cgi_free_psol)
+       else if (strcmp(node_label,"IntegralData_t")==0)
+           CGNS_DELETE_SHIFT(nintegrals, integral, cgi_free_integral)
+       else if (strcmp(node_label,"UserDefinedData_t")==0)
+           CGNS_DELETE_SHIFT(nuser_data, user_data, cgi_free_user_data)
+       else if (strcmp(node_label,"Descriptor_t")==0)
+           CGNS_DELETE_SHIFT(ndescr, descr, cgi_free_descr)
+       else if (strcmp(node_label,"AdditionalFamilyName_t")==0)
+           CGNS_DELETE_SHIFT(nfamname, famname, cgi_free_famname)
+       else if (strcmp(node_label,"ParticleIterativeData_t")==0)
+           CGNS_DELETE_CHILD(piter, cgi_free_ziter)
+       else if (strcmp(node_name,"ReferenceState")==0)
+           CGNS_DELETE_CHILD(state, cgi_free_state)
+       else if (strcmp(node_name,"DataClass")==0)
+           parent->data_class = CGNS_ENUMV( DataClassNull );
+       else if (strcmp(node_name,"FamilyName")==0)
+           parent->family_name[0]='\0';
+       else if (strcmp(node_name,"DimensionalUnits")==0)
+           CGNS_DELETE_CHILD(units, cgi_free_units)
+       else if (strcmp(node_name,"ParticleEquationSet")==0)
+           CGNS_DELETE_CHILD(equations, cgi_free_particle_equations)
+
+       /* Children of ZoneSubRegion_t */
+    }
+    else if (strcmp(posit->label,"ZoneSubRegion_t")==0) {
         cgns_subreg *parent = (cgns_subreg *)posit->posit;
         if (strcmp(node_label,"UserDefinedData_t")==0)
             CGNS_DELETE_SHIFT(nuser_data, user_data, cgi_free_user_data)
@@ -17643,8 +20712,22 @@ int cg_delete_node(const char *node_name)
         else if (strcmp(node_name,"DimensionalUnits")==0)
             CGNS_DELETE_CHILD(units, cgi_free_units)
 
+/* Children of ParticleCoordinates_t */
+    } else if (strcmp(posit->label,"ParticleCoordinates_t")==0) {
+       cgns_pcoor *parent = (cgns_pcoor *)posit->posit;
+       if (strcmp(node_label,"DataArray_t")==0)
+           CGNS_DELETE_SHIFT(ncoords, coord, cgi_free_array)
+       else if (strcmp(node_label,"Descriptor_t")==0)
+           CGNS_DELETE_SHIFT(ndescr, descr, cgi_free_descr)
+       else if (strcmp(node_label,"UserDefinedData_t")==0)
+           CGNS_DELETE_SHIFT(nuser_data, user_data, cgi_free_user_data)
+       else if (strcmp(node_name,"DataClass")==0)
+           parent->data_class = CGNS_ENUMV( DataClassNull );
+       else if (strcmp(node_name,"DimensionalUnits")==0)
+           CGNS_DELETE_CHILD(units, cgi_free_units)
+
 /* Children of DataArray_t */
-    } else if (strcmp(posit->label,"DataArray_t")==0) {
+   } else if (strcmp(posit->label,"DataArray_t")==0) {
         cgns_array *parent = (cgns_array *)posit->posit;
         if (strcmp(node_label,"Descriptor_t")==0)
             CGNS_DELETE_SHIFT(ndescr, descr, cgi_free_descr)
@@ -17685,8 +20768,25 @@ int cg_delete_node(const char *node_name)
             for (n=0; n<2*index_dim; n++) parent->rind_planes[n] = 0;
         }
 
+/* Children of ParticleSolution_t */
+    } else if (strcmp(posit->label,"ParticleSolution_t")==0) {
+        cgns_psol *parent = (cgns_psol *)posit->posit;
+        if (strcmp(node_label,"Descriptor_t")==0)
+            CGNS_DELETE_SHIFT(ndescr, descr, cgi_free_descr)
+        else if (strcmp(node_label,"UserDefinedData_t")==0)
+            CGNS_DELETE_SHIFT(nuser_data, user_data, cgi_free_user_data)
+        else if (strcmp(node_label,"DataArray_t")==0)
+            CGNS_DELETE_SHIFT(nfields, field, cgi_free_array)
+        else if (strcmp(node_name,"PointList")==0 ||
+                 strcmp(node_name,"PointRange")==0)
+            CGNS_DELETE_CHILD(ptset, cgi_free_ptset)
+        else if (strcmp(node_name,"DataClass")==0)
+            parent->data_class = CGNS_ENUMV( DataClassNull );
+        else if (strcmp(node_name,"DimensionalUnits")==0)
+            CGNS_DELETE_CHILD(units, cgi_free_units)
+
 /* Children of ZoneGridConnectivity_t */
-    } else if (strcmp(posit->label,"ZoneGridConnectivity_t")==0) {
+   } else if (strcmp(posit->label,"ZoneGridConnectivity_t")==0) {
         cgns_zconn *parent = (cgns_zconn *)posit->posit;
         if (strcmp(node_label,"Descriptor_t")==0)
             CGNS_DELETE_SHIFT(ndescr, descr, cgi_free_descr)
@@ -17967,8 +21067,60 @@ int cg_delete_node(const char *node_name)
             parent->diffusion_model=0;
         }
 
+/* Children of ParticleEquationSet_t */
+    } else if (strcmp(posit->label,"ParticleEquationSet_t")==0) {
+       cgns_pequations *parent = (cgns_pequations *)posit->posit;
+       if (strcmp(node_label,"Descriptor_t")==0)
+           CGNS_DELETE_SHIFT(ndescr, descr, cgi_free_descr)
+       else if (strcmp(node_label,"UserDefinedData_t")==0)
+           CGNS_DELETE_SHIFT(nuser_data, user_data, cgi_free_user_data)
+       else if (strcmp(node_name,"DataClass")==0)
+           parent->data_class = CGNS_ENUMV( DataClassNull );
+       else if (strcmp(node_name,"DimensionalUnits")==0)
+           CGNS_DELETE_CHILD(units, cgi_free_units)
+       else if (strcmp(node_name,"ParticleGoverningEquations")==0)
+           CGNS_DELETE_CHILD(governing, cgi_free_particle_governing)
+       else if (strcmp(node_name,"ParticleCollisionModel")==0)
+           CGNS_DELETE_CHILD(collision, cgi_free_particle_model)
+       else if (strcmp(node_name,"ParticleBreakupModel")==0)
+           CGNS_DELETE_CHILD(breakup, cgi_free_particle_model)
+       else if (strcmp(node_name,"ParticleForceModel")==0)
+           CGNS_DELETE_CHILD(force, cgi_free_particle_model)
+       else if (strcmp(node_name,"ParticleWallInteractionModel")==0)
+           CGNS_DELETE_CHILD(wallinteract, cgi_free_particle_model)
+       else if (strcmp(node_name,"ParticlePhaseChangeModel")==0)
+           CGNS_DELETE_CHILD(phasechange, cgi_free_particle_model)
+       else if (strcmp(node_name,"EquationDimension")==0)
+           parent->equation_dim=0;
+
+/* Children of ParticleGoverningEquations_t */
+   } else if (strcmp(posit->label,"ParticleGoverningEquations_t")==0) {
+       cgns_pgoverning *parent = (cgns_pgoverning *)posit->posit;
+       if (strcmp(node_label,"Descriptor_t")==0)
+           CGNS_DELETE_SHIFT(ndescr, descr, cgi_free_descr)
+       else if (strcmp(node_label,"UserDefinedData_t")==0)
+           CGNS_DELETE_SHIFT(nuser_data, user_data, cgi_free_user_data)
+
+/* Children of xxxParticleModel_t */
+   } else if (strcmp(posit->label,"ParticleCollisionModel_t")==0 ||
+          strcmp(posit->label,"ParticleBreakupModel_t")==0 ||
+          strcmp(posit->label,"ParticleForceModel_t")==0 ||
+          strcmp(posit->label,"ParticleWallInteractionModel_t")==0 ||
+          strcmp(posit->label,"ParticlePhaseChangeModel_t")==0) {
+            cgns_pmodel *parent = (cgns_pmodel *)posit->posit;
+            if (strcmp(node_label,"Descriptor_t")==0)
+                CGNS_DELETE_SHIFT(ndescr, descr, cgi_free_descr)
+            else if (strcmp(node_label,"UserDefinedData_t")==0)
+                CGNS_DELETE_SHIFT(nuser_data, user_data, cgi_free_user_data)
+            else if (strcmp(node_label,"DataArray_t")==0)
+                CGNS_DELETE_SHIFT(narrays, array, cgi_free_array)
+            else if (strcmp(node_name,"DataClass")==0)
+                parent->data_class = CGNS_ENUMV( DataClassNull );
+            else if (strcmp(node_name,"DimensionalUnits")==0)
+                CGNS_DELETE_CHILD(units, cgi_free_units)
+
 /* Children of ConvergenceHistory_t */
-    } else if (strcmp(posit->label,"ConvergenceHistory_t")==0) {
+   }else if (strcmp(posit->label,"ConvergenceHistory_t")==0) {
         cgns_converg *parent = (cgns_converg *)posit->posit;
         if (strcmp(node_name,"NormDefinitions")==0)
             CGNS_DELETE_CHILD(NormDefinitions, cgi_free_descr)
@@ -18287,14 +21439,23 @@ int cg_delete_node(const char *node_name)
 /**
  * \ingroup FreeingMemory
  *
- * \brief   Release library-allocated memory
+ * \brief Release library-allocated memory
  *
- * \param[in] data Data allocated by the Mid-Level Library.
+ * \param[in]  data Data allocated by the Mid-Level Library.
  * \return \ier
  *
- * \details   This function does not affect the structure of a CGNS file; it is provided as a convenience to free memory allocated by the Mid-Level Library. This isn't necessary in Fortran, and thus an equivalent Fortran function is not provided.
-
-The functions that are used to allocate memory for return values are cg_descriptor_read, cg_convergence_read, cg_geo_read, cg_link_read, and cg_state_read. Each of these may allocate space to contain the data returned to the application. It is the responsibility of the application to free this data when it is no longer needed. Calling cg_free is identical to calling the standard C function free, however it is probably safer in that the memory is freed in the same module in which it is created, particularly when the Mid-Level Library is a shared library or DLL. The routine checks for NULL data and will return CG_ERROR in this case, otherwise it returns CG_OK.
+ * \details This function does not affect the structure of a CGNS file; it is
+ *          provided as a convenience to free memory allocated by the Mid-Level Library.
+ *          This isn't necessary in Fortran; thus, an equivalent Fortran function is not provided.
+ *
+ *          The functions that are used to allocate memory for return values are
+ *          cg_descriptor_read(), cg_convergence_read(), cg_geo_read(), cg_link_read(), and cg_state_read().
+ *          Each of these may allocate space to contain the data returned to the application. It is
+ *          the responsibility of the application to free this data when it is no longer needed.
+ *          Calling cg_free() is identical to calling the standard C function free, however it is
+ *          probably safer in that the memory is freed in the same module in which it is created,
+ *          particularly when the Mid-Level Library is a shared library or DLL. The routine checks
+ *          for NULL data and will return CG_ERROR in this case, otherwise it returns CG_OK.
  *
  */
 int cg_free(void *data) {

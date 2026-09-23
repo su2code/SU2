@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,6 +53,16 @@ public:
    */
   void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, const CConfig *donor_config,
                          unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) override;
+
+  /*!
+  * \brief Rotate the velocity if rotating frame is applied.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   */
+  void GetDonor_Velocity_RotatingFrame(const CConfig *donor_config, CGeometry *donor_geometry,
+                                 const CConfig *target_config, CGeometry *target_geometry) override;
 
   /*!
    * \brief A virtual member, initializes the target variable for sliding mesh.

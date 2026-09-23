@@ -1,14 +1,14 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,10 +30,25 @@
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../numerics/scalar/scalar_edge_flux.hpp"
 #include "../variables/CScalarVariable.hpp"
+#include "../variables/CEulerVariable.hpp"
 #include "../variables/CFlowVariable.hpp"
+#include "../variables/CGhostFlowVariable.hpp"
+#include "../variables/CIncEulerVariable.hpp"
 #include "../variables/CPrimitiveIndices.hpp"
 #include "CSolver.hpp"
+
+/*!
+ * \brief Carries a type through a value, so a runtime branch can hand a compile-time type to a
+ *        generic lambda (its parameter deduces as CTypeTag<T>, and the lambda recovers T as
+ *        decltype(tag)::type). Standing in for a C++20 template lambda, which this project's
+ *        C++17 baseline does not have.
+ */
+template <class T>
+struct CTypeTag {
+  using type = T;
+};
 
 /*!
  * \brief Main class for defining a scalar solver.
@@ -58,6 +73,7 @@ class CScalarSolver : public CSolver {
   su2double Solution_Inf[MAXNVAR]; /*!< \brief Far-field solution. */
 
   const bool Conservative; /*!< \brief Transported Variable is conservative. Solution has to be multiplied with rho. */
+  const bool BoundedScalar; /*!< \brief Whether the derived solver uses the bounded-scalar convective scheme. */
 
   const CPrimitiveIndices<unsigned short> prim_idx; /*!< \brief Indices of the primitive flow variables. */
 
@@ -77,6 +93,18 @@ class CScalarSolver : public CSolver {
 
   /*--- Edge fluxes for reducer strategy (see the notes in CEulerSolver.hpp). ---*/
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
+  CSysVector<su2double> EdgeFluxesDiff; /*!< \brief Flux difference between ij and ji for non-conservative discretisation. */
+
+  /*--- Ghost states of the marker currently being processed by a boundary, indexed by vertex
+   * and sized to the largest marker; same container types as the interior ones, so the flux
+   * kernels read a boundary through the same accessors as an interior edge. Boundary loops run
+   * one marker at a time, parallel over its vertices, so the buffers are written and consumed
+   * before the next marker reaches them (see BoundaryFluxResidual). ---*/
+  unique_ptr<VariableType> ghostNodes;         /*!< \brief Allocated by the derived solver, whose VariableType constructor it alone knows how to call. */
+  unique_ptr<CGhostFlowVariable> ghostFlowNodes; /*!< \brief Sized from the flow solver, see the constructor. */
+  su2activematrix ghostNormal; /*!< \brief Outward normals, sign flipped from the vertex normals. */
+  su2activematrix ghostCoord;  /*!< \brief Reflected coordinates, read by the diffusion sites. */
+  su2vector<uint8_t> ghostSkip; /*!< \brief Whether a vertex contributes no flux, set by the fill pass. */
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
@@ -87,63 +115,6 @@ class CScalarSolver : public CSolver {
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
-
-  /*!
-   * \brief Compute the viscous flux for the scalar equation at a particular edge.
-   * \tparam SolverSpecificNumericsFunc - lambda-function, that implements solver specific contributions to numerics.
-   * \note The functor has to implement (iPoint, jPoint)
-   * \param[in] iEdge - Edge for which we want to compute the flux
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  template <class SolverSpecificNumericsFunc>
-  FORCEINLINE void Viscous_Residual_impl(const SolverSpecificNumericsFunc& SolverSpecificNumerics, const unsigned long iEdge,
-                                         const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                                         const CConfig* config) {
-    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
-        su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
-
-    /*--- Points in edge ---*/
-
-    auto iPoint = geometry->edges->GetNode(iEdge, 0);
-    auto jPoint = geometry->edges->GetNode(iEdge, 1);
-
-    /*--- Points coordinates, and normal vector ---*/
-
-    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
-    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-
-    /*--- Conservative variables w/o reconstruction ---*/
-
-    if (flowNodes) {
-      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
-    }
-
-    /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-
-    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
-    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
-
-    /*--- Call Numerics contribution which are Solver-Specifc. Implemented in the caller: Viscous_Residual.  ---*/
-
-    SolverSpecificNumerics(iPoint, jPoint);
-
-    /*--- Compute residual, and Jacobians ---*/
-
-    auto residual = numerics->ComputeResidual(config);
-
-    if (ReducerStrategy) {
-      EdgeFluxes.SubtractBlock(iEdge, residual);
-      if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
-    } else {
-      LinSysRes.SubtractBlock(iPoint, residual);
-      LinSysRes.AddBlock(jPoint, residual);
-      if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-    }
-  }
 
   /*!
    * \brief Generic implementation of the fluid interface boundary condition for scalar solvers.
@@ -284,6 +255,12 @@ class CScalarSolver : public CSolver {
   }
 
   /*!
+   * \brief Move solution to previous time levels (for restarts).
+   */
+  void PushSolutionBackInTime(unsigned long TimeIter, bool restart, CSolver*** solver_container,
+                              CGeometry** geometry, CConfig* config);
+
+  /*!
    * \brief Gradient and Limiter computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -295,36 +272,151 @@ class CScalarSolver : public CSolver {
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void SumEdgeFluxes(CGeometry* geometry);
+  void SumEdgeFluxes(const CGeometry* geometry);
+
+  /*!
+   * \brief Generic interior edge loop for a scalar model expressed through the CUpwScalarBase
+   *        CRTP chain (numerics/scalar/scalar_edge_flux.hpp), driving both the convective and
+   *        the diffusive term of every edge with a single kernel, under either update strategy.
+   * \tparam Scheme - A model instantiated from CUpwScalarBase, e.g. CScalarFlux_SA<...>.
+   * \param[in] opt - Loop invariant flags built by the caller from the current CConfig state.
+   */
+  template <class Scheme>
+  void EdgeFluxResidual(const CGeometry* geometry, CSolver** solver_container, const CConfig* config,
+                        const ScalarFluxOptions& opt);
+
+  /*!
+   * \brief Write the four flow primitives the flux kernels read into one row of ghostFlowNodes.
+   * \param[in] iVertex - Vertex of the marker currently being processed.
+   * \param[in] V - Row of flow primitives to copy from (e.g. GetCharacPrimVar's or a sliding state's).
+   */
+  inline void SetGhostPrimitives(unsigned long iVertex, const su2double* V) {
+    auto* ghostV = ghostFlowNodes->GetPrimitive(iVertex);
+    ghostV[prim_idx.Density()] = V[prim_idx.Density()];
+    for (auto iDim = 0u; iDim < nDim; ++iDim) ghostV[prim_idx.Velocity() + iDim] = V[prim_idx.Velocity() + iDim];
+    ghostV[prim_idx.LaminarViscosity()] = V[prim_idx.LaminarViscosity()];
+    ghostV[prim_idx.EddyViscosity()] = V[prim_idx.EddyViscosity()];
+    /*--- NEMO's primitive layout has no single thermal conductivity or specific heat, so its
+     * CIndices returns a sentinel for these two; only heat reads them, and NEMO rejects any
+     * scalar transport at configuration. ---*/
+    if (prim_idx.ThermalConductivity() != std::numeric_limits<unsigned short>::max()) {
+      ghostV[prim_idx.ThermalConductivity()] = V[prim_idx.ThermalConductivity()];
+      ghostV[prim_idx.CpTotal()] = V[prim_idx.CpTotal()];
+    }
+  }
+
+  /*!
+   * \brief Generic boundary flux pass, run after a boundary's fill pass has written the ghost
+   *        row, the outward normal and (for the diffusion sites) the ghost gradient of every
+   *        vertex of the marker. The ghost point has no row, so only the contribution to the
+   *        interior point is assembled.
+   * \tparam Scheme - Same model the interior loop uses, instantiated with muscl false.
+   */
+  template <class Scheme>
+  void BoundaryFluxResidual(const CGeometry* geometry, CSolver** solver_container, const CConfig* config,
+                            const ScalarFluxOptions& opt, unsigned short val_marker);
+
+  /*!
+   * \brief Generic fluid interface (sliding mesh) flux pass, shared by every model. The convective
+   *        term is a per-donor weighted average, computed in the same pass that fills the ghost row
+   *        of each donor; the diffusive term is computed once per vertex, after the donor loop,
+   *        from the ghost state the last donor left behind. This does not fit the
+   *        fill-pass-then-BoundaryFluxResidual shape the other boundaries use, so it drives the
+   *        kernel directly.
+   * \tparam Scheme - Same model the interior loop uses, instantiated with muscl false.
+   * \param[in] fillGhostExtras - Functor (iVertex, iPoint) writing the auxiliary ghost fields the
+   *            model's diffusion coefficients read, e.g. SST's blending function or the species
+   *            mass diffusivities. Called once per vertex, before the diffusive flux.
+   */
+  template <class Scheme, class GhostFunc>
+  void FluidInterfaceFluxResidual(const CGeometry* geometry, CSolver** solver_container, const CConfig* config,
+                                  const ScalarFluxOptions& optConv, const ScalarFluxOptions& optVisc,
+                                  const GhostFunc& fillGhostExtras);
+
+  /*!
+   * \brief Write the outward normal of one vertex into the ghost row and mark the vertex as
+   *        contributing a flux.
+   * \note Vertex normals point into the domain, the flux convention needs them outward.
+   */
+  inline void SetGhostGeometry(const CGeometry* geometry, unsigned short val_marker, unsigned long iVertex) {
+    for (auto iDim = 0u; iDim < nDim; ++iDim)
+      ghostNormal(iVertex, iDim) = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+    ghostSkip[iVertex] = false;
+  }
+
+  /*!
+   * \brief Write what the diffusion term of a boundary reads beyond the ghost solution: the
+   *        coordinate of the interior point reflected about the boundary, and the interior
+   *        gradient mirrored into the ghost row.
+   * \param[in] iPoint - Interior point of the vertex.
+   * \param[in] jPoint - Point the interior one is reflected about, the vertex's normal neighbor.
+   */
+  inline void SetGhostDiffusionState(const CGeometry* geometry, unsigned long iVertex, unsigned long iPoint,
+                                     unsigned long jPoint) {
+    su2double Coord_Reflected[MAXNDIM];
+    GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(jPoint), geometry->nodes->GetCoord(iPoint),
+                                       Coord_Reflected);
+    for (auto iDim = 0u; iDim < nDim; ++iDim) ghostCoord(iVertex, iDim) = Coord_Reflected[iDim];
+
+    auto ghostGrad = ghostNodes->GetGradient(iVertex);
+    const auto interiorGrad = nodes->GetGradient(iPoint);
+    for (auto iVar = 0u; iVar < nVar; ++iVar)
+      for (auto iDim = 0u; iDim < nDim; ++iDim) ghostGrad(iVar, iDim) = interiorGrad(iVar, iDim);
+  }
+
+  /*!
+   * \brief Resolve the compile-time parameters of a scalar flux kernel, the flow indices, the
+   *        dimension and the equation count, from the runtime state, and call f with a CTypeTag of
+   *        the resulting scheme type: f is a generic lambda,
+   *        `[&](auto tag){ using Scheme = typename decltype(tag)::type; ... }`.
+   * \tparam Model - Model class template, e.g. CScalarFlux_SST, taking the four parameters of
+   *         CUpwScalarBase: value type, flow indices, dimension and equation count.
+   * \tparam nVarList - Equation counts to instantiate. Dynamic matches any count, a static one is
+   *         taken when it equals the solver's nVar; the counts are tried in the order given.
+   * \note NEMO is not one of the index branches: transported scalars are rejected for it at
+   *       configuration.
+   */
+  template <template <class, class, int, size_t> class Model, size_t... nVarList, class F>
+  void DispatchScheme(const CConfig* config, F&& f) {
+    if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+      DispatchDim<Model, CIncEulerVariable::CIndices<unsigned short>, nVarList...>(std::forward<F>(f));
+    } else {
+      DispatchDim<Model, CEulerVariable::CIndices<unsigned short>, nVarList...>(std::forward<F>(f));
+    }
+  }
 
  private:
-  /*!
-   * \brief Compute the viscous flux for the scalar equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
-   */
-  inline virtual void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                                       CNumerics* numerics, const CConfig* config) {
-    /*--- Define an empty object for solver specific numerics contribution. In case there are none, this default
-     *--- implementation will be called ---*/
-    auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {};
-
-    /*--- Now instantiate the generic implementation with the functor above. ---*/
-
-    Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+  template <template <class, class, int, size_t> class Model, class Indices, size_t... nVarList, class F>
+  void DispatchDim(F&& f) {
+    if (nDim == 2) {
+      DispatchEqnCount<Model, Indices, 2, nVarList...>(std::forward<F>(f));
+    } else {
+      DispatchEqnCount<Model, Indices, 3, nVarList...>(std::forward<F>(f));
+    }
   }
-  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
+
+  /*--- Recursion over the candidate equation counts, ending on the empty list. ---*/
+  template <template <class, class, int, size_t> class Model, class Indices, int nDim_, class F>
+  void DispatchEqnCount(F&&) {
+    SU2_MPI::Error("The equation count of this model has no instantiation.", CURRENT_FUNCTION);
+  }
+
+  template <template <class, class, int, size_t> class Model, class Indices, int nDim_, size_t nVar_,
+            size_t... others, class F>
+  void DispatchEqnCount(F&& f) {
+    if (nVar_ == Dynamic || nVar_ == nVar) {
+      f(CTypeTag<Model<su2double, Indices, nDim_, nVar_>>{});
+    } else {
+      DispatchEqnCount<Model, Indices, nDim_, others...>(std::forward<F>(f));
+    }
+  }
 
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
    * a nonlinear iteration for stability. Default value 1.0 set in ctor of CScalarVariable.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ComputeUnderRelaxationFactor(const CConfig* config) {}
+  virtual void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig* config) {}
 
  public:
   /*!
@@ -336,19 +428,11 @@ class CScalarSolver : public CSolver {
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] flow_solver - Flow solver the boundary ghost states mirror, null for a solver that
+   *            has no flow to read (the heat equation on a solid zone).
    */
-  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative);
-
-  /*!
-   * \brief Compute the spatial integration using a upwind scheme.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
-                       CConfig* config, unsigned short iMesh) override;
+  CScalarSolver(CGeometry* geometry, CConfig* config, const CSolver* flow_solver, bool conservative,
+                bool bounded_scalar, LINEAR_SOLVER_MODE linear_solver_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*!
    * \brief Impose the Far Field boundary condition.
@@ -360,7 +444,7 @@ class CScalarSolver : public CSolver {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final;
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
@@ -389,6 +473,22 @@ class CScalarSolver : public CSolver {
                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) final {
     /*--- Convective fluxes across euler wall are equal to zero. ---*/
   }
+
+  /*!
+   * \brief Impose the boundary condition using characteristic recostruction.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Riemann(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker) final;
+
 
   /*!
    * \brief Impose the supersonic inlet boundary condition (same as inlet, see BC_Inlet).
@@ -482,7 +582,7 @@ class CScalarSolver : public CSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
+  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) override;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
