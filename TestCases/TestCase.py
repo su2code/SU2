@@ -3,14 +3,14 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.3.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -121,6 +121,8 @@ class TestCase:
         self.enabled_on_cpu_arch = ["x86_64","amd64","aarch64","arm64"]
         self.enabled_with_tsan = True
         self.enabled_with_asan = True
+        self.enabled_with_regular = True # Set to False for a case that should only run under a sanitizer,
+                                          # e.g. one added purely to exercise a sanitizer-only finding.
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
@@ -177,6 +179,15 @@ class TestCase:
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
+
+        if hasattr(self, "decompress") and self.decompress:
+            print("--- Decompressing grid file: " + self.grid_file + ".gz")
+            import gzip, shutil
+            with gzip.open(self.grid_file + ".gz", "rb") as f_in:
+                with open(self.grid_file, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            print("--- Decompression completed!")
+
         start   = datetime.datetime.now()
         process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
@@ -232,9 +243,14 @@ class TestCase:
                             for j in range(len(data)):
                                 sim_vals.append( float(data[j]) )
                                 delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                                if delta_vals[j] > self.tol:
-                                    exceed_tol = True
-                                    passed     = False
+                                if isinstance(self.tol, list):
+                                    if delta_vals[j] > self.tol[j]:
+                                        exceed_tol = True
+                                        passed     = False
+                                else:
+                                    if delta_vals[j] > self.tol:
+                                        exceed_tol = True
+                                        passed     = False
                             break
                         else:
                             iter_missing = True
@@ -292,7 +308,7 @@ class TestCase:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
         if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+            print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
         if not start_solver and not with_tapetests:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
@@ -623,7 +639,7 @@ class TestCase:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
         if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+            print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
         if not start_solver:
             print('ERROR: The code was not able to get to the "OBJFUN" section.')
@@ -765,7 +781,7 @@ class TestCase:
 
         if not with_tsan and not with_asan:
           if exceed_tol:
-              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+              print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
           if not start_solver:
               print('ERROR: The code was not able to get to the "OBJFUN" section.')
@@ -896,7 +912,7 @@ class TestCase:
 
         if not with_tsan and not with_asan:
           if exceed_tol:
-              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
+              print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
           if not start_solver:
               print('ERROR: The code was not able to get to the "Begin solver" section.')
@@ -1021,6 +1037,10 @@ class TestCase:
         tsan_compatible = not with_tsan or self.enabled_with_tsan
         asan_compatible = not with_asan or self.enabled_with_asan
         tapetests_compatible = not with_tapetests or self.enabled_with_tapetests
+        # A case marked enabled_with_regular = False only runs under a sanitizer/tapetests mode,
+        # e.g. one added purely to exercise a finding that only a sanitizer catches.
+        regular_run = not (with_tsan or with_asan or with_tapetests)
+        regular_compatible = not regular_run or self.enabled_with_regular
 
         if not tsan_compatible:
             print('Ignoring test "%s" because it is not enabled to run with the thread sanitizer.' % self.tag)
@@ -1028,7 +1048,10 @@ class TestCase:
         if not tapetests_compatible:
             print('Ignoring test "%s" because it is not enabled to run a test of the tape.' % self.tag)
 
-        return is_enabled_on_arch and tsan_compatible and asan_compatible and tapetests_compatible and tapetests_compatible
+        if not regular_compatible:
+            print('Ignoring test "%s" because it is only enabled to run under a sanitizer.' % self.tag)
+
+        return is_enabled_on_arch and tsan_compatible and asan_compatible and tapetests_compatible and regular_compatible
 
     def adjust_test_data(self):
 

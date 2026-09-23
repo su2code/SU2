@@ -6,15 +6,14 @@
  *        they can be completely "disabled" when compiling without tracy.
  * \note Do not include tracy headers explicitly anywhere, use this header instead.
  * \note To enable tracy, define the TRACY_ENABLE macro during compilation.
- * \author Divyaprakash
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,11 +31,16 @@
 
 #pragma once
 
-#ifdef HAVE_TRACY
+#ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
-#define SU2_ZONE_SCOPED ZoneScoped
-#define SU2_ZONE_SCOPED_N(name) ZoneScopedN(name)
+#define SU2_ZONE_SCOPED ZoneScoped;
+#define SU2_ZONE_SCOPED_N(name) ZoneScopedN(name);
 #else
 #define SU2_ZONE_SCOPED
 #define SU2_ZONE_SCOPED_N(name)
 #endif
+
+#define BEGIN_SU2_ZONE_N(name) \
+  {                            \
+    SU2_ZONE_SCOPED_N(name)
+#define END_SU2_ZONE }

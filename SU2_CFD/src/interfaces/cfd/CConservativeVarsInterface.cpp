@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another one.
  * \author Ruben Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 
 CConservativeVarsInterface::CConservativeVarsInterface(unsigned short val_nVar, unsigned short val_nConst) :
   CInterface(val_nVar, val_nConst) {
+  InterfaceType = ENUM_TRANSFER::CONSERVATIVE_VARIABLES;
 }
 
 void CConservativeVarsInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,

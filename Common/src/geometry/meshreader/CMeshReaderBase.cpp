@@ -3,14 +3,14 @@
  * \brief Helper class that provides the counts for each rank in a linear
  *        partitioning given the global count as input.
  * \author T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -90,6 +90,28 @@ void CMeshReaderBase::GetCornerPointsAllFaces(const unsigned long* elemInfo, uns
     for (unsigned short j = 0; j < nPointsPerFace[i]; ++j) {
       unsigned long nn = faceConn[i][j];
       faceConn[i][j] = conn[nn];
+    }
+  }
+}
+
+void CMeshReaderBase::CopyMarkers(const std::vector<std::string>& srcDstMarkers) {
+  for (size_t i = 0; i < srcDstMarkers.size(); i += 2) {
+    const auto& src = srcDstMarkers[i];
+    const auto& dst = srcDstMarkers[i + 1];
+
+    if (const auto it = std::find(markerNames.begin(), markerNames.end(), src); it != markerNames.end()) {
+      const auto j = std::distance(markerNames.begin(), it);
+
+      numberOfMarkers += 1;
+      markerNames.push_back(dst);
+      surfaceElementConnectivity.push_back(surfaceElementConnectivity[j]);
+
+      /*--- Only the FEM readers populate this vector. ---*/
+      if (!numberOfLocalSurfaceElements.empty()) {
+        numberOfLocalSurfaceElements.push_back(numberOfLocalSurfaceElements[j]);
+      }
+    } else if (rank == MASTER_NODE) {
+      std::cout << "WARNING: Not duplicating marker " << src << " because it was not found.\n";
     }
   }
 }

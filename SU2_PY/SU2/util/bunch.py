@@ -82,7 +82,7 @@ class Bunch(dict):
         """
         try:
             return hasattr(self, k) or dict.__contains__(self, k)
-        except:
+        except Exception:
             return False
 
     # only called if k not found in normal places
@@ -140,7 +140,7 @@ class Bunch(dict):
         except AttributeError:
             try:
                 self[k] = v
-            except:
+            except (KeyError, TypeError):
                 raise AttributeError(k)
         else:
             object.__setattr__(self, k, v)
@@ -194,15 +194,13 @@ class Bunch(dict):
 
         (*) Invertible so long as collection contents are each repr-invertible.
         """
-        keys = self.keys()
-        keys.sort()
+        keys = sorted(self.keys())
         args = ", ".join(["%s=%r" % (key, self[key]) for key in keys])
         return "%s(%s)" % (self.__class__.__name__, args)
 
     def __str__(self):
         """String-form of a OrderedBunch."""
-        keys = self.keys()
-        keys.sort()
+        keys = sorted(self.keys())
         args = ", ".join(["%s=%r" % (key, self[key]) for key in keys])
         return "{%s}" % args
 
@@ -247,7 +245,7 @@ def bunchify(x):
     nb. As dicts are not hashable, they cannot be nested in sets/frozensets.
     """
     if isinstance(x, dict):
-        return Bunch((k, bunchify(v)) for k, v in x.iteritems())
+        return Bunch((k, bunchify(v)) for k, v in x.items())
     elif isinstance(x, (list, tuple)):
         return type(x)(bunchify(v) for v in x)
     else:
@@ -273,7 +271,7 @@ def unbunchify(x):
     nb. As dicts are not hashable, they cannot be nested in sets/frozensets.
     """
     if isinstance(x, dict):
-        return dict((k, unbunchify(v)) for k, v in x.iteritems())
+        return dict((k, unbunchify(v)) for k, v in x.items())
     elif isinstance(x, (list, tuple)):
         return type(x)(unbunchify(v) for v in x)
     else:

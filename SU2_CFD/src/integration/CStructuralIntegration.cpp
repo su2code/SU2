@@ -2,14 +2,14 @@
  * \file CStructuralIntegration.cpp
  * \brief Space and time integration for structural problems.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,7 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolve
                                                   CNumerics ******numerics_container, CConfig **config,
                                                   unsigned short RunTime_EqSystem, unsigned short iZone,
                                                   unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
@@ -69,6 +70,7 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolve
 void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container,
                                                    CNumerics **numerics, CConfig *config,
                                                    unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   const auto IterativeScheme = config->GetKind_SpaceIteScheme_FEA();
@@ -127,6 +129,7 @@ void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver 
 
 void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics,
                                                   CConfig *config, unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
   unsigned short iMarker;
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
@@ -186,6 +189,7 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
 }
 
 void CStructuralIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   const bool fsi = config->GetFSI_Simulation();
 

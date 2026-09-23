@@ -1,14 +1,14 @@
 /*!
  * \file CFlowVariable.hpp
  * \brief Class for defining the common variables of flow solvers.
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,9 @@
  */
 
 #pragma once
+
+#include <algorithm>
+#include <cstdint>
 
 #include "CVariable.hpp"
 
@@ -203,6 +206,13 @@ class CFlowVariable : public CVariable {
   inline const MatrixType& GetLimiter_Primitive() const final { return Limiter_Primitive; }
 
   /*!
+   * \brief Number of primitive variables that have a gradient/limiter column, from the start of
+   *        the primitive row. Some convective schemes (see EulerNPrimVarGrad) size this smaller
+   *        than the full primitive count.
+   */
+  inline unsigned long GetnPrimVarGrad() const { return nPrimVarGrad; }
+
+  /*!
    * \brief Get the new solution of the problem (Classical RK4).
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
@@ -260,11 +270,25 @@ class CFlowVariable : public CVariable {
    * \param[in] iPoint - Point index.
    * \return Value of magnitude.
    */
-  inline su2double GetStrainMag(unsigned long iPoint) const { return StrainMag(iPoint); }
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
 
   /*!
    * \brief Get the entire vector of the rate of strain magnitude.
    * \return Vector of magnitudes.
    */
   inline su2activevector& GetStrainMag() { return StrainMag; }
+
+  /*!
+   * \brief Get the density at time level n for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n.
+   */
+  virtual su2double GetDensity_time_n(unsigned long iPoint) const = 0;
+
+  /*!
+   * \brief Get the density at time level n-1 for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n-1.
+   */
+  virtual su2double GetDensity_time_n1(unsigned long iPoint) const = 0;
 };

@@ -1,6 +1,6 @@
 
 project('SU2', 'c', 'cpp',
-        version: '8.3.0 "Harrier"',
+        version: '8.5.0 "Harrier"',
         meson_version: '>=1.8.2',
         license: 'LGPL2',
         default_options: ['buildtype=release',
@@ -19,7 +19,46 @@ python = pymod.find_installation()
 
 if get_option('enable-cuda')
   add_languages('cuda')
-  add_global_arguments('-arch=sm_86', language : 'cuda')
+
+  # Compute capability to generate code for. Anything other than 'auto' is passed to nvcc as it
+  # is, so 'native', 'all-major', 'compute_XY', etc. all work.
+  cuda_arch = get_option('cuda-arch')
+  if cuda_arch == 'auto'
+    cuda_cc = ''
+    # Ships with the toolkit and prints e.g. "89"; it is what nvcc's own -arch=native uses.
+    cuda_query = find_program('__nvcc_device_query', required : false)
+    if cuda_query.found()
+      cuda_probe = run_command(cuda_query, check : false)
+      if cuda_probe.returncode() == 0
+        cuda_cc = cuda_probe.stdout().strip().split('\n')[0].strip()
+      endif
+    endif
+    # Fall back to the driver, which prints e.g. "8.9".
+    if cuda_cc == ''
+      cuda_query = find_program('nvidia-smi', required : false)
+      if cuda_query.found()
+        cuda_probe = run_command(cuda_query, '--query-gpu=compute_cap', '--format=csv,noheader', check : false)
+        if cuda_probe.returncode() == 0
+          cuda_cc = cuda_probe.stdout().strip().split('\n')[0].strip().replace('.', '')
+        endif
+      endif
+    endif
+    if cuda_cc == ''
+      error('Could not detect the CUDA compute capability of this machine (no GPU visible?), ' +
+            'set it explicitly, for example -Dcuda-arch=sm_89.')
+    endif
+    cuda_arch = 'sm_' + cuda_cc
+    message('Detected CUDA compute capability, building for ' + cuda_arch)
+  endif
+  add_global_arguments('-arch=' + cuda_arch, language : 'cuda')
+  # nvcc's frontend does not recognize the AMX-tile builtins pulled in by
+  # newer glibc/gcc <immintrin.h>; SU2 does not use AMX, so skip the header.
+  add_global_arguments('-D_AMXTILEINTRIN_H_INCLUDED', language : 'cuda')
+  # Any target linking CUDA object code is linked via nvcc instead of the C++
+  # linker, which otherwise defaults to a plain host gcc and silently drops
+  # the MPI link flags that -Dcustom-mpi=true relies on mpicxx to provide.
+  add_global_arguments('-ccbin=' + meson.get_compiler('cpp').cmd_array()[0], language : 'cuda')
+  add_global_link_arguments('-ccbin=' + meson.get_compiler('cpp').cmd_array()[0], language : 'cuda')
 endif
 
 su2_cpp_args = []
@@ -27,10 +66,8 @@ su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
 default_warning_flags = []
 if build_machine.system() != 'windows'
-  if meson.get_compiler('cpp').get_id() != 'intel'
-    default_warning_flags += ['-Wno-empty-body']
-  endif
-  desired_warnings = ['-Wno-ignored-qualifiers',
+  desired_warnings = ['-Wno-empty-body',
+                      '-Wno-ignored-qualifiers',
                       '-Wno-unused-parameter',
                       '-Wno-deprecated-declarations',
                       '-Wno-error=cast-function-type',
@@ -40,7 +77,10 @@ if build_machine.system() != 'windows'
                       '-Wno-error=missing-field-initializers',
                       '-Wno-missing-field-initializers',
                       '-Wno-error=class-memaccess',
-                      '-Wno-class-memaccess']
+                      '-Wno-class-memaccess',
+                      '-Wno-overloaded-virtual',
+                      '-Wno-array-bounds',
+                      '-Wno-dangling-pointer']
   foreach flag : desired_warnings
     if meson.get_compiler('cpp').has_argument(flag)
       default_warning_flags += flag
@@ -50,6 +90,15 @@ if build_machine.system() != 'windows'
   if get_option('enable-autodiff') or get_option('enable-directdiff')
     default_warning_flags += ['-Wno-non-virtual-dtor']
   endif
+endif
+
+if get_option('cpu-arch') != ''
+  su2_cpp_args += ['-march=' + get_option('cpu-arch')]
+endif
+
+# Fast math to allow pow(x, 2) -> x * x.
+if meson.get_compiler('cpp').has_argument('-fno-finite-math-only')
+  su2_cpp_args += ['-ffast-math', '-fno-finite-math-only']
 endif
 
 # Handle assertions: default is b_ndebug=true (assertions disabled)
@@ -84,6 +133,8 @@ omp = get_option('with-omp')
 if omp
   omp_dep = dependency('openmp', language:'cpp')
 endif
+
+su2_deps += declare_dependency(include_directories: 'externals/eigen')
 
 if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
@@ -121,10 +172,10 @@ if get_option('enable-autodiff') and not omp
 endif
 
 # Add Tracy dependency if enabled
-if get_option('enable-tracy')
+if get_option('tracy_enable')
     tracy_dep = dependency('tracy', static: true)
     su2_deps += tracy_dep
-    su2_cpp_args += '-DHAVE_TRACY'
+    su2_cpp_args += '-DTRACY_ENABLE'
 
     # Add build type check
     if get_option('buildtype') != 'debugoptimized'
@@ -141,8 +192,11 @@ if get_option('enable-cgns')
 endif
 
 # check for mixed precision floating point arithmetic
-if get_option('enable-mixedprec')
+if get_option('enable-mixedprec') or get_option('enable-singleprec')
   su2_cpp_args += '-DUSE_MIXED_PRECISION'
+endif
+if get_option('enable-singleprec')
+  su2_cpp_args += '-DUSE_SINGLE_PRECISION'
 endif
 
 # check if MPI dependencies are found and add them
@@ -175,6 +229,7 @@ endif
 if omp
   # add OpenMP dependency
   su2_deps += omp_dep
+  su2_cpp_args += '-DEIGEN_DONT_PARALLELIZE'
 
   # add opdi dependency
   if get_option('enable-autodiff')
@@ -206,25 +261,16 @@ if get_option('enable-pastix')
          'PaStiX support requires either mkl or openblas')
 
   su2_cpp_args += '-DHAVE_PASTIX'
-
-  pastix_dep = dependency('pastix', required: false)
-
-  if not pastix_dep.found()
-    pastix_root = get_option('pastix_root')+'/install'
-    scotch_root = get_option('scotch_root')+'/lib'
-    pastix_dep  = declare_dependency(include_directories: pastix_root,
-                                    link_args: [ '-L../'+pastix_root, '-L../'+scotch_root,
-                                    '-lpastix', '-lscotch', '-lptscotch', '-lptscotcherr',
-                                    '-lm', '-lrt', '-lpthread'])
-  endif
-  su2_deps += pastix_dep
+  su2_deps += dependency('pastix')
+  su2_deps += meson.get_compiler('cpp').find_library('scotch', required: true)
+  su2_deps += meson.get_compiler('cpp').find_library('scotcherr', required: true)
+  su2_deps += meson.get_compiler('cpp').find_library('ptscotch', required: true)
 endif
 
 # CUDA dependencies
 if get_option('enable-cuda')
   su2_cpp_args += '-DHAVE_CUDA'
-  gpu_dep = dependency('cuda', version : '>=10', modules : ['cudart'])
-  su2_deps += gpu_dep
+  su2_deps += meson.get_compiler('cuda').find_library('cudart', required : true)
 endif
 
 # blas-type dependencies
@@ -248,9 +294,11 @@ elif get_option('enable-openblas')
 
   su2_cpp_args += '-DHAVE_BLAS'
   su2_cpp_args += '-DHAVE_LAPACK'
-  blas_dep = dependency(get_option('blas-name'))
-  su2_deps += blas_dep
-
+  su2_deps += dependency(get_option('blas-name'))
+  su2_deps += dependency('lapack')
+  if get_option('enable-pastix')
+    su2_deps += dependency('lapacke')
+  endif
 endif
 
 if get_option('enable-librom')
@@ -307,6 +355,11 @@ if get_option('enable-coolprop')
   if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
     cmake = import('cmake')
     cmake_opts = cmake.subproject_options()
+    if get_option('cpu-arch') != ''
+      cmake_opts.add_cmake_defines({
+        'CMAKE_CXX_FLAGS': '-march=' + get_option('cpu-arch')
+      })
+    endif
     cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
       'COOLPROP_STATIC_LIBRARY': true,
@@ -357,7 +410,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 8.3.0 "Harrier"                           |
+         |   / __| | | |_  )   Release 8.5.0 "Harrier"                           |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
@@ -393,7 +446,7 @@ message('''---------------------------------------------------------------------
 '''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
-           get_option('enable-mlpcpp'), get_option('enable-tracy'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
+           get_option('enable-mlpcpp'), get_option('tracy_enable'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
   if get_option('install-mpp')

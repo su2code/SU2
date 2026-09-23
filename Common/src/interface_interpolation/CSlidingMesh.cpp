@@ -2,14 +2,14 @@
  * \file CSlidingMesh.cpp
  * \brief Implementation of sliding mesh interpolation.
  * \author H. Kline
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,10 +33,10 @@
 CSlidingMesh::CSlidingMesh(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
                            unsigned int jZone)
     : CInterpolator(geometry_container, config, iZone, jZone) {
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
-void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
+void CSlidingMesh::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
   /* 0 - Variable declaration */
 
   /* --- General variables --- */

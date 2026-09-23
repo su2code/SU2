@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow NEMO problems.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -169,7 +169,7 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
 
   su2double dist_ij_2[MAXNDIM] = {0.0};
   GeometryToolbox::Distance(nDim, Coord_j, Coord_i, dist_ij_2);
-  dist_ij = GeometryToolbox::SquaredNorm(nDim, dist_ij_2);
+  dist_ij = GeometryToolbox::Norm(nDim, dist_ij_2);
 
     for (auto iVar = 0ul; iVar < nVar; iVar++) {
       for (auto jVar = 0ul; jVar < nVar; jVar++) {
@@ -359,6 +359,6 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
 
   }
 
-  return ResidualType<>(Flux, Jacobian_j, Jacobian_j);
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }

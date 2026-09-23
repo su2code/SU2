@@ -2,14 +2,14 @@
  * \file CNewtonIntegration.cpp
  * \brief Newton-Krylov integration.
  * \author P. Gomes
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,12 +62,14 @@ public:
 CNewtonIntegration::~CNewtonIntegration() { delete preconditioner; }
 
 void CNewtonIntegration::Setup() {
+  SU2_ZONE_SCOPED
 
   auto iparam = config->GetNewtonKrylovIntParam();
   auto dparam = config->GetNewtonKrylovDblParam();
 
   startupIters = iter = iparam[0];
   startupResidual = dparam[0];
+  useDeflation = iparam[3] > 0;
   precondIters = iparam[1];
   precondTol = dparam[1];
   tolRelaxFactor = iparam[2];
@@ -114,6 +116,7 @@ void CNewtonIntegration::Setup() {
 }
 
 void CNewtonIntegration::PerturbSolution(const CSysVector<Scalar>& dir, Scalar mag) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
@@ -125,6 +128,7 @@ void CNewtonIntegration::PerturbSolution(const CSysVector<Scalar>& dir, Scalar m
 }
 
 void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
+  SU2_ZONE_SCOPED
 
   /*--- Save the default integration scheme, and force to explicit if required. ---*/
   auto TimeIntScheme = config->GetKind_TimeIntScheme();
@@ -148,6 +152,7 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
 }
 
 void CNewtonIntegration::ComputeFinDiffStep() {
+  SU2_ZONE_SCOPED
 
   static su2double rmsSol;
   su2double rmsSol_loc = 0.0;
@@ -176,6 +181,8 @@ void CNewtonIntegration::ComputeFinDiffStep() {
 void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver *****solvers_, CNumerics ******numerics_,
                                              CConfig **config_, unsigned short EqSystem, unsigned short iZone,
                                              unsigned short iInst) {
+  SU2_ZONE_SCOPED
+
   config = config_[iZone];
   solvers = solvers_[iZone][iInst][MESH_0];
   geometry = geometry_[iZone][iInst][MESH_0];
@@ -183,15 +190,11 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   if (!setup) { Setup(); setup = true; }
 
-  // Ramp from 1st to 2nd order during the startup.
-  su2double baseNkRelaxation = 1;
-  if (startupPeriod && startupIters > 0 && !config->GetRestart()) {
-    baseNkRelaxation = su2double(startupIters - iter) / startupIters;
-  }
-  config->SetNewtonKrylovRelaxation(baseNkRelaxation);
+  /*--- Remove NK relaxation to compute the current residual. ---*/
+  config->SetNewtonKrylovRelaxation(1.0);
 
-  // When using NK relaxation (not fully 2nd order Jacobian products) we need an additional
-  // residual evaluation that is used as the reference for finite differences.
+  /*--- When using NK relaxation (not fully 2nd order Jacobian products) we need an additional
+   * residual evaluation that is used as the reference for finite differences. ---*/
   LinSysRes0 = (!startupPeriod && nkRelaxation < 1) ? &LinSysResRelax : &LinSysRes;
 
   SU2_OMP_PARALLEL_(if(solvers[FLOW_SOL]->GetHasHybridParallel())) {
@@ -208,7 +211,18 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   solvers[FLOW_SOL]->PrepareImplicitIteration(geometry, solvers, config);
 
-  if (preconditioner) preconditioner->Build();
+  if (preconditioner) {
+    /*--- The Jacobian is normally uploaded by CSysMatrixVectorProduct, but the outer product
+     * here is matrix free, so nothing else would upload it for Build(). ---*/
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<MixedScalar>) {
+      if (config->GetCUDA()) {
+        SU2_DEVICE_REGION(solvers[FLOW_SOL]->Jacobian.HtDTransfer();)
+      }
+    }
+#endif
+    preconditioner->Build();
+  }
 
   auto CopyLinSysRes = [&](int sign, auto& dst) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -265,8 +279,13 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     ComputeFinDiffStep();
 
     eps *= toleranceFactor;
-    iter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, CMatrixFreeProductWrapper(this),
-                                      CPreconditionerWrapper(this), eps, iter, eps, false, config);
+    if (useDeflation) {
+      iter = LinSolver.FGCRODR_LinSolver(LinSysRes, linSysSol, CMatrixFreeProductWrapper(this),
+                                         CPreconditionerWrapper(this), eps, iter, eps, false, config);
+    } else {
+      iter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, CMatrixFreeProductWrapper(this),
+                                        CPreconditionerWrapper(this), eps, iter, eps, false, config);
+    }
     /*--- Scale back the residual to trick the CFL adaptation. ---*/
     eps /= toleranceFactor;
   }
@@ -281,7 +300,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
       if (eps > fmax(config->GetLinear_Solver_Error(), adaptTol)) {
         nkRelaxation *= 0.9;
       } else if (eps < 0.9 * fmax(config->GetLinear_Solver_Error(), adaptTol)) {
-        nkRelaxation = fmin(nkRelaxation * 1.05, 1);
+        nkRelaxation = fmin(fmax(nkRelaxation * 1.05, 0.05), 1);
       }
     }
   }
@@ -299,12 +318,9 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   solvers[FLOW_SOL]->Postprocessing(geometry, solvers, config, MESH_0);
 
-  SU2_OMP_MASTER {
-    solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
-    solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
-    solvers[FLOW_SOL]->Friction_Forces(geometry, config);
-  }
-  END_SU2_OMP_MASTER
+  solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
+  solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
+  solvers[FLOW_SOL]->Friction_Forces(geometry, config);
 
   /*--- At the end of the startup period the CFL is reset to the initial value. ---*/
 
@@ -312,6 +328,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     SU2_OMP_MASTER {
       startupPeriod = false;
       firstResidual = residual;
+      if (autoRelaxation) nkRelaxation = 0;
     }
     END_SU2_OMP_MASTER
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -325,6 +342,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 }
 
 void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
+  SU2_ZONE_SCOPED
 
   Scalar factor = finDiffStep / u.norm();
 
@@ -357,6 +375,7 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
 }
 
 void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const {
+  SU2_ZONE_SCOPED
 
   if (preconditioner) {
     Scalar eps = SU2_TYPE::GetValue(precondTol);
