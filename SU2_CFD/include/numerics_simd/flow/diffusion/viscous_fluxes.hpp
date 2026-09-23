@@ -265,7 +265,6 @@ public:
   using Base::gamma;
   using Base::gasConst;
   using Base::prandtlTurb;
-  using Base::cp;
   using Base::turbVars;
 
   /*!
