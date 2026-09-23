@@ -221,6 +221,7 @@ class CSourceBase_TurbSA : public CNumerics {
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
     AD::SetPreaccIn(stochSource, 3);
+    if (transition_LM) AD::SetPreaccIn(intermittency_i, intermittency_eff_i);
 
     /*--- Common auxiliary variables and constants of the model. ---*/
     CSAVariables var;
