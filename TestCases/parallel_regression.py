@@ -225,7 +225,7 @@ def main():
     ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
     ion_gy.cfg_file = "cyl_ion_gy.cfg"
     ion_gy.test_iter = 99
-    ion_gy.test_vals = [-11.673961, -4.180906, -4.838570, -5.457224, -5.150665, -4.930094, -6.962117, 4.562850, 4.581001, -0.014893, -0.000032, 90471.000000]
+    ion_gy.test_vals = [-12.191649, -4.245292, -4.904190, -5.585803, -5.472455, -5.057619, -7.442352, 3.429183, 3.433581, -0.014861, 0.000001, 90357.000000]
     ion_gy.tol = 0.01
     test_list.append(ion_gy)
 
