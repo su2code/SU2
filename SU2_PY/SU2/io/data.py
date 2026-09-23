@@ -3,14 +3,14 @@
 ## \file data.py
 #  \brief python package for data utility functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.3.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -67,13 +67,6 @@ def load_data(file_name, var_names=None, file_format="infer", core_name="python_
     ('.mat','.pkl')
     """
 
-    try:
-        import scipy.io
-
-        scipy_loaded = True
-    except ImportError:
-        scipy_loaded = False
-
     if not os.path.exists(file_name):
         raise Exception("File does not exist: %s" % file_name)
 
@@ -87,41 +80,18 @@ def load_data(file_name, var_names=None, file_format="infer", core_name="python_
 
     # get filelock
     with filelock(file_name):
-
-        # LOAD MATLAB
-        if file_format == "matlab" and scipy_loaded:
-            input_data = scipy.io.loadmat(
-                file_name=file_name,
-                squeeze_me=False,
-                chars_as_strings=True,
-                struct_as_record=True,
-            )
-            # pull core variable
-            assert core_name in input_data, "core data not found"
-            input_data = input_data[core_name]
-
-            # convert recarray to dictionary
-            input_data = rec2dict(input_data)
-
-        # LOAD PICKLE
-        elif file_format == "pickle":
-            input_data = load_pickle(file_name)
-            # pull core variable
-            assert core_name in input_data, "core data not found"
-            input_data = input_data[core_name]
-
-        #: if file_format
-
+        input_data = _read_data(file_name, file_format, core_name)
     #: with filelock
 
     # load specified varname into dictionary
-    if var_names != None:
+    if var_names is not None:
         # check for one item name array
         if isinstance(var_names, str):
             var_names = [
                 var_names,
             ]
-        for key in input_data.keys():
+        # iterate a copy of the keys, the dictionary is modified in the loop
+        for key in list(input_data.keys()):
             if not key in var_names:
                 del input_data[key]
         #: for key
@@ -130,12 +100,57 @@ def load_data(file_name, var_names=None, file_format="infer", core_name="python_
     return input_data
 
 
-#: def load()
+#: def load_data()
 
 
 # -------------------------------------------------------------------
-#  Save a Dictionary of Data
+#  Read a Dictionary of Data, without locking
 # -------------------------------------------------------------------
+
+
+def _read_data(file_name, file_format, core_name):
+    """data = _read_data( file_name, file_format, core_name )
+
+    Reads the data dictionary from file, assuming the caller already
+    holds the filelock for file_name. filelock is not reentrant, so
+    this must never acquire the lock itself.
+    """
+
+    try:
+        import scipy.io
+
+        scipy_loaded = True
+    except ImportError:
+        scipy_loaded = False
+
+    # LOAD MATLAB
+    if file_format == "matlab" and scipy_loaded:
+        input_data = scipy.io.loadmat(
+            file_name=file_name,
+            squeeze_me=False,
+            chars_as_strings=True,
+            struct_as_record=True,
+        )
+        # pull core variable
+        assert core_name in input_data, "core data not found"
+        input_data = input_data[core_name]
+
+        # convert recarray to dictionary
+        input_data = rec2dict(input_data)
+
+    # LOAD PICKLE
+    elif file_format == "pickle":
+        input_data = load_pickle(file_name)
+        # pull core variable
+        assert core_name in input_data, "core data not found"
+        input_data = input_data[core_name]
+
+    #: if file_format
+
+    return input_data
+
+
+#: def _read_data()
 
 
 def save_data(
@@ -189,14 +204,9 @@ def save_data(
             if not os.path.exists(file_name):
                 raise Exception("Cannot append, file does not exist: %s" % file_name)
             # load old data
-            data_dict_old = load(
-                file_name=file_name,
-                var_names=None,
-                file_format=file_format,
-                core_name=core_name,
-            )
+            data_dict_old = _read_data(file_name, file_format, core_name)
             # check for keys not in new data
-            for key, value in data_dict_old.iteritems():
+            for key, value in data_dict_old.items():
                 if not (key in data_dict):
                     data_dict[key] = value
             #: for each dict item
@@ -227,7 +237,7 @@ def save_data(
     return
 
 
-#: def save()
+#: def save_data()
 
 
 # -------------------------------------------------------------------
@@ -359,13 +369,13 @@ def rec2dict(array_in):
         value = array_in[key].tolist()[0][0]
 
         # convert string
-        if isinstance(value[0], unicode):
+        if isinstance(value[0], str):
             value = str(value[0])
 
         # convert array
         elif isinstance(value, numpy.ndarray):
             # check for another struct level
-            if value.dtype.names == None:
+            if value.dtype.names is None:
                 value = value.tolist()
             # telescoping
             else:
@@ -418,7 +428,7 @@ def append_nestdict(base_dict, add_dict):
     for key in add_dict.keys():
 
         # ensure base_dict key exists and is a list
-        if not base_dict.has_key(key):
+        if key not in base_dict:
             if isinstance(add_dict[key], dict):
                 base_dict[key] = {}
             else:

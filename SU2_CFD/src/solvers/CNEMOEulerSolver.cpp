@@ -2,14 +2,14 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz, J. Needels
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,11 +31,11 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
 #include "../../include/fluid/CSU2TCLib.hpp"
-#include "../../include/limiters/CLimiterDetails.hpp"
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
   CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>(*geometry, *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CNEMONSSolver. ---*/
@@ -147,7 +147,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   Temperature_Inf     = config->GetTemperature_FreeStreamND();
   Temperature_ve_Inf  = config->GetTemperature_ve_FreeStreamND();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
   switch(direct_diff) {
   case NO_DERIVATIVE:
     /*--- Default ---*/
@@ -230,6 +230,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 }
 
 CNEMOEulerSolver::~CNEMOEulerSolver() {
+  SU2_ZONE_SCOPED
 
   delete node_infty;
   delete FluidModel;
@@ -238,6 +239,7 @@ CNEMOEulerSolver::~CNEMOEulerSolver() {
 
 void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                            unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -280,7 +282,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
 
   if(!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
-    if (implicit) Jacobian.SetValZero();
+    if (implicit) Jacobian.SetValDiagonalZero();
   }
 }
 
@@ -288,6 +290,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
   const unsigned long InnerIter = config->GetInnerIter();
   const bool muscl       = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool limiter     = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
@@ -316,6 +319,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
 }
 
 unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned long nonPhysicalPoints = 0;
   bool nonphysical = true;
@@ -341,6 +345,7 @@ unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_containe
 
 void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to compute the speed of sound. ---*/
   struct SoundSpeed {
@@ -391,6 +396,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to compute the speed of sound. ---*/
   struct SoundSpeed {
@@ -412,6 +418,7 @@ void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
 void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
@@ -453,7 +460,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
       if (implicit) {
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+        Jacobian.UpdateBlocks<true>(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
     }
   }
@@ -461,12 +468,16 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 
 void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                        CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /*--- Set booleans based on config settings ---*/
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
+
+  const su2double kappa       = config->GetMUSCL_Kappa_Flow();
+  const su2double musclRamp   = config->GetMUSCLRampValue() * config->GetNewtonKrylovRelaxation();
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -520,9 +531,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
       /*--- High order reconstruction using MUSCL strategy ---*/
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (auto iDim = 0ul; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-      }
+      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Vector_ij);
 
       /*--- Retrieve gradient information ---*/
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
@@ -540,18 +549,15 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_j = 2.0;
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-        Project_Grad_i[iVar] = 0.0; Project_Grad_j[iVar] = 0.0;
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        for (auto iDim = 0ul; iDim < nDim; iDim++) {
-          Project_Grad_i[iVar] += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j[iVar] -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        }
+        Project_Grad_i[iVar] = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa, musclRamp);
+        Project_Grad_j[iVar] = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa, musclRamp);
 
         if (limiter) {
           if (van_albada) {
-            su2double V_ij = V_j[iVar] - V_i[iVar];
             su2double va_lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i[iVar], V_ij, EPS);
-            su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j[iVar], V_ij, EPS);
+            su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j[iVar], V_ij, EPS);
             lim_i = min(lim_i, va_lim_i);
             lim_j = min(lim_j, va_lim_j);
           } else {
@@ -565,8 +571,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_ij = min(lim_i, lim_j);
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-        Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
-        Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j[iVar];
+        Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_ij * Project_Grad_i[iVar];
+        Primitive_j[iVar] = V_j[iVar] - 0.5 * lim_ij * Project_Grad_j[iVar];
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
@@ -619,7 +625,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
       if (implicit) {
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+        Jacobian.UpdateBlocks<true>(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
     }
   }
@@ -627,8 +633,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   /*--- Warning message about non-physical reconstructions. ---*/
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     /*--- Add counter results for all threads. ---*/
-    SU2_OMP_ATOMIC
-    ErrorCounter += counter_local;
+    atomicAdd(counter_local, ErrorCounter);
 
     /*--- Add counter results for all ranks. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -644,6 +649,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel, unsigned short nSpecies, su2double *V,
                                                            su2double* dPdU, su2double* dTdU, su2double* dTvedU,
                                                            su2double* val_eves, su2double *val_Cvves) {
+  SU2_ZONE_SCOPED
 
   //NOTE: TODO - this doesnt compute Cvves/ dPdU,etc.yet
 
@@ -675,6 +681,7 @@ su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel,
 }
 
 void CNEMOEulerSolver::RecomputeConservativeVector(su2double *U, const su2double *V) const {
+  SU2_ZONE_SCOPED
 
   /*---Useful variables ---*/
   vector<su2double> rhos;
@@ -711,6 +718,7 @@ void CNEMOEulerSolver::RecomputeConservativeVector(su2double *U, const su2double
 }
 
 bool CNEMOEulerSolver::CheckNonPhys(const su2double *V) const {
+  SU2_ZONE_SCOPED
 
   /*--- Set booleans ---*/
   bool nonPhys = false;
@@ -744,6 +752,7 @@ bool CNEMOEulerSolver::CheckNonPhys(const su2double *V) const {
 }
 
 void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /*--- Assign booleans ---*/
   bool err        = false;
@@ -898,22 +907,26 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
 
 void CNEMOEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                             CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<RUNGE_KUTTA_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CNEMOEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                               CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<CLASSICAL_RK4_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
 void CNEMOEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   struct DummyPrec {
     const bool active = false;
@@ -923,66 +936,58 @@ void CNEMOEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, 
   PrepareImplicitIteration_impl(precond, geometry, config);
 }
 
-void CNEMOEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+su2double CNEMOEulerSolver::ComputeUnderRelaxationFactor(unsigned short nSpecies, unsigned short nVar,
+                                                       const su2double* solution, const su2double* update,
+                                                       su2double allowableRatio) {
+  su2double localUnderRelaxation = 1.0;
+  su2double num = 0.0;
+  su2double denom = 0.0;
 
-  CompleteImplicitIteration_impl<true>(geometry, config);
-}
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    /*--- Limit the sum of the species updates relative to the mixture density. ---*/
+    if (iVar < nSpecies) {
+      num += fabs(update[iVar]);
+      denom += fabs(solution[iVar]);
 
-void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
-
-  /* Loop over the solution update given by relaxing the linear
-   system for this nonlinear iteration. */
-
-  const su2double allowableRatio = 0.2;
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    su2double localUnderRelaxation = 1.0;
-
-    su2double num = 0.0;
-    su2double denom = 0.0;
-
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      /* We impose a limit on the maximum percentage that the
-       density (sum of all species) and energy can change over a nonlinear iteration. */
-
-      const unsigned long index = iPoint * nVar + iVar;
-      if (iVar < config->GetnSpecies()) {
-        num   += fabs(LinSysSol[index]);
-        denom += fabs(nodes->GetSolution(iPoint, iVar));
-
-        /*--- If final density/species, compute Under-relaxation ---*/
-        if (iVar == (config ->GetnSpecies()-1)){
-          su2double ratio = (num/(denom+EPS));
-          if (ratio > allowableRatio) {
-            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-          }
-        }
-
-        /*--- Energy ---*/
-        if (iVar == (nVar-2)){
-          su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
-          if (ratio > allowableRatio) {
-            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-          }
+      if (iVar == nSpecies - 1) {
+        su2double ratio = num / (denom + EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
       }
     }
 
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
+    /*--- Total energy must be checked independently of the species block. ---*/
+    if (iVar == nVar - 2) {
+      su2double ratio = fabs(update[iVar]) / (fabs(solution[iVar]) + EPS);
+      if (ratio > allowableRatio) {
+        localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+      }
+    }
+  }
 
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+  /*--- Cancel very small updates to avoid non-realizable states. ---*/
+  if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+  return localUnderRelaxation;
+}
 
-    /* Store the under-relaxation factor for this point. */
+void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+  SU2_ZONE_SCOPED
 
+  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
+  const unsigned short nSpecies = config->GetnSpecies();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    const su2double localUnderRelaxation = ComputeUnderRelaxationFactor(
+        nSpecies, nVar, nodes->GetSolution(iPoint), LinSysSol.GetBlock(iPoint), allowableRatio);
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
   }
   END_SU2_OMP_FOR
 }
 
 void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   su2double
   Temperature_FreeStream = 0.0, Temperature_ve_FreeStream = 0.0, Mach2Vel_FreeStream         = 0.0,
@@ -1192,10 +1197,10 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
-  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
+  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStream(Omega_FreeStream);
 
-  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
@@ -1388,14 +1393,21 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 }
 
 void CNEMOEulerSolver::SetReferenceValues(const CConfig& config) {
+  SU2_ZONE_SCOPED
 
   DynamicPressureRef = 0.5 * Density_Inf * GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+
+  if (DynamicPressureRef < EPS) {
+    DynamicPressureRef = 1.0;
+  }
+
   AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
 
 void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Allocate the necessary vector structures ---*/
   su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
@@ -1497,6 +1509,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
                                     CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config,
                                     unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Allocate arrays ---*/
   su2double Normal[MAXNDIM] = {0.0};
@@ -1610,6 +1623,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
 
 void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   SU2_MPI::Error("BC_INLET: Not operational in NEMO.", CURRENT_FUNCTION);
 
   unsigned short RHO_INDEX, nSpecies;
@@ -1875,7 +1889,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
 //        /*--- Jacobian contribution for implicit integration ---*/
 //        if (implicit)
-//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 //      }
     }
   }
@@ -1891,6 +1905,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
 void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   su2double UnitNormal[MAXNDIM] = {0.0};
   vector<su2double> rhos;
@@ -2143,6 +2158,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 void CNEMOEulerSolver::BC_Supersonic_Inlet(
     CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Supersonic inlet flow: there are no outgoing characteristics,
    so all flow variables can be imposed at the inlet.
@@ -2287,6 +2303,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
 void CNEMOEulerSolver::BC_Supersonic_Outlet(
     CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Supersonic outlet flow: there are no ingoing characteristics,
    so all flow variables can should be interpolated from the domain. ---*/
@@ -2344,6 +2361,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(
 }
 
 void CNEMOEulerSolver::SetPressureDiffusionSensor(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   const auto P_INDEX = nodes->GetPIndex();
 

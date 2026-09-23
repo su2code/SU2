@@ -2,14 +2,14 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,12 +30,46 @@
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
+#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
+
+namespace {
+#ifdef CODI_FORWARD_TYPE
+  using Scalar = su2double;
+#else
+  using Scalar = passivedouble;
+#endif
+
+class AdjointProduct : public CMatrixVectorProduct<Scalar> {
+public:
+  CDiscAdjMultizoneDriver* const driver;
+  const unsigned short iZone = 0;
+  mutable unsigned long iInnerIter = 0;
+
+  AdjointProduct(CDiscAdjMultizoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
+
+  inline void operator()(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const override {
+    driver->SetAllSolutions(iZone, true, u);
+    driver->Iterate(iZone, iInnerIter, true);
+    driver->GetAllSolutions(iZone, true, v);
+    v -= u;
+    ++iInnerIter;
+  }
+};
+
+class Identity : public CPreconditioner<Scalar> {
+public:
+  inline bool IsIdentity() const override { return true; }
+  inline void operator()(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const override { v = u; }
+};
+} // namespace
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
                                                  SU2_Comm MPICommunicator)
 
                         : CMultizoneDriver(confFile, val_nZone, MPICommunicator) {
+                          SU2_ZONE_SCOPED
 
   direct_nInst.resize(nZone,1);
   nInnerIter.resize(nZone);
@@ -110,6 +144,7 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 }
 
 CDiscAdjMultizoneDriver::~CDiscAdjMultizoneDriver(){
+  SU2_ZONE_SCOPED
 
   for (iZone = 0; iZone < nZone; iZone++){
     for (iInst = 0; iInst < direct_nInst[iZone]; iInst++){
@@ -125,6 +160,7 @@ CDiscAdjMultizoneDriver::~CDiscAdjMultizoneDriver(){
 }
 
 void CDiscAdjMultizoneDriver::Preprocess(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   const bool time_domain = driver_config->GetTime_Domain();
 
@@ -158,6 +194,7 @@ void CDiscAdjMultizoneDriver::Preprocess(unsigned long TimeIter) {
 }
 
 void CDiscAdjMultizoneDriver::StartSolver() {
+  SU2_ZONE_SCOPED
 
   /*--- Start the debug recording mode for the discrete adjoint solver. ---*/
 
@@ -230,47 +267,75 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 }
 
 void CDiscAdjMultizoneDriver::TapeTest() {
+  SU2_ZONE_SCOPED
+
+  if (nZone > 100) {
+    SU2_MPI::Error("The tape debug mode tag system is limited to a maximum zone number of 100.", CURRENT_FUNCTION);
+  }
 
   if (rank == MASTER_NODE) {
     cout <<"\n---------------------------- Start Debug Run ----------------------------" << endl;
   }
 
   int total_errors = 0;
-  AD::ErrorReport error_report;
-  AD::SetTagErrorCallback(error_report);
-  std::ofstream out1("run1_process" + to_string(rank) + ".out");
-  std::ofstream out2("run2_process" + to_string(rank) + ".out");
 
-  AD::ResetErrorCounter(error_report);
-  AD::SetDebugReportFile(error_report, &out1);
+  /*--- Errors are reported to an instance of AD::DebugControl that holds an error counter, a pointer to
+   *    an error log file and configurations determined by the TAPE_DEBUG_OPTION settings. ---*/
+  AD::DebugControl debug_control;
 
-  /*--- This recording will assign the initial (same) tag to each registered variable.
+  /*--- Set a pointer to the current status internally in the AD structure. ---*/
+  AD::SetDebugControl(&debug_control);
+
+  /*--- Set the callback function that handles the event of a tag mismatch on the tape. ---*/
+  AD::ActivateTagErrorCallback();
+
+  /*--- For multizone cases (nZone > 1), we use zone-specific tags. ---*/
+  if(nZone > 1) { AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::MULTIZONE_TAGS); }
+
+  /*--- Set the default tag mismatch callback (consider every mismatch an error). ---*/
+  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS);
+
+  // Make this a config option?
+  // AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ALLOW_ALL_ZONES);
+
+  /*--- Reset the error counter and set the error log file (each process writes its own). ---*/
+  AD::ResetErrorCounter(debug_control);
+  std::ofstream out("debug_run_process" + to_string(rank) + ".out");
+  AD::SetDebugReportFile(debug_control, &out);
+
+  /*--- This recording will assign an initial, zone-specific tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
+
+  out << "-----------------------------------------------------------------------------------------" << std::endl;
+  out << "INITIAL recording." << std::endl;
+  out << "Errors appearing in this recording are most likely preaccumulation errors (preaccumulation tag: 1337).\n" << std::endl;
+
+  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::INIT_RUN);
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
-      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
     else {
       if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
   }
   else {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
-      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_AND_MESH, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
     else {
       if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLVER_VARIABLES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
   }
-  total_errors = TapeTestGatherErrors(error_report);
 
-  AD::ResetErrorCounter(error_report);
-  AD::SetDebugReportFile(error_report, &out2);
+  /*--- Gather errors from all ranks from the initial recording (e.g. preaccumulation errors). ---*/
+  total_errors = TapeTestGatherErrors(debug_control);
+  AD::ResetErrorCounter(debug_control);
 
   /*--- This recording repeats the initial recording with a different tag.
    *    If a variable was used before it became dependent on the inputs, this variable will still carry the tag
@@ -278,19 +343,29 @@ void CDiscAdjMultizoneDriver::TapeTest() {
    *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
 
+  out << "-------------------------------------------------------------------------------------------------" << std::endl;
+  out << "IZONE = " << iZone << ", SECOND recording." << std::endl;
+  out << "Errors appearing hereafter are most likely mathematical errors (e.g. check for circular dependencies)." << std::endl;
+
+  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::CHECK_RUN);
+
+  /*--- We ignore preaccumulation mismatches during the second recording as they have already been reported. ---*/
+  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ALLOW_PREACC);
+
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     else
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   }
   else {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     else
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
   }
-  total_errors += TapeTestGatherErrors(error_report);
+  total_errors += TapeTestGatherErrors(debug_control);
+
 
   if (rank == MASTER_NODE) {
     cout << "\n------------------------- Tape Test Run Summary -------------------------" << endl;
@@ -299,9 +374,10 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   }
 }
 
-int CDiscAdjMultizoneDriver::TapeTestGatherErrors(AD::ErrorReport& error_report) const {
+int CDiscAdjMultizoneDriver::TapeTestGatherErrors(AD::DebugControl& debug_control) const {
+  SU2_ZONE_SCOPED
 
-  int num_errors = AD::GetErrorCount(error_report);
+  int num_errors = AD::GetErrorCount(debug_control);
   int total_errors = 0;
   std::vector<int> process_error(size);
   SU2_MPI::Allreduce(&num_errors, &total_errors, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
@@ -320,6 +396,7 @@ int CDiscAdjMultizoneDriver::TapeTestGatherErrors(AD::ErrorReport& error_report)
 }
 
 bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode) {
+  SU2_ZONE_SCOPED
 
   config_container[iZone]->SetInnerIter(iInnerIter);
 
@@ -356,6 +433,7 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
 }
 
 void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
+  SU2_ZONE_SCOPED
 
   /*--- Use FGMRES to solve the adjoint system, the RHS is -External,
    * the solution are the iZone adjoint variables + External,
@@ -380,8 +458,9 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
     Scalar eps_l = 0.0;
     Scalar tol_l = KrylovTol / eps;
     auto iter = min(totalIter-2ul, config_container[iZone]->GetnQuasiNewtonSamples()-2ul);
-    iter = LinSolver[iZone].FGMRES_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
-                                             tol_l, iter, eps_l, monitor, config_container[iZone]);
+    iter = LinSolver[iZone].FGCRODR_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
+                                              tol_l, iter, eps_l, monitor, config_container[iZone],
+                                              FgcrodrMode::SAME_MAT, iter);
     totalIter -= iter+1;
     eps *= eps_l;
   }
@@ -407,6 +486,7 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
 }
 
 void CDiscAdjMultizoneDriver::Run() {
+  SU2_ZONE_SCOPED
 
   const unsigned long nOuterIter = driver_config->GetnOuter_Iter();
   const bool time_domain = driver_config->GetTime_Domain();
@@ -415,7 +495,7 @@ void CDiscAdjMultizoneDriver::Run() {
   /*--- Temporary warning because we need to test writing intermediate output to file (requires re-recording). ---*/
   for(iZone = 0; iZone < nZone; iZone++) {
     for (auto iVolumeFreq = 0; iVolumeFreq < config_container[iZone]->GetnVolumeOutputFrequencies(); iVolumeFreq++){
-      if (config_container[iZone]->GetVolumeOutputFrequency(iVolumeFreq) < nOuterIter) {
+      if (!time_domain && config_container[iZone]->GetVolumeOutputFrequency(iVolumeFreq) < nOuterIter) {
         if (rank == MASTER_NODE) {
           cout << "\nWARNING (iZone = " << iZone
                << "): "
@@ -573,12 +653,14 @@ void CDiscAdjMultizoneDriver::Run() {
   }
 
   if (time_domain) {
+    for (const auto& ls : LinSolver) ls.ResetDeflation();
     EvaluateSensitivities(TimeIter, (TimeIter+1) == driver_config->GetnTime_Iter());
   }
 
 }
 
 bool CDiscAdjMultizoneDriver::EvaluateObjectiveFunctionGradient() {
+  SU2_ZONE_SCOPED
 
   /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
 
@@ -612,6 +694,7 @@ bool CDiscAdjMultizoneDriver::EvaluateObjectiveFunctionGradient() {
 }
 
 void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool force_writing) {
+  SU2_ZONE_SCOPED
 
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
@@ -684,6 +767,7 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
 }
 
 void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape tape_type, unsigned short record_zone) {
+  SU2_ZONE_SCOPED
 
   AD::Reset();
 
@@ -705,11 +789,9 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     switch(kind_recording) {
     case RECORDING::CLEAR_INDICES:      cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
-    case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
-    case RECORDING::TAG_INIT_SOLVER_VARIABLES:    cout << "Simulating recording with tag 1 on conservative variables." << endl; AD::SetTag(1); break;
-    case RECORDING::TAG_CHECK_SOLVER_VARIABLES:   cout << "Checking first recording with tag 2 on conservative variables." << endl; AD::SetTag(2); break;
-    case RECORDING::TAG_INIT_SOLVER_AND_MESH:     cout << "Simulating recording with tag 1 on conservative variables and mesh coordinates." << endl; AD::SetTag(1); break;
-    case RECORDING::TAG_CHECK_SOLVER_AND_MESH:    cout << "Checking first recording with tag 2 on conservative variables and mesh coordinates." << endl; AD::SetTag(2); break;
+    case RECORDING::SOLUTION_VARIABLES:
+      cout << "Storing computational graph wrt CONSERVATIVE VARIABLES.\n";
+      cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
     default: break;
     }
   }
@@ -734,6 +816,12 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
         type_recording = RECORDING::MESH_DEFORM;
       }
 
+      /*--- If we are in tape debug mode, set a global (but zone-specific) tag.
+       *    Every variable that we register below will be initialized with this tag. ---*/
+      int tag = AD::ComputeTag(iZone);
+      AD::SetTag(tag);
+      if(tag != 0) { cout << "    - register input variables with tag " << AD::GetTag() << " on zone " << iZone << "." << endl; }
+
       iteration_container[iZone][INST_0]->RegisterInput(solver_container, geometry_container,
                                                         config_container, iZone, INST_0, type_recording);
     }
@@ -742,6 +830,10 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
   AD::Push_TapePosition(); /// REGISTERED
 
   for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- If in tape debug mode, set the zone-specific tag for computations in this zone. ---*/
+    AD::SetTag(AD::ComputeTag(iZone));
+
     iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
                                                         config_container, iZone, INST_0, kind_recording);
   }
@@ -755,6 +847,10 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
   if ((tape_type == Kind_Tape::OBJECTIVE_FUNCTION_TAPE) || (kind_recording == RECORDING::MESH_COORDS)) {
     HandleDataTransfer();
     for (iZone = 0; iZone < nZone; iZone++) {
+
+      /*--- If in tape debug mode, set the zone-specific test tag for computations in this zone. ---*/
+      AD::SetTag(AD::ComputeTag(iZone));
+
       if (Has_Deformation(iZone)) {
         iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
                                                             config_container, iZone, INST_0, kind_recording);
@@ -781,6 +877,11 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
       AD::Push_TapePosition(); /// enter_zone
 
+      /*--- If in tape debug mode, set the zone-specific test tag for computations in this zone. ---*/
+      int tag = AD::ComputeTag(iZone);
+      AD::SetTag(tag);
+      if(tag != 0) { cout << "    - check solver of zone " << iZone << " against tag " << tag << endl; }
+
       DirectIteration(iZone, kind_recording);
 
       iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container,
@@ -800,6 +901,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 }
 
 void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
 
   /*--- Do one iteration of the direct solver ---*/
   direct_iteration[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
@@ -814,6 +916,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING ki
 }
 
 void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
 
   ObjFunc = 0.0;
 
@@ -834,23 +937,32 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
         solvers[FLOW_SOL]->Friction_Forces(geometry, config);
 
-        if(config->GetWeakly_Coupled_Heat()) {
+        if (config->GetWeakly_Coupled_Heat()) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         }
 
-        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
+        if(config->GetBoolTurbomachinery()){
+          /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
+          solvers[FLOW_SOL]->GatherInOutAverageValues(config, geometry);
+          solvers[FLOW_SOL]->ComputeTurboBladePerformance(geometry, config, iZone);
+        }
+
+        direct_output[iZone]->SetObjectiveFunctionValues(geometry, solvers, config);
         ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
-        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
+        direct_output[iZone]->SetObjectiveFunctionValues(geometry, solvers, config);
         ObjFunc += solvers[HEAT_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_FEM:
+        if (config->GetWeakly_Coupled_Heat()) {
+          solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
+        }
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
-        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
+        direct_output[iZone]->SetObjectiveFunctionValues(geometry, solvers, config);
         ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
         break;
 
@@ -862,17 +974,14 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
     AD::SetIndex(ObjFunc_Index, ObjFunc);
-    if (kind_recording == RECORDING::SOLUTION_VARIABLES ||
-        kind_recording == RECORDING::TAG_INIT_SOLVER_VARIABLES ||
-        kind_recording == RECORDING::TAG_CHECK_SOLVER_VARIABLES ||
-        kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH ||
-        kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH) {
-      cout << " Objective function                   : " << ObjFunc << endl;
+    if (kind_recording == RECORDING::SOLUTION_VARIABLES) {
+      cout << "Objective function value: " << std::setprecision(driver_config->GetOutput_Precision()) << ObjFunc << endl;
     }
   }
 }
 
 void CDiscAdjMultizoneDriver::SetAdjObjFunction() {
+  SU2_ZONE_SCOPED
   su2double seeding = 1.0;
 
   if (config_container[ZONE_0]->GetTime_Domain()) {
@@ -897,6 +1006,7 @@ void CDiscAdjMultizoneDriver::SetAdjObjFunction() {
 }
 
 void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_transfer) {
+  SU2_ZONE_SCOPED
 
 #if defined(CODI_INDEX_REUSE)
   if (nZone > 1 && rank == MASTER_NODE) {
@@ -933,6 +1043,7 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 }
 
 void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
+  SU2_ZONE_SCOPED
 
   if (Cross_Terms.empty()) {
     Cross_Terms.resize(nZone, vector<vector<su2passivematrix> >(nZone));
@@ -963,16 +1074,22 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 }
 
 void CDiscAdjMultizoneDriver::HandleDataTransfer() {
+  SU2_ZONE_SCOPED
 
   for(iZone = 0; iZone < nZone; iZone++) {
 
     /*--- In principle, the mesh does not need to be updated ---*/
     bool DeformMesh = false;
 
+    int tag = AD::ComputeTag(iZone);
+    AD::SetTag(tag);
+    if(tag != 0) { cout << "    - check data transfer of variables into zone " << iZone << " against its (correct) tag " << tag << endl; }
+
     /*--- Transfer from all the remaining zones ---*/
     for (unsigned short jZone = 0; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone && interface_container[jZone][iZone] != nullptr) {
+        if(tag != 0) { cout << "        - From zone " << jZone << " into zone " << iZone << endl;}
         DeformMesh |= TransferData(jZone, iZone);
       }
     }
@@ -986,6 +1103,7 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
 }
 
 void CDiscAdjMultizoneDriver::AddSolutionToExternal(unsigned short iZone) {
+  SU2_ZONE_SCOPED
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -995,6 +1113,7 @@ void CDiscAdjMultizoneDriver::AddSolutionToExternal(unsigned short iZone) {
 }
 
 void CDiscAdjMultizoneDriver::SetExternalToDualTimeDer() {
+  SU2_ZONE_SCOPED
 
   for (unsigned short iZone = 0; iZone < nZone; iZone++) {
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
@@ -1006,6 +1125,7 @@ void CDiscAdjMultizoneDriver::SetExternalToDualTimeDer() {
 }
 
 void CDiscAdjMultizoneDriver::AddExternalToSolution(unsigned short iZone) {
+  SU2_ZONE_SCOPED
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -1015,6 +1135,7 @@ void CDiscAdjMultizoneDriver::AddExternalToSolution(unsigned short iZone) {
 }
 
 void CDiscAdjMultizoneDriver::SetSolutionOldToSolution(unsigned short iZone) {
+  SU2_ZONE_SCOPED
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -1024,6 +1145,7 @@ void CDiscAdjMultizoneDriver::SetSolutionOldToSolution(unsigned short iZone) {
 }
 
 void CDiscAdjMultizoneDriver::UpdateCrossTerm(unsigned short iZone, unsigned short jZone) {
+  SU2_ZONE_SCOPED
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[jZone][INST_0][MESH_0][iSol];
@@ -1033,6 +1155,7 @@ void CDiscAdjMultizoneDriver::UpdateCrossTerm(unsigned short iZone, unsigned sho
 }
 
 void CDiscAdjMultizoneDriver::Set_Solution_To_BGSSolution_k(unsigned short iZone) {
+  SU2_ZONE_SCOPED
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -1042,6 +1165,7 @@ void CDiscAdjMultizoneDriver::Set_Solution_To_BGSSolution_k(unsigned short iZone
 }
 
 void CDiscAdjMultizoneDriver::Set_BGSSolution_k_To_Solution(unsigned short iZone) {
+  SU2_ZONE_SCOPED
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -1051,6 +1175,7 @@ void CDiscAdjMultizoneDriver::Set_BGSSolution_k_To_Solution(unsigned short iZone
 }
 
 void CDiscAdjMultizoneDriver::SetResidual_BGS(unsigned short iZone) {
+  SU2_ZONE_SCOPED
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];

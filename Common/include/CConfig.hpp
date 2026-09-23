@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,6 +46,7 @@
 #include "option_structure.hpp"
 #include "containers/container_decorators.hpp"
 #include "toolboxes/printing_toolbox.hpp"
+#include "tracy_structure.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -134,7 +135,8 @@ private:
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
   Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
-  Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Pressure_Based;           /*!< \brief Flag to check if we are using a pressure-based system.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
@@ -199,6 +201,8 @@ private:
   nMarker_Inlet,                  /*!< \brief Number of inlet flow markers. */
   nMarker_Inlet_Species,          /*!< \brief Number of inlet species markers. */
   nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
+  nMarker_Wall_Species,           /*!< \brief Number of wall species markers. */
+  nSpecies_per_Wall,              /*!< \brief Number of species defined per wall markers. */
   nMarker_Inlet_Turb,             /*!< \brief Number of inlet turbulent markers. */
   nTurb_Properties,               /*!< \brief Number of turbulent properties per inlet markers. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
@@ -255,6 +259,7 @@ private:
   *Marker_ActDiskBemOutlet_Axis,  /*!< \brief Actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
+  *Marker_Wall_Species,           /*!< \brief Wall species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
   *Marker_Riemann,                /*!< \brief Riemann markers. */
   *Marker_Giles,                  /*!< \brief Giles markers. */
@@ -294,6 +299,8 @@ private:
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
+  WALL_SPECIES_TYPE **Kind_Wall_Species;        /*!< \brief Species boundary condition type for wall boundaries (FLUX or VALUE) per species. */
+  su2double **Wall_SpeciesVal;               /*!< \brief Specified species flux or value for wall boundaries per species. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
   su2double *Inflow_Mach;                    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Inflow_Pressure;                /*!< \brief Specified fan face pressure for nacelle boundaries. */
@@ -430,8 +437,9 @@ private:
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
   bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the flow equations. */
-  array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
-  array<su2double,4> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4}}; /*!< \brief Floating-point parameters for NK method. */
+  array<unsigned short,4> NK_IntParam{{20, 3, 2, 0}}; /*!< \brief Integer parameters for NK method. */
+  array<su2double,5> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4, 1.0}}; /*!< \brief Floating-point parameters for NK method. */
+  su2double NK_Relaxation = 1.0;
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -466,7 +474,7 @@ private:
   string CustomObjFunc;        /*!< \brief User-defined objective function. */
   string CustomOutputs;        /*!< \brief User-defined functions for outputs. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
-  nObj, nObjW;                         /*! \brief Number of objective functions. */
+  nObj, nObjW;                         /*!< \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;              /*!< \brief Number of ffd boxes. */
   unsigned short nTurboMachineryKind;  /*!< \brief Number turbomachinery types specified. */
@@ -482,21 +490,15 @@ private:
   unsigned short **DegreeFFDBox;      /*!< \brief Degree of the FFD boxes. */
   string *FFDTag;                     /*!< \brief Parameters of the design variable. */
   string *TagFFDBox;                  /*!< \brief Tag of the FFD box. */
-  unsigned short GeometryMode;        /*!< \brief Gemoetry mode (analysis or gradient computation). */
-  unsigned short MGCycle;             /*!< \brief Kind of multigrid cycle. */
+  unsigned short GeometryMode;        /*!< \brief Geometry mode (analysis or gradient computation). */
   unsigned short FinestMesh;          /*!< \brief Finest mesh for the full multigrid approach. */
   unsigned short nFFD_Fix_IDir,
   nFFD_Fix_JDir, nFFD_Fix_KDir;       /*!< \brief Number of planes fixed in the FFD. */
-  unsigned short nMG_PreSmooth,       /*!< \brief Number of MG pre-smooth parameters found in config file. */
-  nMG_PostSmooth,                     /*!< \brief Number of MG post-smooth parameters found in config file. */
-  nMG_CorrecSmooth;                   /*!< \brief Number of MG correct-smooth parameters found in config file. */
   short *FFD_Fix_IDir,
   *FFD_Fix_JDir, *FFD_Fix_KDir;       /*!< \brief Exact sections. */
-  unsigned short *MG_PreSmooth,       /*!< \brief Multigrid Pre smoothing. */
-  *MG_PostSmooth,                     /*!< \brief Multigrid Post smoothing. */
-  *MG_CorrecSmooth;                   /*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
+  MG_CYCLE Kind_MGCycle;              /*!< \brief Kind of multigrid cycle. */
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
@@ -506,14 +508,16 @@ private:
   CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
   FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
+  INIT_OPTION_INC Kind_InitOption_Inc; /*!< \brief Kind of initialization of the incompressible solver. */
   MAIN_SOLVER Kind_Solver;         /*!< \brief Kind of solver: Euler, NS, Continuous adjoint, etc.  */
-  LIMITER Kind_SlopeLimit,    /*!< \brief Global slope limiter. */
+  LIMITER Kind_SlopeLimit,      /*!< \brief Slope limiter (for the runtime eq. system). */
   Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
+  LINEAR_SOLVER_INNER Kind_Linear_Solver_Inner; /*!< \brief Inner solver used in nested Krylov schemes. */
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
@@ -523,6 +527,8 @@ private:
   Kind_Gradient_Method_Recon,      /*!< \brief Numerical method for computation of spatial gradients used for upwind reconstruction. */
   Kind_Deform_Linear_Solver,             /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
+  Kind_Poisson_Linear_Solver,             /*!< \brief Numerical solver for the poisson equation. */
+  Kind_Poisson_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver of the poisson equation. */
   Kind_Linear_Solver,                    /*!< \brief Numerical solver for the implicit scheme. */
   Kind_Linear_Solver_Prec,               /*!< \brief Preconditioner of the linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
@@ -554,12 +560,12 @@ private:
   Kind_ConvNumScheme_AdjTurb,   /*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Species,   /*!< \brief Centered or upwind scheme for the species model. */
   Kind_ConvNumScheme_Template,  /*!< \brief Centered or upwind scheme for the level set equation. */
-  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations (for the runtime eq. system). */
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
   Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
 
   CENTERED
-  Kind_Centered,                /*!< \brief Centered scheme. */
+  Kind_Centered,                /*!< \brief Centered scheme (for the runtime eq. system). */
   Kind_Centered_Flow,           /*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_AdjFlow,        /*!< \brief Centered scheme for the adjoint flow equations. */
   Kind_Centered_Turb,           /*!< \brief Centered scheme for the turbulence model. */
@@ -576,7 +582,7 @@ private:
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
 
   UPWIND
-  Kind_Upwind,                  /*!< \brief Upwind scheme. */
+  Kind_Upwind,                  /*!< \brief Upwind scheme (for the runtime eq. system). */
   Kind_Upwind_Flow,             /*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,          /*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,             /*!< \brief Upwind scheme for the turbulence model. */
@@ -585,13 +591,22 @@ private:
   Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
-  bool MUSCL,              /*!< \brief MUSCL scheme .*/
+  PBITER Kind_PBIter;                    /*< \brief Kind of pressure-based algorithm that is used. */
+  INCOMP_SYSTEM Kind_Incomp_System;      /*< \brief Kind of incompressible solver. */
+
+  bool MUSCL,              /*!< \brief MUSCL scheme (for the runtime eq. system). */
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,              /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
-  MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
+  MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  MUSCL_Species;           /*!< \brief MUSCL scheme for the species equations.*/
+  su2double MUSCL_Kappa,   /*!< \brief Blending coefficient for U-MUSCL scheme (for the runtime eq. system). */
+  MUSCL_Kappa_Flow,        /*!< \brief Blending coefficient for U-MUSCL scheme for the flow equations.*/
+  MUSCL_Kappa_Turb,        /*!< \brief Blending coefficient for U-MUSCL scheme for the turbulence equations.*/
+  MUSCL_Kappa_Heat,        /*!< \brief Blending coefficient for U-MUSCL scheme for the (fvm) heat equation.*/
+  MUSCL_Kappa_AdjFlow,     /*!< \brief Blending coefficient for U-MUSCL scheme for the adj flow equations.*/
+  MUSCL_Kappa_Species;     /*!< \brief Blending coefficient for U-MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
@@ -630,14 +645,33 @@ private:
   bool InletUseNormal;             /*!< \brief Flag for whether to use the local normal as the flow direction for a pressure inlet. */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Poisson_Linear_Solver_Error;         /*!< \brief Min error of the linear solver for the poisson equation. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Poisson_Linear_Solver_Iter;      /*!< \brief Max iterations of the linear solver for the poisson solver*/
   unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
+  unsigned long Linear_Solver_Restart_Deflation; /*!< \brief Number of vectors used for deflated restarts. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
-  unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
+
+  struct CIluOptions {
+    unsigned short FillIn = 0;        /*!< \brief ILU fill-in level. */
+    bool LevelScheduling = false;     /*!< \brief Use level scheduling for OMP parallelization of ILU. */
+    /*!< \brief Number of colored Gauss-Seidel sweeps used to build the GPU ILU factorization;
+     * the triangular solves are level-scheduled and exact (no sweep count). */
+    unsigned short GPUSweeps = 2;
+  } IluOptions;
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
+  su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
+
+  struct CSIMPLE_Options {
+    su2double Transient_Term_Removal_Factor; /*!< \brief Coefficient for removing the transient term from the momentum coefficient. */
+    su2double Relaxation_Factor_Pressure;    /*!< \brief Relaxation coefficient of the pressure corrections in the SIMPLE solver. */
+    bool AutomaticRelaxationFactors;         /*!< \brief option for automatically computing relaxation factors for flow corrections in SIMPLE. */
+    unsigned short nCorrections_PISO;        /*!< \brief Number of corrections used in PISO algorithm. */
+  } SIMPLE_Options;
+
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
@@ -725,6 +759,7 @@ private:
   nMarker_ZoneInterface,              /*!< \brief Number of markers in the zone interface. */
   nMarker_Plotting,                   /*!< \brief Number of markers to plot. */
   nMarker_Analyze,                    /*!< \brief Number of markers to analyze. */
+  nMarker_Create_Copy,                /*!< \brief Number of markers to duplicate. */
   nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL). */
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
@@ -736,6 +771,7 @@ private:
   *Marker_GeoEval,                    /*!< \brief Markers to evaluate geometry. */
   *Marker_Plotting,                   /*!< \brief Markers to plot. */
   *Marker_Analyze,                    /*!< \brief Markers to analyze. */
+  *Marker_Create_Copy,                /*!< \brief Markers to duplicate. */
   *Marker_ZoneInterface,              /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL). */
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
@@ -749,6 +785,7 @@ private:
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
   SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
   LM_OPTIONS *LM_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
+  ROUGHSST_MODEL Kind_RoughSST_Model;         /*!< \brief List of modifications/corrections/versions of rough-wall boundary conditions for SST turbulence model.*/
   unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
   unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
@@ -796,11 +833,13 @@ private:
   su2double *nBlades;                 /*!< \brief number of blades for turbomachinery computation. */
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
+  unsigned short Mesh_Out_FileFormat; /*!< \brief Mesh output format. */
   TAB_OUTPUT Tab_FileFormat;          /*!< \brief Format of the output files. */
   unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
+  unsigned long outlierMitigationParam[4]; /*!< \brief Parameters of outlier mitigation strategy. */
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
@@ -914,6 +953,7 @@ private:
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  bool out2in_mdot_engine;         /*!< \brief Flag to use engine outlet mass flow as engine inlet mass flow. */
   unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
   su2double wallModel_Kappa,        /*!< \brief von Karman constant kappa for turbulence wall modeling */
   wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
@@ -1082,14 +1122,31 @@ private:
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
+  struct CStochBackScatParam {
+    bool StochasticBackscatter;             /*!< \brief Option to include Stochastic Backscatter Model. */
+    su2double SBS_Cdelta;                   /*!< \brief Stochastic Backscatter Model lengthscale coefficient. */
+    unsigned short SBS_maxIterSmooth;       /*!< \brief Maximum number of smoothing iterations for the SBS model. */
+    su2double SBS_Ctau;                     /*!< \brief Stochastic Backscatter Model timescale coefficient. */
+    su2double SBS_Cmag;                     /*!< \brief Stochastic Backscatter Model intensity coefficient. */
+    bool stochSourceNu;                     /*!< \brief Option for including stochastic source term in turbulence model equation (Stochastic Backscatter Model). */
+    bool stochSourceDiagnostics;            /*!< \brief Option for writing diagnostics related to stochastic source terms in Langevin equations (Stochastic Backscatter Model). */
+    bool StochBackscatterInBox;             /*!< \brief Option for activating the Stochastic Backscatter Model only in a bounded box. */
+    su2double StochBackscatterBoxBounds[6]; /*!< \brief Bounds of the box where the Stochastic Backscatter Model is active. */
+    su2double stochFdThreshold;             /*!< \brief Shielding function lower threshold for application of Stochastic Backscatter Model. */
+    su2double stochSourceRelax;             /*!< \brief Relaxation factor for stochastic source term generation (Stochastic Backscatter Model). */
+  } SBSParam;
+  bool enforceLES;                          /*!< \brief Option to enforce LES mode in hybrid RANS-LES simulations. */
+  su2double LES_FilterWidth;                /*!< \brief LES filter width for hybrid RANS-LES simulations. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones;  /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;     /*!< \brief number of span-wise sections for each zones */
   bool turbMixingPlane;             /*!< \brief option for turbulent mixingplane */
   bool SpatialFourier;              /*!< \brief option for computing the fourier transforms for subsonic non-reflecting BC. */
+  bool RelFrame_SlidingPlane;       /*!< \brief option for relative frame slidingplane */
   bool RampMotionFrame;             /*!< \brief option for ramping up or down the motion Frame values */
   bool RampOutlet;                  /*!< \brief option for ramping up or down the outlet values */
+  bool RampMUSCL;
   bool RampRotatingFrame;           /*!< \brief option for ramping up or down the motion Frame values */
   bool RampTranslationFrame;        /*!< \brief option for ramping up or down the outlet values */
   bool RampOutletMassFlow;          /*!< \brief option for ramping up or down the motion Frame values */
@@ -1105,6 +1162,19 @@ private:
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
+
+  struct CMUSCLRampParam {
+    su2double RampMUSCLPower; /*!< \brief Exponent by which to raise the MUSCL ramp to the power of */
+    MUSCL_RAMP_TYPE Kind_MUSCLRamp; /*!< \brief The kind of MUSCL ramp */
+    unsigned long rampMUSCLCoeff[3];     /*!< \brief ramp MUSCL value coefficients for the COption class. */
+  } RampMUSCLParam;
+  su2double rampMUSCLValue; /*!< \brief Current value of the MUSCL ramp */
+  CMGOptions MGOptions;
+  /*--- Multigrid options  ---*/
+  unsigned short nMG_PreSmooth_p{0}, nMG_PostSmooth_p{0}, nMG_CorrecSmooth_p{0};
+  unsigned short *MG_PreSmooth_p{nullptr}, *MG_PostSmooth_p{nullptr}, *MG_CorrecSmooth_p{nullptr};
+  unsigned short nMG_CflScaling_p{0};
+  su2double *MG_CflScaling_p{nullptr};
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -1225,6 +1295,8 @@ private:
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
   bool edgeColoringRelaxDiscAdj;    /*!< \brief Allow fallback to smaller edge color group sizes and use more colors for the discrete adjoint. */
 
+  unsigned short rcmNumSeeds; /*!< \brief Number of concurrent BFS fronts used to build the RCM reordering. */
+
   INLET_SPANWISE_INTERP Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
   INLET_INTERP_TYPE Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
@@ -1332,9 +1404,11 @@ private:
   template <class Tenum, class Tfield>
   void addEnumListOption(const string name, unsigned short& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
 
-  void addDoubleArrayOption(const string& name, const int size, su2double* option_field);
+  void addDoubleArrayOption(const string& name, int size, bool allow_fewer, su2double* option_field);
 
-  void addUShortArrayOption(const string& name, const int size, unsigned short* option_field);
+  void addUShortArrayOption(const string& name, int size, bool allow_fewer, unsigned short* option_field);
+
+  void addULongArrayOption(const string& name, int size, bool allow_fewer, unsigned long* option_field);
 
   void addDoubleListOption(const string& name, unsigned short & size, su2double * & option_field);
 
@@ -1383,6 +1457,11 @@ private:
   template <class Tenum>
   void addGilesOption(const string name, unsigned short & nMarker_Giles, string * & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                      su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2);
+
+  template <class Tenum>
+  void addWallSpeciesOption(const string name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
+                            WALL_SPECIES_TYPE** & option_field, const map<string, Tenum> & enum_map,
+                            su2double** & value, unsigned short & nSpecies_per_Wall);
 
   void addExhaustOption(const string& name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
                         su2double* & Ttotal, su2double* & Ptotal);
@@ -1477,6 +1556,14 @@ public:
    * \param[in] Communicator - MPI communicator for SU2.
    */
   void SetMPICommunicator(SU2_MPI::Comm Communicator);
+
+  /*!
+   * \brief Helper function, which checks and opens a binary SU2 file.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] readnDim = Whether or not nDim must be read. If false nZone is read.
+   * \return Number of dimensions or number of zones in the grid.
+   */
+  static unsigned short CheckOpenSU2BinFile(const string& val_mesh_filename, bool readnDim);
 
   /*!
    * \brief Gets the number of zones in the mesh file.
@@ -1662,6 +1749,11 @@ public:
    * \return <code>TRUE</code> if CFL adaption is active; otherwise <code>FALSE</code>.
    */
   bool GetCFL_Adapt(void) const { return CFL_Adapt; }
+
+  /*!
+   * \brief Get the outlier mitigation parameters.
+   */
+  const unsigned long* GetOutlierMitigationParam() const { return outlierMitigationParam; }
 
   /*!
    * \brief Get the value of the limits for the sections.
@@ -1940,12 +2032,6 @@ public:
   su2double GetPressure_FreeStreamND(void) const { return Pressure_FreeStreamND; }
 
   /*!
-   * \brief Get a reference to the non-dimensionalized freestream pressure (used for AD tracking).
-   * \return Reference to non-dimensionalized freestream pressure.
-   */
-  su2double& GetPressure_FreeStreamND(void) { return Pressure_FreeStreamND; }
-
-  /*!
    * \brief Get the value of the thermodynamic pressure.
    * \return Thermodynamic pressure.
    */
@@ -1969,12 +2055,6 @@ public:
    * \return Non-dimensionalized freestream temperature.
    */
   su2double GetTemperature_FreeStreamND(void) const { return Temperature_FreeStreamND; }
-
-  /*!
-   * \brief Get a reference to the non-dimensionalized freestream temperature (used for AD tracking).
-   * \return Reference to non-dimensionalized freestream temperature.
-   */
-  su2double& GetTemperature_FreeStreamND(void) { return Temperature_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized vibrational-electronic freestream temperature.
@@ -2084,6 +2164,12 @@ public:
    * \return Non-dimensionalized engine intensity.
    */
   su2double GetNuFactor_Engine(void) const { return NuFactor_Engine; }
+
+  /*!
+   * \brief Get the flag to use exhaust mass flow as inlet mass flow.
+   * \return TRUE if exhaust mass flow is used as inlet mass flow.
+   */
+  bool GetExhaustToInlet_Engine(void) const { return out2in_mdot_engine; }
 
   /*!
    * \brief Get the value of the non-dimensionalized actuator disk turbulence intensity.
@@ -2456,11 +2542,12 @@ public:
    * \param[in] val_kind_upwind - If upwind scheme, kind of upwind scheme (Roe, etc.).
    * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
    * \param[in] val_muscl - Define if we apply a MUSCL scheme or not.
+   * \param[in] val_muscl_kappa - Define the blending coefficient for the MUSCL scheme.
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, CENTERED val_kind_centered,
                              UPWIND val_kind_upwind, LIMITER val_kind_slopelimit,
-                             bool val_muscl,  unsigned short val_kind_fem);
+                             bool val_muscl, su2double val_muscl_kappa, unsigned short val_kind_fem);
 
   /*!
    * \brief Get the value of limiter coefficient.
@@ -2867,7 +2954,8 @@ public:
    */
   void SetMGLevels(unsigned short val_nMGLevels) {
     nMGLevels = val_nMGLevels;
-    if (MGCycle == FULLMG_CYCLE) {
+    /*--- Clamp so FinestMesh can never point past the last level that still exists. ---*/
+    if ((Kind_MGCycle == MG_CYCLE::FULL) || (FinestMesh > val_nMGLevels)) {
       SetFinestMesh(val_nMGLevels);
     }
   }
@@ -2880,11 +2968,11 @@ public:
   unsigned short GetFinestMesh(void) const { return FinestMesh; }
 
   /*!
-   * \brief Get the kind of multigrid (V or W).
+   * \brief Get the kind of multigrid (V, W or FULLMG).
    * \note This variable is used in a recursive way to perform the different kind of cycles
    * \return 0 or 1 depending of we are dealing with a V or W cycle.
    */
-  unsigned short GetMGCycle(void) const { return MGCycle; }
+  MG_CYCLE GetMGCycle(void) const { return Kind_MGCycle; }
 
   /*!
    * \brief Get the king of evaluation in the geometrical module.
@@ -3023,7 +3111,27 @@ public:
    * \brief Get the number of Runge-Kutta steps.
    * \return Number of Runge-Kutta steps.
    */
-  unsigned short GetnRKStep(void) const { return nRKStep; }
+  unsigned short GetnRKStep(void) const {
+
+    unsigned short iRKLimit = 1;
+
+    switch (GetKind_TimeIntScheme()) {
+      case RUNGE_KUTTA_EXPLICIT:
+        iRKLimit = nRKStep;
+        break;
+      case CLASSICAL_RK4_EXPLICIT:
+        iRKLimit = 4;
+        break;
+      case EULER_EXPLICIT:
+      case EULER_IMPLICIT:
+        iRKLimit = 1;
+        break;
+      default:
+        iRKLimit = 1;
+        break;
+    }
+    return iRKLimit;
+  }
 
   /*!
    * \brief Get the number of time levels for time accurate local time stepping.
@@ -3420,12 +3528,19 @@ public:
   string GetMarker_HeatFlux_TagBound(unsigned short val_marker) const { return Marker_HeatFlux[val_marker]; }
 
   /*!
+   * \brief Get the list of markers for which to create copies.
+   */
+  std::vector<string> GetMarkerCreateCopy() const {
+    return { Marker_Create_Copy, Marker_Create_Copy + nMarker_Create_Copy };
+  }
+
+  /*!
    * \brief Get the tag if the iMarker defined in the geometry file.
    * \param[in] val_tag - Value of the tag in which we are interested.
    * \return Value of the marker <i>val_marker</i> that is in the geometry file
    *         for the surface that has the tag.
    */
-  short GetMarker_All_TagBound(string val_tag)  {
+  short GetMarker_All_TagBound(const string& val_tag)  {
     for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
       if (val_tag == Marker_All_TagBound[iMarker]) return iMarker;
     }
@@ -3779,34 +3894,9 @@ public:
   su2double GetNacelleLocation(unsigned short val_index) const { return nacelle_location[val_index]; }
 
   /*!
-   * \brief Get the number of pre-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
+   * \brief Get the multigrid options struct.
    */
-  unsigned short GetMG_PreSmooth(unsigned short val_mesh) const {
-    if (nMG_PreSmooth == 0) return 1;
-    return MG_PreSmooth[val_mesh];
-  }
-
-  /*!
-   * \brief Get the number of post-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
-   */
-  unsigned short GetMG_PostSmooth(unsigned short val_mesh) const {
-    if (nMG_PostSmooth == 0) return 0;
-    return MG_PostSmooth[val_mesh];
-  }
-
-  /*!
-   * \brief Get the number of implicit Jacobi smoothings of the correction in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of implicit smoothing iterations.
-   */
-  unsigned short GetMG_CorrecSmooth(unsigned short val_mesh) const {
-    if (nMG_CorrecSmooth == 0) return 0;
-    return MG_CorrecSmooth[val_mesh];
-  }
+  const CMGOptions& GetMGOptions() const { return MGOptions; }
 
   /*!
    * \brief plane of the FFD (I axis) that should be fixed.
@@ -3935,6 +4025,18 @@ public:
   ENUM_REGIME GetKind_Regime(void) const { return Kind_Regime; }
 
   /*!
+   * \brief Kind of incompressible solver formulation.
+   * \return Kind of incompressible solver.
+   */
+  INCOMP_SYSTEM GetKind_Incomp_System(void) const { return Kind_Incomp_System; }
+
+  /*!
+   * \brief Kind of iteration used for pressure based iterations.
+   * \return Kind of iteration used for pressure based iterations.
+   */
+  PBITER GetKind_PBIter(void) const { return Kind_PBIter; }
+
+  /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
    * \param[in] val_zone - Zone where the soler is applied.
    * \return Governing equation that we are solving.
@@ -4013,6 +4115,13 @@ public:
    * \return free stream option
    */
   unsigned short GetKind_InitOption(void) const { return Kind_InitOption; }
+
+  /*!
+   * \brief Get the initialization option of the incompressible solver.
+   * \return Initialization option of the incompressible solver.
+   */
+  INIT_OPTION_INC GetKind_InitOption_Inc() const { return Kind_InitOption_Inc; }
+
   /*!
    * \brief Get the value of the critical pressure.
    * \return Critical pressure.
@@ -4273,6 +4382,10 @@ public:
    */
   unsigned short GetKind_Linear_Solver(void) const { return Kind_Linear_Solver; }
 
+  /*!
+   * \brief Get the inner linear solver used in nested Krylov linear solvers.
+   */
+  LINEAR_SOLVER_INNER GetKind_Linear_Solver_Inner(void) const { return Kind_Linear_Solver_Inner; }
 
   /*!
    * \brief Get the kind of preconditioner for the implicit solver.
@@ -4281,10 +4394,22 @@ public:
   unsigned short GetKind_Linear_Solver_Prec(void) const { return Kind_Linear_Solver_Prec; }
 
   /*!
+   * \brief Get the kind of preconditioner for the linear solver of the poisson problem.
+   * \return Numerical preconditioner for poisson equation (solving the linear system).
+   */
+  unsigned short GetKind_Poisson_Linear_Solver_Prec(void) const { return Kind_Poisson_Linear_Solver_Prec; }
+
+  /*!
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_Deform_Linear_Solver(void) const { return Kind_Deform_Linear_Solver; }
+
+  /*!
+   * \brief Get the kind of solver for the poisson equation.
+   * \return Numerical solver for poisson equation (solving the linear system).
+   */
+  unsigned short GetKind_Poisson_Linear_Solver(void) const { return Kind_Poisson_Linear_Solver; }
 
   /*!
    * \brief Get min error of the linear solver for the implicit formulation.
@@ -4299,10 +4424,22 @@ public:
   su2double GetDeform_Linear_Solver_Error(void) const { return Deform_Linear_Solver_Error; }
 
   /*!
+   * \brief Get min error of the linear solver for the poisson equation.
+   * \return Min error of the linear solver for the poisson equation.
+   */
+  su2double GetPoisson_Linear_Solver_Error(void) const { return Poisson_Linear_Solver_Error; }
+
+  /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Iter(void) const { return Linear_Solver_Iter; }
+
+  /*!
+   * \brief Get max number of iterations of the linear solver for the poisson equation.
+   * \return Max number of iterations of the linear solver for the poisson equation.
+   */
+  unsigned long GetPoisson_Linear_Solver_Iter(void) const { return Poisson_Linear_Solver_Iter; }
 
   /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.
@@ -4311,16 +4448,26 @@ public:
   unsigned long GetDeform_Linear_Solver_Iter(void) const { return Deform_Linear_Solver_Iter; }
 
   /*!
-   * \brief Get the ILU fill-in level for the linear solver.
-   * \return Fill in level of the ILU preconditioner for the linear solver.
+   * \brief Get the ILU preconditioner options (fill-in level, OMP level scheduling, GPU build
+   *        sweeps), see CIluOptions.
    */
-  unsigned short GetLinear_Solver_ILU_n(void) const { return Linear_Solver_ILU_n; }
+  const CIluOptions& GetIluOptions(void) const { return IluOptions; }
+
+  /*!
+   * \brief Get the SIMPLE (and PISO) algorithm options, see CSIMPLE_Options.
+   */
+  const CSIMPLE_Options& GetSIMPLE_Options(void) const { return SIMPLE_Options; }
 
   /*!
    * \brief Get restart frequency of the linear solver for the implicit formulation.
    * \return Restart frequency of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Restart_Frequency(void) const { return Linear_Solver_Restart_Frequency; }
+
+  /*!
+   * \brief Get the number of vectors used for deflated restarts.
+   */
+  unsigned long GetLinear_Solver_Restart_Deflation(void) const { return Linear_Solver_Restart_Deflation; }
 
   /*!
    * \brief Get the relaxation factor for iterative linear smoothers.
@@ -4375,12 +4522,27 @@ public:
   /*!
    * \brief Get Newton-Krylov integer parameters.
    */
-  array<unsigned short,3> GetNewtonKrylovIntParam(void) const { return NK_IntParam; }
+  array<unsigned short,4> GetNewtonKrylovIntParam() const { return NK_IntParam; }
 
   /*!
    * \brief Get Newton-Krylov floating-point parameters.
    */
-  array<su2double,4> GetNewtonKrylovDblParam(void) const { return NK_DblParam; }
+  array<su2double,5> GetNewtonKrylovDblParam() const { return NK_DblParam; }
+
+  /*!
+   * \brief Get the Newton-Krylov relaxation.
+   */
+  su2double GetNewtonKrylovRelaxation() const { return NK_Relaxation; }
+
+  /*!
+   * \brief Set the Newton-Krylov relaxation.
+   */
+  void SetNewtonKrylovRelaxation(const su2double& relaxation) { NK_Relaxation = relaxation; }
+
+  /*!
+   * \brief Returns the MSW alpha (coefficient of the state blending weight).
+   */
+  su2double GetMSW_Alpha(void) const { return MSW_Alpha; }
 
   /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).
@@ -4606,54 +4768,30 @@ public:
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
-   * \note This is the information that the code will use, the method will
-   *       change in runtime depending of the specific equation (direct, adjoint,
-   *       linearized) that is being solved.
    * \return MUSCL scheme.
    */
   bool GetMUSCL_Flow(void) const { return MUSCL_Flow; }
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
-   * \note This is the information that the code will use, the method will
-   *       change in runtime depending of the specific equation (direct, adjoint,
-   *       linearized) that is being solved.
-   * \return MUSCL scheme.
-   */
-  bool GetMUSCL_Heat(void) const { return MUSCL_Heat; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \note This is the information that the code will use, the method will
-   *       change in runtime depending of the specific equation (direct, adjoint,
-   *       linearized) that is being solved.
-   * \return MUSCL scheme.
-   */
-  bool GetMUSCL_Turb(void) const { return MUSCL_Turb; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \return MUSCL scheme.
-   */
-  bool GetMUSCL_Species(void) const { return MUSCL_Species; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \note This is the information that the code will use, the method will
-   *       change in runtime depending of the specific equation (direct, adjoint,
-   *       linearized) that is being solved.
    * \return MUSCL scheme.
    */
   bool GetMUSCL_AdjFlow(void) const { return MUSCL_AdjFlow; }
 
   /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
+   * \brief Get the blending coefficient for the U-MUSCL scheme.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return MUSCL scheme.
+   * \return Blending coefficient for the U-MUSCL scheme.
    */
-  bool GetMUSCL_AdjTurb(void) const { return MUSCL_AdjTurb; }
+  su2double GetMUSCL_Kappa(void) const { return MUSCL_Kappa; }
+
+  /*!
+   * \brief Get the blending coefficient for the MUSCL scheme.
+   * \return Blending coefficient for the MUSCL scheme.
+   */
+  su2double GetMUSCL_Kappa_Flow(void) const { return MUSCL_Kappa_Flow; }
 
   /*!
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
@@ -5186,6 +5324,12 @@ public:
   bool GetRampOutflow(void) const { return RampOutlet; }
 
   /*!
+   * \brief Get MUSCL ramp option.
+   * \return Ramp MUSCL option
+  */
+  bool GetMUSCLRamp(void) const { return RampMUSCL; }
+
+  /*!
    * \brief General interface for accessing ramp coefficient information
    * \return coeff for ramps
   */
@@ -5194,6 +5338,23 @@ public:
     else if (ramp_flag == RAMP_TYPE::BOUNDARY) return rampOutletCoeff[val_coeff];
     else return 0;
   };
+
+  /*!
+   * \brief Set MUSCL ramp value.
+  */
+  void SetMUSCLRampValue(su2double ramp_value) { rampMUSCLValue = ramp_value; }
+
+  /*!
+   * \brief Get MUSCL ramp value.
+   * \return Ramp MUSCL value
+  */
+  su2double GetMUSCLRampValue(void) const { return rampMUSCLValue; }
+
+  /*!
+   * \brief Get MUSCL ramp paramaters.
+   * \return Ramp MUSCL kind
+  */
+  const CMUSCLRampParam& GetMUSCLRampParam(void) const { return RampMUSCLParam; }
 
   /*!
    * \brief Generic interface for setting monitor outlet values for the ramp.
@@ -5268,6 +5429,12 @@ public:
    * \return boolean.
    */
   bool GetBoolTurbomachinery(void) const { return (nMarker_Turbomachinery !=0);}
+
+  /*!
+   * \brief Verify if a sliding plane for relative frame is specified from config file.
+   * \return boolean.
+   */
+  bool GetBoolRelFrame_SlidingPlane(void) const { return (RelFrame_SlidingPlane !=0);}
 
   /*!
    * \brief number Turbomachinery blades computed using the pitch information.
@@ -5546,14 +5713,14 @@ public:
   unsigned short GetnVar(void);
 
   /*!
-   * \brief Provides the number of variables.
-   * \return Number of variables.
+   * \brief Provides the total number of zones.
+   * \return Total number of zones.
    */
   unsigned short GetnZone(void) const { return nZone; }
 
   /*!
-   * \brief Provides the number of variables.
-   * \return Number of variables.
+   * \brief Provides the zone index the configuration belongs to.
+   * \return Zone index.
    */
   unsigned short GetiZone(void) const { return iZone; }
 
@@ -5617,17 +5784,21 @@ public:
     /*--- we keep the original Mesh_FileName  ---*/
     string meshFilename = Mesh_FileName;
 
-    /*--- strip the extension, only if it is .su2 or .cgns ---*/
+    /*--- strip the extension, only if it is .su2, .su2b or .cgns ---*/
     PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".su2b",meshFilename);
     PrintingToolbox::TrimExtension(".cgns",meshFilename);
 
     switch (GetMesh_FileFormat()) {
-      case SU2:
-      case RECTANGLE:
-      case BOX:
+      case ENUM_GRID::SU2:
+      case ENUM_GRID::RECTANGLE:
+      case ENUM_GRID::BOX:
         meshFilename += ".su2";
         break;
-      case CGNS_GRID:
+      case ENUM_GRID::SU2_BIN:
+        meshFilename += ".su2b";
+        break;
+      case ENUM_GRID::CGNS_GRID:
         meshFilename += ".cgns";
         break;
       default:
@@ -5641,6 +5812,9 @@ public:
   /*!
    * \brief Get name of the output grid, this parameter is important for grid
    *        adaptation and deformation.
+   * \note The returned name does not include the extension, it is the
+   *       responsibility of the caller (usually a CFileWriter) to append it,
+   *       consistent with GetMesh_Out_FileExtension().
    * \return File name of the output grid.
    */
   string GetMesh_Out_FileName(void) const {
@@ -5648,11 +5822,29 @@ public:
     /*--- we keep the original Mesh_Out_FileName  ---*/
     string meshFilename = Mesh_Out_FileName;
 
-    /*--- strip the extension, only if it is .su2 or .cgns ---*/
+    /*--- strip the extension, only if it is .su2, .su2b or .cgns ---*/
     PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".su2b",meshFilename);
     PrintingToolbox::TrimExtension(".cgns",meshFilename);
 
     return meshFilename;
+  }
+
+  /*!
+   * \brief Get the extension (including the leading dot) associated with the
+   *        current mesh output format.
+   * \return Extension of the output grid file.
+   */
+  string GetMesh_Out_FileExtension(void) const {
+    switch (GetMesh_Out_FileFormat()) {
+      case ENUM_GRID::SU2:
+        return ".su2";
+      case ENUM_GRID::SU2_BIN:
+        return ".su2b";
+      default:
+        SU2_MPI::Error("Unrecognized mesh_out format specified!", CURRENT_FUNCTION);
+        return "";
+    }
   }
 
   /*!
@@ -5690,10 +5882,16 @@ public:
   }
 
   /*!
-   * \brief Get the format of the input/output grid.
-   * \return Format of the input/output grid.
+   * \brief Get the format of the input grid.
+   * \return Format of the input grid.
    */
   unsigned short GetMesh_FileFormat(void) const { return Mesh_FileFormat; }
+
+  /*!
+   * \brief Get the format of the output grid.
+   * \return Format of the output grid.
+   */
+  unsigned short GetMesh_Out_FileFormat(void) const { return Mesh_Out_FileFormat; }
 
   /*!
    * \brief Get the format of the output solution.
@@ -6743,10 +6941,22 @@ public:
   su2double GetDamp_Res_Restric(void) const { return Damp_Res_Restric; }
 
   /*!
+   * \brief Set the damping factor for the residual restriction (used by adaptive MG damping).
+   * \param[in] val - New damping factor value.
+   */
+  void SetDamp_Res_Restric(su2double val) { Damp_Res_Restric = val; }
+
+  /*!
    * \brief Value of the damping factor for the correction prolongation.
    * \return Value of the damping factor.
    */
   su2double GetDamp_Correc_Prolong(void) const { return Damp_Correc_Prolong; }
+
+  /*!
+   * \brief Set the damping factor for the correction prolongation (used by adaptive MG damping).
+   * \param[in] val - New damping factor value.
+   */
+  void SetDamp_Correc_Prolong(su2double val) { Damp_Correc_Prolong = val; }
 
   /*!
    * \brief Value of the position of the Near Field (y coordinate for 2D, and z coordinate for 3D).
@@ -7136,6 +7346,22 @@ public:
    * \return The inlet species values.
    */
   const su2double* GetInlet_SpeciesVal(const string& val_index) const;
+
+  /*!
+   * \brief Get the species value at a wall boundary for a specific species
+   * \param[in] val_marker - Marker tag corresponding to the wall boundary.
+   * \param[in] iSpecies - Species index.
+   * \return The wall species value (flux or Dirichlet value).
+   */
+  su2double GetWall_SpeciesVal(const string& val_marker, unsigned short iSpecies) const;
+
+  /*!
+   * \brief Get the species boundary condition type at a wall boundary for a specific species
+   * \param[in] val_marker - Marker tag corresponding to the wall boundary.
+   * \param[in] iSpecies - Species index.
+   * \return The wall species type (FLUX or VALUE).
+   */
+  WALL_SPECIES_TYPE GetWall_SpeciesType(const string& val_marker, unsigned short iSpecies) const;
 
   /*!
    * \brief Get the turbulent properties values at an inlet boundary
@@ -9009,25 +9235,6 @@ public:
    * \brief Start the timer for profiling subroutines.
    * \param[in] val_start_time - the value of the start time.
    */
-  void Tick(double *val_start_time);
-
-  /*!
-   * \brief Stop the timer for profiling subroutines and store results.
-   * \param[in] val_start_time - the value of the start time.
-   * \param[in] val_function_name - string for the name of the profiled subroutine.
-   * \param[in] val_group_id - string for the name of the profiled subroutine.
-   */
-  void Tock(double val_start_time, const string& val_function_name, int val_group_id);
-
-  /*!
-   * \brief Write a CSV file containing the results of the profiling.
-   */
-  void SetProfilingCSV(void);
-
-  /*!
-   * \brief Start the timer for profiling subroutines.
-   * \param[in] val_start_time - the value of the start time.
-   */
   void GEMM_Tick(double *val_start_time) const;
 
   /*!
@@ -9525,10 +9732,28 @@ public:
   unsigned short GetKind_HybridRANSLES(void) const { return Kind_HybridRANSLES; }
 
   /*!
+   * \brief Get if the LES mode must be enforced.
+   * \return TRUE if LES is enforced.
+   */
+  bool GetEnforceLES(void) const { return enforceLES; }
+
+  /*!
+   * \brief Get the LES Filter Width.
+   * \return Value of LES Filter Width.
+   */
+  su2double GetLES_FilterWidth(void) const { return LES_FilterWidth; }
+
+  /*!
    * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.
    * \return Value of Low dissipation approach.
    */
   unsigned short GetKind_RoeLowDiss(void) const { return Kind_RoeLowDiss; }
+
+  /*!
+   * \brief Get the Stochastic BackScatter (SBS) model parameters.
+   * \return SBS model parameters.
+   */
+  const CStochBackScatParam& GetSBSParam(void) const { return SBSParam; }
 
   /*!
    * \brief Get the DES Constant.
@@ -9994,6 +10219,11 @@ public:
   bool GetEdgeColoringRelaxDiscAdj() const { return edgeColoringRelaxDiscAdj; }
 
   /*!
+   * \brief Get the number of concurrent BFS fronts used to build the RCM reordering, see SetRCM_Ordering.
+   */
+  unsigned short GetRCM_NumSeeds(void) const { return rcmNumSeeds; }
+
+  /*!
    * \brief Get the ParMETIS load balancing tolerance.
    */
   passivedouble GetParMETIS_Tolerance() const { return SU2_TYPE::GetValue(ParMETIS_tolerance); }
@@ -10014,6 +10244,13 @@ public:
    * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
+
+  /*!
+   * \brief Find the marker index (if any) that is part of a mixing plane interface pair.
+   * \param[in] nMarker - Number of the marker in a zone being tested, starting at 0.
+   * \return value > 1 if (on this mpi rank) the zone defined by config is part of the mixing plane.
+   */
+  short FindMixingPlaneInterfaceMarker(unsigned short nMarker, unsigned short iMarkerInt) const;
 
   /*!
    * \brief Get whether or not to save solution data to libROM.
@@ -10135,6 +10372,10 @@ public:
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
 
+  /*!
+   * \brief Get rough-wall boundary conditions for SST.
+   */
+  ROUGHSST_MODEL GetKindRoughSSTModel() const { return Kind_RoughSST_Model; }
 
   /*!
    * \brief Get parsed option data structure for data-driven fluid model.
@@ -10147,5 +10388,13 @@ public:
    * \return option data structure for the flamelet fluid model.
    */
   const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
+
+  /*!
+   * \brief Get the enthalpy BC mode for the flamelet solver.
+   * FLOW_MARKERS: derive enthalpy BCs from MARKER_ISOTHERMAL/MARKER_HEATFLUX/MARKER_INLET (temperature-based).
+   * SPECIES_MARKERS: take enthalpy BCs directly from MARKER_WALL_SPECIES/MARKER_INLET_SPECIES.
+   * \return FLAMELET_ENTHALPY_BC enum value.
+   */
+  FLAMELET_ENTHALPY_BC GetFlamelet_Enthalpy_BC() const { return flamelet_ParsedOptions.enthalpy_bc; }
 
 };

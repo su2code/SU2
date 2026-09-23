@@ -2,14 +2,14 @@
  * \file CInterpolator.hpp
  * \brief Base class for multiphysics interpolation.
  * \author H. Kline
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -99,7 +99,13 @@ class CInterpolator {
       coefficient.resize(nDonor);
     }
   };
-  vector<vector<CDonorInfo> > targetVertices; /*! \brief Donor information per marker per vertex of the target. */
+  vector<vector<CDonorInfo>> targetVertices; /*! \brief Donor information per marker per vertex of the target. */
+
+  struct CSpanDonorInfo {
+    size_t donorSpan;       // Refers to donor span
+    su2double coefficient;  // Refers to coefficient
+  };
+  vector<vector<CSpanDonorInfo>> targetSpans;  // <iMarkerInt<TargetSpan<CSpanDonorInfo>>
 
   /*!
    * \brief Constructor of the class.
@@ -125,12 +131,17 @@ class CInterpolator {
    * \note Main method that derived classes must implement.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetTransferCoeff(const CConfig* const* config) = 0;
+  virtual void SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) = 0;
 
   /*!
    * \brief Print information about the interpolation.
    */
   virtual void PrintStatistics(void) const {}
+
+  /*!
+   * \brief Write mixing plane interpolation details to file
+   */
+  inline virtual void WriteInterpolationDetails(const string& filename, const CConfig* const* config){};
 
   /*!
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.

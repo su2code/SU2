@@ -2,14 +2,14 @@
  * \file CSlidingMesh.hpp
  * \brief Sliding mesh interpolation.
  * \author H. Kline
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@ class CSlidingMesh final : public CInterpolator {
    * \brief Set up transfer matrix defining relation between two meshes
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTransferCoeff(const CConfig* const* config) override;
+  void SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) override;
 
  private:
   /*!

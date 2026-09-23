@@ -2,14 +2,14 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,6 @@
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
-#include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/fluid/CFluidFlamelet.hpp"
@@ -40,7 +39,9 @@
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
                                  const bool navier_stokes) :
-  CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>(*geometry, *config) {
+  CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>(*geometry, *config),
+  pressure_based(config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
+  SU2_ZONE_SCOPED
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CIncNSSolver. ---*/
@@ -55,6 +56,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   const bool centered = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
+  const su2double* scalar_init = nullptr;
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
@@ -108,7 +110,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Make sure to align the sizes with the constructor of CIncEulerVariable. ---*/
   nVar = nDim + 2;
-  nPrimVar = nDim + 9;
+  nPrimVar = nDim + 10;
   /*--- Centered schemes only need gradients for viscous fluxes (T and v, but we need also to include P). ---*/
   nPrimVarGrad = nDim + (centered ? 2 : 4);
 
@@ -154,7 +156,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy, true);
   }
   else {
     if (rank == MASTER_NODE)
@@ -167,8 +169,11 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Pressure_Inf    = config->GetPressure_FreeStreamND();
   Velocity_Inf    = config->GetVelocity_FreeStreamND();
   Temperature_Inf = config->GetTemperature_FreeStreamND();
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) scalar_init = config->GetSpecies_Init();
+  GetFluidModel()->SetTDState_T(Temperature_Inf, scalar_init);
+  Enthalpy_Inf = GetFluidModel()->GetEnthalpy();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
 
   switch (config->GetDirectDiff()) {
     case NO_DERIVATIVE:
@@ -197,9 +202,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
-    nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+    nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
   } else {
-    nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+    nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
   }
   SetBaseClassPointerToNodes();
 
@@ -212,8 +217,30 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   CommunicateInitialState(geometry, config);
 
   /*--- Sizing edge mass flux array ---*/
-  if (config->GetBounded_Scalar())
+  if (config->GetBounded_Scalar() || pressure_based)
     EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
+
+  /*--- Pressure based solver specific allocations ---*/
+  if (pressure_based) {
+
+    /*--- Initialize the edge mass flux array ---*/
+
+    for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+      EdgeMassFluxes[iEdge] = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        EdgeMassFluxes[iEdge] += Density_Inf * Velocity_Inf[iDim] * geometry->edges->GetNormal(iEdge)[iDim];
+
+    }
+
+    /*--- Allocate corrections and relaxation ---*/
+
+    pressureCorrection.resize(nPointDomain) = su2double(0.0);
+    momentumCorrection.resize(nPointDomain,nDim) = su2double(0.0);
+    EdgeMassFluxCorrection.resize(geometry->GetnEdge()) =  su2double(0.0);
+    alpha_p.resize(nPointDomain)  = su2double(1.0);
+
+  }
 
   /*--- Add the solver name. ---*/
   SolverName = "INC.FLOW";
@@ -225,11 +252,13 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 }
 
 CIncEulerSolver::~CIncEulerSolver() {
+  SU2_ZONE_SCOPED
 
   for(auto& model : FluidModel) delete model;
 }
 
 void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   su2double Temperature_FreeStream = 0.0,  ModVel_FreeStream = 0.0,Energy_FreeStream = 0.0,
   ModVel_FreeStreamND = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
@@ -257,6 +286,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST)));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
+  bool density_init  = (config->GetKind_InitOption_Inc() == INIT_OPTION_INC::DENSITY_INIT);
 
   /*--- Compute dimensional free-stream values. ---*/
 
@@ -280,63 +310,75 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   }
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 
+  const su2double* scalar_init = nullptr;
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) scalar_init = config->GetSpecies_Init();
+
+  /*--- Build the fluid model at the operating pressure, it is rescaled below for density initialization. ---*/
+
+  const bool constant_density = (config->GetKind_FluidModel() == CONSTANT_DENSITY);
+  if (!constant_density) {
+    config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
+    Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
+  }
+
   CFluidModel* auxFluidModel = nullptr;
 
   switch (config->GetKind_FluidModel()) {
 
     case CONSTANT_DENSITY:
 
-      auxFluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp());
-      auxFluidModel->SetTDState_T(Temperature_FreeStream);
+      auxFluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp(), Temperature_FreeStream);
       break;
 
     case INC_IDEAL_GAS:
 
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic);
-      auxFluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = auxFluidModel->GetPressure();
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
       break;
 
     case INC_IDEAL_GAS_POLY:
 
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic);
+      auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
         for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
           config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar), iVar);
-        auxFluidModel->SetCpModel(config);
+        auxFluidModel->SetCpModel(config, Temperature_FreeStream);
       }
-      auxFluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = auxFluidModel->GetPressure();
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
     case FLUID_MIXTURE:
 
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
-      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidScalar(Pressure_Thermodynamic, config);
-      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
 
     case FLUID_FLAMELET:
 
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
-      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
-      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
 
     default:
 
       SU2_MPI::Error("Fluid model not implemented for incompressible solver.", CURRENT_FUNCTION);
       break;
+  }
+
+  auxFluidModel->SetTDState_T(Temperature_FreeStream, scalar_init);
+
+  /*--- Density is proportional to the thermodynamic pressure, match one of the two to the initial value.
+        The flamelet manifold tabulates the density, there the pressure cannot change it. ---*/
+
+  const bool tabulated_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::FLAMELET);
+
+  if (!constant_density) {
+    if (density_init && !tabulated_density) {
+      Pressure_Thermodynamic *= Density_FreeStream/auxFluidModel->GetDensity();
+      auxFluidModel->SetPressure(Pressure_Thermodynamic);
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, scalar_init);
+    } else {
+      Density_FreeStream = auxFluidModel->GetDensity();
+      config->SetDensity_FreeStream(Density_FreeStream);
+    }
+    config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
   }
 
   if (viscous) {
@@ -457,10 +499,10 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
-  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
+  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStream(Omega_FreeStream);
 
-  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
@@ -477,11 +519,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     switch (config->GetKind_FluidModel()) {
 
       case CONSTANT_DENSITY:
-        fluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
+        fluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND, STD_REF_TEMP / config->GetTemperature_Ref());
         break;
 
       case INC_IDEAL_GAS:
-        fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
+        fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 
@@ -496,13 +538,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case INC_IDEAL_GAS_POLY:
-        fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND);
+        fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
         if (viscous) {
           /*--- Variable Cp model via polynomial. ---*/
           config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
           for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
             config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
-          fluidModel->SetCpModel(config);
+          fluidModel->SetCpModel(config, Temperature_FreeStreamND);
         }
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
@@ -605,6 +647,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case INC_DENSITYMODEL::FLAMELET:
         cout << "Energy equation is disabled and density is obtained through flamelet manifold." << endl;
+        if (config->OptionIsSet("INIT_OPTION_INC"))
+          cout << "INIT_OPTION_INC is not used, the density is looked up in the flamelet manifold." << endl;
         break;
     }
 
@@ -924,6 +968,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 }
 
 void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
+  SU2_ZONE_SCOPED
 
   /*--- Evaluate reference values for non-dimensionalization. For dimensional or non-dim
    based on initial values, use the far-field state (inf). For a custom non-dim based
@@ -942,17 +987,25 @@ void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
   }
 
   DynamicPressureRef = 0.5 * RefDensity * RefVel2;
+
+  if (DynamicPressureRef < EPS) {
+    DynamicPressureRef = 1.0;
+  }
+
   AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
 
 void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool center     = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
+  const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST || config->GetKind_Centered_Flow() == CENTERED::LD2) && (iMesh == MESH_0);
   const bool outlet     = (config->GetnMarker_Outlet() != 0);
+  const bool dual_time  = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   /*--- Set the primitive variables ---*/
 
@@ -960,6 +1013,11 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
+
+  /*--- InnerIter is not reset while recording the discrete adjoint tape. ---*/
+  if (dual_time && (config->GetInnerIter() == 0 || AD::TapeActive())) {
+    RecomputeDensity_time_n(solver_container, config);
+  }
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -983,7 +1041,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   /*--- Update the beta value based on the maximum velocity. ---*/
 
-  SetBeta_Parameter(geometry, solver_container, config, iMesh);
+  if (!pressure_based) SetBeta_Parameter(geometry, solver_container, config, iMesh);
 
   /*--- Update the pressure range in the domain for target outflow mass flow rate. ---*/
 
@@ -995,18 +1053,27 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
     SU2_OMP_SAFE_GLOBAL_ACCESS(GetOutlet_Properties(geometry, config, iMesh, Output);)
   }
 
+  /*--- Reset flag for strong BCs. ---*/
+  if (pressure_based) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+      nodes->ResetStrongBC(iPoint);
+    END_SU2_OMP_FOR
+  }
+
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
 
   if(!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
-    if (implicit) Jacobian.SetValZero();
+    if (implicit) Jacobian.SetValDiagonalZero();
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
 }
 
 void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -1016,6 +1083,21 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Common preprocessing steps. ---*/
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+
+  /*--- Source_Residual needs the pressure gradient to build the pressure-based solver's
+  momentum source term. For a viscous run CIncNSSolver::Preprocessing computes it unconditionally,
+  but this inviscid path otherwise only computes Gradient_Reconstruction, and only when MUSCL is
+  on - which silently leaves the pressure gradient at zero for an inviscid PB run with
+  MUSCL_FLOW=NO, or with mismatched reconstruction/base gradient methods. ---*/
+
+  if (pressure_based) {
+    switch (config->GetKind_Gradient_Method()) {
+      case GREEN_GAUSS: SetPrimitive_Gradient_GG(geometry, config); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES: SetPrimitive_Gradient_LS(geometry, config); break;
+      default: break;
+    }
+  }
 
   /*--- Upwind second order reconstruction ---*/
 
@@ -1039,6 +1121,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 }
 
 unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint, nonPhysicalPoints = 0;
 
@@ -1062,20 +1145,45 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
   return nonPhysicalPoints;
 }
 
+void CIncEulerSolver::RecomputeDensity_time_n(CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  /*--- Only variable-density (non-constant) cases allocate the density history. ---*/
+  if (config->GetKind_DensityModel() == INC_DENSITYMODEL::CONSTANT) return;
+
+  const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+
+  CVariable* speciesNodes = (solver_container[SPECIES_SOL] != nullptr)
+                              ? solver_container[SPECIES_SOL]->GetNodes() : nullptr;
+
+  /*--- The species solver only exists on the fine grid; MG with scalar-dependent density is rejected in CConfig. ---*/
+  const bool needs_scalars = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE);
+  if (needs_scalars && speciesNodes == nullptr) return;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    /*--- Per-thread fluid model, mirroring the recipe in SetPrimitive_Variables. ---*/
+    CFluidModel* fluidModel = GetFluidModel();
+
+    const su2double* scalar_n = speciesNodes ? speciesNodes->GetSolution_time_n(iPoint) : nullptr;
+    const su2double Enthalpy_n = nodes->GetSolution_time_n(iPoint, nDim + 1);
+    fluidModel->SetTDState_h(Enthalpy_n, scalar_n);
+    nodes->SetDensity_time_n(iPoint, fluidModel->GetDensity());
+
+    if (second_order) {
+      const su2double* scalar_n1 = speciesNodes ? speciesNodes->GetSolution_time_n1(iPoint) : nullptr;
+      const su2double Enthalpy_n1 = nodes->GetSolution_time_n1(iPoint, nDim + 1);
+      fluidModel->SetTDState_h(Enthalpy_n1, scalar_n1);
+      nodes->SetDensity_time_n1(iPoint, fluidModel->GetDensity());
+    }
+  }
+  END_SU2_OMP_FOR
+}
+
 void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                    unsigned short iMesh, unsigned long Iteration) {
-
-  /*--- Define an object to compute the speed of sound. ---*/
-  struct SoundSpeed {
-    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
-      return sqrt(0.5 * (nodes.GetBetaInc2(iPoint) + nodes.GetBetaInc2(jPoint)));
-    }
-
-    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
-      return sqrt(nodes.GetBetaInc2(iPoint));
-    }
-
-  } soundSpeed;
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to compute the viscous eigenvalue. ---*/
   struct LambdaVisc {
@@ -1110,22 +1218,53 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 
   } lambdaVisc(config->GetEnergy_Equation());
 
-  /*--- Now instantiate the generic implementation with the two functors above. ---*/
+  if (pressure_based) {
+    /* Define an object to compute the speed of sound, as the speed of sound is theoretically infinite,
+    this makes no sense. However to be able to reuse the time step routine we artificially define the speed of sound
+    to be zero such that a regular advective time step is computed */
+    struct SoundSpeed {
+      FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint = 0) const {
+        return 0.0;
+      }
 
-  SetTime_Step_impl(soundSpeed, lambdaVisc, geometry, solver_container, config, iMesh, Iteration);
+    } soundSpeed;
+
+    /*--- Now instantiate the generic implementation with the two functors above. ---*/
+
+    SetTime_Step_impl(soundSpeed, lambdaVisc, geometry, solver_container, config, iMesh, Iteration);
+
+  } else {
+    /*--- Define an object to compute the speed of sound. ---*/
+    struct SoundSpeed {
+      FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
+        return sqrt(0.5 * (nodes.GetBetaInc2(iPoint) + nodes.GetBetaInc2(jPoint)));
+      }
+
+      FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
+        return sqrt(nodes.GetBetaInc2(iPoint));
+      }
+
+    } soundSpeed;
+
+    /*--- Now instantiate the generic implementation with the two functors above. ---*/
+
+    SetTime_Step_impl(soundSpeed, lambdaVisc, geometry, solver_container, config, iMesh, Iteration);
+  }
 
 }
 
 void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
   unsigned long iPoint, jPoint;
 
   const bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0));
+  const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST || config->GetKind_Centered_Flow() == CENTERED::LD2) && (iMesh == MESH_0));
   const bool bounded_scalar = config->GetBounded_Scalar();
+  const bool LD2_Scheme = (config->GetKind_Centered_Flow() == CENTERED::LD2);
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1163,38 +1302,47 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
       numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
     }
 
+    if (LD2_Scheme) {
+      numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(jPoint));
+      if (!geometry->nodes->GetPeriodicBoundary(iPoint) || (geometry->nodes->GetPeriodicBoundary(iPoint)
+          && !geometry->nodes->GetPeriodicBoundary(jPoint))) {
+        numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+      } else {
+        numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+      }
+    }
+
     /*--- Grid movement ---*/
 
     if (dynamic_grid) {
       numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
     }
 
+    /*--- Set the edge mass flux ---*/
+
+    if (pressure_based) numerics->SetMassFlux(EdgeMassFluxes[iEdge]);
+
     /*--- Compute residuals, and Jacobians ---*/
 
-    auto residual = numerics->ComputeResidual(config);
+    auto conv_residual = numerics->ComputeResidual(config);
 
-    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = conv_residual[0];
 
     /*--- Update residual value ---*/
 
     if (ReducerStrategy) {
-      EdgeFluxes.SetBlock(iEdge, residual);
-      if (implicit)
-        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
-    }
-    else {
-      LinSysRes.AddBlock(iPoint, residual);
-      LinSysRes.SubtractBlock(jPoint, residual);
-
-      /*--- Set implicit computation ---*/
-      if (implicit)
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      EdgeFluxes.SetBlock(iEdge, conv_residual);
+    } else {
+      LinSysRes.AddBlock(iPoint, conv_residual);
+      LinSysRes.SubtractBlock(jPoint, conv_residual);
     }
 
-    /*--- Viscous contribution. ---*/
+    /*--- Viscous contribution, returns its Jacobians so that the matrix is updated once. ---*/
 
-    Viscous_Residual(iEdge, geometry, solver_container,
-                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+    const auto visc_residual = Viscous_Residual(
+        iEdge, geometry, solver_container, numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+
+    if (implicit) UpdateJacobian(iEdge, iPoint, jPoint, conv_residual, visc_residual);
   }
   END_SU2_OMP_FOR
   } // end color loop
@@ -1213,6 +1361,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
 void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
@@ -1220,7 +1369,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
 
   unsigned long iPoint, jPoint, counter_local = 0;
-  unsigned short iDim, iVar;
 
   SU2_OMP_MASTER
   ErrorCounter = 0;
@@ -1231,6 +1379,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool bounded_scalar = config->GetBounded_Scalar();
+  const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
+
+  const su2double kappa = config->GetMUSCL_Kappa_Flow();
+  const su2double musclRamp = config->GetMUSCLRampValue() * config->GetNewtonKrylovRelaxation();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1270,43 +1422,41 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-      }
+      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Vector_ij);
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (auto iVar = 0u; iVar < nPrimVarGrad; iVar++) {
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        }
+        const su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa, musclRamp);
+        const su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa, musclRamp);
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;
-
         if (van_albada) {
-          su2double V_ij = V_j[iVar] - V_i[iVar];
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, V_ij, EPS);
         }
         else if (limiter) {
           lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
           lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
         }
 
-        Primitive_i[iVar] = V_i[iVar] + lim_i * Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + lim_j * Project_Grad_j;
+        Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_i * Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] - 0.5 * lim_j * Project_Grad_j;
       }
 
-      for (iVar = nPrimVarGrad; iVar < nPrimVar; iVar++) {
+      for (auto iVar = nPrimVarGrad; iVar < nPrimVar; iVar++) {
         Primitive_i[iVar] = V_i[iVar];
         Primitive_j[iVar] = V_j[iVar];
+      }
+      if(multicomponent){
+        const su2double* scalar_i = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+        const su2double* scalar_j = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(jPoint);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j);
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found,
@@ -1328,7 +1478,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         counter_local += bad_recon;
 
         if (bad_recon) {
-          for (iVar = 0; iVar < nPrimVar; iVar++) {
+          for (auto iVar = 0u; iVar < nPrimVar; iVar++) {
             Primitive_i[iVar] = V_i[iVar];
             Primitive_j[iVar] = V_j[iVar];
           }
@@ -1345,32 +1495,32 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     }
 
+    /*--- Set the edge mass flux ---*/
+
+    if (pressure_based) numerics->SetMassFlux(EdgeMassFluxes[iEdge]);
+
     /*--- Compute the residual ---*/
 
-    auto residual = numerics->ComputeResidual(config);
+    auto conv_residual = numerics->ComputeResidual(config);
 
-    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = conv_residual[0];
 
     /*--- Update residual value ---*/
 
     if (ReducerStrategy) {
-      EdgeFluxes.SetBlock(iEdge, residual);
-      if (implicit)
-        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+      EdgeFluxes.SetBlock(iEdge, conv_residual);
     }
     else {
-      LinSysRes.AddBlock(iPoint, residual);
-      LinSysRes.SubtractBlock(jPoint, residual);
-
-      /*--- Set implicit computation ---*/
-      if (implicit)
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      LinSysRes.AddBlock(iPoint, conv_residual);
+      LinSysRes.SubtractBlock(jPoint, conv_residual);
     }
 
-    /*--- Viscous contribution. ---*/
+    /*--- Viscous contribution, returns its Jacobians so that the matrix is updated once. ---*/
 
-    Viscous_Residual(iEdge, geometry, solver_container,
-                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+    const auto visc_residual = Viscous_Residual(
+        iEdge, geometry, solver_container, numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+
+    if (implicit) UpdateJacobian(iEdge, iPoint, jPoint, conv_residual, visc_residual);
 
   }
   END_SU2_OMP_FOR
@@ -1379,8 +1529,20 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
 }
 
+void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim,
+                                                     const su2double* scalar, su2double* primitive) {
+  SU2_ZONE_SCOPED
+  const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
+  const su2double enthalpy = primitive[prim_idx.Enthalpy()];
+  fluidModel->SetTDState_h(enthalpy, scalar);
+
+  primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
+  primitive[prim_idx.Density()] = fluidModel->GetDensity();
+}
+
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -1397,8 +1559,23 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
+  const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   AD::StartNoSharedReading();
+
+  if (pressure_based) {
+
+    /*--- Add pressure source term (V * gradp) ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        LinSysRes(iPoint, iDim + 1) += geometry->nodes->GetVolume(iPoint) * nodes->GetGradient_Primitive(iPoint,prim_idx.Pressure(),iDim);
+
+    }
+    END_SU2_OMP_FOR
+  }
 
   if (body_force) {
 
@@ -1579,6 +1756,35 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
+        if(multicomponent && energy){
+          /*--- retrieve number of species that are solved and set maximum static array ---*/
+          int n_species = config->GetnSpecies();
+          static constexpr size_t MAXNVAR_SPECIES = 20UL;
+          /*--- Obtain fluid model for computing the enthalpy diffusion terms. ---*/
+          CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+          /*--- retrieve species gradient needed for multicomponent. ---*/
+          CMatrixView<const su2double> Species_Grad_i = solver_container[SPECIES_SOL]->GetNodes()->GetGradient(iPoint);
+          /*--- Set thermodynamic state. ---*/
+          FluidModel->SetTDState_T(nodes->GetTemperature(iPoint),solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint));
+          /*--- Get enthalpy diffusion terms and its gradients(for implicit). ---*/
+          su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+          su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+          FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_i);
+          if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_i);
+          /*--- Compute Enthalpy diffusion flux and its jacobian (for implicit iterations) ---*/
+          su2double flux_enthalpy_diffusion = 0.0;
+          su2double jac_flux_enthalpy_diffusion = 0.0;
+          for (int i_species = 0; i_species < n_species; i_species++) {
+            flux_enthalpy_diffusion += EnthalpyDiffusion_i[i_species]* Species_Grad_i[i_species][1];
+            if (implicit)
+              jac_flux_enthalpy_diffusion += GradEnthalpyDiffusion_i[i_species] * Species_Grad_i[i_species][1];
+          }
+
+          /*--- Set heat flux and jacobian (for implicit) due to enthalpy diffusion ---*/
+
+          numerics->SetHeatFluxDiffusion(flux_enthalpy_diffusion);
+          if (implicit) numerics->SetJacHeatFluxDiffusion(jac_flux_enthalpy_diffusion);
+        }
       }
 
       /*--- Compute Source term Residual ---*/
@@ -1616,6 +1822,10 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Set control volume ---*/
 
       second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Set Cp (for implicit) ---*/
+
+      if (implicit) second_numerics->SetSpecificHeat(nodes->GetSpecificHeatCp(iPoint), 0.0);
 
       /*--- Compute the residual ---*/
 
@@ -1821,6 +2031,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /* This method should be used to call any new source terms for a particular problem*/
   /* This method calls the new child class in CNumerics, where the new source term should be implemented.  */
@@ -1834,6 +2045,7 @@ void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to compute the speed of sound. ---*/
   struct SoundSpeed {
@@ -1854,6 +2066,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, const CConfig *conf
 }
 
 void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object for the sensor variable, density. ---*/
   struct SensVar {
@@ -1870,6 +2083,13 @@ void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const 
 template<ENUM_TIME_INT IntegrationType>
 FORCEINLINE void CIncEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                      CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
+
+  if (pressure_based) {
+    CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>::Explicit_Iteration<IntegrationType>(geometry, solver_container, config, iRKStep);
+    return;
+  }
+
   struct Precond {
     const CIncEulerSolver* solver;
     su2activematrix matrix;
@@ -1896,29 +2116,35 @@ FORCEINLINE void CIncEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolve
 
 void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                            CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<RUNGE_KUTTA_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CIncEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                              CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<CLASSICAL_RK4_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
 void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   struct IncPrec {
     const CIncEulerSolver* solver;
-    const bool active = true;
+    const bool active;
     su2activematrix matrix;
 
-    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s) { matrix.resize(nVar,nVar); }
+    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s), active(!s->pressure_based) {
+      matrix.resize(nVar,nVar);
+    }
 
     FORCEINLINE const su2activematrix& operator() (const CConfig* config, unsigned long iPoint, su2double delta) {
       solver->SetPreconditioner(config, iPoint, delta, matrix);
@@ -1928,15 +2154,22 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
   } precond(this, nVar);
 
   PrepareImplicitIteration_impl(precond, geometry, config);
-}
 
-void CIncEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
-
-  CompleteImplicitIteration_impl<false>(geometry, config);
+  /*--- Delete pressure rows for segregated solver type. ---*/
+  if (pressure_based) {
+    SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      Jacobian.DeleteValsRowi(iPoint, 0);
+      LinSysRes(iPoint,0) = 0.0;
+      LinSysSol(iPoint,0) = 0.0;
+    }
+    END_SU2_OMP_FOR
+  }
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
   static su2double MaxVel2;
   const su2double epsilon2_default = 4.1;
 
@@ -1953,9 +2186,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
       maxVel2 = max(maxVel2, nodes->GetVelocity2(iPoint));
     END_SU2_OMP_FOR
 
-    SU2_OMP_CRITICAL
-    MaxVel2 = max(MaxVel2, maxVel2);
-    END_SU2_OMP_CRITICAL
+    atomicMax(maxVel2, MaxVel2);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
@@ -1980,6 +2211,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
 void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
   static su2double MinP, MaxP;
 
   if (iMesh == MESH_0) {
@@ -1998,14 +2230,10 @@ void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_con
     }
     END_SU2_OMP_FOR
 
-    SU2_OMP_CRITICAL {
-      MinP = min(MinP, minP);
-      MaxP = max(MaxP, maxP);
-    }
-    END_SU2_OMP_CRITICAL
+    atomicMin(minP, MinP);
+    atomicMax(maxP, MaxP);
 
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       minP = MinP;
       SU2_MPI::Allreduce(&minP, &MinP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       maxP = MaxP;
@@ -2020,10 +2248,11 @@ void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_con
 
 void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,
                                         su2double delta, su2activematrix& Preconditioner) const {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim, jDim, iVar, jVar;
 
-  su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
+  su2double  BetaInc2, Density, dRhodh, Temperature, Cp, Enthalpy;
   su2double  Velocity[MAXNDIM] = {0.0};
 
   bool variable_density = (config->GetVariable_Density_Model());
@@ -2035,20 +2264,20 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   Density     = nodes->GetDensity(iPoint);
   BetaInc2    = nodes->GetBetaInc2(iPoint);
   Cp          = nodes->GetSpecificHeatCp(iPoint);
-  oneOverCp   = 1.0/Cp;
   Temperature = nodes->GetTemperature(iPoint);
+  Enthalpy = nodes->GetEnthalpy(iPoint);
 
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
 
   /*--- We need the derivative of the equation of state to build the
    preconditioning matrix. For now, the only option is the ideal gas
-   law, but in the future, dRhodT should be in the fluid model. ---*/
+   law, but in the future, dRhodh should be in the fluid model. ---*/
 
   if (variable_density) {
-    dRhodT = -Density/Temperature;
+    dRhodh = -Density / (Cp * Temperature);
   } else {
-    dRhodT = 0.0;
+    dRhodh = 0.0;
   }
 
   /*--- Calculating the inverse of the preconditioning matrix
@@ -2063,8 +2292,11 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim++)
       Preconditioner[iDim+1][0] = Velocity[iDim]/BetaInc2;
 
-    if (energy) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
-    else        Preconditioner[nDim+1][0] = 0.0;
+    if (energy) {
+      Preconditioner[nDim+1][0] = Enthalpy / BetaInc2;
+    } else {
+      Preconditioner[nDim+1][0] = 0.0;
+    }
 
     for (jDim = 0; jDim < nDim; jDim++) {
       Preconditioner[0][jDim+1] = 0.0;
@@ -2075,60 +2307,69 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
       Preconditioner[nDim+1][jDim+1] = 0.0;
     }
 
-    Preconditioner[0][nDim+1] = dRhodT;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Preconditioner[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
+    Preconditioner[0][nDim+1] = dRhodh;
+    for (iDim = 0; iDim < nDim; iDim++) Preconditioner[iDim+1][nDim+1] = Velocity[iDim] * dRhodh;
 
-    if (energy) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
-    else        Preconditioner[nDim+1][nDim+1] = 1.0;
+    if (energy) {
+      Preconditioner[nDim+1][nDim+1] = dRhodh * Enthalpy + Density;
+    } else {
+      Preconditioner[nDim+1][nDim+1] = 1.0;
+    }
 
     for (iVar = 0; iVar < nVar; iVar ++ )
       for (jVar = 0; jVar < nVar; jVar ++ )
         Preconditioner[iVar][jVar] = delta*Preconditioner[iVar][jVar];
 
   } else {
-
     /*--- For explicit calculations, we move the residual to the
      right-hand side and pre-multiply by the preconditioner inverse.
      Therefore, we build inv(Precon) here and multiply by the residual
      later in the R-K and Euler Explicit time integration schemes. ---*/
 
-    Preconditioner[0][0] = Temperature*BetaInc2*dRhodT/Density + BetaInc2;
-    for (iDim = 0; iDim < nDim; iDim ++)
-      Preconditioner[iDim+1][0] = -1.0*Velocity[iDim]/Density;
 
-    if (energy) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
-    else        Preconditioner[nDim+1][0] = 0.0;
+    Preconditioner[0][0] = Enthalpy * BetaInc2 * dRhodh / Density + BetaInc2;
 
+    for (iDim = 0; iDim < nDim; iDim++) Preconditioner[iDim + 1][0] = -1.0 * Velocity[iDim] / Density;
+
+    if (energy) {
+      Preconditioner[nDim+1][0] = -1.0 * Enthalpy / Density;
+    } else {
+      Preconditioner[nDim+1][0] = 0.0;
+    }
 
     for (jDim = 0; jDim < nDim; jDim++) {
       Preconditioner[0][jDim+1] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        if (iDim == jDim) Preconditioner[iDim+1][jDim+1] = 1.0/Density;
-        else Preconditioner[iDim+1][jDim+1] = 0.0;
+        if (iDim == jDim)
+          Preconditioner[iDim+1][jDim+1] = 1.0 / Density;
+        else
+          Preconditioner[iDim+1][jDim+1] = 0.0;
       }
       Preconditioner[nDim+1][jDim+1] = 0.0;
     }
 
-    Preconditioner[0][nDim+1] = -1.0*BetaInc2*dRhodT*oneOverCp/Density;
-    for (iDim = 0; iDim < nDim; iDim ++)
-      Preconditioner[iDim+1][nDim+1] = 0.0;
+    Preconditioner[0][nDim+1] = -1.0 * BetaInc2 * dRhodh / Density;
+    for (iDim = 0; iDim < nDim; iDim++) Preconditioner[iDim+1][nDim+1] = 0.0;
 
-    if (energy) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
-    else        Preconditioner[nDim+1][nDim+1] = 0.0;
-
+    if (energy) {
+      Preconditioner[nDim+1][nDim+1] = 1 / Density;
+    } else {
+      Preconditioner[nDim+1][nDim+1] = 0.0;
+    }
   }
-
 }
 
 void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const bool viscous = config->GetViscous();
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   su2double Normal[MAXNDIM] = {0.0};
 
@@ -2170,8 +2411,14 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
     V_infty[prim_idx.Pressure()] = GetPressure_Inf();
 
     /*--- Dirichlet condition for temperature at far-field (if energy is active). ---*/
-
     V_infty[prim_idx.Temperature()] = GetTemperature_Inf();
+
+    /*-- Enthalpy at far-field. ---*/
+    const su2double* scalar_infty = nullptr;
+    if (species_model) scalar_infty = config->GetSpecies_Init();
+    CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+    auxFluidModel->SetTDState_T(V_infty[prim_idx.Temperature()], scalar_infty);
+    V_infty[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
 
     /*--- Store the density.  ---*/
 
@@ -2179,7 +2426,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Beta coefficient stored at the node ---*/
 
-    V_infty[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
+    if (!pressure_based) V_infty[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
 
     /*--- Cp is needed for Temperature equation. ---*/
 
@@ -2193,22 +2440,75 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
 
-    /*--- Compute the convective residual using an upwind scheme ---*/
+    if (pressure_based) {
 
-    auto residual = conv_numerics->ComputeResidual(config);
+      /*--- Decide if the boundary should be an inlet or an outlet ---*/
 
-    /*--- Update residual value ---*/
+      su2double Face_Flux = 0.0;
+      if (dynamic_grid)
+        for (iDim = 0; iDim < nDim; iDim++)
+          Face_Flux += nodes->GetDensity(iPoint)*(V_domain[iDim+1]-geometry->nodes->GetGridVel(iPoint)[iDim])*Normal[iDim];
+      else
+        for (iDim = 0; iDim < nDim; iDim++)
+          Face_Flux += nodes->GetDensity(iPoint)*V_domain[iDim+1]*Normal[iDim];
 
-    LinSysRes.AddBlock(iPoint, residual);
+      bool inflow = false;
+      if ((Face_Flux < 0.0) && (fabs(Face_Flux) > EPS)) inflow = true;
 
-    /*--- Convective Jacobian contribution for implicit integration ---*/
+      if (inflow) {
 
-    if (implicit)
-      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+        /*--- Set this face as an inlet via a strong BC. ---*/
+
+        LinSysRes.SetBlock_Zero(iPoint);
+
+        /*--- Mark as a strong BC which is important for deciding if a velocity correction should be applied ---*/
+
+        nodes->SetStrongBC(iPoint);
+
+        if (implicit)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Jacobian.DeleteValsRowi(iPoint, iDim+1);
+
+      } else {
+
+        /*--- Set the edge mass flux ---*/
+
+        conv_numerics->SetMassFlux(Face_Flux);
+
+        /*--- Compute the residual using an upwind scheme ---*/
+
+        conv_numerics->SetPrimitive(V_domain, V_domain);
+
+        auto residual = conv_numerics->ComputeResidual(config);
+
+        LinSysRes.AddBlock(iPoint, residual);
+        nodes->SetSolution(iPoint, 0, GetPressure_Inf());
+        nodes->SetPressure(iPoint);
+
+        if (implicit)
+          Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+      }
+    } else {
+
+      /*--- Compute the convective residual using an upwind scheme ---*/
+
+      auto residual = conv_numerics->ComputeResidual(config);
+
+      /*--- Update residual value ---*/
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Convective Jacobian contribution for implicit integration ---*/
+
+      if (implicit)
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+    }
 
     /*--- Viscous residual contribution ---*/
 
-    if (!viscous) continue;
+    if (!viscous || energy_multicomponent || pressure_based) continue;
 
     /*--- Set transport properties at infinity. ---*/
 
@@ -2253,6 +2553,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
 void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   unsigned long Point_Normal;
@@ -2263,6 +2564,8 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
@@ -2349,6 +2652,9 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       case INLET_TYPE::PRESSURE_INLET:
 
+        if (pressure_based)
+          SU2_MPI::Error("Pressure Inlet is currently an unsupported INC_INLET_TYPE for pressure based solver.", CURRENT_FUNCTION);
+
         /*--- Retrieve the specified total pressure for the inlet. ---*/
 
         P_total = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
@@ -2426,87 +2732,120 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
     }
 
-    /*--- Access density at the node. This is either constant by
+    if (pressure_based) {
+
+      /*--- Directly overwrite the velocity at the boundary nodes as a dirichlet boundary condition ---*/
+
+      nodes->SetVelocity_Old(iPoint,V_inlet+prim_idx.Velocity());
+
+      LinSysRes.SetBlock_Zero(iPoint);
+
+      if (pressure_based) nodes->SetStrongBC(iPoint);
+
+      if (implicit)
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian.DeleteValsRowi(iPoint, iDim+1);
+
+    } else {
+
+      /*-- Enthalpy is needed for energy equation. ---*/
+      const su2double* scalar_inlet = nullptr;
+      if (species_model) scalar_inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+      CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+      auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], scalar_inlet);
+
+      /*--- For the flamelet model with FLOW_MARKERS enthalpy BC, we obtain the inlet enthalpy
+      from the flamelet species solver  With SPECIES_MARKERS, the enthalpy in MARKER_INLET_SPECIES
+      is used directly. ---*/
+      if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET &&
+          config->GetFlamelet_Enthalpy_BC() == FLAMELET_ENTHALPY_BC::FLOW_MARKERS)
+        V_inlet[prim_idx.Enthalpy()] = nodes->GetEnthalpy(iPoint);
+      else
+        V_inlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
+
+      /*--- Access density at the node. This is either constant by
       construction, or will be set fixed implicitly by the temperature
       and equation of state. ---*/
 
-    V_inlet[prim_idx.Density()] = nodes->GetDensity(iPoint);
+      V_inlet[prim_idx.Density()] = nodes->GetDensity(iPoint);
 
-    /*--- Beta coefficient from the config file ---*/
+      /*--- Beta coefficient from the config file ---*/
 
-    V_inlet[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
+      V_inlet[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
 
-    /*--- Cp is needed for Temperature equation. ---*/
+      /*--- Cp is needed for Temperature equation. ---*/
 
-    V_inlet[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
+      V_inlet[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
 
-    /*--- Set various quantities in the solver class ---*/
+      /*--- Set various quantities in the solver class ---*/
 
-    conv_numerics->SetPrimitive(V_domain, V_inlet);
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-    if (dynamic_grid)
-      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                geometry->nodes->GetGridVel(iPoint));
+      if (dynamic_grid)
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
 
-    /*--- Compute the residual using an upwind scheme ---*/
+      /*--- Compute the residual using an upwind scheme ---*/
 
-    auto residual = conv_numerics->ComputeResidual(config);
+      auto residual = conv_numerics->ComputeResidual(config);
 
-    /*--- Update residual value ---*/
+      /*--- Update residual value ---*/
 
-    LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
-    /*--- Jacobian contribution for implicit integration ---*/
+      /*--- Jacobian contribution for implicit integration ---*/
 
-    if (implicit)
-      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      if (implicit)
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-    /*--- Viscous contribution, commented out because serious convergence problems ---*/
+      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-    if (!viscous) continue;
+      if (!viscous || energy_multicomponent) continue;
 
-    /*--- Set transport properties at the inlet ---*/
+      /*--- Set transport properties at the inlet ---*/
 
-    V_inlet[prim_idx.LaminarViscosity()] = nodes->GetLaminarViscosity(iPoint);
-    V_inlet[prim_idx.EddyViscosity()] = nodes->GetEddyViscosity(iPoint);
-    V_inlet[prim_idx.ThermalConductivity()] = nodes->GetThermalConductivity(iPoint);
+      V_inlet[prim_idx.LaminarViscosity()] = nodes->GetLaminarViscosity(iPoint);
+      V_inlet[prim_idx.EddyViscosity()] = nodes->GetEddyViscosity(iPoint);
+      V_inlet[prim_idx.ThermalConductivity()] = nodes->GetThermalConductivity(iPoint);
 
-    /*--- Set the normal vector and the coordinates ---*/
+      /*--- Set the normal vector and the coordinates ---*/
 
-    visc_numerics->SetNormal(Normal);
-    su2double Coord_Reflected[MAXNDIM];
-    GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                             geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-    visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      visc_numerics->SetNormal(Normal);
+      su2double Coord_Reflected[MAXNDIM];
+      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                              geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
-    /*--- Primitive variables, and gradient ---*/
+      /*--- Primitive variables, and gradient ---*/
 
-    visc_numerics->SetPrimitive(V_domain, V_inlet);
-    visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                      nodes->GetGradient_Primitive(iPoint));
+      visc_numerics->SetPrimitive(V_domain, V_inlet);
+      visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                        nodes->GetGradient_Primitive(iPoint));
 
-    /*--- Turbulent kinetic energy ---*/
+      /*--- Turbulent kinetic energy ---*/
 
-    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-      visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                          solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                            solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
-    /*--- Compute and update residual ---*/
+      /*--- Compute and update residual ---*/
 
-    auto residual_v = visc_numerics->ComputeResidual(config);
+      auto residual_v = visc_numerics->ComputeResidual(config);
 
-    LinSysRes.SubtractBlock(iPoint, residual_v);
+      LinSysRes.SubtractBlock(iPoint, residual_v);
 
-    /*--- Jacobian contribution for implicit integration ---*/
+      /*--- Jacobian contribution for implicit integration ---*/
 
-    if (implicit)
-      Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
+      if (implicit)
+        Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
+    }
   }
   END_SU2_OMP_FOR
 }
 
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_outlet, *V_domain, P_Outlet = 0.0, P_domain;
@@ -2515,6 +2854,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double Normal[MAXNDIM] = {0.0};
@@ -2582,6 +2922,9 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       case INC_OUTLET_TYPE::MASS_FLOW_OUTLET:
 
+        if (pressure_based)
+          SU2_MPI::Error("Mass Flow Outlet is currently an unsupported INC_OUTLET_TYPE for pressure based solver.", CURRENT_FUNCTION);
+
         /*--- Retrieve the specified target mass flow at the outlet. ---*/
 
         mDot_Target = config->GetOutlet_Pressure(Marker_Tag)/(config->GetDensity_Ref() * config->GetVelocity_Ref());
@@ -2635,11 +2978,14 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Beta coefficient from the config file ---*/
 
-    V_outlet[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
+    if (!pressure_based) V_outlet[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
 
     /*--- Cp is needed for Temperature equation. ---*/
 
     V_outlet[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
+
+    /*-- Neumann condition for Enthalpy in energy equation. ---*/
+    V_outlet[prim_idx.Enthalpy()] = nodes->GetEnthalpy(iPoint);
 
     /*--- Set various quantities in the solver class ---*/
 
@@ -2648,6 +2994,21 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
+
+    /*--- Set the edge mass flux ---*/
+
+    if (pressure_based) {
+      su2double ProjVelocity = 0.0;
+      if (dynamic_grid)
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjVelocity += (V_domain[iDim+prim_idx.Velocity()] - geometry->nodes->GetGridVel(iPoint)[iDim]) * Normal[iDim];
+      else
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjVelocity += V_domain[iDim+prim_idx.Velocity()] * Normal[iDim];
+      su2double MeanDensity = 0.5 * (V_domain[prim_idx.Density()] + V_outlet[prim_idx.Density()]);
+      su2double MassFlux = MeanDensity * ProjVelocity;
+      conv_numerics->SetMassFlux(MassFlux);
+    }
 
     /*--- Compute the residual using an upwind scheme ---*/
 
@@ -2665,7 +3026,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-    if (!viscous) continue;
+    if (!viscous || energy_multicomponent) continue;
 
     /*--- Set transport properties at the outlet. ---*/
 
@@ -2710,6 +3071,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                         unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   /*--- Local variables ---*/
 
@@ -2720,18 +3082,17 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double U_time_nM1[MAXNVAR], U_time_n[MAXNVAR], U_time_nP1[MAXNVAR];
   su2double Volume_nM1, Volume_nP1, TimeStep;
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
-  su2double Density, Cp;
+  su2double Density;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
 
-  const int ndim = nDim;
-  auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {
+  const int nvar = nVar;
+  auto V2U = [nvar](su2double Density, const su2double* V, su2double* U) {
     U[0] = Density;
-    for (int iDim = 0; iDim < ndim; iDim++) U[iDim+1] = Density*V[iDim+1];
-    U[ndim+1] = Density*Cp*V[ndim+1];
+    for (int iVar = 1; iVar < nvar; ++iVar) U[iVar] = Density * V[iVar];
   };
 
   /*--- Store the physical time step ---*/
@@ -2758,16 +3119,18 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V_time_n   = nodes->GetSolution_time_n(iPoint);
       V_time_nP1 = nodes->GetSolution(iPoint);
 
-      /*--- Access the density and Cp at this node (constant for now). ---*/
+      /*--- Access the density at different time levels for non-constant density. ---*/
 
-      Density = nodes->GetDensity(iPoint);
-      Cp = nodes->GetSpecificHeatCp(iPoint);
+      su2double Density_nM1 = nodes->GetDensity_time_n1(iPoint);
+      su2double Density_n = nodes->GetDensity_time_n(iPoint);
+      Density = nodes->GetDensity(iPoint);  // Density at n+1
 
-      /*--- Compute the conservative variable vector for all time levels. ---*/
+      /*--- Compute the conservative variable vector for all time levels.
+       Use the density from the corresponding time level. ---*/
 
-      V2U(Density, Cp, V_time_nM1, U_time_nM1);
-      V2U(Density, Cp, V_time_n, U_time_n);
-      V2U(Density, Cp, V_time_nP1, U_time_nP1);
+      V2U(Density_nM1, V_time_nM1, U_time_nM1);
+      V2U(Density_n, V_time_n, U_time_n);
+      V2U(Density, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/
@@ -2788,13 +3151,9 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
 
       if (implicit) {
-        su2double delta = (second_order? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
+        su2double delta = (second_order ? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
 
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
-
-        if (energy) delta *= Cp;
-        Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
+        for (iVar = 1; iVar < nVar; ++iVar) Jacobian.AddVal2Diag(iPoint, iVar, delta);
       }
     }
     END_SU2_OMP_FOR
@@ -2818,9 +3177,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the conservative variables. ---*/
 
       V_time_n = nodes->GetSolution_time_n(iPoint);
-      Density = nodes->GetDensity(iPoint);
-      Cp = nodes->GetSpecificHeatCp(iPoint);
-      V2U(Density, Cp, V_time_n, U_time_n);
+      su2double Density_n = nodes->GetDensity_time_n(iPoint);
+      V2U(Density_n, V_time_n, U_time_n);
 
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
 
@@ -2874,9 +3232,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           /*--- Compute the GCL component of the source term for node i ---*/
 
           V_time_n = nodes->GetSolution_time_n(iPoint);
-          Density = nodes->GetDensity(iPoint);
-          Cp = nodes->GetSpecificHeatCp(iPoint);
-          V2U(Density, Cp, V_time_n, U_time_n);
+          su2double Density_n = nodes->GetDensity_time_n(iPoint);
+          V2U(Density_n, V_time_n, U_time_n);
 
           for (iVar = 0; iVar < nVar-!energy; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
@@ -2902,16 +3259,18 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V_time_n   = nodes->GetSolution_time_n(iPoint);
       V_time_nP1 = nodes->GetSolution(iPoint);
 
-      /*--- Access the density and Cp at this node (constant for now). ---*/
+      /*--- Access the density at different time levels for non-constant density. ---*/
 
-      Density = nodes->GetDensity(iPoint);
-      Cp = nodes->GetSpecificHeatCp(iPoint);
+      su2double Density_nM1 = nodes->GetDensity_time_n1(iPoint);
+      su2double Density_n = nodes->GetDensity_time_n(iPoint);
+      Density = nodes->GetDensity(iPoint);  // Density at n+1
 
-      /*--- Compute the conservative variable vector for all time levels. ---*/
+      /*--- Compute the conservative variable vector for all time levels.
+       Use the density from the corresponding time level. ---*/
 
-      V2U(Density, Cp, V_time_nM1, U_time_nM1);
-      V2U(Density, Cp, V_time_n, U_time_n);
-      V2U(Density, Cp, V_time_nP1, U_time_nP1);
+      V2U(Density_nM1, V_time_nM1, U_time_nM1);
+      V2U(Density_n, V_time_n, U_time_n);
+      V2U(Density, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
        grids, the volumes will change. On rigidly transforming grids, the
@@ -2937,11 +3296,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       if (implicit) {
         su2double delta = (second_order? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
 
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
-
-        if (energy) delta *= Cp;
-        Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
+        for (iVar = 1; iVar < nVar; ++iVar)
+          Jacobian.AddVal2Diag(iPoint, iVar, delta);
       }
     }
     END_SU2_OMP_FOR
@@ -2952,6 +3308,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 }
 
 void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
@@ -3163,6 +3520,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 }
 
 void CIncEulerSolver::PrintVerificationError(const CConfig *config) const {
+  SU2_ZONE_SCOPED
 
   if ((rank != MASTER_NODE) || (MGLevel != MESH_0)) return;
 
@@ -3203,6 +3561,7 @@ void CIncEulerSolver::PrintVerificationError(const CConfig *config) const {
 }
 
 void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Adjust the number of solution variables in the restart. We always
    carry a space in nVar for the energy equation in the solver, but we only
@@ -3219,9 +3578,35 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   LoadRestart_impl(geometry, solver, config, val_iter, val_update_geo, Solution, nVar_Restart);
 
+  if (pressure_based) {
+
+    /*--- Initialize the edge mass flux array ---*/
+
+    unsigned long iEdge, iPoint, jPoint;
+    su2double MeanVelocity[MAXNDIM], MeanDensity;
+
+    for (iEdge = 0; iEdge < geometry[MESH_0]->GetnEdge(); iEdge++) {
+
+      iPoint = geometry[MESH_0]->edges->GetNode(iEdge,0); jPoint = geometry[MESH_0]->edges->GetNode(iEdge,1);
+
+      /*--- Compute average velocities and density between two nodes ---*/
+
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        MeanVelocity[iDim] = 0.5 * (nodes->GetVelocity(iPoint, iDim) + nodes->GetVelocity(jPoint, iDim));
+
+      MeanDensity = 0.5 * (nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
+
+      /*--- Initialize the edge mass flux ---*/
+
+      EdgeMassFluxes[iEdge] = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        EdgeMassFluxes[iEdge] += MeanDensity * MeanVelocity[iDim] * geometry[MESH_0]->edges->GetNormal(iEdge)[iDim];
+    }
+  }
 }
 
 void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
+  SU2_ZONE_SCOPED
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     nodes->SetSolution(iPoint,0, Pressure_Inf);
@@ -3235,6 +3620,7 @@ void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
 }
 
 unsigned long CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+  SU2_ZONE_SCOPED
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     if (input) AD::RegisterInput(SPvals.Streamwise_Periodic_PressureDrop);
     else AD::RegisterOutput(SPvalsUpdated.Streamwise_Periodic_PressureDrop);
@@ -3244,13 +3630,394 @@ unsigned long CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* 
 }
 
 void CIncEulerSolver::SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {
+  SU2_ZONE_SCOPED
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     SU2_TYPE::SetDerivative(SPvalsUpdated.Streamwise_Periodic_PressureDrop, SU2_TYPE::GetValue(adj_sol[0]));
   }
 }
 
 void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) {
+  SU2_ZONE_SCOPED
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     adj_sol[0] = SU2_TYPE::GetDerivative(SPvals.Streamwise_Periodic_PressureDrop);
   }
+}
+
+void CIncEulerSolver::CorrectPressureGradient(su2double* corrected_grad_pressure,
+                                              const su2double* avg_grad_pressure,
+                                              const su2double val_pressure_i,
+                                              const su2double val_pressure_j,
+                                              const su2double* val_edge_vector,
+                                              const su2double val_dist_ij_2) {
+
+  /*--- Eq 15.62 F Moukalled, L Mangani M. Darwish OpenFOAM and uFVM book. ---*/
+  su2double Proj_Mean_Grad_Pressure_Edge = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Proj_Mean_Grad_Pressure_Edge += avg_grad_pressure[iDim]*val_edge_vector[iDim];
+  }
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    corrected_grad_pressure[iDim] = avg_grad_pressure[iDim] - (Proj_Mean_Grad_Pressure_Edge -
+                                (val_pressure_j-val_pressure_i))*val_edge_vector[iDim] / val_dist_ij_2;
+  }
+}
+
+void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  /*--- Compute gradients to be used in Rhie Chow interpolation ---*/
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetPrimitive_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == LEAST_SQUARES ||
+      config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetPrimitive_Gradient_LS(geometry, config);
+  }
+
+  unsigned short iDim;
+  unsigned long iPoint, jPoint;
+  const su2double *Normal = nullptr, *Coord_i, *Coord_j, *GridVel_i,*GridVel_j;
+  su2double GradPressure_f[MAXNDIM], GradPressure_avg[MAXNDIM], Edge_Vector[MAXNDIM], dist_ij_2, Coeff_Mom;
+
+  CSolver* poisson_solver = solver_container[POISSON_SOL];
+  CVariable* poisson_nodes = poisson_solver->GetNodes();
+
+  /*--- Mass flux is computed over all edges. Each edge writes only its own slot of
+  EdgeMassFluxes, so no coloring is needed to avoid races between edges sharing a point. ---*/
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+
+    Normal = geometry->edges->GetNormal(iEdge);
+
+    if (dynamic_grid) {
+      GridVel_i = geometry->nodes->GetGridVel(iPoint);
+      GridVel_j = geometry->nodes->GetGridVel(jPoint);
+    }
+
+    /*--- Correct pressure gradient ---*/
+
+    Coord_i = geometry->nodes->GetCoord(iPoint);
+    Coord_j = geometry->nodes->GetCoord(jPoint);
+    dist_ij_2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+      dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    }
+
+    /*--- 1. Interpolate the pressure gradient based on node values ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      GradPressure_avg[iDim] = 0.5 * (nodes->GetGradient_Primitive(iPoint,prim_idx.Pressure(),iDim) + nodes->GetGradient_Primitive(jPoint,prim_idx.Pressure(),iDim));
+
+    /*--- 2. Compute pressure gradient at the face ---*/
+
+    CorrectPressureGradient(GradPressure_f, GradPressure_avg, nodes->GetPressure(iPoint), nodes->GetPressure(jPoint), Edge_Vector, dist_ij_2);
+
+    /*--- Linearly interpolated coefficient. A point under a strong velocity BC has no momentum
+    coefficient, so the edge uses that of its other node. ---*/
+
+    Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(nodes->GetStrongBC(iPoint) ? jPoint : iPoint) +
+                     poisson_nodes->GetMomCoeff(nodes->GetStrongBC(jPoint) ? iPoint : jPoint));
+
+    /*--- Initialize mass flux ---*/
+
+    EdgeMassFluxes[iEdge] = 0.0;
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+
+      /*--- Face average mass flux. ---*/
+
+      su2double meanMassFlux = 0.5 * (nodes->GetDensity(iPoint) * nodes->GetVelocity(iPoint,iDim)
+                                    + nodes->GetDensity(jPoint) * nodes->GetVelocity(jPoint,iDim));
+
+      if (dynamic_grid) {
+        meanMassFlux -= 0.5 * (nodes->GetDensity(iPoint) * GridVel_i[iDim] + nodes->GetDensity(jPoint) * GridVel_j[iDim]);
+      }
+
+      /*--- Correction based on Rhie-Chow. ---*/
+
+      su2double RhieChowCorrection = Coeff_Mom * (GradPressure_f[iDim] - GradPressure_avg[iDim]);
+
+      su2double CorrectedMassFlux = meanMassFlux - RhieChowCorrection;
+
+      /*--- Update edge mass flux ---*/
+
+      EdgeMassFluxes[iEdge] += CorrectedMassFlux * Normal[iDim];
+
+    }
+  }
+  END_SU2_OMP_FOR
+}
+
+
+void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  /*--- Start of computing the corrections ---*/
+  unsigned long iPoint, jPoint, iMarker, iVertex;
+  unsigned short iDim, KindBC;
+  su2double Current_Pressure, factor, PCorr_Ref, Vol, delT;
+  string Marker_Tag;
+  const su2double *Normal = nullptr;
+
+  bool AutomaticURF = config->GetSIMPLE_Options().AutomaticRelaxationFactors;
+
+  CSolver* poisson_solver = solver_container[POISSON_SOL];
+  CVariable* poisson_nodes = poisson_solver->GetNodes();
+
+  /*--- Combine all pressure corrections into a vector for easy access ---*/
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    pressureCorrection[iPoint] = poisson_nodes->GetSolution(iPoint,0);
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Define a reference pressure. Fixed at 0 for now: for a domain with at least one
+  Dirichlet pressure boundary (an outlet or a far-field with outflow) this reference is
+  unused (the boundary loop below overwrites pressureCorrection at those points instead),
+  but for a fully closed domain (walls only) the Poisson system is pure-Neumann and has no
+  pressure datum, so pinning a single point's correction to a real reference value would be
+  needed there instead of leaving it at 0. ---*/
+
+  PCorr_Ref = 0.0;
+
+  /*--- Compute Velocity Corrections and under relaxation factor for the pressure. ---*/
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      momentumCorrection[iPoint][iDim] = - poisson_nodes->GetMomCoeff(iPoint) * poisson_nodes->GetGradient(iPoint,0,iDim);
+    }
+
+    if (AutomaticURF) {
+      /*--- a_P = dR/d(rho u) has mass/time units, so it needs the same /density SetMomCoeff
+       * applies for the same reason. Block row 0 is the continuity/pressure row, not a velocity
+       * direction - starting the diagonal sum from iDim=0 mixed it into a_P, and summing every
+       * velocity direction's diagonal made alpha_p dimension-dependent. Use the x-momentum row
+       * alone, matching SetMomCoeff's own convention that this coefficient is the same in every
+       * direction. ---*/
+      const auto view = Jacobian.GetBlockView(iPoint, iPoint);
+      factor = view(1, 1) / nodes->GetDensity(iPoint);
+      Vol = geometry->nodes->GetVolume(iPoint);
+      delT = nodes->GetDelta_Time(iPoint);
+      alpha_p[iPoint] = (Vol / delT) / (factor + (Vol / delT));
+    } else {
+      alpha_p[iPoint] = config->GetSIMPLE_Options().Relaxation_Factor_Pressure;
+    }
+
+  }
+  END_SU2_OMP_FOR
+
+  // TODO: The HbyA correction is always zero during the first PISO correction, therefore this can be skipped.
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      momentumCorrection[iPoint][iDim] += poisson_nodes->GetHbyACorrection(iPoint, iDim);
+    }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Compute the edge corrections based on the average of the momentum coefficients and the average of the p' gradient. ---*/
+
+  su2double* Coord_i,* Coord_j;
+  su2double GradPressure_f[MAXNDIM], GradPressure_avg[MAXNDIM], Edge_Vector[MAXNDIM], dist_ij_2;
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+
+    Normal = geometry->edges->GetNormal(iEdge);
+
+    /*--- Correct pressure deviation (p') gradient ---*/
+
+    Coord_i = geometry->nodes->GetCoord(iPoint);
+    Coord_j = geometry->nodes->GetCoord(jPoint);
+    dist_ij_2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+      dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    }
+
+    /*--- 1. Interpolate the p' gradient based on node values - deliberately zero: this is a
+    compact (orthogonal-only) mass-flux correction, not an oversight. Feeding the real,
+    node-averaged p' gradient here (available via GetGradient(), already used correctly a few
+    lines above for the interior velocity correction) was tried and measured to reintroduce
+    checkerboard-style pressure-velocity decoupling - the 3D sphere case diverges from the first
+    iteration regardless of CFL, with the same sign-flipping, magnitude-growing oscillation
+    signature as the unrelated broken-SIMPLEC finding. A node-averaged gradient is exactly the
+    kind of quantity Rhie-Chow interpolation exists to avoid using directly in a face mass flux.
+    Kept explicitly zero (rather than reachable only by accident through
+    GetGradient_Primitive's unrelated always-0.0 base-class stub) so a future refactor cannot
+    silently reintroduce this instability by "fixing" what looks like a missing override. ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      GradPressure_avg[iDim] = 0.0;
+
+    /*--- 2. Compute p' at the face ---*/
+
+    CorrectPressureGradient(GradPressure_f, GradPressure_avg, poisson_nodes->GetSolution(iPoint, 0), poisson_nodes->GetSolution(jPoint, 0), Edge_Vector, dist_ij_2);
+
+    /*--- Initialize projected velocity and density ---*/
+
+    su2double ProjMassFluxCorrection = 0.0;
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+
+      su2double MassFluxCorrection =
+          -0.5 * (poisson_nodes->GetMomCoeff(nodes->GetStrongBC(iPoint) ? jPoint : iPoint) +
+                  poisson_nodes->GetMomCoeff(nodes->GetStrongBC(jPoint) ? iPoint : jPoint)) * GradPressure_f[iDim];
+
+      /*--- 2nd piso correction term (HbyA') --- (TODO: this is zero for the first correction and can thus also be skipped) ---*/
+
+      MassFluxCorrection += 0.5*(poisson_nodes->GetHbyACorrection(iPoint, iDim)
+                                                  +poisson_nodes->GetHbyACorrection(jPoint, iDim));
+
+      /*--- Accumulate into the edge mass flux correction ---*/
+
+      ProjMassFluxCorrection += MassFluxCorrection * Normal[iDim];
+    }
+
+    /*--- Set the mass flux correction ---*/
+
+    EdgeMassFluxCorrection[iEdge] = ProjMassFluxCorrection;
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Reassign strong boundary conditions ---*/
+  /*--- For now I only have velocity inlet and fully developed outlet. Will need to add other types of inlet/outlet conditions
+   *  where different treatment of pressure might be needed. Symmetry and Euler wall are weak BCs. ---*/
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    KindBC = config->GetMarker_All_KindBC(iMarker);
+    Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
+    switch (KindBC) {
+      case EULER_WALL: case SYMMETRY_PLANE:
+        break;
+
+      /*--- Nothing at MPI boundaries ---*/
+      case SEND_RECEIVE:
+        break;
+
+      /*--- Only a fully developed outlet is implemented. For pressure, a dirichlet
+            BC has to be applied and no correction is necessary. Velocity has a neumann BC. ---*/
+      case OUTLET_FLOW:{
+        auto Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
+        switch (Kind_Outlet) {
+          case INC_OUTLET_TYPE::PRESSURE_OUTLET:{
+            SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+            for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              if (geometry->nodes->GetDomain(iPoint))
+                pressureCorrection[iPoint] = PCorr_Ref;
+            }
+            END_SU2_OMP_FOR
+            break;
+          }
+          //TODO: other outlet types
+          default:
+            SU2_MPI::Error("The requested outflow boundary condition has not yet been implemented for the pressure based poisson solver", CURRENT_FUNCTION);
+            break;
+        }
+        break;
+      }
+
+      /*--- Only a fixed velocity inlet is implemented now. Along with the wall boundaries,
+        * the velocity is known and thus no correction is necessary.---*/
+      case ISOTHERMAL: case HEAT_FLUX: case INLET_FLOW: {
+        SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->nodes->GetDomain(iPoint)) {
+            for (iDim = 0; iDim < nDim; iDim++)
+              momentumCorrection[iPoint][iDim] = 0.0;
+            alpha_p[iPoint] = 1.0;
+            }
+        }
+        END_SU2_OMP_FOR
+        break;
+      }
+
+      /*--- Farfield is treated as a fully developed flow for pressure and a fixed pressure is
+      * used, thus no correction is necessary. The treatment for velocity depends on whether the
+      * flow is into the domain or out. If flow is in, a dirichlet bc is applied and no correction
+      * is made, otherwise a Neumann BC is used and velocity is adjusted. ---*/
+
+      case FAR_FIELD:
+        SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->nodes->GetDomain(iPoint)) {
+            // Check if the boundary condition is an inlet or not
+            if (nodes->GetStrongBC(iPoint)) {
+              for (iDim = 0; iDim < nDim; iDim++)
+                momentumCorrection[iPoint][iDim] = 0.0;
+            }
+            pressureCorrection[iPoint] = PCorr_Ref;
+          }
+        }
+        END_SU2_OMP_FOR
+        break;
+
+      default:
+        SU2_MPI::Error("The requested boundary condition has not yet been implemented for the pressure based poisson solver", CURRENT_FUNCTION);
+        break;
+    }
+  }
+
+  /*--- Apply corrections to the nodal solution ---*/
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Pressure corrections ---*/
+
+    Current_Pressure = nodes->GetPressure(iPoint);
+    Current_Pressure += alpha_p[iPoint] * (pressureCorrection[iPoint] - PCorr_Ref);
+    nodes->SetSolution(iPoint, 0, Current_Pressure);
+
+    /*--- Velocity corrections ---*/
+
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      nodes->SetSolution(iPoint, iDim + 1, nodes->GetSolution(iPoint,iDim + 1) + momentumCorrection[iPoint][iDim] / nodes->GetDensity(iPoint));
+      poisson_nodes->SetMomentumCorrection(iPoint,iDim,momentumCorrection[iPoint][iDim]);
+    }
+
+    /*--- Update primitive variables ---*/
+
+    nodes->SetPressure(iPoint);
+    nodes->SetVelocity(iPoint);
+
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Add corrections to the edge velocities. Each edge accumulates only into its own slot,
+  so partitioning by edge index is race-free. ---*/
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++)
+    EdgeMassFluxes[iEdge] += EdgeMassFluxCorrection[iEdge];
+  END_SU2_OMP_FOR
+
+  /*--- Reset HbyA for next iteration ---*/
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      poisson_nodes->SetHbyACorrection(iPoint, iDim, 0.0);
+  }
+  END_SU2_OMP_FOR
+
+
+  /*--- periodic communication for both the momentum and the poisson equations as both are now updated ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+   InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+   CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
+
+  /*--- Communicate updated velocities and pressure ---*/
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+
 }

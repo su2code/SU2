@@ -2,14 +2,14 @@
  * \file CTurbSSTVariable.hpp
  * \brief Declaration of the variables of the SST turbulence model.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -78,6 +78,16 @@ public:
    * \brief Get the first blending function.
    */
   inline su2double GetF1blending(unsigned long iPoint) const override { return F1(iPoint); }
+
+  /*!
+   * \brief Write the first blending function directly, for a ghost row (see CVariable's note).
+   */
+  inline void SetF1blending(unsigned long iPoint, su2double val) override { F1(iPoint) = val; }
+
+  /*!
+   * \brief Container backing GetF1blending/SetF1blending (see CVariable's note).
+   */
+  inline const VectorType& GetF1blending() const override { return F1; }
 
   /*!
    * \brief Get the second blending function.

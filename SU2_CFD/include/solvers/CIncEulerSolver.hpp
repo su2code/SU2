@@ -2,14 +2,14 @@
  * \file CIncEulerSolver.hpp
  * \brief Headers of the CIncEulerSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,6 +40,12 @@ class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME
 protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
   StreamwisePeriodicValues SPvals, SPvalsUpdated;
+
+  bool pressure_based;
+  su2activevector alpha_p;
+  su2activevector pressureCorrection;
+  su2activematrix momentumCorrection;
+  su2activevector EdgeMassFluxCorrection;
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -85,6 +91,18 @@ protected:
    * \return - The number of non-physical points.
    */
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container, const CConfig *config);
+
+  /*!
+   * \brief Recompute the dual-time density history (rho_n, rho_n-1) from the stored
+   *        solution histories (Solution_time_n[,1], and the species histories for
+   *        flamelet/variable-density) via the fluid model.
+   * \details Called once per physical time step (InnerIter == 0), after the solution
+   *          push-back. This keeps the density history consistent with the primitive
+   *          state at time n (also after restart).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void RecomputeDensity_time_n(CSolver **solver_container, const CConfig *config);
 
   /*!
    * \brief Update the Beta parameter for the incompressible preconditioner.
@@ -135,6 +153,22 @@ protected:
    * \brief Set reference values for pressure, forces, etc.
    */
   void SetReferenceValues(const CConfig& config) final;
+
+  /*!
+   * \brief Apply a correction to the pressure or pressure deviation gradient to align with the edges
+   * \param[in] corrected_grad_pressure - The corrected gradient at the edge
+   * \param[in] avg_grad_pressure - The average gradient at the edge
+   * \param[in] val_pressure_i - variable at point i
+   * \param[in] val_pressure_j - variable at point j
+   * \param[in] val_edge_vector - The vector between points i and j
+   * \param[in] val_dist_ij_2 - The distance between points i and j, squared
+   */
+  void CorrectPressureGradient(su2double* corrected_grad_pressure,
+                               const su2double* avg_grad_pressure,
+                               const su2double val_pressure_i,
+                               const su2double val_pressure_j,
+                               const su2double* val_edge_vector,
+                               const su2double val_dist_ij_2);
 
 public:
   CIncEulerSolver() = delete;
@@ -202,6 +236,19 @@ public:
                       CNumerics **numerics_container,
                       CConfig *config,
                       unsigned short iMesh) final;
+
+  /*!
+   * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
+   *        in a more thermodynamically consistent way.
+   * \note This method is static to improve the chances of it being used in a
+   *       thread-safe manner.
+   * \param[in,out] fluidModel - The fluid model.
+   * \param[in] nDim - Number of physical dimensions.
+   * \param[in] scalar - scalar variable.
+   * \param[in,out] primitive - Primitive variables.
+   */
+  static void ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, const su2double* scalar,
+                                             su2double* primitive);
 
   /*!
    * \brief Source term integration.
@@ -353,13 +400,6 @@ public:
   void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
-   * \brief Complete an implicit iteration.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
-
-  /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -433,4 +473,20 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) final;
+
+  /*!
+   * \brief Compute the spatial integration using a centered scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   */
+  void ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+
+  /*!
+   * \brief Compute the spatial integration using a centered scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ApplyPressureVelocityCorrection(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+
 };

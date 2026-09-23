@@ -2,14 +2,14 @@
  * \file centered.hpp
  * \brief Centered convective schemes.
  * \author P. Gomes, F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,7 +67,7 @@ protected:
    * \brief Special treatment needed to fetch integer data.
    */
   template<class T, size_t N>
-  FORCEINLINE static Double numNeighbor(simd::Array<T,N> idx, const CGeometry& geometry) {
+  FORCEINLINE static Double numNeighbor(const simd::Array<T,N>& idx, const CGeometry& geometry) {
     Double n;
     for (size_t k=0; k<N; ++k) n[k] = geometry.nodes->GetnNeighbor(idx[k]);
     return n;
@@ -80,14 +80,15 @@ public:
   /*!
    * \brief Implementation of the base centered flux.
    */
-  void ComputeFlux(Int iEdge,
+  void ComputeFlux(const Int iEdge,
                    const CConfig& config,
                    const CGeometry& geometry,
                    const CVariable& solution_,
-                   UpdateType updateType,
-                   Double updateMask,
+                   const UpdateType updateType,
+                   const Double updateMask,
                    CSysVector<su2double>& vector,
-                   SparseMatrixType& matrix) const final {
+                   SparseMatrixType& matrix,
+                   su2activevector* edgeMassFluxes) const final {
 
     /*--- Start preaccumulation, inputs are registered
      *    automatically in "gatherVariables". ---*/
@@ -182,6 +183,10 @@ public:
 
     updateLinearSystem(iEdge, iPoint, jPoint, implicit, updateType,
                        updateMask, flux, jac_i, jac_j, vector, matrix);
+
+    /*--- Store the mass flux (density-equation flux) for bounded-scalar transport. ---*/
+
+    updateEdgeMassFlux(iEdge, flux(0), edgeMassFluxes);
   }
 };
 
@@ -220,14 +225,14 @@ public:
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
-                                bool implicit,
-                                Double area,
-                                Double projVel,
+                                const bool implicit,
+                                const Double& area,
+                                const Double& projVel,
                                 const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
-                                Int iPoint,
-                                Int jPoint,
+                                const Int& iPoint,
+                                const Int& jPoint,
                                 const CGeometry& geometry,
                                 const CEulerVariable& solution,
                                 Ts&...) const {
@@ -301,14 +306,14 @@ public:
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
-                                bool implicit,
-                                Double area,
-                                Double projVel,
+                                const bool implicit,
+                                const Double& area,
+                                const Double& projVel,
                                 const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
-                                Int iPoint,
-                                Int jPoint,
+                                const Int& iPoint,
+                                const Int& jPoint,
                                 const CGeometry& geometry,
                                 const CEulerVariable& solution,
                                 const VectorDbl<nDim>& unitNormal,
@@ -425,14 +430,14 @@ public:
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
-                                bool implicit,
-                                Double area,
-                                Double projVel,
+                                const bool implicit,
+                                const Double& area,
+                                const Double& projVel,
                                 const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
-                                Int iPoint,
-                                Int jPoint,
+                                const Int& iPoint,
+                                const Int& jPoint,
                                 const CGeometry& geometry,
                                 const CEulerVariable& solution,
                                 Ts&...) const {
@@ -496,14 +501,14 @@ public:
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
-                                bool implicit,
-                                Double area,
-                                Double projVel,
+                                const bool implicit,
+                                const Double& area,
+                                const Double& projVel,
                                 const PrimVarType& avgV,
                                 const CPair<PrimVarType>& V,
                                 const VectorDbl<nVar>& diffU,
-                                Int iPoint,
-                                Int jPoint,
+                                const Int& iPoint,
+                                const Int& jPoint,
                                 const CGeometry& geometry,
                                 const CEulerVariable& solution,
                                 Ts&...) const {

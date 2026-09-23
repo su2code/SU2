@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,6 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   for (iVar = 0; iVar < nPrimVar; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
-  Proj_Mean_GradPrimVar_Edge = new su2double[val_nPrimVar];
 
   tau_jacobian_i = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -78,7 +77,6 @@ CAvgGrad_Base::~CAvgGrad_Base() {
     delete [] Mean_GradPrimVar;
   }
 
-  delete [] Proj_Mean_GradPrimVar_Edge;
 
   if (tau_jacobian_i != nullptr) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -107,12 +105,12 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double val_dist_ij_2,
                                     const unsigned short val_nPrimVar) {
   for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
-    Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
+    su2double Proj_Mean_GradPrimVar_Edge = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*val_edge_vector[iDim];
+      Proj_Mean_GradPrimVar_Edge += GradPrimVar[iVar][iDim]*val_edge_vector[iDim];
     }
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
+      GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge -
                                  (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*val_edge_vector[iDim] / val_dist_ij_2;
     }
   }
@@ -122,7 +120,8 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
                            const su2double* const *val_gradprimvar,
                            const su2double val_turb_ke,
                            const su2double val_laminar_viscosity,
-                           const su2double val_eddy_viscosity) {
+                           const su2double val_eddy_viscosity,
+                           const CConfig* config) {
 
   const su2double Density = val_primvar[nDim+2];
 
@@ -142,6 +141,30 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
     // turb_ke is not considered in the stress tensor, see #797
     ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, su2double(0.0));
   }
+
+  /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
+
+  if (config->GetSBSParam().StochasticBackscatter) {
+    for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+        tau[iDim][jDim] += stochReynStress[iDim][jDim];
+      }
+  }
+
+}
+
+void CAvgGrad_Base::SetStochReynStress(const CConfig* config) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Mean_StochVar[iDim] = 0.5*(stochVar_i[iDim] + stochVar_j[iDim]);
+  su2double tkeEstim_i = 0.0, tkeEstim_j = 0.0;
+  if (max(lesMode_i, lesMode_j) > config->GetSBSParam().stochFdThreshold) {
+    tkeEstim_i = pow(Eddy_Viscosity_i/dist_i, 2);
+    tkeEstim_j = pow(Eddy_Viscosity_j/dist_j, 2);
+  }
+  su2double Mean_turb_ke_estim = 0.5*(tkeEstim_i + tkeEstim_j);
+  su2double intensityCoeff = ComputeStochRelaxFactor(config);
+  ComputeStochReynStress(Mean_PrimVar[nDim+2], Mean_turb_ke_estim,
+                         Mean_StochVar, intensityCoeff, stochReynStress);
 }
 
 void CAvgGrad_Base::SetHeatFluxVector(const su2double* const* val_gradprimvar, const su2double val_eddy_viscosity,
@@ -165,7 +188,7 @@ void CAvgGrad_Base::AddTauWall(const su2double *UnitNormal,
   GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);
 
   su2double WallShearStress = GeometryToolbox::Norm(nDim, TauTangent);
-  su2double Scale = TauWall / WallShearStress;
+  su2double Scale = TauWall / fmax(WallShearStress, EPS);
 
   /*--- Scale the stress tensor by the ratio of the wall shear stress
    (from wall functions) to the one computed above. ---*/
@@ -447,11 +470,19 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
                         Mean_turb_ke, MeanPerturbedRSM);
   }
 
+  /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
+
+  if (config->GetSBSParam().StochasticBackscatter) SetStochReynStress(config);
+
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
+  if (config->GetSAParsedOptions().qcr2000) {
+    const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
+    const su2double turb_fraction = Mean_Eddy_Viscosity / fmax(total_viscosity, EPS);
+    AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
+  }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
@@ -481,6 +512,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   }
 
   AD::SetPreaccOut(Proj_Flux_Tensor, nVar);
+  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
   AD::EndPreacc();
 
   return ResidualType<>(Proj_Flux_Tensor, Jacobian_i, Jacobian_j);
@@ -554,6 +587,9 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
+  if (energy_multicomponent) {
+    AD::SetPreaccIn(HeatFluxDiffusion);
+  }
 
   unsigned short iVar, jVar, iDim;
 
@@ -581,9 +617,9 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Density and transport properties ---*/
 
-  Laminar_Viscosity_i    = V_i[nDim+4];  Laminar_Viscosity_j    = V_j[nDim+4];
-  Eddy_Viscosity_i       = V_i[nDim+5];  Eddy_Viscosity_j       = V_j[nDim+5];
-  Thermal_Conductivity_i = V_i[nDim+6];  Thermal_Conductivity_j = V_j[nDim+6];
+  Laminar_Viscosity_i    = V_i[nDim+5];  Laminar_Viscosity_j    = V_j[nDim+5];
+  Eddy_Viscosity_i       = V_i[nDim+6];  Eddy_Viscosity_j       = V_j[nDim+6];
+  Thermal_Conductivity_i = V_i[nDim+7];  Thermal_Conductivity_j = V_j[nDim+7];
 
   /*--- Mean transport properties ---*/
 
@@ -618,13 +654,26 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
                         Mean_turb_ke, MeanPerturbedRSM);
   }
 
+  /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
+
+  if (config->GetSBSParam().StochasticBackscatter) SetStochReynStress(config);
+
   /*--- Get projected flux tensor (viscous residual) ---*/
+
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
+  if (config->GetSAParsedOptions().qcr2000) {
+    const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
+    const su2double turb_fraction = Mean_Eddy_Viscosity / fmax(total_viscosity, EPS);
+    AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
+  }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
+
+  if (energy_multicomponent) {
+    Proj_Flux_Tensor[nVar - 1] += HeatFluxDiffusion;
+  }
 
   /*--- Implicit part ---*/
 
@@ -650,8 +699,13 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
         proj_vector_ij += (Coord_j[iDim]-Coord_i[iDim])*Normal[iDim];
       }
       proj_vector_ij = proj_vector_ij/dist_ij_2;
-      Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
-      Jacobian_j[nDim+1][nDim+1] =  Mean_Thermal_Conductivity*proj_vector_ij;
+      Mean_Cp = 0.5 * (V_i[nDim + 8] + V_j[nDim + 8]);
+      Jacobian_i[nDim + 1][nDim + 1] = -Mean_Thermal_Conductivity * proj_vector_ij / Mean_Cp;
+      Jacobian_j[nDim + 1][nDim + 1] = Mean_Thermal_Conductivity * proj_vector_ij / Mean_Cp;
+      if (energy_multicomponent){
+        Jacobian_i[nDim + 1][nDim + 1] -= JacHeatFluxDiffusion / Mean_Cp;
+        Jacobian_j[nDim + 1][nDim + 1] += JacHeatFluxDiffusion / Mean_Cp;
+      }
     }
 
   }
@@ -934,11 +988,19 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
                         Mean_turb_ke, MeanPerturbedRSM);
   }
 
+  /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
+
+  if (config->GetSBSParam().StochasticBackscatter) SetStochReynStress(config);
+
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
+  if (config->GetSAParsedOptions().qcr2000) {
+    const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
+    const su2double turb_fraction = Mean_Eddy_Viscosity / fmax(total_viscosity, EPS);
+    AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
+  }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);

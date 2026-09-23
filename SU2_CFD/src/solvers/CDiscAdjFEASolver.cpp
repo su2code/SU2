@@ -2,14 +2,14 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,7 @@
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver,
                                      unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
+  SU2_ZONE_SCOPED
 
   adjoint = true;
 
@@ -123,17 +124,33 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 CDiscAdjFEASolver::~CDiscAdjFEASolver() { delete nodes; }
 
 void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
-  /*--- Reset the solution to the initial (converged) solution ---*/
+  /*--- Under some conditions, linear elasticity problems converge in one iteration.
+   * This means that the "clear indices" step of the discrete adjoint solver produces a
+   * converged solution regardless of the primal solution given to the adjoint solver.
+   * We can take advantage of this for optimization to skip the primal solver. ---*/
+
+  const bool linear = config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL;
+  const bool heat = config->GetWeakly_Coupled_Heat();
+  const bool time_domain = config->GetTime_Domain();
+  const bool keep_solution = linear && !heat && !time_domain && !std::is_same_v<su2mixedfloat, float>;
+
+  /*--- Restore the solution to the initial (converged) solution or reset AD indices. ---*/
 
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iVar = 0u; iVar < nVar; iVar++)
-      direct_solver->GetNodes()->SetSolution(iPoint, iVar, nodes->GetSolution_Direct(iPoint)[iVar]);
+    if (keep_solution) {
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        AD::ResetInput(direct_solver->GetNodes()->GetSolution(iPoint)[iVar]);
+    } else {
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        direct_solver->GetNodes()->SetSolution(iPoint, iVar, nodes->GetSolution_Direct(iPoint)[iVar]);
+    }
   }
 
   /*--- Reset the input for time n ---*/
 
-  if (config->GetTime_Domain()) {
+  if (time_domain) {
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
       for (auto iVar = 0u; iVar < nVar; iVar++)
         AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);
@@ -146,6 +163,7 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 }
 
 void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   const bool input = true;
   const bool dynamic = config->GetTime_Domain();
@@ -164,6 +182,7 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 }
 
 void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
+  SU2_ZONE_SCOPED
 
   /*--- Register element-based values as input ---*/
 
@@ -213,6 +232,7 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 }
 
 void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   const bool input = false;
 
@@ -223,6 +243,7 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 }
 
 void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
+  SU2_ZONE_SCOPED
 
   /*--- Set the old solution, for multi-zone problems this is done after computing the
    *    residuals, otherwise the per-zone-residuals do not make sense, as on entry Solution
@@ -279,6 +300,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 }
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   if (KindDirect_Solver != RUNTIME_FEA_SYS) return;
 
@@ -305,6 +327,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 }
 
 void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   const bool dynamic = config->GetTime_Domain();
   const bool deform_mesh = (config->GetnMarker_Deform_Mesh() > 0);
@@ -338,6 +361,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 }
 
 void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
+  SU2_ZONE_SCOPED
 
   if (config_container->GetTime_Domain()) {
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
@@ -347,6 +371,7 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*){
+  SU2_ZONE_SCOPED
 
   const bool time_domain = config->GetTime_Domain();
 
@@ -390,6 +415,7 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
 }
 
 void CDiscAdjFEASolver::ReadDV(const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   string filename;
   ifstream properties_file;
@@ -458,6 +484,7 @@ void CDiscAdjFEASolver::ReadDV(const CConfig *config) {
 }
 
 void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
 
