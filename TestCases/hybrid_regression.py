@@ -549,7 +549,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714713, -5.763299, -0.214960, 0.023758, 0.000000]
+    ddes_flatplate.test_vals = [-2.714713, -5.938404, -0.214960, 0.023758, 0.000000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 

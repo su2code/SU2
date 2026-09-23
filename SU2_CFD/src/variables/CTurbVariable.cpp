@@ -79,11 +79,19 @@ void CTurbVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su
   numVecVort[2] = StrainDotVort[0]*Vorticity[1] - StrainDotVort[1]*Vorticity[0];
 
   numerator = sqrt(6.0) * sqrt(numVecVort[0]*numVecVort[0] + numVecVort[1]*numVecVort[1] + numVecVort[2]*numVecVort[2]);
-  trace0 = 3.0*(pow(Strain[0][0],2.0) + pow(Strain[1][1],2.0) + pow(Strain[2][2],2.0));
+  /*--- 3 tr(S^2) - tr(S)^2, where tr(S^2) is the sum of the squares of all the components of S. ---*/
+  trace0 = 0.0;
+  for (auto iDim = 0u; iDim < 3; iDim++)
+    for (auto jDim = 0u; jDim < 3; jDim++) trace0 += 3.0 * pow(Strain[iDim][jDim], 2);
   trace1 = pow(Strain[0][0] + Strain[1][1] + Strain[2][2],2.0);
-  denominator = pow(Omega, 2.0) * sqrt(trace0-trace1);
+  denominator = pow(Omega, 2.0) * sqrt(max(trace0-trace1, 0.0));
 
-  Vortex_Tilting(iPoint) = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/muT(iPoint));
+  /*--- Without vorticity or strain anisotropy the measure is undefined, make it neutral (F_KH = 1). ---*/
+  if (denominator < 1e-20) {
+    Vortex_Tilting(iPoint) = 1.0;
+  } else {
+    Vortex_Tilting(iPoint) = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/max(muT(iPoint), 1e-20));
+  }
 
   AD::SetPreaccOut(Vortex_Tilting(iPoint));
   AD::EndPreacc();

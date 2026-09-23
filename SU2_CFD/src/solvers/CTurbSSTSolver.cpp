@@ -915,8 +915,6 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
 
-    const auto coord_i       = geometry->nodes->GetCoord(iPoint);
-    const auto nNeigh        = geometry->nodes->GetnPoint(iPoint);
 
     const su2double StrainMag = max(flowNodes->GetStrainMag(iPoint), 1e-12);
     const auto Vorticity      = flowNodes->GetVorticity(iPoint);
@@ -1005,110 +1003,11 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         break;
       }
-      case SST_EDDES: {
-
-        // Improved DDES version with the Shear-Layer-Adapted augmentation 
-        // found in Detached Eddy Simulation: Recent Development and Application to Compressor Tip Leakage Flow, Xiao He, Fanzhou Zhao, Mehdi Vahdati
-        // originally from Application of SST-Based SLA-DDES Formulation to Turbomachinery Flows, Guoping Xia, Zifei Yin and Gorazd Medic
-        // I could be naming it either as SST_EDDES to follow the same notation as for the SA model or as SST_SLA_DDES to follow the paper notation
-
-        const su2double f_max = 1.0, f_min = 0.1, a1 = 0.15, a2 = 0.3;
-
-        su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
-
-        const su2double omega = max(GeometryToolbox::Norm(3, Vorticity), 1e-12);
-
-        su2double ratioOmega[MAXNDIM] = {};
-
-        for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
-          ratioOmega[iDim] = Vorticity[iDim]/omega;
-        }
-
-        const su2double deltaDDES = geometry->nodes->GetMaxLength(iPoint);
-
-        su2double ln_max = 0.0;
-        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-          const auto coord_j = geometry->nodes->GetCoord(jPoint);
-          su2double delta[MAXNDIM] = {};
-          for (auto iDim = 0u; iDim < nDim; iDim++){
-            delta[iDim] = fabs(coord_j[iDim] - coord_i[iDim]);
-          }
-          su2double ln[3];
-          ln[0] = delta[1]*ratioOmega[2] - delta[2]*ratioOmega[1];
-          ln[1] = delta[2]*ratioOmega[0] - delta[0]*ratioOmega[2];
-          ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
-          const su2double aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
-          ln_max = max(ln_max, aux_ln);
-          vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
-        }
-        vortexTiltingMeasure /= (nNeigh + 1);
-
-        
-
-        const su2double f_kh = max(f_min,
-                                   min(f_max,
-                                       f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
-
-        const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
-        const su2double C_d1 = 20.0;
-        const su2double C_d2 = 3.0;
-
-        const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
-
-        su2double delta = (ln_max/sqrt(3.0)) * f_kh;
-        /*--- Without vorticity the direction n_omega is undefined and Delta_omega vanishes, use h_max. ---*/
-        if (f_d < 0.99 || GeometryToolbox::Norm(3, Vorticity) < 1e-12){
-          delta = h_max;
-        }
-
-        const su2double l_LES = C_DES * delta;
-        DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
-
-        break;
-      }
+      case SST_EDDES:
       case SST_EDDES_UNSTR: {
-
-        // Improved DDES version with the Shear-Layer-Adapted augmentation 
-        // found in Detached Eddy Simulation: Recent Development and Application to Compressor Tip Leakage Flow, Xiao He, Fanzhou Zhao, Mehdi Vahdati
-        // originally from Application of SST-Based SLA-DDES Formulation to Turbomachinery Flows, Guoping Xia, Zifei Yin and Gorazd Medic
-        // I could be naming it either as SST_EDDES to follow the same notation as for the SA model or as SST_SLA_DDES to follow the paper notation
-
-        const su2double f_max = 1.0, f_min = 0.1, a1 = 0.15, a2 = 0.3;
-        
-        su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
-
-        su2double deltaOmega = -1.0;
-        su2double vorticityDir[MAXNDIM] = {};
-
-        for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
-          vorticityDir[iDim] = Vorticity[iDim]/VortMag;
-        }
-        
-        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)){
-          const auto coord_j = geometry->nodes->GetCoord(jPoint);
-
-          for (const auto kPoint : geometry->nodes->GetPoints(iPoint)){
-            const auto coord_k = geometry->nodes->GetCoord(kPoint);
-
-            su2double delta[MAXNDIM] = {};
-            for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
-              // TODO: Should I divide by 2 as I am interested in the dual volume (the edge is split at midpoint)?
-              delta[iDim] = (coord_j[iDim] - coord_k[iDim])/2.0; 
-            }
-            su2double l_n_minus_m[MAXNDIM];
-            GeometryToolbox::CrossProduct(delta, vorticityDir, l_n_minus_m);
-            deltaOmega = max(deltaOmega, GeometryToolbox::Norm(3, l_n_minus_m));
-          }
-
-          // Add to VTM(iPoint) to perform the average
-          vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
-        }
-        deltaOmega /= sqrt(3.0);
-        vortexTiltingMeasure /= (nNeigh+1);
-
-        const su2double f_kh = max(f_min,
-                                   min(f_max,
-                                       f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
+        /*--- DDES with the shear-layer-adapted subgrid length-scale of Shur et al. (An Enhanced Version of DES with
+         Rapid Transition from RANS to LES in Separated Flows, Flow Turbulence Combust 95, 2015), applied to the SST model
+         as in Guseva et al. (Flow Turbulence Combust 98, 2017) and Xiao et al. (Int. J. Heat Fluid Flow 85, 2020). ---*/
 
         const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
         const su2double C_d1 = 20.0;
@@ -1116,11 +1015,8 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
 
-        su2double delta = deltaOmega * f_kh;
-        /*--- Without vorticity the direction n_omega is undefined and Delta_omega vanishes, use h_max. ---*/
-        if (f_d < 0.99 || GeometryToolbox::Norm(3, Vorticity) < 1e-12){
-          delta = h_max;
-        }
+        const su2double delta = ShearLayerAdaptedLengthScale(geometry, iPoint, Vorticity,
+                                                             kind_hybridRANSLES == SST_EDDES_UNSTR, f_d < 0.99);
 
         const su2double l_LES = C_DES * delta;
         DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
