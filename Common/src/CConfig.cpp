@@ -3835,6 +3835,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("COMPRESSIBILITY-WILCOX only supported for SOLVER= RANS", CURRENT_FUNCTION);
   }
 
+  /*--- The transition solver has no discrete adjoint: the adjoint solvers do not create it, and the turbulence
+   *    sources would read a missing transition solution. ---*/
+  if (DiscreteAdjoint && Kind_Trans_Model != TURB_TRANS_MODEL::NONE) {
+    SU2_MPI::Error("KIND_TRANS_MODEL= LM is not available for discrete adjoint simulations (MATH_PROBLEM= DISCRETE_ADJOINT).",
+                   CURRENT_FUNCTION);
+  }
+
   /*--- Postprocess LM_OPTIONS into structure. ---*/
   if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
     lmParsedOptions = ParseLMOptions(LM_Options, nLM_Options, rank, Kind_Turb_Model);
