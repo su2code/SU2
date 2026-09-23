@@ -224,7 +224,7 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
         const auto Vorticity = flowNodes->GetVorticity(iPoint);
         const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity);
         for (auto iDim = 0u; iDim < 3; iDim++)
-          nodes->SetAuxVar(iPoint, 1 + iDim, VorticityMag > 1e-12 ? Vorticity[iDim] / VorticityMag : 0.0);
+          nodes->SetAuxVar(iPoint, 1 + iDim, VorticityMag > 1e-12 ? su2double(Vorticity[iDim] / VorticityMag) : su2double(0.0));
       }
     }
     END_SU2_OMP_FOR
