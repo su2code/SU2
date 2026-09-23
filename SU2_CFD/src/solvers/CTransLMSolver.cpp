@@ -639,8 +639,8 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
         const auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-        nodes->SetIntermittencySep(iPoint_Local,  Restart_Data[index + 2]);
-        nodes->SetIntermittencyEff(iPoint_Local,  Restart_Data[index + 3]);
+        /*--- The separation and effective intermittencies are not in the restart (compact restarts only have the
+         * solution variables), they are recomputed by Postprocessing below. ---*/
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;

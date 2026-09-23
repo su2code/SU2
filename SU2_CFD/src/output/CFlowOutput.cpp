@@ -1391,7 +1391,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
       AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
-      AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
+      /*--- Re_theta_t is a solution variable only of the two-equation model, the simplified model computes it
+       * algebraically, so it must not enter the restart files. ---*/
+      if (!(config->GetLMParsedOptions()).SLM) {
+        AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
+      } else {
+        AddVolumeOutput("RE_THETA_T", "LM_Re_t", "PRIMITIVE", "LM RE_THETA_T");
+      }
       AddVolumeOutput("RE_V", "Re_v", "DEBUG", "LM Re_v");
       AddVolumeOutput("RE_THETA_CORR", "LM_Corr_Rec", "DEBUG", "LM RE_THETA_CORR");
       AddVolumeOutput("PROD", "LM_Prod", "DEBUG", "LM PROD");
@@ -1403,21 +1409,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       AddVolumeOutput("LAMBDA_THETA", "Lambda_theta", "DEBUG", "LM Lambda_theta");  
       AddVolumeOutput("DU_DS", "du_ds", "DEBUG", "LM du_ds");
       if ((config->GetLMParsedOptions()).SLM) {
-        AddVolumeOutput("TU", "Tu", "SOLUTION", "LM Tu");
+        AddVolumeOutput("TU", "Tu", "PRIMITIVE", "LM Tu");
         AddVolumeOutput("NORMAL_X", "Normal_x", "DEBUG", "LM Normal_x");
         AddVolumeOutput("NORMAL_Y", "Normal_y", "DEBUG", "LM Normal_y");
         AddVolumeOutput("NORMAL_Z", "Normal_z", "DEBUG", "LM Normal_z");
-        if (!((config->GetLMParsedOptions()).Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM)) {
-          AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
-          AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
-        }
       }
-      
-      if (!(config->GetLMParsedOptions()).SLM) {
-        AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
-        AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
-      }
-      AddVolumeOutput("TURB_INDEX", "Turb_index", "PRIMITIVE", "Turbulence index");
       break;
 
     case TURB_TRANS_MODEL::NONE:
@@ -1756,15 +1752,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("NORMAL_X", iPoint, Node_Trans->GetNormal_x(iPoint));
         SetVolumeOutputValue("NORMAL_Y", iPoint, Node_Trans->GetNormal_y(iPoint));
         SetVolumeOutputValue("NORMAL_Z", iPoint, Node_Trans->GetNormal_z(iPoint));
-        if (!((config->GetLMParsedOptions()).Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM)) {
-          SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
-          SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
-        }
       }
-      if (!(config->GetLMParsedOptions()).SLM) {
-        SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
-        SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
-      }
+      SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
+      SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
       SetVolumeOutputValue("TURB_INDEX", iPoint, Node_Turb->GetTurbIndex(iPoint));
       SetVolumeOutputValue("RES_INTERMITTENCY", iPoint, trans_solver->LinSysRes(iPoint, 0));
       if (!(config->GetLMParsedOptions()).SLM) {
