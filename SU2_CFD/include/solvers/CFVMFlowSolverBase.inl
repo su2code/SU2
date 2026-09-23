@@ -417,7 +417,8 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
   const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
 
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
-                               primitives, 0, nPrimVarGrad, prim_idx.Velocity(), gradient, rmatrix);
+                               primitives, 0, nPrimVarGrad, prim_idx.Velocity(), gradient, rmatrix,
+                               config->GetLSQMetricCaching());
 }
 
 template <class V, ENUM_REGIME R>
