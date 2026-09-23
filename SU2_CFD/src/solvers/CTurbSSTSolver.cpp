@@ -221,19 +221,10 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-        su2double **Grad_Vel = new su2double* [nDim];
-        su2double **StrainMat = new su2double* [nDim];
         auto Vorticity = flowNodes->GetVorticity(iPoint);
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          Grad_Vel[iDim] = new su2double [nDim];
-          StrainMat[iDim] = new su2double [nDim];
-          for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-            Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Velocity() + iDim, jDim);
-          }
-        }
+        auto PrimGrad_Flow = flowNodes->GetGradient_Primitive(iPoint);
         auto Laminar_Viscosity = flowNodes->GetLaminarViscosity(iPoint);
-        CNumerics::ComputeMeanRateOfStrainMatrix(3, StrainMat, Grad_Vel);
-        nodes->SetVortex_Tilting(iPoint, StrainMat, Vorticity, Laminar_Viscosity);
+        nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
       }
       END_SU2_OMP_FOR
     }
