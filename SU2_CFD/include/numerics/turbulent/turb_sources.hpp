@@ -1067,9 +1067,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Cross diffusion is included in the viscous fluxes, not this source term. ---*/
 
-      /*--- Compressibility correction of the omega equation (Suzen and Hoffmann). ---*/
+      /*--- Compressibility correction of the omega equation (Suzen and Hoffmann), divided by the kinematic eddy viscosity. ---*/
       if (sstParsedOptions.production == SST_OPTIONS::COMP_ShuzHoff) {
-        Residual[1] -= (1.0 - F1_i) * PDTerm / Eddy_Viscosity_i * Volume;
+        Residual[1] -= (1.0 - F1_i) * Density_i * PDTerm / Eddy_Viscosity_i * Volume;
       }
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
