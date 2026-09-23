@@ -3843,6 +3843,26 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (lmParsedOptions.CrossFlow && val_nDim == 2) {
       SU2_MPI::Error("Cross-flow corrections are available only for 3D problems", CURRENT_FUNCTION);
     }
+
+    /*--- The simplified (one-equation) model is available only for the combinations found in the literature:
+     *    SST + MENTER_SLM (+ CROSSFLOW): Menter et al., Flow Turbul. Combust. 95, 2015, with the cross-flow extension of
+     *                                    Vallinayagam Pillai and Lardeau, AIAA 2017-3159.
+     *    SA  + MENTER_SLM (+ CROSSFLOW): Lee and Baeder, AIAA 2021-1532.
+     *    The CODER_SLM and MOD_EPPLER_SLM correlations (Coder and Maughmer, AIAA 2012-672) are defined for the
+     *    Langtry-Menter intermittency equation, not for the one-equation model implemented here. ---*/
+    if (lmParsedOptions.SLM) {
+      if (lmParsedOptions.Correlation_SLM != TURB_TRANS_CORRELATION_SLM::MENTER_SLM) {
+        SU2_MPI::Error("The CODER_SLM and MOD_EPPLER_SLM correlations of LM_OPTIONS are not available with the "
+                       "one-equation (SLM) transition model:\nCoder and Maughmer (AIAA 2012-672) use them with the "
+                       "Langtry-Menter intermittency equation.\nSupported combinations: SLM with MENTER_SLM and "
+                       "KIND_TURB_MODEL= SST (Menter et al. 2015) or SA (Lee and Baeder, AIAA 2021-1532), "
+                       "with or without CROSSFLOW.", CURRENT_FUNCTION);
+      }
+      if (Kind_Turb_Model != TURB_MODEL::SST && Kind_Turb_Model != TURB_MODEL::SA) {
+        SU2_MPI::Error("The one-equation (SLM) transition model is available only with KIND_TURB_MODEL= SST or SA.",
+                       CURRENT_FUNCTION);
+      }
+    }
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
