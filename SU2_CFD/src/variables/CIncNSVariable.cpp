@@ -99,6 +99,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   SetVelocity(iPoint);
 
   /*--- Set laminar viscosity ---*/
+
   SetLaminarViscosity(iPoint, FluidModel->GetLaminarViscosity());
 
   /*--- Set eddy viscosity locally and in the fluid model. ---*/
