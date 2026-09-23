@@ -4119,6 +4119,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                    "TIME_STEPPING, DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER", CURRENT_FUNCTION);
   }
 
+  if (Kind_HybridRANSLES != NO_HYBRIDRANSLES && !Time_Domain) {
+    SU2_MPI::Error("Hybrid RANS/LES models (HYBRID_RANSLES) require an unsteady simulation, set TIME_DOMAIN= YES.",
+                   CURRENT_FUNCTION);
+  }
+
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
 
