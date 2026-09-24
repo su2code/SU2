@@ -1,4 +1,5 @@
 install_data(['continuous_adjoint.py',
+             'aeroacoustics.py',
              'compute_uncertainty.py',
 	     'finite_differences.py',
 	     'mesh_deformation.py',
