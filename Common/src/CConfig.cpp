@@ -3837,13 +3837,40 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("COMPRESSIBILITY-WILCOX only supported for SOLVER= RANS", CURRENT_FUNCTION);
   }
 
+  /*--- The transition solver has no discrete adjoint: the adjoint solvers do not create it, and the turbulence
+   *    sources would read a missing transition solution. ---*/
+  if (DiscreteAdjoint && Kind_Trans_Model != TURB_TRANS_MODEL::NONE) {
+    SU2_MPI::Error("KIND_TRANS_MODEL= LM is not available for discrete adjoint simulations (MATH_PROBLEM= DISCRETE_ADJOINT).",
+                   CURRENT_FUNCTION);
+  }
+
   /*--- Postprocess LM_OPTIONS into structure. ---*/
   if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
     lmParsedOptions = ParseLMOptions(LM_Options, nLM_Options, rank, Kind_Turb_Model);
 
-    /*--- Check if problem is 2D and LM2015 has been selected ---*/
-    if (lmParsedOptions.LM2015 && val_nDim == 2) {
-      SU2_MPI::Error("LM2015 is available only for 3D problems", CURRENT_FUNCTION);
+    /*--- Check if problem is 2D and CrossFlow has been selected ---*/
+    if (lmParsedOptions.CrossFlow && val_nDim == 2) {
+      SU2_MPI::Error("Cross-flow corrections are available only for 3D problems", CURRENT_FUNCTION);
+    }
+
+    /*--- The simplified (one-equation) model is available only for the combinations found in the literature:
+     *    SST + MENTER_SLM (+ CROSSFLOW): Menter et al., Flow Turbul. Combust. 95, 2015, with the cross-flow extension of
+     *                                    Vallinayagam Pillai and Lardeau, AIAA 2017-3159.
+     *    SA  + MENTER_SLM (+ CROSSFLOW): Lee and Baeder, AIAA 2021-1532.
+     *    The CODER_SLM and MOD_EPPLER_SLM correlations (Coder and Maughmer, AIAA 2012-672) are defined for the
+     *    Langtry-Menter intermittency equation, not for the one-equation model implemented here. ---*/
+    if (lmParsedOptions.SLM) {
+      if (lmParsedOptions.Correlation_SLM != TURB_TRANS_CORRELATION_SLM::MENTER_SLM) {
+        SU2_MPI::Error("The CODER_SLM and MOD_EPPLER_SLM correlations of LM_OPTIONS are not available with the "
+                       "one-equation (SLM) transition model:\nCoder and Maughmer (AIAA 2012-672) use them with the "
+                       "Langtry-Menter intermittency equation.\nSupported combinations: SLM with MENTER_SLM and "
+                       "KIND_TURB_MODEL= SST (Menter et al. 2015) or SA (Lee and Baeder, AIAA 2021-1532), "
+                       "with or without CROSSFLOW.", CURRENT_FUNCTION);
+      }
+      if (Kind_Turb_Model != TURB_MODEL::SST && Kind_Turb_Model != TURB_MODEL::SA) {
+        SU2_MPI::Error("The one-equation (SLM) transition model is available only with KIND_TURB_MODEL= SST or SA.",
+                       CURRENT_FUNCTION);
+      }
     }
   }
 
@@ -6699,33 +6726,79 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         switch (Kind_Trans_Model) {
           case TURB_TRANS_MODEL::NONE:  break;
           case TURB_TRANS_MODEL::LM: {
-            cout << "Transition model: Langtry and Menter's 4 equation model";
-            if (lmParsedOptions.LM2015) {
-              cout << " w/ cross-flow corrections (2015)" << endl;
+            int NTurbEqs = 0;
+            switch (Kind_Turb_Model) {
+              case TURB_MODEL::SA: NTurbEqs = 1;  break;
+              case TURB_MODEL::SST: NTurbEqs = 2;  break;
+              case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
+            }
+            if (!lmParsedOptions.SLM) {
+              int NEquations = 2;
+              cout << "Transition model: Langtry and Menter's "<< NEquations+NTurbEqs <<" equation model";
             } else {
-              cout << " (2009)" << endl;
+              int NEquations = 1;
+              cout << "Transition model: Simplified Langtry and Menter's "<< NEquations+NTurbEqs <<" equation model";
+            }
+            if (lmParsedOptions.CrossFlow) {
+              cout << " w/ cross-flow corrections";
+              if (!lmParsedOptions.SLM) {
+                cout << " (2015)";
+              }
+              cout << endl;
+              cout << "Roughness height of the cross-flow model (HROUGHNESS, in mesh length units): limited to at least "
+                   << LM_CROSSFLOW_MIN_ROUGHNESS << " to keep log(h/theta_t) and h/h0 finite (the papers give no\n"
+                   << "calibration limit for small heights); ";
+              if (hRoughness < LM_CROSSFLOW_MIN_ROUGHNESS)
+                cout << "the given value " << hRoughness << " is below it, " << LM_CROSSFLOW_MIN_ROUGHNESS << " is used." << endl;
+              else
+                cout << "the given value " << hRoughness << " is used." << endl;
+            } else {
+              if (!lmParsedOptions.SLM) {
+                cout << " (2009)";
+              }
+              cout << endl;
             }
             break;
           }
         }
-        if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
 
-          cout << "Correlation Functions: ";
-          switch (lmParsedOptions.Correlation) {
-            case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
-            case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
-            case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;
-            case TURB_TRANS_CORRELATION::KRAUSE_HYPER: cout << "Krause et al. (2008, paper)" << endl;  break;
-            case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
-            case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
-            case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
-            case TURB_TRANS_CORRELATION::DEFAULT:
-              switch (Kind_Turb_Model) {
-                case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
-                case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
-                case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
-              }
-              break;
+        if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
+          if (!lmParsedOptions.SLM){
+            cout << "Correlation Functions: ";
+            switch (lmParsedOptions.Correlation) {
+              case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
+              case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
+              case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;
+              case TURB_TRANS_CORRELATION::KRAUSE_HYPER: cout << "Krause et al. (2008, paper)" << endl;  break;
+              case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
+              case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
+              case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
+              case TURB_TRANS_CORRELATION::DEFAULT:
+                switch (Kind_Turb_Model) {
+                  case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
+                  case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
+                  case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
+                }
+                break;
+            }
+          }
+          else {
+            cout << "Correlation Functions for Simplified LM model: ";
+            switch (lmParsedOptions.Correlation_SLM) {
+              case TURB_TRANS_CORRELATION_SLM::CODER_SLM: cout << "Coder et al. (2012)" << endl;  break;
+              case TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM: cout << "Modified Eppler (from Coder et al. 2012)" << endl;  break;
+              case TURB_TRANS_CORRELATION_SLM::MENTER_SLM:
+              case TURB_TRANS_CORRELATION_SLM::DEFAULT: cout << "Menter et al. (2015)" << endl;  break;
+            }
+            const bool menterSLM = lmParsedOptions.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM ||
+                                   lmParsedOptions.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::DEFAULT;
+            if (menterSLM && Kind_Turb_Model == TURB_MODEL::SST) {
+              cout << "WARNING: Menter et al. (2015, Eq. 24) compute the k production of the SST model with the\n"
+                      "         Kato-Launder form P_k = mu_t*S*Omega and without the SST production limiter.\n";
+              if (sstParsedOptions.production != SST_OPTIONS::KL)
+                cout << "         The selected SST options do not use Kato-Launder, add KATO-LAUNDER to SST_OPTIONS.\n";
+              cout << "         The SST production limiter is active." << endl;
+            }
           }
         }
         cout << "Hybrid RANS/LES: ";

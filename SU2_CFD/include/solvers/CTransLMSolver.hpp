@@ -42,6 +42,7 @@ private:
 
   LM_ParsedOptions options;
   TURB_FAMILY TurbFamily;
+  bool isSepNeeded;
 
   TransLMCorrelations TransCorrelations;
 

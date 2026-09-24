@@ -1373,27 +1373,37 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
  * \brief LM Options
  */
 enum class LM_OPTIONS {
-  NONE,         /*!< \brief No option / default. */
-  LM2015,       /*!< \brief Cross-flow corrections. */
-  MALAN,        /*!< \brief Kind of transition correlation model (Malan). */
-  SULUKSNA,     /*!< \brief Kind of transition correlation model (Suluksna). */
-  KRAUSE,       /*!< \brief Kind of transition correlation model (Krause). */
-  KRAUSE_HYPER, /*!< \brief Kind of transition correlation model (Krause hypersonic). */
-  MEDIDA_BAEDER,/*!< \brief Kind of transition correlation model (Medida-Baeder). */
-  MEDIDA,       /*!< \brief Kind of transition correlation model (Medida). */
-  MENTER_LANGTRY,   /*!< \brief Kind of transition correlation model (Menter-Langtry). */
-  DEFAULT       /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
+  NONE,           /*!< \brief No option / default. */
+  CROSSFLOW,      /*!< \brief Cross-flow corrections. */
+  SLM,            /*!< \brief Simplified version. */
+  PRODLIM,        /*!< \brief Add production term to Pk. */
+  MALAN,          /*!< \brief Kind of transition correlation model (Malan). */
+  SULUKSNA,       /*!< \brief Kind of transition correlation model (Suluksna). */
+  KRAUSE,         /*!< \brief Kind of transition correlation model (Krause). */
+  KRAUSE_HYPER,   /*!< \brief Kind of transition correlation model (Krause hypersonic). */
+  MEDIDA_BAEDER,  /*!< \brief Kind of transition correlation model (Medida-Baeder). */
+  MEDIDA,         /*!< \brief Kind of transition correlation model (Medida). */
+  MENTER_LANGTRY, /*!< \brief Kind of transition correlation model (Menter-Langtry). */
+  MENTER_SLM,     /*!< \brief Kind of transition correlation model (Menter Simplified LM model). */
+  CODER_SLM,      /*!< \brief Kind of transition correlation model (Coder Simplified LM model). */
+  MOD_EPPLER_SLM, /*!< \brief Kind of transition correlation model (Modified Eppler Simplified LM model). */
+  DEFAULT         /*!< \brief Kind of transition correlation model (Menter-Langtry if SST, MALAN if SA). */
 };
 
 static const MapType<std::string, LM_OPTIONS> LM_Options_Map = {
   MakePair("NONE", LM_OPTIONS::NONE)
-  MakePair("LM2015", LM_OPTIONS::LM2015)
+  MakePair("CROSSFLOW", LM_OPTIONS::CROSSFLOW)
+  MakePair("SLM", LM_OPTIONS::SLM)
+  MakePair("PRODLIM", LM_OPTIONS::PRODLIM)
   MakePair("MALAN", LM_OPTIONS::MALAN)
   MakePair("SULUKSNA", LM_OPTIONS::SULUKSNA)
   MakePair("KRAUSE", LM_OPTIONS::KRAUSE)
   MakePair("KRAUSE_HYPER", LM_OPTIONS::KRAUSE_HYPER)
   MakePair("MEDIDA_BAEDER", LM_OPTIONS::MEDIDA_BAEDER)
   MakePair("MENTER_LANGTRY", LM_OPTIONS::MENTER_LANGTRY)
+  MakePair("MENTER_SLM", LM_OPTIONS::MENTER_SLM)
+  MakePair("CODER_SLM", LM_OPTIONS::CODER_SLM)
+  MakePair("MOD_EPPLER_SLM", LM_OPTIONS::MOD_EPPLER_SLM)
   MakePair("DEFAULT", LM_OPTIONS::DEFAULT)
 };
 
@@ -1412,12 +1422,34 @@ enum class TURB_TRANS_CORRELATION {
 };
 
 /*!
+ * \brief Types of transition correlations for Simplified LM model
+ */
+enum class TURB_TRANS_CORRELATION_SLM {
+  MENTER_SLM,        /*!< \brief Kind of transition correlation model (Menter Simplified LM model). */
+  CODER_SLM,        /*!< \brief Kind of transition correlation model (Coder Simplified LM model). */
+  MOD_EPPLER_SLM,        /*!< \brief Kind of transition correlation model (Modified Eppler Simplified LM model). */
+  DEFAULT       /*!< \brief Kind of transition correlation model. */
+};
+
+/*!
+ * \brief Lower limit of the roughness height (HROUGHNESS, same units) in the cross-flow corrections of the LM models,
+ *        where it enters a logarithm (Langtry et al., log(h/theta_t)) or a ratio (Vallinayagam Pillai and Lardeau,
+ *        h/h0). The papers give no calibration limit for small heights, so a small value keeps these terms finite
+ *        for smooth surfaces (h = 0). h and theta_t are both in mesh length units (the reference length of the
+ *        non-dimensionalization is 1), so log(h/theta_t) is consistent for any REF_DIMENSIONALIZATION.
+ */
+constexpr double LM_CROSSFLOW_MIN_ROUGHNESS = 1e-8;
+
+/*!
  * \brief Structure containing parsed LM options.
  */
 struct LM_ParsedOptions {
   LM_OPTIONS version = LM_OPTIONS::NONE;  /*!< \brief LM base model. */
-  bool LM2015 = false;                    /*!< \brief Use cross-flow corrections. */
+  bool SLM = false;                       /*!< \brief Use simplified version. */
+  bool ProdLim = false;                   /*!< \brief Add production term to Pk. */
+  bool CrossFlow = false;                    /*!< \brief Use cross-flow corrections. */
   TURB_TRANS_CORRELATION Correlation = TURB_TRANS_CORRELATION::DEFAULT;
+  TURB_TRANS_CORRELATION_SLM Correlation_SLM = TURB_TRANS_CORRELATION_SLM::DEFAULT;
 };
 
 /*!
@@ -1435,7 +1467,10 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
     return std::find(LM_Options, lm_options_end, option) != lm_options_end;
   };
 
-  LMParsedOptions.LM2015 = IsPresent(LM_OPTIONS::LM2015);
+  LMParsedOptions.SLM = IsPresent(LM_OPTIONS::SLM);
+  LMParsedOptions.ProdLim = IsPresent(LM_OPTIONS::PRODLIM);
+
+  LMParsedOptions.CrossFlow = IsPresent(LM_OPTIONS::CROSSFLOW);
 
   int NFoundCorrelations = 0;
   if (IsPresent(LM_OPTIONS::MALAN)) {
@@ -1467,8 +1502,26 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
     NFoundCorrelations++;
   }
 
+  int NFoundCorrelations_SLM = 0;
+  if (IsPresent(LM_OPTIONS::MENTER_SLM)) {
+    LMParsedOptions.Correlation_SLM = TURB_TRANS_CORRELATION_SLM::MENTER_SLM;
+    NFoundCorrelations_SLM++;
+  }
+  if (IsPresent(LM_OPTIONS::CODER_SLM)) {
+    LMParsedOptions.Correlation_SLM = TURB_TRANS_CORRELATION_SLM::CODER_SLM;
+    NFoundCorrelations_SLM++;
+  }
+  if (IsPresent(LM_OPTIONS::MOD_EPPLER_SLM)) {
+    LMParsedOptions.Correlation_SLM = TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM;
+    NFoundCorrelations_SLM++;
+  }
+
   if (NFoundCorrelations > 1) {
     SU2_MPI::Error("Two correlations selected for LM_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  }
+
+  if (NFoundCorrelations_SLM > 1) {
+    SU2_MPI::Error("Two SLM correlations selected for LM_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
   }
 
   if (LMParsedOptions.Correlation == TURB_TRANS_CORRELATION::DEFAULT){
@@ -1477,6 +1530,10 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
     } else if (Kind_Turb_Model == TURB_MODEL::SA) {
       LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MALAN;
     }
+  }
+
+  if (LMParsedOptions.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::DEFAULT){
+    LMParsedOptions.Correlation_SLM = TURB_TRANS_CORRELATION_SLM::MENTER_SLM;
   }
 
   return LMParsedOptions;
