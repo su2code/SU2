@@ -25,6 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../../../include/output/filewriter/CSU2MeshBinaryFileWriter.hpp"
+
+#include <numeric>
+#include <tuple>
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 #include <array>
@@ -65,144 +68,117 @@ void RestrictPermissions(const string& filename) {
 #endif
 }
 
-FILE* OpenAppend(const string& filename) {
-  FILE* f = fopen(filename.c_str(), "ab");
-  if (!f) SU2_MPI::Error(string("Unable to open file ") + filename, CURRENT_FUNCTION);
-  RestrictPermissions(filename);
-  return f;
+/*--- Append the bytes of a value to a buffer, the buffers of all ranks are written to the file together. ---*/
+template <class T>
+void AppendBytes(string& buffer, const T& value) {
+  buffer.append(reinterpret_cast<const char*>(&value), sizeof(value));
 }
 
 }  // namespace
 
 void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
 
-  val_filename.append(fileExt);
+  /*--- For multizone cases all zones are written into one file, the zones after the first are appended. ---*/
 
-  /*--- Write the file-level header (only once, before the first zone) followed
-        by the per-zone header (zone_id, n_dim, n_elem). Only rank 0 touches the
-        file for this; the implicit synchronization at the first Allreduce below
-        (also present in CSU2MeshFileWriter) keeps the other ranks from writing
-        before this is done. ---*/
+  OpenMPIFile(val_filename, iZone != 0);
 
-  if (rank == 0) {
-    FILE* f = fopen(val_filename.c_str(), (iZone == 0) ? "wb" : "ab");
-    if (!f) SU2_MPI::Error(string("Unable to open file ") + val_filename, CURRENT_FUNCTION);
-    RestrictPermissions(val_filename);
+  if (rank == MASTER_NODE) RestrictPermissions(val_filename + fileExt);
 
-    if (iZone == 0) {
-      int32_t size_conn_type = SU2B_CONN_TYPE_SIZE;
-      int32_t n_zone = nZone;
-      fwrite(&size_conn_type, sizeof(size_conn_type), 1, f);
-      fwrite(&n_zone, sizeof(n_zone), 1, f);
+  /*--- Write the file-level header (only once, before the first zone) followed by the per-zone header
+        (zone_id, n_dim, n_elem). Only the master node writes it. ---*/
+
+  string buffer;
+
+  if (iZone == 0) {
+    AppendBytes(buffer, SU2B_CONN_TYPE_SIZE);
+    AppendBytes(buffer, static_cast<int32_t>(nZone));
+  }
+
+  /*--- Zone IDs are 1-based, matching the "IZONE=" convention of the ASCII format. ---*/
+  AppendBytes(buffer, static_cast<int32_t>(iZone + 1));
+  AppendBytes(buffer, static_cast<int32_t>(dataSorter->GetnDim()));
+  AppendBytes(buffer, static_cast<conn_t>(dataSorter->GetnElemGlobal()));
+
+  WriteMPIString(buffer, MASTER_NODE);
+
+  /*--- Each rank writes the data of its own elements and points, at the position that follows the data of the
+        ranks before it. The global offsets and indices of a rank are those of the ranks before it. ---*/
+
+  auto offsetOfRank = [&](unsigned long localCount) {
+    vector<unsigned long> counts(size, localCount);
+    SU2_MPI::Allgather(&localCount, 1, MPI_UNSIGNED_LONG, counts.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    return std::make_pair(std::accumulate(counts.begin(), counts.begin() + rank, 0ul),
+                          std::accumulate(counts.begin(), counts.end(), 0ul));
+  };
+
+  /*--- Section 1: element offsets, the starting connectivity-array position of each element, closed by the
+        total size as sentinel offset[n_elem]. ---*/
+
+  unsigned long localConnSize = 0, localElemCount = 0;
+  for (auto type : ElemTypes) {
+    localConnSize += dataSorter->GetnElem(type) * (nPointsOfElementType(type) + 2);
+    localElemCount += dataSorter->GetnElem(type);
+  }
+
+  unsigned long connOffset, totalConnSize;
+  std::tie(connOffset, totalConnSize) = offsetOfRank(localConnSize);
+
+  unsigned long elemOffset, nElemGlobal;
+  std::tie(elemOffset, nElemGlobal) = offsetOfRank(localElemCount);
+
+  buffer.clear();
+  buffer.reserve(localElemCount * sizeof(conn_t));
+
+  unsigned long running = connOffset;
+  for (auto type : ElemTypes) {
+    const conn_t nPointsElem = nPointsOfElementType(type);
+    for (auto iElem = 0ul; iElem < dataSorter->GetnElem(type); iElem++) {
+      AppendBytes(buffer, static_cast<conn_t>(running));
+      running += nPointsElem + 2;
     }
-
-    /*--- Zone IDs are 1-based, matching the "IZONE=" convention of the ASCII
-          format (CSU2MeshFileWriter writes iZone+1 as well). ---*/
-    int32_t zone_id = iZone + 1;
-    int32_t n_dim = dataSorter->GetnDim();
-    conn_t n_elem = dataSorter->GetnElemGlobal();
-    fwrite(&zone_id, sizeof(zone_id), 1, f);
-    fwrite(&n_dim, sizeof(n_dim), 1, f);
-    fwrite(&n_elem, sizeof(n_elem), 1, f);
-
-    fclose(f);
   }
+  WriteMPIStringAll(buffer);
 
-  /*--- Section 1: element offsets. Every rank streams, in turn, the starting
-        connectivity-array position of each of its local elements (visited in
-        the fixed type order above), starting from the cumulative total left
-        behind by the previous ranks. Each rank's accumulator holds only its
-        own local contribution (like CSU2MeshFileWriter's nElem/myPoint), so
-        summing it across ranks via Allreduce yields the new cumulative total.
-        Once all ranks are done, the final total is appended once more as the
-        closing sentinel offset[n_elem]. ---*/
+  buffer.clear();
+  AppendBytes(buffer, static_cast<conn_t>(totalConnSize));
+  WriteMPIString(buffer, MASTER_NODE);
 
-  unsigned long connOffset = 0, localConnOffset = 0;
+  /*--- Section 2: element connectivity, [VTK_Type, node_0..node_n-1, GlobalIndex] per element. ---*/
 
-  for (int iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-      FILE* f = OpenAppend(val_filename);
-      unsigned long running = connOffset;
-      for (auto type : ElemTypes) {
-        const conn_t nPointsElem = nPointsOfElementType(type);
-        for (auto iElem = 0ul; iElem < dataSorter->GetnElem(type); iElem++) {
-          conn_t value = running;
-          fwrite(&value, sizeof(value), 1, f);
-          running += nPointsElem + 2;
-        }
-      }
-      fclose(f);
-      localConnOffset = running - connOffset;
+  buffer.clear();
+  buffer.reserve(localConnSize * sizeof(conn_t));
+
+  conn_t globalIndex = elemOffset;
+  for (auto type : ElemTypes) {
+    const auto nPointsElem = nPointsOfElementType(type);
+    for (auto iElem = 0ul; iElem < dataSorter->GetnElem(type); iElem++) {
+      AppendBytes(buffer, static_cast<conn_t>(type));
+      for (auto iNode = 0u; iNode < nPointsElem; iNode++)
+        AppendBytes(buffer, static_cast<conn_t>(dataSorter->GetElemConnectivity(type, iElem, iNode) - 1));
+      AppendBytes(buffer, globalIndex);
+      globalIndex++;
     }
-    SU2_MPI::Allreduce(&localConnOffset, &connOffset, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   }
+  WriteMPIStringAll(buffer);
 
-  if (rank == 0) {
-    FILE* f = OpenAppend(val_filename);
-    conn_t sentinel = connOffset;
-    fwrite(&sentinel, sizeof(sentinel), 1, f);
-    fclose(f);
+  /*--- Section 3: point coordinates and IDs, interleaved. ---*/
+
+  buffer.clear();
+  AppendBytes(buffer, static_cast<conn_t>(dataSorter->GetnPointsGlobal()));
+  WriteMPIString(buffer, MASTER_NODE);
+
+  unsigned long pointOffset, nPointsTotal;
+  std::tie(pointOffset, nPointsTotal) = offsetOfRank(dataSorter->GetnPoints());
+
+  buffer.clear();
+  buffer.reserve(dataSorter->GetnPoints() * (dataSorter->GetnDim() * sizeof(double) + sizeof(conn_t)));
+
+  for (auto iPoint = 0ul; iPoint < dataSorter->GetnPoints(); iPoint++) {
+    for (auto iDim = 0u; iDim < dataSorter->GetnDim(); iDim++)
+      AppendBytes(buffer, static_cast<double>(dataSorter->GetData(iDim, iPoint)));
+    AppendBytes(buffer, static_cast<conn_t>(iPoint + pointOffset));
   }
-
-  /*--- Section 2: element connectivity, [VTK_Type, node_0..node_n-1, GlobalIndex]
-        per element, in the same fixed type order and the same rank-by-rank
-        streaming pattern as CSU2MeshFileWriter uses for the ASCII format
-        (including the same "-1" to convert 1-based dataSorter indices to the
-        0-based indices used throughout the SU2 mesh formats). ---*/
-
-  unsigned long elemIndexOffset = 0, localElemCount = 0;
-
-  for (int iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-      FILE* f = OpenAppend(val_filename);
-      conn_t globalIndex = elemIndexOffset;
-      for (auto type : ElemTypes) {
-        const auto nPointsElem = nPointsOfElementType(type);
-        for (auto iElem = 0ul; iElem < dataSorter->GetnElem(type); iElem++) {
-          conn_t vtkType = type;
-          fwrite(&vtkType, sizeof(vtkType), 1, f);
-          for (auto iNode = 0u; iNode < nPointsElem; iNode++) {
-            conn_t node = dataSorter->GetElemConnectivity(type, iElem, iNode) - 1;
-            fwrite(&node, sizeof(node), 1, f);
-          }
-          fwrite(&globalIndex, sizeof(globalIndex), 1, f);
-          globalIndex++;
-        }
-      }
-      fclose(f);
-      localElemCount = static_cast<unsigned long>(globalIndex - elemIndexOffset);
-    }
-    SU2_MPI::Allreduce(&localElemCount, &elemIndexOffset, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  }
-
-  /*--- Section 3: point coordinates and IDs, interleaved. Same rank-by-rank
-        streaming pattern as CSU2MeshFileWriter's point section. ---*/
-
-  if (rank == 0) {
-    FILE* f = OpenAppend(val_filename);
-    conn_t nPointsGlobal = dataSorter->GetnPointsGlobal();
-    fwrite(&nPointsGlobal, sizeof(nPointsGlobal), 1, f);
-    fclose(f);
-  }
-
-  unsigned long myPoint = 0, pointOffset = 0;
-
-  for (int iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-      FILE* f = OpenAppend(val_filename);
-      for (auto iPoint = 0ul; iPoint < dataSorter->GetnPoints(); iPoint++) {
-        for (auto iDim = 0u; iDim < dataSorter->GetnDim(); iDim++) {
-          double coord = dataSorter->GetData(iDim, iPoint);
-          fwrite(&coord, sizeof(coord), 1, f);
-        }
-        conn_t pointID = iPoint + pointOffset;
-        fwrite(&pointID, sizeof(pointID), 1, f);
-      }
-      fclose(f);
-      myPoint = dataSorter->GetnPoints();
-    }
-    SU2_MPI::Allreduce(&myPoint, &pointOffset, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  }
+  WriteMPIStringAll(buffer);
 
   /*--- Section 4: markers. Mirrors CSU2MeshFileWriter: the marker connectivity
         is not available from the data sorter, so it is read back from the
@@ -210,8 +186,9 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
         SU2_COMPONENT::SU2_DEF) right after reading the original mesh. Only the
         master rank does this work, exactly as for the ASCII format. ---*/
 
+  buffer.clear();
+
   if (rank == MASTER_NODE) {
-    FILE* f = OpenAppend(val_filename);
 
     string str = "boundary";
     if (nZone > 1) str += "_" + PrintingToolbox::to_string(iZone);
@@ -228,7 +205,7 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
 
       text_line.erase(0, 6);
       const int32_t nMarker_ = atoi(text_line.c_str());
-      fwrite(&nMarker_, sizeof(nMarker_), 1, f);
+      AppendBytes(buffer, nMarker_);
 
       for (int iMarker = 0; iMarker < nMarker_; iMarker++) {
 
@@ -250,7 +227,7 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
               are independent and must not silently drift apart. ---*/
         char name_buf[SU2_BINARY_STRING_SIZE] = {};
         strncpy(name_buf, Marker_Tag.c_str(), SU2_BINARY_STRING_SIZE - 1);
-        fwrite(name_buf, sizeof(char), SU2_BINARY_STRING_SIZE, f);
+        buffer.append(name_buf, SU2_BINARY_STRING_SIZE);
 
         getline(input_file, text_line);
         text_line.erase(0, 13);
@@ -277,32 +254,35 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
         }
 
         auto nElemBoundConn = static_cast<conn_t>(nElem_Bound_);
-        fwrite(&nElemBoundConn, sizeof(nElemBoundConn), 1, f);
+        AppendBytes(buffer, nElemBoundConn);
 
-        unsigned long running = 0;
+        unsigned long boundOffset = 0;
         for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
-          conn_t value = running;
-          fwrite(&value, sizeof(value), 1, f);
-          running += nPointsOfElementType(vtkTypes[iElem_Bound]) + 1;
+          conn_t value = boundOffset;
+          AppendBytes(buffer, value);
+          boundOffset += nPointsOfElementType(vtkTypes[iElem_Bound]) + 1;
         }
-        conn_t sentinel = running;
-        fwrite(&sentinel, sizeof(sentinel), 1, f);
+        conn_t sentinel = boundOffset;
+        AppendBytes(buffer, sentinel);
 
         for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
           conn_t vtkType = vtkTypes[iElem_Bound];
-          fwrite(&vtkType, sizeof(vtkType), 1, f);
+          AppendBytes(buffer, vtkType);
           const auto nPointsElem = nPointsOfElementType(vtkTypes[iElem_Bound]);
           for (unsigned short iNode = 0; iNode < nPointsElem; iNode++) {
             conn_t node = nodes[iElem_Bound][iNode];
-            fwrite(&node, sizeof(node), 1, f);
+            AppendBytes(buffer, node);
           }
         }
       }
     }
 
     input_file.close();
-    fclose(f);
   }
 
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
+  /*--- Only the master node has the markers, the other ranks write nothing. ---*/
+
+  WriteMPIString(buffer, MASTER_NODE);
+
+  CloseMPIFile();
 }

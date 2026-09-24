@@ -488,6 +488,7 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
 #define MPI_MAX 10
 #define MPI_INT 11
 #define MPI_PROD 12
+#define MPI_BOR 13
 #define MPI_STATUS_IGNORE nullptr
 
 /*!

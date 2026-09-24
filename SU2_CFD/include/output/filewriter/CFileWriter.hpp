@@ -169,11 +169,18 @@ protected:
   bool WriteMPIString(const std::string& str, unsigned short processor);
 
   /*!
+   * \brief Write a string of each rank to the file, one after the other in rank order.
+   * \param[in] str - The string of this rank.
+   * \return <code>TRUE</code> if the writing was successful.
+   */
+  bool WriteMPIStringAll(const std::string& str);
+
+  /*!
    * \brief Open a file to write using MPI I/O. Already existing file is deleted.
    * \param[in] val_filename - The name of the file
    * \return Boolean indicating whether the opening was successful.
    */
-  bool OpenMPIFile(string val_filename);
+  bool OpenMPIFile(string val_filename, bool append = false);
 
   /*!
    * \brief Close a file using MPI I/O.

@@ -26,6 +26,8 @@
  */
 
 #include "../../../include/output/filewriter/CSU2MeshFileWriter.hpp"
+
+#include <numeric>
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 const string CSU2MeshFileWriter::fileExt = ".su2";
@@ -36,129 +38,87 @@ CSU2MeshFileWriter::CSU2MeshFileWriter(CParallelDataSorter *valDataSorter,
 
 void CSU2MeshFileWriter::WriteData(string val_filename) {
 
-  ofstream output_file;
+  /*--- For multizone cases all zones are written into one file, the zones after the first are appended. ---*/
 
-  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  val_filename.append(fileExt);
+  OpenMPIFile(val_filename, iZone != 0);
 
-  /*--- Only the FIRST node writes the header (it does not matter if that is the master). ---*/
+  /*--- Write the header. ---*/
 
-  if (rank == 0) {
-    /*--- For multizone-cases this only works if the all zonal meshes are in one file.
-          If the meshes are separate for each zone another solution has to be found. ---*/
-    if (iZone==0) {
-      output_file.open(val_filename);
-    } else {
-      output_file.open(val_filename, ios::app);
+  ostringstream header;
+
+  if (iZone == 0 && nZone > 1) header << "NZONE= " << nZone << endl;
+  if (nZone > 1) header << "IZONE= " << iZone + 1 << endl;
+
+  header << "NDIME= " << dataSorter->GetnDim() << endl;
+  header << "NELEM= " << dataSorter->GetnElemGlobal() << endl;
+
+  WriteMPIString(header.str(), MASTER_NODE);
+
+  /*--- Each rank formats the data of its own elements and points into a string, and all ranks then write their
+   strings to the file at the same time, one after the other in rank order. The global index of an element or
+   point is its local index plus the number of elements or points of the ranks before this one. ---*/
+
+  auto offsetOfRank = [&](unsigned long localCount) {
+    vector<unsigned long> counts(size, localCount);
+    SU2_MPI::Allgather(&localCount, 1, MPI_UNSIGNED_LONG, counts.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    return std::accumulate(counts.begin(), counts.begin() + rank, 0ul);
+  };
+
+  ostringstream data;
+
+  /*--- Write the connectivity, the type of each element is written before its nodes. ---*/
+
+  unsigned long nElem = 0;
+  for (auto type : {TRIANGLE, QUADRILATERAL, TETRAHEDRON, HEXAHEDRON, PRISM, PYRAMID})
+    nElem += dataSorter->GetnElem(type);
+
+  unsigned long offset = offsetOfRank(nElem);
+
+  nElem = 0;
+  for (auto type : {TRIANGLE, QUADRILATERAL, TETRAHEDRON, HEXAHEDRON, PRISM, PYRAMID}) {
+    const auto nPoints = nPointsOfElementType(type);
+    for (auto iElem = 0ul; iElem < dataSorter->GetnElem(type); iElem++) {
+      data << type << "\t";
+      for (auto iNode = 0u; iNode < nPoints; ++iNode)
+        data << dataSorter->GetElemConnectivity(type, iElem, iNode) - 1 << "\t";
+      data << nElem + offset << "\n"; nElem++;
     }
-
-    if (iZone==0 && nZone>1) {
-      output_file << "NZONE= " << nZone << endl;
-    }
-
-    if (nZone > 1){
-      output_file << "IZONE= " << iZone+1 << endl;
-    }
-
-    /*--- Write dimensions data. ---*/
-
-    output_file << "NDIME= " << dataSorter->GetnDim() << endl;
-
-    output_file << "NELEM= " << dataSorter->GetnElemGlobal() << endl;
-
-    output_file.close();
   }
 
-  unsigned long nElem = 0, offset = 0;
-
-  for (int iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-      output_file.open(val_filename, ios::app);
-
-      for (auto iElem = 0ul; iElem < dataSorter->GetnElem(TRIANGLE); iElem++) {
-        output_file << "5\t";
-        for (auto iNode = 0u; iNode < N_POINTS_TRIANGLE; ++iNode)
-          output_file << dataSorter->GetElemConnectivity(TRIANGLE, iElem, iNode) - 1 << "\t";
-        output_file << nElem + offset << "\n"; nElem++;
-      }
-      for (auto iElem = 0ul; iElem < dataSorter->GetnElem(QUADRILATERAL); iElem++) {
-        output_file << "9\t";
-        for (auto iNode = 0u; iNode < N_POINTS_QUADRILATERAL; ++iNode)
-          output_file << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, iNode) - 1 << "\t";
-        output_file << nElem + offset << "\n"; nElem++;
-      }
-      for (auto iElem = 0ul; iElem < dataSorter->GetnElem(TETRAHEDRON); iElem++) {
-        output_file << "10\t";
-        for (auto iNode = 0u; iNode < N_POINTS_TETRAHEDRON; ++iNode)
-          output_file << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, iNode) - 1 << "\t";
-        output_file << nElem + offset << "\n"; nElem++;
-      }
-      for (auto iElem = 0ul; iElem < dataSorter->GetnElem(HEXAHEDRON); iElem++) {
-        output_file << "12\t";
-        for (auto iNode = 0u; iNode < N_POINTS_HEXAHEDRON; ++iNode)
-          output_file << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, iNode) - 1 << "\t";
-        output_file << nElem + offset << "\n"; nElem++;
-      }
-      for (auto iElem = 0ul; iElem < dataSorter->GetnElem(PRISM); iElem++) {
-        output_file << "13\t";
-        for (auto iNode = 0u; iNode < N_POINTS_PRISM; ++iNode)
-          output_file << dataSorter->GetElemConnectivity(PRISM, iElem, iNode) - 1 << "\t";
-        output_file << nElem + offset << "\n"; nElem++;
-      }
-
-      for (auto iElem = 0ul; iElem < dataSorter->GetnElem(PYRAMID); iElem++) {
-        output_file << "14\t";
-        for (auto iNode = 0u; iNode < N_POINTS_PYRAMID; ++iNode)
-          output_file << dataSorter->GetElemConnectivity(PYRAMID, iElem, iNode) - 1 << "\t";
-        output_file << nElem + offset << "\n"; nElem++;
-      }
-
-      output_file.close();
-    }
-
-    /*--- Communicate offset, implies a barrier. ---*/
-    SU2_MPI::Allreduce(&nElem, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  }
+  WriteMPIStringAll(data.str());
 
   /*--- Write the node coordinates. ---*/
 
-  if (rank == 0) {
-    output_file.open(val_filename, ios::app);
-    output_file << "NPOIN= " << dataSorter->GetnPointsGlobal() << "\n";
-    output_file.close();
-  }
+  WriteMPIString("NPOIN= " + to_string(dataSorter->GetnPointsGlobal()) + "\n", MASTER_NODE);
 
-  unsigned long myPoint = 0; offset = 0;
+  offset = offsetOfRank(dataSorter->GetnPoints());
 
-  for (int iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-      output_file.open(val_filename, ios::app);
-      output_file.precision(15);
+  data.str("");
+  data.clear();
+  data.precision(15);
+  data << scientific;
 
-      for (auto iPoint = 0ul; iPoint < dataSorter->GetnPoints(); iPoint++) {
+  for (auto iPoint = 0ul; iPoint < dataSorter->GetnPoints(); iPoint++) {
 
-        /*--- Loop over the coordinates and write the values to file. ---*/
+    /*--- Loop over the coordinates and write the values to file. ---*/
 
-        for (auto iDim = 0u; iDim < dataSorter->GetnDim(); iDim++) {
-          output_file << scientific << dataSorter->GetData(iDim, iPoint) << "\t";
-        }
-
-        /*--- Write global index. ---*/
-
-        output_file << iPoint + offset << "\n";
-        myPoint++;
-      }
-
-      output_file.close();
+    for (auto iDim = 0u; iDim < dataSorter->GetnDim(); iDim++) {
+      data << dataSorter->GetData(iDim, iPoint) << "\t";
     }
 
-    /*--- Communicate offset, implies a barrier. ---*/
-    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+    /*--- Write global index. ---*/
+
+    data << iPoint + offset << "\n";
   }
 
-  if (rank == MASTER_NODE) {
+  WriteMPIStringAll(data.str());
 
-    output_file.open(val_filename, ios::app);
+  /*--- The boundaries are copied from the file written by the mesh deformation, only the master node has them.
+   This is the last thing written to the file. ---*/
+
+  ostringstream boundaries;
+
+  if (rank == MASTER_NODE) {
 
     /*--- Read the boundary information ---*/
 
@@ -186,7 +146,7 @@ void CSU2MeshFileWriter::WriteData(string val_filename) {
 
       text_line.erase(0,6);
       const auto nMarker_ = atoi(text_line.c_str());
-      output_file << "NMARK= " << nMarker_ << endl;
+      boundaries << "NMARK= " << nMarker_ << endl;
 
       for (auto iMarker = 0; iMarker < nMarker_; iMarker++) {
 
@@ -208,15 +168,15 @@ void CSU2MeshFileWriter::WriteData(string val_filename) {
 
         text_line.erase(0,13);
         const auto nElem_Bound_ = atoi(text_line.c_str());
-        output_file << "MARKER_TAG= " << Marker_Tag << endl;
-        output_file << "MARKER_ELEMS= " << nElem_Bound_<< endl;
+        boundaries << "MARKER_TAG= " << Marker_Tag << endl;
+        boundaries << "MARKER_ELEMS= " << nElem_Bound_<< endl;
         getline (input_file, text_line);
 
         text_line.erase(0,8);
         const auto SendTo = atoi(text_line.c_str());
 
         if (Marker_Tag == "SEND_RECEIVE") {
-          output_file << "SEND_TO= " << SendTo << endl;
+          boundaries << "SEND_TO= " << SendTo << endl;
         }
 
         for (auto iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
@@ -226,30 +186,33 @@ void CSU2MeshFileWriter::WriteData(string val_filename) {
 
           unsigned short VTK_Type;
           bound_line >> VTK_Type;
-          output_file << VTK_Type;
+          boundaries << VTK_Type;
           unsigned long vnodes[4] = {0};
 
           switch (VTK_Type) {
           case LINE:
           case VERTEX:
             bound_line >> vnodes[0]; bound_line >> vnodes[1];
-            output_file << "\t" << vnodes[0] << "\t" << vnodes[1] << "\n";
+            boundaries << "\t" << vnodes[0] << "\t" << vnodes[1] << "\n";
             break;
           case TRIANGLE:
             bound_line >> vnodes[0]; bound_line >> vnodes[1]; bound_line >> vnodes[2];
-            output_file << "\t" << vnodes[0] << "\t" << vnodes[1] << "\t" << vnodes[2] << "\n";
+            boundaries << "\t" << vnodes[0] << "\t" << vnodes[1] << "\t" << vnodes[2] << "\n";
             break;
           case QUADRILATERAL:
             bound_line >> vnodes[0]; bound_line >> vnodes[1]; bound_line >> vnodes[2]; bound_line >> vnodes[3];
-            output_file << "\t" << vnodes[0] << "\t" << vnodes[1] << "\t" << vnodes[2] << "\t" << vnodes[3] << "\n";
+            boundaries << "\t" << vnodes[0] << "\t" << vnodes[1] << "\t" << vnodes[2] << "\t" << vnodes[3] << "\n";
             break;
           }
         }
       }
     }
 
-    output_file.close();
   }
 
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
+  /*--- Only the master node has this text, the other ranks write nothing. ---*/
+
+  WriteMPIString(boundaries.str(), MASTER_NODE);
+
+  CloseMPIFile();
 }

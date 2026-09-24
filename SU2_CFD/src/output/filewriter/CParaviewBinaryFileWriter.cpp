@@ -27,6 +27,8 @@
 
 #include "../../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
 #include "../../../../Common/include/toolboxes/SwapBytes.hpp"
+#include <cstdint>
+#include <limits>
 
 const string CParaviewBinaryFileWriter::fileExt = ".vtk";
 
@@ -56,7 +58,7 @@ void CParaviewBinaryFileWriter::WriteData(string val_filename){
 
   unsigned short iDim = 0, nDim = dataSorter->GetnDim();
 
-  unsigned long iPoint, iElem;
+  unsigned long iPoint;
 
   const int MAX_STRING_LENGTH = 255;
   char str_buf[MAX_STRING_LENGTH];
@@ -65,7 +67,13 @@ void CParaviewBinaryFileWriter::WriteData(string val_filename){
 
   OpenMPIFile(val_filename);
 
-  string header = "# vtk DataFile Version 3.0\n"
+  /*--- The classic (3.0) cell layout stores the cell sizes and node ids of all cells in one Int32 array. When that
+   array does not fit in Int32, use the 5.1 layout (VTK >= 9.0) with separate Int64 offsets and connectivity. ---*/
+
+  const unsigned long GlobalCellStorage = dataSorter->GetnConnGlobal() + dataSorter->GetnElemGlobal();
+  const bool cellsInt64 = GlobalCellStorage > static_cast<unsigned long>(std::numeric_limits<int32_t>::max());
+
+  string header = string("# vtk DataFile Version ") + (cellsInt64 ? "5.1" : "3.0") + "\n"
                   "vtk output\n"
                   "BINARY\n"
                   "DATASET UNSTRUCTURED_GRID\n";
@@ -82,9 +90,7 @@ void CParaviewBinaryFileWriter::WriteData(string val_filename){
   GlobalPoint = dataSorter->GetnPointsGlobal();
   myPoint     = dataSorter->GetnPoints();
 
-  SPRINTF(str_buf, "POINTS %i float\n", SU2_TYPE::Int(GlobalPoint));
-
-  WriteMPIString(string(str_buf), MASTER_NODE);
+  WriteMPIString("POINTS " + std::to_string(GlobalPoint) + " float\n", MASTER_NODE);
 
   /*--- Load/write the 1D buffer of point coordinates. Note that we
    always have 3 coordinate dimensions, even for 2D problems. ---*/
@@ -130,48 +136,76 @@ void CParaviewBinaryFileWriter::WriteData(string val_filename){
   GlobalElem        = dataSorter->GetnElemGlobal();
   GlobalElemStorage = dataSorter->GetnConnGlobal();
 
-  SPRINTF(str_buf, "\nCELLS %i %i\n", SU2_TYPE::Int(GlobalElem),
-          SU2_TYPE::Int(GlobalElemStorage+GlobalElem));
-  WriteMPIString(str_buf, MASTER_NODE);
+  /*--- Loop over the local elements of each type, calling f(type, iElem, nPoints). ---*/
 
-  /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
-
-  vector<int> connBuf(myElemStorage + myElem);
-  unsigned long iStorage = 0;
-  unsigned short iNode = 0;
-
-  auto copyToBuffer = [&](GEO_TYPE type, unsigned long nElem, unsigned short nPoints){
-    for (iElem = 0; iElem < nElem; iElem++) {
-      connBuf[iStorage+0] = nPoints;
-      for (iNode = 0; iNode < nPoints; iNode++){
-        connBuf[iStorage+iNode+1] = int(dataSorter->GetElemConnectivity(type, iElem, iNode)-1);
-      }
-      iStorage += nPoints + 1;
+  auto forEachElem = [&](auto f) {
+    for (auto type : {LINE, TRIANGLE, QUADRILATERAL, TETRAHEDRON, HEXAHEDRON, PRISM, PYRAMID}) {
+      const auto nPoints = nPointsOfElementType(type);
+      for (unsigned long iElem = 0; iElem < dataSorter->GetnElem(type); iElem++) f(type, iElem, nPoints);
     }
   };
+  unsigned long iStorage = 0;
 
-  copyToBuffer(LINE,          nParallel_Line, N_POINTS_LINE);
-  copyToBuffer(TRIANGLE,      nParallel_Tria, N_POINTS_TRIANGLE);
-  copyToBuffer(QUADRILATERAL, nParallel_Quad, N_POINTS_QUADRILATERAL);
-  copyToBuffer(TETRAHEDRON,   nParallel_Tetr, N_POINTS_TETRAHEDRON);
-  copyToBuffer(HEXAHEDRON,    nParallel_Hexa, N_POINTS_HEXAHEDRON);
-  copyToBuffer(PRISM,         nParallel_Pris, N_POINTS_PRISM);
-  copyToBuffer(PYRAMID,       nParallel_Pyra, N_POINTS_PYRAMID);
+  if (!cellsInt64) {
 
-  if (!bigEndian) SwapBytes((char *)connBuf.data(), sizeof(int), myElemStorage+myElem);
+    WriteMPIString("\nCELLS " + std::to_string(GlobalElem) + " " + std::to_string(GlobalCellStorage) + "\n",
+                   MASTER_NODE);
 
-  /*--- Compute various data sizes --- */
+    /*--- Load/write the 1D buffer of the number of nodes followed by the node ids of each cell. ---*/
 
-  sizeInBytesPerPoint = sizeof(int);
-  sizeInBytesLocal    = sizeInBytesPerPoint*(myElemStorage + myElem);
-  sizeInBytesGlobal   = sizeInBytesPerPoint*(GlobalElemStorage + GlobalElem);
-  offsetInBytes       = sizeInBytesPerPoint*
-                        (dataSorter->GetnElemConnCumulative(rank) + dataSorter->GetnElemCumulative(rank));
+    vector<int32_t> connBuf(myElemStorage + myElem);
 
-  WriteMPIBinaryDataAll(connBuf.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
+    forEachElem([&](GEO_TYPE type, unsigned long iElem, unsigned short nPoints) {
+      connBuf[iStorage++] = nPoints;
+      for (unsigned short iNode = 0; iNode < nPoints; iNode++)
+        connBuf[iStorage++] = static_cast<int32_t>(dataSorter->GetElemConnectivity(type, iElem, iNode) - 1);
+    });
 
-  SPRINTF (str_buf, "\nCELL_TYPES %i\n", SU2_TYPE::Int(GlobalElem));
-  WriteMPIString(str_buf, MASTER_NODE);
+    if (!bigEndian) SwapBytes((char *)connBuf.data(), sizeof(int32_t), myElemStorage+myElem);
+
+    sizeInBytesPerPoint = sizeof(int32_t);
+    sizeInBytesLocal    = sizeInBytesPerPoint*(myElemStorage + myElem);
+    sizeInBytesGlobal   = sizeInBytesPerPoint*GlobalCellStorage;
+    offsetInBytes       = sizeInBytesPerPoint*
+                          (dataSorter->GetnElemConnCumulative(rank) + dataSorter->GetnElemCumulative(rank));
+
+    WriteMPIBinaryDataAll(connBuf.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
+
+  } else {
+
+    WriteMPIString("\nCELLS " + std::to_string(GlobalElem + 1) + " " + std::to_string(GlobalElemStorage) + "\n",
+                   MASTER_NODE);
+
+    /*--- Load the offsets (where each cell ends in the connectivity) and the connectivity. ---*/
+
+    vector<int64_t> offsetBuf(myElem), connBuf(myElemStorage);
+    unsigned long iCell = 0;
+
+    forEachElem([&](GEO_TYPE type, unsigned long iElem, unsigned short nPoints) {
+      for (unsigned short iNode = 0; iNode < nPoints; iNode++)
+        connBuf[iStorage++] = static_cast<int64_t>(dataSorter->GetElemConnectivity(type, iElem, iNode)) - 1;
+      offsetBuf[iCell++] = static_cast<int64_t>(iStorage + dataSorter->GetnElemConnCumulative(rank));
+    });
+
+    if (!bigEndian) {
+      SwapBytes((char *)offsetBuf.data(), sizeof(int64_t), myElem);
+      SwapBytes((char *)connBuf.data(), sizeof(int64_t), myElemStorage);
+    }
+
+    /*--- The offsets start with a 0, written by the master node. ---*/
+
+    WriteMPIString("OFFSETS vtktypeint64\n", MASTER_NODE);
+    const int64_t firstOffset = 0;
+    WriteMPIBinaryData(&firstOffset, sizeof(int64_t), MASTER_NODE);
+    WriteMPIBinaryDataAll(offsetBuf.data(), sizeof(int64_t)*myElem, sizeof(int64_t)*GlobalElem,
+                          sizeof(int64_t)*dataSorter->GetnElemCumulative(rank));
+
+    WriteMPIString("\nCONNECTIVITY vtktypeint64\n", MASTER_NODE);
+    WriteMPIBinaryDataAll(connBuf.data(), sizeof(int64_t)*myElemStorage, sizeof(int64_t)*GlobalElemStorage,
+                          sizeof(int64_t)*dataSorter->GetnElemConnCumulative(rank));
+  }
+
+  WriteMPIString("\nCELL_TYPES " + std::to_string(GlobalElem) + "\n", MASTER_NODE);
 
   /*--- Load/write the cell type for all elements in the file. ---*/
 
@@ -197,8 +231,7 @@ void CParaviewBinaryFileWriter::WriteData(string val_filename){
 
   WriteMPIBinaryDataAll(typeBuf.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
 
-  SPRINTF (str_buf, "\nPOINT_DATA %i\n", SU2_TYPE::Int(GlobalPoint));
-  WriteMPIString(str_buf, MASTER_NODE);
+  WriteMPIString("\nPOINT_DATA " + std::to_string(GlobalPoint) + "\n", MASTER_NODE);
 
   /*--- Adjust container start location to avoid point coords. ---*/
 

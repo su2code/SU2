@@ -1933,6 +1933,45 @@ def main():
     pass_list.append(stl_writer_test.run_filediff())
     test_list.append(stl_writer_test)
 
+    # The ASCII writers write in parallel, compare their files with those of the previous writers.
+    # ITER= 0 (test_iter = -1): the restart solution is written without iterating.
+    ascii_restart_writer = TestCase('ascii_restart_writer')
+    ascii_restart_writer.cfg_dir = "output_writers"
+    ascii_restart_writer.cfg_file = "ascii_output.cfg"
+    ascii_restart_writer.test_iter = -1
+    ascii_restart_writer.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    ascii_restart_writer.timeout = 1600
+    ascii_restart_writer.reference_file = "restart_flow.csv.ref"
+    ascii_restart_writer.test_file = "restart_flow.csv"
+    pass_list.append(ascii_restart_writer.run_filediff())
+    test_list.append(ascii_restart_writer)
+
+    for tag, test_file in [("ascii_paraview_writer", "flow.vtk"), ("ascii_tecplot_writer", "flow.dat"),
+                           ("ascii_surface_paraview_writer", "surface_flow.vtk"),
+                           ("ascii_surface_tecplot_writer", "surface_flow.dat")]:
+        ascii_writer = TestCase(tag)
+        ascii_writer.cfg_dir = "output_writers"
+        ascii_writer.cfg_file = "ascii_output.cfg"
+        ascii_writer.test_iter = -1
+        ascii_writer.command = TestCase.Command("mpirun -n 2", "SU2_SOL")
+        ascii_writer.timeout = 1600
+        ascii_writer.reference_file = test_file + ".ref"
+        ascii_writer.test_file = test_file
+        pass_list.append(ascii_writer.run_filediff())
+        test_list.append(ascii_writer)
+
+    # SU2 mesh file written by SU2_DEF without deformation
+    ascii_mesh_writer = TestCase('ascii_mesh_writer')
+    ascii_mesh_writer.cfg_dir = "output_writers"
+    ascii_mesh_writer.cfg_file = "ascii_output.cfg"
+    ascii_mesh_writer.test_iter = -1
+    ascii_mesh_writer.command = TestCase.Command("mpirun -n 2", "SU2_DEF")
+    ascii_mesh_writer.timeout = 1600
+    ascii_mesh_writer.reference_file = "mesh_out.su2.ref"
+    ascii_mesh_writer.test_file = "mesh_out.su2"
+    pass_list.append(ascii_mesh_writer.run_filediff())
+    test_list.append(ascii_mesh_writer)
+
     ######################################
     ### RUN SU2_DEF TESTS              ###
     ######################################

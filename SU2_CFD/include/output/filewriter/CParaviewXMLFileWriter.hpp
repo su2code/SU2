@@ -38,7 +38,9 @@ private:
    */
   enum class VTKDatatype {
     FLOAT32,
+    FLOAT64,
     INT32,
+    INT64,
     UINT8
   };
 
@@ -46,6 +48,11 @@ private:
    * \brief Boolean storing whether we are on a big or little endian machine
    */
   bool bigEndian;
+
+  /*!
+   * \brief True to write the coordinates and fields in double precision instead of single.
+   */
+  bool doublePrecision = false;
 
   /*!
    * \brief The current data offset that is used to find data in the binary blob at the end of the file
@@ -70,7 +77,7 @@ public:
    * \brief Construct a file writer using field names and the data sorter.
    * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CParaviewXMLFileWriter(CParallelDataSorter* valDataSorter);
+  CParaviewXMLFileWriter(CParallelDataSorter* valDataSorter, bool valDoublePrecision = false);
 
   /*!
    * \brief Destructor
@@ -112,13 +119,21 @@ private:
    */
   inline void GetTypeInfo(const VTKDatatype type, string &typeStr, unsigned long &typeSize) const {
     switch (type) {
+      case VTKDatatype::FLOAT64:
+        typeStr = "\"Float64\"";
+        typeSize = sizeof(double);
+        break;
       case VTKDatatype::FLOAT32:
         typeStr = "\"Float32\"";
         typeSize = sizeof(float);
         break;
       case VTKDatatype::INT32:
         typeStr = "\"Int32\"";
-        typeSize = sizeof(int);
+        typeSize = sizeof(int32_t);
+        break;
+      case VTKDatatype::INT64:
+        typeStr = "\"Int64\"";
+        typeSize = sizeof(int64_t);
         break;
       case VTKDatatype::UINT8:
         typeStr = "\"UInt8\"";
