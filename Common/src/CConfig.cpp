@@ -1204,6 +1204,10 @@ void CConfig::SetConfig_Options() {
 
   addDoubleOption("PROD_LIM_CONST", prodLimConst, 20.0);
   addDoubleOption("L_DOMAIN", LDomain, 1.0);
+  /*!\brief SST_SUST_TKE_AMB \n DESCRIPTION: Ambient k of the SST sustaining terms (m^2/s^2), <= 0 for 1e-6 U^2. \ingroup Config*/
+  addDoubleOption("SST_SUST_TKE_AMB", sstSustTkeAmb, 0.0);
+  /*!\brief SST_SUST_OMEGA_AMB \n DESCRIPTION: Ambient omega of the SST sustaining terms (1/s), <= 0 for 5 U / REYNOLDS_LENGTH. \ingroup Config*/
+  addDoubleOption("SST_SUST_OMEGA_AMB", sstSustOmegaAmb, 0.0);
 
   /*!\brief KIND_INCOMP_SYSTEM \n DESCRIPTION: Incomp type \n OPTIONS: see \link Incomp_Map \endlink DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_INCOMP_SYSTEM", Kind_Incomp_System, Incomp_Map, INCOMP_SYSTEM::DENSITY_BASED);

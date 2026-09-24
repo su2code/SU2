@@ -1282,6 +1282,8 @@ private:
   SST_ParsedOptions sstParsedOptions; /*!< \brief Additional parameters for the SST turbulence model. */
   su2double prodLimConst;
   su2double LDomain;
+  su2double sstSustTkeAmb;     /*!< \brief Ambient k of the SST sustaining terms (dimensional), <= 0 for the default. */
+  su2double sstSustOmegaAmb;   /*!< \brief Ambient omega of the SST sustaining terms (dimensional), <= 0 for the default. */
   SA_ParsedOptions saParsedOptions;   /*!< \brief Additional parameters for the SA turbulence model. */
   LM_ParsedOptions lmParsedOptions;   /*!< \brief Additional parameters for the LM transition model. */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
@@ -10365,6 +10367,25 @@ public:
 
   su2double GetProdLimConst() const { return prodLimConst; }
   su2double GetLDomain() const { return LDomain; }
+
+  /*!
+   * \brief Ambient (free-stream) k of the SST sustaining terms, dimensional.
+   * \note Default of Spalart and Rumsey (AIAA J 45(10), 2007), as in the NASA TMR SST-sust: 1e-6 U^2.
+   * \param[in] velMag - Free-stream velocity magnitude (dimensional).
+   */
+  su2double GetSSTSust_TkeAmb(su2double velMag) const {
+    return sstSustTkeAmb > 0.0 ? sstSustTkeAmb : 1e-6 * velMag * velMag;
+  }
+
+  /*!
+   * \brief Ambient (free-stream) omega of the SST sustaining terms, dimensional.
+   * \note Default of Spalart and Rumsey (AIAA J 45(10), 2007), as in the NASA TMR SST-sust: 5 U / L, with L the
+   *       defining length of the problem, taken as REYNOLDS_LENGTH.
+   * \param[in] velMag - Free-stream velocity magnitude (dimensional).
+   */
+  su2double GetSSTSust_OmegaAmb(su2double velMag) const {
+    return sstSustOmegaAmb > 0.0 ? sstSustOmegaAmb : 5.0 * velMag / Length_Reynolds;
+  }
 
   /*!
    * \brief Get parsed SA option data structure.

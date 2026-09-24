@@ -506,12 +506,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     Tke_FreeStream = Omega_FreeStream*(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStream;
     Tke_FreeStreamND = Omega_FreeStreamND*(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStreamND;
   } else if (config->GetSSTParsedOptions().sust) {
-    Omega_FreeStream = 5*ModVel_FreeStream/config->GetLength_Reynolds();
-    Omega_FreeStreamND = 5*ModVel_FreeStreamND / config->GetLength_Reynolds(); // Should it be non-dimensionalized by what? Dimensions are 1/s
-    
-    /*--- not good ---*/
-    Tke_FreeStream = pow(10.0, -6) * ModVel_FreeStream*ModVel_FreeStream; /*--- Equals a freestream turbulence intensity of 0.08165%. This should be the default one, not hard-coding the freestream TI. ---*/
-    Tke_FreeStreamND = pow(10.0, -6) * ModVel_FreeStreamND*ModVel_FreeStreamND; /*--- Equals a freestream turbulence intensity of 0.08165%. This should be the default one, not hard-coding the freestream TI. ---*/
+    /*--- Ambient values of the sustaining terms, also used as free-stream values. ---*/
+    Omega_FreeStream = config->GetSSTSust_OmegaAmb(ModVel_FreeStream);
+    Omega_FreeStreamND = Omega_FreeStream / Omega_Ref;
+    Tke_FreeStream = config->GetSSTSust_TkeAmb(ModVel_FreeStream);
+    Tke_FreeStreamND = Tke_FreeStream / pow(Velocity_Ref, 2);
   }
 
   config->SetTke_FreeStream(Tke_FreeStream);
