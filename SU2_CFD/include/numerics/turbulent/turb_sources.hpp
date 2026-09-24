@@ -1007,7 +1007,12 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Production limiter only for V2003, recompute for V1994. ---*/
       su2double pw;
       if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        pw = alfa_blended * Density_i * P / Eddy_Viscosity_i;
+        /*--- gamma/nu_t * P, with P/mu_t expanded so that it is defined where mu_t = 0. The last term,
+         * rho k / mu_t, is bounded since mu_t is proportional to k (it vanishes with k). ---*/
+        su2double P_over_muT = pow(P_Base, 2);
+        if (sstParsedOptions.fullProd) P_over_muT -= diverg * diverg * 2.0/3.0;
+        if (!sstParsedOptions.modified) P_over_muT -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0 / max(Eddy_Viscosity_i, EPS);
+        pw = alfa_blended * Density_i * P_over_muT;
       } else {
         pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pk;
       }
