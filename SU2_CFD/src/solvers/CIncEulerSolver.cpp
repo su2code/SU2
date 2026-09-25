@@ -499,7 +499,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
 
-  if (config->GetSSTParsedOptions().newBC) {
+  if (config->GetSSTParsedOptions().tmrBC) {
     Omega_FreeStream = 10 * ModVel_FreeStream / config->GetLDomain();
     Omega_FreeStreamND = 10 * ModVel_FreeStreamND / config->GetLDomain(); // Should it be non-dimensionalized for the Reynolds length?
 

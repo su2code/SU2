@@ -1202,7 +1202,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SA turbulence model options/corrections. \n Options: see \link SA_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumListOption("SA_OPTIONS", nSA_Options, SA_Options, SA_Options_Map);
 
-  /*!\brief L_DOMAIN \n DESCRIPTION: Approximate length of the computational domain, for the far-field omega of SST_OPTIONS= NEWBC (NASA TMR). \ingroup Config*/
+  /*!\brief L_DOMAIN \n DESCRIPTION: Approximate length of the computational domain, for the far-field omega of SST_OPTIONS= TMRBC (NASA TMR). \ingroup Config*/
   addDoubleOption("L_DOMAIN", LDomain, 1.0);
   /*!\brief SST_SUST_TKE_AMB \n DESCRIPTION: Ambient k of the SST sustaining terms (m^2/s^2), <= 0 for 1e-6 U^2. \ingroup Config*/
   addDoubleOption("SST_SUST_TKE_AMB", sstSustTkeAmb, 0.0);

@@ -1012,7 +1012,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
     Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
 
-    if (config->GetSSTParsedOptions().newBC) {
+    if (config->GetSSTParsedOptions().tmrBC) {
       su2double Omega_Freestream = 10 * ModVel_FreeStream / config->GetLDomain();
       Tke_FreeStream = Omega_Freestream*(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStream;
     } else if (config->GetSSTParsedOptions().sust) {
@@ -1104,7 +1104,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
 
-  if (config->GetSSTParsedOptions().newBC) {
+  if (config->GetSSTParsedOptions().tmrBC) {
     Omega_FreeStream = 10 * ModVel_FreeStream / config->GetLDomain();
     Omega_FreeStreamND = 10 * ModVel_FreeStreamND / config->GetLDomain(); // Should it be non-dimensionalized for the Reynolds length?
 

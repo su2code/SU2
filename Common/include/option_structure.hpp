@@ -1114,7 +1114,7 @@ enum class SST_OPTIONS {
   COMP_Sarkar,   /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
   DLL,           /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
   WALL_OMEGA_LIMIT, /*!< \brief Clip the omega wall value to the upper limit of omega. */
-  NEWBC,         /*!< \brief Far-field omega = 10 U / L_DOMAIN, original reference of the NASA TMR SST page. */
+  TMRBC,         /*!< \brief Far-field omega = 10 U / L_DOMAIN, original reference of the NASA TMR SST page. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1129,7 +1129,7 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
   MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
   MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
-  MakePair("NEWBC", SST_OPTIONS::NEWBC)
+  MakePair("TMRBC", SST_OPTIONS::TMRBC)
   MakePair("WALL_OMEGA_LIMIT", SST_OPTIONS::WALL_OMEGA_LIMIT)
 };
 
@@ -1146,7 +1146,7 @@ struct SST_ParsedOptions {
   bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
   bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
   bool wallOmegaLimit = false;                /*!< \brief Bool for clipping the omega wall value (WALL_OMEGA_LIMIT). */
-  bool newBC = false;                         /*!< \brief Bool for the far-field values of the NASA TMR (NEWBC). */
+  bool tmrBC = false;                         /*!< \brief Bool for the far-field values of the NASA TMR (TMRBC). */
 };
 
 /*!
@@ -1164,7 +1164,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     return std::find(SST_Options, sst_options_end, option) != sst_options_end;
   };
 
-  const bool found_newBC = IsPresent(SST_OPTIONS::NEWBC);
+  const bool found_tmrBC = IsPresent(SST_OPTIONS::TMRBC);
   const bool found_wallOmegaLimit = IsPresent(SST_OPTIONS::WALL_OMEGA_LIMIT);
 
   const bool found_1994 = IsPresent(SST_OPTIONS::V1994);
@@ -1224,7 +1224,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.compSarkar = sst_compSarkar;
   SSTParsedOptions.dll = sst_dll;
 
-  SSTParsedOptions.newBC = found_newBC;
+  SSTParsedOptions.tmrBC = found_tmrBC;
   SSTParsedOptions.wallOmegaLimit = found_wallOmegaLimit;
   return SSTParsedOptions;
 }

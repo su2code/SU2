@@ -124,7 +124,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, const CSolv
   su2double kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
   su2double omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
-  if (sstParsedOptions.newBC) {
+  if (sstParsedOptions.tmrBC) {
     omega_Inf = 10 * sqrt(VelMag2) / config->GetLDomain();
     kine_Inf = omega_Inf*(muLamInf*viscRatio)/rhoInf;
   } else if (sstParsedOptions.sust) {
@@ -657,7 +657,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       const su2double viscRatio = Turb_Properties[1];
       const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
 
-      if (sstParsedOptions.newBC) {
+      if (sstParsedOptions.tmrBC) {
         Inlet_Vars[1] = 10 * sqrt(VelMag2) / config->GetLDomain();
         Inlet_Vars[0] = Inlet_Vars[1]*(Laminar_Viscosity_Inlet*viscRatio)/Density_Inlet;
       } else {
