@@ -2104,6 +2104,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Pave the coarse grid with advancing fronts raised from boundaries
    * that carry a stretched layer normal to themselves. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
+  /*!\brief MG_LINEAR_PROLONGATION\n DESCRIPTION: Prolong the multigrid correction with a limited least-squares
+   * gradient over the coarse control volume instead of injecting the parent value into every child. Coarse CVs on
+   * walls and symmetry planes keep the constant operator. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_LINEAR_PROLONGATION", MGOptions.MG_Linear_Prolongation, false);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
    * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);

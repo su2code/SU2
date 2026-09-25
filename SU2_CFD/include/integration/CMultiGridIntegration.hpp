@@ -26,6 +26,7 @@
  */
 
 #include "CIntegration.hpp"
+#include "../../../Common/include/containers/container_decorators.hpp"
 
 /*!
  * \class CMultiGridIntegration
@@ -190,7 +191,20 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                                 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+                                 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config,
+                                 unsigned short iMesh);
+
+  /*!
+   * \brief Least-squares gradient of the coarse-grid correction, limited so no child value
+   * leaves the range of the coarse stencil.
+   * \param[in] sol_coarse - Solver holding the correction in Solution_Old.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the coarse mesh.
+   */
+  void ComputeProlongationGradient(CSolver *sol_coarse, CGeometry *geo_coarse, CGeometry *geo_fine,
+                                   const CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Do an implicit smoothing of the prolongated correction.
@@ -366,6 +380,10 @@ private:
   /*! \brief Why the active level was last promoted, for the report message. */
   enum class MGStartupPromote { NONE, BUDGET, CONVERGENCE, STAGNATION };
   MGStartupPromote mg_startup_promote_reason = MGStartupPromote::NONE;
+
+  /*! \brief Limited least-squares gradient of the correction, indexed by coarse level.
+   *  Allocated on first use, only when MG_LINEAR_PROLONGATION is on. */
+  vector<CVectorOfMatrix> prolongGradient;
 
   vector<passivedouble> mg_startup_conv_start; /*!< \brief Field values when the active level became active. */
   vector<passivedouble> mg_startup_conv_prev;  /*!< \brief Field values on the previous iteration. */

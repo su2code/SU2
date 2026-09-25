@@ -28,6 +28,7 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include <algorithm>
 
 
@@ -48,6 +49,50 @@ static su2double applyGlobalTrend(su2double factor, passivedouble crossCycleRati
   if      (crossCycleRatio >= HI) factor *= SCALE_DOWN;
   else if (crossCycleRatio <  LO) factor *= SCALE_UP;
   return max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
+}
+
+/*!\cond PRIVATE
+ *  Inverts the symmetric least-squares matrix. False means the stencil is too degenerate
+ *  to define a gradient.
+ \endcond */
+static bool invertLeastSquaresMatrix(unsigned short nDim, const su2double A[3][3], su2double inv[3][3]) {
+
+  /*--- Compare against the trace so the test does not depend on the mesh units. ---*/
+
+  su2double trace = 0.0;
+  for (auto iDim = 0u; iDim < nDim; iDim++) trace += A[iDim][iDim];
+  if (trace <= 0.0) return false;
+
+  const su2double scale = trace / su2double(nDim);
+  constexpr passivedouble REL_TOL = 1e-12;
+
+  if (nDim == 2) {
+    const su2double det = A[0][0]*A[1][1] - A[0][1]*A[0][1];
+    if (det <= REL_TOL * scale * scale) return false;
+
+    inv[0][0] =  A[1][1]/det;
+    inv[0][1] = -A[0][1]/det;
+    inv[1][0] = inv[0][1];
+    inv[1][1] =  A[0][0]/det;
+    return true;
+  }
+
+  const su2double a = A[0][0], b = A[0][1], c = A[0][2];
+  const su2double d = A[1][1], e = A[1][2], f = A[2][2];
+
+  const su2double det = a*(d*f - e*e) - b*(b*f - e*c) + c*(b*e - d*c);
+  if (det <= REL_TOL * scale * scale * scale) return false;
+
+  inv[0][0] = (d*f - e*e)/det;
+  inv[0][1] = (c*e - b*f)/det;
+  inv[0][2] = (b*e - c*d)/det;
+  inv[1][1] = (a*f - c*c)/det;
+  inv[1][2] = (b*c - a*e)/det;
+  inv[2][2] = (a*d - b*b)/det;
+  inv[1][0] = inv[0][1];
+  inv[2][0] = inv[0][2];
+  inv[2][1] = inv[1][2];
+  return true;
 }
 
 inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
@@ -72,7 +117,9 @@ void CMultiGridIntegration::adaptDampingFactors(CConfig* config, passivedouble c
     applyGlobalTrend(config->GetDamp_Correc_Prolong(), crossCycleRatio));
 }
 
-CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
+CMultiGridIntegration::CMultiGridIntegration() : CIntegration() {
+  prolongGradient.resize(MAX_MG_LEVELS + 1);
+}
 
 void CMultiGridIntegration::MonitorFullMG_Startup(const vector<pair<string, passivedouble> >& convFields,
                                                  const CConfig *config) {
@@ -670,7 +717,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +
           Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
 
-    GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
+    GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config,
+                              iMesh+1);
 
     const auto& mgOpts = config->GetMGOptions();
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, mgOpts.MG_CorrecSmooth[iMesh], mgOpts.MG_Smooth_Coeff, config, iMesh);
@@ -873,7 +921,8 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
 
 void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                                                      CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+                                                      CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config,
+                                                      unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -941,13 +990,194 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   /*--- Interpolate the coarse-grid correction onto the fine
    *    grid and store in LinSysRes. ---*/
 
-  /*--- Halos too: the correction smoother reads them before its first exchange. ---*/
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
-  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
+  if (!config->GetMGOptions().MG_Linear_Prolongation) {
+
+    /*--- Halos too: the correction smoother reads them before its first exchange. ---*/
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
+    for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
+      const auto* Correction = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
+      for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+        sol_fine->LinSysRes.SetBlock(Point_Fine, Correction);
+      }
+    }
+    END_SU2_OMP_FOR
+
+    return;
+  }
+
+  /*--- The coarse coordinate is the volume-weighted centroid of the children, so the
+   *    reconstruction below averages back to the coarse correction exactly. ---*/
+
+  ComputeProlongationGradient(sol_coarse, geo_coarse, geo_fine, config, iMesh);
+
+  const unsigned short nDim = geo_coarse->GetnDim();
+  const auto& gradient = prolongGradient[iMesh];
+
+  /*--- A halo agglomerate holds a partial child list, so only owners write, and the
+   *    exchange below fills the fine halos the correction smoother reads. ---*/
+
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+
     const auto* Correction = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
+    const auto* Coord_Coarse = geo_coarse->nodes->GetCoord(Point_Coarse);
+
     for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
       const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      sol_fine->LinSysRes.SetBlock(Point_Fine, Correction);
+
+      su2double Distance[MAXNDIM] = {0.0};
+      GeometryToolbox::Distance(nDim, geo_fine->nodes->GetCoord(Point_Fine), Coord_Coarse, Distance);
+
+      su2double Solution[MAXNVAR] = {0.0};
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        Solution[iVar] = Correction[iVar];
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Solution[iVar] += gradient(Point_Coarse, iVar, iDim) * Distance[iDim];
+      }
+      sol_fine->LinSysRes.SetBlock(Point_Fine, Solution);
+    }
+  }
+  END_SU2_OMP_FOR
+
+  SU2_OMP_BARRIER
+  CSysMatrixComms::Initiate(sol_fine->LinSysRes, geo_fine, config);
+  CSysMatrixComms::Complete(sol_fine->LinSysRes, geo_fine, config);
+
+}
+
+void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGeometry *geo_coarse,
+                                                        CGeometry *geo_fine, const CConfig *config,
+                                                        unsigned short iMesh) {
+  SU2_ZONE_SCOPED
+
+  const unsigned short nVar = sol_coarse->GetnVar();
+  const unsigned short nDim = geo_coarse->GetnDim();
+  const auto nPointDomain = geo_coarse->GetnPointDomain();
+  auto* nodes = sol_coarse->GetNodes();
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    auto& grad = prolongGradient[iMesh];
+    if ((grad.length() != nPointDomain) || (grad.rows() != nVar) || (grad.cols() != nDim))
+      grad.resize(nPointDomain, nVar, nDim, 0.0);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  auto& gradient = prolongGradient[iMesh];
+
+  /*--- Unweighted fit: inverse-distance weights would let the short wall-normal edges of a
+   *    stretched agglomerate dominate it. ---*/
+
+  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain, omp_get_num_threads()))
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      for (auto iDim = 0u; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) = 0.0;
+
+    const auto* Coord_i = geo_coarse->nodes->GetCoord(iPoint);
+    const auto* Correction_i = nodes->GetSolution_Old(iPoint);
+
+    su2double Amat[MAXNDIM][MAXNDIM] = {{0.0}};
+    su2double rhs[MAXNVAR][MAXNDIM] = {{0.0}};
+
+    for (auto jPoint : geo_coarse->nodes->GetPoints(iPoint)) {
+
+      su2double Distance[MAXNDIM] = {0.0};
+      GeometryToolbox::Distance(nDim, geo_coarse->nodes->GetCoord(jPoint), Coord_i, Distance);
+
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        for (auto jDim = 0u; jDim < nDim; jDim++) Amat[iDim][jDim] += Distance[iDim]*Distance[jDim];
+
+      const auto* Correction_j = nodes->GetSolution_Old(jPoint);
+
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double delta = Correction_j[iVar] - Correction_i[iVar];
+        for (auto iDim = 0u; iDim < nDim; iDim++) rhs[iVar][iDim] += Distance[iDim]*delta;
+      }
+    }
+
+    su2double Ainv[MAXNDIM][MAXNDIM] = {{0.0}};
+    if (!invertLeastSquaresMatrix(nDim, Amat, Ainv)) continue;
+
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        su2double value = 0.0;
+        for (auto jDim = 0u; jDim < nDim; jDim++) value += Ainv[iDim][jDim]*rhs[iVar][jDim];
+        gradient(iPoint, iVar, iDim) = value;
+      }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Control volumes on a wall or symmetry plane keep the constant operator, their
+   *    correction being constrained by the boundary condition. ---*/
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    const auto kindBC = config->GetMarker_All_KindBC(iMarker);
+    if (!config->GetViscous_Wall(iMarker) && (kindBC != EULER_WALL) && (kindBC != SYMMETRY_PLANE)) continue;
+
+    SU2_OMP_FOR_STAT(32)
+    for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+      const auto iPoint = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+      if (iPoint >= nPointDomain) continue;
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        for (auto iDim = 0u; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) = 0.0;
+    }
+    END_SU2_OMP_FOR
+  }
+
+  /*--- Barth-Jespersen limiter over the children. One factor per variable scales the whole
+   *    gradient, which is what keeps the children averaging back to the coarse value. ---*/
+
+  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain, omp_get_num_threads()))
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+    const auto* Coord_i = geo_coarse->nodes->GetCoord(iPoint);
+    const auto* Correction_i = nodes->GetSolution_Old(iPoint);
+
+    su2double Correction_Min[MAXNVAR], Correction_Max[MAXNVAR];
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      Correction_Min[iVar] = Correction_i[iVar];
+      Correction_Max[iVar] = Correction_i[iVar];
+    }
+
+    for (auto jPoint : geo_coarse->nodes->GetPoints(iPoint)) {
+      const auto* Correction_j = nodes->GetSolution_Old(jPoint);
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        Correction_Min[iVar] = min(Correction_Min[iVar], Correction_j[iVar]);
+        Correction_Max[iVar] = max(Correction_Max[iVar], Correction_j[iVar]);
+      }
+    }
+
+    su2double limiter[MAXNVAR];
+    for (auto iVar = 0u; iVar < nVar; iVar++) limiter[iVar] = 1.0;
+
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(iPoint); iChildren++) {
+
+      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(iPoint, iChildren);
+
+      su2double Distance[MAXNDIM] = {0.0};
+      GeometryToolbox::Distance(nDim, geo_fine->nodes->GetCoord(Point_Fine), Coord_i, Distance);
+
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+
+        su2double delta = 0.0;
+        for (auto iDim = 0u; iDim < nDim; iDim++) delta += gradient(iPoint, iVar, iDim)*Distance[iDim];
+
+        /*--- Scaled with the correction so the cut-off tracks its magnitude. ---*/
+        const su2double tol = EPS*max(fabs(Correction_Max[iVar]), fabs(Correction_Min[iVar])) + EPS*EPS;
+
+        if (delta > tol)
+          limiter[iVar] = min(limiter[iVar], (Correction_Max[iVar] - Correction_i[iVar])/delta);
+        else if (delta < -tol)
+          limiter[iVar] = min(limiter[iVar], (Correction_Min[iVar] - Correction_i[iVar])/delta);
+      }
+    }
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      const su2double factor = max(su2double(0.0), min(su2double(1.0), limiter[iVar]));
+      for (auto iDim = 0u; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) *= factor;
     }
   }
   END_SU2_OMP_FOR
