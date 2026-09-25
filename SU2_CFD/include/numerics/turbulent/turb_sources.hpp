@@ -964,9 +964,16 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Production limiter. ---*/
       const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
+      /*--- The modified (m) versions use P = mu_t S^2 (NASA TMR). The standard versions use the exact production,
+       P = tau_ij du_i/dx_j = mu_t (S^2 - 2/3 div(u)^2) - 2/3 rho k div(u); with the vorticity (V) and Kato-Launder (KL)
+       forms of mu_t S^2 only the -2/3 rho k div(u) term is added. ---*/
+      const bool strainProduction = sstParsedOptions.production != SST_OPTIONS::V &&
+                                    sstParsedOptions.production != SST_OPTIONS::KL;
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
-      if (sstParsedOptions.fullProd) P -= Eddy_Viscosity_i * diverg*diverg * 2.0/3.0;
-      if (!sstParsedOptions.modified) P -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0;
+      if (!sstParsedOptions.modified) {
+        if (strainProduction) P -= Eddy_Viscosity_i * diverg * diverg * 2.0/3.0;
+        P -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0;
+      }
 
       su2double PLim = 0.0;
       if ( P > prod_limit ) PLim = 1.0;
@@ -981,8 +988,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         /*--- gamma/nu_t * P, with P/mu_t expanded so that it is defined where mu_t = 0. The last term,
          * rho k / mu_t, is bounded since mu_t is proportional to k (it vanishes with k). ---*/
         su2double P_over_muT = pow(P_Base, 2);
-        if (sstParsedOptions.fullProd) P_over_muT -= diverg * diverg * 2.0/3.0;
-        if (!sstParsedOptions.modified) P_over_muT -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0 / max(Eddy_Viscosity_i, EPS);
+        if (!sstParsedOptions.modified) {
+          if (strainProduction) P_over_muT -= diverg * diverg * 2.0/3.0;
+          P_over_muT -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0 / max(Eddy_Viscosity_i, EPS);
+        }
         pw = alfa_blended * Density_i * P_over_muT;
       } else {
         pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pk;
