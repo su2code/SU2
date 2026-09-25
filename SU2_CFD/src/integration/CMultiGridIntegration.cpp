@@ -64,7 +64,10 @@ static bool invertLeastSquaresMatrix(unsigned short nDim, const su2double A[3][3
   if (trace <= 0.0) return false;
 
   const su2double scale = trace / su2double(nDim);
-  constexpr passivedouble REL_TOL = 1e-12;
+
+  /*--- det/scale^nDim is the conditioning of the fit. At 1e-8 the inverse still carries about
+   *    nine digits; below it the gradient is noise and the control volume stays constant. ---*/
+  constexpr passivedouble REL_TOL = 1e-8;
 
   if (nDim == 2) {
     const su2double det = A[0][0]*A[1][1] - A[0][1]*A[0][1];
@@ -148,14 +151,15 @@ void CMultiGridIntegration::MonitorFullMG_Startup(const vector<pair<string, pass
       mg_startup_promote_reason = MGStartupPromote::CONVERGENCE;
   }
 
-  /*--- Ratio of successive residuals, so a difference in log10. One slow iteration
-   *    is not stagnation, and a field still coming down means the level is not stalled. ---*/
+  /*--- Ratio of successive residuals, so a difference in log10. One slow iteration is not
+   *    stagnation, and a field still coming down or growing means the level is not stalled. ---*/
 
   const passivedouble stall_tol = SU2_TYPE::GetValue(mgOpts.MG_Startup_Stagnation);
   if (stall_tol > 0.0 && !mg_startup_conv_prev.empty()) {
+    const passivedouble band = fabs(log10(stall_tol));
     bool stalled = true;
     for (auto iField = 0ul; iField < nFields; iField++)
-      stalled = stalled && (convFields[iField].second - mg_startup_conv_prev[iField] >= log10(stall_tol));
+      stalled = stalled && (fabs(convFields[iField].second - mg_startup_conv_prev[iField]) <= band);
 
     if (stalled)
       mg_startup_stall_count++;
@@ -496,6 +500,15 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   if (fmg_warmup && !config[iZone]->GetMGOptions().MG_Smooth_EarlyExit) {
     solver_container[iZone][iInst][FinestMesh][Solver_Position]->SetResidual_RMS(
         geometry[iZone][iInst][FinestMesh], config[iZone], true);
+  }
+
+  /*--- The scalar solvers run on the active startup level and need its vorticity and strain rate. ---*/
+
+  if (fmg_warmup) {
+    solver_container[iZone][iInst][FinestMesh][Solver_Position]->Preprocessing(geometry[iZone][iInst][FinestMesh],
+                                                                               solver_container[iZone][iInst][FinestMesh],
+                                                                               config[iZone], FinestMesh, NO_RK_ITER,
+                                                                               RunTime_EqSystem, true);
   }
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
@@ -1056,6 +1069,10 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
   const auto nPointDomain = geo_coarse->GetnPointDomain();
   auto* nodes = sol_coarse->GetNodes();
 
+  /*--- Every thread of this rank takes this branch together, and the loops below would all be
+   *    empty anyway. It also keeps the sizing test off a container that was never resized. ---*/
+  if (nPointDomain == 0) return;
+
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     auto& grad = prolongGradient[iMesh];
@@ -1109,22 +1126,27 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
   }
   END_SU2_OMP_FOR
 
-  /*--- Control volumes on a wall or symmetry plane keep the constant operator, their
-   *    correction being constrained by the boundary condition. ---*/
+  /*--- The children of a wall agglomerate are all wall nodes, so their velocity correction is
+   *    the constrained one the caller already imposed and only its gradient has to go. The
+   *    remaining variables carry no wall condition and reconstruct along the surface. ---*/
 
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+  const short iVel = nodes->GetVelocityIndex();
 
-    const auto kindBC = config->GetMarker_All_KindBC(iMarker);
-    if (!config->GetViscous_Wall(iMarker) && (kindBC != EULER_WALL) && (kindBC != SYMMETRY_PLANE)) continue;
+  if (iVel >= 0) {
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    SU2_OMP_FOR_STAT(32)
-    for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-      const auto iPoint = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-      if (iPoint >= nPointDomain) continue;
-      for (auto iVar = 0u; iVar < nVar; iVar++)
-        for (auto iDim = 0u; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) = 0.0;
+      const auto kindBC = config->GetMarker_All_KindBC(iMarker);
+      if (!config->GetViscous_Wall(iMarker) && (kindBC != EULER_WALL) && (kindBC != SYMMETRY_PLANE)) continue;
+
+      SU2_OMP_FOR_STAT(32)
+      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        const auto iPoint = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+        if (iPoint >= nPointDomain) continue;
+        for (auto iVar = iVel; iVar < min<short>(iVel + nDim, nVar); iVar++)
+          for (auto iDim = 0u; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) = 0.0;
+      }
+      END_SU2_OMP_FOR
     }
-    END_SU2_OMP_FOR
   }
 
   /*--- Barth-Jespersen limiter over the children. One factor per variable scales the whole

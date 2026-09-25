@@ -627,6 +627,10 @@ void CGeometry::GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commTy
       COUNT_PER_POINT = 1;
       MPI_TYPE = COMM_TYPE::DOUBLE;
       break;
+    case MPI_QUANTITIES::WALL_DISTANCE:
+      COUNT_PER_POINT = 2;
+      MPI_TYPE = COMM_TYPE::DOUBLE;
+      break;
     case MPI_QUANTITIES::NEIGHBORS:
       COUNT_PER_POINT = 1;
       MPI_TYPE = COMM_TYPE::UNSIGNED_SHORT;
@@ -717,6 +721,10 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, MPI_QU
           break;
         case MPI_QUANTITIES::MAX_LENGTH:
           bufDSend[buf_offset] = nodes->GetMaxLength(iPoint);
+          break;
+        case MPI_QUANTITIES::WALL_DISTANCE:
+          bufDSend[buf_offset] = nodes->GetWall_Distance(iPoint);
+          bufDSend[buf_offset + 1] = nodes->GetRoughnessHeight(iPoint);
           break;
         case MPI_QUANTITIES::NEIGHBORS:
           bufSSend[buf_offset] = geometry->nodes->GetnNeighbor(iPoint);
@@ -810,6 +818,10 @@ void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, MPI_QU
           break;
         case MPI_QUANTITIES::MAX_LENGTH:
           nodes->SetMaxLength(iPoint, bufDRecv[buf_offset]);
+          break;
+        case MPI_QUANTITIES::WALL_DISTANCE:
+          nodes->SetWall_Distance(iPoint, bufDRecv[buf_offset]);
+          nodes->SetRoughnessHeight(iPoint, bufDRecv[buf_offset + 1]);
           break;
         case MPI_QUANTITIES::NEIGHBORS:
           nodes->SetnNeighbor(iPoint, bufSRecv[buf_offset]);
@@ -2741,6 +2753,16 @@ void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) 
     geometry_container[iMesh]->SetControlVolume(geometry_container[iMesh - 1], UPDATE);
     geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh - 1], config, UPDATE);
     geometry_container[iMesh]->SetCoord(geometry_container[iMesh - 1]);
+
+    /*--- SetCoord centred a halo agglomerate on the partial child list this rank holds. Take
+     the owner's coordinate, otherwise coarse stencils depend on the partitioning. Deformation
+     runs this inside a parallel region, so only one thread may reach the exchange. ---*/
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      geometry_container[iMesh]->InitiateComms(geometry_container[iMesh], config, MPI_QUANTITIES::COORDINATES);
+      geometry_container[iMesh]->CompleteComms(geometry_container[iMesh], config, MPI_QUANTITIES::COORDINATES);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Compute the global surface areas for all markers. ---*/
@@ -4538,6 +4560,47 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
   const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
   return 2 * Vol / GeometryToolbox::Norm(3, Normal);
 }
+
+/*--- Volume-averages the wall distance and roughness of the children onto a coarse grid, then sets the
+ *    nearest-neighbor distance of its viscous wall vertices. ---*/
+void RestrictWallDistance(const CGeometry* geo_fine, CGeometry* geo_coarse, const CConfig* config) {
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+  for (auto iPoint = 0ul; iPoint < geo_coarse->GetnPointDomain(); iPoint++) {
+    su2double dist = 0.0, roughness = 0.0, vol = 0.0;
+    for (auto iChild = 0u; iChild < geo_coarse->nodes->GetnChildren_CV(iPoint); iChild++) {
+      const auto jPoint = geo_coarse->nodes->GetChildren_CV(iPoint, iChild);
+      const su2double volChild = geo_fine->nodes->GetVolume(jPoint);
+      dist += geo_fine->nodes->GetWall_Distance(jPoint) * volChild;
+      roughness += geo_fine->nodes->GetRoughnessHeight(jPoint) * volChild;
+      vol += volChild;
+    }
+    geo_coarse->nodes->SetWall_Distance(iPoint, (vol > 0.0) ? dist / vol : 0.0);
+    geo_coarse->nodes->SetRoughnessHeight(iPoint, (vol > 0.0) ? roughness / vol : 0.0);
+  }
+  END_SU2_OMP_FOR
+
+  /*--- A halo agglomerate only holds the children on this rank, so take the owner's values. ---*/
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    geo_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::WALL_DISTANCE);
+    geo_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::WALL_DISTANCE);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+    const auto viscous = config->GetViscous_Wall(iMarker);
+
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+    for (auto iVertex = 0u; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+      const auto iPoint = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+      const su2double dist = (viscous && geo_coarse->nodes->GetDomain(iPoint))
+                                 ? NearestNeighborDistance(geo_coarse, config, iPoint)
+                                 : geo_coarse->nodes->GetWall_Distance(iPoint);
+      geo_coarse->vertex[iMarker][iVertex]->SetNearestNeighborDistance(dist);
+    }
+    END_SU2_OMP_FOR
+  }
+}
 }  // namespace
 
 void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container,
@@ -4637,6 +4700,13 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
           geometry->vertex[iMarker][iVertex]->SetNearestNeighborDistance(dist);
         }
         END_SU2_OMP_FOR
+      }
+
+      /*--- The Full-MG startup solves the turbulence model on coarse grids. ---*/
+
+      for (unsigned short iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+        RestrictWallDistance(geometry_container[iZone][iInst][iMesh - 1], geometry_container[iZone][iInst][iMesh],
+                             config);
       }
     }
   }

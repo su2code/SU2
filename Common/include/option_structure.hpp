@@ -80,6 +80,7 @@ const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDB
 enum: unsigned int{MAX_SOLS = 14};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
+const unsigned short MAX_MGLEVELS = 10;       /*!< \brief Maximum number of coarse multigrid levels, which bounds the per-level arrays of the multigrid integration. */
 const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;            /*!< \brief No Runge-Kutta iteration. */
 
@@ -2877,6 +2878,7 @@ enum class MPI_QUANTITIES {
   COORDINATES          ,  /*!< \brief Vertex coordinates communication. */
   COORDINATES_OLD      ,  /*!< \brief Old vertex coordinates communication. */
   MAX_LENGTH           ,  /*!< \brief Maximum length communication. */
+  WALL_DISTANCE        ,  /*!< \brief Wall distance and roughness of the nearest wall communication. */
   GRID_VELOCITY        ,  /*!< \brief Grid velocity communication. */
   SOLUTION_EDDY        ,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
   STOCH_SOURCE_LANG    ,  /*!< \brief Stochastic source term for Langevin equations communication. */

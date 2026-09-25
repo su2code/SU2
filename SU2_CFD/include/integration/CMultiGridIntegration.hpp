@@ -333,7 +333,8 @@ private:
                         passivedouble lastRMS[2], char& exitReason,
                         passivedouble& worstStepRatio, unsigned short& worstStep);
 
-  static constexpr int MAX_MG_LEVELS = 10;
+  /*--- CConfig rejects a larger MGLEVEL, so the per-level arrays below always fit. ---*/
+  static constexpr int MAX_MG_LEVELS = MAX_MGLEVELS;
 
   /*--- Bounds the fixed-size stack buffers in the restriction and prolongation kernels,
    *    independently of the CSysMatrix limit of the same name. ---*/

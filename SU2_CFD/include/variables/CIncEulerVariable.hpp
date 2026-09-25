@@ -214,6 +214,11 @@ public:
   }
 
   /*!
+   * \brief Index of the velocity in the solution vector.
+   */
+  inline short GetVelocityIndex() const final { return 1; }
+
+  /*!
    * \brief Set the momentum part of the truncation error to zero.
    * \param[in] iPoint - Point index.
    */
