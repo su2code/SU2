@@ -5195,8 +5195,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      /*--- k of the state the turbulence boundary condition imposes: free stream at inflow, interior at outflow. ---*/
-      if (tkeNeeded) Energy += (Qn_Infty > 0.0) ? turbNodes->GetSolution(iPoint,0) : GetTke_Inf();
+      /*--- k of the boundary node, not the free-stream value, which decays right away in the domain (#1851). ---*/
+      if (tkeNeeded) Energy += turbNodes->GetSolution(iPoint,0);
 
       /*--- Store new primitive state for computing the flux. ---*/
 
@@ -5485,23 +5485,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         break;
       }
 
-      /*--- k of the exterior state, the one the turbulence boundary condition imposes: the inlet value (from the
-       exterior state) at inflows, the interior value at outlets. It is also used for the boundary state. ---*/
-      su2double Tke_e = 0.0;
-      if (tkeNeeded) {
-        if (config->GetKind_Data_Riemann(Marker_Tag) == STATIC_PRESSURE) {
-          Tke_e = turbNodes->GetSolution(iPoint, 0);
-        } else {
-          GetFluidModel()->SetTDState_rhoe(Density_e, Energy_e - 0.5*Velocity2_e);
-          su2double V_e[32] = {0.0};
-          V_e[prim_idx.Temperature()] = GetFluidModel()->GetTemperature();
-          V_e[prim_idx.Pressure()] = GetFluidModel()->GetPressure();
-          V_e[prim_idx.Density()] = Density_e;
-          for (auto iDim = 0u; iDim < nDim; iDim++) V_e[prim_idx.Velocity() + iDim] = Velocity_e[iDim];
-          Tke_e = solver_container[TURB_SOL]->GetInletTke(this, config, val_marker, iVertex, V_e);
-        }
-        Energy_e += Tke_e;
-      }
+      /*--- k of the boundary node, not the free-stream value, which decays right away in the domain (#1851).
+       It is also removed from the static energy of the boundary state. ---*/
+      const su2double Tke_e = tkeNeeded ? turbNodes->GetSolution(iPoint, 0) : 0.0;
+      Energy_e += Tke_e;
 
       /*--- Compute P (matrix of right eigenvectors) ---*/
       conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
@@ -7396,8 +7383,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         V_inlet[nDim+2] = Density;
         V_inlet[nDim+3] = Energy + Pressure/Density;
 
-        /*--- Add the k imposed by the turbulence inlet boundary condition for this state. ---*/
-        if (tkeNeeded) V_inlet[nDim+3] += solver_container[TURB_SOL]->GetInletTke(this, config, val_marker, iVertex, V_inlet);
+        /*--- k of the boundary node, not the free-stream value, which decays right away in the domain (#1851). ---*/
+        if (tkeNeeded) V_inlet[nDim+3] += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
         break;
       }
@@ -7470,8 +7457,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         V_inlet[nDim+2] = Density;
         V_inlet[nDim+3] = Energy + Pressure/Density;
 
-        /*--- Add the k imposed by the turbulence inlet boundary condition for this state. ---*/
-        if (tkeNeeded) V_inlet[nDim+3] += solver_container[TURB_SOL]->GetInletTke(this, config, val_marker, iVertex, V_inlet);
+        /*--- k of the boundary node, not the free-stream value, which decays right away in the domain (#1851). ---*/
+        if (tkeNeeded) V_inlet[nDim+3] += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
         break;
       }
@@ -7728,8 +7715,8 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       V_inlet[iDim+prim_idx.Velocity()] = Velocity[iDim];
 
-    /*--- Add the k imposed by the turbulence inlet boundary condition for this state. ---*/
-    if (tkeNeeded) V_inlet[prim_idx.Enthalpy()] += solver_container[TURB_SOL]->GetInletTke(this, config, val_marker, iVertex, V_inlet);
+    /*--- k of the boundary node, not the free-stream value, which decays right away in the domain (#1851). ---*/
+    if (tkeNeeded) V_inlet[prim_idx.Enthalpy()] += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
     /*--- Current solution at this boundary node. ---*/
 
@@ -8042,7 +8029,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       }
 
       Energy = Inflow_Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
+      if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
 
       /*--- Conservative variables, using the derived quantities ---*/
 
@@ -8279,7 +8266,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         /*--- Using pressure, density, & velocity, compute the energy ---*/
 
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
 
         /*--- Primitive variables, using the derived quantities ---*/
 
@@ -8571,7 +8558,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
 
         /*--- Conservative variables, using the derived quantities ---*/
 
@@ -8726,7 +8713,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         /*--- Using pressure, density, & velocity, compute the energy ---*/
 
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
 
         /*--- Primitive variables, using the derived quantities ---*/
 
@@ -8974,7 +8961,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
 
         /*--- Conservative variables, using the derived quantities ---*/
 
@@ -9022,7 +9009,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
         /*--- Computation of the enthalpy, total energy, temperature and speed of sound. ---*/
         H_out = H_in/Density_in + Fa/Density_out;
         Energy = H_out - Pressure_out/Density_out;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
         Temperature_out = (Energy-0.5*Velocity2/(pow(Density_out,2)))*(Gamma_Minus_One/Gas_Constant);
 
         SoS_out = sqrt(Gamma*Gas_Constant*Temperature_out);

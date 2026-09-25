@@ -3251,18 +3251,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] flowSolver - Flow solver, for the fluid model.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Inlet marker.
-   * \param[in] val_vertex - Vertex of the marker.
-   * \param[in] V_inlet - Primitive variables of the inlet state (temperature, velocity, pressure and density).
-   * \return Turbulent kinetic energy imposed by the turbulence inlet boundary condition for this state.
-   */
-  inline virtual su2double GetInletTke(const CSolver* flowSolver, const CConfig* config, unsigned short val_marker,
-                                       unsigned long val_vertex, const su2double* V_inlet) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
    * \return Value of the turbulent frequency.
    */
   inline virtual su2double GetOmega_Inf(void) const { return 0; }
