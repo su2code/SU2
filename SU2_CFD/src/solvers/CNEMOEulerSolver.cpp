@@ -1192,15 +1192,29 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  config->SetTke_FreeStream(Tke_FreeStream);
-
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
-  config->SetOmega_FreeStream(Omega_FreeStream);
-
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
+
+  if (config->GetSSTParsedOptions().tmrBC) {
+    Omega_FreeStream = 10 * ModVel_FreeStream / config->GetLDomain();
+    Omega_FreeStreamND = 10 * ModVel_FreeStreamND / config->GetLDomain(); // Should it be non-dimensionalized for the Reynolds length?
+
+    Tke_FreeStream = Omega_FreeStream*(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStream;
+    Tke_FreeStreamND = Omega_FreeStreamND*(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStreamND;
+  } else if (config->GetSSTParsedOptions().sust) {
+    /*--- Ambient values of the sustaining terms, also used as free-stream values. ---*/
+    Omega_FreeStream = config->GetSSTSust_OmegaAmb(ModVel_FreeStream);
+    Omega_FreeStreamND = Omega_FreeStream / Omega_Ref;
+    Tke_FreeStream = config->GetSSTSust_TkeAmb(ModVel_FreeStream);
+    Tke_FreeStreamND = Tke_FreeStream / pow(Velocity_Ref, 2);
+  }
+
+  config->SetTke_FreeStream(Tke_FreeStream);
+  config->SetTke_FreeStreamND(Tke_FreeStreamND);
+
+  config->SetOmega_FreeStream(Omega_FreeStream);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/

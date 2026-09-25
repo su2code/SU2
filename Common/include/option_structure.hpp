@@ -1101,26 +1101,27 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
  * \brief SST Options
  */
 enum class SST_OPTIONS {
-  NONE,        /*!< \brief No SST Turb model. */
-  V1994,       /*!< \brief 1994 Menter k-w SST model. */
-  V2003,       /*!< \brief 2003 Menter k-w SST model. */
-  V1994m,      /*!< \brief 1994m Menter k-w SST model. */
-  V2003m,      /*!< \brief 2003m Menter k-w SST model. */
-  SUST,        /*!< \brief Menter k-w SST model with sustaining terms. */
-  V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
-  KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
-  UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
-  COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
-  COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
-  DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
+  NONE,          /*!< \brief No SST Turb model. */
+  V1994,         /*!< \brief 1994 Menter k-w SST model. */
+  V2003,         /*!< \brief 2003 Menter k-w SST model. */
+  V1994m,        /*!< \brief 1994m Menter k-w SST model. */
+  V2003m,        /*!< \brief 2003m Menter k-w SST model. */
+  SUST,          /*!< \brief Menter k-w SST model with sustaining terms. */
+  V,             /*!< \brief Menter k-w SST model with vorticity production terms. */
+  KL,            /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
+  UQ,            /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  COMP_Wilcox,   /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
+  COMP_Sarkar,   /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
+  DLL,           /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
+  WALL_OMEGA_LIMIT, /*!< \brief Clip the omega wall value to the upper limit of omega. */
+  TMRBC,         /*!< \brief Far-field omega = 10 U / L_DOMAIN, original reference of the NASA TMR SST page. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
   MakePair("V1994m", SST_OPTIONS::V1994m)
   MakePair("V2003m", SST_OPTIONS::V2003m)
-  /// TODO: For now we do not support "unmodified" versions of SST.
-  //MakePair("V1994", SST_OPTIONS::V1994)
-  //MakePair("V2003", SST_OPTIONS::V2003)
+  MakePair("V1994", SST_OPTIONS::V1994)
+  MakePair("V2003", SST_OPTIONS::V2003)
   MakePair("SUSTAINING", SST_OPTIONS::SUST)
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
@@ -1128,6 +1129,8 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
   MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
   MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
+  MakePair("TMRBC", SST_OPTIONS::TMRBC)
+  MakePair("WALL_OMEGA_LIMIT", SST_OPTIONS::WALL_OMEGA_LIMIT)
 };
 
 /*!
@@ -1142,6 +1145,8 @@ struct SST_ParsedOptions {
   bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
   bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
   bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
+  bool wallOmegaLimit = false;                /*!< \brief Bool for clipping the omega wall value (WALL_OMEGA_LIMIT). */
+  bool tmrBC = false;                         /*!< \brief Bool for the far-field values of the NASA TMR (TMRBC). */
 };
 
 /*!
@@ -1158,6 +1163,9 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     const auto sst_options_end = SST_Options + nSST_Options;
     return std::find(SST_Options, sst_options_end, option) != sst_options_end;
   };
+
+  const bool found_tmrBC = IsPresent(SST_OPTIONS::TMRBC);
+  const bool found_wallOmegaLimit = IsPresent(SST_OPTIONS::WALL_OMEGA_LIMIT);
 
   const bool found_1994 = IsPresent(SST_OPTIONS::V1994);
   const bool found_2003 = IsPresent(SST_OPTIONS::V2003);
@@ -1216,6 +1224,8 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.compSarkar = sst_compSarkar;
   SSTParsedOptions.dll = sst_dll;
 
+  SSTParsedOptions.tmrBC = found_tmrBC;
+  SSTParsedOptions.wallOmegaLimit = found_wallOmegaLimit;
   return SSTParsedOptions;
 }
 

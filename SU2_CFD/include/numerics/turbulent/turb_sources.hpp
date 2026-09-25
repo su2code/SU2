@@ -961,16 +961,33 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Production limiter. ---*/
       const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
+      /*--- The modified (m) versions use P = mu_t S^2 (NASA TMR). The standard versions use the exact production,
+       P = tau_ij du_i/dx_j = mu_t (S^2 - 2/3 div(u)^2) - 2/3 rho k div(u); with the vorticity (V) and Kato-Launder (KL)
+       forms of mu_t S^2 only the -2/3 rho k div(u) term is added. ---*/
+      const bool strainProduction = sstParsedOptions.production != SST_OPTIONS::V &&
+                                    sstParsedOptions.production != SST_OPTIONS::KL;
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
+      if (!sstParsedOptions.modified) {
+        if (strainProduction) P -= Eddy_Viscosity_i * diverg * diverg * 2.0/3.0;
+        P -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0;
+      }
+
       su2double pk = max(0.0, min(P, prod_limit));
 
-      const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
+      const su2double eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
       const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
 
       /*--- Production limiter only for V2003, recompute for V1994. ---*/
       su2double pw;
       if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        pw = alfa_blended * Density_i * pow(P_Base, 2);
+        /*--- gamma/nu_t * P, with P/mu_t expanded so that it is defined where mu_t = 0. The last term,
+         * rho k / mu_t, is bounded since mu_t is proportional to k (it vanishes with k). ---*/
+        su2double P_over_muT = pow(P_Base, 2);
+        if (!sstParsedOptions.modified) {
+          if (strainProduction) P_over_muT -= diverg * diverg * 2.0/3.0;
+          P_over_muT -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0 / max(Eddy_Viscosity_i, EPS);
+        }
+        pw = alfa_blended * Density_i * P_over_muT;
       } else {
         pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pk;
       }
@@ -996,7 +1013,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Dissipation ---*/
 
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * (1.0 + zetaFMt);
-      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - 0.09/beta_blended * zetaFMt);
+      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - beta_star/beta_blended * zetaFMt);
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
@@ -1023,9 +1040,12 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Implicit part ---*/
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
+      /*--- Derivative of -2/3 rho k div(u), only where it adds to the diagonal (compression is left out
+       * of the Jacobian but kept in the residual, so that the linear system does not lose diagonal dominance). ---*/
+      if (!sstParsedOptions.modified) Jacobian_i[0][0] -= max(diverg, 0.0) * Volume*2.0/3.0;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       Jacobian_i[1][0] = 0.0;
-      Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
+      Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - beta_star/beta_blended * zetaFMt);
     }
 
     AD::SetPreaccOut(Residual, nVar);

@@ -63,7 +63,7 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals = [-13.040943, -10.136971, -10.942764, -7.985181, -10.323857, -4.732487, 0.002801]
+    flatplate_sst1994m.test_vals = [-6.758709, -3.881664, -4.245031, -1.294380, -4.474846, -0.677798, 0.002801]
     flatplate_sst1994m.test_vals_aarch64 = [-13.021715, -9.534786, -10.401912, -7.501836, -9.750800, -4.850665, 0.002807]
     test_list.append(flatplate_sst1994m)
 
@@ -72,7 +72,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals = [-11.928292, -10.095796, -9.512953, -6.445652, -11.774088, -6.988752, 0.004931]
+    bump_sst1994m.test_vals = [-8.014868, -5.138354, -6.180378, -2.558011, -6.570741, -2.603570, 0.004931]
     bump_sst1994m.test_vals_aarch64 = [-13.042689, -10.812982, -10.604523, -7.655547, -10.816257, -5.308083, 0.004911]
     test_list.append(bump_sst1994m)
 
@@ -91,7 +91,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 5
-    swbli_sst.test_vals = [-11.319578, -10.641523, -11.224600, -10.150215, -11.407538, -2.637660, 0.001816, -1.839484, -3.514593, 11.136000]
+    swbli_sst.test_vals = [-10.620096, -9.467013, -10.489091, -9.162510, -10.530142, -2.612181, 0.001816, -1.568660, -3.540055, 8.615300]
     test_list.append(swbli_sst)
 
     # DSMA661 - SA
@@ -108,7 +108,7 @@ def main():
     dsma661_sst.cfg_dir   = "vandv/rans/dsma661"
     dsma661_sst.cfg_file  = "dsma661_sst_config.cfg"
     dsma661_sst.test_iter = 5
-    dsma661_sst.test_vals = [-11.025153, -8.156995, -9.057021, -5.947228, -10.650874, -7.884423, 0.155882, 0.023344]
+    dsma661_sst.test_vals = [-2.616553, 0.009594, -0.244123, 2.840416, -2.180298, 1.413440, 0.156003, 0.023336]
     dsma661_sst.test_vals_aarch64 = [-10.977195, -8.403731, -8.747068, -5.808899, -10.522786, -7.369851, 0.155875, 0.023353]
     test_list.append(dsma661_sst)
 
