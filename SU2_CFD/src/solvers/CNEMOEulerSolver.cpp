@@ -1016,7 +1016,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   const bool viscous  = config->GetViscous();
   const bool gravity  = config->GetGravityForce();
   const bool turbulent = false;
-  const bool tkeNeeded = ((turbulent) && (config->GetKind_Turb_Model() == TURB_MODEL::SST) && !(config->GetSSTParsedOptions().modified));
+  const bool tkeNeeded = ((turbulent) && (config->GetKind_Turb_Model() == TURB_MODEL::SST));
   const bool reynolds_init = (config->GetKind_InitOption() == REYNOLDS);
 
   /*--- The dimensional viscosity is needed to determine the free-stream conditions.

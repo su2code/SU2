@@ -619,6 +619,49 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
 }
 
+void CTurbSSTSolver::ComputeInletTurbVars(const CSolver* flowSolver, const CConfig* config, unsigned short val_marker,
+                                          unsigned long val_vertex, const su2double* V_inlet,
+                                          su2double* Inlet_Vars) const {
+  if (config->GetInlet_Profile_From_File()) {
+    /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
+    Inlet_Vars[0] = Inlet_TurbVars[val_marker][val_vertex][0] / pow(config->GetVelocity_Ref(), 2);
+    Inlet_Vars[1] = Inlet_TurbVars[val_marker][val_vertex][1] * config->GetViscosity_Ref() /
+                    (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
+  } else {
+    /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+    CFluidModel* FluidModel = flowSolver->GetFluidModel();
+
+    /*--- Obtain flow velocity vector at inlet boundary node ---*/
+
+    const su2double* Velocity_Inlet = &V_inlet[prim_idx.Velocity()];
+    su2double Density_Inlet;
+    if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+      Density_Inlet = V_inlet[prim_idx.Density()];
+      FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
+    } else {
+      const su2double* Scalar_Inlet = nullptr;
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+      }
+      FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
+      Density_Inlet = FluidModel->GetDensity();
+    }
+    const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
+    const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+    const su2double Intensity = Turb_Properties[0];
+    const su2double viscRatio = Turb_Properties[1];
+    const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
+
+    if (sstParsedOptions.newBC) {
+      Inlet_Vars[1] = 10 * sqrt(VelMag2) / config->GetLDomain();
+      Inlet_Vars[0] = Inlet_Vars[1]*(Laminar_Viscosity_Inlet*viscRatio)/Density_Inlet;
+    } else {
+      Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
+      Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
+    }
+  }
+}
+
 void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics*, CNumerics*,
                               CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
@@ -630,44 +673,8 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
     const auto* V_inlet = flowSolver->GetCharacPrimVar(val_marker, iVertex);
 
     su2double Inlet_Vars[MAXNVAR];
-    if (config->GetInlet_Profile_From_File()) {
-      /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
-      Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0] / pow(config->GetVelocity_Ref(), 2);
-      Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1] * config->GetViscosity_Ref() /
-                      (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
-    } else {
-      /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
-      CFluidModel* FluidModel = flowSolver->GetFluidModel();
+    ComputeInletTurbVars(flowSolver, config, val_marker, iVertex, V_inlet, Inlet_Vars);
 
-      /*--- Obtain flow velocity vector at inlet boundary node ---*/
-
-      const su2double* Velocity_Inlet = &V_inlet[prim_idx.Velocity()];
-      su2double Density_Inlet;
-      if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-        Density_Inlet = V_inlet[prim_idx.Density()];
-        FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
-      } else {
-        const su2double* Scalar_Inlet = nullptr;
-        if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-          Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
-        }
-        FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
-        Density_Inlet = FluidModel->GetDensity();
-      }
-      const su2double Laminar_Viscosity_Inlet = FluidModel->GetLaminarViscosity();
-      const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
-      const su2double Intensity = Turb_Properties[0];
-      const su2double viscRatio = Turb_Properties[1];
-      const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
-
-      if (sstParsedOptions.newBC) {
-        Inlet_Vars[1] = 10 * sqrt(VelMag2) / config->GetLDomain();
-        Inlet_Vars[0] = Inlet_Vars[1]*(Laminar_Viscosity_Inlet*viscRatio)/Density_Inlet;
-      } else {
-        Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
-        Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
-      }
-    }
     for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, Inlet_Vars[iVar]);
 
     SetGhostPrimitives(iVertex, V_inlet);

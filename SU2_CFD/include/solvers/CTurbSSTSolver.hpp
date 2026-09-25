@@ -185,6 +185,29 @@ public:
                           unsigned short val_marker) override;
 
   /*!
+   * \brief Turbulence variables imposed at an inlet for a given inlet state (profile from file, or intensity
+   *        and viscosity ratio of the marker).
+   * \param[in] flowSolver - Flow solver, for the fluid model.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Inlet marker.
+   * \param[in] val_vertex - Vertex of the marker.
+   * \param[in] V_inlet - Primitive variables of the inlet state.
+   * \param[out] Inlet_Vars - k and omega.
+   */
+  void ComputeInletTurbVars(const CSolver* flowSolver, const CConfig* config, unsigned short val_marker,
+                            unsigned long val_vertex, const su2double* V_inlet, su2double* Inlet_Vars) const;
+
+  /*!
+   * \brief Turbulent kinetic energy imposed by the inlet boundary condition, see ComputeInletTurbVars.
+   */
+  su2double GetInletTke(const CSolver* flowSolver, const CConfig* config, unsigned short val_marker,
+                        unsigned long val_vertex, const su2double* V_inlet) const override {
+    su2double Inlet_Vars[MAXNVAR];
+    ComputeInletTurbVars(flowSolver, config, val_marker, val_vertex, V_inlet, Inlet_Vars);
+    return Inlet_Vars[0];
+  }
+
+  /*!
    * \brief Impose the inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
