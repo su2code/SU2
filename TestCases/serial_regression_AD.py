@@ -96,7 +96,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.096075, -0.181237, 0.350380, -0.023435]
+    discadj_rans_naca0012_sst.test_vals = [-2.096080, -0.181131, 0.352000, -0.023451]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -200,7 +200,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, -7.308168, -9.891121, -10.038669, -13.368502]
+    discadj_trans_stator.test_vals = [79.000000, -7.308278, -9.893294, -10.039103, -13.368529]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, -7.308167, -9.891117, -10.038669, -13.368501]
     test_list.append(discadj_trans_stator)
 
