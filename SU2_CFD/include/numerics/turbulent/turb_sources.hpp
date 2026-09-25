@@ -750,8 +750,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
 
-  su2double Pk, Dk, Pw, Dw;
-
   su2double F1_i, F2_i, CDkw_i;
   su2double Residual[2];
   su2double* Jacobian_i[2];
@@ -890,7 +888,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
     Residual[0] = 0.0;
     Residual[1] = 0.0;
-    for (auto& val : ProdDistr) val = 0.0;
     Jacobian_i[0][0] = 0.0;
     Jacobian_i[0][1] = 0.0;
     Jacobian_i[1][0] = 0.0;
@@ -975,8 +972,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         P -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0;
       }
 
-      su2double PLim = 0.0;
-      if ( P > prod_limit ) PLim = 1.0;
       su2double pk = max(0.0, min(P, prod_limit));
 
       const su2double eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
@@ -1027,24 +1022,14 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       }
 
       /*--- Add the production terms to the residuals. ---*/
-      Pk = pk;
-      Pw = pw;
 
       Residual[0] += pk * Volume;
       Residual[1] += pw * Volume;
 
       /*--- Add the dissipation  terms to the residuals.---*/
-      Dk = dk;
-      Dw = dw;
 
       Residual[0] -= dk * Volume;
       Residual[1] -= dw * Volume;
-
-      ProdDistr[0] = Pk;
-      ProdDistr[1] = Dk;
-      ProdDistr[2] = Pw;
-      ProdDistr[3] = Dw;
-      ProdDistr[4] = PLim;
 
       /*--- Cross diffusion is included in the viscous fluxes, not this source term. ---*/
 

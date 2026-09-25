@@ -103,13 +103,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, const CSolv
     constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
     constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
     constants[10] = 20.0; // production limiter constant
-    if (sstParsedOptions.prodLim) constants[10] = config->GetProdLimConst();
   } else {
     /* SST-V2003 */
     constants[8] = 5.0 / 9.0;  //gamma_1
     constants[9] = 0.44;  //gamma_2
     constants[10] = 10.0; // production limiter constant
-    if (sstParsedOptions.prodLim) constants[10] = config->GetProdLimConst();
   }
 
   /*--- Far-field flow state quantities and initialization. ---*/
@@ -405,13 +403,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
     }
 
-    su2double ProdDestr[5];
-    ProdDestr[0] = numerics->GetProdDest(0);
-    ProdDestr[1] = numerics->GetProdDest(1);
-    ProdDestr[2] = numerics->GetProdDest(2);
-    ProdDestr[3] = numerics->GetProdDest(3);
-    ProdDestr[4] = numerics->GetProdDest(4);
-    nodes->SetProdDestr(iPoint, ProdDestr);
 
     /*--- Subtract residual and the Jacobian ---*/
 

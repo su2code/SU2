@@ -1280,7 +1280,6 @@ private:
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief Additional parameters for the SST turbulence model. */
-  su2double prodLimConst;
   su2double LDomain;
   su2double sstSustTkeAmb;     /*!< \brief Ambient k of the SST sustaining terms (dimensional), <= 0 for the default. */
   su2double sstSustOmegaAmb;   /*!< \brief Ambient omega of the SST sustaining terms (dimensional), <= 0 for the default. */
@@ -10365,7 +10364,6 @@ public:
    */
   SST_ParsedOptions GetSSTParsedOptions() const { return sstParsedOptions; }
 
-  su2double GetProdLimConst() const { return prodLimConst; }
   su2double GetLDomain() const { return LDomain; }
 
   /*!

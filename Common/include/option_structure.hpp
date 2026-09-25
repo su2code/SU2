@@ -1113,7 +1113,6 @@ enum class SST_OPTIONS {
   COMP_Wilcox,   /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
   COMP_Sarkar,   /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
   DLL,           /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
-  PRODLIM,       /*!< \brief Menter k-w SST model with user-defined production limiter constant. */
   WALL_OMEGA_LIMIT, /*!< \brief Clip the omega wall value to the upper limit of omega. */
   NEWBC,         /*!< \brief Far-field omega = 10 U / L_DOMAIN, original reference of the NASA TMR SST page. */
 };
@@ -1130,7 +1129,6 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
   MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
   MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
-  MakePair("PRODLIM", SST_OPTIONS::PRODLIM)
   MakePair("NEWBC", SST_OPTIONS::NEWBC)
   MakePair("WALL_OMEGA_LIMIT", SST_OPTIONS::WALL_OMEGA_LIMIT)
 };
@@ -1147,7 +1145,6 @@ struct SST_ParsedOptions {
   bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
   bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
   bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
-  bool prodLim = false;                       /*!< \brief Bool for user-defined production limiter constant. */
   bool wallOmegaLimit = false;                /*!< \brief Bool for clipping the omega wall value (WALL_OMEGA_LIMIT). */
   bool newBC = false;                         /*!< \brief Bool for the far-field values of the NASA TMR (NEWBC). */
 };
@@ -1167,7 +1164,6 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     return std::find(SST_Options, sst_options_end, option) != sst_options_end;
   };
 
-  const bool found_prodLim = IsPresent(SST_OPTIONS::PRODLIM);
   const bool found_newBC = IsPresent(SST_OPTIONS::NEWBC);
   const bool found_wallOmegaLimit = IsPresent(SST_OPTIONS::WALL_OMEGA_LIMIT);
 
@@ -1228,7 +1224,6 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.compSarkar = sst_compSarkar;
   SSTParsedOptions.dll = sst_dll;
 
-  SSTParsedOptions.prodLim = found_prodLim;
   SSTParsedOptions.newBC = found_newBC;
   SSTParsedOptions.wallOmegaLimit = found_wallOmegaLimit;
   return SSTParsedOptions;
