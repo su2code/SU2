@@ -70,14 +70,14 @@ FORCEINLINE void correctGradient(const PrimitiveType& V,
  * \note Second viscosity term ignored.
  */
 template<size_t nVar, size_t nDim>
-FORCEINLINE MatrixDbl<nDim> stressTensor(const Double& viscosity, const MatrixDbl<nVar,nDim>& grad,
-                                         const Double& density = Double(0.0), const Double& tke = Double(0.0)) {
+FORCEINLINE MatrixDbl<nDim> stressTensor(const Double& viscosity,
+                                         const MatrixDbl<nVar,nDim>& grad) {
   /*--- Hydrostatic term. ---*/
   Double velDiv = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
     velDiv += grad(iDim+1,iDim);
   }
-  Double pTerm = 2.0/3.0 * viscosity * velDiv + 2.0/3.0 * density * tke;
+  Double pTerm = 2.0/3.0 * viscosity * velDiv;
 
   MatrixDbl<nDim> tau;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {

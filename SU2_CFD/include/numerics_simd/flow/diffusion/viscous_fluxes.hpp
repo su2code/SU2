@@ -50,7 +50,6 @@ class CNoViscousFlux : public CNumericsSIMD {
 protected:
   static constexpr size_t nDim = NDIM;
   static constexpr size_t nPrimVar = 0;
-  const CVariable* turbVars = nullptr;
 
   template<class... Ts>
   CNoViscousFlux(Ts&...) {}
@@ -81,6 +80,7 @@ protected:
   const bool useSA_QCR;
   const bool wallFun;
   const bool uq;
+  const bool tkeInStress; /*!< \brief 2/3 rho k in the stress tensor (standard, non-m, SST versions). */
   const bool uq_permute;
   const size_t uq_eigval_comp;
   const su2double uq_delta_b;
@@ -101,6 +101,8 @@ protected:
     useSA_QCR(config.GetSAParsedOptions().qcr2000),
     wallFun(config.GetWall_Functions()),
     uq(config.GetSSTParsedOptions().uq),
+    tkeInStress(config.GetKind_Turb_Model() == TURB_MODEL::SST && !config.GetSSTParsedOptions().modified &&
+                !config.GetSSTParsedOptions().uq),
     uq_permute(config.GetUQ_Permute()),
     uq_eigval_comp(config.GetEig_Val_Comp()),
     uq_delta_b(config.GetUQ_Delta_B()),
@@ -137,8 +139,6 @@ protected:
     const auto& solution = static_cast<const CNSVariable&>(solution_);
     const auto& gradient = solution.GetGradient_Primitive();
 
-    const bool tkeNeeded = (config.GetKind_Turb_Model() == TURB_MODEL::SST) && !(config.GetSSTParsedOptions().modified);
-
     /*--- Compute distance and handle zero without "ifs" by making it large. ---*/
 
     auto dist2_ij = squaredNorm(vector_ij);
@@ -153,15 +153,19 @@ protected:
     /*--- Stress and heat flux tensors. ---*/
 
     const Double eddyVisc = uq? Double(0.0) : avgV.eddyVisc();
-    /*--- The 2/3 rho k term of the non-modified SST versions, already in the perturbed Reynolds stress with UQ. ---*/
-    Double turb_ke = 0.0;
-    if (tkeNeeded && !uq) turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
-                                         gatherVariables(jPoint, turbVars->GetSolution()));
-    auto tau = stressTensor(avgV.laminarVisc() + eddyVisc, avgGrad, avgV.density(), turb_ke);
+    auto tau = stressTensor(avgV.laminarVisc() + eddyVisc, avgGrad);
     if(useSA_QCR) addQCR(avgGrad, tau, eddyVisc / (avgV.laminarVisc() + eddyVisc));
+    if(tkeInStress) {
+      /*--- 2/3 rho k term of the Boussinesq approximation, ignored by the modified (m) SST versions (with UQ it is
+       * part of the perturbed Reynolds stress). ---*/
+      const Double turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
+                                  gatherVariables(jPoint, turbVars->GetSolution()));
+      const Double kTerm = 2.0/3.0 * avgV.density() * turb_ke;
+      for (size_t iDim = 0; iDim < nDim; ++iDim) tau(iDim,iDim) -= kTerm;
+    }
     if(uq) {
-      turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
-                     gatherVariables(jPoint, turbVars->GetSolution()));
+      Double turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
+                            gatherVariables(jPoint, turbVars->GetSolution()));
       addPerturbedRSM(avgV, avgGrad, turb_ke, tau,
                       uq_eigval_comp, uq_permute, uq_delta_b, uq_urlx);
     }
@@ -265,7 +269,6 @@ public:
   using Base::gamma;
   using Base::gasConst;
   using Base::prandtlTurb;
-  using Base::turbVars;
 
   /*!
    * \brief Constructor, initialize constants and booleans.
@@ -322,8 +325,6 @@ public:
   static constexpr size_t nSecVar = 4;
   using Base = CCompressibleViscousFluxBase<NDIM, CGeneralCompressibleViscousFlux<NDIM> >;
   using Base::prandtlTurb;
-  using Base::turbVars;
-;
 
   /*!
    * \brief Constructor, initialize constants and booleans.
