@@ -77,7 +77,7 @@ FORCEINLINE MatrixDbl<nDim> stressTensor(const Double& viscosity, const MatrixDb
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
     velDiv += grad(iDim+1,iDim);
   }
-  Double pTerm = 2.0/3.0 * (viscosity * velDiv + density * tke);
+  Double pTerm = 2.0/3.0 * viscosity * velDiv + 2.0/3.0 * density * tke;
 
   MatrixDbl<nDim> tau;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
