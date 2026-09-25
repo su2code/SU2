@@ -531,7 +531,13 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       su2double beta_1 = constants[4];
       solution[0] = 0.0;
-      solution[1] = min(60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2)), upperlimit[1]);
+      solution[1] = 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2));
+
+      /*--- Menter's wall value, omega_w = 10 * 6 nu / (beta_1 d^2) (AIAA J 32(8), 1994), grows as 1/d^2 with the
+       distance d of the first point off the wall, so on very fine wall grids it can exceed the upper limit used
+       to clip omega in the rest of the domain (upperlimit[1]). SST_OPTIONS= WALL_OMEGA_LIMIT clips it to the
+       same limit, so that the wall and the interior values stay consistent. Off by default. ---*/
+      if (sstParsedOptions.wallOmegaLimit) solution[1] = min(solution[1], upperlimit[1]);
     }
 
     /*--- Set the solution values and zero the residual ---*/
