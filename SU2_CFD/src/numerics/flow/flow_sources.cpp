@@ -68,7 +68,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
   su2double u = U_i[1]/U_i[0];                // u-velocity
   su2double r = Coord_i[1];                   // radial coordinate
   su2double dv_dr = PrimVar_Grad_i[2][1];     // ∂v/∂r (radial velocity gradient)
-  
+
   sq_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i = U_i[iDim+1] / U_i[0];
@@ -80,7 +80,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
   /*--- Smooth blending between gradient formulation and standard formulation ---*/
   su2double transition_width = 50.0 * EPS;  // Smooth transition over 50×EPS (much wider)
   su2double alpha = 0.0;  // Blending factor: 0=gradient_form, 1=standard_form
-  
+
   if (r > transition_width) {
     alpha = 1.0;  // Far from axis: use standard v/r formulation
   } else if (r > EPS) {
@@ -257,7 +257,7 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
     /* Compute pressure and enthalpy consistently with the general-gas formulation. */
     const su2double Density_i = rho;
     const su2double Energy_i  = U_i[3]/U_i[0];
-    const su2double Pressure_i = V_j[3]; 
+    const su2double Pressure_i = V_j[3];
     const su2double Enthalpy_i = Energy_i + Pressure_i/Density_i;
 
     /*--- Apply L'Hôpital's rule to axisymmetric source terms ---*/
