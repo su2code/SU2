@@ -6701,7 +6701,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             else cout << "\nusing default hard coded lower limit clipping";
 
             cout << "." << endl;
-
             break;
         }
         switch (Kind_Trans_Model) {

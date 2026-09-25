@@ -501,7 +501,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   if (config->GetSSTParsedOptions().tmrBC) {
     Omega_FreeStream = 10 * ModVel_FreeStream / config->GetLDomain();
-    Omega_FreeStreamND = 10 * ModVel_FreeStreamND / config->GetLDomain(); // Should it be non-dimensionalized for the Reynolds length?
+    Omega_FreeStreamND = 10 * ModVel_FreeStreamND / config->GetLDomain();  // the reference length is 1
 
     Tke_FreeStream = Omega_FreeStream*(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStream;
     Tke_FreeStreamND = Omega_FreeStreamND*(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStreamND;
