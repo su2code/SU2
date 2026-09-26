@@ -4590,7 +4590,7 @@ void RestrictWallDistance(const CGeometry* geo_fine, CGeometry* geo_coarse, cons
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
     const auto viscous = config->GetViscous_Wall(iMarker);
 
-    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->nVertex[iMarker], omp_get_num_threads()))
     for (auto iVertex = 0u; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
       const auto iPoint = geo_coarse->vertex[iMarker][iVertex]->GetNode();
       const su2double dist = (viscous && geo_coarse->nodes->GetDomain(iPoint))
