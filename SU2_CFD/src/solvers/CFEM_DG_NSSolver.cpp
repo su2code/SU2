@@ -140,6 +140,11 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
         SGSModel     = new CVremanModel;
         SGSModelUsed = true;
         break;
+        
+      case TURB_SGS_MODEL::DYNAMIC_SMAGORINSKY:
+        SGSModel     = new CDynamicSmagorinskyModel;
+        SGSModelUsed = true;
+        break;
 
       default:
         SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
