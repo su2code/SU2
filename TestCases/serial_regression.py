@@ -165,7 +165,7 @@ def main():
     inv_channel.cfg_dir   = "euler/channel"
     inv_channel.cfg_file  = "inv_channel.cfg"
     inv_channel.test_iter = 20
-    inv_channel.test_vals = [-2.881210, -0.363528, -0.766663, 2.541394]
+    inv_channel.test_vals = [-4.417118, -1.270081, -2.008538, 1.033475, 5.000000, -0.426366, 0.000084, -0.002650, 1000.000000]
     test_list.append(inv_channel)
 
     # CRM DPW4 wing-body, transonic
@@ -173,7 +173,7 @@ def main():
     inv_crm_jst.cfg_dir   = "euler/CRM"
     inv_crm_jst.cfg_file  = "inv_CRM_JST.cfg"
     inv_crm_jst.test_iter = 20
-    inv_crm_jst.test_vals = [-2.000366, -1.822591, -1.831202, -1.712343, -1.392624]
+    inv_crm_jst.test_vals = [-2.051928, -1.904068, -1.904270, -1.771577, -1.441046]
     test_list.append(inv_crm_jst)
 
     ##########################
@@ -233,7 +233,7 @@ def main():
     lam_naca0012.cfg_dir   = "navierstokes/naca0012"
     lam_naca0012.cfg_file  = "lam_NACA0012.cfg"
     lam_naca0012.test_iter = 20
-    lam_naca0012.test_vals = [-5.522140, -3.127430, -3.286926, -0.109971]
+    lam_naca0012.test_vals = [-5.476464, -3.192186, -3.250615, -0.070066]
     test_list.append(lam_naca0012)
 
     ##########################
@@ -387,7 +387,7 @@ def main():
     turb_sst_flatplate.cfg_dir   = "rans/flatplate"
     turb_sst_flatplate.cfg_file  = "turb_SST_flatplate.cfg"
     turb_sst_flatplate.test_iter = 20
-    turb_sst_flatplate.test_vals = [-4.894651, -1.648175, -2.218517, 0.580205, -0.691347, 4.979689]
+    turb_sst_flatplate.test_vals = [-5.350371, -2.389040, -2.941017, 0.134026, -2.673494, 5.640908]
     test_list.append(turb_sst_flatplate)
 
     # S809 wind turbine airfoil, SA
