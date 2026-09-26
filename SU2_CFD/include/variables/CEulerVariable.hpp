@@ -299,6 +299,11 @@ class CEulerVariable : public CFlowVariable {
   }
 
   /*!
+   * \brief Index of the momentum in the conservative solution vector.
+   */
+  inline short GetVelocityIndex() const final { return 1; }
+
+  /*!
    * \brief Set the momentum part of the truncation error to zero.
    * \param[in] iPoint - Point index.
    */
