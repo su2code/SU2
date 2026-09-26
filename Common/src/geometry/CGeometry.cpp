@@ -4574,8 +4574,8 @@ void RestrictWallDistance(const CGeometry* geo_fine, CGeometry* geo_coarse, cons
       roughness += geo_fine->nodes->GetRoughnessHeight(jPoint) * volChild;
       vol += volChild;
     }
-    geo_coarse->nodes->SetWall_Distance(iPoint, (vol > 0.0) ? dist / vol : 0.0);
-    geo_coarse->nodes->SetRoughnessHeight(iPoint, (vol > 0.0) ? roughness / vol : 0.0);
+    geo_coarse->nodes->SetWall_Distance(iPoint, (vol > 0.0) ? su2double(dist / vol) : su2double(0.0));
+    geo_coarse->nodes->SetRoughnessHeight(iPoint, (vol > 0.0) ? su2double(roughness / vol) : su2double(0.0));
   }
   END_SU2_OMP_FOR
 
