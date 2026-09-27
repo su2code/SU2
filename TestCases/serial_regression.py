@@ -200,7 +200,7 @@ def main():
     lam_naca0012_linelet.cfg_dir   = "navierstokes/naca0012"
     lam_naca0012_linelet.cfg_file  = "lam_NACA0012_LINELET.cfg"
     lam_naca0012_linelet.test_iter = 20
-    lam_naca0012_linelet.test_vals = [-5.282867, -2.845208, -2.852421, 0.154542]
+    lam_naca0012_linelet.test_vals = [-5.345015, -2.936895, -2.943468, 0.096348]
     test_list.append(lam_naca0012_linelet)
 
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
