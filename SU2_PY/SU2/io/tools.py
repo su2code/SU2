@@ -271,8 +271,10 @@ optnames_geo = [
     "NACELLE_MAX_TWIST",
 ]
 
+# SU2_GEO numbers the stations of GEO_LOCATION_STATIONS from 1 (STATION1_*),
+# see SU2_GEO.cpp, so the names cover stations 1 to 20.
 PerStation = []
-for i in range(20):
+for i in range(1, 21):
     PerStation.append("STATION" + str(i) + "_AREA")
     PerStation.append("STATION" + str(i) + "_LENGTH")
     PerStation.append("STATION" + str(i) + "_WIDTH")
