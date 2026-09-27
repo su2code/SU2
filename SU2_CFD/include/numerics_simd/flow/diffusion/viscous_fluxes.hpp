@@ -76,7 +76,6 @@ protected:
   const su2double gamma;
   const su2double gasConst;
   const su2double prandtlTurb;
-  const bool effDistJac; /*!< EXPERIMENT: SU2_VISC_JAC_EFFDIST. */
   const bool useSA_QCR;
   const bool wallFun;
   const bool uq;
@@ -96,7 +95,6 @@ protected:
     gamma(config.GetGamma()),
     gasConst(config.GetGas_ConstantND()),
     prandtlTurb(config.GetPrandtl_Turb()),
-    effDistJac(getenv("SU2_VISC_JAC_EFFDIST") != nullptr),
     useSA_QCR(config.GetSAParsedOptions().qcr2000),
     wallFun(config.GetWall_Functions()),
     uq(config.GetSSTParsedOptions().uq),
@@ -179,14 +177,10 @@ protected:
 
     /*--- Flux Jacobians. ---*/
 
-    Double dist_ij = sqrt(dist2_ij);
+    /*--- Effective distance |d|^2/|d.n| matches the normal derivative of the corrected gradient. ---*/
 
-    /*--- EXPERIMENT: SU2_VISC_JAC_EFFDIST linearizes the corrected gradient, whose normal part depends
-     *    on the neighbour difference over |d|^2/(d.n) rather than over |d|. ---*/
-    if (effDistJac) {
-      const Double projDist = abs(dot(vector_ij, unitNormal));
-      dist_ij = dist2_ij / fmax(projDist, 0.1 * dist_ij);
-    }
+    const Double projDist = abs(dot(vector_ij, unitNormal));
+    const Double dist_ij = dist2_ij / fmax(projDist, 0.1 * sqrt(dist2_ij));
     auto dtau = stressTensorJacobian<nVar>(avgV, unitNormal, dist_ij);
 
     /*--- Energy flux Jacobian. ---*/

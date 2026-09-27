@@ -502,6 +502,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
           unsigned short shared = 0;
           for (auto jPoint : fine_grid->nodes->GetPoints(CVPoint)) shared += inCV[jPoint];
+          /*--- In 2D a CV of three or more nodes only takes nodes touching two members, so it cannot
+           *    grow into a chain. ---*/
+          if ((nDim == 2) && (nChildren >= 3) && (shared < 2)) continue;
 
           /*--- Distance to the centroid in cells: the offset is scaled by the seed edge pointing
            *    most nearly along it. ---*/
@@ -638,18 +641,43 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     nodes->SetnChildren_CV(fromCV, 0);
   };
 
-  /*--- Neighbour with the fewest children that may take this CV, NO_CV if there is none. Neighbours
-   *    an earlier merge in the same pass emptied are not revived. ---*/
-  auto smallestPartner = [&](unsigned long iCV, unsigned short maxPartnerSize, bool keepOffPartition) {
+  /*--- Dual-face area and number of fine edges between the children of two coarse CVs. ---*/
+  auto sharedFaces = [&](unsigned long iCV, unsigned long jCV) {
+    su2double area = 0.0;
+    unsigned short nEdges = 0;
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCV); iChildren++) {
+      const auto iFinePoint = nodes->GetChildren_CV(iCV, iChildren);
+      for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iFinePoint); iNeigh++) {
+        if (fine_grid->nodes->GetParent_CV(fine_grid->nodes->GetPoint(iFinePoint, iNeigh)) != jCV) continue;
+        area += GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(fine_grid->nodes->GetEdge(iFinePoint, iNeigh)));
+        nEdges++;
+      }
+    }
+    return std::make_pair(area, nEdges);
+  };
+
+  /*--- Neighbour sharing the most dual-face area that may take this CV, the one with fewer children on
+   *    a tie, NO_CV if there is none. A compact merge must join the two through at least as many fine
+   *    edges as the smaller one has children. Neighbours an earlier merge in the same pass emptied are
+   *    not revived. ---*/
+  auto bestPartner = [&](unsigned long iCV, unsigned short maxPartnerSize, bool keepOffPartition,
+                             bool compact) {
     auto best = NO_CV;
     auto best_nChildren = std::numeric_limits<unsigned short>::max();
+    su2double best_area = -1.0;
     for (auto jCV : nodes->GetPoints(iCV)) {
       const auto nChildren = nodes->GetnChildren_CV(jCV);
-      if ((nChildren == 0) || (nChildren > maxPartnerSize) || (nChildren >= best_nChildren)) continue;
+      if ((nChildren == 0) || (nChildren > maxPartnerSize)) continue;
       if (keepOffPartition && touchesPartition[jCV]) continue;
       if (!mayMerge(iCV, jCV)) continue;
-      best_nChildren = nChildren;
-      best = jCV;
+      const auto shared = sharedFaces(iCV, jCV);
+      if (compact && (shared.second < min(nChildren, nodes->GetnChildren_CV(iCV)))) continue;
+      if ((shared.first > best_area * (1.0 + 1e-6)) ||
+          ((shared.first >= best_area * (1.0 - 1e-6)) && (nChildren < best_nChildren))) {
+        best_nChildren = nChildren;
+        best_area = shared.first;
+        best = jCV;
+      }
     }
     return best;
   };
@@ -686,8 +714,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     mergeInto(iCoarsePoint, iTarget);
   }
 
-  /*--- A CV left holding a single child joins the neighbour with the fewest, even where that takes
-   the neighbour one past maxAgglomSize. ---*/
+  /*--- A CV left holding a single child joins the neighbour it shares the most face with, even where
+   that takes the neighbour one past maxAgglomSize. ---*/
 
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
     if (nodes->GetnChildren_CV(iCoarsePoint) != 1) continue;
@@ -695,12 +723,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     /*--- Already handled above, or truly islanded. ---*/
     if (nodes->GetnPoint(iCoarsePoint) <= 1) continue;
 
-    const auto iTarget = smallestPartner(iCoarsePoint, std::numeric_limits<unsigned short>::max(), false);
+    const auto iTarget = bestPartner(iCoarsePoint, std::numeric_limits<unsigned short>::max(), false, false);
     if (iTarget != NO_CV) mergeInto(iCoarsePoint, iTarget);
   }
 
-  /*--- Merge a paved CV of at most SMALL_STACK_CV children into an equally small neighbour, which
-   the two passes above do not reach. Two of them can never exceed maxAgglomSize together. ---*/
+  /*--- Merge a paved CV of at most SMALL_STACK_CV children into an equally small neighbour it joins
+   compactly, which the two passes above do not reach. Two of them can never exceed maxAgglomSize together. ---*/
 
   constexpr unsigned short SMALL_STACK_CV = 2; /*!< \brief The block size a narrow stack emits
                                                      between flushes; see BlockFor. */
@@ -712,7 +740,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     /*--- Interior stack fragments only, a boundary row keeps its footprint. ---*/
     if (cvOnBoundary[iCoarsePoint]) continue;
 
-    const auto iTarget = smallestPartner(iCoarsePoint, SMALL_STACK_CV, true);
+    const auto iTarget = bestPartner(iCoarsePoint, SMALL_STACK_CV, true, true);
     if (iTarget != NO_CV) mergeInto(iCoarsePoint, iTarget);
   }
 
@@ -2148,7 +2176,14 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
             std::sort(distinct.begin(), distinct.end());
             distinct.erase(std::unique(distinct.begin(), distinct.end()), distinct.end());
             if (distinct.size() != width) return false;
-            return true;
+            /*--- The layer must stay connected, or its blocks split into strands. ---*/
+            vector<unsigned long> reached(1, distinct[0]);
+            for (size_t k = 0; k < reached.size(); ++k)
+              for (auto jPoint : fine_grid->nodes->GetPoints(reached[k]))
+                if (std::binary_search(distinct.begin(), distinct.end(), jPoint) &&
+                    (std::find(reached.begin(), reached.end(), jPoint) == reached.end()))
+                  reached.push_back(jPoint);
+            return reached.size() == width;
           };
 
           if (complete(candidates)) {
