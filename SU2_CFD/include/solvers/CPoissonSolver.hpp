@@ -41,34 +41,6 @@ protected:
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
 
-  /*!
-   * \brief Compute the viscous flux for the scalar equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
-   */
-  inline void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
-                                       CNumerics* numerics, const CConfig* config) override {
-
-    su2double mom_coeff_i{}, mom_coeff_j{};
-
-    /*--- Sets the momentum coefficients to use in the viscous numerics. A point under a strong
-     * velocity BC has no momentum coefficient, so the edge uses that of its other node. ---*/
-    auto compute_momentum_coeff = [&](unsigned long iPoint, unsigned long jPoint) {
-      const auto* flow_nodes = solver_container[FLOW_SOL]->GetNodes();
-
-      mom_coeff_i = nodes->GetMomCoeff(flow_nodes->GetStrongBC(iPoint) ? jPoint : iPoint);
-      mom_coeff_j = nodes->GetMomCoeff(flow_nodes->GetStrongBC(jPoint) ? iPoint : jPoint);
-      numerics->SetDiffusionCoeff(&mom_coeff_i, &mom_coeff_j);
-    };
-    
-    /*--- Compute residual and Jacobians. ---*/
-    Viscous_Residual_impl(compute_momentum_coeff, iEdge, geometry, solver_container, numerics, config);
-  }
-  
 public:
 
   /*
@@ -109,10 +81,10 @@ public:
                                      unsigned short iMesh) final;
 
   /*!
-   * \brief Compute the viscous residuals for the turbulent equation.
+   * \brief Compute the diffusion of the pressure correction, through the CScalarFlux_Poisson
+   *        edge kernel; the equation has no convective term, see Upwind_Residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.

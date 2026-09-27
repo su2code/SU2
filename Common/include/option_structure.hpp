@@ -752,6 +752,18 @@ static const MapType<std::string, ENUM_INIT_OPTION> InitOption_Map = {
 };
 
 /*!
+ * \brief Types of initialization of the incompressible solver.
+ */
+enum class INIT_OPTION_INC {
+  DENSITY_INIT,       /*!< \brief Initialization with the initial density. */
+  OPERATING_PRESSURE, /*!< \brief Initialization with the operating (thermodynamic) pressure. */
+};
+static const MapType<std::string, INIT_OPTION_INC> InitOptionInc_Map = {
+  MakePair("DENSITY_INIT", INIT_OPTION_INC::DENSITY_INIT)
+  MakePair("OPERATING_PRESSURE", INIT_OPTION_INC::OPERATING_PRESSURE)
+};
+
+/*!
  * \brief Types of freestream specification
  */
 enum class FREESTREAM_OPTION {
@@ -1213,7 +1225,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 struct CMGOptions {
   su2double MG_Smooth_Res_Threshold{0.0}; /*!< \brief RMS reduction threshold for MG smoothing early exit. */
   su2double MG_Smooth_Coeff{0.0};         /*!< \brief Jacobi smoother coefficient for coarse-grid correction. */
-  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level. */
+  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level, over all ranks. */
   std::vector<unsigned short> MG_PreSmooth;    /*!< \brief Multigrid pre-smoothing iterations per level. */
   std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
   std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
@@ -1222,7 +1234,6 @@ struct CMGOptions {
   bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
   su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
-  unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Iterations per mesh during FMG startup, and the length of each level's CFL ramp. 0 = no iteration budget. */
   su2double MG_Startup_Convergence{-2.0}; /*!< \brief FMG: orders of magnitude (log10) that CONV_FIELD must drop on the
                                                  active level before promoting to the next finer one. Negative is a

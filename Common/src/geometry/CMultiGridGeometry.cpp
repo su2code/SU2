@@ -30,11 +30,51 @@
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
+#include <algorithm>
+#include <array>
+#include <limits>
+#include <map>
+#include <sstream>
+#include <utility>
+
+namespace {
+
+/*--- Euler wall nodes are not agglomerated where the surface turns by more than this, in
+ *    degrees. ---*/
+constexpr passivedouble EULER_WALL_MAX_CURVATURE = 45.0;
+
+/*--- Fine points one coarse CV may hold: a quadrilateral in 2D, a hexahedron in 3D. ---*/
+constexpr short int MaxAgglomSize(unsigned short nDim) { return (nDim == 2) ? 4 : 8; }
+
+/*--- Equivalence-class id per entity for the set of physical markers it lies on: entities with the
+ *    same set share an id, 0 means no marker. The pairs are consumed. ---*/
+vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<unsigned long, unsigned short>>& pairs) {
+  vector<unsigned long> classOfEntity(nEntity, 0);
+
+  std::sort(pairs.begin(), pairs.end());
+  pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+
+  map<vector<unsigned short>, unsigned long> classOf;
+  unsigned long nClass = 0;
+  for (size_t i = 0; i < pairs.size();) {
+    size_t j = i;
+    vector<unsigned short> markerSet;
+    while ((j < pairs.size()) && (pairs[j].first == pairs[i].first)) markerSet.push_back(pairs[j++].second);
+
+    const auto res = classOf.emplace(std::move(markerSet), nClass + 1);
+    if (res.second) nClass++;
+    classOfEntity[pairs[i].first] = res.first->second;
+    i = j;
+  }
+  return classOfEntity;
+}
+
+}  // namespace
+
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
   nDim = fine_grid->GetnDim();  // Write the number of dimensions of the coarse grid.
 
-  /*--- Maximum agglomeration size in 2D is 4 nodes, in 3D is 8 nodes. ---*/
-  const short int maxAgglomSize = (nDim == 2) ? 4 : 8;
+  const short int maxAgglomSize = MaxAgglomSize(nDim);
 
   /*--- Inherit boundary properties from fine grid ---*/
   boundIsStraight = fine_grid->boundIsStraight;
@@ -45,9 +85,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    2nd) Two markers ---> Edges (agglomerate if same BC, never agglomerate if different BC)
    3rd) One marker ---> Surface (always agglomerate)
    4th) No marker ---> Internal Volume (always agglomerate) ---*/
-
-  // Note that for MPI, we introduce interfaces and we can choose to have agglomeration over
-  // the interface or not. Nishikawa chooses not to agglomerate over interfaces.
 
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
    i.e. consider up to neighbors of neighbors.
@@ -68,6 +105,14 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
+  /*--- Index of a coarse CV that does not exist, and of a fine point with no parent yet. ---*/
+  constexpr auto NO_CV = std::numeric_limits<unsigned long>::max();
+
+  /*--- Clear the parents the halo points were given when this fine grid was itself agglomerated.
+   *    Everything below reads NO_CV as "not agglomerated on this rank". ---*/
+  for (auto iPoint = fine_grid->GetnPointDomain(); iPoint < fine_grid->GetnPoint(); iPoint++)
+    fine_grid->nodes->SetParent_CV(iPoint, NO_CV);
+
   /*--- Create the coarse grid structure using as baseline the fine grid ---*/
 
   CMultiGridQueue MGQueue_InnerCV(fine_grid->GetnPoint());
@@ -77,21 +122,51 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   unsigned long Index_CoarseCV = 0;
 
-  /*--- Statistics for Euler wall agglomeration ---*/
-  map<unsigned short, unsigned long> euler_wall_agglomerated, euler_wall_rejected_curvature,
-      euler_wall_rejected_straight;
-  for (unsigned short iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
-      euler_wall_agglomerated[iMarker] = 0;
-      euler_wall_rejected_curvature[iMarker] = 0;
-      euler_wall_rejected_straight[iMarker] = 0;
-    }
+  /*--- Euler wall seeds taken and refused, per config file marker so the counts reduce over the
+   *    ranks. A local marker index names a different boundary on each rank. ---*/
+  vector<unsigned long> eulerTaken(config->GetnMarker_CfgFile(), 0);
+  vector<unsigned long> eulerRefused(config->GetnMarker_CfgFile(), 0);
+  vector<unsigned short> cfgMarker(fine_grid->GetnMarker(), 0);
+  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++)
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)
+      cfgMarker[iMarker] = config->GetMarker_CfgFile_TagBound(config->GetMarker_All_TagBound(iMarker));
+
+  /*--- Points carrying a physical boundary condition. This does not include SEND_RECEIVE. ---*/
+  vector<char> onPhysBoundary(fine_grid->GetnPoint(), 0);
+  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+    for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++)
+      onPhysBoundary[fine_grid->vertex[iMarker][iVertex]->GetNode()] = 1;
   }
+  /*--- Nodes on a periodic marker. Periodic donor matching is rebuilt per level and pairs one
+   *    coarse vertex per marker, so a coarse CV holding two of these would receive twice. ---*/
+  vector<char> onPeriodic(fine_grid->GetnPoint(), 0);
+  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
+    for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++)
+      onPeriodic[fine_grid->vertex[iMarker][iVertex]->GetNode()] = 1;
+  }
+
+  /*--- Nodes where two different boundary conditions meet.  ---*/
+  const auto mixedBC = FindMixedBoundaryNodes(fine_grid, config);
+
+  /*--- STEP 0: pave the domain with advancing fronts rising from the boundaries. The coarse CVs it
+   *    creates occupy [firstLineCV, endLineCV). ---*/
+  const auto firstLineCV = Index_CoarseCV;
+  vector<unsigned long> neverGrewCV;
+  if (config->GetMGOptions().MG_Implicit_Lines) {
+    levelReport =
+        PaveAdvancingFronts(Index_CoarseCV, fine_grid, config, iMesh, mixedBC, onPhysBoundary, onPeriodic, neverGrewCV);
+  }
+  const auto endLineCV = Index_CoarseCV;
 
   /*--- STEP 1: The first step is the boundary agglomeration. ---*/
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
     /*--- Skip periodic boundaries: do not agglomerate on periodic markers. ---*/
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) continue;
+
+    /*--- Skip SEND_RECEIVE markers, those points are left to the domain pass. ---*/
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
 
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
@@ -115,16 +190,17 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         nodes->SetChildren_CV(Index_CoarseCV, 0, iPoint);
         bool agglomerate_seed = false;
         auto counter = 0;
-        unsigned short copy_marker[3] = {};
+        unsigned short copy_marker[2] = {};
         marker_seed.push_back(iMarker);
 
-        /*--- For a particular point in the fine grid we save all the markers
-         that are in that point ---*/
+        /*--- For a particular point in the fine grid we save all the physical markers that are in
+         that point.  ---*/
 
         for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
-          const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) continue;
           if (fine_grid->nodes->GetVertex(iPoint, jMarker) != -1) {
-            copy_marker[counter] = jMarker;
+            /*--- Count every physical marker, only the first two are read back. ---*/
+            if (counter < 2) copy_marker[counter] = jMarker;
             counter++;
 
             if (jMarker != iMarker) {
@@ -151,35 +227,25 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
             if (!boundIsStraight[marker_seed[0]]) {
               /*--- Compute local curvature at this point ---*/
               su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, marker_seed[0]);
-              // limit to 45 degrees
-              if (local_curvature >= 45.0) {
+              if (local_curvature >= EULER_WALL_MAX_CURVATURE) {
                 agglomerate_seed = false;  // High curvature: do not agglomerate
-                euler_wall_rejected_curvature[marker_seed[0]]++;
+                eulerRefused[cfgMarker[marker_seed[0]]]++;
               } else {
-                euler_wall_agglomerated[marker_seed[0]]++;
+                eulerTaken[cfgMarker[marker_seed[0]]]++;
               }
             } else {
               /*--- Straight wall: agglomerate ---*/
-              euler_wall_agglomerated[marker_seed[0]]++;
+              eulerTaken[cfgMarker[marker_seed[0]]]++;
             }
-          }
-
-          /*--- Note that if the (single) marker is a SEND_RECEIVE, then the node is actually an interior point.
-                In that case it can only be agglomerated with another interior point. ---*/
-          if (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE) {
-            agglomerate_seed = true;
           }
         }
 
-        /*--- Note that in 2D, this is a corner and we do not agglomerate unless one of them is SEND_RECEIVE. ---*/
-        /*--- In 3D, we agglomerate if the 2 markers are the same. ---*/
+        /*--- Two physical markers meet here. ---*/
         if (counter == 2) {
-          if (nDim == 2) {
-            agglomerate_seed = ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
-                                (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE));
-          }
-          /*--- agglomerate if both markers are the same. ---*/
-          if (nDim == 3) agglomerate_seed = (copy_marker[0] == copy_marker[1]);
+          /*--- In 2D that is a corner in the geometry, which is never agglomerated. ---*/
+          if (nDim == 2) agglomerate_seed = false;
+          /*--- In 3D, this is a ridge point (an edge where two surface markers meet). ---*/
+          if (nDim == 3) agglomerate_seed = true;
 
           /*--- Euler walls: check curvature-based agglomeration criterion for both markers ---*/
           // only in 3d because in 2d it's a corner
@@ -189,16 +255,15 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               if (!boundIsStraight[copy_marker[i]]) {
                 /*--- Compute local curvature at this point ---*/
                 su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, copy_marker[i]);
-                // limit to 45 degrees
-                if (local_curvature >= 45.0) {
+                if (local_curvature >= EULER_WALL_MAX_CURVATURE) {
                   agglomerate_seed = false;  // High curvature: do not agglomerate
-                  euler_wall_rejected_curvature[copy_marker[i]]++;
+                  eulerRefused[cfgMarker[copy_marker[i]]]++;
                   euler_wall_rejected_here = true;
                 }
               }
               /*--- Track agglomeration if not rejected ---*/
               if (agglomerate_seed && !euler_wall_rejected_here) {
-                euler_wall_agglomerated[copy_marker[i]]++;
+                eulerTaken[cfgMarker[copy_marker[i]]]++;
               }
             }
           }
@@ -207,6 +272,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
 
         if (counter > 2) agglomerate_seed = false;
+
+        /*--- ...and so is a node where two markers of different type meet, in any dimension. ---*/
+        if (mixedBC[iPoint]) agglomerate_seed = false;
 
         /*--- If the seed (parent) can be agglomerated, we try to agglomerate connected childs to the parent ---*/
         /*--- Note that in 2D we allow a maximum of 4 nodes to be agglomerated ---*/
@@ -217,7 +285,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           for (auto CVPoint : fine_grid->nodes->GetPoints(iPoint)) {
             /*--- The new point can be agglomerated ---*/
 
-            if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
+            if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config, mixedBC)) {
               /*--- We set the value of the parent ---*/
 
               fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
@@ -231,23 +299,23 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               /*--- In 3D, we agglomerate exactly 2 nodes if the nodes are on the surface edge. ---*/
               if ((nDim == 3) && (counter == 2)) break;
               /*--- Apply maxAgglomSize limit for 3D internal boundary face nodes (counter==1 in 3D). ---*/
-              if (nChildren == maxAgglomSize) break;
+              if (nChildren >= maxAgglomSize) break;
             }
           }
 
-          /*--- Only take into account indirect neighbors for 3D faces, not 2D. ---*/
-          if (nDim == 3) {
+          /*--- Indirect neighbors only for 3D faces.  ---*/
+          if ((nDim == 3) && (nChildren < maxAgglomSize)) {
             Suitable_Indirect_Neighbors.clear();
 
             if (fine_grid->nodes->GetAgglomerate_Indirect(iPoint))
-              SetSuitableNeighbors(Suitable_Indirect_Neighbors, iPoint, Index_CoarseCV, fine_grid);
+              SetSuitableNeighbors(Suitable_Indirect_Neighbors, iPoint, fine_grid);
 
             /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
 
             for (auto CVPoint : Suitable_Indirect_Neighbors) {
               /*--- The new point can be agglomerated ---*/
 
-              if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
+              if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config, mixedBC)) {
                 /*--- We set the value of the parent ---*/
 
                 fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
@@ -263,7 +331,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
                 nodes->SetChildren_CV(Index_CoarseCV, nChildren, CVPoint);
                 nChildren++;
                 /*--- Apply maxAgglomSize limit for 3D internal boundary face nodes. ---*/
-                if (nChildren == maxAgglomSize) break;
+                if (nChildren >= maxAgglomSize) break;
               }
             }
           }
@@ -281,6 +349,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    i.e. make one coarse CV with a single child. ---*/
 
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    /*--- As in STEP 1, a SEND_RECEIVE marker does not make a point a boundary point. ---*/
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
 
@@ -311,12 +382,18 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-  /*--- Agglomerate high-aspect-ratio interior nodes along implicit lines from walls. ---*/
-  if (config->GetMGOptions().MG_Implicit_Lines) {
-    AgglomerateImplicitLines(Index_CoarseCV, fine_grid, config, MGQueue_InnerCV);
-  }
+  /*--- STEP 2: Agglomerate the domain points. A seed grows one node at a time, taking the candidate
+   *    that shares the most edges with the current members. ---*/
+  vector<char> inCV(fine_grid->GetnPoint(), 0);
+  vector<char> isCandidate(fine_grid->GetnPoint(), 0);
+  vector<unsigned long> members, candidates;
+  members.reserve(maxAgglomSize);
 
-  /*--- STEP 2: Agglomerate the domain points. ---*/
+  /*--- A local frame at the seed: up to nDim of its incident edges, as mutually orthogonal as
+   *    possible, each with its own length. ---*/
+  vector<std::array<su2double, MAXNDIM>> frameDir, edgeDir;
+  vector<su2double> frameLen, edgeLen;
+  vector<char> edgeUsed;
 
   auto iteration = 0ul;
   while (!MGQueue_InnerCV.EmptyQueue() && (iteration < fine_grid->GetnPoint())) {
@@ -328,78 +405,136 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
     if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint)) &&
         (GeometricalCheck(iPoint, fine_grid, config))) {
-      unsigned short nChildren = 1;
+      members.clear();
+      candidates.clear();
+      unsigned short nChildren = 0;
 
-      /*--- We set an index for the parent control volume ---*/
+      /*--- Take a node into the CV and let the frontier grow with it. ---*/
+      auto addMember = [&](unsigned long CVPoint) {
+        fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, nChildren, CVPoint);
+        nChildren++;
 
-      fine_grid->nodes->SetParent_CV(iPoint, Index_CoarseCV);
+        if (fine_grid->nodes->GetAgglomerate_Indirect(CVPoint)) nodes->SetAgglomerate_Indirect(Index_CoarseCV, true);
 
-      /*--- We add the seed point (child) to the parent control volume ---*/
+        /*--- Remove it from the queue and raise the priority of its neighbours. ---*/
+        MGQueue_InnerCV.Update(CVPoint, fine_grid);
 
-      nodes->SetChildren_CV(Index_CoarseCV, 0, iPoint);
+        members.push_back(CVPoint);
+        inCV[CVPoint] = 1;
 
-      /*--- Update the queue with the seed point (remove the seed and
-       increase the priority of its neighbors) ---*/
-
-      MGQueue_InnerCV.Update(iPoint, fine_grid);
-
-      /*--- Now we do a sweep over all the nodes that surround the seed point ---*/
-
-      for (auto CVPoint : fine_grid->nodes->GetPoints(iPoint)) {
-        /*--- Determine if the CVPoint can be agglomerated ---*/
-
-        if ((!fine_grid->nodes->GetAgglomerate(CVPoint)) && (fine_grid->nodes->GetDomain(CVPoint)) &&
-            (GeometricalCheck(CVPoint, fine_grid, config))) {
-          /*--- We set the value of the parent ---*/
-
-          fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
-
-          /*--- We set the value of the child ---*/
-
-          nodes->SetChildren_CV(Index_CoarseCV, nChildren, CVPoint);
-          nChildren++;
-
-          /*--- Update the queue with the new control volume (remove the CV and
-           increase the priority of its neighbors) ---*/
-
-          MGQueue_InnerCV.Update(CVPoint, fine_grid);
+        for (auto jPoint : fine_grid->nodes->GetPoints(CVPoint)) {
+          if (inCV[jPoint] || isCandidate[jPoint]) continue;
+          if (fine_grid->nodes->GetAgglomerate(jPoint) || !fine_grid->nodes->GetDomain(jPoint)) continue;
+          if (!GeometricalCheck(jPoint, fine_grid, config)) continue;
+          isCandidate[jPoint] = 1;
+          candidates.push_back(jPoint);
         }
-        if (nChildren == maxAgglomSize) break;
+      };
+
+      addMember(iPoint);
+
+      edgeDir.clear();
+      edgeLen.clear();
+      su2double seedShortest = std::numeric_limits<su2double>::max();
+      for (auto jPoint : fine_grid->nodes->GetPoints(iPoint)) {
+        su2double e[MAXNDIM] = {0.0};
+        GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(iPoint), e);
+        const su2double len = GeometryToolbox::Norm(nDim, e);
+        if (len <= 0.0) continue;
+        std::array<su2double, MAXNDIM> u{};
+        for (unsigned short d = 0; d < nDim; ++d) u[d] = e[d] / len;
+        edgeDir.push_back(u);
+        edgeLen.push_back(len);
+        seedShortest = std::min(seedShortest, len);
+      }
+      /*--- A seed with no usable edge cannot be measured against anything, leave the scale at one. ---*/
+      if (seedShortest == std::numeric_limits<su2double>::max()) seedShortest = 1.0;
+
+      /*--- The shortest edge goes in first, the rest in order of how orthogonal they are to what is
+       *    already in the frame. ---*/
+      frameDir.clear();
+      frameLen.clear();
+      edgeUsed.assign(edgeDir.size(), 0);
+      while (frameDir.size() < nDim) {
+        long pick = -1;
+        su2double bestScore = -1.0;
+        for (size_t i = 0; i < edgeDir.size(); ++i) {
+          if (edgeUsed[i]) continue;
+          su2double score;
+          if (frameDir.empty()) {
+            score = 1.0 / edgeLen[i];
+          } else {
+            score = 2.0;
+            for (const auto& f : frameDir) {
+              su2double a = 0.0;
+              for (unsigned short d = 0; d < nDim; ++d) a += f[d] * edgeDir[i][d];
+              score = std::min(score, 1.0 - fabs(a));
+            }
+          }
+          if (score > bestScore) {
+            bestScore = score;
+            pick = static_cast<long>(i);
+          }
+        }
+        if (pick < 0) break;
+        edgeUsed[pick] = 1;
+        frameDir.push_back(edgeDir[pick]);
+        frameLen.push_back(edgeLen[pick]);
+      }
+      /*--- Without a full frame the offset cannot be resolved, fall back to one isotropic scale. ---*/
+      const bool haveFrame = (frameDir.size() == nDim);
+
+      while (nChildren < maxAgglomSize) {
+        /*--- Centroid of what the CV holds so far, used only to break ties. ---*/
+        su2double centroid[MAXNDIM] = {0.0};
+        for (auto jPoint : members) {
+          const auto* coord = fine_grid->nodes->GetCoord(jPoint);
+          for (auto iDim = 0u; iDim < nDim; iDim++) centroid[iDim] += coord[iDim] / su2double(members.size());
+        }
+
+        unsigned long best = NO_CV;
+        unsigned short best_shared = 0;
+        su2double best_dist = std::numeric_limits<su2double>::max();
+
+        for (auto CVPoint : candidates) {
+          if (inCV[CVPoint]) continue;
+
+          unsigned short shared = 0;
+          for (auto jPoint : fine_grid->nodes->GetPoints(CVPoint)) shared += inCV[jPoint];
+
+          /*--- Distance to the centroid in cells: the offset is scaled by the seed edge pointing
+           *    most nearly along it. ---*/
+          su2double off[MAXNDIM] = {0.0};
+          for (unsigned short d = 0; d < nDim; ++d) off[d] = fine_grid->nodes->GetCoord(CVPoint)[d] - centroid[d];
+          const su2double offLen = GeometryToolbox::Norm(nDim, off);
+
+          su2double dist = 0.0;
+          if (haveFrame) {
+            for (size_t k = 0; k < frameDir.size(); ++k) {
+              su2double p = 0.0;
+              for (unsigned short d = 0; d < nDim; ++d) p += off[d] * frameDir[k][d];
+              const su2double q = p / frameLen[k];
+              dist += q * q;
+            }
+          } else {
+            const su2double r = offLen / seedShortest;
+            dist = r * r;
+          }
+
+          if ((shared > best_shared) || ((shared == best_shared) && (dist < best_dist))) {
+            best = CVPoint;
+            best_shared = shared;
+            best_dist = dist;
+          }
+        }
+
+        if (best == NO_CV) break;
+        addMember(best);
       }
 
-      /*--- Identify the indirect neighbors ---*/
-
-      Suitable_Indirect_Neighbors.clear();
-      if (fine_grid->nodes->GetAgglomerate_Indirect(iPoint))
-        SetSuitableNeighbors(Suitable_Indirect_Neighbors, iPoint, Index_CoarseCV, fine_grid);
-
-      /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
-
-      for (auto CVPoint : Suitable_Indirect_Neighbors) {
-        // if we have reached the maximum, get out.
-        if (nChildren == maxAgglomSize) break;
-        /*--- The new point can be agglomerated ---*/
-
-        if ((!fine_grid->nodes->GetAgglomerate(CVPoint)) && (fine_grid->nodes->GetDomain(CVPoint))) {
-          /*--- We set the value of the parent ---*/
-
-          fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
-
-          /*--- We set the indirect agglomeration information ---*/
-
-          if (fine_grid->nodes->GetAgglomerate_Indirect(CVPoint)) nodes->SetAgglomerate_Indirect(Index_CoarseCV, true);
-
-          /*--- We set the value of the child ---*/
-
-          nodes->SetChildren_CV(Index_CoarseCV, nChildren, CVPoint);
-          nChildren++;
-
-          /*--- Update the queue with the new control volume (remove the CV and
-           increase the priority of the neighbors) ---*/
-
-          MGQueue_InnerCV.Update(CVPoint, fine_grid);
-        }
-      }
+      for (auto jPoint : members) inCV[jPoint] = 0;
+      for (auto jPoint : candidates) isCandidate[jPoint] = 0;
 
       /*--- Update the number of control of childrens ---*/
 
@@ -428,76 +563,193 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   nPointDomain = Index_CoarseCV;
   nPoint = nPointDomain;
 
-  /*--- Check that there are no hanging nodes. Detect isolated points
-   (only 1 neighbor), and merge their children CV's with the neighbor. ---*/
+  /*--- Coarse neighbours, so the repair passes below can find a CV a merge can go to. ---*/
 
   SetPoint_Connectivity(fine_grid);
 
+  /*--- Coarse CVs the repair passes must leave exactly as the agglomeration made them, and those
+   *    holding a boundary node at all. ---*/
+  vector<bool> mustStayAlone(nPointDomain, false);
+  vector<bool> cvOnBoundary(nPointDomain, false);
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++)
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+      const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+      if (mixedBC[iFinePoint] || onPeriodic[iFinePoint]) mustStayAlone[iCoarsePoint] = true;
+      if (onPhysBoundary[iFinePoint]) cvOnBoundary[iCoarsePoint] = true;
+    }
+
+  /*--- Which physical boundaries each coarse CV sits on, as a marker-set class. Comparing classes
+   *    keeps a merge inside one boundary. Halo points hold the parent sentinel and drop out. ---*/
+  vector<std::pair<unsigned long, unsigned short>> cvMarker;
+  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+    for (auto iVertex = 0ul; iVertex < fine_grid->nVertex[iMarker]; iVertex++) {
+      const auto iParent = fine_grid->nodes->GetParent_CV(fine_grid->vertex[iMarker][iVertex]->GetNode());
+      if (iParent < nPointDomain) cvMarker.push_back({iParent, static_cast<unsigned short>(iMarker)});
+    }
+  }
+  const auto cvMarkerClass = MarkerSetClasses(nPointDomain, cvMarker);
+
+  /*--- Columns that never advanced past their seed layer, which are not stacks. ---*/
+  vector<bool> neverGrew(nPointDomain, false);
+  for (auto iCV : neverGrewCV)
+    if (iCV < nPointDomain) neverGrew[iCV] = true;
+
+  /*--- A boundary CV the paving built is the base of a stack and keeps its footprint. ---*/
+  auto isStackBase = [&](unsigned long iCoarsePoint) {
+    return cvOnBoundary[iCoarsePoint] && (iCoarsePoint >= firstLineCV) && (iCoarsePoint < endLineCV) &&
+           !neverGrew[iCoarsePoint];
+  };
+
+  /*--- The coarse connectivity only knows about CVs of this rank, so a CV reaching over a partition
+   *    boundary can look isolated. ---*/
+  vector<bool> touchesPartition(nPointDomain, false);
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
-    if (nodes->GetnPoint(iCoarsePoint) == 1) {
-      /*--- Find the neighbor of the isolated point. This neighbor is the right control volume ---*/
-
-      const auto iCoarsePoint_Complete = nodes->GetPoint(iCoarsePoint, 0);
-
-      /*--- Check if merging would exceed the maximum agglomeration size ---*/
-      auto nChildren_Target = nodes->GetnChildren_CV(iCoarsePoint_Complete);
-      auto nChildren_Isolated = nodes->GetnChildren_CV(iCoarsePoint);
-      auto nChildren_Total = nChildren_Target + nChildren_Isolated;
-
-      /*--- If the total would exceed maxAgglomSize, try to redistribute children to neighbors ---*/
-      if (nChildren_Total > maxAgglomSize) {
-        /*--- Find neighbors of the target coarse point that have room ---*/
-        unsigned short nChildrenToRedistribute = nChildren_Total - maxAgglomSize;
-
-        for (auto jCoarsePoint : nodes->GetPoints(iCoarsePoint_Complete)) {
-          if (nChildrenToRedistribute == 0) break;
-
-          auto nChildren_Neighbor = nodes->GetnChildren_CV(jCoarsePoint);
-          if (nChildren_Neighbor < maxAgglomSize) {
-            unsigned short nCanTransfer =
-                min(nChildrenToRedistribute, static_cast<unsigned short>(maxAgglomSize - nChildren_Neighbor));
-
-            /*--- Transfer children from target to neighbor ---*/
-            for (unsigned short iTransfer = 0; iTransfer < nCanTransfer; iTransfer++) {
-              /*--- Take from the end of the target's children list ---*/
-              auto nChildren_Current = nodes->GetnChildren_CV(iCoarsePoint_Complete);
-              if (nChildren_Current > 0) {
-                auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint_Complete, nChildren_Current - 1);
-
-                /*--- Add to neighbor ---*/
-                auto nChildren_Neighbor_Current = nodes->GetnChildren_CV(jCoarsePoint);
-                nodes->SetChildren_CV(jCoarsePoint, nChildren_Neighbor_Current, iFinePoint);
-                nodes->SetnChildren_CV(jCoarsePoint, nChildren_Neighbor_Current + 1);
-
-                /*--- Update parent ---*/
-                fine_grid->nodes->SetParent_CV(iFinePoint, jCoarsePoint);
-
-                /*--- Remove from target (by reducing count) ---*/
-                nodes->SetnChildren_CV(iCoarsePoint_Complete, nChildren_Current - 1);
-
-                nChildrenToRedistribute--;
-              }
-            }
-          }
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+      const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+      for (auto iFinePoint_Neighbor : fine_grid->nodes->GetPoints(iFinePoint)) {
+        if (fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor) == NO_CV) {
+          touchesPartition[iCoarsePoint] = true;
+          break;
         }
+      }
+      if (touchesPartition[iCoarsePoint]) break;
+    }
+  }
 
-        /*--- Update the target's child count after redistribution ---*/
-        nChildren_Target = nodes->GetnChildren_CV(iCoarsePoint_Complete);
+  /*--- Whether jCV may take children from iCV: the agglomeration has not pinned it, and it sits on
+   *    the same boundaries. ---*/
+  auto mayMerge = [&](unsigned long iCV, unsigned long jCV) {
+    return !mustStayAlone[jCV] && !isStackBase(jCV) && (cvMarkerClass[jCV] == cvMarkerClass[iCV]);
+  };
+
+  /*--- Append one fine point to a coarse CV. ---*/
+  auto giveChild = [&](unsigned long iFinePoint, unsigned long toCV) {
+    const auto nChildren = nodes->GetnChildren_CV(toCV);
+    nodes->SetChildren_CV(toCV, nChildren, iFinePoint);
+    nodes->SetnChildren_CV(toCV, nChildren + 1);
+    fine_grid->nodes->SetParent_CV(iFinePoint, toCV);
+  };
+
+  /*--- Empty one coarse CV into another. ---*/
+  auto mergeInto = [&](unsigned long fromCV, unsigned long toCV) {
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(fromCV); iChildren++)
+      giveChild(nodes->GetChildren_CV(fromCV, iChildren), toCV);
+    nodes->SetnChildren_CV(fromCV, 0);
+  };
+
+  /*--- Neighbour with the fewest children that may take this CV, NO_CV if there is none. Neighbours
+   *    an earlier merge in the same pass emptied are not revived. ---*/
+  auto smallestPartner = [&](unsigned long iCV, unsigned short maxPartnerSize, bool keepOffPartition) {
+    auto best = NO_CV;
+    auto best_nChildren = std::numeric_limits<unsigned short>::max();
+    for (auto jCV : nodes->GetPoints(iCV)) {
+      const auto nChildren = nodes->GetnChildren_CV(jCV);
+      if ((nChildren == 0) || (nChildren > maxPartnerSize) || (nChildren >= best_nChildren)) continue;
+      if (keepOffPartition && touchesPartition[jCV]) continue;
+      if (!mayMerge(iCV, jCV)) continue;
+      best_nChildren = nChildren;
+      best = jCV;
+    }
+    return best;
+  };
+
+  /*--- A CV with a single coarse neighbour is merged into it. ---*/
+
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
+    if (mustStayAlone[iCoarsePoint] || touchesPartition[iCoarsePoint]) continue;
+    if (nodes->GetnPoint(iCoarsePoint) != 1) continue;
+
+    const auto iTarget = nodes->GetPoint(iCoarsePoint, 0);
+    if (isStackBase(iCoarsePoint) || !mayMerge(iCoarsePoint, iTarget)) continue;
+    /*--- Two boundary rows that already hold more than one node each must never fuse into one
+     *    oversized CV. A genuine singleton leftover may still be absorbed. ---*/
+    if (cvOnBoundary[iCoarsePoint] && cvOnBoundary[iTarget] && (nodes->GetnChildren_CV(iCoarsePoint) > 1)) continue;
+
+    /*--- Make room in the target by handing its last children to its other neighbours. The merge
+     *    runs whether or not that succeeds, so the size limit can still be exceeded. ---*/
+    int nAfterMerge = nodes->GetnChildren_CV(iTarget) + nodes->GetnChildren_CV(iCoarsePoint);
+    for (auto jCoarsePoint : nodes->GetPoints(iTarget)) {
+      if (nAfterMerge <= maxAgglomSize) break;
+      /*--- The isolated CV hands anything it takes straight back below. ---*/
+      if ((jCoarsePoint == iCoarsePoint) || !mayMerge(iTarget, jCoarsePoint)) continue;
+
+      while ((nAfterMerge > maxAgglomSize) && (nodes->GetnChildren_CV(jCoarsePoint) < maxAgglomSize)) {
+        const auto nChildren = nodes->GetnChildren_CV(iTarget);
+        if (nChildren == 0) break;
+        giveChild(nodes->GetChildren_CV(iTarget, nChildren - 1), jCoarsePoint);
+        nodes->SetnChildren_CV(iTarget, nChildren - 1);
+        nAfterMerge--;
+      }
+    }
+
+    mergeInto(iCoarsePoint, iTarget);
+  }
+
+  /*--- A CV left holding a single child joins the neighbour with the fewest, even where that takes
+   the neighbour one past maxAgglomSize. ---*/
+
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
+    if (nodes->GetnChildren_CV(iCoarsePoint) != 1) continue;
+    if (mustStayAlone[iCoarsePoint] || isStackBase(iCoarsePoint)) continue;
+    /*--- Already handled above, or truly islanded. ---*/
+    if (nodes->GetnPoint(iCoarsePoint) <= 1) continue;
+
+    const auto iTarget = smallestPartner(iCoarsePoint, std::numeric_limits<unsigned short>::max(), false);
+    if (iTarget != NO_CV) mergeInto(iCoarsePoint, iTarget);
+  }
+
+  /*--- Merge a paved CV of at most SMALL_STACK_CV children into an equally small neighbour, which
+   the two passes above do not reach. Two of them can never exceed maxAgglomSize together. ---*/
+
+  constexpr unsigned short SMALL_STACK_CV = 2; /*!< \brief The block size a narrow stack emits
+                                                     between flushes; see BlockFor. */
+
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
+    const auto nChildren = nodes->GetnChildren_CV(iCoarsePoint);
+    if ((nChildren == 0) || (nChildren > SMALL_STACK_CV)) continue;
+    if (mustStayAlone[iCoarsePoint] || isStackBase(iCoarsePoint) || touchesPartition[iCoarsePoint]) continue;
+    /*--- Interior stack fragments only, a boundary row keeps its footprint. ---*/
+    if (cvOnBoundary[iCoarsePoint]) continue;
+
+    const auto iTarget = smallestPartner(iCoarsePoint, SMALL_STACK_CV, true);
+    if (iTarget != NO_CV) mergeInto(iCoarsePoint, iTarget);
+  }
+
+  /*--- Compact the coarse numbering, squeezing out the indices the repair passes emptied. The
+   children lists, indirect-agglomeration flags and owned parent indices are remapped. ---*/
+
+  {
+    vector<unsigned long> newIndex(nPointDomain, NO_CV);
+    unsigned long nKept = 0;
+    for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++)
+      if (nodes->GetnChildren_CV(iCoarsePoint) > 0) newIndex[iCoarsePoint] = nKept++;
+
+    if (nKept < nPointDomain) {
+      /*--- Move the survivors down. newIndex[i] <= i, so a forward sweep never lands on a CV that has
+       not been moved yet. ---*/
+      for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
+        const auto iNew = newIndex[iCoarsePoint];
+        if ((iNew == NO_CV) || (iNew == iCoarsePoint)) continue;
+        nodes->SetChildren_CV(iNew, nodes->GetChildren_CV(iCoarsePoint));
+        nodes->SetnChildren_CV(iNew, nodes->GetnChildren_CV(iCoarsePoint));
+        nodes->SetAgglomerate_Indirect(iNew, nodes->GetAgglomerate_Indirect(iCoarsePoint));
+      }
+      for (auto iCoarsePoint = nKept; iCoarsePoint < nPointDomain; iCoarsePoint++)
+        nodes->SetnChildren_CV(iCoarsePoint, 0);
+
+      for (auto iFinePoint = 0ul; iFinePoint < fine_grid->GetnPointDomain(); iFinePoint++) {
+        const auto iParent = fine_grid->nodes->GetParent_CV(iFinePoint);
+        if (iParent == NO_CV) continue;
+        /*--- A fine point may only reference a CV the compaction kept. ---*/
+        if ((iParent >= nPointDomain) || (newIndex[iParent] == NO_CV))
+          SU2_MPI::Error("Multigrid compaction: a fine point still references an emptied coarse CV.", CURRENT_FUNCTION);
+        fine_grid->nodes->SetParent_CV(iFinePoint, newIndex[iParent]);
       }
 
-      /*--- Add the isolated point's children to the target control volume ---*/
-      auto nChildren = nChildren_Target;
-      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-        const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-        nodes->SetChildren_CV(iCoarsePoint_Complete, nChildren, iFinePoint);
-        nChildren++;
-        fine_grid->nodes->SetParent_CV(iFinePoint, iCoarsePoint_Complete);
-      }
-
-      /*--- Update the number of children control volumes ---*/
-
-      nodes->SetnChildren_CV(iCoarsePoint_Complete, nChildren);
-      nodes->SetnChildren_CV(iCoarsePoint, 0);
+      nPointDomain = nKept;
+      nPoint = nKept;
+      Index_CoarseCV = nKept;
     }
   }
 
@@ -506,16 +758,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   nodes->ResetPoints();
 
 #ifdef HAVE_MPI
-  /*--- Reset halo point parents before MPI agglomeration.
-   When creating level N from level N-1, the fine grid (level N-1)
-   already has Parent_CV set from when it was created from level N-2.
-   Those parent indices point to level N, but when creating level N+1, they would be
-   incorrectly interpreted as level N+1 indices. ---*/
-
-  for (auto iPoint = fine_grid->GetnPointDomain(); iPoint < fine_grid->GetnPoint(); iPoint++) {
-    fine_grid->nodes->SetParent_CV(iPoint, std::numeric_limits<unsigned long>::max());
-  }
-
   /*--- Dealing with MPI parallelization, the objective is that the received nodes must be agglomerated
    in the same way as the donor (send) nodes. Send the node agglomeration information of the donor
    (parent and children). The agglomerated halos of this rank are set according to the rank where
@@ -571,20 +813,20 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       vector<unsigned long> Parent_Local(nVertexR);
       vector<unsigned long> Children_Local(nVertexR);
 
-      /*--- First pass: Determine which parents will actually be used (have non-skipped children).
-       This prevents creating orphaned halo CVs that have coordinates (0,0,0). ---*/
+      /*--- First pass: determine which parents will actually be used, i.e. have non-skipped
+       children. ---*/
       vector<bool> parent_used(Aux_Parent.size(), false);
-      vector<unsigned long> parent_local_index(Aux_Parent.size(), std::numeric_limits<unsigned long>::max());
+      vector<unsigned long> parent_local_index(Aux_Parent.size(), NO_CV);
 
       for (auto iVertex = 0ul; iVertex < nVertexR; iVertex++) {
         const auto iPoint_Fine = fine_grid->vertex[MarkerR][iVertex]->GetNode();
         auto existing_parent = fine_grid->nodes->GetParent_CV(iPoint_Fine);
 
         /*--- Skip if already agglomerated (first-wins policy) ---*/
-        if (existing_parent != std::numeric_limits<unsigned long>::max()) continue;
+        if (existing_parent != NO_CV) continue;
 
         /*--- Skip if received parent is invalid (sending rank didn't agglomerate this point) ---*/
-        if (Parent_Remote[iVertex] == std::numeric_limits<unsigned long>::max()) continue;
+        if (Parent_Remote[iVertex] == NO_CV) continue;
 
         /*--- Find which parent this vertex maps to ---*/
         for (auto jVertex = 0ul; jVertex < Aux_Parent.size(); jVertex++) {
@@ -606,7 +848,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
       /*--- Now map each received vertex to its local parent ---*/
       for (auto iVertex = 0ul; iVertex < nVertexR; iVertex++) {
-        Parent_Local[iVertex] = std::numeric_limits<unsigned long>::max();
+        Parent_Local[iVertex] = NO_CV;
         for (auto jVertex = 0ul; jVertex < Aux_Parent.size(); jVertex++) {
           if (Parent_Remote[iVertex] == Aux_Parent[jVertex]) {
             Parent_Local[iVertex] = parent_local_index[jVertex];
@@ -626,11 +868,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         /*--- Skip if this halo point was already agglomerated (first-wins policy) ---*/
         auto existing_parent = fine_grid->nodes->GetParent_CV(iPoint_Fine);
-        if (existing_parent != std::numeric_limits<unsigned long>::max()) continue;
+        if (existing_parent != NO_CV) continue;
 
         /*--- Skip if parent mapping is invalid (sender didn't agglomerate) ---*/
         const auto iPoint_Coarse = Parent_Local[iVertex];
-        if (iPoint_Coarse == std::numeric_limits<unsigned long>::max()) continue;
+        if (iPoint_Coarse == NO_CV) continue;
 
         /*--- Append to existing children, don't overwrite ---*/
         auto existing_children_count = nodes->GetnChildren_CV(iPoint_Coarse);
@@ -649,6 +891,17 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   nPoint = Index_CoarseCV;
 
+  /*--- Name each coarse point, halos too, by the smallest global index it holds, so every level
+   *    carries a name its owner and the ranks that only see it agree on. ---*/
+
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPoint; iCoarsePoint++) {
+    auto globalIndex = NO_CV;
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++)
+      globalIndex =
+          std::min(globalIndex, fine_grid->nodes->GetGlobalIndex(nodes->GetChildren_CV(iCoarsePoint, iChildren)));
+    if (globalIndex != NO_CV) nodes->SetGlobalIndex(iCoarsePoint, globalIndex);
+  }
+
   /*--- Console output with the summary of the agglomeration ---*/
   unsigned long nPointFine = fine_grid->GetnPointDomain();
   unsigned long Global_nPointCoarse, Global_nPointFine;
@@ -659,15 +912,16 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   SetGlobal_nPointDomain(Global_nPointCoarse);
 
   if (iMesh != MESH_0) {
-    /*--- Note: CFL at the coarse levels have a large impact on convergence,
-          this should be rewritten to use adaptive CFL. ---*/
-    const su2double Coeff = 1.5;
-    const su2double CFL = config->GetCFL(iMesh - 1) / Coeff;
-    config->SetCFL(iMesh, CFL);
+    /*--- Seed the coarse-level CFL with the same per-level reduction CMultiGridIntegration
+          applies after every cycle. ---*/
+    const su2double scale = max(su2double(1e-6), min(su2double(1.0), config->GetMGOptions().MG_CflScaling[iMesh - 1]));
+    config->SetCFL(iMesh, config->GetCFL(iMesh - 1) * scale);
   }
 
   const su2double ratio = su2double(Global_nPointFine) / su2double(Global_nPointCoarse);
 
+  /*--- Stop coarsening on the size of the whole level, so the hierarchy a case gets does not
+        depend on how many ranks it happens to run on. ---*/
   if (Global_nPointCoarse < config->GetMGOptions().MG_Min_MeshSize) {
     if (rank == MASTER_NODE)
       cout << "MG level " << iMesh << " has only " << Global_nPointCoarse
@@ -694,41 +948,26 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-  /*--- Output Euler wall agglomeration statistics ---*/
+  /*--- Euler wall seeds this level took, one line per marker. Every rank reaches the reduction. ---*/
+
+  vector<unsigned long> eulerTakenGlobal(eulerTaken.size()), eulerRefusedGlobal(eulerRefused.size());
+  SU2_MPI::Allreduce(eulerTaken.data(), eulerTakenGlobal.data(), eulerTaken.size(), MPI_UNSIGNED_LONG, MPI_SUM,
+                     SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(eulerRefused.data(), eulerRefusedGlobal.data(), eulerRefused.size(), MPI_UNSIGNED_LONG, MPI_SUM,
+                     SU2_MPI::GetComm());
+
   if (rank == MASTER_NODE) {
-    /*--- Gather global statistics for Euler walls ---*/
-    bool has_euler_walls = false;
-    for (unsigned short iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
-        has_euler_walls = true;
-        break;
-      }
+    stringstream euler;
+    euler << std::fixed << std::setprecision(1);
+    for (auto iMarker = 0u; iMarker < eulerTakenGlobal.size(); iMarker++) {
+      const auto total = eulerTakenGlobal[iMarker] + eulerRefusedGlobal[iMarker];
+      if (total == 0) continue;
+      euler << "  MG level " << iMesh << " Euler wall " << config->GetMarker_CfgFile_TagBound(iMarker) << ": "
+            << eulerTakenGlobal[iMarker] << " seeds agglomerated, " << eulerRefusedGlobal[iMarker] << " refused above "
+            << EULER_WALL_MAX_CURVATURE << " degrees of curvature ("
+            << 100.0 * passivedouble(eulerRefusedGlobal[iMarker]) / passivedouble(total) << "%)\n";
     }
-
-    if (has_euler_walls) {
-      cout << endl;
-      cout << "Euler Wall Agglomeration Statistics (45° curvature threshold):" << endl;
-      cout << "----------------------------------------------------------------" << endl;
-
-      for (unsigned short iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker++) {
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
-          string marker_name = config->GetMarker_All_TagBound(iMarker);
-          unsigned long agglomerated = euler_wall_agglomerated[iMarker];
-          unsigned long rejected = euler_wall_rejected_curvature[iMarker];
-          unsigned long total = agglomerated + rejected;
-
-          if (total > 0) {
-            su2double accept_rate = 100.0 * su2double(agglomerated) / su2double(total);
-            cout << "  Marker: " << marker_name << endl;
-            cout << "    Seeds agglomerated:       " << agglomerated << " (" << std::setprecision(1) << std::fixed
-                 << accept_rate << "%)" << endl;
-            cout << "    Seeds rejected (>45° curv): " << rejected << " (" << std::setprecision(1) << std::fixed
-                 << (100.0 - accept_rate) << "%)" << endl;
-          }
-        }
-      }
-      cout << "----------------------------------------------------------------" << endl;
-    }
+    levelReport += euler.str();
   }
 
   edgeColorGroupSize = config->GetEdgeColoringGroupSize();
@@ -736,23 +975,42 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
 bool CMultiGridGeometry::GeometricalCheck(unsigned long iPoint, const CGeometry* fine_grid,
                                           const CConfig* config) const {
-  su2double max_dimension = 1.2;
+  /*--- A control volume whose edge exceeds MAX_DIMENSION times the domain's is not agglomerated.
+   *    Raising both sides to the power nDim gives the same test on volumes, without the roots. ---*/
+  constexpr passivedouble MAX_DIMENSION = 1.2;
+  su2double scale = MAX_DIMENSION * MAX_DIMENSION;
+  if (nDim == 3) scale *= MAX_DIMENSION;
 
-  /*--- Evaluate the total size of the element ---*/
+  return fine_grid->nodes->GetVolume(iPoint) * scale <= config->GetDomainVolume();
+}
 
-  bool Volume = true;
-  su2double ratio = pow(fine_grid->nodes->GetVolume(iPoint), 1.0 / su2double(nDim)) * max_dimension;
-  su2double limit = pow(config->GetDomainVolume(), 1.0 / su2double(nDim));
-  if (ratio > limit) {
-    Volume = false;
-    cout << "Volume limit reached!" << endl;
+vector<char> CMultiGridGeometry::FindMixedBoundaryNodes(const CGeometry* fine_grid, const CConfig* config) const {
+  vector<char> mixed(fine_grid->GetnPoint(), 0);
+
+  /*--- The first physical condition seen at each node, -1 until one is. A second one of a different
+   *    kind is what makes the node mixed. ---*/
+  vector<short> firstBC(fine_grid->GetnPoint(), -1);
+
+  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+    const auto bc = static_cast<short>(config->GetMarker_All_KindBC(iMarker));
+    for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
+      const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
+      if (firstBC[iPoint] < 0)
+        firstBC[iPoint] = bc;
+      else if (firstBC[iPoint] != bc)
+        mixed[iPoint] = 1;
+    }
   }
-
-  return (Volume);
+  return mixed;
 }
 
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<short> marker_seed,
-                                               const CGeometry* fine_grid, const CConfig* config) const {
+                                               const CGeometry* fine_grid, const CConfig* config,
+                                               const vector<char>& mixedBC) const {
+  /*--- A node where two boundary conditions of different type meet is never merged with anything. ---*/
+  if (mixedBC[CVPoint]) return false;
+
   bool agglomerate_CV = false;
 
   /*--- Basic condition, the point has not been previously agglomerated, it belongs to the domain,
@@ -763,21 +1021,22 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
     /*--- If the point belongs to a boundary, its type must be compatible with the seed marker. ---*/
 
     int counter = 0;
-    unsigned short copy_marker[3] = {};
+    unsigned short copy_marker[2] = {};
 
     if (fine_grid->nodes->GetBoundary(CVPoint)) {
-      /*--- Identify the markers of the vertex that we want to agglomerate ---*/
+      /*--- Identify the physical markers of the vertex that we want to agglomerate. A candidate whose
+       markers are all SEND_RECEIVE ends up with counter == 0 and is rejected below. ---*/
 
-      // count number of markers on the agglomeration candidate
-      for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker() && counter < 3; jMarker++) {
+      for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
+        if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) continue;
         if (fine_grid->nodes->GetVertex(CVPoint, jMarker) != -1) {
-          copy_marker[counter] = jMarker;
+          if (counter < 2) copy_marker[counter] = jMarker;
           counter++;
         }
       }
 
-      /*--- The basic condition is that the agglomerated vertex must have the same physical marker,
-       but eventually a send-receive condition ---*/
+      /*--- The basic condition is that the agglomerated vertex must have the same physical marker
+       as the seed. ---*/
 
       /*--- Only one marker in the vertex that is going to be agglomerated ---*/
 
@@ -787,16 +1046,6 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
         // So this is the case when in 2D we are on an edge, and in 3D we are in the interior of a surface.
         // note that this should be the same marker id, not just the same marker type.
         if ((marker_seed.size() == 1) && (copy_marker[0] == marker_seed[0])) agglomerate_CV = true;
-
-        // we also allow agglomeration if the seed has 2 markers, one of them is the same as the candidate, and the
-        // other is a send-receive marker.
-        if ((marker_seed.size() == 2) && ((copy_marker[0] == marker_seed[0]) || (copy_marker[0] == marker_seed[1]))) {
-          // check that the other marker is a send-receive marker
-          unsigned short other_marker = (copy_marker[0] == marker_seed[0]) ? marker_seed[1] : marker_seed[0];
-          if (config->GetMarker_All_KindBC(other_marker) == SEND_RECEIVE) {
-            agglomerate_CV = true;
-          }
-        }
       }
 
       /*--- If there are two markers in the vertex that is going to be aglomerated ---*/
@@ -806,7 +1055,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
           agglomerate_CV = false;
         }
         /*--- Both markers have to be the same. ---*/
-        if (marker_seed.size() == 2) {
+        else if (marker_seed.size() == 2) {
           if (((copy_marker[0] == marker_seed[0]) && (copy_marker[1] == marker_seed[1])) ||
               ((copy_marker[0] == marker_seed[1]) && (copy_marker[1] == marker_seed[0]))) {
             agglomerate_CV = true;
@@ -823,10 +1072,8 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
   return agglomerate_CV;
 }
 
-/*--- ---*/
-
 void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
-                                              unsigned long Index_CoarseCV, const CGeometry* fine_grid) const {
+                                              const CGeometry* fine_grid) const {
   /*--- Create a list with the first neighbors, including the seed. ---*/
 
   vector<unsigned long> First_Neighbor_Points;
@@ -835,7 +1082,7 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_In
 
   /*--- Create a list with the second neighbors, without first, and seed neighbors. ---*/
 
-  vector<unsigned long> Second_Neighbor_Points, Second_Origin_Points, Suitable_Second_Neighbors;
+  vector<unsigned long> Second_Neighbor_Points, Second_Origin_Points;
 
   for (auto jPoint : fine_grid->nodes->GetPoints(iPoint)) {
     for (auto kPoint : fine_grid->nodes->GetPoints(jPoint)) {
@@ -860,20 +1107,9 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_In
       if ((Second_Neighbor_Points[iNeighbor] == Second_Neighbor_Points[jNeighbor]) &&
           (Second_Origin_Points[iNeighbor] != Second_Origin_Points[jNeighbor])) {
         Suitable_Indirect_Neighbors.push_back(Second_Neighbor_Points[iNeighbor]);
-
-        /*--- Create a list of suitable second neighbors, that we will use
-         to compute the third neighbors. --*/
-
-        Suitable_Second_Neighbors.push_back(Second_Neighbor_Points[iNeighbor]);
       }
     }
   }
-
-  /*--- Remove duplicates ---*/
-
-  sort(Suitable_Second_Neighbors.begin(), Suitable_Second_Neighbors.end());
-  auto it1 = unique(Suitable_Second_Neighbors.begin(), Suitable_Second_Neighbors.end());
-  Suitable_Second_Neighbors.resize(it1 - Suitable_Second_Neighbors.begin());
 }
 
 void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
@@ -887,6 +1123,9 @@ void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
       /*--- loop over the parent CVs (coarse grid) of its (fine) neighbors. ---*/
       for (auto iFinePoint_Neighbor : fine_grid->nodes->GetPoints(iFinePoint)) {
         const auto iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
+        /*--- Skip neighbors whose parent is not known yet, halo points still hold the sentinel until
+         the MPI relay has run. ---*/
+        if (iParent == std::numeric_limits<unsigned long>::max()) continue;
         /*--- If it is not the target coarse point, it is a coarse neighbor. ---*/
         if (iParent != iCoarsePoint) {
           /*--- Avoid duplicates. ---*/
@@ -1218,8 +1457,7 @@ void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
 
 su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, unsigned long iPoint,
                                                     unsigned short iMarker) const {
-  /*--- Compute local curvature (maximum angle between adjacent face normals) at a boundary vertex.
-        This is used to determine if agglomeration is safe based on a curvature threshold. ---*/
+  /*--- Local curvature is the maximum angle between adjacent face normals at a boundary vertex. ---*/
 
   /*--- Get the vertex index for this point on this marker ---*/
   long iVertex = fine_grid->nodes->GetVertex(iPoint, iMarker);
@@ -1280,232 +1518,913 @@ su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, 
   return max_angle;
 }
 
-void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
-                                                  const CConfig* config, CMultiGridQueue& MGQueue_InnerCV) {
-  /*--- Parameters ---*/
-  const su2double ANGLE_THRESHOLD_DEG = 20.0; /*!< Stop line if direction deviates more than this. */
-  const unsigned long MAX_LINE_LENGTH = config->GetMGOptions().MG_Implicit_Lines_MaxLength;
-  const su2double cos_threshold = cos(ANGLE_THRESHOLD_DEG * PI_NUMBER / 180.0);
+namespace {
 
-  const unsigned long nPointFine = fine_grid->GetnPoint();
+/*--- Unit normal of a boundary at a vertex, false if the marker does not reach iPoint. Boundary
+ *    normals point into the domain. ---*/
+bool VertexUnitNormal(const CGeometry* grid, unsigned short nDim, unsigned long iPoint, unsigned short iMarker,
+                      su2double* unitNormal) {
+  const long iVertex = grid->nodes->GetVertex(iPoint, iMarker);
+  if (iVertex == -1) return false;
+  grid->vertex[iMarker][iVertex]->GetNormal(unitNormal);
+  const su2double nrm = GeometryToolbox::Norm(nDim, unitNormal);
+  if (nrm <= 0.0) return false;
+  for (unsigned short d = 0; d < nDim; ++d) unitNormal[d] /= nrm;
+  return true;
+}
 
-  /*--- Collect implicit lines starting at viscous (no-slip) wall vertices only.
-   *    Seeding from non-wall boundaries (farfield, inlet, outlet, symmetry) would
-   *    claim interior BL cells before the wall lines can reach them, leaving
-   *    wall-seeded lines with length < 3 (discarded).  Restricting to viscous walls
-   *    ensures the boundary-layer cells are agglomerated wall-first.
-   *    Each line: [wall_node, interior_1, interior_2, ...].
-   *    The wall node (index 0) is already agglomerated by boundary agglomeration;
-   *    only interior nodes (index >= 1) are paired into coarse CVs. ---*/
-  vector<vector<unsigned long>> lines;
+/*--- Fine layers the next coarse CV of a column holds: two, or one if that would exceed the
+ *    agglomeration size limit. ---*/
+unsigned long BlockFor(short int maxAgglomSize, size_t width) {
+  return (width * 2 > static_cast<size_t>(maxAgglomSize)) ? 1 : 2;
+}
+
+constexpr unsigned short NO_FACE = std::numeric_limits<unsigned short>::max();
+constexpr auto NO_ELEM = std::numeric_limits<unsigned long>::max();
+
+/*--- Face an element is left by when it is entered through the given one. Only the extruded
+ *    types have one. ---*/
+unsigned short OppositeFace(unsigned short vtkType, unsigned short iFace) {
+  switch (vtkType) {
+    case QUADRILATERAL: {
+      static const unsigned short opposite[4] = {2, 3, 0, 1};
+      return opposite[iFace];
+    }
+    case HEXAHEDRON: {
+      static const unsigned short opposite[6] = {2, 3, 0, 1, 5, 4};
+      return opposite[iFace];
+    }
+    case PRISM: {
+      /*--- Only the two triangles pair; the quadrilateral sides are not crossed. ---*/
+      static const unsigned short opposite[5] = {NO_FACE, NO_FACE, NO_FACE, 4, 3};
+      return opposite[iFace];
+    }
+    default:
+      return NO_FACE;
+  }
+}
+
+/*--- Sorted nodes of a face, the key that names it in either element holding it. ---*/
+void FaceNodes(const CGeometry* grid, unsigned long iElem, unsigned short iFace, vector<unsigned long>& face) {
+  const auto* elem = grid->elem[iElem];
+  face.clear();
+  for (unsigned short k = 0; k < elem->GetnNodesFace(iFace); ++k)
+    face.push_back(elem->GetNode(elem->GetFaces(iFace, k)));
+  std::sort(face.begin(), face.end());
+}
+
+/*--- Local index of the face with these nodes, or NO_FACE. ---*/
+unsigned short LocalFace(const CGeometry* grid, unsigned long iElem, const vector<unsigned long>& face,
+                         vector<unsigned long>& scratch) {
+  for (unsigned short iFace = 0; iFace < grid->elem[iElem]->GetnFaces(); ++iFace) {
+    FaceNodes(grid, iElem, iFace, scratch);
+    if (scratch == face) return iFace;
+  }
+  return NO_FACE;
+}
+
+/*--- Whether the primal grid is available, which it is on the fine mesh only. ---*/
+bool HasElements(const CGeometry* grid) { return (grid->elem != nullptr) && (grid->GetnElem() > 0); }
+
+}  // namespace
+
+CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeometry* fine_grid,
+                                                                   const CConfig* config) const {
+  CFrontSeeds seeds;
+  vector<char> taken(fine_grid->GetnPoint(), 0);
+
+  /*--- Stiffness the smoother sees across an edge, from the dual face it carries. ---*/
+  auto edgeWeight = [&](unsigned long iPoint, unsigned short iNeigh) {
+    const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
+    const auto iEdge = fine_grid->nodes->GetEdge(iPoint, iNeigh);
+    const su2double area = GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(iEdge));
+    return 0.5 * area * (1.0 / fine_grid->nodes->GetVolume(iPoint) + 1.0 / fine_grid->nodes->GetVolume(jPoint));
+  };
+
+  /*--- Local anisotropy at a node, the stiffest edge over the slackest. It orders the seeds so
+   *    that the thinnest mesh is served first, and is zero where no edge is usable. ---*/
+  auto layerStrength = [&](unsigned long iPoint) {
+    su2double wMin = std::numeric_limits<su2double>::max(), wMax = 0.0;
+
+    for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
+      const su2double w = edgeWeight(iPoint, iNeigh);
+      wMax = std::max(wMax, w);
+      wMin = std::min(wMin, w);
+    }
+
+    if (wMax <= 0.0) return su2double(0.0);
+    return (wMin > 0.0) ? wMax / wMin : su2double(1.0);
+  };
+
+  /*--- Paving order: a no-slip wall first, a slip wall next, everything else last. ---*/
+  auto tierOfBC = [](unsigned short bc) -> char {
+    if ((bc == HEAT_FLUX) || (bc == ISOTHERMAL) || (bc == CHT_WALL_INTERFACE) || (bc == SMOLUCHOWSKI_MAXWELL)) return 0;
+    return (bc == EULER_WALL) ? 1 : 2;
+  };
 
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
-    /*--- Only seed lines from viscous (no-slip) wall markers.
-     *    Non-wall boundaries (farfield, inlet, outlet, symmetry) must NOT seed
-     *    lines because they would prematurely claim boundary-layer interior nodes. ---*/
     const auto bc = config->GetMarker_All_KindBC(iMarker);
-    if (bc != HEAT_FLUX && bc != ISOTHERMAL && bc != CHT_WALL_INTERFACE && bc != SMOLUCHOWSKI_MAXWELL) continue;
+    /*--- Periodic boundaries have their own matching, and a halo marker is not a boundary. ---*/
+    if ((bc == SEND_RECEIVE) || (bc == PERIODIC_BOUNDARY)) continue;
 
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
+      if (!fine_grid->nodes->GetDomain(iPoint)) continue;
+      if (fine_grid->nodes->GetAgglomerate(iPoint)) continue;
+      if (taken[iPoint]) continue; /*--- A node on two markers seeds only one column. ---*/
 
-      /*--- Get vertex normal to seed the line direction ---*/
-      const long ChildVertex = fine_grid->nodes->GetVertex(iPoint, iMarker);
-      if (ChildVertex == -1) continue;
       su2double Normal[MAXNDIM] = {0.0};
-      fine_grid->vertex[iMarker][ChildVertex]->GetNormal(Normal);
+      if (!VertexUnitNormal(fine_grid, nDim, iPoint, iMarker, Normal)) continue;
 
-      /*--- Normalize the direction ---*/
-      su2double prev_dir[MAXNDIM] = {0.0};
-      su2double norm_prev = 0.0;
-      for (unsigned short d = 0; d < nDim; ++d) {
-        prev_dir[d] = Normal[d];
-        norm_prev += Normal[d] * Normal[d];
+      /*--- Every boundary node seeds. Seeding only part of a boundary leaves patches with no
+       *    neighbour to pair with, and a patch below full width coarsens worse than no paving. ---*/
+      const su2double strength = layerStrength(iPoint);
+      if (strength <= 0.0) continue;
+
+      /*--- A column claims its seed before the boundary pass runs, so the Euler wall curvature
+       *    limit is applied here too, on the same terms. ---*/
+      if ((bc == EULER_WALL) && !fine_grid->boundIsStraight[iMarker] &&
+          (ComputeLocalCurvature(fine_grid, iPoint, iMarker) >= EULER_WALL_MAX_CURVATURE)) {
+        seeds.nRefusedCurvature++;
+        continue;
       }
-      if (norm_prev <= 0.0) continue;
-      norm_prev = sqrt(norm_prev);
-      for (unsigned short d = 0; d < nDim; ++d) prev_dir[d] /= norm_prev;
 
-      /*--- Build the implicit line by following the best-aligned interior neighbor ---*/
-      vector<unsigned long> L;
-      L.push_back(iPoint);
-      auto current = iPoint;
+      std::array<su2double, MAXNDIM> n0{};
+      for (unsigned short d = 0; d < nDim; ++d) n0[d] = Normal[d];
+      seeds.node.push_back(iPoint);
+      seeds.normal.push_back(n0);
+      seeds.strength.push_back(strength);
+      seeds.tier.push_back(tierOfBC(bc));
+      taken[iPoint] = 1;
+    }
+  }
 
-      while (L.size() < MAX_LINE_LENGTH) {
-        su2double best_dot = -2.0;
-        unsigned long best_neighbor = ULONG_MAX;
+  /*--- Most anisotropic first, so the thinnest mesh takes contested nodes, with the global index
+   *    as the tie-break. ---*/
+  vector<unsigned long> order(seeds.node.size());
+  for (auto i = 0ul; i < order.size(); ++i) order[i] = i;
+  std::sort(order.begin(), order.end(), [&](unsigned long a, unsigned long b) {
+    if (seeds.strength[a] != seeds.strength[b]) return seeds.strength[a] > seeds.strength[b];
+    return fine_grid->nodes->GetGlobalIndex(seeds.node[a]) < fine_grid->nodes->GetGlobalIndex(seeds.node[b]);
+  });
 
-        for (auto jPoint : fine_grid->nodes->GetPoints(current)) {
-          if (jPoint == current) continue;
-          if (!fine_grid->nodes->GetDomain(jPoint)) continue;
-          if (fine_grid->nodes->GetBoundary(jPoint)) continue;
-          if (fine_grid->nodes->GetAgglomerate(jPoint)) continue;
+  CFrontSeeds sorted;
+  sorted.nRefusedCurvature = seeds.nRefusedCurvature;
+  sorted.node.reserve(order.size());
+  sorted.normal.reserve(order.size());
+  sorted.strength.reserve(order.size());
+  sorted.tier.reserve(order.size());
+  for (auto i : order) {
+    sorted.node.push_back(seeds.node[i]);
+    sorted.normal.push_back(seeds.normal[i]);
+    sorted.strength.push_back(seeds.strength[i]);
+    sorted.tier.push_back(seeds.tier[i]);
+  }
+  return sorted;
+}
+vector<vector<unsigned long>> CMultiGridGeometry::BuildFrontPatches(const CFrontSeeds& seeds,
+                                                                    const CGeometry* fine_grid, const CConfig* config,
+                                                                    const vector<char>& mixedBC,
+                                                                    vector<CWalkState>& walk) const {
+  /*--- A boundary face is already the footprint of one element strip, so it is taken as the patch.
+   *    Seeds it leaves over are grouped by repeated pairwise matching. ---*/
+  const auto nSeeds = seeds.node.size();
+  const unsigned long max_group = (nDim == 2) ? 2 : 4;
 
-          /*--- Compute normalized direction to candidate ---*/
-          su2double vec[MAXNDIM] = {0.0};
-          GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(current), vec);
-          const su2double len = GeometryToolbox::Norm(nDim, vec);
-          if (len <= 0.0) continue;
-          for (unsigned short d = 0; d < nDim; ++d) vec[d] /= len;
+  /*--- Marker-set class of each seed. Seeds may only be matched when these agree. ---*/
+  const auto nMarkerFine = fine_grid->GetnMarker();
+  vector<std::pair<unsigned long, unsigned short>> seedMarker;
+  for (unsigned long si = 0; si < nSeeds; ++si)
+    for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++)
+      if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+          (fine_grid->nodes->GetVertex(seeds.node[si], iMarker) != -1))
+        seedMarker.push_back({si, static_cast<unsigned short>(iMarker)});
+  const auto sig = MarkerSetClasses(nSeeds, seedMarker);
 
-          /*--- Alignment with previous direction ---*/
-          const su2double dot = GeometryToolbox::DotProduct(nDim, vec, prev_dir);
-          if (dot > best_dot) {
-            best_dot = dot;
-            best_neighbor = jPoint;
+  /*--- Seed-to-seed adjacency, inherited from the boundary nodes' mesh connectivity. ---*/
+  vector<long> seedOfNode(fine_grid->GetnPoint(), -1);
+  for (unsigned long si = 0; si < nSeeds; ++si) seedOfNode[seeds.node[si]] = static_cast<long>(si);
+
+  vector<vector<unsigned long>> adj(nSeeds);
+  for (unsigned long si = 0; si < nSeeds; ++si)
+    for (auto jPoint : fine_grid->nodes->GetPoints(seeds.node[si])) {
+      const auto sj = seedOfNode[jPoint];
+      if ((sj >= 0) && (static_cast<unsigned long>(sj) != si)) adj[si].push_back(static_cast<unsigned long>(sj));
+    }
+
+  /*--- Global point index of each seed, used below as the partitioning-independent sort key. ---*/
+  vector<unsigned long> sgkey(nSeeds);
+  for (unsigned long si = 0; si < nSeeds; ++si) sgkey[si] = fine_grid->nodes->GetGlobalIndex(seeds.node[si]);
+
+  /*--- Boundary faces whose nodes are all seeds, taken in a partitioning independent order and
+   *    claimed whole, so consecutive faces sharing a node cannot both become a patch. ---*/
+  vector<long> faceOfSeed(nSeeds, -1);
+  vector<CWalkState> faceWalk;
+  if (HasElements(fine_grid)) {
+    struct CFaceSeed {
+      unsigned long key;        /*!< \brief Lowest global index on the face. */
+      vector<unsigned long> si; /*!< \brief Its seeds. */
+      CWalkState walk;          /*!< \brief Element strip it opens. */
+    };
+    vector<CFaceSeed> candidates;
+    vector<unsigned long> face, faceScratch;
+
+    for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+      const auto bc = config->GetMarker_All_KindBC(iMarker);
+      if ((bc == SEND_RECEIVE) || (bc == PERIODIC_BOUNDARY)) continue;
+
+      for (auto iElem = 0ul; iElem < fine_grid->nElem_Bound[iMarker]; iElem++) {
+        const auto* bElem = fine_grid->bound[iMarker][iElem];
+        if (bElem->GetnNodes() > max_group) continue;
+
+        CFaceSeed cand;
+        cand.key = std::numeric_limits<unsigned long>::max();
+        face.clear();
+        bool ok = true;
+        for (unsigned short k = 0; (k < bElem->GetnNodes()) && ok; ++k) {
+          const auto iPoint = bElem->GetNode(k);
+          const auto si = seedOfNode[iPoint];
+          ok = (si >= 0) && !mixedBC[iPoint];
+          if (!ok) break;
+          face.push_back(iPoint);
+          cand.si.push_back(static_cast<unsigned long>(si));
+          cand.key = std::min(cand.key, sgkey[si]);
+        }
+        if (!ok) continue;
+        for (auto si : cand.si) ok = ok && (sig[si] == sig[cand.si.front()]);
+        if (!ok) continue;
+
+        std::sort(face.begin(), face.end());
+        const auto iVolume = bElem->GetDomainElement();
+        const auto iFace = LocalFace(fine_grid, iVolume, face, faceScratch);
+        if (iFace == NO_FACE) continue;
+        if (OppositeFace(fine_grid->elem[iVolume]->GetVTK_Type(), iFace) == NO_FACE) continue;
+
+        cand.walk = {iVolume, iFace};
+        candidates.push_back(std::move(cand));
+      }
+    }
+
+    std::sort(candidates.begin(), candidates.end(),
+              [](const CFaceSeed& a, const CFaceSeed& b) { return a.key < b.key; });
+    for (const auto& cand : candidates) {
+      bool free = true;
+      for (auto si : cand.si) free = free && (faceOfSeed[si] < 0);
+      if (!free) continue;
+      for (auto si : cand.si) faceOfSeed[si] = static_cast<long>(faceWalk.size());
+      faceWalk.push_back(cand.walk);
+    }
+  }
+
+  vector<vector<unsigned long>> groups(faceWalk.size());
+  vector<unsigned long> groupOf(nSeeds);
+  /*--- A patch taken from a face is final and takes no part in the matching. ---*/
+  vector<char> frozen(faceWalk.size(), 1);
+  groups.reserve(nSeeds + faceWalk.size());
+
+  for (unsigned long si = 0; si < nSeeds; ++si)
+    if (faceOfSeed[si] >= 0) groups[faceOfSeed[si]].push_back(si);
+  for (unsigned long si = 0; si < nSeeds; ++si)
+    if (faceOfSeed[si] < 0) {
+      groups.push_back({si});
+      frozen.push_back(0);
+    }
+  for (unsigned long g = 0; g < groups.size(); ++g)
+    for (auto si : groups[g]) groupOf[si] = g;
+
+  const unsigned nRounds = (max_group <= 2) ? 1 : 2;
+
+  /*--- One admissible merge of two groups, weighted by how many seed-to-seed adjacencies they
+   *    share: 2 for a group lying alongside, 1 for one continuing in the same direction. ---*/
+  struct CMerge {
+    unsigned long g, h;       /*!< \brief The two groups, g < h. */
+    unsigned long weight;     /*!< \brief Shared adjacencies: 2 makes a square, 1 makes a strip. */
+    unsigned long size;       /*!< \brief Seeds the merged group would hold. */
+    unsigned long keyG, keyH; /*!< \brief Their global-index keys, the deterministic tie-break. */
+  };
+
+  vector<CMerge> merges;
+  vector<unsigned long> touched, nShared(nSeeds, 0);
+  vector<unsigned long> gkey;
+  vector<char> consumed;
+
+  for (unsigned round = 0; round < nRounds; ++round) {
+    const auto nGroups = groups.size();
+
+    /*--- Sort key of each group: the smallest global point index it holds. ---*/
+    gkey.assign(nGroups, std::numeric_limits<unsigned long>::max());
+    for (unsigned long g = 0; g < nGroups; ++g)
+      for (auto si : groups[g]) gkey[g] = std::min(gkey[g], sgkey[si]);
+
+    /*--- Every merge this round could make, counted once per unordered pair by taking only
+     *    h > g. ---*/
+    merges.clear();
+    for (unsigned long g = 0; g < nGroups; ++g) {
+      /*--- A node where two different boundary conditions meet stays a patch of its own, so both
+       *    sides of a merge are tested for it. ---*/
+      if (frozen[g] || mixedBC[seeds.node[groups[g].front()]]) continue;
+      touched.clear();
+      for (auto si : groups[g])
+        for (auto sj : adj[si]) {
+          const auto h = groupOf[sj];
+          if (h <= g) continue;
+          if (frozen[h] || mixedBC[seeds.node[groups[h].front()]]) continue;
+          if (groups[g].size() + groups[h].size() > max_group) continue;
+          if (sig[groups[h].front()] != sig[groups[g].front()]) continue;
+          if (nShared[h]++ == 0) touched.push_back(h);
+        }
+      for (auto h : touched) {
+        merges.push_back(
+            {g, h, nShared[h], static_cast<unsigned long>(groups[g].size() + groups[h].size()), gkey[g], gkey[h]});
+        nShared[h] = 0;
+      }
+    }
+
+    /*--- Best merges first over all groups at once, so every square is considered before the first
+     *    strip. At equal weight the bigger patch wins, to fill max_group before settling for less. ---*/
+    std::sort(merges.begin(), merges.end(), [](const CMerge& a, const CMerge& b) {
+      if (a.weight != b.weight) return a.weight > b.weight;
+      if (a.size != b.size) return a.size > b.size;
+      if (a.keyG != b.keyG) return a.keyG < b.keyG;
+      return a.keyH < b.keyH;
+    });
+
+    consumed.assign(nGroups, 0);
+    vector<vector<unsigned long>> merged;
+    vector<char> mergedFrozen;
+    merged.reserve(nGroups);
+
+    for (const auto& m : merges) {
+      if (consumed[m.g] || consumed[m.h]) continue;
+      consumed[m.g] = consumed[m.h] = 1;
+      auto group = groups[m.g];
+      group.insert(group.end(), groups[m.h].begin(), groups[m.h].end());
+      merged.push_back(std::move(group));
+      mergedFrozen.push_back(0);
+    }
+    /*--- Whatever found no partner passes through unchanged. ---*/
+    for (unsigned long g = 0; g < nGroups; ++g)
+      if (!consumed[g]) {
+        merged.push_back(std::move(groups[g]));
+        mergedFrozen.push_back(frozen[g]);
+      }
+
+    groups = std::move(merged);
+    frozen = std::move(mergedFrozen);
+    for (unsigned long g = 0; g < groups.size(); ++g)
+      for (auto si : groups[g]) groupOf[si] = g;
+  }
+
+  /*--- A patch keeps the strip it opened only while it is still exactly that face. ---*/
+  walk.assign(groups.size(), {NO_ELEM, NO_FACE});
+  for (unsigned long g = 0; g < groups.size(); ++g) {
+    const auto id = faceOfSeed[groups[g].front()];
+    if (id < 0) continue;
+    bool whole = true;
+    for (auto si : groups[g]) whole = whole && (faceOfSeed[si] == id);
+    if (whole) walk[g] = faceWalk[id];
+  }
+
+  return groups;
+}
+
+string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
+                                               const CConfig* config, unsigned short iMesh, const vector<char>& mixedBC,
+                                               const vector<char>& onPhysBoundary, const vector<char>& onPeriodic,
+                                               vector<unsigned long>& neverGrewCV) {
+  /*--- Columns rise from the boundary patches one layer per round, and one that runs into a
+   *    partition interface is handed to the rank beyond it. ---*/
+  const auto nPointFine = fine_grid->GetnPoint();
+  constexpr auto NO_COLUMN = std::numeric_limits<unsigned long>::max();
+  const short int maxAgglomSize = MaxAgglomSize(nDim);
+
+  /*--- SeedFrontNodes returns the seeds ordered by anisotropy. ---*/
+  const auto seeds = SeedFrontNodes(fine_grid, config);
+  vector<CWalkState> walkOf;
+  const auto patches = BuildFrontPatches(seeds, fine_grid, config, mixedBC, walkOf);
+
+  /*--- Patches take their seeds in seed order, so the most anisotropic boundary is served first. ---*/
+  vector<unsigned long> order(patches.size()), patchKey(patches.size(), NO_COLUMN);
+  for (auto iPatch = 0ul; iPatch < patches.size(); ++iPatch) {
+    order[iPatch] = iPatch;
+    for (auto si : patches[iPatch]) patchKey[iPatch] = std::min(patchKey[iPatch], si);
+  }
+  std::sort(order.begin(), order.end(), [&](unsigned long a, unsigned long b) { return patchKey[a] < patchKey[b]; });
+
+  vector<unsigned long> columnOf(nPointFine, NO_COLUMN), layerOf(nPointFine, 0);
+
+  /*--- Per column state. Columns inherited from another rank are appended while the sweeps run. ---*/
+  vector<vector<unsigned long>> layer(patches.size());
+  vector<unsigned long> depthOf(patches.size(), 0);
+  vector<char> alive(patches.size(), 0);
+  /*--- A column that started on a boundary patch opens with a boundary row, an inherited one
+   *    continues in open mesh and has no such row. ---*/
+  vector<char> isSeeded(patches.size(), 1);
+  /*--- A patch never straddles two markers, so its tier is that of any of its seeds. ---*/
+  vector<char> tierOf(patches.size(), 0);
+
+  /*--- Where each node of the current layer is travelling: the step it last took, or at the
+   *    boundary the inward normal there. ---*/
+  vector<vector<std::array<su2double, MAXNDIM>>> dirOf(patches.size());
+
+  for (auto iPatch : order) {
+    for (auto si : patches[iPatch]) {
+      const auto iPoint = seeds.node[si];
+      if (columnOf[iPoint] != NO_COLUMN) continue;
+      if (fine_grid->nodes->GetAgglomerate(iPoint) || !fine_grid->nodes->GetDomain(iPoint)) continue;
+      if (!GeometricalCheck(iPoint, fine_grid, config)) continue;
+      columnOf[iPoint] = iPatch;
+      layer[iPatch].push_back(iPoint);
+      dirOf[iPatch].push_back(seeds.normal[si]);
+    }
+    tierOf[iPatch] = seeds.tier[patches[iPatch].front()];
+    /*--- A strip is only followed from the whole face that opened it. ---*/
+    if (layer[iPatch].size() != patches[iPatch].size()) walkOf[iPatch] = {NO_ELEM, NO_FACE};
+  }
+
+  /*--- A column may take a node only if it is free and carries no condition of its own. ---*/
+  auto admissible = [&](unsigned long jPoint) {
+    return (columnOf[jPoint] == NO_COLUMN) && fine_grid->nodes->GetDomain(jPoint) &&
+           !fine_grid->nodes->GetAgglomerate(jPoint) && !onPhysBoundary[jPoint] && !onPeriodic[jPoint] &&
+           !mixedBC[jPoint] && GeometricalCheck(jPoint, fine_grid, config);
+  };
+
+  /*--- The SEND_RECEIVE marker pairs, and where each halo node sits in the flat exchange buffer.
+   *    A handover travels the opposite way to the usual exchange. ---*/
+  struct CHandoverPair {
+    unsigned short markerS, markerR;
+    int send_to, receive_from;
+    unsigned long nVertexS, nVertexR, offS, offR;
+  };
+  vector<CHandoverPair> handPairs;
+  unsigned long nSendTotal = 0, nRecvTotal = 0;
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (!((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) && (config->GetMarker_All_SendRecv(iMarker) > 0)))
+      continue;
+    CHandoverPair hp;
+    hp.markerS = iMarker;
+    hp.markerR = iMarker + 1;
+    hp.send_to = config->GetMarker_All_SendRecv(hp.markerS) - 1;
+    hp.receive_from = abs(config->GetMarker_All_SendRecv(hp.markerR)) - 1;
+    hp.nVertexS = fine_grid->nVertex[hp.markerS];
+    hp.nVertexR = fine_grid->nVertex[hp.markerR];
+    hp.offS = nSendTotal;
+    hp.offR = nRecvTotal;
+    nSendTotal += hp.nVertexS;
+    nRecvTotal += hp.nVertexR;
+    handPairs.push_back(hp);
+  }
+
+  /*--- Where a halo node sits in the flat receive buffer, and which pair owns each slot. The
+   *    vertex within the pair is the slot less that pair's offset. ---*/
+  vector<long> haloSlot(nPointFine, -1);
+  vector<unsigned short> pairOfSlot(nRecvTotal, 0);
+  for (auto iPair = 0ul; iPair < handPairs.size(); ++iPair) {
+    const auto& hp = handPairs[iPair];
+    for (auto iVertex = 0ul; iVertex < hp.nVertexR; iVertex++) {
+      const auto iPoint = fine_grid->vertex[hp.markerR][iVertex]->GetNode();
+      haloSlot[iPoint] = static_cast<long>(hp.offR + iVertex);
+      pairOfSlot[hp.offR + iVertex] = static_cast<unsigned short>(iPair);
+    }
+  }
+
+  /*--- Summed over all ranks for the report. ---*/
+  enum {
+    P_COLUMNS,
+    P_SEEDS,
+    P_CVS,
+    P_COVERED,
+    P_SEED_CURV,
+    P_HANDED,
+    P_ADOPTED,
+    P_DROPPED,
+    P_PATCH1,
+    P_PATCH2,
+    P_PATCH3,
+    P_PATCH4,
+    P_COUNT
+  };
+  unsigned long ct[P_COUNT] = {0};
+  ct[P_SEEDS] = seeds.node.size();
+  ct[P_SEED_CURV] = seeds.nRefusedCurvature;
+
+  vector<unsigned long> candidates, haloWanted, distinct, faceAhead, faceScratch;
+  vector<std::array<su2double, MAXNDIM>> stepDir, haloStep;
+  vector<unsigned long> haloClaim(nPointFine, NO_COLUMN);
+  vector<unsigned long> tagOut(nRecvTotal, 0), tagIn(nSendTotal, 0);
+  /*--- The direction a handed over column travels. It only steers discrete choices and is never
+   *    differentiated, so it crosses as a passive type. ---*/
+  using CPassiveMPI = SelectMPIWrapper<passivedouble>::W;
+  vector<passivedouble> dirOut(nRecvTotal * nDim, 0.0), dirIn(nSendTotal * nDim, 0.0);
+
+  /*--- One tier is paved out everywhere before the next starts, so an inherited column belongs to
+   *    the tier that is running. ---*/
+  constexpr char N_TIER = 3;
+  vector<unsigned long> active;
+  for (char tier = 0; tier < N_TIER; ++tier) {
+    /*--- The columns of this tier still advancing, in seed order. A column that stops drops out at
+     *    the end of the round, so a deep mesh does not rescan the ones that finished early. ---*/
+    active.clear();
+    for (auto iColumn : order)
+      if (tierOf[iColumn] == tier) {
+        alive[iColumn] = !layer[iColumn].empty();
+        if (alive[iColumn]) active.push_back(iColumn);
+      }
+
+    /*--- Advance every column as far as it goes here, then offer the ones an interface stopped. ---*/
+    for (;;) {
+      for (unsigned long iRound = 1;; ++iRound) {
+        bool advanced = false;
+
+        for (auto iColumn : active) {
+          if (!alive[iColumn]) continue;
+          const auto width = layer[iColumn].size();
+
+          /*--- Successors beyond the interface are tracked apart: this rank cannot claim them,
+           *    only offer the column to their owner. ---*/
+          candidates.clear();
+          haloWanted.clear();
+          haloStep.clear();
+          stepDir.clear();
+
+          /*--- While the primal grid still carries the column, the layer ahead is the far face of
+           *    the element it stands in, so the mesh names it and nothing is chosen. ---*/
+          bool walked = false;
+          if (walkOf[iColumn].elem != NO_ELEM) {
+            const auto iElem = walkOf[iColumn].elem;
+            const auto jFace = OppositeFace(fine_grid->elem[iElem]->GetVTK_Type(), walkOf[iColumn].face);
+            if (jFace != NO_FACE) {
+              FaceNodes(fine_grid, iElem, jFace, faceAhead);
+              if (faceAhead.size() == width) {
+                size_t nFree = 0, nHalo = 0;
+                for (auto jPoint : faceAhead) {
+                  if (admissible(jPoint))
+                    nFree++;
+                  else if (!fine_grid->nodes->GetDomain(jPoint) && (haloSlot[jPoint] >= 0) &&
+                           (haloClaim[jPoint] == NO_COLUMN))
+                    nHalo++;
+                }
+
+                /*--- One step for the whole layer, which steers it on if the strip runs out. ---*/
+                std::array<su2double, MAXNDIM> step{};
+                for (auto jPoint : faceAhead)
+                  for (unsigned short d = 0; d < nDim; ++d)
+                    step[d] += fine_grid->nodes->GetCoord(jPoint, d) / su2double(width);
+                for (auto iPoint : layer[iColumn])
+                  for (unsigned short d = 0; d < nDim; ++d)
+                    step[d] -= fine_grid->nodes->GetCoord(iPoint, d) / su2double(width);
+                const su2double len = GeometryToolbox::Norm(nDim, step.data());
+                if (len > 0.0)
+                  for (unsigned short d = 0; d < nDim; ++d) step[d] /= len;
+
+                if (nFree == width) {
+                  candidates = faceAhead;
+                  stepDir.assign(width, step);
+                  const auto jElem = fine_grid->elem[iElem]->GetNeighbor_Elements(jFace);
+                  walkOf[iColumn] = {NO_ELEM, NO_FACE};
+                  if (jElem >= 0) {
+                    const auto kFace = LocalFace(fine_grid, jElem, faceAhead, faceScratch);
+                    if (kFace != NO_FACE) walkOf[iColumn] = {static_cast<unsigned long>(jElem), kFace};
+                  }
+                  walked = true;
+                } else if (nHalo == width) {
+                  haloWanted = faceAhead;
+                  haloStep.assign(width, step);
+                  walked = true;
+                }
+              }
+            }
+          }
+
+          /*--- Off the strip the column carries on by the way it was going. ---*/
+          if (!walked) walkOf[iColumn] = {NO_ELEM, NO_FACE};
+
+          if (!walked)
+            for (size_t k = 0; k < layer[iColumn].size(); ++k) {
+              const auto iPoint = layer[iColumn][k];
+              const auto& marching = dirOf[iColumn][k];
+
+              /*--- Where this node goes is decided before whether it may: the neighbour that best
+               *    carries on the way it was travelling, and only that one is then tested. ---*/
+              auto best = NO_COLUMN;
+              su2double bestAlign = -2.0;
+              std::array<su2double, MAXNDIM> bestStep{};
+
+              for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
+                const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
+
+                su2double step[MAXNDIM] = {0.0};
+                GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(iPoint),
+                                          step);
+                const su2double len = GeometryToolbox::Norm(nDim, step);
+                if (len <= 0.0) continue;
+                for (unsigned short d = 0; d < nDim; ++d) step[d] /= len;
+
+                const su2double align = GeometryToolbox::DotProduct(nDim, step, marching.data());
+                if (align > bestAlign) {
+                  bestAlign = align;
+                  best = jPoint;
+                  for (unsigned short d = 0; d < nDim; ++d) bestStep[d] = step[d];
+                }
+              }
+
+              if (best == NO_COLUMN) continue;
+
+              if (admissible(best)) {
+                candidates.push_back(best);
+                stepDir.push_back(bestStep);
+              } else if (!fine_grid->nodes->GetDomain(best) && (haloSlot[best] >= 0) &&
+                         (haloClaim[best] == NO_COLUMN)) {
+                haloWanted.push_back(best);
+                haloStep.push_back(bestStep);
+              }
+            }
+
+          /*--- A column advances only onto a whole layer of its own width, one successor per node
+           *    and no two of them the same. ---*/
+          auto complete = [&](vector<unsigned long>& set) {
+            if (set.size() != width) return false;
+            distinct = set;
+            std::sort(distinct.begin(), distinct.end());
+            distinct.erase(std::unique(distinct.begin(), distinct.end()), distinct.end());
+            if (distinct.size() != width) return false;
+            return true;
+          };
+
+          if (complete(candidates)) {
+            for (auto jPoint : candidates) {
+              columnOf[jPoint] = iColumn;
+              layerOf[jPoint] = iRound;
+            }
+            depthOf[iColumn] = iRound;
+            layer[iColumn] = candidates;
+            dirOf[iColumn] = stepDir;
+            advanced = true;
+            continue;
+          }
+
+          /*--- Nothing left here. If the whole layer wants to step across an interface, offer the
+           *    column to the owner of that mesh; a layer split by the interface is let go. ---*/
+          alive[iColumn] = 0;
+          if ((size > 1) && complete(haloWanted)) {
+            /*--- An offer is named by the lowest interface position it covers, which both ranks
+             *    read off the same matched vertex lists. ---*/
+            for (auto jPoint : haloWanted) haloClaim[jPoint] = iColumn;
+            for (auto k = 0ul; k < haloWanted.size(); ++k)
+              for (unsigned short d = 0; d < nDim; ++d)
+                dirOut[haloSlot[haloWanted[k]] * nDim + d] = SU2_TYPE::GetValue(haloStep[k][d]);
+
+            for (auto iPair = 0ul; iPair < handPairs.size(); ++iPair) {
+              auto tag = std::numeric_limits<unsigned long>::max();
+              for (auto jPoint : haloWanted)
+                if (pairOfSlot[haloSlot[jPoint]] == iPair)
+                  tag = std::min(tag, static_cast<unsigned long>(haloSlot[jPoint]) - handPairs[iPair].offR);
+              if (tag == std::numeric_limits<unsigned long>::max()) continue;
+
+              tag += 1; /*--- Zero means no offer. ---*/
+              for (auto jPoint : haloWanted)
+                if (pairOfSlot[haloSlot[jPoint]] == iPair) tagOut[haloSlot[jPoint]] = tag;
+              ct[P_HANDED]++;
+            }
           }
         }
 
-        if (best_neighbor == ULONG_MAX || best_dot < cos_threshold) break;
-
-        L.push_back(best_neighbor);
-
-        /*--- Update direction for next step ---*/
-        GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(best_neighbor), fine_grid->nodes->GetCoord(current),
-                                  prev_dir);
-        const su2double len = GeometryToolbox::Norm(nDim, prev_dir);
-        if (len <= 0.0) break;
-        for (unsigned short d = 0; d < nDim; ++d) prev_dir[d] /= len;
-
-        current = best_neighbor;
+        active.erase(
+            std::remove_if(active.begin(), active.end(), [&](unsigned long iColumn) { return !alive[iColumn]; }),
+            active.end());
+        if (!advanced) break;
       }
 
-      /*--- Accept only lines with at least 2 interior nodes (length >= 3 including wall) ---*/
-      if (L.size() >= 3) {
-        lines.push_back(std::move(L));
+      if (size <= 1) break;
+
+      /*--- Every rank reaches this exchange and the collective that follows it. ---*/
+      for (const auto& hp : handPairs) {
+        SU2_MPI::Sendrecv(tagOut.data() + hp.offR, hp.nVertexR, MPI_UNSIGNED_LONG, hp.receive_from, 0,
+                          tagIn.data() + hp.offS, hp.nVertexS, MPI_UNSIGNED_LONG, hp.send_to, 0, SU2_MPI::GetComm(),
+                          MPI_STATUS_IGNORE);
+        CPassiveMPI::Sendrecv(dirOut.data() + hp.offR * nDim, hp.nVertexR * nDim, MPI_DOUBLE, hp.receive_from, 1,
+                              dirIn.data() + hp.offS * nDim, hp.nVertexS * nDim, MPI_DOUBLE, hp.send_to, 1,
+                              SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
       }
-    }
-  }
 
-  if (lines.empty()) return;
+      /*--- Grouping the arrivals by tag rebuilds the footprint the sender stood on. The map orders
+       *    the tags, so every rank adopts in the same order. ---*/
+      map<std::pair<unsigned long, unsigned long>, vector<std::pair<unsigned long, unsigned long>>> adopted;
+      for (auto iPair = 0ul; iPair < handPairs.size(); ++iPair) {
+        const auto& hp = handPairs[iPair];
+        for (auto iVertex = 0ul; iVertex < hp.nVertexS; iVertex++) {
+          const auto tag = tagIn[hp.offS + iVertex];
+          if (tag != 0)
+            adopted[{iPair, tag}].push_back({fine_grid->vertex[hp.markerS][iVertex]->GetNode(), hp.offS + iVertex});
+        }
+      }
 
-  if (rank == MASTER_NODE) {
-    cout << "Implicit line agglomeration: detected " << lines.size() << " lines." << endl;
-  }
+      unsigned long nAdopted = 0;
+      vector<unsigned long> group;
+      vector<std::array<su2double, MAXNDIM>> inheritedDir;
+      for (auto& item : adopted) {
+        auto& arrivals = item.second;
+        std::sort(arrivals.begin(), arrivals.end());
+        arrivals.erase(std::unique(arrivals.begin(), arrivals.end(),
+                                   [](const std::pair<unsigned long, unsigned long>& a,
+                                      const std::pair<unsigned long, unsigned long>& b) { return a.first == b.first; }),
+                       arrivals.end());
 
-  /*--- Advancing-front greedy pairing with cross-line merging.
-   *    For each pair stage k, process interior positions (1+2k, 1+2k+1).
-   *    When two lines share the same wall-node parent CV, merge their pairs
-   *    into a single 4-child coarse CV.  Otherwise create 2-child coarse CVs. ---*/
-  vector<char> reserved(nPointFine, 0);
-  unsigned pair_idx = 0;
+        group.clear();
+        for (const auto& arrival : arrivals) group.push_back(arrival.first);
 
-  while (true) {
-    bool any_work = false;
-
-    /*--- Build map: wall parent CV -> list of line indices ---*/
-    unordered_map<unsigned long, vector<unsigned long>> parent_to_lines;
-    parent_to_lines.reserve(lines.size());
-    for (unsigned long li = 0; li < lines.size(); ++li) {
-      const auto& L = lines[li];
-      if (L.empty()) continue;
-      const auto idx2 = 1 + 2 * pair_idx + 1;
-      if (L.size() <= idx2) continue;  // no pair at this stage
-      const auto pW = fine_grid->nodes->GetParent_CV(L[0]);
-      parent_to_lines[pW].push_back(li);
-    }
-
-    vector<char> line_processed(lines.size(), 0);
-
-    /*--- A) Cross-line merges: parents with multiple lines ---*/
-    for (auto& [parent, line_ids] : parent_to_lines) {
-      if (line_ids.size() < 2) continue;
-
-      for (size_t k = 0; k + 1 < line_ids.size(); k += 2) {
-        const auto li1 = line_ids[k];
-        const auto li2 = line_ids[k + 1];
-        if (line_processed[li1] || line_processed[li2]) continue;
-
-        const auto& L1 = lines[li1];
-        const auto& L2 = lines[li2];
-        const auto idx1 = 1 + 2 * pair_idx;
-        const auto idx2 = idx1 + 1;
-        if (L1.size() <= idx2 || L2.size() <= idx2) continue;
-
-        const auto a = L1[idx1], b = L1[idx2];
-        const auto c = L2[idx1], d = L2[idx2];
-
-        /*--- Skip if any node is already claimed ---*/
-        if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b) ||
-            fine_grid->nodes->GetAgglomerate(c) || fine_grid->nodes->GetAgglomerate(d))
-          continue;
-        if (reserved[a] || reserved[b] || reserved[c] || reserved[d]) continue;
-
-        /*--- Geometrical quality check ---*/
-        if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config) ||
-            !GeometricalCheck(c, fine_grid, config) || !GeometricalCheck(d, fine_grid, config))
-          continue;
-
-        /*--- Guard against duplicate indices ---*/
-        if (a == b || a == c || a == d || b == c || b == d || c == d) {
-          for (auto other_li : line_ids) line_processed[other_li] = 1;
+        /*--- The mesh may have been taken since the offer was made, and a footprint is adopted whole
+         *    or not at all. ---*/
+        bool free = !group.empty();
+        for (auto iPoint : group) free = free && admissible(iPoint);
+        if (!free) {
+          ct[P_DROPPED]++;
           continue;
         }
 
-        /*--- Create 4-child coarse CV ---*/
-        fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
-        nodes->SetChildren_CV(Index_CoarseCV, 0, a);
-        fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
-        nodes->SetChildren_CV(Index_CoarseCV, 1, b);
-        fine_grid->nodes->SetParent_CV(c, Index_CoarseCV);
-        nodes->SetChildren_CV(Index_CoarseCV, 2, c);
-        fine_grid->nodes->SetParent_CV(d, Index_CoarseCV);
-        nodes->SetChildren_CV(Index_CoarseCV, 3, d);
-        nodes->SetnChildren_CV(Index_CoarseCV, 4);
+        /*--- The column keeps travelling the way the rank that offered it was going. ---*/
+        inheritedDir.clear();
+        for (const auto& arrival : arrivals) {
+          std::array<su2double, MAXNDIM> dir{};
+          for (unsigned short d = 0; d < nDim; ++d) dir[d] = dirIn[arrival.second * nDim + d];
+          inheritedDir.push_back(dir);
+        }
 
-        reserved[a] = reserved[b] = reserved[c] = reserved[d] = 1;
-        MGQueue_InnerCV.RemoveCV(a);
-        MGQueue_InnerCV.RemoveCV(b);
-        MGQueue_InnerCV.RemoveCV(c);
-        MGQueue_InnerCV.RemoveCV(d);
+        /*--- Pick the strip up again on this side: of the two elements holding the arriving face,
+         *    the column enters the one ahead of it. ---*/
+        CWalkState state{NO_ELEM, NO_FACE};
+        if (HasElements(fine_grid)) {
+          faceAhead = group;
+          std::sort(faceAhead.begin(), faceAhead.end());
+          su2double faceCentre[MAXNDIM] = {0.0};
+          for (auto iPoint : faceAhead)
+            for (unsigned short d = 0; d < nDim; ++d)
+              faceCentre[d] += fine_grid->nodes->GetCoord(iPoint, d) / su2double(faceAhead.size());
 
-        Index_CoarseCV++;
-        line_processed[li1] = line_processed[li2] = 1;
-        for (auto other_li : line_ids)
-          if (other_li != li1 && other_li != li2) line_processed[other_li] = 1;
-        any_work = true;
+          for (auto iElem = 0u; iElem < fine_grid->nodes->GetnElem(faceAhead.front()); ++iElem) {
+            const auto jElem = fine_grid->nodes->GetElem(faceAhead.front(), iElem);
+            const auto jFace = LocalFace(fine_grid, jElem, faceAhead, faceScratch);
+            if (jFace == NO_FACE) continue;
+            if (OppositeFace(fine_grid->elem[jElem]->GetVTK_Type(), jFace) == NO_FACE) continue;
+
+            const auto nNode = fine_grid->elem[jElem]->GetnNodes();
+            su2double ahead = 0.0;
+            for (unsigned short d = 0; d < nDim; ++d) {
+              su2double centre = 0.0;
+              for (unsigned short k = 0; k < nNode; ++k)
+                centre += fine_grid->nodes->GetCoord(fine_grid->elem[jElem]->GetNode(k), d) / su2double(nNode);
+              ahead += (centre - faceCentre[d]) * inheritedDir.front()[d];
+            }
+            if (ahead > 0.0) {
+              state = {jElem, jFace};
+              break;
+            }
+          }
+        }
+
+        const auto iColumn = layer.size();
+        for (auto iPoint : group) {
+          columnOf[iPoint] = iColumn;
+          layerOf[iPoint] = 0;
+        }
+        layer.push_back(group);
+        walkOf.push_back(state);
+        dirOf.push_back(inheritedDir);
+        depthOf.push_back(0);
+        alive.push_back(1);
+        isSeeded.push_back(0);
+        tierOf.push_back(tier);
+        order.push_back(iColumn);
+        active.push_back(iColumn);
+        nAdopted++;
+        ct[P_ADOPTED]++;
       }
+
+      std::fill(tagOut.begin(), tagOut.end(), 0);
+      std::fill(tagIn.begin(), tagIn.end(), 0);
+      std::fill(dirOut.begin(), dirOut.end(), 0.0);
+      std::fill(dirIn.begin(), dirIn.end(), 0.0);
+      std::fill(haloClaim.begin(), haloClaim.end(), NO_COLUMN);
+
+      unsigned long nAdoptedGlobal = 0;
+      SU2_MPI::Allreduce(&nAdopted, &nAdoptedGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+      if (nAdoptedGlobal == 0) break;
     }
-
-    /*--- B) Single-line 2-child merges for remaining lines ---*/
-    for (unsigned long li = 0; li < lines.size(); ++li) {
-      if (line_processed[li]) continue;
-      const auto& L = lines[li];
-      const auto idx1 = 1 + 2 * pair_idx;
-      const auto idx2 = idx1 + 1;
-      if (L.size() <= idx2) continue;
-
-      const auto a = L[idx1], b = L[idx2];
-      if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b)) continue;
-      if (reserved[a] || reserved[b]) continue;
-      if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config)) continue;
-
-      /*--- Create 2-child coarse CV ---*/
-      fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
-      nodes->SetChildren_CV(Index_CoarseCV, 0, a);
-      fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
-      nodes->SetChildren_CV(Index_CoarseCV, 1, b);
-      nodes->SetnChildren_CV(Index_CoarseCV, 2);
-
-      reserved[a] = reserved[b] = 1;
-      MGQueue_InnerCV.RemoveCV(a);
-      MGQueue_InnerCV.RemoveCV(b);
-
-      Index_CoarseCV++;
-      any_work = true;
-    }
-
-    pair_idx++;
-    if (!any_work) break;
-
-    /*--- Check if any line still has pairs at the next stage ---*/
-    bool any_more = false;
-    for (const auto& L : lines) {
-      if (L.size() > 1 + 2 * pair_idx + 1) {
-        any_more = true;
-        break;
-      }
-    }
-    if (!any_more) break;
   }
+
+  /*--- Gather each column by layer. ---*/
+  const auto nColumn = layer.size();
+  vector<vector<vector<unsigned long>>> byLayer(nColumn);
+  for (auto iPoint = 0ul; iPoint < nPointFine; ++iPoint) {
+    const auto iColumn = columnOf[iPoint];
+    if (iColumn == NO_COLUMN) continue;
+    if (byLayer[iColumn].size() <= layerOf[iPoint]) byLayer[iColumn].resize(layerOf[iPoint] + 1);
+    byLayer[iColumn][layerOf[iPoint]].push_back(iPoint);
+  }
+
+  auto emitGroup = [&](const vector<unsigned long>& group) {
+    nodes->SetChildren_CV(Index_CoarseCV, group);
+    for (auto iPoint : group) {
+      fine_grid->nodes->SetParent_CV(iPoint, Index_CoarseCV);
+      if (fine_grid->nodes->GetAgglomerate_Indirect(iPoint)) nodes->SetAgglomerate_Indirect(Index_CoarseCV, true);
+    }
+    nodes->SetnChildren_CV(Index_CoarseCV, static_cast<unsigned short>(group.size()));
+    return Index_CoarseCV++;
+  };
+
+  auto minDepth = std::numeric_limits<unsigned long>::max(), maxDepth = 0ul;
+  vector<unsigned long> group;
+
+  /*--- Hand a set of nodes out as coarse CVs, each connected and within the size limit. ---*/
+  vector<char> inSet(nPointFine, 0);
+  vector<unsigned long> chunk, stack;
+  auto emitConnected = [&](const vector<unsigned long>& set) {
+    for (auto iPoint : set) inSet[iPoint] = 1;
+
+    for (auto iSeed : set) {
+      if (!inSet[iSeed]) continue;
+      chunk.clear();
+      stack.assign(1, iSeed);
+      inSet[iSeed] = 0;
+
+      while (!stack.empty() && (chunk.size() < static_cast<size_t>(maxAgglomSize))) {
+        const auto iPoint = stack.back();
+        stack.pop_back();
+        chunk.push_back(iPoint);
+        for (auto jPoint : fine_grid->nodes->GetPoints(iPoint)) {
+          if (!inSet[jPoint]) continue;
+          if (chunk.size() + stack.size() >= static_cast<size_t>(maxAgglomSize)) break;
+          inSet[jPoint] = 0;
+          stack.push_back(jPoint);
+        }
+      }
+      /*--- Whatever the cell had no room for waits for the next one. ---*/
+      for (auto iPoint : stack) inSet[iPoint] = 1;
+      stack.clear();
+
+      emitGroup(chunk);
+      ct[P_CVS]++;
+      ct[P_COVERED] += chunk.size();
+    }
+  };
+
+  for (auto iColumn = 0ul; iColumn < nColumn; ++iColumn) {
+    const auto& layers = byLayer[iColumn];
+    if (layers.empty() || layers[0].empty()) continue;
+
+    ct[P_COLUMNS]++;
+    ct[P_PATCH1 + std::min<size_t>(layers[0].size(), 4) - 1]++;
+    minDepth = std::min(minDepth, depthOf[iColumn]);
+    maxDepth = std::max(maxDepth, depthOf[iColumn]);
+
+    auto iLayer = 0ul;
+    if (isSeeded[iColumn]) {
+      /*--- The boundary row is a coarse CV of its own, which fixes the footprint above it. ---*/
+      const auto baseCV = emitGroup(layers[0]);
+      ct[P_CVS]++;
+      ct[P_COVERED] += layers[0].size();
+      if (depthOf[iColumn] == 0) neverGrewCV.push_back(baseCV);
+      iLayer = 1;
+    }
+
+    /*--- Above it, consecutive layers are blocked so the coarse cell coarsens by the same ratio
+     *    along the column as the patch does across it. ---*/
+    while (iLayer < layers.size()) {
+      group.clear();
+      const auto block = BlockFor(maxAgglomSize, layers[iLayer].size());
+      for (auto k = 0ul; (k < block) && (iLayer < layers.size()); ++k) {
+        if (!group.empty() && (group.size() + layers[iLayer].size() > static_cast<size_t>(maxAgglomSize))) break;
+        group.insert(group.end(), layers[iLayer].begin(), layers[iLayer].end());
+        iLayer++;
+      }
+      /*--- A single layer wider than the limit still has to go somewhere. ---*/
+      if (group.empty()) {
+        group = layers[iLayer];
+        iLayer++;
+      }
+      emitConnected(group);
+    }
+  }
+  if (minDepth == std::numeric_limits<unsigned long>::max()) minDepth = 0;
+
+  /*--- One line per level, summed over the ranks. Every rank reaches these collectives. ---*/
+  unsigned long ctGlobal[P_COUNT] = {0};
+  SU2_MPI::Allreduce(ct, ctGlobal, P_COUNT, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  unsigned long minDepthGlobal = 0, maxDepthGlobal = 0;
+  SU2_MPI::Allreduce(&minDepth, &minDepthGlobal, 1, MPI_UNSIGNED_LONG, MPI_MIN, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&maxDepth, &maxDepthGlobal, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+
+  if (rank != MASTER_NODE) return "";
+
+  stringstream out;
+  out << "  MG level " << iMesh << " paving: " << ctGlobal[P_COLUMNS] << " columns from " << ctGlobal[P_SEEDS]
+      << " seeds, " << ctGlobal[P_CVS] << " CVs covering " << ctGlobal[P_COVERED] << " nodes, depth " << minDepthGlobal
+      << " to " << maxDepthGlobal << "\n";
+  out << "    patches 1/2/3/4 wide: " << ctGlobal[P_PATCH1] << "/" << ctGlobal[P_PATCH2] << "/" << ctGlobal[P_PATCH3]
+      << "/" << ctGlobal[P_PATCH4] << ", " << ctGlobal[P_SEED_CURV] << " seeds refused on curvature";
+  if (ctGlobal[P_HANDED] != 0)
+    out << ", " << ctGlobal[P_HANDED] << " columns offered across a partition, " << ctGlobal[P_ADOPTED] << " adopted, "
+        << ctGlobal[P_DROPPED] << " dropped";
+  out << "\n";
+  return out.str();
 }

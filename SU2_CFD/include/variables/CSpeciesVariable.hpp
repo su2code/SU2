@@ -74,4 +74,9 @@ class CSpeciesVariable : public CScalarVariable {
    * \return Pointer to the mass diffusivities
    */
   inline const su2double* GetDiffusivity(unsigned long iPoint) const { return Diffusivity[iPoint]; }
+
+  /*!
+   * \brief Get the mass diffusivity container, for a per-species gather by point and equation.
+   */
+  inline const MatrixType& GetDiffusivity() const { return Diffusivity; }
 };
