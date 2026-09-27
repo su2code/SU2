@@ -111,6 +111,7 @@ class CSysSolve {
 
   mutable VectorType r_0; /*!< \brief The "arbitrary" vector in BCGSTAB. */
   mutable VectorType v;   /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
+  mutable VectorType x_best; /*!< \brief BCGSTAB iterate with the smallest residual. */
 
   mutable bool ritz_failed = false;
   mutable unsigned long k = 0, k_new = 0;
