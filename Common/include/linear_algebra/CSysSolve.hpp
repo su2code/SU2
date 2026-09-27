@@ -109,8 +109,8 @@ class CSysSolve {
   mutable VectorType p;   /*!< \brief Direction in CG and BCGSTAB. */
   mutable VectorType z;   /*!< \brief Preconditioned residual/direction in CG/BCGSTAB. */
 
-  mutable VectorType r_0; /*!< \brief The "arbitrary" vector in BCGSTAB. */
-  mutable VectorType v;   /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
+  mutable VectorType r_0;    /*!< \brief The "arbitrary" vector in BCGSTAB. */
+  mutable VectorType v;      /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
   mutable VectorType x_best; /*!< \brief BCGSTAB iterate with the smallest residual. */
 
   mutable bool ritz_failed = false;
