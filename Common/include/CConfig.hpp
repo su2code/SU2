@@ -841,6 +841,7 @@ private:
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
   unsigned long outlierMitigationParam[4]; /*!< \brief Parameters of outlier mitigation strategy. */
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
+  bool CFL_AdaptResidual; /*!< \brief Adapt the CFL on the nonlinear residual trend instead of the linear solve. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
   RefElemLength,         /*!< \brief Reference element length for computing the slope limiting epsilon. */
@@ -1115,6 +1116,7 @@ private:
   su2double ParMETIS_tolerance;     /*!< \brief Load balancing tolerance for ParMETIS. */
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
+  bool ParMETIS_anisotropyWgt;      /*!< \brief Weight graph edges by cell anisotropy and partition with coordinates. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
   DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
@@ -1749,6 +1751,11 @@ public:
    * \return <code>TRUE</code> if CFL adaption is active; otherwise <code>FALSE</code>.
    */
   bool GetCFL_Adapt(void) const { return CFL_Adapt; }
+
+  /*!
+   * \brief Whether the adaptive CFL follows the nonlinear residual trend instead of the linear solve.
+   */
+  bool GetCFL_AdaptResidual(void) const { return CFL_AdaptResidual; }
 
   /*!
    * \brief Get the outlier mitigation parameters.
@@ -10237,6 +10244,11 @@ public:
    * \brief Get the ParMETIS load balancing weight for edges
    */
   long GetParMETIS_EdgeWeight() const { return ParMETIS_edgeWgt; }
+
+  /*!
+   * \brief Whether ParMETIS weights graph edges by cell anisotropy and partitions with coordinates.
+   */
+  bool GetParMETIS_AnisotropyWeight() const { return ParMETIS_anisotropyWgt; }
 
   /*!
    * \brief Find the marker index (if any) that is part of a given interface pair.

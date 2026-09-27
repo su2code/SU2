@@ -1905,6 +1905,8 @@ void CConfig::SetConfig_Options() {
   addULongArrayOption("OUTLIER_MITIGATION_PARAM", 4, true, outlierMitigationParam);
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
+  /* DESCRIPTION: Adapt the CFL on the finest-grid nonlinear residuals instead of the linear solve, with a cut on divergence. */
+  addBoolOption("CFL_ADAPT_RESIDUAL", CFL_AdaptResidual, false);
   /* !\brief CFL_ADAPT_PARAM
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max)[, acceptable linear residual][, starting iteration]).
    * Parameters in square brackets are optional, parameter "starting iteration" only valid with parameter "acceptable linear residual".
@@ -3092,6 +3094,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: ParMETIS load balancing weight for edges (equiv. to neighbors) */
   addLongOption("PARMETIS_EDGE_WEIGHT", ParMETIS_edgeWgt, 1);
+
+  /* DESCRIPTION: Weight ParMETIS graph edges by cell anisotropy and partition with coordinates */
+  addBoolOption("PARMETIS_ANISOTROPY_WEIGHT", ParMETIS_anisotropyWgt, false);
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
@@ -5837,6 +5842,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /* Protect against using CFL adaption for non-flow or certain
    unsteady flow problems. */
+
+  if (CFL_AdaptResidual && OptionIsSet("OUTLIER_MITIGATION_PARAM")) {
+    SU2_MPI::Error("CFL_ADAPT_RESIDUAL cannot be combined with OUTLIER_MITIGATION_PARAM.", CURRENT_FUNCTION);
+  }
 
   if (CFL_Adapt && !GetFluidProblem()) {
     SU2_MPI::Error(string("CFL adaption only available for finite-volume fluid solvers.\n") +

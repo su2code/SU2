@@ -76,7 +76,7 @@ protected:
   const su2double gamma;
   const su2double gasConst;
   const su2double prandtlTurb;
-  const bool correct;
+  const bool effDistJac; /*!< EXPERIMENT: SU2_VISC_JAC_EFFDIST. */
   const bool useSA_QCR;
   const bool wallFun;
   const bool uq;
@@ -91,12 +91,12 @@ protected:
    * \brief Constructor, initialize constants and booleans.
    */
   template<class... Ts>
-  CCompressibleViscousFluxBase(const CConfig& config, int iMesh,
+  CCompressibleViscousFluxBase(const CConfig& config, int,
                                const CVariable* turbVars_, Ts&...) :
     gamma(config.GetGamma()),
     gasConst(config.GetGas_ConstantND()),
     prandtlTurb(config.GetPrandtl_Turb()),
-    correct(iMesh == MESH_0),
+    effDistJac(getenv("SU2_VISC_JAC_EFFDIST") != nullptr),
     useSA_QCR(config.GetSAParsedOptions().qcr2000),
     wallFun(config.GetWall_Functions()),
     uq(config.GetSSTParsedOptions().uq),
@@ -142,10 +142,10 @@ protected:
     Double mask = dist2_ij < EPS*EPS;
     dist2_ij += mask / (EPS*EPS);
 
-    /*--- Compute the corrected mean gradient. ---*/
+    /*--- Compute the corrected mean gradient on all levels. ---*/
 
     auto avgGrad = averageGradient<nPrimVarGrad,nDim>(iPoint, jPoint, gradient);
-    if(correct) correctGradient(V, vector_ij, dist2_ij, avgGrad);
+    correctGradient(V, vector_ij, dist2_ij, avgGrad);
 
     /*--- Stress and heat flux tensors. ---*/
 
@@ -180,6 +180,13 @@ protected:
     /*--- Flux Jacobians. ---*/
 
     Double dist_ij = sqrt(dist2_ij);
+
+    /*--- EXPERIMENT: SU2_VISC_JAC_EFFDIST linearizes the corrected gradient, whose normal part depends
+     *    on the neighbour difference over |d|^2/(d.n) rather than over |d|. ---*/
+    if (effDistJac) {
+      const Double projDist = abs(dot(vector_ij, unitNormal));
+      dist_ij = dist2_ij / fmax(projDist, 0.1 * dist_ij);
+    }
     auto dtau = stressTensorJacobian<nVar>(avgV, unitNormal, dist_ij);
 
     /*--- Energy flux Jacobian. ---*/

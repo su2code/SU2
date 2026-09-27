@@ -337,6 +337,15 @@ class CPhysicalGeometry final : public CGeometry {
    */
   void PrepareAdjacency(const CConfig* config);
 
+#if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
+  /*!
+   * \brief ParMETIS edge weights that make cutting across the short edges of anisotropic cells expensive.
+   * \param[in] maxWeight - Cap on the weight of any edge.
+   * \return One weight per entry of the adjacency array.
+   */
+  vector<idx_t> ComputeAnisotropyEdgeWeights(long maxWeight) const;
+#endif
+
   /*!
    * \brief Find repeated nodes between two elements to identify the common face.
    * \param[in] first_elem - Identification of the first element.

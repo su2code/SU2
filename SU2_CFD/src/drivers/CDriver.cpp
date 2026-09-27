@@ -1813,7 +1813,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         /*--- Compressible flow Ideal gas ---*/
         numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGrad_Flow(nDim, nVar_Flow, true, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGrad_Flow(nDim, nVar_Flow, false, config);
+          numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGrad_Flow(nDim, nVar_Flow, true, config);
 
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1824,7 +1824,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         /*--- Compressible flow Real gas ---*/
         numerics[MESH_0][FLOW_SOL][visc_term] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, true, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics[iMGlevel][FLOW_SOL][visc_term] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, false, config);
+          numerics[iMGlevel][FLOW_SOL][visc_term] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, true, config);
 
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1836,7 +1836,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       /*--- Incompressible flow, use preconditioning method ---*/
       numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, true, config);
       for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, false, config);
+        numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, true, config);
 
       /*--- Definition of the boundary condition method ---*/
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)

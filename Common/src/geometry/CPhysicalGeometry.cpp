@@ -7361,6 +7361,113 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
   Tecplot_File.close();
 }
 
+#if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
+vector<idx_t> CPhysicalGeometry::ComputeAnisotropyEdgeWeights(long maxWeight) const {
+  CLinearPartitioner pointPartitioner(Global_nPointDomain, 0);
+  const unsigned long firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
+  const auto isLocal = [&](unsigned long iGlobal) {
+    return (iGlobal >= firstIndex) && (iGlobal - firstIndex < nPoint);
+  };
+
+  /*--- Request the coordinates of element nodes that other ranks hold. ---*/
+
+  vector<vector<unsigned long>> request(size);
+  for (auto iElem = 0ul; iElem < nElem; iElem++) {
+    for (auto iNode = 0u; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      const auto iGlobal = elem[iElem]->GetNode(iNode);
+      if (!isLocal(iGlobal)) request[pointPartitioner.GetRankContainingIndex(iGlobal)].push_back(iGlobal);
+    }
+  }
+
+  vector<int> nSend(size), nRecv(size), sendDisp(size + 1, 0), recvDisp(size + 1, 0);
+  for (int iRank = 0; iRank < size; iRank++) {
+    auto& list = request[iRank];
+    sort(list.begin(), list.end());
+    list.erase(unique(list.begin(), list.end()), list.end());
+    nSend[iRank] = static_cast<int>(list.size());
+  }
+  SU2_MPI::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, SU2_MPI::GetComm());
+
+  for (int iRank = 0; iRank < size; iRank++) {
+    sendDisp[iRank + 1] = sendDisp[iRank] + nSend[iRank];
+    recvDisp[iRank + 1] = recvDisp[iRank] + nRecv[iRank];
+  }
+
+  vector<unsigned long> sendIndex, recvIndex(recvDisp[size]);
+  sendIndex.reserve(sendDisp[size]);
+  for (const auto& list : request) sendIndex.insert(sendIndex.end(), list.begin(), list.end());
+
+  SU2_MPI::Alltoallv(sendIndex.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvIndex.data(),
+                     nRecv.data(), recvDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+
+  vector<passivedouble> replyCoord(recvIndex.size() * nDim), remoteCoord(sendIndex.size() * nDim);
+  for (auto i = 0ul; i < recvIndex.size(); i++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      replyCoord[i * nDim + iDim] = SU2_TYPE::GetValue(nodes->GetCoord(recvIndex[i] - firstIndex, iDim));
+
+  for (int iRank = 0; iRank < size; iRank++) {
+    nSend[iRank] *= nDim;
+    nRecv[iRank] *= nDim;
+    sendDisp[iRank] *= nDim;
+    recvDisp[iRank] *= nDim;
+  }
+  SU2_MPI::Alltoallv(replyCoord.data(), nRecv.data(), recvDisp.data(), MPI_DOUBLE, remoteCoord.data(), nSend.data(),
+                     sendDisp.data(), MPI_DOUBLE, SU2_MPI::GetComm());
+
+  unordered_map<unsigned long, unsigned long> remoteSlot;
+  for (auto i = 0ul; i < sendIndex.size(); i++) remoteSlot[sendIndex[i]] = i;
+
+  auto getCoord = [&](unsigned long iGlobal, unsigned short iDim) -> passivedouble {
+    if (isLocal(iGlobal)) return SU2_TYPE::GetValue(nodes->GetCoord(iGlobal - firstIndex, iDim));
+    return remoteCoord[remoteSlot.at(iGlobal) * nDim + iDim];
+  };
+
+  /*--- Weight is the longest node distance of the element over the edge length, maximized over elements. ---*/
+
+  vector<idx_t> weight(adjacency.size(), 1);
+
+  for (auto iElem = 0ul; iElem < nElem; iElem++) {
+    const auto nNodes = elem[iElem]->GetnNodes();
+    passivedouble coord[N_POINTS_HEXAHEDRON][MAXNDIM] = {};
+    for (auto iNode = 0u; iNode < nNodes; iNode++)
+      for (auto iDim = 0u; iDim < nDim; iDim++) coord[iNode][iDim] = getCoord(elem[iElem]->GetNode(iNode), iDim);
+
+    auto distance2 = [&](unsigned short a, unsigned short b) {
+      passivedouble d2 = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++) d2 += pow(coord[a][iDim] - coord[b][iDim], 2);
+      return d2;
+    };
+
+    passivedouble maxDist2 = 0.0;
+    for (auto a = 0u; a < nNodes; a++)
+      for (auto b = a + 1; b < nNodes; b++) maxDist2 = max(maxDist2, distance2(a, b));
+
+    for (auto a = 0u; a < nNodes; a++) {
+      const auto iGlobal = elem[iElem]->GetNode(a);
+      if (!isLocal(iGlobal)) continue;
+      const auto iLocal = iGlobal - firstIndex;
+      const auto begin = adjacency.begin() + xadj[iLocal];
+      const auto end = adjacency.begin() + xadj[iLocal + 1];
+
+      for (auto b = 0u; b < nNodes; b++) {
+        const auto d2 = distance2(a, b);
+        if ((b == a) || (d2 <= 0.0)) continue;
+
+        const auto jGlobal = static_cast<idx_t>(elem[iElem]->GetNode(b));
+        const auto it = lower_bound(begin, end, jGlobal);
+        if ((it == end) || (*it != jGlobal)) continue;
+
+        const auto ratio = static_cast<idx_t>(sqrt(maxDist2 / d2));
+        auto& w = weight[it - adjacency.begin()];
+        w = max(w, min<idx_t>(maxWeight, max<idx_t>(1, ratio)));
+      }
+    }
+  }
+  return weight;
+}
+#endif
+
 void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
   /*--- We need to have parallel support with MPI and have the ParMETIS
    library compiled and linked for parallel graph partitioning. ---*/
@@ -7412,6 +7519,22 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
     vwgt[iPoint] = wp + we * (xadj[iPoint + 1] - xadj[iPoint]);
   }
 
+  /*--- Keep partition boundaries off the short edges of anisotropic cells, with the coordinates
+   *    seeding the partition. The cap keeps the total edge weight within the range of idx_t. ---*/
+
+  const bool anisotropic = config->GetParMETIS_AnisotropyWeight();
+  vector<idx_t> adjwgt;
+  vector<real_t> xyz;
+  if (anisotropic) {
+    constexpr long maxWeight = (sizeof(idx_t) >= 8) ? 1000000 : 1000;
+    adjwgt = ComputeAnisotropyEdgeWeights(maxWeight);
+    wgtflag = 3;
+    xyz.resize(nPoint * nDim);
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        xyz[iPoint * nDim + iDim] = SU2_TYPE::GetValue(nodes->GetCoord(iPoint, iDim));
+  }
+
   /*--- Create some structures that ParMETIS needs to output the partitioning. ---*/
 
   idx_t edgecut;
@@ -7420,12 +7543,21 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
   /*--- Calling ParMETIS ---*/
 
   if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-  auto err =
-      ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(), nullptr, &wgtflag, &numflag,
-                           &ncon, &nparts, tpwgts.data(), &ubvec, options, &edgecut, part.data(), &comm);
+  int err;
+  if (anisotropic) {
+    idx_t ndims = nDim;
+    err = ParMETIS_V3_PartGeomKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(), adjwgt.data(),
+                                   &wgtflag, &numflag, &ndims, xyz.data(), &ncon, &nparts, tpwgts.data(), &ubvec,
+                                   options, &edgecut, part.data(), &comm);
+  } else {
+    err = ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(), nullptr, &wgtflag,
+                               &numflag, &ncon, &nparts, tpwgts.data(), &ubvec, options, &edgecut, part.data(),
+                               &comm);
+  }
   if (err != METIS_OK) SU2_MPI::Error("Partitioning failed.", CURRENT_FUNCTION);
   if (rank == MASTER_NODE) {
-    cout << " graph partitioning complete (" << edgecut << " edge cuts)." << endl;
+    cout << " graph partitioning complete (" << edgecut << (anisotropic ? " weighted" : "") << " edge cuts)."
+         << endl;
   }
 
   /*--- Store the results of the partitioning (note that this is local
