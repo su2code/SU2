@@ -120,7 +120,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
 
   /*--- Compute P and Lambda (do it with the Normal) ---*/
 
-  GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor);
+  GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor, (R*turb_ke_j+turb_ke_i)/(R+1));
 
   /*--- Flow eigenvalues and Entropy correctors ---*/
 
@@ -130,7 +130,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
 
   /*--- Compute inverse P ---*/
-  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor, (R*turb_ke_j+turb_ke_i)/(R+1));
 
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
   GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i, turb_ke_i);
@@ -930,7 +930,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
     RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-(R*turb_ke_j+turb_ke_i)/(R+1))));
 
     /*--- Compute P and Lambda (do it with the Normal) ---*/
-    GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor);
+    GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor, (R*turb_ke_j+turb_ke_i)/(R+1));
 
     ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -946,7 +946,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
     Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
 
     /*--- Compute inverse P ---*/
-    GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
+    GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor, (R*turb_ke_j+turb_ke_i)/(R+1));
 
     /*--- Jacobias of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i, turb_ke_i);

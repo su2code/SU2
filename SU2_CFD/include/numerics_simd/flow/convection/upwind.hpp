@@ -61,6 +61,7 @@ protected:
   const bool muscl;
   const su2double umusclKappa;
   const LIMITER typeLimiter;
+  const CVariable* const tkeVars; /*!< \brief SST turbulence variables (k is part of the total energy), else nullptr. */
 
   /*!
    * \brief Constructor, store some constants and forward args to base.
@@ -73,7 +74,8 @@ protected:
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
     umusclKappa(config.GetMUSCL_Kappa_Flow()),
-    typeLimiter(config.GetKind_SlopeLimit_Flow()) {
+    typeLimiter(config.GetKind_SlopeLimit_Flow()),
+    tkeVars(config.GetKind_Turb_Model() == TURB_MODEL::SST ? findTurbVars(args...) : nullptr) {
   }
 
 public:
@@ -175,10 +177,10 @@ private:
   const su2double kappa;
   const su2double entropyFix;
   const ENUM_ROELOWDISS typeDissip;
-  const CVariable* const tkeVars; /*!< \brief SST turbulence variables (k is part of the total enthalpy), else nullptr. */
   using Base::gamma;
   using Base::gasConst;
   using Base::dynamicGrid;
+  using Base::tkeVars;
 
 public:
   /*!
@@ -188,8 +190,7 @@ public:
   CRoeScheme(const CConfig& config, Ts&... args) : Base(config, args...),
     kappa(config.GetRoe_Kappa()),
     entropyFix(config.GetEntropyFix_Coeff()),
-    typeDissip(static_cast<ENUM_ROELOWDISS>(config.GetKind_RoeLowDiss())),
-    tkeVars(config.GetKind_Turb_Model() == TURB_MODEL::SST ? findTurbVars(args...) : nullptr) {
+    typeDissip(static_cast<ENUM_ROELOWDISS>(config.GetKind_RoeLowDiss())) {
   }
 
 
@@ -278,12 +279,12 @@ public:
     /*--- P tensor. ---*/
 
     auto pMat = pMatrix(gamma, roeAvg.density, roeAvg.velocity,
-                        roeAvg.projVel, roeAvg.speedSound, unitNormal);
+                        roeAvg.projVel, roeAvg.speedSound, unitNormal, roeAvg.tke);
 
     /*--- Inverse P tensor. ---*/
 
     auto pMatInv = pMatrixInv(gamma, roeAvg.density, roeAvg.velocity,
-                              roeAvg.projVel, roeAvg.speedSound, unitNormal);
+                              roeAvg.projVel, roeAvg.speedSound, unitNormal, roeAvg.tke);
 
     /*--- Diference between conservative variables at jPoint and iPoint. ---*/
 
@@ -338,6 +339,7 @@ protected:
   using Base::gamma;
   using Base::gasConst;
   using Base::dynamicGrid;
+  using Base::tkeVars;
 
 public:
   /*!
@@ -405,10 +407,16 @@ public:
     lambda(nDim) = fmax(projVel_i + soundSpeed_i, 0);
     lambda(nDim+1) = fmax(projVel_i - soundSpeed_i, 0);
 
+    /*--- With SST the total energy contains k, taken from the cells. ---*/
+    Double tke_i = 0.0, tke_j = 0.0;
+    if (tkeVars) {
+      tke_i = gatherVariables(iPoint, tkeVars->GetSolution());
+      tke_j = gatherVariables(jPoint, tkeVars->GetSolution());
+    }
     auto pMat = pMatrix(gamma, Vweighted.i.density(), Vweighted.i.velocity(),
-                        projVel_i, soundSpeed_i, unitNormal);
+                        projVel_i, soundSpeed_i, unitNormal, tke_i);
     auto pMatInv = pMatrixInv(gamma, Vweighted.i.density(), Vweighted.i.velocity(),
-                              projVel_i, soundSpeed_i, unitNormal);
+                              projVel_i, soundSpeed_i, unitNormal, tke_i);
 
     auto updateFlux = [&](const auto& u, auto& jac) {
       for (size_t iVar = 0; iVar < nVar; ++iVar) {
@@ -437,9 +445,9 @@ public:
     lambda(nDim+1) = fmin(projVel_j - soundSpeed_j, 0);
 
     pMat = pMatrix(gamma, Vweighted.j.density(), Vweighted.j.velocity(),
-                   projVel_j, soundSpeed_j, unitNormal);
+                   projVel_j, soundSpeed_j, unitNormal, tke_j);
     pMatInv = pMatrixInv(gamma, Vweighted.j.density(), Vweighted.j.velocity(),
-                         projVel_j, soundSpeed_j, unitNormal);
+                         projVel_j, soundSpeed_j, unitNormal, tke_j);
     updateFlux(U.j.all, jac_j);
   }
 };

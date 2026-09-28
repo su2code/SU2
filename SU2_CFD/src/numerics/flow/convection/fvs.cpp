@@ -132,8 +132,8 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   /*--- Compute projected P, invP, and Lambda ---*/
 
   su2double P_Tensor[MAXNVAR][MAXNVAR], invP_Tensor[MAXNVAR][MAXNVAR];
-  GetPMatrix(Vst_i[nDim + 2], Velst_i, Vst_i[nDim + 4], UnitNormal, P_Tensor);
-  GetPMatrix_inv(Vst_i[nDim + 2], Velst_i, Vst_i[nDim + 4], UnitNormal, invP_Tensor);
+  GetPMatrix(Vst_i[nDim + 2], Velst_i, Vst_i[nDim + 4], UnitNormal, P_Tensor, turb_ke_i);
+  GetPMatrix_inv(Vst_i[nDim + 2], Velst_i, Vst_i[nDim + 4], UnitNormal, invP_Tensor, turb_ke_i);
 
   /*--- Projected flux (f+) at i ---*/
 
@@ -167,8 +167,8 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Compute projected P, invP, and Lambda ---*/
 
-  GetPMatrix(Vst_j[nDim + 2], Velst_j, Vst_j[nDim + 4], UnitNormal, P_Tensor);
-  GetPMatrix_inv(Vst_j[nDim + 2], Velst_j, Vst_j[nDim + 4], UnitNormal, invP_Tensor);
+  GetPMatrix(Vst_j[nDim + 2], Velst_j, Vst_j[nDim + 4], UnitNormal, P_Tensor, turb_ke_j);
+  GetPMatrix_inv(Vst_j[nDim + 2], Velst_j, Vst_j[nDim + 4], UnitNormal, invP_Tensor, turb_ke_j);
 
   /*--- Projected flux (f-) ---*/
 

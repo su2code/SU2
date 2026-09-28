@@ -107,6 +107,7 @@ struct CRoeVariables {
   Double enthalpy;
   Double speedSound;
   Double projVel;
+  Double tke;  /*!< \brief Roe-averaged k (SST, part of the total enthalpy). */
 };
 
 /*!
@@ -127,8 +128,8 @@ FORCEINLINE CRoeVariables<nDim> roeAveragedVariables(const Double& gamma,
     roeAvg.velocity(iDim) = (R*V.j.velocity(iDim) + V.i.velocity(iDim)) * D;
   }
   roeAvg.enthalpy = (R*V.j.enthalpy() + V.i.enthalpy()) * D;
-  const Double tke = (R*tke_j + tke_i) * D;
-  roeAvg.speedSound = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity) - tke));
+  roeAvg.tke = (R*tke_j + tke_i) * D;
+  roeAvg.speedSound = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity) - roeAvg.tke));
   roeAvg.projVel = dot(roeAvg.velocity, normal);
   return roeAvg;
 }

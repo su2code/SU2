@@ -291,6 +291,7 @@ private:
   using Base::nVar;
   using Base::gamma;
   using Base::fixFactor;
+  using Base::tkeVars;
   const su2double kappa2;
   const su2double kappa4;
   const su2double entropyFix;
@@ -358,11 +359,16 @@ public:
 
     const auto unitProjVel = dot(avgV.velocity(), unitNormal);
 
+    /*--- With SST the total energy contains k, averaged between the cells. ---*/
+    Double avgTke = 0.0;
+    if (tkeVars) {
+      avgTke = 0.5 * (gatherVariables(iPoint, tkeVars->GetSolution()) + gatherVariables(jPoint, tkeVars->GetSolution()));
+    }
     auto pMat = pMatrix(gamma, avgV.density(), avgV.velocity(),
-                        unitProjVel, avgV.speedSound(), unitNormal);
+                        unitProjVel, avgV.speedSound(), unitNormal, avgTke);
 
     auto pMatInv = pMatrixInv(gamma, avgV.density(), avgV.velocity(),
-                              unitProjVel, avgV.speedSound(), unitNormal);
+                              unitProjVel, avgV.speedSound(), unitNormal, avgTke);
 
     /*--- Compute limited absolute eigenvalues (times area). ---*/
 

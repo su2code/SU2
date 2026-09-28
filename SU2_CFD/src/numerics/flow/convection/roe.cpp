@@ -147,7 +147,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   /*--- With SST the total enthalpy contains k, which is not part of the speed of sound. ---*/
-  const su2double RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
+  RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
   RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
@@ -172,7 +172,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- P tensor ---*/
 
-  GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor);
+  GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor, RoeTke);
 
   /*--- Projected velocity adjusted for mesh motion ---*/
 
@@ -263,7 +263,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   unsigned short iVar, jVar, kVar;
 
   /*--- Compute inverse P tensor ---*/
-  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor, RoeTke);
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -353,7 +353,7 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- If implicit use the Jacobians of the standard Roe scheme as an approximation ---*/
 
-  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor, RoeTke);
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
@@ -426,7 +426,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- If implicit use the Jacobians of the standard Roe scheme as an approximation ---*/
 
-  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor, RoeTke);
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
@@ -834,7 +834,8 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
 
   /*--- Compute P and Lambda (do it with the Normal) ---*/
 
-  GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, &RoeEnthalpy, &RoeChi, &RoeKappa, UnitNormal, P_Tensor);
+  GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, &RoeEnthalpy, &RoeChi, &RoeKappa, UnitNormal, P_Tensor,
+             (R*turb_ke_j+turb_ke_i)/(R+1));
 
   ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -932,7 +933,8 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
 
     /*--- Compute inverse P ---*/
 
-    GetPMatrix_inv(invP_Tensor, &RoeDensity, RoeVelocity, &RoeSoundSpeed, &RoeChi , &RoeKappa, UnitNormal);
+    GetPMatrix_inv(invP_Tensor, &RoeDensity, RoeVelocity, &RoeSoundSpeed, &RoeChi , &RoeKappa, UnitNormal,
+                   (R*turb_ke_j+turb_ke_i)/(R+1));
 
      /*--- Jacobians of the inviscid flux, scaled by
       0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/

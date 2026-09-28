@@ -134,9 +134,11 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
  */
 template<size_t nDim, class RandomAccessIterator>
 FORCEINLINE MatrixDbl<nDim+2> pMatrix(const Double& gamma, const Double& density, const RandomAccessIterator& velocity,
-                                      const Double& projVel, const Double& speedSound, const VectorDbl<nDim>& normal) {
+                                      const Double& projVel, const Double& speedSound, const VectorDbl<nDim>& normal,
+                                      const Double& tke = Double(0.0)) {
   MatrixDbl<nDim+2> pMat;
-  const Double vel2 = 0.5*squaredNorm<nDim>(velocity);
+  /*--- With SST the total energy contains k (tke). ---*/
+  const Double vel2 = 0.5*squaredNorm<nDim>(velocity) + tke;
 
   if (nDim == 2) {
     pMat(0,0) = 1.0;
@@ -197,11 +199,13 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(const Double& gamma, const Double& density
 template<size_t nDim, class RandomAccessIterator>
 FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(const Double& gamma, const Double& density,
                                          const RandomAccessIterator& velocity, const Double& projVel,
-                                         const Double& speedSound, const VectorDbl<nDim>& normal) {
+                                         const Double& speedSound, const VectorDbl<nDim>& normal,
+                                         const Double& tke = Double(0.0)) {
   MatrixDbl<nDim+2> pMatInv;
 
   const Double c2 = pow(speedSound,2);
-  const Double vel2 = 0.5*squaredNorm<nDim>(velocity);
+  /*--- With SST the total energy contains k (tke), dp/drho = (gamma-1) (|u|^2/2 - k). ---*/
+  const Double vel2 = 0.5*squaredNorm<nDim>(velocity) - tke;
   const Double oneOnRho = 1 / density;
 
   if (nDim == 2) {

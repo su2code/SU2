@@ -2016,7 +2016,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       su2double RoeEnthalpy = (R * Primitive_j[prim_idx.Enthalpy()] + Primitive_i[prim_idx.Enthalpy()]) / (R+1);
 
       const su2double RoeTke = (R * tke_j + tke_i) / (R+1);  // SST: the total enthalpy contains k
-      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+      /*--- Speed of sound of the Roe average and of each side (schemes such as HLLC use both). ---*/
+      auto negSoundSpeed2 = [&](const su2double* prim, su2double tke) {
+        const su2double vel2 = GeometryToolbox::SquaredNorm(nDim, &prim[prim_idx.Velocity()]);
+        return (Gamma-1)*(prim[prim_idx.Enthalpy()] - 0.5*vel2 - tke) < 0.0;
+      };
+      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0) ||
+                                   negSoundSpeed2(Primitive_i, tke_i) || negSoundSpeed2(Primitive_j, tke_j);
       bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
       bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
       counter_local += bad_recon;
@@ -5517,10 +5523,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       Energy_e += Tke_e;
 
       /*--- Compute P (matrix of right eigenvectors) ---*/
-      conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
+      conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor,
+                                Tke_e);
 
       /*--- Compute inverse P (matrix of left eigenvectors)---*/
-      conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+      conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal,
+                                    Tke_e);
 
       /*--- eigenvalues contribution due to grid motion ---*/
       su2double ProjVelocity_i = GeometryToolbox::DotProduct(nDim, Velocity_i, UnitNormal);
@@ -6008,10 +6016,13 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         }
 
         /*--- Compute P (matrix of right eigenvectors) ---*/
-        conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
+        const su2double Tke_i = tkeNeeded ? turbNodes->GetSolution(iPoint, 0) : 0.0;  // SST: k in the total energy
+        conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor,
+                                  Tke_i);
 
         /*--- Compute inverse P (matrix of left eigenvectors)---*/
-        conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+        conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal,
+                                      Tke_i);
 
         /*--- eigenvalues contribution due to grid motion ---*/
         if (dynamic_grid){
