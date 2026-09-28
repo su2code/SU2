@@ -561,7 +561,6 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
       F_onset1_Here = F_onset1;
       F_onset2_Here = F_onset2;
       F_onset3_Here = F_onset3;
-      F_onset_Here = F_onset;
 
       if (options.CrossFlow && TurbFamily == TURB_FAMILY::SA) {
         /*--- Menter and Smirnov C1-based cross-flow criterion, Lee and Baeder (2021), Eqs. 25-35. ---*/
@@ -617,6 +616,9 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
         F_onset = max(F_onset, F_onset_CF);
 
       }
+
+      /*--- Output value, including the cross-flow corrections. ---*/
+      F_onset_Here = F_onset;
 
       /*--- Menter et al. (2015), Eq. 5, and Lee and Baeder (2021), Eq. 6. ---*/
       const su2double f_turb = exp(-pow(R_t / 2, 4));

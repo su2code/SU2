@@ -1377,7 +1377,6 @@ enum class LM_OPTIONS {
   NONE,           /*!< \brief No option / default. */
   CROSSFLOW,      /*!< \brief Cross-flow corrections. */
   SLM,            /*!< \brief Simplified version. */
-  PRODLIM,        /*!< \brief Add production term to Pk. */
   MALAN,          /*!< \brief Kind of transition correlation model (Malan). */
   SULUKSNA,       /*!< \brief Kind of transition correlation model (Suluksna). */
   KRAUSE,         /*!< \brief Kind of transition correlation model (Krause). */
@@ -1394,8 +1393,8 @@ enum class LM_OPTIONS {
 static const MapType<std::string, LM_OPTIONS> LM_Options_Map = {
   MakePair("NONE", LM_OPTIONS::NONE)
   MakePair("CROSSFLOW", LM_OPTIONS::CROSSFLOW)
+  MakePair("LM2015", LM_OPTIONS::CROSSFLOW)  // name of the option before the one-equation model was added
   MakePair("SLM", LM_OPTIONS::SLM)
-  MakePair("PRODLIM", LM_OPTIONS::PRODLIM)
   MakePair("MALAN", LM_OPTIONS::MALAN)
   MakePair("SULUKSNA", LM_OPTIONS::SULUKSNA)
   MakePair("KRAUSE", LM_OPTIONS::KRAUSE)
@@ -1447,7 +1446,6 @@ constexpr double LM_CROSSFLOW_MIN_ROUGHNESS = 1e-8;
 struct LM_ParsedOptions {
   LM_OPTIONS version = LM_OPTIONS::NONE;  /*!< \brief LM base model. */
   bool SLM = false;                       /*!< \brief Use simplified version. */
-  bool ProdLim = false;                   /*!< \brief Add production term to Pk. */
   bool CrossFlow = false;                    /*!< \brief Use cross-flow corrections. */
   TURB_TRANS_CORRELATION Correlation = TURB_TRANS_CORRELATION::DEFAULT;
   TURB_TRANS_CORRELATION_SLM Correlation_SLM = TURB_TRANS_CORRELATION_SLM::DEFAULT;
@@ -1469,7 +1467,6 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
   };
 
   LMParsedOptions.SLM = IsPresent(LM_OPTIONS::SLM);
-  LMParsedOptions.ProdLim = IsPresent(LM_OPTIONS::PRODLIM);
 
   LMParsedOptions.CrossFlow = IsPresent(LM_OPTIONS::CROSSFLOW);
 
