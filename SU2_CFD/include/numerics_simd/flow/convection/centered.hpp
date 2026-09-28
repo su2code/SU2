@@ -360,10 +360,18 @@ public:
     const auto unitProjVel = dot(avgV.velocity(), unitNormal);
 
     /*--- With SST the total energy contains k, averaged between the cells. ---*/
-    Double avgTke = 0.0;
+    Double tke_i = 0.0, tke_j = 0.0;
     if (tkeVars) {
-      avgTke = 0.5 * (gatherVariables(iPoint, tkeVars->GetSolution()) + gatherVariables(jPoint, tkeVars->GetSolution()));
+      tke_i = gatherVariables(iPoint, tkeVars->GetSolution());
+      tke_j = gatherVariables(jPoint, tkeVars->GetSolution());
     }
+    const Double avgTke = 0.5 * (tke_i + tke_j);
+
+    /*--- Delta(rho k) = avg(rho) Delta k + avg(k) Delta rho. The part with Delta k is not a pressure jump: remove it
+     from the 2nd order dissipation before the projection and advect it with the contact wave. The 4th order term
+     keeps it (the Laplacian of k is not available). ---*/
+    const Double rhoDeltaTke = eps2 * avgV.density() * (tke_i - tke_j);
+    scalarDissip(nVar-1) -= rhoDeltaTke;
     auto pMat = pMatrix(gamma, avgV.density(), avgV.velocity(),
                         unitProjVel, avgV.speedSound(), unitNormal, avgTke);
 
@@ -408,6 +416,7 @@ public:
         }
       }
     }
+    flux(nVar-1) += lambda(0) * rhoDeltaTke;
   }
 };
 

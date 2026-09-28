@@ -34,9 +34,10 @@ namespace {
 
 constexpr su2double gamma = 1.4;
 
-std::unique_ptr<CConfig> MakeConfig() {
+std::unique_ptr<CConfig> MakeConfig(bool implicit = true) {
   std::stringstream options;
-  options << "SOLVER= EULER\nCONV_NUM_METHOD_FLOW= ROE\nTIME_DISCRE_FLOW= EULER_IMPLICIT\nENTROPY_FIX_COEFF= 0.0\n";
+  options << "SOLVER= EULER\nCONV_NUM_METHOD_FLOW= ROE\nENTROPY_FIX_COEFF= 0.0\nROE_KAPPA= 0.5\n";
+  options << "TIME_DISCRE_FLOW= " << (implicit ? "EULER_IMPLICIT" : "EULER_EXPLICIT") << "\n";
   return std::make_unique<CConfig>(options, SU2_COMPONENT::SU2_CFD, false);
 }
 
@@ -54,7 +55,75 @@ void Primitives(unsigned short nDim, su2double rho, const su2double* vel, su2dou
   V[nDim + 4] = sqrt(gamma * p / rho);
 }
 
+/*--- Secondary variables (dp/drho_e, dp/de_rho) of the ideal gas, for the general-gas schemes. ---*/
+void Secondary(su2double rho, su2double p, su2double* S) {
+  S[0] = p / rho;
+  S[1] = (gamma - 1) * rho;
+}
+
+/*--- Common constructor for the schemes of the family. ---*/
+template <class Scheme>
+std::unique_ptr<CNumerics> MakeScheme(unsigned short nDim, unsigned short nVar, const CConfig* config) {
+  return std::make_unique<Scheme>(nDim, nVar, config);
+}
+template <>
+std::unique_ptr<CNumerics> MakeScheme<CUpwRoe_Flow>(unsigned short nDim, unsigned short nVar, const CConfig* config) {
+  return std::make_unique<CUpwRoe_Flow>(nDim, nVar, config, false);
+}
+
+/*--- Roe flux between two states with the same pressure and velocity and different density and k. With the
+ entropy fix off this is a contact discontinuity, whose exact (upwind) flux is the flux of the upstream state. ---*/
+template <class Scheme>
+void CheckContactWithTkeJump(const char* name, unsigned short nDim, const su2double* vel, bool implicit) {
+  auto config = MakeConfig(implicit);
+  const unsigned short nVar = nDim + 2;
+  auto numerics = MakeScheme<Scheme>(nDim, nVar, config.get());
+
+  const su2double p = 1.0, rho_i = 1.4, rho_j = 0.7, k_i = 0.1, k_j = 0.3;
+  const su2double n2[2] = {0.6, 0.8}, n3[3] = {2.0 / 7, 3.0 / 7, 6.0 / 7};
+  const su2double* n = (nDim == 2) ? n2 : n3;
+  su2double Vi[10] = {0.0}, Vj[10] = {0.0}, Si[2], Sj[2];
+  Primitives(nDim, rho_i, vel, p, k_i, Vi);
+  Primitives(nDim, rho_j, vel, p, k_j, Vj);
+  Secondary(rho_i, p, Si);
+  Secondary(rho_j, p, Sj);
+  numerics->SetPrimitive(Vi, Vj);
+  numerics->SetSecondary(Si, Sj);
+  numerics->SetNormal(n);
+  numerics->SetTurbKineticEnergy(k_i, k_j);
+  const auto res = numerics->ComputeResidual(config.get());
+
+  su2double un = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) un += vel[iDim] * n[iDim];
+  const su2double rho_up = (un >= 0.0) ? rho_i : rho_j;
+  const su2double* V_up = (un >= 0.0) ? Vi : Vj;
+
+  CAPTURE(name, nDim, un, implicit);
+  CHECK(res.residual[0] == Approx(rho_up * un).margin(1e-12));
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    CHECK(res.residual[iDim + 1] == Approx(rho_up * vel[iDim] * un + p * n[iDim]).margin(1e-12));
+  CHECK(res.residual[nVar - 1] == Approx(rho_up * V_up[nDim + 3] * un).margin(1e-12));
+}
+
+template <class Scheme>
+void CheckContactsWithTkeJump(const char* name, bool implicit = true, unsigned short maxDim = 3) {
+  const su2double zero[3] = {0.0, 0.0, 0.0}, moving[3] = {0.3, -0.1, 0.2}, reverse[3] = {-0.3, 0.1, -0.2};
+  for (unsigned short nDim = 2; nDim <= maxDim; nDim++) {
+    for (const auto* vel : {zero, moving, reverse}) CheckContactWithTkeJump<Scheme>(name, nDim, vel, implicit);
+  }
+}
+
 }  // namespace
+
+TEST_CASE("Roe schemes resolve a contact with a jump of k exactly", "[Roe][SST]") {
+  CheckContactsWithTkeJump<CUpwRoe_Flow>("Roe");
+  CheckContactsWithTkeJump<CUpwGeneralRoe_Flow>("general Roe", true);
+  /*--- 2D only: in 3D, the wave strengths of these schemes do not match the columns of the P matrix (not related
+   to k, fixed separately). ---*/
+  CheckContactsWithTkeJump<CUpwL2Roe_Flow>("L2Roe", true, 2);
+  CheckContactsWithTkeJump<CUpwLMRoe_Flow>("LMRoe", true, 2);
+  CheckContactsWithTkeJump<CUpwGeneralRoe_Flow>("general Roe", false, 2);
+}
 
 TEST_CASE("Roe eigenvector matrices are inverse with k in the total energy", "[Roe][SST]") {
   auto config = MakeConfig();

@@ -269,6 +269,11 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   for (iVar = 0; iVar < nVar; iVar++)
     Diff_U[iVar] = Conservatives_j[iVar]-Conservatives_i[iVar];
 
+  /*--- With SST rho*E contains rho*k, and Delta(rho k) = RoeDensity Delta k + RoeTke Delta rho. The part with
+   Delta k is not a pressure jump: remove it before the projection and advect it with the contact wave. ---*/
+  const su2double rhoDeltaTke = RoeDensity*(turb_ke_j-turb_ke_i);
+  Diff_U[nVar-1] -= rhoDeltaTke;
+
   /*--- Low dissipation formulation ---*/
   if (roe_low_dissipation)
     Dissipation_ij = GetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, config);
@@ -293,6 +298,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
       }
     }
   }
+  val_residual[nVar-1] -= (1.0-kappa)*Lambda[0]*rhoDeltaTke*Area*Dissipation_ij;
 
 }
 
@@ -348,6 +354,9 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   for (iVar = 0; iVar < nVar; iVar++)
     for (kVar = 0; kVar < nVar; kVar++)
       val_residual[iVar] -= (1.0-kappa)*Lambda[kVar]*delta_wave[kVar]*P_Tensor[iVar][kVar]*Area;
+
+  /*--- With SST, the jump of k in rho*E is advected with the contact wave. ---*/
+  val_residual[nVar-1] -= (1.0-kappa)*Lambda[0]*RoeDensity*(turb_ke_j-turb_ke_i)*Area;
 
   if (!implicit) return;
 
@@ -421,6 +430,9 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   for (iVar = 0; iVar < nVar; iVar++)
     for (kVar = 0; kVar < nVar; kVar++)
       val_residual[iVar] -= (1.0-kappa)*Lambda[kVar]*delta_wave[kVar]*P_Tensor[iVar][kVar]*Area;
+
+  /*--- With SST, the jump of k in rho*E is advected with the contact wave. ---*/
+  val_residual[nVar-1] -= (1.0-kappa)*Lambda[0]*RoeDensity*(turb_ke_j-turb_ke_i)*Area;
 
   if (!implicit) return;
 
@@ -918,6 +930,8 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
       for (jVar = 0; jVar < nVar; jVar++)
         Flux[iVar] -= 0.5*Lambda[jVar]*delta_wave[jVar]*P_Tensor[iVar][jVar]*Area;
     }
+    /*--- With SST, the jump of k in rho*E is advected with the contact wave. ---*/
+    Flux[nVar-1] -= 0.5*Lambda[0]*RoeDensity*(turb_ke_j-turb_ke_i)*Area;
 
     /*--- Flux contribution due to grid motion ---*/
     if (dynamic_grid) {
@@ -948,6 +962,11 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
     for (iVar = 0; iVar < nVar; iVar++)
       Diff_U[iVar] = U_j[iVar]-U_i[iVar];
 
+    /*--- With SST, the part of the jump of rho*E due to the jump of k is not a pressure jump: remove it before the
+     projection and advect it with the contact wave. ---*/
+    const su2double rhoDeltaTke = RoeDensity*(turb_ke_j-turb_ke_i);
+    Diff_U[nVar-1] -= rhoDeltaTke;
+
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       Flux[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
@@ -964,6 +983,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
         Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
       }
     }
+    Flux[nVar-1] -= (1.0-kappa)*Lambda[0]*rhoDeltaTke*Area;
 
     /*--- Jacobian contributions due to grid motion ---*/
     if (dynamic_grid) {

@@ -5631,7 +5631,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         }
 
         /*--- Compute flux Jacobian in state b ---*/
-        conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
+        conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b, Tke_e);
 
         /*--- Jacobian contribution due to grid motion ---*/
         if (dynamic_grid){
@@ -5912,7 +5912,6 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               turboVelocity[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
             ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
             StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-            if (tkeNeeded) StaticEnthalpy_e -= turbNodes->GetSolution(iPoint, 0);
             GetFluidModel()->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
             Density_e = GetFluidModel()->GetDensity();
             StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
@@ -5948,7 +5947,6 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
 
             StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-            if (tkeNeeded) StaticEnthalpy_e -= turbNodes->GetSolution(iPoint, 0);
             GetFluidModel()->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
             Density_e = GetFluidModel()->GetDensity();
             StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
@@ -6086,7 +6084,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           Velocity2_b += Velocity_b[iDim]*Velocity_b[iDim];
         }
         Energy_b = u_b[nVar-1]/Density_b;
-        StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
+        StaticEnergy_b = Energy_b - 0.5*Velocity2_b - Tke_i;  // SST: k in the total energy
         GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
         Pressure_b = GetFluidModel()->GetPressure();
         Temperature_b = GetFluidModel()->GetTemperature();
@@ -6142,7 +6140,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           }
 
           /*--- Compute flux Jacobian in state b ---*/
-          conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
+          conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b, Tke_i);
 
           /*--- Jacobian contribution due to grid motion ---*/
           if (dynamic_grid)
@@ -7350,6 +7348,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+        /*--- SST: the total enthalpy of the domain contains k, the imposed total enthalpy does not. ---*/
+        if (tkeNeeded) Energy -= solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
         Pressure    = V_domain[nDim+1];
         H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
         SoundSpeed2 = Gamma*Pressure/Density;
@@ -8271,6 +8271,8 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
       Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+      /*--- SST: the total enthalpy of the domain contains k, the imposed total enthalpy does not. ---*/
+      if (tkeNeeded) Energy -= solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
       Pressure    = V_domain[nDim+1];
       H_Exhaust   = (Gamma*Gas_Constant/Gamma_Minus_One)*Exhaust_Temperature;
       SoundSpeed2 = Gamma*Pressure/Density;
@@ -8732,6 +8734,8 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+        /*--- SST: the total enthalpy of the domain contains k, the imposed total enthalpy does not. ---*/
+        if (tkeNeeded) Energy -= solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
         Pressure    = V_domain[nDim+1];
         H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
         SoundSpeed2 = Gamma*Pressure/Density;

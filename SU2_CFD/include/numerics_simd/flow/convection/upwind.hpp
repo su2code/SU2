@@ -293,6 +293,11 @@ public:
       deltaU(iVar) = U.j.all(iVar) - U.i.all(iVar);
     }
 
+    /*--- With SST rho*E contains rho*k, and Delta(rho k) = rho_roe Delta k + k_roe Delta rho. The part with Delta k
+     is not a pressure jump: remove it before the projection and advect it with the contact wave. ---*/
+    const Double rhoDeltaTke = roeAvg.density * (tke_j - tke_i);
+    deltaU(nVar-1) -= rhoDeltaTke;
+
     /*--- Dissipation terms. ---*/
 
     Double dissipation = roeDissipation(iPoint, jPoint, typeDissip, solution);
@@ -318,6 +323,7 @@ public:
         }
       }
     }
+    flux(nVar-1) -= (1-kappa) * area * dissipation * lambda(0) * rhoDeltaTke;
   }
 };
 
