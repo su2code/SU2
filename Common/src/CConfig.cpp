@@ -4124,6 +4124,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                    CURRENT_FUNCTION);
   }
 
+  /*--- The SA_* hybrid models are built on the SA model and the SST_* ones on the SST model. ---*/
+  const bool hybridSA = Kind_HybridRANSLES == SA_DES || Kind_HybridRANSLES == SA_DDES ||
+                        Kind_HybridRANSLES == SA_ZDES || Kind_HybridRANSLES == SA_EDDES;
+  const bool hybridSST = Kind_HybridRANSLES == SST_DDES || Kind_HybridRANSLES == SST_IDDES ||
+                         Kind_HybridRANSLES == SST_SIDDES || Kind_HybridRANSLES == SST_EDDES;
+  if ((hybridSA && Kind_Turb_Model != TURB_MODEL::SA) || (hybridSST && Kind_Turb_Model != TURB_MODEL::SST)) {
+    SU2_MPI::Error(string("The hybrid RANS/LES model (HYBRID_RANSLES) must match the turbulence model (KIND_TURB_MODEL): ") +
+                   "SA_* options require SA, SST_* options require SST.", CURRENT_FUNCTION);
+  }
+
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
 

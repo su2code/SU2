@@ -1762,7 +1762,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("LESIQ", iPoint, LESIQ);
     if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
       const su2double betaStar = 0.09; // constants[6]
-      const su2double RANSLength = sqrt(Node_Flow->GetSolution(iPoint, 0)) / max(1e-20, (betaStar * Node_Flow->GetSolution(iPoint, 1)));
+      const su2double RANSLength = sqrt(Node_Turb->GetSolution(iPoint, 0)) / max(1e-20, (betaStar * Node_Turb->GetSolution(iPoint, 1)));
       const su2double RatioL = 0.1;  // TODO:: it should be less or equal than 0.2 - 0.1. Should be taken as input from config?
       const su2double SRSGridSize = RANSLength * RatioL;
       SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, SRSGridSize);

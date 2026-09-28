@@ -924,7 +924,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
     const su2double wallDist2 = geometry->nodes->GetWall_Distance(iPoint)*geometry->nodes->GetWall_Distance(iPoint); 
     
     const su2double eddyVisc = nodes->GetmuT(iPoint)/flowNodes->GetDensity(iPoint);
-    const su2double lamVisc = nodes->GetLaminarViscosity(iPoint)/flowNodes->GetDensity(iPoint);
+    const su2double lamVisc = flowNodes->GetLaminarViscosity(iPoint)/flowNodes->GetDensity(iPoint);
 
     const su2double C_DES1 = 0.78;
     const su2double C_DES2 = 0.61;

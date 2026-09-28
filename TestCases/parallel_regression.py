@@ -1161,9 +1161,9 @@ def main():
 
     # Hybrid RANS/LES models on the ONERA M6 wing, restarting from a RANS solution
     ddes_oneram6_vals = {"sst_ddes": [-3.562793, -0.782226, 1.862938, 0.262000, 0.023186],
-                         "sst_iddes": [-3.548910, 3.066218, 2.094562, 0.262015, 0.023189],
+                         "sst_iddes": [-3.548910, 3.066218, 2.094583, 0.262015, 0.023189],
                          "sst_siddes": [-3.548930, 3.066218, 2.094596, 0.262000, 0.023186],
-                         "sst_eddes": [-3.562348, 0.215307, 1.862789, 0.262000, 0.023186],
+                         "sst_eddes": [-3.562348, 0.218641, 1.862787, 0.262000, 0.023186],
                          "sa_eddes": [-3.510007, -3.683557, 0.266420, 0.023471]}
     for model, vals in ddes_oneram6_vals.items():
         ddes_oneram6 = TestCase('ddes_oneram6_' + model)
