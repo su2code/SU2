@@ -216,7 +216,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Set the vortex tilting coefficient at every node if required ---*/
 
-    if (kind_hybridRANSLES == SST_EDDES || kind_hybridRANSLES == SST_EDDES_UNSTR){
+    if (kind_hybridRANSLES == SST_EDDES){
       auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1003,12 +1003,10 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         break;
       }
-      case SST_EDDES:
-      case SST_EDDES_UNSTR: {
+      case SST_EDDES: {
         /*--- DDES with the shear-layer-adapted subgrid length-scale of Shur et al. (An Enhanced Version of DES with
          Rapid Transition from RANS to LES in Separated Flows, Flow Turbulence Combust 95, 2015), applied to the SST model
-         as in Guseva et al. (Flow Turbulence Combust 98, 2017) and Xiao et al. (Int. J. Heat Fluid Flow 85, 2020).
-         SST_EDDES_UNSTR uses F_KH * Delta_hyb of He et al. (J. Turbomach. 144, 2022) instead. ---*/
+         as in Guseva et al. (Flow Turbulence Combust 98, 2017) and Xiao et al. (Int. J. Heat Fluid Flow 85, 2020). ---*/
 
         const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
         const su2double C_d1 = 20.0;
@@ -1016,8 +1014,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
 
-        const su2double delta = ShearLayerAdaptedLengthScale(geometry, iPoint, Vorticity,
-                                                             kind_hybridRANSLES == SST_EDDES_UNSTR, f_d < 0.99);
+        const su2double delta = ShearLayerAdaptedLengthScale(geometry, iPoint, Vorticity, f_d < 0.99);
 
         const su2double l_LES = C_DES * delta;
         DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);

@@ -218,7 +218,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Set the vortex tilting coefficient at every node if required ---*/
 
-    if (kind_hybridRANSLES == SA_EDDES || kind_hybridRANSLES == SA_EDDES_UNSTR){
+    if (kind_hybridRANSLES == SA_EDDES){
       auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1162,19 +1162,16 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
         break;
       }
-      case SA_EDDES:
-      case SA_EDDES_UNSTR: {
+      case SA_EDDES: {
         /*--- An Enhanced Version of DES with Rapid Transition from RANS to LES in Separated Flows.
          Shur et al.
          Flow Turbulence Combust - 2015
-         SA_EDDES_UNSTR uses F_KH * Delta_hyb of He et al. (J. Turbomach. 144, 2022) instead.
          ---*/
 
         const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
         const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
 
-        su2double maxDelta = ShearLayerAdaptedLengthScale(geometry, iPoint, vorticity,
-                                                          kindHybridRANSLES == SA_EDDES_UNSTR, f_d < 0.99);
+        su2double maxDelta = ShearLayerAdaptedLengthScale(geometry, iPoint, vorticity, f_d < 0.99);
 
         if (LES_FilterWidth > 0.0){
           maxDelta = LES_FilterWidth;
