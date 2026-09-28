@@ -1007,7 +1007,8 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
       case SST_EDDES_UNSTR: {
         /*--- DDES with the shear-layer-adapted subgrid length-scale of Shur et al. (An Enhanced Version of DES with
          Rapid Transition from RANS to LES in Separated Flows, Flow Turbulence Combust 95, 2015), applied to the SST model
-         as in Guseva et al. (Flow Turbulence Combust 98, 2017) and Xiao et al. (Int. J. Heat Fluid Flow 85, 2020). ---*/
+         as in Guseva et al. (Flow Turbulence Combust 98, 2017) and Xiao et al. (Int. J. Heat Fluid Flow 85, 2020).
+         SST_EDDES_UNSTR uses F_KH * Delta_hyb of He et al. (J. Turbomach. 144, 2022) instead. ---*/
 
         const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
         const su2double C_d1 = 20.0;

@@ -1167,6 +1167,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         /*--- An Enhanced Version of DES with Rapid Transition from RANS to LES in Separated Flows.
          Shur et al.
          Flow Turbulence Combust - 2015
+         SA_EDDES_UNSTR uses F_KH * Delta_hyb of He et al. (J. Turbomach. 144, 2022) instead.
          ---*/
 
         const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
