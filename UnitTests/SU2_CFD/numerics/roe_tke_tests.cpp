@@ -43,12 +43,15 @@ std::unique_ptr<CConfig> MakeConfig() {
 /*--- Primitive variables (T, u, v, [w], p, rho, h, c) of an ideal gas whose total energy contains k. ---*/
 void Primitives(unsigned short nDim, su2double rho, const su2double* vel, su2double p, su2double k, su2double* V) {
   su2double q2 = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) { V[iDim+1] = vel[iDim]; q2 += vel[iDim] * vel[iDim]; }
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    V[iDim + 1] = vel[iDim];
+    q2 += vel[iDim] * vel[iDim];
+  }
   V[0] = p / (rho * 287.058);
-  V[nDim+1] = p;
-  V[nDim+2] = rho;
-  V[nDim+3] = gamma / (gamma - 1) * p / rho + 0.5 * q2 + k;
-  V[nDim+4] = sqrt(gamma * p / rho);
+  V[nDim + 1] = p;
+  V[nDim + 2] = rho;
+  V[nDim + 3] = gamma / (gamma - 1) * p / rho + 0.5 * q2 + k;
+  V[nDim + 4] = sqrt(gamma * p / rho);
 }
 
 }  // namespace
