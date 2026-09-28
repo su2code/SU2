@@ -146,7 +146,9 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel);
+  /*--- With SST the total enthalpy contains k, which is not part of the speed of sound. ---*/
+  const su2double RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
+  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
@@ -562,7 +564,8 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
+  /*--- With SST the total enthalpy contains k, which is not part of the speed of sound. ---*/
+  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-(R*turb_ke_j+turb_ke_i)/(R+1))));
   RoePressure = RoeDensity/Gamma*RoeSoundSpeed*RoeSoundSpeed;
 
   /*--- Compute ProjFlux_i ---*/
@@ -768,7 +771,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  StaticEnthalpy_i = Enthalpy_i - 0.5*Velocity2_i;
+  StaticEnthalpy_i = Enthalpy_i - 0.5*Velocity2_i - turb_ke_i;  // SST: H contains k
   StaticEnergy_i = StaticEnthalpy_i - Pressure_i/Density_i;
 
   Kappa_i = S_i[1]/Density_i;
@@ -788,7 +791,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
 
-  StaticEnthalpy_j = Enthalpy_j - 0.5*Velocity2_j;
+  StaticEnthalpy_j = Enthalpy_j - 0.5*Velocity2_j - turb_ke_j;  // SST: H contains k
   StaticEnergy_j = StaticEnthalpy_j - Pressure_j/Density_j;
 
   Kappa_j = S_j[1]/Density_j;
@@ -1017,6 +1020,6 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 //
 //  }
 
-  RoeSoundSpeed2 = RoeChi + RoeKappa*(RoeEnthalpy-0.5*sq_vel);
+  RoeSoundSpeed2 = RoeChi + RoeKappa*(RoeEnthalpy-0.5*sq_vel-(R*turb_ke_j+turb_ke_i)/(R+1));  // SST: H contains k
 
 }

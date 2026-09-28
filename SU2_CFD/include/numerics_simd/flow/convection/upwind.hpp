@@ -175,6 +175,7 @@ private:
   const su2double kappa;
   const su2double entropyFix;
   const ENUM_ROELOWDISS typeDissip;
+  const CVariable* const tkeVars; /*!< \brief SST turbulence variables (k is part of the total enthalpy), else nullptr. */
   using Base::gamma;
   using Base::gasConst;
   using Base::dynamicGrid;
@@ -187,7 +188,18 @@ public:
   CRoeScheme(const CConfig& config, Ts&... args) : Base(config, args...),
     kappa(config.GetRoe_Kappa()),
     entropyFix(config.GetEntropyFix_Coeff()),
-    typeDissip(static_cast<ENUM_ROELOWDISS>(config.GetKind_RoeLowDiss())) {
+    typeDissip(static_cast<ENUM_ROELOWDISS>(config.GetKind_RoeLowDiss())),
+    tkeVars(config.GetKind_Turb_Model() == TURB_MODEL::SST ? findTurbVars(args...) : nullptr) {
+  }
+
+  /*!
+   * \brief Turbulence variables among the constructor arguments (nullptr if there are none).
+   */
+  static const CVariable* findTurbVars() { return nullptr; }
+  template<class T, class... Ts>
+  static const CVariable* findTurbVars(T& first, Ts&... rest) {
+    if constexpr (std::is_convertible<T, const CVariable*>::value) return first;
+    else return findTurbVars(rest...);
   }
 
   /*!
@@ -210,9 +222,14 @@ public:
                                 const CEulerVariable& solution,
                                 const CGeometry& geometry,
                                 Ts&...) const {
-    /*--- Roe averaged variables. ---*/
+    /*--- Roe averaged variables. With SST the total enthalpy of the cells contains k. ---*/
 
-    auto roeAvg = roeAveragedVariables(gamma, V, unitNormal);
+    Double tke_i = 0.0, tke_j = 0.0;
+    if (tkeVars) {
+      tke_i = gatherVariables(iPoint, tkeVars->GetSolution());
+      tke_j = gatherVariables(jPoint, tkeVars->GetSolution());
+    }
+    auto roeAvg = roeAveragedVariables(gamma, V, unitNormal, tke_i, tke_j);
 
     /*--- Grid motion. ---*/
 

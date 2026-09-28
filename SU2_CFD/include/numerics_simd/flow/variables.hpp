@@ -111,11 +111,14 @@ struct CRoeVariables {
 
 /*!
  * \brief Compute Roe-averaged variables from pair of primitive variables.
+ * \note With SST the total enthalpy contains k (tke_i, tke_j), which is not part of the speed of sound.
  */
 template<size_t nDim, class PrimVarType>
 FORCEINLINE CRoeVariables<nDim> roeAveragedVariables(const Double& gamma,
                                                      const CPair<PrimVarType>& V,
-                                                     const VectorDbl<nDim>& normal) {
+                                                     const VectorDbl<nDim>& normal,
+                                                     const Double& tke_i = Double(0.0),
+                                                     const Double& tke_j = Double(0.0)) {
   CRoeVariables<nDim> roeAvg;
   Double R = sqrt(V.j.density() / V.i.density());
   Double D = 1 / (R+1);
@@ -124,7 +127,8 @@ FORCEINLINE CRoeVariables<nDim> roeAveragedVariables(const Double& gamma,
     roeAvg.velocity(iDim) = (R*V.j.velocity(iDim) + V.i.velocity(iDim)) * D;
   }
   roeAvg.enthalpy = (R*V.j.enthalpy() + V.i.enthalpy()) * D;
-  roeAvg.speedSound = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity)));
+  const Double tke = (R*tke_j + tke_i) * D;
+  roeAvg.speedSound = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity) - tke));
   roeAvg.projVel = dot(roeAvg.velocity, normal);
   return roeAvg;
 }

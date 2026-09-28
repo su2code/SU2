@@ -54,7 +54,8 @@ CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsi
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   viscous = config->GetViscous();
-  rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  tkeInEnergy = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  tkeInStress = tkeInEnergy && !config->GetSSTParsedOptions().modified;
 
 }
 
@@ -73,7 +74,9 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
       sq_vel += Velocity_i *Velocity_i;
     }
 
-    Pressure_i = Gamma_Minus_One*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
+    /*--- With SST the total energy contains k. ---*/
+    const su2double tke = tkeInEnergy ? turb_ke_i : 0.0;
+    Pressure_i = Gamma_Minus_One*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel-tke);
     Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
 
     residual[0] = yinv*Volume*U_i[2];
@@ -103,6 +106,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
       jacobian[3][1] = -(Gamma-1)*U_i[2]*U_i[1]/(U_i[0]*U_i[0]);
       jacobian[3][2] = Gamma*U_i[3]/U_i[0] - 1/2*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
       jacobian[3][3] = Gamma*U_i[2]/U_i[0];
+      jacobian[3][2] -= Gamma_Minus_One*tke;  // k is a variable of the turbulence solver
 
       for (iVar=0; iVar < nVar; iVar++)
         for (jVar=0; jVar < nVar; jVar++)
@@ -135,7 +139,8 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 
 void CSourceAxisymmetric_Flow::ResidualDiffusion(){
 
-  if (!rans){ turb_ke_i = 0.0; }
+  /*--- -2/3 rho k of the radial normal stress (only where k is part of the stress tensor). ---*/
+  const su2double tke = tkeInStress ? turb_ke_i : 0.0;
 
   su2double laminar_viscosity_i    = V_i[nDim+5];
   su2double eddy_viscosity_i       = V_i[nDim+6];
@@ -155,7 +160,8 @@ void CSourceAxisymmetric_Flow::ResidualDiffusion(){
                          -TWO3*AuxVar_Grad_i[0][1]);
   residual[3] -= Volume*(yinv*(total_viscosity_i*(u*(PrimVar_Grad_i[2][0]+PrimVar_Grad_i[1][1])
                                                  +v*TWO3*(2*PrimVar_Grad_i[2][1]-PrimVar_Grad_i[1][0]
-                                                 -v*yinv+U_i[0]*turb_ke_i))
+                                                 -v*yinv))
+                                                 -v*TWO3*U_i[0]*tke
                                                  +total_conductivity_i*PrimVar_Grad_i[0][1])
                                                  -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][0]));
 }

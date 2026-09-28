@@ -120,8 +120,9 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
   Energy_i = Enthalpy_i - Pressure_i / Density_i;
   Energy_j = Enthalpy_j - Pressure_j / Density_j;
 
-  SoundSpeed_i = sqrt((Enthalpy_i - 0.5 * sq_vel_i) * Gamma_Minus_One);
-  SoundSpeed_j = sqrt((Enthalpy_j - 0.5 * sq_vel_j) * Gamma_Minus_One);
+  /*--- With SST the total enthalpy contains k, which is not part of the speed of sound. ---*/
+  SoundSpeed_i = sqrt((Enthalpy_i - 0.5 * sq_vel_i - turb_ke_i) * Gamma_Minus_One);
+  SoundSpeed_j = sqrt((Enthalpy_j - 0.5 * sq_vel_j - turb_ke_j) * Gamma_Minus_One);
 
   /*--- Projected velocities ---*/
 
@@ -161,7 +162,8 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Roe-averaged speed of sound ---*/
 
-  RoeSoundSpeed  = sqrt( Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe  ) ) - ProjInterfaceVel;
+  const su2double RoeTke = ( sqrt(Density_j) * turb_ke_j + sqrt(Density_i) * turb_ke_i ) / Rrho;
+  RoeSoundSpeed  = sqrt( Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe - RoeTke ) ) - ProjInterfaceVel;
 
   /*--- Speed of sound at L and R ---*/
 
@@ -623,8 +625,9 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
   }
 
   Energy_i         = Enthalpy_i - Pressure_i / Density_i;
-  StaticEnthalpy_i = Enthalpy_i - 0.5 * sq_vel_i;
-  StaticEnergy_i   = Energy_i - 0.5 * sq_vel_i;
+  /*--- With SST the total energy and enthalpy contain k. ---*/
+  StaticEnthalpy_i = Enthalpy_i - 0.5 * sq_vel_i - turb_ke_i;
+  StaticEnergy_i   = Energy_i - 0.5 * sq_vel_i - turb_ke_i;
 
   Kappa_i = S_i[1] / Density_i;
   Chi_i   = S_i[0] - Kappa_i * StaticEnergy_i;
@@ -632,8 +635,8 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
 
   Energy_j         = Enthalpy_j - Pressure_j / Density_j;
-  StaticEnthalpy_j = Enthalpy_j - 0.5 * sq_vel_j;
-  StaticEnergy_j   = Energy_j - 0.5 * sq_vel_j;
+  StaticEnthalpy_j = Enthalpy_j - 0.5 * sq_vel_j - turb_ke_j;
+  StaticEnergy_j   = Energy_j - 0.5 * sq_vel_j - turb_ke_j;
 
   Kappa_j = S_j[1] / Density_j;
   Chi_j   = S_j[0] - Kappa_j * StaticEnergy_j;
@@ -691,7 +694,8 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
   /*--- Roe-averaged speed of sound ---*/
 
   //RoeSoundSpeed2 = RoeChi + RoeKappa * ( RoeEnthalpy - 0.5 * sq_velRoe );
-  RoeSoundSpeed  = sqrt( RoeChi + RoeKappa * ( RoeEnthalpy - 0.5 * sq_velRoe ) ) - ProjInterfaceVel;
+  RoeSoundSpeed  = sqrt( RoeChi + RoeKappa * ( RoeEnthalpy - 0.5 * sq_velRoe
+                        - ( sqrt(Density_j) * turb_ke_j + sqrt(Density_i) * turb_ke_i ) / Rrho ) ) - ProjInterfaceVel;
 
   /*--- Speed of sound at L and R ---*/
 
