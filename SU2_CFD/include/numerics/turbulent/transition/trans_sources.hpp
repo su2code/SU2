@@ -107,8 +107,10 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     /*--- dU/dx = PrimVar_Grad[1][0] ---*/
     AD::StartPreacc();
     AD::SetPreaccIn(StrainMag_i);
-    AD::SetPreaccIn(ScalarVar_i, nVar);
-    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+    /*--- The turbulence model has one variable (SA) or two (k-omega). ---*/
+    const unsigned short nTurbVar = (TurbFamily == TURB_FAMILY::SA) ? 1 : 2;
+    AD::SetPreaccIn(ScalarVar_i, nTurbVar);
+    AD::SetPreaccIn(ScalarVar_Grad_i, nTurbVar, nDim);
     AD::SetPreaccIn(TransVar_i, nVar);
     AD::SetPreaccIn(TransVar_Grad_i, nVar, nDim);
     AD::SetPreaccIn(Volume);
@@ -141,11 +143,12 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     if (dist_i > 1e-10) {
       su2double Tu = 1.0;
       if (TurbFamily == TURB_FAMILY::KW) Tu = max(100.0 * sqrt(2.0 * ScalarVar_i[0] / 3.0) / Velocity_Mag, 0.027);
-      if (TurbFamily == TURB_FAMILY::SA) Tu = config->GetTurbulenceIntensity_FreeStream() * 100;
+      /*--- The same lower limit as for k-omega, the correlations divide by Tu. ---*/
+      if (TurbFamily == TURB_FAMILY::SA) Tu = max(config->GetTurbulenceIntensity_FreeStream() * 100, 0.027);
 
       /*--- Corr_RetC correlation*/
       const su2double Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, TransVar_i[1]);
-       // AGGIUNTO PER DEBUG
+      // Stored for the output
       Corr_Rec_Here = Corr_Rec;
 
       /*--- F_length correlation*/
@@ -166,7 +169,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       if (TurbFamily == TURB_FAMILY::SA) R_t = Eddy_Viscosity_i / Laminar_Viscosity_i;
 
       const su2double Re_v = Density_i * dist_i * dist_i * StrainMag_i / Laminar_Viscosity_i;
-      // AGGIUNTO PER DEBUG
+      // Stored for the output
       Re_v_Here = Re_v;
 
       const su2double F_onset1 = Re_v / (2.193 * Corr_Rec);
@@ -181,7 +184,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         F_onset3 = max(2.0 - pow(R_t / 2.5, 3.0), 0.0);
       }
       const su2double F_onset = max(F_onset2 - F_onset3, 0.0);
-      // AGGIUNTO PER DEBUG
+      // Stored for the output
       F_onset1_Here = F_onset1;
       F_onset2_Here = F_onset2;
       F_onset3_Here = F_onset3;
@@ -265,7 +268,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         Retheta_old = Corr_Ret;
       }
 
-      // DEBUG
+      // Stored for the output
       lambda_theta_Here = lambda;
       duds_Here = du_ds;
 
@@ -317,7 +320,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       /*-- destruction term of Intermeittency(Gamma) --*/
       const su2double Dg = c_a2 * Density_i * VorticityMag * TransVar_i[0] * f_turb * (c_e2 * TransVar_i[0] - 1.0);
 
-      // DEBUG
+      // Stored for the output
       Prod_Here = Pg;
       Destr_Here = Dg;
 

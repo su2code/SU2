@@ -541,16 +541,10 @@ void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto* V_inlet = flowSolver->GetCharacPrimVar(val_marker, iVertex);
 
-    /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
-    su2double Inlet_Vars[MAXNVAR];
-    Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
-    Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1];
-    if (config->GetInlet_Profile_From_File()) {
-      Inlet_Vars[0] /= pow(config->GetVelocity_Ref(), 2);
-      Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
-    }
-
-    for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, Inlet_Vars[iVar]);
+    /*--- The transition variables are dimensionless and are not read from inlet profile files: the free-stream
+     values set in the constructor are used (nVar of them, one for the simplified model). ---*/
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      ghostNodes->SetSolution(iVertex, iVar, Inlet_TurbVars[val_marker][iVertex][iVar]);
 
     SetGhostPrimitives(iVertex, V_inlet);
 
