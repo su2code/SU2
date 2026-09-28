@@ -274,18 +274,29 @@ FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const PrimVarType& V,
 }
 
 /*!
+ * \brief Turbulence variables among the constructor arguments of a scheme (nullptr if there are none).
+ */
+inline const CVariable* findTurbVars() { return nullptr; }
+template<class T, class... Ts>
+const CVariable* findTurbVars(T& first, Ts&... rest) {
+  if constexpr (std::is_convertible<T, const CVariable*>::value) return first;
+  else return findTurbVars(rest...);
+}
+
+/*!
  * \brief Jacobian of the convective flux (compressible flow, ideal gas).
+ * \note With SST the total energy contains k (tke), which is held fixed.
  */
 template<size_t nDim, class RandomAccessIterator>
 FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(const Double& gamma, RandomAccessIterator velocity,
                                               const Double& energy, const VectorDbl<nDim>& normal,
-                                              const Double& scale) {
+                                              const Double& scale, const Double& tke = Double(0.0)) {
   MatrixDbl<nDim+2> jac;
 
   Double projVel = dot(velocity, normal);
   Double gamma_m_1 = gamma-1;
-  Double phi = 0.5*gamma_m_1*squaredNorm<nDim>(velocity);
-  Double a1 = gamma*energy - phi;
+  Double phi = gamma_m_1*(0.5*squaredNorm<nDim>(velocity) - tke);  // dp/drho, k held fixed
+  Double a1 = gamma*energy - gamma_m_1*(0.5*squaredNorm<nDim>(velocity) + tke);  // total enthalpy
 
   jac(0,0) = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {

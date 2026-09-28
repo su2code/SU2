@@ -192,15 +192,6 @@ public:
     tkeVars(config.GetKind_Turb_Model() == TURB_MODEL::SST ? findTurbVars(args...) : nullptr) {
   }
 
-  /*!
-   * \brief Turbulence variables among the constructor arguments (nullptr if there are none).
-   */
-  static const CVariable* findTurbVars() { return nullptr; }
-  template<class T, class... Ts>
-  static const CVariable* findTurbVars(T& first, Ts&... rest) {
-    if constexpr (std::is_convertible<T, const CVariable*>::value) return first;
-    else return findTurbVars(rest...);
-  }
 
   /*!
    * \brief Updates flux and Jacobians with standard Roe dissipation.
@@ -266,8 +257,8 @@ public:
       flux(iVar) = 0.5 * (flux_i(iVar) + flux_j(iVar));
     }
     if (implicit) {
-      jac_i = inviscidProjJac(gamma, V.i.velocity(), U.i.energy(), normal, kappa);
-      jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.energy(), normal, kappa);
+      jac_i = inviscidProjJac(gamma, V.i.velocity(), U.i.energy(), normal, kappa, tke_i);
+      jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.energy(), normal, kappa, tke_j);
     }
 
     /*--- Correct for grid motion. ---*/

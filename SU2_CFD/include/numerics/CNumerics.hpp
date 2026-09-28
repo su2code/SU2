@@ -1146,10 +1146,11 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   * \param[in] val_tke - Turbulent kinetic energy contained in the total energy (SST), held fixed.
    */
   void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
                           const su2double *val_normal, su2double val_scale,
-                          su2double **val_Proj_Jac_tensor) const;
+                          su2double **val_Proj_Jac_tensor, su2double val_tke = 0.0) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
@@ -1222,11 +1223,12 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   * \param[in] val_tke - Turbulent kinetic energy contained in the total energy (SST), held fixed.
    */
   void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_enthalphy,
                           const su2double *val_chi, const su2double *val_kappa,
                           const su2double *val_normal, su2double val_scale,
-                          su2double **val_Proj_Jac_tensor) const;
+                          su2double **val_Proj_Jac_tensor, su2double val_tke = 0.0) const;
 
   /*!
    * \brief Mapping between primitives variables P and conservatives variables C.

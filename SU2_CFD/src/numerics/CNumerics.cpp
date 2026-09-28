@@ -174,7 +174,7 @@ void CNumerics::GetInviscidIncProjFlux(const su2double *val_density,
 
 void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
                                    const su2double *val_normal, su2double val_scale,
-                                   su2double **val_Proj_Jac_Tensor) const {
+                                   su2double **val_Proj_Jac_Tensor, su2double val_tke) const {
   const bool wasActive = AD::BeginPassive();
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
@@ -185,8 +185,9 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
     proj_vel += val_velocity[iDim]*val_normal[iDim];
   }
 
-  phi = 0.5*Gamma_Minus_One*sqvel;
-  a1 = Gamma*(*val_energy)-phi;
+  /*--- dp/drho, with p = (gamma-1)*(rho*E - |rho*u|^2/(2*rho) - rho*k) and k held fixed; a1 is the total enthalpy. ---*/
+  phi = Gamma_Minus_One*(0.5*sqvel - val_tke);
+  a1 = Gamma*(*val_energy) - Gamma_Minus_One*(0.5*sqvel + val_tke);
   a2 = Gamma-1.0;
 
   val_Proj_Jac_Tensor[0][0] = 0.0;
@@ -213,7 +214,7 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
 void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2double *val_enthalpy,
                                    const su2double *val_chi, const su2double *val_kappa,
                                    const su2double *val_normal, su2double val_scale,
-                                   su2double **val_Proj_Jac_Tensor) const {
+                                   su2double **val_Proj_Jac_Tensor, su2double val_tke) const {
   const bool wasActive = AD::BeginPassive();
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
@@ -224,7 +225,8 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
     proj_vel += val_velocity[iDim]*val_normal[iDim];
   }
 
-  phi = *val_chi + 0.5*sqvel*(*val_kappa);
+  /*--- dp/drho = Chi + Kappa * d(rho*e)/drho, with rho*e = rho*E - |rho*u|^2/(2*rho) - rho*k and k held fixed. ---*/
+  phi = *val_chi + (0.5*sqvel - val_tke)*(*val_kappa);
   a1 = *val_enthalpy;
   a2 = *val_kappa;
 

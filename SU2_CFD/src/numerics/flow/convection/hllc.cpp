@@ -256,7 +256,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_j[iVar][jVar] = 0;
 
-      GetInviscidProjJac(Velocity_i, &Energy_i, UnitNormal, 1.0, Jacobian_i);
+      GetInviscidProjJac(Velocity_i, &Energy_i, UnitNormal, 1.0, Jacobian_i, turb_ke_i);
 
     }
     else {
@@ -272,7 +272,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
       /*--- Computing pressure derivatives d/dU_L (PI) ---*/
 
-      dPI_dU[0] = 0.5 * Gamma_Minus_One * sq_vel_i;
+      dPI_dU[0] = Gamma_Minus_One * (0.5 * sq_vel_i - turb_ke_i);  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Gamma_Minus_One * Velocity_i[iDim];
       dPI_dU[nVar-1] = Gamma_Minus_One;
@@ -391,7 +391,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0;
 
-      GetInviscidProjJac(Velocity_j, &Energy_j, UnitNormal, 1.0, Jacobian_j);
+      GetInviscidProjJac(Velocity_j, &Energy_j, UnitNormal, 1.0, Jacobian_j, turb_ke_j);
 
     }
     else {
@@ -450,7 +450,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
       /*--- Computing pressure derivatives d/dU_R (PI) ---*/
 
-      dPI_dU[0] = 0.5 * Gamma_Minus_One * sq_vel_j;
+      dPI_dU[0] = Gamma_Minus_One * (0.5 * sq_vel_j - turb_ke_j);  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Gamma_Minus_One * Velocity_j[iDim];
       dPI_dU[nVar-1] = Gamma_Minus_One;
@@ -788,7 +788,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
           Jacobian_j[iVar][jVar] = 0;
 
 
-      GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, 1.0, Jacobian_i);
+      GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, 1.0, Jacobian_i, turb_ke_i);
 
     }
     else {
@@ -804,7 +804,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_L (PI) ---*/
 
-      dPI_dU[0] = Chi_i - 0.5 * Kappa_i * sq_vel_i;
+      dPI_dU[0] = Chi_i - 0.5 * Kappa_i * sq_vel_i - Kappa_i * turb_ke_i;  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_i * Velocity_i[iDim];
       dPI_dU[nVar-1] = Kappa_i;
@@ -878,7 +878,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_R (PI) ---*/
 
-      dPI_dU[0] = Chi_j - 0.5 * Kappa_j * sq_vel_j;
+      dPI_dU[0] = Chi_j - 0.5 * Kappa_j * sq_vel_j - Kappa_j * turb_ke_j;  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_j * Velocity_j[iDim];
       dPI_dU[nVar-1] = Kappa_j;
@@ -932,7 +932,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0;
 
-      GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, UnitNormal, 1.0, Jacobian_j);
+      GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, UnitNormal, 1.0, Jacobian_j, turb_ke_j);
 
     }
     else {
@@ -948,7 +948,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_L (PI) ---*/
 
-      dPI_dU[0] = Chi_i - 0.5 * Kappa_i * sq_vel_i;
+      dPI_dU[0] = Chi_i - 0.5 * Kappa_i * sq_vel_i - Kappa_i * turb_ke_i;  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_i * Velocity_i[iDim];
       dPI_dU[nVar-1] = Kappa_i;
@@ -999,7 +999,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_R (PI) ---*/
 
-      dPI_dU[0] = Chi_j - 0.5 * Kappa_j * sq_vel_j;
+      dPI_dU[0] = Chi_j - 0.5 * Kappa_j * sq_vel_j - Kappa_j * turb_ke_j;  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_j * Velocity_j[iDim];
       dPI_dU[nVar-1] = Kappa_j;
