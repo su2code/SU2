@@ -1208,13 +1208,10 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     SSTParsedOptions.production = SST_OPTIONS::UQ;
   }
 
-  // Parse compressibility options
+  // Parse compressibility options, stored in compWilcox and compSarkar so that they can be combined with a
+  // production modifier
   if (sst_compWilcox && sst_compSarkar) {
     SU2_MPI::Error("Please select only one compressibility correction (COMPRESSIBILITY-WILCOX or COMPRESSIBILITY-SARKAR).", CURRENT_FUNCTION);
-  } else if (sst_compWilcox) {
-    SSTParsedOptions.production = SST_OPTIONS::COMP_Wilcox;
-  } else if (sst_compSarkar) {
-    SSTParsedOptions.production = SST_OPTIONS::COMP_Sarkar;
   }
 
   SSTParsedOptions.sust = sst_sust;

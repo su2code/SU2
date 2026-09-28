@@ -938,24 +938,18 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
           P_Base = sqrt(StrainMag_i*VorticityMag);
           break;
 
-        case SST_OPTIONS::COMP_Wilcox:
-          P_Base = StrainMag_i;
-          if (Mt >= 0.25) {
-            zetaFMt = 2.0 * (Mt * Mt - 0.25 * 0.25);
-          }
-          break;
-
-        case SST_OPTIONS::COMP_Sarkar:
-          P_Base = StrainMag_i;
-          if (Mt >= 0.25) {
-            zetaFMt = 0.5 * (Mt * Mt);
-          }
-          break;
-
         default:
           /*--- Base production term for SST-1994 and SST-2003 ---*/
           P_Base = StrainMag_i;
           break;
+      }
+
+      /*--- Compressibility corrections, independent of the production modifier. ---*/
+      if (sstParsedOptions.compWilcox && Mt >= 0.25) {
+        zetaFMt = 2.0 * (Mt * Mt - 0.25 * 0.25);
+      }
+      if (sstParsedOptions.compSarkar && Mt >= 0.25) {
+        zetaFMt = 0.5 * (Mt * Mt);
       }
 
       /*--- Production limiter. ---*/
@@ -1005,7 +999,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         pw = max(pw, sust_w);
       }
 
-      if (sstParsedOptions.production == SST_OPTIONS::COMP_Sarkar) {
+      if (sstParsedOptions.compSarkar) {
         const su2double Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Mt * Mt;
         pk += Dilatation_Sarkar;
       }
