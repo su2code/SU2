@@ -5461,7 +5461,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         for (auto iDim = 0u; iDim < nDim; iDim++)
           Velocity_e[iDim] = VelMag_e*Flow_Dir[iDim];
+        /*--- The total energy of the node already contains k, which is added below to every case. ---*/
         Energy_e = Energy_i;
+        if (tkeNeeded) Energy_e -= turbNodes->GetSolution(iPoint, 0);
         break;
 
       case STATIC_PRESSURE:

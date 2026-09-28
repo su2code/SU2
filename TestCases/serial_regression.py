@@ -372,6 +372,14 @@ def main():
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
 
+    # Riemann DENSITY_VELOCITY inlet with SST: k of the node in the energy of the boundary state
+    axi_rans_air_nozzle_density_velocity = TestCase('axi_rans_air_nozzle_density_velocity')
+    axi_rans_air_nozzle_density_velocity.cfg_dir = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle_density_velocity.cfg_file = "air_nozzle_density_velocity.cfg"
+    axi_rans_air_nozzle_density_velocity.test_iter = 10
+    axi_rans_air_nozzle_density_velocity.test_vals = [-1.372885, 4.597063, 0.099806, 4.871497, 697.47, 697.47]
+    test_list.append(axi_rans_air_nozzle_density_velocity)
+
     # Axisymmetric air nozzle species
     axi_rans_air_nozzle_species           = TestCase('axi_rans_air_nozzle_species')
     axi_rans_air_nozzle_species.cfg_dir   = "axisymmetric_rans/air_nozzle"
