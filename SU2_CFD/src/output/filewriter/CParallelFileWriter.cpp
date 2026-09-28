@@ -220,22 +220,21 @@ bool CFileWriter::OpenMPIFile(string val_filename, bool append){
   /*--- Continue writing at the end of a file that exists, e.g. to add a zone to a multizone mesh file. ---*/
 
   if (append) {
-    ierr = MPI_File_open(SU2_MPI::GetComm(), val_filename.c_str(), MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
-
-    /*--- If the file does not exist yet, for example the first zone written to a file of its own, it is
-     created below like any other new file. ---*/
-
-    if (ierr == MPI_SUCCESS) {
-      MPI_Offset fileEnd;
-      MPI_File_get_size(fhw, &fileEnd);
-      disp = fileEnd;
-
-      fileSize = 0.0;
-      usedTime = 0;
-
-      return true;
+    /*--- The file is created if it does not exist yet, for example for the first zone written to a file of its
+     own, and the writing starts at its end. ---*/
+    ierr = MPI_File_open(SU2_MPI::GetComm(), val_filename.c_str(), MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL,
+                         &fhw);
+    if (ierr != MPI_SUCCESS) {
+      SU2_MPI::Error(string("Unable to open file ") + val_filename, CURRENT_FUNCTION);
     }
-    MPI_File_close(&fhw);
+    MPI_Offset fileEnd;
+    MPI_File_get_size(fhw, &fileEnd);
+    disp = fileEnd;
+
+    fileSize = 0.0;
+    usedTime = 0;
+
+    return true;
   }
 
   /*--- All ranks open the file using MPI. Here, we try to open the file with
@@ -247,7 +246,7 @@ bool CFileWriter::OpenMPIFile(string val_filename, bool append){
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
-    MPI_File_close(&fhw);
+    /*--- The file exists: the failed open gives no valid handle to close, the file is deleted and created again. ---*/
     if (rank == 0)
       MPI_File_delete(val_filename.c_str(), MPI_INFO_NULL);
     ierr = MPI_File_open(SU2_MPI::GetComm(), val_filename.c_str(),

@@ -30,6 +30,7 @@
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 
+#include <algorithm>
 #include <numeric>
 
 const string CCGNSFileWriter::fileExt = ".cgns";
@@ -217,7 +218,25 @@ void CCGNSFileWriter::InitializeZone(const string& zoneName) {
 }
 
 void CCGNSFileWriter::WriteBoundaries() {
+  /*--- CGNS names have at most 32 characters, longer tags are truncated. If two truncated tags are equal, a number is
+   appended to make the names of the sections, BCs and families unique. ---*/
+
+  vector<string> names;
   for (const auto& marker : boundaryMarkers) {
+    string name = marker.name.substr(0, 32);
+    for (unsigned long n = 1; std::find(names.begin(), names.end(), name) != names.end(); n++) {
+      const string suffix = "_" + to_string(n);
+      name = marker.name.substr(0, 32 - suffix.size()) + suffix;
+    }
+    if (rank == MASTER_NODE && name != marker.name.substr(0, 32)) {
+      cout << "CGNS output: the marker " << marker.name << " is written as " << name
+           << " (names have at most 32 characters)." << endl;
+    }
+    names.push_back(name);
+  }
+
+  for (size_t iMarker = 0; iMarker < boundaryMarkers.size(); ++iMarker) {
+    const auto& marker = boundaryMarkers[iMarker];
     /*--- Count the elements of this rank and collect the element types it holds. The local connectivity holds the
      VTK type of each element followed by the ids of its nodes. ---*/
 
@@ -250,7 +269,7 @@ void CCGNSFileWriter::WriteBoundaries() {
     SU2_MPI::Allreduce(&typesMask, &globalTypesMask, 1, MPI_UNSIGNED_LONG, MPI_BOR, SU2_MPI::GetComm());
     const bool singleType = (globalTypesMask & (globalTypesMask - 1)) == 0;
 
-    const string name = marker.name.substr(0, 32);
+    const string& name = names[iMarker];
     const cgsize_t range[2] = {cumulative + 1, cumulative + static_cast<cgsize_t>(nTotElem)};
     const cgsize_t first = range[0] + static_cast<cgsize_t>(elemOffset);
     const cgsize_t last = first + static_cast<cgsize_t>(nLocalElem) - 1;
