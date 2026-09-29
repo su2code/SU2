@@ -5800,7 +5800,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
         su2double donorAverages[5] = {0.0};
-        switch (config->GetKind_Data_Giles(Marker_Tag)){
+        switch (config->GetKind_Data_Riemann(Marker_Tag)){
           case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:
             for (auto mixVar = 0u; mixVar < 5; mixVar++) donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
             break;
