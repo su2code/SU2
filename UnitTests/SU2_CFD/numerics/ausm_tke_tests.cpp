@@ -31,6 +31,7 @@
 #include <memory>
 #include <sstream>
 #include "../../../SU2_CFD/include/numerics/flow/convection/ausm_slau.hpp"
+#include "../../../SU2_CFD/include/numerics/flow/convection/fvs.hpp"
 
 namespace {
 
@@ -60,14 +61,15 @@ void Primitives(unsigned short nDim, su2double rho, const su2double* vel, su2dou
 
 /*--- k changes neither the pressure nor the speed of sound: with the same density, velocity and pressure, the mass
  and momentum fluxes must not depend on k, and the energy flux changes only by the advected k. ---*/
-void CheckTkeIndependence(CNumerics& numerics, const CConfig* config, unsigned short nDim) {
+void CheckTkeIndependence(CNumerics& numerics, const CConfig* config, unsigned short nDim, bool uniformTke = false) {
   const su2double vel_i[3] = {0.8, 0.1, -0.05}, vel_j[3] = {0.6, -0.1, 0.05}, n[3] = {2.0 / 7, 3.0 / 7, 6.0 / 7};
   const su2double n2[2] = {0.6, 0.8};
   su2double Vi[10] = {0.0}, Vj[10] = {0.0};
   numerics.SetNormal(nDim == 2 ? n2 : n);
 
   su2double flux[2][5] = {{0.0}};
-  const su2double k_i[2] = {0.0, 0.3}, k_j[2] = {0.0, 0.2};
+  /*--- MSW mixes the two states, so k must be uniform for the fluxes to be independent of it. ---*/
+  const su2double k_i[2] = {0.0, 0.3}, k_j[2] = {0.0, uniformTke ? 0.3 : 0.2};
   for (int c = 0; c < 2; c++) {
     Primitives(nDim, 1.2, vel_i, 1.1, k_i[c], Vi);
     Primitives(nDim, 0.9, vel_j, 0.8, k_j[c], Vj);
@@ -152,7 +154,7 @@ TEST_CASE("Accurate SLAU and AUSM+up Jacobians hold k fixed", "[AUSM][SST]") {
   }
 }
 
-TEST_CASE("SLAU, SLAU2, AUSM, AUSM+up and AUSM+up2 do not use k in the speed of sound", "[AUSM][SST]") {
+TEST_CASE("SLAU, SLAU2, AUSM, AUSM+up, AUSM+up2 and MSW do not use k in the speed of sound", "[AUSM][SST]") {
   auto config = MakeConfig();
   for (const unsigned short nDim : {2, 3}) {
     CUpwSLAU_Flow slau(nDim, nDim + 2, config.get(), false);
@@ -165,5 +167,7 @@ TEST_CASE("SLAU, SLAU2, AUSM, AUSM+up and AUSM+up2 do not use k in the speed of 
     CheckTkeIndependence(ausmup, config.get(), nDim);
     CUpwAUSMPLUSUP2_Flow ausmup2(nDim, nDim + 2, config.get());
     CheckTkeIndependence(ausmup2, config.get(), nDim);
+    CUpwMSW_Flow msw(nDim, nDim + 2, config.get());
+    CheckTkeIndependence(msw, config.get(), nDim, true);
   }
 }
