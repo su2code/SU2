@@ -21,6 +21,7 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
                        'SU2_CFD/nemo_viscous_assembly.cpp',
                        'SU2_CFD/windowing.cpp',
                        'Common/toolboxes/random_toolbox_tests.cpp',
+                       'Common/toolboxes/geometry_toolbox_tests.cpp',
                        'Common/linear_algebra/quantization_tests.cpp',
                        'Common/linear_algebra/edge_residual_blocks_tests.cpp'])
 

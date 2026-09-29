@@ -56,6 +56,7 @@ protected:
   su2double Total_HeatFlux_Areas;
   su2double Total_HeatFlux_Areas_Monitor;
   vector<su2activematrix> ConjugateVar;
+  vector<bool> VolHeatSource; /*!< \brief Points inside the volumetric heat source (HEAT_SOURCE), solid zones only. */
 
   /*!
    * \brief Applies an isothermal condition to a vertex of a marker.

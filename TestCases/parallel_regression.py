@@ -1501,6 +1501,14 @@ def main():
     solid_periodic_pins.test_vals_aarch64 = [-15.879016, -14.569206, 300.900000, 425.320000, 5.000000, -1.672666]
     test_list.append(solid_periodic_pins)
 
+    # 2D slab with a uniform volumetric heat source (HEAT_SOURCE), analytic parabolic solution
+    solid_volumetric_source           = TestCase('solid_volumetric_source')
+    solid_volumetric_source.cfg_dir   = "solid_heat_conduction/volumetric_source"
+    solid_volumetric_source.cfg_file  = "configSource.cfg"
+    solid_volumetric_source.test_iter = 5
+    solid_volumetric_source.test_vals = [-11.041014, -10.349794, -64.000000, 10.000000]
+    test_list.append(solid_volumetric_source)
+
     # ###############################
     # ### Conjugate heat transfer ###
     # ###############################
