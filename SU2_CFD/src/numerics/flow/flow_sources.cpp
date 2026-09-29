@@ -92,8 +92,9 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 
   /*--- Standard formulation (v/r) ---*/
   su2double std_res[4];
-  yinv = (r > EPS) ? 1.0/r : 0.0;
+  yinv = 0.0;
   if (r > EPS) {
+    yinv = 1.0/r;
     std_res[0] = yinv*Volume*U_i[2];                    // ρv/r
     std_res[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];     // ρuv/r
     std_res[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);   // ρv²/r
