@@ -811,8 +811,8 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
     for (iVar = 0; iVar < nVar; iVar++) {
       Flux[iVar] = 0.0;
       for (jVar = 0; jVar < nVar; jVar++) {
-      Jacobian_i[iVar][iVar] = 0.0;
-      Jacobian_j[iVar][iVar] = 0.0;
+        Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0;
       }
     }
     AD::SetPreaccOut(Flux, nVar);
