@@ -6842,6 +6842,9 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
       Energy_i = nodes->GetEnergy(iPoint);
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+      /*--- SST: the total energy contains k. ---*/
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        StaticEnergy_i -= solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -7098,6 +7101,9 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       Energy_b = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_b;
       Temperature_b= GetFluidModel()->GetTemperature();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
+      /*--- SST: the boundary state carries the k of the node in its total enthalpy, as the interior one. ---*/
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        Enthalpy_b += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
 
       /*--- Primitive variables, using the derived quantities ---*/
       V_boundary[0] = Temperature_b;
