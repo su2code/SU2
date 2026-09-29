@@ -133,6 +133,16 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, const CSolv
     omega_Inf = config->GetOmega_FreeStreamND();
   }
 
+  /*--- A zero turbulence intensity, viscosity ratio or free-stream velocity gives k = 0 or omega = 0 (or infinite),
+   and then mu_t = 0/0 in the whole field. ---*/
+  if (!(kine_Inf > 0.0 && omega_Inf > 0.0 && std::isfinite(SU2_TYPE::GetValue(kine_Inf)) &&
+        std::isfinite(SU2_TYPE::GetValue(omega_Inf)))) {
+    SU2_MPI::Error("SST: the free-stream k and omega must be positive and finite.\n"
+                   "Set FREESTREAM_TURBULENCEINTENSITY > 0 and FREESTREAM_TURB2LAMVISCRATIO > 0 with a nonzero\n"
+                   "free-stream velocity, or (e.g. for MACH_NUMBER= 0 with grid motion) SST_OPTIONS= SUST with\n"
+                   "positive SST_SUST_TKE_AMB and SST_SUST_OMEGA_AMB.", CURRENT_FUNCTION);
+  }
+
   Solution_Inf[0] = kine_Inf;
   Solution_Inf[1] = omega_Inf;
 
@@ -797,15 +807,15 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
     su2double rho       = flowSolver->GetAverageDensity(val_marker, iSpan);
     su2double pressure  = flowSolver->GetAveragePressure(val_marker, iSpan);
-    su2double kine      = flowSolver->GetAverageKine(val_marker, iSpan);
 
     FluidModel->SetTDState_Prho(pressure, rho);
     su2double muLam = FluidModel->GetLaminarViscosity();
 
     su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, flowSolver->GetAverageTurboVelocity(val_marker, iSpan));
 
+    /*--- Imposed k from the intensity, omega from the imposed k and the viscosity ratio. ---*/
     su2double kine_b  = 3.0/2.0*(VelMag2*Intensity*Intensity);
-    su2double omega_b = rho*kine/(muLam*viscRatio);
+    su2double omega_b = rho*kine_b/(muLam*viscRatio);
 
     const su2double solution_j[] = {kine_b, omega_b};
 
