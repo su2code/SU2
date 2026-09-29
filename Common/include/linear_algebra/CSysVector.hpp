@@ -31,6 +31,7 @@
 #include <memory>
 #include <vector>
 
+#include "../code_config.hpp"
 #include "../parallelization/mpi_structure.hpp"
 #include "../parallelization/omp_structure.hpp"
 #include "../parallelization/vectorization.hpp"
@@ -39,9 +40,6 @@
 
 #ifdef __CUDACC__
 #include "GPUComms.cuh"
-#define SU2_CUDA_HOST_DEVICE __host__ __device__
-#else
-#define SU2_CUDA_HOST_DEVICE
 #endif
 
 template <class ScalarType>
@@ -270,6 +268,17 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     return *this;
   }
 
+  /*!
+   * \brief GPU helper for `dot`.
+   */
+  ScalarType dotGPU(const CSysVector& other) const;
+
+  /*!
+   * \brief GPU helper for multiDot.
+   */
+  static su2matrix<ScalarType> multiDotGPU(const std::vector<CSysVector<ScalarType>>& V, size_t i0, size_t n,
+                                           const std::vector<CSysVector<ScalarType>>& W, size_t m);
+
  public:
   static constexpr bool StoreAsRef = true; /*! \brief Required by CVecExpr. */
 
@@ -393,21 +402,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
    */
   void DtHTransfer(bool trigger = true) const;
-
-  /*!
-   * \brief Dot product between this vector and another vector on the device.
-   * \note Explicit GPU helper for solver-side reductions.
-   * \param[in] other - Input vector.
-   * \return Dot product result.
-   */
-  ScalarType GPUDot(const CSysVector& other) const;
-
-  /*!
-   * \brief L2 norm of this vector on the device.
-   * \note Explicit GPU helper for solver-side reductions.
-   * \return L2 norm result.
-   */
-  ScalarType GPUNorm() const;
 
   /*!
    * \brief return device pointer that points to the CSysVector values in GPU memory
@@ -534,12 +528,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     if constexpr (su2_gpu_capable_v<ScalarType>) {
       using DeviceExpr = std::remove_cv_t<VecExpr::remove_reference_t<T>>;
       static_assert(std::is_same_v<DeviceExpr, CSysVector>,
-                    "On the device the dot product is a cuBLAS call, so it only takes vectors. "
+                    "On the device the dot product needs a real device pointer (dotGPU takes a "
+                    "materialized vector, not an expression template), so it only takes vectors. "
                     "Assign the expression to a vector first.");
       if (VecExpr::UseDeviceExpressions()) {
-        /*--- GPUDot reduces over MPI, which has to happen once for the team, so the result
+        /*--- dotGPU reduces over MPI, which has to happen once for the team, so the result
          * is published through the same scratch slot the host reduction below uses. ---*/
-        SU2_DEVICE_REGION(dot_scratch[0] = GPUDot(expr.derived());)
+        SU2_DEVICE_REGION(dot_scratch[0] = dotGPU(expr.derived());)
         return dot_scratch[0];
       }
     }
@@ -713,4 +708,3 @@ CVectorView<Scalar>::CVectorView(const CSysVector<Scalar>& vector)
 
 #undef CSYSVEC_PARFOR
 #undef END_CSYSVEC_PARFOR
-#undef SU2_CUDA_HOST_DEVICE

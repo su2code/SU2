@@ -76,66 +76,69 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
                                                               const std::vector<CSysVector<ScalarType>>& W,
                                                               const size_t m) {
   SU2_ZONE_SCOPED
-  static constexpr size_t BLOCK_SIZE = 1024;
+
   static su2matrix<ScalarType> shared;
 
   if (n == 0 || m == 0) return shared;
 
+  su2matrix<ScalarType> local;
+
+  if (VecExpr::UseDeviceExpressions()) {
 #ifdef SU2_ENABLE_CUDA_KERNELS
-  if constexpr (su2_gpu_capable_v<ScalarType>) {
-    if (VecExpr::UseDeviceExpressions()) {
-      BEGIN_SU2_DEVICE_REGION {
-        shared.resize(n, m);
-        for (size_t i = 0; i < n; ++i) {
-          for (size_t j = 0; j < m; ++j) {
-            shared(i, j) = V[i0 + i].GPUDot(W[j]);
-          }
-        }
-      }
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      BEGIN_SU2_DEVICE_REGION
+      local = multiDotGPU(V, i0, n, W, m);
       END_SU2_DEVICE_REGION
-      return shared;
+    } else {
+      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
     }
-  }
+#else
+    SU2_MPI::Error(
+        "\nError in multiDot\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
+        "enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
 #endif
+  } else {
+    static constexpr size_t BLOCK_SIZE = 1024;
 
-  SU2_OMP_BARRIER
-  const size_t size = V[0].nElmDomain;
+    SU2_OMP_BARRIER
+    const size_t size = V[0].nElmDomain;
 
-  su2matrix<ScalarType> local(n, m);
-  local.setConstant(0);
+    local.resize(n, m);
+    local.setConstant(0);
 
-  SU2_OMP_FOR_(schedule(static) SU2_NOWAIT)
-  for (size_t offset = 0; offset < size; offset += BLOCK_SIZE) {
-    const auto limit = std::min(offset + BLOCK_SIZE, size);
-    for (size_t i = 0; i < n; ++i) {
-      const auto& vi = V[i0 + i];
-      for (size_t j = 0; j < m; ++j) {
-        const auto& wj = W[j];
-        ScalarType sum = 0.0;
-        SU2_OMP_SIMD
-        for (auto k = offset; k < limit; ++k) {
-          sum += vi[k] * wj[k];
+    SU2_OMP_FOR_(schedule(static) SU2_NOWAIT)
+    for (size_t offset = 0; offset < size; offset += BLOCK_SIZE) {
+      const auto limit = std::min(offset + BLOCK_SIZE, size);
+      for (size_t i = 0; i < n; ++i) {
+        const auto& vi = V[i0 + i];
+        for (size_t j = 0; j < m; ++j) {
+          const auto& wj = W[j];
+          ScalarType sum = 0.0;
+          SU2_OMP_SIMD
+          for (auto k = offset; k < limit; ++k) {
+            sum += vi[k] * wj[k];
+          }
+          local(i, j) += sum;
         }
-        local(i, j) += sum;
       }
     }
-  }
-  END_SU2_OMP_FOR
+    END_SU2_OMP_FOR
 
-  /*--- Reduce over all threads in an ordered way to ensure a deterministic result. ---*/
-  for (size_t i = 0; i < n; ++i) {
-    for (size_t j = 0; j < m; ++j) {
-      W[j].dot_scratch[omp_get_thread_num()] = local(i, j);
-    }
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    for (size_t j = 0; j < m; ++j) {
-      for (int t = 1; t < omp_get_num_threads(); ++t) {
-        local(i, j) += W[j].dot_scratch[t];
+    /*--- Reduce over all threads in an ordered way to ensure a deterministic result. ---*/
+    for (size_t i = 0; i < n; ++i) {
+      for (size_t j = 0; j < m; ++j) {
+        W[j].dot_scratch[omp_get_thread_num()] = local(i, j);
       }
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      for (size_t j = 0; j < m; ++j) {
+        for (int t = 1; t < omp_get_num_threads(); ++t) {
+          local(i, j) += W[j].dot_scratch[t];
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
-
   /*--- Single AllReduce of the result, only the master thread communicates. ---*/
   SU2_OMP_MASTER {
     shared.resize(n, m);

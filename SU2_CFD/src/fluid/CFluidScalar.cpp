@@ -44,13 +44,14 @@
 CFluidScalar::CFluidScalar(su2double value_pressure_operating, const CConfig* config)
     : CFluidModel(),
       n_species_mixture(config->GetnSpecies() + 1),
-      Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
       Std_Ref_Temp_ND(STD_REF_TEMP / config->GetTemperature_Ref()),
       Prandtl_Turb_Number(config->GetPrandtl_Turb()),
       Schmidt_Turb_Number(config->GetSchmidt_Number_Turbulent()),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
       davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON) {
+  Pressure = value_pressure_operating;
+
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
@@ -247,7 +248,7 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
   Temperature = val_temperature;
-  Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
+  Density = Pressure / (Temperature * Gas_Constant);
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
   Enthalpy = ComputeEnthalpyFromT(Temperature, val_scalars);
@@ -272,7 +273,7 @@ void CFluidScalar::SetTDState_h(const su2double val_enthalpy, const su2double* v
    * expression h_s = Cp(T - T_ref).
    */
   Temperature = val_enthalpy / Cp + Std_Ref_Temp_ND;
-  Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
+  Density = Pressure / (Temperature * Gas_Constant);
   Cv = Cp - Gas_Constant;
 
   if (wilke) {

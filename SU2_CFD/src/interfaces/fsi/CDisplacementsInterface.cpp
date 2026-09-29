@@ -33,6 +33,7 @@
 CDisplacementsInterface::CDisplacementsInterface(unsigned short val_nVar,
                                                  unsigned short val_nConst) :
   CInterface(val_nVar, val_nConst) {
+  InterfaceType = ENUM_TRANSFER::BOUNDARY_DISPLACEMENTS;
 }
 
 void CDisplacementsInterface::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry,

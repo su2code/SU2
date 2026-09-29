@@ -121,6 +121,8 @@ class TestCase:
         self.enabled_on_cpu_arch = ["x86_64","amd64","aarch64","arm64"]
         self.enabled_with_tsan = True
         self.enabled_with_asan = True
+        self.enabled_with_regular = True # Set to False for a case that should only run under a sanitizer,
+                                          # e.g. one added purely to exercise a sanitizer-only finding.
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
@@ -1035,6 +1037,10 @@ class TestCase:
         tsan_compatible = not with_tsan or self.enabled_with_tsan
         asan_compatible = not with_asan or self.enabled_with_asan
         tapetests_compatible = not with_tapetests or self.enabled_with_tapetests
+        # A case marked enabled_with_regular = False only runs under a sanitizer/tapetests mode,
+        # e.g. one added purely to exercise a finding that only a sanitizer catches.
+        regular_run = not (with_tsan or with_asan or with_tapetests)
+        regular_compatible = not regular_run or self.enabled_with_regular
 
         if not tsan_compatible:
             print('Ignoring test "%s" because it is not enabled to run with the thread sanitizer.' % self.tag)
@@ -1042,7 +1048,10 @@ class TestCase:
         if not tapetests_compatible:
             print('Ignoring test "%s" because it is not enabled to run a test of the tape.' % self.tag)
 
-        return is_enabled_on_arch and tsan_compatible and asan_compatible and tapetests_compatible and tapetests_compatible
+        if not regular_compatible:
+            print('Ignoring test "%s" because it is only enabled to run under a sanitizer.' % self.tag)
+
+        return is_enabled_on_arch and tsan_compatible and asan_compatible and tapetests_compatible and regular_compatible
 
     def adjust_test_data(self):
 

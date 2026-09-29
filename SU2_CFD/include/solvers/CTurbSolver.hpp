@@ -52,8 +52,9 @@ public:
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] flow_solver - Flow solver the boundary ghost states mirror.
    */
-  CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative);
+  CTurbSolver(CGeometry* geometry, CConfig *config, const CSolver* flow_solver, bool conservative);
 
 
   /*!
@@ -133,7 +134,7 @@ public:
    * \returns The number of extra variables.
    */
   unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
-  
+
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
    * a nonlinear iteration for stability.
