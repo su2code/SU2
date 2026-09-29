@@ -605,7 +605,6 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
     su2double solution[MAXNVAR] = {k, omega};
 
     nodes->SetSolution_Old(iPoint_Neighbor,solution);
-    nodes->SetSolution(iPoint,solution);
 
     LinSysRes.SetBlock_Zero(iPoint_Neighbor);
 

@@ -3836,6 +3836,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     saParsedOptions = ParseSAOptions(SA_Options, nSA_Options, rank);
   }
 
+  /*--- SST has no engine or actuator-disk boundary conditions: the faces would get no turbulence flux at all. ---*/
+  if (Kind_Turb_Model == TURB_MODEL::SST &&
+      (nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_ActDiskInlet + nMarker_ActDiskOutlet) > 0) {
+    SU2_MPI::Error("MARKER_ENGINE_INFLOW, MARKER_ENGINE_EXHAUST and MARKER_ACTDISK are not supported with the SST model.",
+                   CURRENT_FUNCTION);
+  }
+
   if (Kind_Solver == MAIN_SOLVER::INC_RANS && sstParsedOptions.compSarkar){
     SU2_MPI::Error("COMPRESSIBILITY-SARKAR only supported for SOLVER= RANS", CURRENT_FUNCTION);
   }
