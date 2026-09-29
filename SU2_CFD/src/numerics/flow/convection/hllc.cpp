@@ -28,12 +28,59 @@
 #include "../../../../include/numerics/flow/convection/hllc.hpp"
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
+namespace {
+/*--- Moving grids. The flux across a face that moves with normal velocity w is the flux of the states seen from the
+ face (velocity u' = u - c, c = w n, same thermodynamic state) transformed back: with U' = T U,
+ F_ALE(U) = B F'(U'), where F' is the flux for a fixed face. Mass: unchanged; momentum: + c F'_0;
+ energy: + c.F'_m + |c|^2/2 F'_0. The Jacobians are B J' T. ---*/
+
+void ShiftToFaceFrame(unsigned short nDim, su2double w, const su2double* unitNormal, su2double* velocity,
+                      su2double& enthalpy) {
+  const su2double projVel = GeometryToolbox::DotProduct(nDim, velocity, unitNormal);
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) velocity[iDim] -= w * unitNormal[iDim];
+  enthalpy += w * (0.5 * w - projVel);  // H' = H - u.c + |c|^2/2
+}
+
+void FaceFrameToMovingFlux(unsigned short nDim, su2double w, const su2double* unitNormal, su2double* flux) {
+  const unsigned short nVar = nDim + 2;
+  su2double cDotMom = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) cDotMom += w * unitNormal[iDim] * flux[iDim+1];
+  flux[nVar-1] += cDotMom + 0.5 * w * w * flux[0];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) flux[iDim+1] += w * unitNormal[iDim] * flux[0];
+}
+
+void FaceFrameToMovingJacobian(unsigned short nDim, su2double w, const su2double* unitNormal, su2double** jac) {
+  const unsigned short nVar = nDim + 2;
+  constexpr unsigned short maxDim = 3, maxVar = maxDim + 2;
+  su2double c[maxDim] = {0.0}, T[maxVar][maxVar] = {{0.0}}, B[maxVar][maxVar] = {{0.0}}, tmp[maxVar][maxVar];
+  su2double c2 = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) { c[iDim] = w * unitNormal[iDim]; c2 += c[iDim] * c[iDim]; }
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) { T[iVar][iVar] = 1.0; B[iVar][iVar] = 1.0; }
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    T[iDim+1][0] = -c[iDim];  T[nVar-1][iDim+1] = -c[iDim];
+    B[iDim+1][0] = c[iDim];   B[nVar-1][iDim+1] = c[iDim];
+  }
+  T[nVar-1][0] = 0.5 * c2;  B[nVar-1][0] = 0.5 * c2;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      tmp[iVar][jVar] = 0.0;
+      for (unsigned short kVar = 0; kVar < nVar; kVar++) tmp[iVar][jVar] += jac[iVar][kVar] * T[kVar][jVar];
+    }
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      jac[iVar][jVar] = 0.0;
+      for (unsigned short kVar = 0; kVar < nVar; kVar++) jac[iVar][jVar] += B[iVar][kVar] * tmp[kVar][jVar];
+    }
+}
+}  // namespace
+
 CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
+  useAccurateJacobian = config->GetUse_Accurate_Jacobians();
 
   Gamma = config->GetGamma();
 
@@ -114,6 +161,16 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
 
+  /*--- Moving grid: states seen from the face (see ShiftToFaceFrame). ---*/
+
+  ProjInterfaceVel = 0.0;
+  if (dynamic_grid) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      ProjInterfaceVel += 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * UnitNormal[iDim];
+    ShiftToFaceFrame(nDim, ProjInterfaceVel, UnitNormal, Velocity_i, Enthalpy_i);
+    ShiftToFaceFrame(nDim, ProjInterfaceVel, UnitNormal, Velocity_j, Enthalpy_j);
+  }
+
   sq_vel_i = GeometryToolbox::SquaredNorm(nDim, Velocity_i);
   sq_vel_j = GeometryToolbox::SquaredNorm(nDim, Velocity_j);
 
@@ -128,22 +185,6 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
   ProjVelocity_i = GeometryToolbox::DotProduct(nDim, Velocity_i, UnitNormal);
   ProjVelocity_j = GeometryToolbox::DotProduct(nDim, Velocity_j, UnitNormal);
 
-  /*--- Projected Grid Velocity ---*/
-
-  ProjInterfaceVel = 0;
-
-  if (dynamic_grid) {
-
-    for (iDim = 0; iDim < nDim; iDim++)
-      ProjInterfaceVel += 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * UnitNormal[iDim];
-
-    SoundSpeed_i -= ProjInterfaceVel;
-    SoundSpeed_j += ProjInterfaceVel;
-
-    ProjVelocity_i -= ProjInterfaceVel;
-    ProjVelocity_j -= ProjInterfaceVel;
-  }
-
   /*--- Roe's averaging ---*/
 
   Rrho = ( sqrt(Density_i) + sqrt(Density_j) );
@@ -152,7 +193,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
     RoeVelocity[iDim] = ( Velocity_i[iDim] * sqrt(Density_i) + Velocity_j[iDim] * sqrt(Density_j) ) / Rrho;
   }
   sq_velRoe = GeometryToolbox::SquaredNorm(nDim, RoeVelocity);
-  RoeProjVelocity = GeometryToolbox::DotProduct(nDim, RoeVelocity, UnitNormal) - ProjInterfaceVel;
+  RoeProjVelocity = GeometryToolbox::DotProduct(nDim, RoeVelocity, UnitNormal);
 
   /*--- Mean Roe variables iPoint and jPoint ---*/
 
@@ -161,12 +202,14 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Roe-averaged speed of sound ---*/
 
-  RoeSoundSpeed  = sqrt( Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe  ) ) - ProjInterfaceVel;
+  RoeSoundSpeed  = sqrt( Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe ) );
 
   /*--- Speed of sound at L and R ---*/
 
   sL = min( RoeProjVelocity - RoeSoundSpeed, ProjVelocity_i - SoundSpeed_i);
   sR = max( RoeProjVelocity + RoeSoundSpeed, ProjVelocity_j + SoundSpeed_j);
+
+  if (fixedWaveSpeeds) { sL = fixed_sL; sR = fixed_sR; }
 
   /*--- speed of contact surface ---*/
 
@@ -205,7 +248,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
       Flux[0] = sM * IntermediateState[0];
       for (iDim = 0; iDim < nDim; iDim++)
         Flux[iDim+1] = sM * IntermediateState[iDim+1] + pStar * UnitNormal[iDim];
-      Flux[nVar-1] = sM * ( IntermediateState[nVar-1] + pStar ) + pStar * ProjInterfaceVel;
+      Flux[nVar-1] = sM * ( IntermediateState[nVar-1] + pStar );
     }
   }
   else {
@@ -234,15 +277,28 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
       Flux[0] = sM * IntermediateState[0];
       for (iDim = 0; iDim < nDim; iDim++)
         Flux[iDim+1] = sM * IntermediateState[iDim+1] + pStar * UnitNormal[iDim];
-      Flux[nVar-1] = sM * (IntermediateState[nVar-1] + pStar ) + pStar * ProjInterfaceVel;
+      Flux[nVar-1] = sM * (IntermediateState[nVar-1] + pStar );
     }
   }
+
+  if (dynamic_grid) FaceFrameToMovingFlux(nDim, ProjInterfaceVel, UnitNormal, Flux);
 
   for (iVar = 0; iVar < nVar; iVar++) Flux[iVar] *= Area;
 
   /*--- Return early if the Jacobians do not need to be computed. ---*/
 
   if (!implicit) return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+
+  /*--- Jacobians for the wave speeds held fixed (in the frame of the face). p* = rho_j (u_j - sR)(u_j - sM) + p_j
+   = rho_i (u_i - sL)(u_i - sM) + p_i, so its derivative contains rho_j (sR - u_j) dsM/dU (or rho_i (sL - u_i) dsM/dU).
+   By default the density of the other state is kept, as in the previous implementation (an inexact transcription
+   of the reference, see #2198): in our tests it was more robust with inexact linear solves than the exact
+   derivative, which USE_ACCURATE_FLUX_JACOBIANS= YES gives. ---*/
+
+  const su2double rhoPStar_R = useAccurateJacobian ? Density_j : Density_i;
+  const su2double rhoPStar_L = useAccurateJacobian ? Density_i : Density_j;
+
+
 
   if (sM > 0.0) {
 
@@ -295,7 +351,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
       /*--- Computing d/dU_L (pStar) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        dpStar_dU[iVar] = Density_i * (sR - ProjVelocity_j) * dSm_dU[iVar];
+        dpStar_dU[iVar] = rhoPStar_R * (sR - ProjVelocity_j) * dSm_dU[iVar];
 
 
       /*--- Computing d/dU_L (EStar) ---*/
@@ -352,7 +408,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
       /*--- Computing d/dU_R (pStar) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        dpStar_dU[iVar] = Density_j * (sL - ProjVelocity_i) * dSm_dU[iVar];
+        dpStar_dU[iVar] = rhoPStar_L * (sL - ProjVelocity_i) * dSm_dU[iVar];
 
 
       /*--- Computing d/dU_R (EStar) ---*/
@@ -414,7 +470,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
       /*--- Computing d/dU_L (pStar) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        dpStar_dU[iVar] = Density_i * (sR - ProjVelocity_j) * dSm_dU[iVar];
+        dpStar_dU[iVar] = rhoPStar_R * (sR - ProjVelocity_j) * dSm_dU[iVar];
 
 
       /*--- Computing d/dU_L (EStar) ---*/
@@ -466,7 +522,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
       /*--- Computing d/dU_R (pStar) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        dpStar_dU[iVar] = Density_j * (sL - ProjVelocity_i) * dSm_dU[iVar];
+        dpStar_dU[iVar] = rhoPStar_L * (sL - ProjVelocity_i) * dSm_dU[iVar];
 
 
       /*--- Computing d/dU_R (rhoStar) ---*/
@@ -519,6 +575,11 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
     }
   }
 
+  if (dynamic_grid) {
+    FaceFrameToMovingJacobian(nDim, ProjInterfaceVel, UnitNormal, Jacobian_i);
+    FaceFrameToMovingJacobian(nDim, ProjInterfaceVel, UnitNormal, Jacobian_j);
+  }
+
   /*--- Scale Jacobians by area (from Flux *= Area). ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
@@ -535,6 +596,7 @@ CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned sho
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
+  useAccurateJacobian = config->GetUse_Accurate_Jacobians();
 
   Gamma = config->GetGamma();
 
@@ -613,6 +675,16 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
 
+  /*--- Moving grid: states seen from the face (see ShiftToFaceFrame). ---*/
+
+  ProjInterfaceVel = 0.0;
+  if (dynamic_grid) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      ProjInterfaceVel += 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * UnitNormal[iDim];
+    ShiftToFaceFrame(nDim, ProjInterfaceVel, UnitNormal, Velocity_i, Enthalpy_i);
+    ShiftToFaceFrame(nDim, ProjInterfaceVel, UnitNormal, Velocity_j, Enthalpy_j);
+  }
+
 
   sq_vel_i = 0.0;
   sq_vel_j = 0.0;
@@ -650,28 +722,12 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
   }
 
 
-  /*--- Projected Grid Velocity ---*/
-
-  ProjInterfaceVel = 0;
-
-  if (dynamic_grid) {
-
-    for (iDim = 0; iDim < nDim; iDim++)
-      ProjInterfaceVel += 0.5 * ( GridVel_i[iDim] + GridVel_j[iDim] )*UnitNormal[iDim];
-
-    SoundSpeed_i -= ProjInterfaceVel;
-    SoundSpeed_j += ProjInterfaceVel;
-
-    ProjVelocity_i -= ProjInterfaceVel;
-    ProjVelocity_j -= ProjInterfaceVel;
-  }
-
   /*--- Roe's averaging ---*/
 
   Rrho = ( sqrt(Density_i) + sqrt(Density_j) );
 
   sq_velRoe        = 0.0;
-  RoeProjVelocity  = - ProjInterfaceVel;
+  RoeProjVelocity  = 0.0;
 
   for (iDim = 0; iDim < nDim; iDim++) {
     RoeVelocity[iDim] = ( Velocity_i[iDim] * sqrt(Density_i) + Velocity_j[iDim] * sqrt(Density_j) ) / Rrho;
@@ -691,12 +747,14 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
   /*--- Roe-averaged speed of sound ---*/
 
   //RoeSoundSpeed2 = RoeChi + RoeKappa * ( RoeEnthalpy - 0.5 * sq_velRoe );
-  RoeSoundSpeed  = sqrt( RoeChi + RoeKappa * ( RoeEnthalpy - 0.5 * sq_velRoe ) ) - ProjInterfaceVel;
+  RoeSoundSpeed  = sqrt( RoeChi + RoeKappa * ( RoeEnthalpy - 0.5 * sq_velRoe ) );
 
   /*--- Speed of sound at L and R ---*/
 
   sL = min( RoeProjVelocity - RoeSoundSpeed, ProjVelocity_i - SoundSpeed_i );
   sR = max( RoeProjVelocity + RoeSoundSpeed, ProjVelocity_j + SoundSpeed_j );
+
+  if (fixedWaveSpeeds) { sL = fixed_sL; sR = fixed_sR; }
 
   /*--- speed of contact surface ---*/
 
@@ -734,7 +792,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
       Flux[0] = sM * IntermediateState[0];
       for (iDim = 0; iDim < nDim; iDim++)
         Flux[iDim+1] = sM * IntermediateState[iDim+1] + pStar * UnitNormal[iDim];
-      Flux[nVar-1] = sM * ( IntermediateState[nVar-1] + pStar )  + pStar * ProjInterfaceVel;
+      Flux[nVar-1] = sM * ( IntermediateState[nVar-1] + pStar );
     }
   }
   else {
@@ -763,15 +821,28 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
       Flux[0] = sM * IntermediateState[0];
       for (iDim = 0; iDim < nDim; iDim++)
         Flux[iDim+1] = sM * IntermediateState[iDim+1] + pStar * UnitNormal[iDim];
-      Flux[nVar-1] = sM * (IntermediateState[nVar-1] + pStar )  + pStar * ProjInterfaceVel;
+      Flux[nVar-1] = sM * (IntermediateState[nVar-1] + pStar );
     }
   }
+
+  if (dynamic_grid) FaceFrameToMovingFlux(nDim, ProjInterfaceVel, UnitNormal, Flux);
 
   for (iVar = 0; iVar < nVar; iVar++) Flux[iVar] *= Area;
 
   /*--- Return early if the Jacobians do not need to be computed. ---*/
 
   if (!implicit) return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+
+  /*--- Jacobians for the wave speeds held fixed (in the frame of the face). p* = rho_j (u_j - sR)(u_j - sM) + p_j
+   = rho_i (u_i - sL)(u_i - sM) + p_i, so its derivative contains rho_j (sR - u_j) dsM/dU (or rho_i (sL - u_i) dsM/dU).
+   By default the density of the other state is kept, as in the previous implementation (an inexact transcription
+   of the reference, see #2198): in our tests it was more robust with inexact linear solves than the exact
+   derivative, which USE_ACCURATE_FLUX_JACOBIANS= YES gives. ---*/
+
+  const su2double rhoPStar_R = useAccurateJacobian ? Density_j : Density_i;
+  const su2double rhoPStar_L = useAccurateJacobian ? Density_i : Density_j;
+
+
 
   if (sM > 0.0) {
 
@@ -800,7 +871,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_L (PI) ---*/
 
-      dPI_dU[0] = Chi_i - 0.5 * Kappa_i * sq_vel_i;
+      dPI_dU[0] = Chi_i + 0.5 * Kappa_i * sq_vel_i;
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_i * Velocity_i[iDim];
       dPI_dU[nVar-1] = Kappa_i;
@@ -825,7 +896,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
       /*--- Computing d/dU_L (pStar) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        dpStar_dU[iVar] = Density_i * (sR - ProjVelocity_j) * dSm_dU[iVar];
+        dpStar_dU[iVar] = rhoPStar_R * (sR - ProjVelocity_j) * dSm_dU[iVar];
 
 
       /*--- Computing d/dU_L (EStar) ---*/
@@ -874,7 +945,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_R (PI) ---*/
 
-      dPI_dU[0] = Chi_j - 0.5 * Kappa_j * sq_vel_j;
+      dPI_dU[0] = Chi_j + 0.5 * Kappa_j * sq_vel_j;
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_j * Velocity_j[iDim];
       dPI_dU[nVar-1] = Kappa_j;
@@ -891,7 +962,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
       /*--- Computing d/dU_R (pStar) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        dpStar_dU[iVar] = Density_j * (sL - ProjVelocity_i) * dSm_dU[iVar];
+        dpStar_dU[iVar] = rhoPStar_L * (sL - ProjVelocity_i) * dSm_dU[iVar];
 
 
       /*--- Computing d/dU_R (EStar) ---*/
@@ -944,7 +1015,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_L (PI) ---*/
 
-      dPI_dU[0] = Chi_i - 0.5 * Kappa_i * sq_vel_i;
+      dPI_dU[0] = Chi_i + 0.5 * Kappa_i * sq_vel_i;
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_i * Velocity_i[iDim];
       dPI_dU[nVar-1] = Kappa_i;
@@ -961,7 +1032,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
       /*--- Computing d/dU_L (pStar) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        dpStar_dU[iVar] = Density_i * (sR - ProjVelocity_j) * dSm_dU[iVar];
+        dpStar_dU[iVar] = rhoPStar_R * (sR - ProjVelocity_j) * dSm_dU[iVar];
 
 
       /*--- Computing d/dU_L (EStar) ---*/
@@ -995,7 +1066,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_R (PI) ---*/
 
-      dPI_dU[0] = Chi_j - 0.5 * Kappa_j * sq_vel_j;
+      dPI_dU[0] = Chi_j + 0.5 * Kappa_j * sq_vel_j;
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_j * Velocity_j[iDim];
       dPI_dU[nVar-1] = Kappa_j;
@@ -1012,7 +1083,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
       /*--- Computing d/dU_R (pStar) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        dpStar_dU[iVar] = Density_j * (sL - ProjVelocity_i) * dSm_dU[iVar];
+        dpStar_dU[iVar] = rhoPStar_L * (sL - ProjVelocity_i) * dSm_dU[iVar];
 
 
       /*--- Computing d/dU_R (rhoStar) ---*/
@@ -1062,6 +1133,11 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
       for (iVar = 0; iVar < nVar; iVar++)
         Jacobian_j[nVar-1][iVar] = sM * ( dEStar_dU[iVar] + dpStar_dU[iVar] ) + ( EStar + pStar ) * dSm_dU[iVar];
     }
+  }
+
+  if (dynamic_grid) {
+    FaceFrameToMovingJacobian(nDim, ProjInterfaceVel, UnitNormal, Jacobian_i);
+    FaceFrameToMovingJacobian(nDim, ProjInterfaceVel, UnitNormal, Jacobian_j);
   }
 
   /*--- Scale Jacobians by area (from Flux *= Area). ---*/
