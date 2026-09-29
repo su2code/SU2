@@ -101,6 +101,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);  // SST: k in the total energy
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
@@ -756,6 +757,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);  // SST: k in the total energy
   AD::SetPreaccIn(S_i, 2); AD::SetPreaccIn(S_j, 2);
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);

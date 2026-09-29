@@ -45,6 +45,8 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim + 4);
   AD::SetPreaccIn(V_j, nDim + 4);
+  AD::SetPreaccIn(turb_ke_i);  // SST: k in the total energy
+  AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Sensor_i, Sensor_j);
   AD::SetPreaccIn(Normal, nDim);
   if (dynamic_grid) {

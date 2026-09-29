@@ -25,6 +25,8 @@
  */
 
 #include "catch.hpp"
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <memory>
 #include <sstream>
@@ -34,9 +36,11 @@ namespace {
 
 constexpr su2double gamma = 1.4;
 
-std::unique_ptr<CConfig> MakeConfig() {
+std::unique_ptr<CConfig> MakeConfig(bool implicit = false) {
   std::stringstream options;
-  options << "SOLVER= EULER\nCONV_NUM_METHOD_FLOW= SLAU\nTIME_DISCRE_FLOW= EULER_EXPLICIT\n";
+  options << "SOLVER= EULER\nCONV_NUM_METHOD_FLOW= SLAU\nMACH_NUMBER= 0.5\n";
+  options << "TIME_DISCRE_FLOW= "
+          << (implicit ? "EULER_IMPLICIT\nUSE_ACCURATE_FLUX_JACOBIANS= YES\n" : "EULER_EXPLICIT\n");
   return std::make_unique<CConfig>(options, SU2_COMPONENT::SU2_CFD, false);
 }
 
@@ -78,9 +82,77 @@ void CheckTkeIndependence(CNumerics& numerics, const CConfig* config, unsigned s
   CHECK(flux[1][nDim + 1] - flux[0][nDim + 1] == Approx(flux[0][0] * k_i[1]).epsilon(1e-10));
 }
 
+/*--- Largest difference between the (accurate) Jacobians and central differences of the flux with respect to the
+ conservative variables, k held fixed, relative to the largest entry. ---*/
+su2double JacobianError(CNumerics& numerics, const CConfig* config, su2double k) {
+  constexpr unsigned short nDim = 2, nVar = 4;
+  using State = std::array<su2double, nVar>;
+  const su2double normal[2] = {0.6, 0.8};
+  numerics.SetNormal(normal);
+  auto evaluate = [&](const State& Ui, const State& Uj, su2double* flux, su2double(*jac_i)[nVar],
+                      su2double(*jac_j)[nVar]) {
+    su2double Vi[10] = {0.0}, Vj[10] = {0.0};
+    for (int side = 0; side < 2; side++) {
+      const State& U = side ? Uj : Ui;
+      const su2double vel[2] = {U[1] / U[0], U[2] / U[0]};
+      const su2double p = (gamma - 1) * (U[3] - 0.5 * (U[1] * U[1] + U[2] * U[2]) / U[0] - U[0] * k);
+      Primitives(nDim, U[0], vel, p, k, side ? Vj : Vi);
+    }
+    numerics.SetPrimitive(Vi, Vj);
+    numerics.SetTurbKineticEnergy(k, k);
+    const auto res = numerics.ComputeResidual(config);
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      flux[iVar] = res.residual[iVar];
+      if (jac_i)
+        for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+          jac_i[iVar][jVar] = res.jacobian_i[iVar][jVar];
+          jac_j[iVar][jVar] = res.jacobian_j[iVar][jVar];
+        }
+    }
+  };
+  const State Ui = {1.2, 0.72, 0.24, 1.1 / (gamma - 1) + 0.5 * (0.72 * 0.72 + 0.24 * 0.24) / 1.2 + 1.2 * k};
+  const State Uj = {0.9, 0.36, -0.18, 0.8 / (gamma - 1) + 0.5 * (0.36 * 0.36 + 0.18 * 0.18) / 0.9 + 0.9 * k};
+  su2double flux[nVar], jac_i[nVar][nVar], jac_j[nVar][nVar];
+  evaluate(Ui, Uj, flux, jac_i, jac_j);
+  su2double maxErr = 0.0, maxJac = 0.0;
+  for (int side = 0; side < 2; side++) {
+    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      State Up = side ? Uj : Ui, Um = Up;
+      const su2double h = 1e-6;
+      Up[jVar] += h;
+      Um[jVar] -= h;
+      su2double fp[nVar], fm[nVar];
+      if (side) {
+        evaluate(Ui, Up, fp, nullptr, nullptr);
+        evaluate(Ui, Um, fm, nullptr, nullptr);
+      } else {
+        evaluate(Up, Uj, fp, nullptr, nullptr);
+        evaluate(Um, Uj, fm, nullptr, nullptr);
+      }
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        const su2double jac = side ? jac_j[iVar][jVar] : jac_i[iVar][jVar];
+        maxErr = std::max(maxErr, std::abs(jac - (fp[iVar] - fm[iVar]) / (2 * h)));
+        maxJac = std::max(maxJac, std::abs(jac));
+      }
+    }
+  }
+  return maxErr / maxJac;
+}
+
 }  // namespace
 
-TEST_CASE("SLAU, SLAU2 and AUSM do not use k in the speed of sound", "[AUSM][SST]") {
+TEST_CASE("Accurate SLAU and AUSM+up Jacobians hold k fixed", "[AUSM][SST]") {
+  auto config = MakeConfig(true);
+  for (const su2double k : {0.0, 0.2}) {
+    CAPTURE(k);
+    CUpwSLAU_Flow slau(2, 4, config.get(), false);
+    CHECK(JacobianError(slau, config.get(), k) < 1e-4);
+    CUpwAUSMPLUSUP_Flow ausmup(2, 4, config.get());
+    CHECK(JacobianError(ausmup, config.get(), k) < 1e-4);
+  }
+}
+
+TEST_CASE("SLAU, SLAU2, AUSM, AUSM+up and AUSM+up2 do not use k in the speed of sound", "[AUSM][SST]") {
   auto config = MakeConfig();
   for (const unsigned short nDim : {2, 3}) {
     CUpwSLAU_Flow slau(nDim, nDim + 2, config.get(), false);
@@ -89,5 +161,9 @@ TEST_CASE("SLAU, SLAU2 and AUSM do not use k in the speed of sound", "[AUSM][SST
     CheckTkeIndependence(slau2, config.get(), nDim);
     CUpwAUSM_Flow ausm(nDim, nDim + 2, config.get());
     CheckTkeIndependence(ausm, config.get(), nDim);
+    CUpwAUSMPLUSUP_Flow ausmup(nDim, nDim + 2, config.get());
+    CheckTkeIndependence(ausmup, config.get(), nDim);
+    CUpwAUSMPLUSUP2_Flow ausmup2(nDim, nDim + 2, config.get());
+    CheckTkeIndependence(ausmup2, config.get(), nDim);
   }
 }
