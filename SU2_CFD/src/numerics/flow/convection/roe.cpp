@@ -334,9 +334,12 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
     delta_wave[2] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
     delta_wave[3] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
   } else {
-    delta_wave[0] = delta_rho - delta_p/RoeSoundSpeed2;
-    delta_wave[1] = (UnitNormal[0]*delta_vel[2]-UnitNormal[2]*delta_vel[0])*zeta;
-    delta_wave[2] = (UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1])*zeta;
+    /*--- The first three columns of the 3D P matrix combine the entropy wave (weighted by the normal) with the
+     shear waves, so their strengths are n_j (Delta rho - Delta p / c^2) + (Delta u x n)_j. ---*/
+    const su2double delta_entropy = delta_rho - delta_p/RoeSoundSpeed2;
+    delta_wave[0] = UnitNormal[0]*delta_entropy + (delta_vel[1]*UnitNormal[2]-delta_vel[2]*UnitNormal[1])*zeta;
+    delta_wave[1] = UnitNormal[1]*delta_entropy + (delta_vel[2]*UnitNormal[0]-delta_vel[0]*UnitNormal[2])*zeta;
+    delta_wave[2] = UnitNormal[2]*delta_entropy + (delta_vel[0]*UnitNormal[1]-delta_vel[1]*UnitNormal[0])*zeta;
     delta_wave[3] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
     delta_wave[4] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
   }
@@ -407,9 +410,12 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
     delta_wave[2] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
     delta_wave[3] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
   } else {
-    delta_wave[0] = delta_rho - delta_p/RoeSoundSpeed2;
-    delta_wave[1] = (UnitNormal[0]*delta_vel[2]-UnitNormal[2]*delta_vel[0]);
-    delta_wave[2] = (UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1]);
+    /*--- The first three columns of the 3D P matrix combine the entropy wave (weighted by the normal) with the
+     shear waves, so their strengths are n_j (Delta rho - Delta p / c^2) + (Delta u x n)_j. ---*/
+    const su2double delta_entropy = delta_rho - delta_p/RoeSoundSpeed2;
+    delta_wave[0] = UnitNormal[0]*delta_entropy + (delta_vel[1]*UnitNormal[2]-delta_vel[2]*UnitNormal[1]);
+    delta_wave[1] = UnitNormal[1]*delta_entropy + (delta_vel[2]*UnitNormal[0]-delta_vel[0]*UnitNormal[2]);
+    delta_wave[2] = UnitNormal[2]*delta_entropy + (delta_vel[0]*UnitNormal[1]-delta_vel[1]*UnitNormal[0]);
     delta_wave[3] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
     delta_wave[4] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
   }
@@ -901,9 +907,12 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
       delta_wave[2] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
       delta_wave[3] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
     } else {
-      delta_wave[0] = delta_rho - delta_p/(RoeSoundSpeed*RoeSoundSpeed);
-      delta_wave[1] = UnitNormal[0]*delta_vel[2]-UnitNormal[2]*delta_vel[0];
-      delta_wave[2] = UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1];
+      /*--- The first three columns of the 3D P matrix combine the entropy wave (weighted by the normal) with the
+       shear waves, so their strengths are n_j (Delta rho - Delta p / c^2) + (Delta u x n)_j. ---*/
+      const su2double delta_entropy = delta_rho - delta_p/(RoeSoundSpeed*RoeSoundSpeed);
+      delta_wave[0] = UnitNormal[0]*delta_entropy + delta_vel[1]*UnitNormal[2]-delta_vel[2]*UnitNormal[1];
+      delta_wave[1] = UnitNormal[1]*delta_entropy + delta_vel[2]*UnitNormal[0]-delta_vel[0]*UnitNormal[2];
+      delta_wave[2] = UnitNormal[2]*delta_entropy + delta_vel[0]*UnitNormal[1]-delta_vel[1]*UnitNormal[0];
       delta_wave[3] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
       delta_wave[4] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
     }
