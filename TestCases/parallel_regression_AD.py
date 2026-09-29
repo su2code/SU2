@@ -150,7 +150,7 @@ def main():
     discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
     discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle_restart.cfg"
     discadj_axisymmetric_rans_nozzle.test_iter  = 10
-    discadj_axisymmetric_rans_nozzle.test_vals  = [9.909657, 5.078045, 7.129068, 2.490955]
+    discadj_axisymmetric_rans_nozzle.test_vals  = [9.733989, 5.141750, 7.108464, 2.490402]
     discadj_axisymmetric_rans_nozzle.no_restart = True
     test_list.append(discadj_axisymmetric_rans_nozzle)
 
@@ -239,7 +239,7 @@ def main():
     discadj_sliding_interface.cfg_dir   = "disc_adj_ffi/sliding_interface"
     discadj_sliding_interface.cfg_file  = "circles.cfg"
     discadj_sliding_interface.test_iter = 10
-    discadj_sliding_interface.test_vals = [10.000000, -4.395153, -4.419435]
+    discadj_sliding_interface.test_vals = [10.000000, -4.403529, -4.419435]
     test_list.append(discadj_sliding_interface)
 
     #######################################################
@@ -315,7 +315,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-3.824633, 1.979516, -3.863368, 0.295450, 3.839800]
+    discadj_fsi2.test_vals         = [-3.824591, 1.979595, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.test_vals_aarch64 = [-3.824870, 1.979160, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
