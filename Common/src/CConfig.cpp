@@ -4598,6 +4598,36 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   Rotating_Frame = (Kind_GridMovement == ROTATING_FRAME);
 
+  /*--- The finite volume flow solvers apply these source terms with a single numerics object, which is built
+   for only one of them: combinations would apply one source several times and ignore the others. Only these
+   solvers (and their discrete adjoints) are checked: e.g. elasticity uses BODY_FORCE and GRAVITY_FORCE together. ---*/
+
+  if (GetFluidProblem() && !GetNEMOProblem()) {
+    const bool inc = (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE);
+    const int nSources = int(Body_Force) + int(Rotating_Frame) + int(Axisymmetric) + int(GravityForce && !inc) +
+                         int(inc && Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ) +
+                         int(inc && Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE);
+    if (nSources > 1) {
+      SU2_MPI::Error("Only one of BODY_FORCE, GRID_MOVEMENT= ROTATING_FRAME, AXISYMMETRIC, GRAVITY_FORCE (compressible), "
+                     "INC_DENSITY_MODEL= BOUSSINESQ and KIND_STREAMWISE_PERIODIC (incompressible) can be used at a time.",
+                     CURRENT_FUNCTION);
+    }
+  }
+
+  /*--- The second source object, for radiation, the energy correction of incompressible streamwise periodic flow
+   (without periodic temperature) or vorticity confinement, is also built for only one of them. ---*/
+
+  if (GetFluidProblem() && !GetNEMOProblem()) {
+    const bool inc = (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE);
+    const bool periodicOutlet = inc && Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE && Energy_Equation &&
+                                !Streamwise_Periodic_Temperature;
+    if (int(Radiation) + int(periodicOutlet) + int(VorticityConfinement) > 1) {
+      SU2_MPI::Error("Only one of RADIATION, the energy correction of KIND_STREAMWISE_PERIODIC (incompressible, "
+                     "STREAMWISE_PERIODIC_TEMPERATURE= NO) and VORTICITY_CONFINEMENT can be used at a time.",
+                     CURRENT_FUNCTION);
+    }
+  }
+
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each option, a value has been declared for each moving marker. ---*/
