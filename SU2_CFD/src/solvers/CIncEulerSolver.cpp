@@ -2235,7 +2235,7 @@ void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_con
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       minP = MinP;
-      SU2_MPI::Allreduce(&minP, &MinP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&minP, &MinP, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
       maxP = MaxP;
       SU2_MPI::Allreduce(&maxP, &MaxP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 

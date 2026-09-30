@@ -1947,27 +1947,39 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       }
 
-      /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
-
-      if (!ideal_gas || low_mach_corr) {
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
-      }
-
-      /*--- Low-Mach number correction. ---*/
-
-      if (low_mach_corr) {
-        LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
-      }
-
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
-       which is typically only active during the start-up of a calculation. ---*/
+       which is typically only active during the start-up of a calculation.
+       Pressure and density are checked before the fluid model is evaluated with them. ---*/
 
-      bool neg_pres_or_rho_i = (Primitive_i[prim_idx.Pressure()] < 0.0) || (Primitive_i[prim_idx.Density()] < 0.0);
-      bool neg_pres_or_rho_j = (Primitive_j[prim_idx.Pressure()] < 0.0) || (Primitive_j[prim_idx.Density()] < 0.0);
+      auto nonPositive = [](su2double value) { return !(value > 0.0) || !std::isfinite(SU2_TYPE::GetValue(value)); };
+      bool neg_pres_or_rho_i = nonPositive(Primitive_i[prim_idx.Pressure()]) || nonPositive(Primitive_i[prim_idx.Density()]);
+      bool neg_pres_or_rho_j = nonPositive(Primitive_j[prim_idx.Pressure()]) || nonPositive(Primitive_j[prim_idx.Density()]);
 
-      su2double R = sqrt(fabs(Primitive_j[prim_idx.Density()]/Primitive_i[prim_idx.Density()]));
+      if (!neg_pres_or_rho_i && !neg_pres_or_rho_j) {
+
+        /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
+
+        if (!ideal_gas || low_mach_corr) {
+          ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
+          ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
+        }
+
+        /*--- Low-Mach number correction. ---*/
+
+        if (low_mach_corr) {
+          LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
+        }
+
+        /*--- The correction changes the face states, check them again. ---*/
+
+        neg_pres_or_rho_i = nonPositive(Primitive_i[prim_idx.Pressure()]) || nonPositive(Primitive_i[prim_idx.Density()]);
+        neg_pres_or_rho_j = nonPositive(Primitive_j[prim_idx.Pressure()]) || nonPositive(Primitive_j[prim_idx.Density()]);
+      }
+
+      su2double R = 1.0;
+      if (!neg_pres_or_rho_i && !neg_pres_or_rho_j)
+        R = sqrt(Primitive_j[prim_idx.Density()]/Primitive_i[prim_idx.Density()]);
       su2double sq_vel = 0.0;
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         su2double RoeVelocity = (R * Primitive_j[iDim + prim_idx.Velocity()] +
@@ -5800,7 +5812,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
         su2double donorAverages[5] = {0.0};
-        switch (config->GetKind_Data_Giles(Marker_Tag)){
+        switch (config->GetKind_Data_Riemann(Marker_Tag)){
           case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:
             for (auto mixVar = 0u; mixVar < 5; mixVar++) donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
             break;
