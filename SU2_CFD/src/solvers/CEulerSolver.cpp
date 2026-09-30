@@ -1843,6 +1843,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
+  /*--- SST: the total enthalpy of the cells contains k. ---*/
+  const bool tkeInEnergy      = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const CVariable* turbNodes  = tkeInEnergy ? solver_container[TURB_SOL]->GetNodes() : nullptr;
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
   const su2double kappa       = config->GetMUSCL_Kappa_Flow();
@@ -1882,6 +1885,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     auto jPoint = geometry->edges->GetNode(iEdge,1);
 
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+
+    su2double tke_i = 0.0, tke_j = 0.0;
+    if (tkeInEnergy) {
+      tke_i = turbNodes->GetSolution(iPoint, 0);
+      tke_j = turbNodes->GetSolution(jPoint, 0);
+      numerics->SetTurbKineticEnergy(tke_i, tke_j);
+    }
 
     auto Coord_i = geometry->nodes->GetCoord(iPoint);
     auto Coord_j = geometry->nodes->GetCoord(jPoint);
@@ -1958,17 +1968,18 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       if (!neg_pres_or_rho_i && !neg_pres_or_rho_j) {
 
-        /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
+        /*--- Recompute the reconstructed quantities in a thermodynamically consistent way.
+         With SST the total enthalpy contains k, taken from the cells (as the vectorized reconstruction does). ---*/
 
         if (!ideal_gas || low_mach_corr) {
-          ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
-          ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
+          ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i, tke_i);
+          ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j, tke_j);
         }
 
         /*--- Low-Mach number correction. ---*/
 
         if (low_mach_corr) {
-          LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
+          LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j, tke_i, tke_j);
         }
 
         /*--- The correction changes the face states, check them again. ---*/
@@ -1988,7 +1999,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       su2double RoeEnthalpy = (R * Primitive_j[prim_idx.Enthalpy()] + Primitive_i[prim_idx.Enthalpy()]) / (R+1);
 
-      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      const su2double RoeTke = (R * tke_j + tke_i) / (R+1);  // SST: the total enthalpy contains k
+      /*--- Speed of sound of the Roe average and of each side (schemes such as HLLC use both). ---*/
+      auto negSoundSpeed2 = [&](const su2double* prim, su2double tke) {
+        const su2double vel2 = GeometryToolbox::SquaredNorm(nDim, &prim[prim_idx.Velocity()]);
+        return (Gamma-1)*(prim[prim_idx.Enthalpy()] - 0.5*vel2 - tke) < 0.0;
+      };
+      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0) ||
+                                   negSoundSpeed2(Primitive_i, tke_i) || negSoundSpeed2(Primitive_j, tke_j);
       bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
       bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
       counter_local += bad_recon;
@@ -2048,7 +2066,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
-                                                  su2double *primitive, su2double *secondary) {
+                                                  su2double *primitive, su2double *secondary, su2double tke) {
   SU2_ZONE_SCOPED
   const CEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
   const su2double density = primitive[prim_idx.Density()];
@@ -2058,7 +2076,7 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
   fluidModel->SetTDState_Prho(pressure, density);
 
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
-  primitive[prim_idx.Enthalpy()] = fluidModel->GetStaticEnergy() + pressure / density + 0.5*velocity2;
+  primitive[prim_idx.Enthalpy()] = fluidModel->GetStaticEnergy() + pressure / density + 0.5*velocity2 + tke;
   primitive[prim_idx.SoundSpeed()] = fluidModel->GetSoundSpeed();
   secondary[0] = fluidModel->GetdPdrho_e();
   secondary[1] = fluidModel->GetdPde_rho();
@@ -2066,7 +2084,8 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
 }
 
 void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned short nDim,
-                                              su2double *primitive_i, su2double *primitive_j) {
+                                              su2double *primitive_i, su2double *primitive_j,
+                                              su2double tke_i, su2double tke_j) {
   SU2_ZONE_SCOPED
   unsigned short iDim;
 
@@ -2097,10 +2116,10 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
   }
 
   fluidModel->SetEnergy_Prho(primitive_i[nDim+1], primitive_i[nDim+2]);
-  primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i;
+  primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i + tke_i;
 
   fluidModel->SetEnergy_Prho(primitive_j[nDim+1], primitive_j[nDim+2]);
-  primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j;
+  primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j + tke_j;
 
 }
 

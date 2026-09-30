@@ -174,7 +174,7 @@ void CNumerics::GetInviscidIncProjFlux(const su2double *val_density,
 
 void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
                                    const su2double *val_normal, su2double val_scale,
-                                   su2double **val_Proj_Jac_Tensor) const {
+                                   su2double **val_Proj_Jac_Tensor, su2double val_tke) const {
   const bool wasActive = AD::BeginPassive();
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
@@ -185,8 +185,9 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
     proj_vel += val_velocity[iDim]*val_normal[iDim];
   }
 
-  phi = 0.5*Gamma_Minus_One*sqvel;
-  a1 = Gamma*(*val_energy)-phi;
+  /*--- dp/drho, with p = (gamma-1)*(rho*E - |rho*u|^2/(2*rho) - rho*k) and k held fixed; a1 is the total enthalpy. ---*/
+  phi = Gamma_Minus_One*(0.5*sqvel - val_tke);
+  a1 = Gamma*(*val_energy) - Gamma_Minus_One*(0.5*sqvel + val_tke);
   a2 = Gamma-1.0;
 
   val_Proj_Jac_Tensor[0][0] = 0.0;
@@ -213,7 +214,7 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
 void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2double *val_enthalpy,
                                    const su2double *val_chi, const su2double *val_kappa,
                                    const su2double *val_normal, su2double val_scale,
-                                   su2double **val_Proj_Jac_Tensor) const {
+                                   su2double **val_Proj_Jac_Tensor, su2double val_tke) const {
   const bool wasActive = AD::BeginPassive();
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
@@ -224,7 +225,8 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
     proj_vel += val_velocity[iDim]*val_normal[iDim];
   }
 
-  phi = *val_chi + 0.5*sqvel*(*val_kappa);
+  /*--- dp/drho = Chi + Kappa * d(rho*e)/drho, with rho*e = rho*E - |rho*u|^2/(2*rho) - rho*k and k held fixed. ---*/
+  phi = *val_chi + (0.5*sqvel - val_tke)*(*val_kappa);
   a1 = *val_enthalpy;
   a2 = *val_kappa;
 
@@ -380,7 +382,7 @@ void CNumerics::GetPreconditionedProjJac(const su2double *val_density, const su2
 void CNumerics::GetPMatrix(const su2double *val_density, const su2double *val_velocity,
                            const su2double *val_soundspeed, const su2double *val_enthalpy,
                            const su2double *val_chi, const su2double *val_kappa,
-                           const su2double *val_normal, su2double **val_p_tensor) const {
+                           const su2double *val_normal, su2double **val_p_tensor, su2double val_tke) const {
 
   su2double sqvel, rhooc, zeta;
   //su2double rhoxc, c2;
@@ -391,7 +393,7 @@ void CNumerics::GetPMatrix(const su2double *val_density, const su2double *val_ve
 
   if (nDim == 2) {
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
-    zeta = sqvel - (*val_kappa*0.5*sqvel + *val_chi)/(*val_kappa);
+    zeta = sqvel - (*val_kappa*0.5*sqvel + *val_chi)/(*val_kappa) + val_tke;  // SST: k in the total energy
 
     val_p_tensor[0][0] = 1.0;
     val_p_tensor[0][1]=0.0;
@@ -415,7 +417,7 @@ void CNumerics::GetPMatrix(const su2double *val_density, const su2double *val_ve
   }
   else {
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1]+val_velocity[2]*val_velocity[2];
-    zeta = sqvel - (*val_kappa*0.5*sqvel + *val_chi)/(*val_kappa);
+    zeta = sqvel - (*val_kappa*0.5*sqvel + *val_chi)/(*val_kappa) + val_tke;  // SST: k in the total energy
 
     val_p_tensor[0][0]=val_normal[0];
     val_p_tensor[0][1]=val_normal[1];
@@ -452,7 +454,8 @@ void CNumerics::GetPMatrix(const su2double *val_density, const su2double *val_ve
 
 void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, const su2double *val_density,
                                const su2double *val_velocity, const su2double *val_soundspeed,
-                               const su2double *val_chi, const su2double *val_kappa, const su2double *val_normal) const {
+                               const su2double *val_chi, const su2double *val_kappa, const su2double *val_normal,
+                               su2double val_tke) const {
 
   su2double rhoxc, c2, k0orho, k1orho, sqvel, k_o_c2, k_o_rhoxc, dp_drho;
 
@@ -465,7 +468,7 @@ void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, const su2double *val
 
   if (nDim == 3) {
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1]+val_velocity[2]*val_velocity[2];
-    dp_drho = *val_chi + 0.5*sqvel*(*val_kappa);
+    dp_drho = *val_chi + (0.5*sqvel - val_tke)*(*val_kappa);  // SST: k held fixed
 
     val_invp_tensor[0][0]=val_normal[0]-val_normal[2]*val_velocity[1] / *val_density + val_normal[1]*val_velocity[2] / *val_density - val_normal[0]*dp_drho/c2;
     val_invp_tensor[0][1]=val_normal[0]*val_velocity[0]*k_o_c2;
@@ -499,7 +502,7 @@ void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, const su2double *val
   }
   else {
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
-    dp_drho = *val_chi + 0.5*sqvel*(*val_kappa);
+    dp_drho = *val_chi + (0.5*sqvel - val_tke)*(*val_kappa);  // SST: k held fixed
 
     val_invp_tensor[0][0] = 1.0 - dp_drho/c2;
     val_invp_tensor[0][1]= k_o_c2*val_velocity[0];
