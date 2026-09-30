@@ -938,24 +938,18 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
           P_Base = sqrt(StrainMag_i*VorticityMag);
           break;
 
-        case SST_OPTIONS::COMP_Wilcox:
-          P_Base = StrainMag_i;
-          if (Mt >= 0.25) {
-            zetaFMt = 2.0 * (Mt * Mt - 0.25 * 0.25);
-          }
-          break;
-
-        case SST_OPTIONS::COMP_Sarkar:
-          P_Base = StrainMag_i;
-          if (Mt >= 0.25) {
-            zetaFMt = 0.5 * (Mt * Mt);
-          }
-          break;
-
         default:
           /*--- Base production term for SST-1994 and SST-2003 ---*/
           P_Base = StrainMag_i;
           break;
+      }
+
+      /*--- Compressibility corrections, independent of the production modifier. ---*/
+      if (sstParsedOptions.compWilcox && Mt >= 0.25) {
+        zetaFMt = 2.0 * (Mt * Mt - 0.25 * 0.25);
+      }
+      if (sstParsedOptions.compSarkar && Mt >= 0.25) {
+        zetaFMt = 0.5 * (Mt * Mt);
       }
 
       /*--- Production limiter. ---*/
@@ -964,7 +958,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
       su2double pk = max(0.0, min(P, prod_limit));
 
-      const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
+      const su2double eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
       const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
 
       /*--- Production limiter only for V2003, recompute for V1994. ---*/
@@ -988,7 +982,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         pw = max(pw, sust_w);
       }
 
-      if (sstParsedOptions.production == SST_OPTIONS::COMP_Sarkar) {
+      if (sstParsedOptions.compSarkar) {
         const su2double Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Mt * Mt;
         pk += Dilatation_Sarkar;
       }
@@ -996,7 +990,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Dissipation ---*/
 
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * (1.0 + zetaFMt);
-      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - 0.09/beta_blended * zetaFMt);
+      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - beta_star/beta_blended * zetaFMt);
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
@@ -1025,7 +1019,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       Jacobian_i[1][0] = 0.0;
-      Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
+      Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - beta_star/beta_blended * zetaFMt);
     }
 
     AD::SetPreaccOut(Residual, nVar);

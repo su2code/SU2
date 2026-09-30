@@ -1,7 +1,8 @@
 /*!
  * \file hllc_jacobian_tests.cpp
  * \brief Finite-difference verification of the HLLC Jacobians (ideal and general gas, 2D and 3D), on fixed and moving
- *        faces, exact (USE_ACCURATE_FLUX_JACOBIANS) or default.
+ *        faces, with the turbulent kinetic energy of SST in the total energy, exact (USE_ACCURATE_FLUX_JACOBIANS) or
+ *        default.
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -211,9 +212,11 @@ void CheckAllBranches(unsigned short nDim, bool moving, su2double k, bool accura
 TEST_CASE("HLLC Jacobians match finite differences", "[HLLC]") {
   for (const unsigned short nDim : {2, 3}) {
     for (const bool moving : {false, true}) {
-      for (const bool accurate : {false, true}) {
-        CheckAllBranches<CUpwHLLC_Flow>(nDim, moving, 0.0, accurate);
-        CheckAllBranches<CUpwGeneralHLLC_Flow>(nDim, moving, 0.0, accurate);
+      for (const su2double k : {0.0, 0.2}) {
+        for (const bool accurate : {false, true}) {
+          CheckAllBranches<CUpwHLLC_Flow>(nDim, moving, k, accurate);
+          CheckAllBranches<CUpwGeneralHLLC_Flow>(nDim, moving, k, accurate);
+        }
       }
     }
   }
