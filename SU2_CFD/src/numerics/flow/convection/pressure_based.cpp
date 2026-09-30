@@ -144,20 +144,22 @@ void CPBConvection_Base::ComputeJacobian(su2double val_density, const su2double 
 
   /*--- MassFlux is frozen here: it comes from the previous Rhie-Chow interpolation, not from the
   state being solved for. The only derivative left is d(m_f*v_adv)/du, and val_scale carries the
-  advection scheme's weight since v_adv is what the scheme upwinds or averages. ---*/
+  advection scheme's weight since v_adv is what the scheme upwinds or averages. The Jacobian is per
+  unit velocity (A_p = J/rho in CPoissonSolver::SetMomCoeff), so no density appears here. ---*/
 
   for (jDim = 0; jDim < nDim; jDim++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      val_Proj_Jac_Tensor[iDim+1][jDim+1] = val_density * val_scale * proj_vel * delta[iDim][jDim];
+      val_Proj_Jac_Tensor[iDim+1][jDim+1] = val_scale * MassFlux * delta[iDim][jDim];
     }
   }
 
   /*--- With m_f frozen, Flux[nDim+1] = m_f*h_adv depends only on enthalpy and Flux[1+iDim] =
-  m_f*v_adv only on velocity, so the velocity<->enthalpy cross terms are exactly zero. ---*/
+  m_f*v_adv only on velocity, so the velocity<->enthalpy cross terms are exactly zero and the
+  enthalpy diagonal is the same as the velocity one. ---*/
 
   val_Proj_Jac_Tensor[nDim+1][0] = 0.0;
   val_Proj_Jac_Tensor[0][nDim+1] = val_scale * ((val_dRhodh) * proj_vel);
-  val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*(((val_enthalpy)*(val_dRhodh) + (val_density))*proj_vel);
+  val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale * MassFlux;
   for (iDim = 0; iDim < nDim; iDim++) {
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = 0.0;
     val_Proj_Jac_Tensor[iDim+1][nDim+1] = 0.0;
