@@ -2239,7 +2239,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
         /*--- Set turbulence kinetic energy ---*/
-        if (rans){
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
           CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
           numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0), turbNodes->GetSolution(iPoint,0));
         }

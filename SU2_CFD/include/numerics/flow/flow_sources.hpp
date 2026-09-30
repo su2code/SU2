@@ -72,7 +72,8 @@ public:
  */
 class CSourceAxisymmetric_Flow : public CSourceBase_Flow {
 protected:
-    bool implicit, viscous, rans;
+    bool implicit, viscous;
+    bool tkeInEnergy; /*!< \brief SST: k is part of the total energy (turb_ke_i is set by the solver). */
     su2double yinv{0.0};
 
   /*!
