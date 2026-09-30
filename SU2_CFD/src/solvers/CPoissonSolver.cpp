@@ -28,13 +28,14 @@
 #include "../../include/solvers/CPoissonSolver.hpp"
 #include <cstddef>
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/numerics/poisson_edge_flux.hpp"
 #include "../../include/solvers/CScalarSolver.inl"
 
 /*--- Explicit instantiation of the parent class of CPoissonSolver. ---*/
 template class CScalarSolver<CPoissonVariable>;
 
 CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
-  : CScalarSolver<CPoissonVariable>(geometry, config, false, false, LINEAR_SOLVER_MODE::POISSON) {
+  : CScalarSolver<CPoissonVariable>(geometry, config, nullptr, false, false, LINEAR_SOLVER_MODE::POISSON) {
   SU2_ZONE_SCOPED
 
   /*--- Dimension of the problem --> pressure deviation is the only conservative variable ---*/
@@ -66,7 +67,10 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy, false, config->GetKind_Poisson_Linear_Solver_Prec());
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+  if (ReducerStrategy) {
+    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+    EdgeFluxesDiff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+  }
 
   /*--- Initialize the nodes vector. ---*/
 
@@ -118,10 +122,13 @@ void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   /*--- Compute the gradients only after the solution has been reset to zero ---*/
   CommonPreprocessing(geometry, config, Output);
 
-  /*--- Need to clear EdgeFluxes and Jacobian. ---*/
+  /*--- Need to clear EdgeFluxes, EdgeFluxesDiff and Jacobian. ---*/
   if (!Output) {
     LinSysRes.SetValZero();
-    if (ReducerStrategy) EdgeFluxes.SetValZero();
+    if (ReducerStrategy) {
+      EdgeFluxes.SetValZero();
+      EdgeFluxesDiff.SetValZero();
+    }
     Jacobian.SetValZero();
   }
 
@@ -271,35 +278,17 @@ void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container
   CompleteComms(geometry, config, MPI_QUANTITIES::HBYA_CORRECTION);
 }
 
-void CPoissonSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+void CPoissonSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics**,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   SU2_ZONE_SCOPED
 
-  CNumerics* numerics = numerics_container[VISC_TERM + omp_get_thread_num() * MAX_TERMS];
+  /*--- The pressure correction has no convective term, only this diffusion of it. ---*/
+  auto opt = ScalarFluxOptions::Interior(*config, false);
+  opt.convective = false;
 
-  bool pausePreacc = false;
-  if (ReducerStrategy)
-    pausePreacc = AD::PausePreaccumulation();
-  else
-    AD::StartNoSharedReading();
-
-  for (auto color : EdgeColoring) {
-    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-    for (auto k = 0ul; k < color.size; ++k) {
-      auto iEdge = color.indices[k];
-      Viscous_Residual(iEdge, geometry, solver_container, numerics, config);
-    }
-    END_SU2_OMP_FOR
-  }
-
-  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
-  AD::ResumePreaccumulation(pausePreacc);
-  if (!ReducerStrategy) AD::EndNoSharedReading();
-
-  if (ReducerStrategy) {
-    SumEdgeFluxes(geometry);
-    Jacobian.SetDiagonalAsColumnSum();
-  }
+  DispatchScheme<CScalarFlux_Poisson, 1>(config, [&](auto tag) {
+    EdgeFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt);
+  });
 }
 
 void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
@@ -313,14 +302,21 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const auto& edgeMassFluxes = *(flow_solver->GetEdgeMassFluxes());
 
-  /*--- flux is computed over all edges ---*/
+  /*--- The flux is computed over all edges, but accumulated per point rather than per edge:
+   * the edge colors are disjoint in their points only while the coloring is in use, and the
+   * reducer strategy replaces it with the natural coloring (see CScalarSolver's constructor),
+   * where writing a point's row from an edge loop is a race. ---*/
 
-  for (auto color : EdgeColoring) {
-    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-    for (auto k = 0ul; k < color.size; ++k) {
-      auto iEdge = color.indices[k];
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    su2double PointSource = 0.0;
 
-      auto iPoint = geometry->edges->GetNode(iEdge,0); auto jPoint = geometry->edges->GetNode(iEdge,1);
+    for (const auto iEdge : geometry->nodes->GetEdges(iPoint)) {
+      /*--- The edge normal points from node 0 to node 1, so the flux leaves the former and
+       * enters the latter, as the two signs of the equivalent edge loop. ---*/
+      const bool iIsNode0 = (iPoint == geometry->edges->GetNode(iEdge, 0));
+      const auto jPoint = geometry->edges->GetNode(iEdge, iIsNode0 ? 1 : 0);
+
       su2double Normal[MAXNDIM] = {0.0};
       geometry->edges->GetNormal(iEdge, Normal);
 
@@ -332,15 +328,13 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Add the mass flux and the HbyA correction to the source term for the poisson equation ---*/
 
-      su2double EdgeSource = edgeMassFluxes[iEdge] + MeanHbyA;
-      auto residual = CNumerics::ResidualType<>(&EdgeSource, nullptr, nullptr);
-
-      if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
-      if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residual);
-
+      const su2double EdgeSource = edgeMassFluxes[iEdge] + MeanHbyA;
+      PointSource += iIsNode0 ? EdgeSource : -EdgeSource;
     }
-    END_SU2_OMP_FOR
+
+    LinSysRes(iPoint, 0) += PointSource;
   }
+  END_SU2_OMP_FOR
 
   /*--- Now add corrections to the previously computed mass fluxes for boundary conditions which alter the mass flux.
   geometry->vertex[...]->GetNormal() returns the normal pointing into the domain, so accumulating with -= below

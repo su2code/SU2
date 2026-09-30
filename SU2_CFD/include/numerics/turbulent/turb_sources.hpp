@@ -1014,7 +1014,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Residual[0] -= dk * Volume;
       Residual[1] -= dw * Volume;
 
-      /*--- Cross diffusion is included in the viscous fluxes, discretisation in turb_diffusion.hpp ---*/
+      /*--- Cross diffusion is included in the viscous fluxes, not this source term. ---*/
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 
