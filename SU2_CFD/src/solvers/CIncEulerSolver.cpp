@@ -2458,7 +2458,11 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       if (inflow) {
 
-        /*--- Set this face as an inlet via a strong BC. ---*/
+        /*--- Set this face as an inlet via a strong BC, the free-stream velocity and enthalpy are imposed. ---*/
+
+        nodes->SetVelocity_Old(iPoint, V_infty+prim_idx.Velocity());
+        if (config->GetEnergy_Equation())
+          nodes->SetSolution_Old(iPoint, nDim+1, V_infty[prim_idx.Enthalpy()]);
 
         LinSysRes.SetBlock_Zero(iPoint);
 
@@ -2466,9 +2470,12 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
         nodes->SetStrongBC(iPoint);
 
-        if (implicit)
+        if (implicit) {
           for (iDim = 0; iDim < nDim; iDim++)
             Jacobian.DeleteValsRowi(iPoint, iDim+1);
+          if (config->GetEnergy_Equation())
+            Jacobian.DeleteValsRowi(iPoint, nDim+1);
+        }
 
       } else {
 
@@ -2739,13 +2746,29 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       nodes->SetVelocity_Old(iPoint,V_inlet+prim_idx.Velocity());
 
+      /*--- Same for the enthalpy, from the inlet temperature. ---*/
+
+      const bool inlet_enthalpy = config->GetEnergy_Equation() &&
+          !(config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET &&
+            config->GetFlamelet_Enthalpy_BC() == FLAMELET_ENTHALPY_BC::FLOW_MARKERS);
+      if (inlet_enthalpy) {
+        const su2double* scalar_inlet = nullptr;
+        if (species_model) scalar_inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+        CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+        auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], scalar_inlet);
+        nodes->SetSolution_Old(iPoint, nDim+1, auxFluidModel->GetEnthalpy());
+      }
+
       LinSysRes.SetBlock_Zero(iPoint);
 
       if (pressure_based) nodes->SetStrongBC(iPoint);
 
-      if (implicit)
+      if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.DeleteValsRowi(iPoint, iDim+1);
+        if (inlet_enthalpy)
+          Jacobian.DeleteValsRowi(iPoint, nDim+1);
+      }
 
     } else {
 
