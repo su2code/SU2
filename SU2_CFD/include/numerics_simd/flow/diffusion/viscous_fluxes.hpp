@@ -80,6 +80,7 @@ protected:
   const bool useSA_QCR;
   const bool wallFun;
   const bool uq;
+  const bool tkeInStress; /*!< \brief 2/3 rho k in the stress tensor (standard, non-m, SST versions). */
   const bool uq_permute;
   const size_t uq_eigval_comp;
   const su2double uq_delta_b;
@@ -100,6 +101,8 @@ protected:
     useSA_QCR(config.GetSAParsedOptions().qcr2000),
     wallFun(config.GetWall_Functions()),
     uq(config.GetSSTParsedOptions().uq),
+    tkeInStress(config.GetKind_Turb_Model() == TURB_MODEL::SST && !config.GetSSTParsedOptions().modified &&
+                !config.GetSSTParsedOptions().uq),
     uq_permute(config.GetUQ_Permute()),
     uq_eigval_comp(config.GetEig_Val_Comp()),
     uq_delta_b(config.GetUQ_Delta_B()),
@@ -152,6 +155,14 @@ protected:
     const Double eddyVisc = uq? Double(0.0) : avgV.eddyVisc();
     auto tau = stressTensor(avgV.laminarVisc() + eddyVisc, avgGrad);
     if(useSA_QCR) addQCR(avgGrad, tau, eddyVisc / (avgV.laminarVisc() + eddyVisc));
+    if(tkeInStress) {
+      /*--- 2/3 rho k term of the Boussinesq approximation, ignored by the modified (m) SST versions (with UQ it is
+       * part of the perturbed Reynolds stress). ---*/
+      const Double turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
+                                  gatherVariables(jPoint, turbVars->GetSolution()));
+      const Double kTerm = 2.0/3.0 * avgV.density() * turb_ke;
+      for (size_t iDim = 0; iDim < nDim; ++iDim) tau(iDim,iDim) -= kTerm;
+    }
     if(uq) {
       Double turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
                             gatherVariables(jPoint, turbVars->GetSolution()));
