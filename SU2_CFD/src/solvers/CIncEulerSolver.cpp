@@ -2140,15 +2140,24 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
 
   struct IncPrec {
     const CIncEulerSolver* solver;
-    const bool active;
+    const bool active = true;
     su2activematrix matrix;
 
-    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s), active(!s->pressure_based) {
+    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s) {
       matrix.resize(nVar,nVar);
     }
 
     FORCEINLINE const su2activematrix& operator() (const CConfig* config, unsigned long iPoint, su2double delta) {
-      solver->SetPreconditioner(config, iPoint, delta, matrix);
+      if (solver->pressure_based) {
+        /*--- The Jacobian of the pressure-based solver is per unit velocity and enthalpy, the
+         *    pseudo-time term is rho*V/dt (the continuity row is deleted below). ---*/
+        matrix = su2double(0.0);
+        matrix(0,0) = delta;
+        for (unsigned short iVar = 1; iVar < matrix.rows(); iVar++)
+          matrix(iVar,iVar) = solver->nodes->GetDensity(iPoint) * delta;
+      } else {
+        solver->SetPreconditioner(config, iPoint, delta, matrix);
+      }
       return matrix;
     }
 
