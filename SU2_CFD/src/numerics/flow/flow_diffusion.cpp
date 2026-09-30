@@ -131,6 +131,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
 
   if (sstParsedOptions.uq) {
     // laminar part
+    // the 2/3 rho k term is already in the perturbed Reynolds stress
     ComputeStressTensor(nDim, tau, val_gradprimvar+1, val_laminar_viscosity);
     // add turbulent part which was perturbed
     for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
@@ -138,8 +139,14 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
         tau[iDim][jDim] += (-Density) * MeanPerturbedRSM[iDim][jDim];
   } else {
     const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-    // turb_ke is not considered in the stress tensor, see #797
-    ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, su2double(0.0));
+    /*--- 2/3 rho k only for the standard (non-m) SST versions, see #797. The other models call the function
+     * without it, so that their results do not change with how the compiler rounds a zero k term. ---*/
+    const bool tkeInStress = config->GetKind_Turb_Model() == TURB_MODEL::SST && !sstParsedOptions.modified;
+    if (tkeInStress) {
+      ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, val_turb_ke);
+    } else {
+      ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, su2double(0.0));
+    }
   }
 
   /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/

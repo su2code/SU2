@@ -74,6 +74,7 @@ class CSourceAxisymmetric_Flow : public CSourceBase_Flow {
 protected:
     bool implicit, viscous;
     bool tkeInEnergy; /*!< \brief SST: k is part of the total energy (turb_ke_i is set by the solver). */
+    bool tkeInStress; /*!< \brief Standard (non-m) SST versions: -2/3 rho k is part of the stress tensor. */
     su2double yinv{0.0};
 
   /*!
