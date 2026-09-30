@@ -1677,6 +1677,15 @@ def main():
     pywrapper_Unst_Heat_Source.command = TestCase.Command("mpirun -n 2", "python", "run.py")
     test_list.append(pywrapper_Unst_Heat_Source)
 
+    # Heat solver steady with a volumetric source in an ellipsoid, analytic solution
+    pywrapper_Steady_Heat_Source = TestCase('pywrapper_Steady_Heat_Source')
+    pywrapper_Steady_Heat_Source.cfg_dir = "py_wrapper/custom_heat_source_steady"
+    pywrapper_Steady_Heat_Source.cfg_file = "run.py"
+    pywrapper_Steady_Heat_Source.test_iter = 5
+    pywrapper_Steady_Heat_Source.test_vals = [-11.041014, -10.349794, -64.000000, 10.000000]
+    pywrapper_Steady_Heat_Source.command = TestCase.Command("mpirun -n 2", "python", "run.py")
+    test_list.append(pywrapper_Steady_Heat_Source)
+
     ##############################################
     ### Method of Manufactured Solutions (MMS) ###
     ##############################################
