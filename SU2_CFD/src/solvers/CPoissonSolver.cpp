@@ -168,14 +168,11 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
       su2double Vol = geometry->nodes->GetVolume(iPoint);
 
       /*--- The momentum equation is not assembled at a strong velocity BC, DeleteValsRowi zeroes
-       * the row and writes 1.0 on the diagonal, so there is no A_p to read. Nothing consumes the
-       * value stored here: edges touching the point take the coefficient of their other node, the
-       * velocity correction is overwritten in the boundary loop, and HbyA scales it by a numerator
-       * that is identically zero. Store a finite placeholder and skip the corrections below, which
-       * divide by zero for a transient removal factor of 1. ---*/
+       * the row and writes 1.0 on the diagonal, so there is no A_p to read. The coefficient of
+       * these points is set below from their neighbours, zero marks them until then. ---*/
 
       if (flow_nodes->GetStrongBC(iPoint)) {
-        nodes->SetMomCoeff(iPoint, Vol * flow_nodes->GetDensity(iPoint));
+        nodes->SetMomCoeff(iPoint, 0.0);
         continue;
       }
 
@@ -225,7 +222,29 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
     */
   }
 
-  /*--- Insert MPI call here. ---*/
+  InitiateComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
+  CompleteComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
+
+  /*--- Points under a strong velocity BC take the average coefficient of their neighbours that have
+   * a momentum equation, which also sets the edges between two such points. The flags are only known
+   * on this rank's points, the zero set above marks the strong points of the other ranks. ---*/
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (!flow_nodes->GetStrongBC(iPoint)) continue;
+
+    su2double Sum_Coeff = 0.0;
+    unsigned short nCoeff = 0;
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+      if (!flow_nodes->GetStrongBC(jPoint) && nodes->GetMomCoeff(jPoint) > 0.0) {
+        Sum_Coeff += nodes->GetMomCoeff(jPoint);
+        nCoeff++;
+      }
+    }
+    nodes->SetMomCoeff(iPoint, (nCoeff > 0) ? Sum_Coeff / nCoeff : 0.0);
+  }
+  END_SU2_OMP_FOR
+
   InitiateComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
   CompleteComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
 }
