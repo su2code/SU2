@@ -191,11 +191,13 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
         }
       }
 
-      /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
+      /*--- Add simplec neighbour contributions and optional time dependent term. The off-diagonal
+       * entries are -a_nb, so A_p + Sum_A_nb is a_P - sum(a_nb), which is only the pseudo-time term
+       * V/dt: the removal of the transient term must not be used with SIMPLEC. ---*/
 
       su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
-      su2double CorrectedA_p = A_p - Sum_A_nb - config->GetSIMPLE_Options().Transient_Term_Removal_Factor * (Vol / delT);
+      su2double CorrectedA_p = A_p + Sum_A_nb - config->GetSIMPLE_Options().Transient_Term_Removal_Factor * (Vol / delT);
 
       /*--- Invert the momentum coefficient to 1/a_p and scale by the volume and density so it can be used as diffusion coefficient in the poisson eq ---*/
 
