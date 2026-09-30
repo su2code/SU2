@@ -659,6 +659,14 @@ def main():
     inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784247, 0.427448, 0.012083]
     test_list.append(inc_euler_naca0012_pb)
 
+    # NACA0012 Hydrofoil, pressure-based with SIMPLEC
+    inc_euler_naca0012_pb_simplec = TestCase('inc_euler_naca0012_pb_simplec')
+    inc_euler_naca0012_pb_simplec.cfg_dir = "incomp_euler/naca0012"
+    inc_euler_naca0012_pb_simplec.cfg_file = "incomp_pb_NACA0012_simplec.cfg"
+    inc_euler_naca0012_pb_simplec.test_iter = 20
+    inc_euler_naca0012_pb_simplec.test_vals = [-4.400610, -4.580884, 0.480955, 0.021030]
+    test_list.append(inc_euler_naca0012_pb_simplec)
+
     # C-D nozzle with pressure inlet and mass flow outlet
     inc_nozzle           = TestCase('inc_nozzle')
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
