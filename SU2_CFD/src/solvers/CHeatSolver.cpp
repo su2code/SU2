@@ -148,18 +148,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, const CSolver* fl
     ghostNodes = make_unique<CHeatVariable>(Solution_Inf[0], maxMarkerVertices, nDim, nVar, config);
   }
 
-  /*--- Mark the points inside the volumetric heat source. In the weakly coupled fluid case the source
-   * belongs to the flow solver's energy equation, so it is only applied here for solid conduction. ---*/
-  if (config->GetHeatSource() && !flow) {
-    const su2double rotZ = config->GetHeatSource_Rot_Z() * PI_NUMBER / 180.0;
-    VolHeatSource.resize(nPoint);
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-      VolHeatSource[iPoint] = GeometryToolbox::PointInEllipsoid(nDim, geometry->nodes->GetCoord(iPoint),
-                                                                config->GetHeatSource_Center(),
-                                                                config->GetHeatSource_Axes(), rotZ);
-    }
-  }
-
   /*--- Communicate and store volume and the number of neighbors for any dual CVs that lie on on periodic markers. ---*/
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
@@ -344,17 +332,8 @@ void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_containe
                                   CConfig *config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
-  /*--- Volumetric heat source (HEAT_SOURCE), scaled like a wall heat flux. ---*/
-  if (!VolHeatSource.empty()) {
-    const su2double HeatSource = config->GetHeatSource_Val() / config->GetHeat_Flux_Ref();
-
-    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-      if (!VolHeatSource[iPoint]) continue;
-      LinSysRes(iPoint, 0) -= HeatSource * geometry->nodes->GetVolume(iPoint);
-    }
-    END_SU2_OMP_FOR
-  }
+  /*--- Regular source terms go here. ---*/
+  /*--- ... ---*/
 
  /*--- Custom user defined source term (from the python wrapper) ---*/
   if (config->GetPyCustomSource()) {

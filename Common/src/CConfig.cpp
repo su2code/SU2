@@ -4224,6 +4224,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);
 
+  /*--- The ellipsoidal HEAT_SOURCE is part of the radiation model. Without one, no solver applies it. ---*/
+  if (HeatSource && !Radiation) {
+    SU2_MPI::Error("HEAT_SOURCE= YES requires a RADIATION_MODEL. For other volumetric sources, use PYTHON_CUSTOM_SOURCE.",
+                   CURRENT_FUNCTION);
+  }
+
   /*--- Check for unsupported features. ---*/
 
   if ((Kind_Solver != MAIN_SOLVER::EULER && Kind_Solver != MAIN_SOLVER::NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::RANS) && (TimeMarching == TIME_MARCHING::HARMONIC_BALANCE)){
