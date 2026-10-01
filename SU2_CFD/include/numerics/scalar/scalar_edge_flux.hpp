@@ -363,8 +363,7 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
         umusclRamp(config.GetMUSCLRampValue()),
         kappaFlow(config.GetMUSCL_Kappa_Flow()),
         limiterType(config.GetKind_SlopeLimit()),
-        limiterTypeFlow(config.GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE ? config.GetKind_SlopeLimit_Flow()
-                                                                                     : LIMITER::NONE),
+        limiterTypeFlow(config.GetKind_SlopeLimit_Flow()),
         musclFlow(config.GetMUSCL_Flow() && config.GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {
     if (nEqn > Size) {
       SU2_MPI::Error("Static arrays are too small for the requested equation count.", CURRENT_FUNCTION);
