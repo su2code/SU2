@@ -118,7 +118,9 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL();
+  /*--- The edge limiter (VAN_ALBADA_EDGE) is applied in the flux kernel and needs no point values. ---*/
   const bool limiter = (config->GetKind_SlopeLimit() != LIMITER::NONE) &&
+                       (config->GetKind_SlopeLimit() != LIMITER::VAN_ALBADA_EDGE) &&
                        (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Clear residual and system matrix, not needed for
