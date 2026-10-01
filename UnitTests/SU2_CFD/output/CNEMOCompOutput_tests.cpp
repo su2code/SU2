@@ -122,7 +122,7 @@ class CTestSolver final : public CSolver {
 std::vector<std::string> ExpectedResidualFields(const std::string& prefix, unsigned short dimension,
                                                 unsigned short nSpecies) {
   std::vector<std::string> fields;
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; ++iSpecies) {
+  for (auto iSpecies = 0u; iSpecies < nSpecies; ++iSpecies) {
     fields.push_back(prefix + "_DENSITY_" + std::to_string(iSpecies));
   }
   fields.push_back(prefix + "_MOMENTUM-X");
@@ -136,7 +136,7 @@ std::vector<std::string> ExpectedResidualFields(const std::string& prefix, unsig
 std::vector<std::string> ExpectedFieldNames(const std::string& prefix, unsigned short dimension,
                                             unsigned short nSpecies) {
   std::vector<std::string> names;
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; ++iSpecies) {
+  for (auto iSpecies = 0u; iSpecies < nSpecies; ++iSpecies) {
     names.push_back(prefix + "[Rho_" + std::to_string(iSpecies) + "]");
   }
   names.push_back(prefix + "[RhoU]");
