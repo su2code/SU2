@@ -365,6 +365,15 @@ protected:
   void SetFixedCLScreenOutput(const CConfig *config);
 
   /*!
+   * \brief Determines if the screen output should be written.
+   * \note In fixed CL mode the start and the end of the finite difference step are always written,
+   *       since SetFixedCLScreenOutput writes the meta data file with the finite difference derivatives.
+   * \param[in] config - Definition of the particular problem per zone.
+   * \return <TRUE> if screen output should be written.
+   */
+  bool WriteScreenOutput(const CConfig *config) override;
+
+  /*!
    * \brief Compute the ratio of the stochastic energy backscatter to the turbulent energy dissipation.
    * \param iPoint - Index of the point.
    * \param config - Definition of the particular problem.

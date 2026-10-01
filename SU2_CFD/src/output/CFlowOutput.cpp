@@ -4282,6 +4282,23 @@ void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
   }
 }
 
+bool CFlowOutput::WriteScreenOutput(const CConfig *config) {
+
+  /*--- In fixed CL mode, SetFixedCLScreenOutput stores the iteration at which the finite difference
+   * step starts and, at its end, writes the meta data file with dCL/dAlpha and dCX/dCL. These events
+   * must not depend on the screen output frequency (e.g. when the finite difference step ends due to
+   * ITER_DCL_DALPHA), otherwise the adjoint reads stale derivatives from the meta data file. ---*/
+
+  if (config->GetFixed_CL_Mode() && config->GetFinite_Difference_Mode() &&
+      !(config->GetMultizone_Problem() && !config->GetWrt_ZoneConv())) {
+    const bool startFD = fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16;
+    const bool endFD = historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value;
+    if (startFD || endFD) return true;
+  }
+
+  return COutput::WriteScreenOutput(config);
+}
+
 void CFlowOutput::AddTurboOutput(unsigned short nZone){
 //Adds zone turboperformance history variables
   for (unsigned short iZone = 0; iZone <= nZone-1; iZone++) {
