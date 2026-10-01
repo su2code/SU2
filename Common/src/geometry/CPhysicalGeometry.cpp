@@ -7666,8 +7666,8 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
   /*--- Compute the metrics with a final loop over the vertices. Also
    compute the local min and max values here for reporting. ---*/
 
-  su2double orthoMin = 1.e6, arMin = 1.e6, vrMin = 1.e6;
-  su2double orthoMax = 0.0, arMax = 0.0, vrMax = 0.0;
+  su2double orthoMin = 1.e6, arMin = 1.e6, vrMin = 1.e6, volMin = 1.e6;
+  su2double orthoMax = 0.0, arMax = 0.0, vrMax = 0.0, volMax = 0.0;
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Orthogonality[iPoint] = Orthogonality[iPoint] / SurfaceArea[iPoint];
     orthoMin = min(Orthogonality[iPoint], orthoMin);
@@ -7680,6 +7680,12 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
     Volume_Ratio[iPoint] = SubVolume_Max[iPoint] / SubVolume_Min[iPoint];
     vrMin = min(Volume_Ratio[iPoint], vrMin);
     vrMax = max(Volume_Ratio[iPoint], vrMax);
+
+    /*--- The dual CV's own volume, not a ratio: a collapsed cell can have a normal aspect
+     ratio and sub-volume ratio yet still be degenerate in absolute size. ---*/
+    const su2double Volume_i = SU2_TYPE::GetValue(nodes->GetVolume(iPoint));
+    volMin = min(Volume_i, volMin);
+    volMax = max(Volume_i, volMax);
   }
 
   /*--- Reduction to find the min and max values globally. ---*/
@@ -7696,6 +7702,10 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
   SU2_MPI::Allreduce(&vrMin, &Global_VR_Min, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&vrMax, &Global_VR_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
+  su2double Global_Vol_Min, Global_Vol_Max;
+  SU2_MPI::Allreduce(&volMin, &Global_Vol_Min, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&volMax, &Global_Vol_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+
   /*--- Print the summary to the console for the user. ---*/
 
   PrintingToolbox::CTablePrinter MetricsTable(&std::cout);
@@ -7707,6 +7717,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
     MetricsTable << "Orthogonality Angle (deg.)" << Global_Ortho_Min << Global_Ortho_Max;
     MetricsTable << "CV Face Area Aspect Ratio" << Global_AR_Min << Global_AR_Max;
     MetricsTable << "CV Sub-Volume Ratio" << Global_VR_Min << Global_VR_Max;
+    MetricsTable << "CV Volume" << Global_Vol_Min << Global_Vol_Max;
     MetricsTable.PrintFooter();
   }
 
