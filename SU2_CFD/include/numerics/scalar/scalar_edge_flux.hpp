@@ -340,10 +340,9 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
 
   /*!
    * \brief MUSCL reconstruction parameters, read from CConfig once per construction (i.e. once
-   *        per nonlinear iteration, see CScalarSolver::EdgeFluxResidual) instead of per edge;
-   *        this is also where the scalar limiter's freezing (GetLimiterIter) is resolved, by
-   *        collapsing its type to NONE once frozen. The flow limiter is not frozen this way: once
-   *        the flow solver stops recomputing it, it keeps applying the last values it has.
+   *        per nonlinear iteration, see CScalarSolver::EdgeFluxResidual) instead of per edge.
+   *        Both the scalar and the flow limiters are frozen after LIMITER_ITER by no longer
+   *        recomputing them: the last stored values keep being applied.
    */
   const su2double kappa, umusclRamp, kappaFlow;
   const LIMITER limiterType, limiterTypeFlow;
@@ -363,7 +362,7 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
         kappa(config.GetMUSCL_Kappa()),
         umusclRamp(config.GetMUSCLRampValue()),
         kappaFlow(config.GetMUSCL_Kappa_Flow()),
-        limiterType(config.GetInnerIter() <= config.GetLimiterIter() ? config.GetKind_SlopeLimit() : LIMITER::NONE),
+        limiterType(config.GetKind_SlopeLimit()),
         limiterTypeFlow(config.GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE ? config.GetKind_SlopeLimit_Flow()
                                                                                      : LIMITER::NONE),
         musclFlow(config.GetMUSCL_Flow() && config.GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {
