@@ -122,7 +122,7 @@ struct LimiterHelpers
     if(Dp>(2.0*Dm)) return 1.0;
     Type y = pow(Dp, 4) + epsp;
     Type S4 = 2.0*Dm*(Dp*Dp-2.0*Dm*(Dp-2.0*Dm));
-    return (y + Dp*S4) / (y + Dm*(pow(delta,3)+S4));
+    return (y + Dp*S4) / (y + Dm*(pow(Dp,3)+S4));
   }
 
   FORCEINLINE static Type r5Function(const Type& proj, const Type& delta, const Type& epsp)
