@@ -363,7 +363,8 @@ void CScalarSolver<VariableType>::FluidInterfaceFluxResidual(const CGeometry* ge
         su2double massFlux = 0.0;
         if (optConv.boundedScalar) {
           massFlux = BoundedScalarBCFlux(iPoint, optConv.implicit, flowNodes->GetDensity(iPoint),
-                                         &PrimVar_j[prim_idx.Velocity()], normal.data(), &PrimVar_j[prim_idx.Density()]);
+                                         &PrimVar_j[prim_idx.Velocity()], normal.data(), &PrimVar_j[prim_idx.Density()],
+                                         weight);
         }
 
         const auto res = flux.ComputeFlux(optConv, iPoint, side_i, iVertex, side_j, normal, massFlux);

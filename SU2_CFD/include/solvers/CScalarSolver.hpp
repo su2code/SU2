@@ -244,13 +244,15 @@ class CScalarSolver : public CSolver {
    * \brief Applies a convective flux correction to negate the effects of flow divergence at a BC node.
    * \note This function should be used for nodes that are part of a boundary marker, it computes a mass flux
    * from density and velocity at the node, and the outward-pointing normal (-1 * normal of vertex).
+   * \param[in] weight - Weight of the boundary state, e.g. of a donor at a sliding interface, which also weights
+   *            the flux (the returned mass flux is not weighted).
    * \return The mass flux.
    */
   inline su2double BoundedScalarBCFlux(unsigned long iPoint, bool implicit, const su2double& density,
                                        const su2double* velocity, const su2double* normal,
-                                       const su2double* densityGhost = nullptr) {
+                                       const su2double* densityGhost = nullptr, su2double weight = 1.0) {
     const su2double edgeMassFlux = density * GeometryToolbox::DotProduct(nDim, velocity, normal);
-    const su2double q = BoundedScalarDivergenceFlux(edgeMassFlux, density, densityGhost ? *densityGhost : density);
+    const su2double q = weight * BoundedScalarDivergenceFlux(edgeMassFlux, density, densityGhost ? *densityGhost : density);
     LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -q);
     if (implicit) Jacobian.AddVal2Diag(iPoint, -q / (Conservative ? density : 1.0));
     return edgeMassFlux;
