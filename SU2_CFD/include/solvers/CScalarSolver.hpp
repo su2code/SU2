@@ -247,11 +247,26 @@ class CScalarSolver : public CSolver {
    * \return The mass flux.
    */
   inline su2double BoundedScalarBCFlux(unsigned long iPoint, bool implicit, const su2double& density,
-                                       const su2double* velocity, const su2double* normal) {
+                                       const su2double* velocity, const su2double* normal,
+                                       const su2double* densityGhost = nullptr) {
     const su2double edgeMassFlux = density * GeometryToolbox::DotProduct(nDim, velocity, normal);
-    LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -edgeMassFlux);
-    if (implicit) Jacobian.AddVal2Diag(iPoint, -edgeMassFlux);
+    const su2double q = BoundedScalarDivergenceFlux(edgeMassFlux, density, densityGhost ? *densityGhost : density);
+    LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -q);
+    if (implicit) Jacobian.AddVal2Diag(iPoint, -q / (Conservative ? density : 1.0));
     return edgeMassFlux;
+  }
+
+  /*!
+   * \brief Face flux of the bounded scalar divergence correction, -q * phi_i, such that it cancels the
+   *        part of the upwind flux due to the discrete divergence of the mass flux. It uses the same
+   *        coefficients as the flux: the mass flux for a conservative scalar (whose flux is
+   *        mdot+ phi_i + mdot- phi_j), the upwinded volume flux mdot+/rho_i + mdot-/rho_j otherwise.
+   * \note The Jacobian w.r.t. the conserved variable of a conservative scalar, rho * phi, is -q / rho_i.
+   */
+  inline su2double BoundedScalarDivergenceFlux(const su2double& massFlux, const su2double& rho_i,
+                                               const su2double& rho_j) const {
+    if (Conservative) return massFlux;
+    return fmax(massFlux, 0.0) / rho_i + fmin(massFlux, 0.0) / rho_j;
   }
 
   /*!
