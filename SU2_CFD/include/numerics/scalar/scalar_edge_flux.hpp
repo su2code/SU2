@@ -62,6 +62,12 @@ struct ScalarFluxOptions {
   bool viscous = false;   /*!< \brief Whether the diffusion term contributes. */
   bool oneSided = false;  /*!< \brief Whether only the row of i is assembled. */
   bool muscl = false;     /*!< \brief Whether the convective scheme reconstructs. */
+  /*!
+   * \brief Bounds of the transported variables (those that clip the solution). A reconstructed face
+   *        value outside them falls back to the value of its point (first order). Null: no bounds.
+   */
+  const su2double* lowerLimit = nullptr;
+  const su2double* upperLimit = nullptr;
 
   /*!
    * \brief Options of the interior edge loop: both terms, both rows, and reconstruction and
@@ -462,6 +468,7 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
       }
 
       if (opt.muscl) {
+        const auto phi1st = phi;
         if constexpr (nVar != Dynamic) {
           reconstruct<nVar>(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
                             side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp);
@@ -470,6 +477,18 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
            * width is passed as an argument instead of a template parameter. ---*/
           reconstruct(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
                       side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp, res.nVar);
+        }
+
+        /*--- A face value outside the bounds of the variable (e.g. a negative k or omega next to a wall,
+         * where omega varies by orders of magnitude) falls back to the value of its point. ---*/
+        if (opt.lowerLimit) {
+          for (size_t iVar = 0; iVar < res.nVar; ++iVar) {
+            const su2double lo = opt.lowerLimit[iVar], hi = opt.upperLimit[iVar];
+            const Double out_i = fmax(phi.i.all(iVar) < lo, phi.i.all(iVar) > hi);
+            const Double out_j = fmax(phi.j.all(iVar) < lo, phi.j.all(iVar) > hi);
+            phi.i.all(iVar) = out_i * phi1st.i.all(iVar) + (1 - out_i) * phi.i.all(iVar);
+            phi.j.all(iVar) = out_j * phi1st.j.all(iVar) + (1 - out_j) * phi.j.all(iVar);
+          }
         }
       }
 

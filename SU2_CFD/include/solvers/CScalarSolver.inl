@@ -178,8 +178,13 @@ void CScalarSolver<VariableType>::SumEdgeFluxes(const CGeometry* geometry) {
 template <class VariableType>
 template <class Scheme>
 void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CSolver** solver_container,
-                                                    const CConfig* config, const ScalarFluxOptions& opt) {
+                                                    const CConfig* config, const ScalarFluxOptions& optIn) {
   SU2_ZONE_SCOPED
+
+  /*--- The reconstructed face values are kept within the bounds that clip the solution. ---*/
+  auto opt = optIn;
+  opt.lowerLimit = lowerlimit;
+  opt.upperLimit = upperlimit;
 
   using Double = typename Scheme::Double;
   constexpr int nDim = Scheme::nDim;
