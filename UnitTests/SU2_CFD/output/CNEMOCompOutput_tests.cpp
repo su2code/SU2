@@ -51,8 +51,7 @@ std::unique_ptr<CConfig> MakeNEMOConfig(bool multizone) {
           << "MACH_NUMBER= 5.0\n"
           << "FREESTREAM_PRESSURE= 101325.0\n"
           << "FREESTREAM_TEMPERATURE= 288.15\n"
-          << "FREESTREAM_TEMPERATURE_VE= 288.15\n"
-          << "COMM_LEVEL= MINIMAL\n";
+          << "FREESTREAM_TEMPERATURE_VE= 288.15\n";
   auto config = std::make_unique<CConfig>(options, SU2_COMPONENT::SU2_CFD, false);
   config->SetMultizone_Problem(multizone);
   return config;
@@ -62,7 +61,8 @@ class CTestGeometry final : public CGeometry {
  public:
   explicit CTestGeometry(unsigned short dimension) {
     nDim = dimension;
-    nPoint = nPointDomain = Global_nPoint = Global_nPointDomain = 1;
+    nPoint = nPointDomain = 1;
+    Global_nPoint = Global_nPointDomain = SU2_MPI::GetSize();
     MGLevel = MESH_0;
   }
 };
@@ -88,6 +88,13 @@ class CTestSolver final : public CSolver {
     Point_Max_BGS.resize(nVar);
     Point_Max_Coord.resize(nVar, nDim);
     Point_Max_Coord_BGS.resize(nVar, nDim);
+    for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+      Point_Max[iVar] = Point_Max_BGS[iVar] = rank;
+      for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+        Point_Max_Coord(iVar, iDim) = -(rank + 1.0) * (iDim + 1.0);
+        Point_Max_Coord_BGS(iVar, iDim) = 10.0 * (rank + 1.0) + iDim + 1.0;
+      }
+    }
 
     SetBaseClassPointerToNodes();
     SetCFL_Local_Stats(1.0);
@@ -95,23 +102,27 @@ class CTestSolver final : public CSolver {
   }
 
   void SeedResidualSums() {
+    const double rankAmplitude = rank + 1.0;
     for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
       const auto rmsExponent = static_cast<int>(iVar) + 1;
       const auto maxExponent = static_cast<int>(iVar) + 22;
       const auto bgsExponent = static_cast<int>(iVar) + 12;
-      Residual_RMS[iVar] = std::pow(10.0, -2.0 * rmsExponent);
-      Residual_Max[iVar] = std::pow(10.0, -maxExponent);
-      Residual_BGS[iVar] = std::pow(10.0, -2.0 * bgsExponent);
+      Residual_RMS[iVar] = rankAmplitude * rankAmplitude * std::pow(10.0, -2.0 * rmsExponent);
+      Residual_Max[iVar] = rankAmplitude * std::pow(10.0, -maxExponent);
+      Residual_BGS[iVar] = rankAmplitude * rankAmplitude * std::pow(10.0, -2.0 * bgsExponent);
+      Residual_Max_BGS[iVar] = rankAmplitude * std::pow(10.0, -bgsExponent);
     }
 
-    /* An exactly-zero species maximum exercises the finite output floor. */
+    /* Species 2 is zero everywhere; species 3 has a positive remote maximum in MPI runs. */
     Residual_Max[2] = 0.0;
+    if (rank == MASTER_NODE) Residual_Max[3] = 0.0;
   }
 };
 
-std::vector<std::string> ExpectedResidualFields(const std::string& prefix, unsigned short dimension) {
+std::vector<std::string> ExpectedResidualFields(const std::string& prefix, unsigned short dimension,
+                                                unsigned short nSpecies) {
   std::vector<std::string> fields;
-  for (unsigned short iSpecies = 0; iSpecies < 5; ++iSpecies) {
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; ++iSpecies) {
     fields.push_back(prefix + "_DENSITY_" + std::to_string(iSpecies));
   }
   fields.push_back(prefix + "_MOMENTUM-X");
@@ -122,9 +133,10 @@ std::vector<std::string> ExpectedResidualFields(const std::string& prefix, unsig
   return fields;
 }
 
-std::vector<std::string> ExpectedFieldNames(const std::string& prefix, unsigned short dimension) {
+std::vector<std::string> ExpectedFieldNames(const std::string& prefix, unsigned short dimension,
+                                            unsigned short nSpecies) {
   std::vector<std::string> names;
-  for (unsigned short iSpecies = 0; iSpecies < 5; ++iSpecies) {
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; ++iSpecies) {
     names.push_back(prefix + "[Rho_" + std::to_string(iSpecies) + "]");
   }
   names.push_back(prefix + "[RhoU]");
@@ -135,11 +147,11 @@ std::vector<std::string> ExpectedFieldNames(const std::string& prefix, unsigned 
   return names;
 }
 
-void CheckRegisteredGroup(CNEMOCompOutput& output, const std::string& group, const std::string& prefix,
-                          unsigned short dimension) {
-  const auto expectedFields = ExpectedResidualFields(group == "MAX_RES" ? "MAX" : "BGS", dimension);
-  const auto expectedNames = ExpectedFieldNames(prefix, dimension);
-  const auto registered = output.GetHistoryGroup(group);
+void CheckRegisteredGroup(CNEMOCompOutput& output, const std::string& fieldPrefix, const std::string& namePrefix,
+                          unsigned short dimension, unsigned short nSpecies) {
+  const auto expectedFields = ExpectedResidualFields(fieldPrefix, dimension, nSpecies);
+  const auto expectedNames = ExpectedFieldNames(namePrefix, dimension, nSpecies);
+  const auto registered = output.GetHistoryGroup(fieldPrefix + "_RES");
 
   REQUIRE(registered.size() == expectedFields.size());
   const auto& fields = output.GetHistoryFields();
@@ -151,64 +163,95 @@ void CheckRegisteredGroup(CNEMOCompOutput& output, const std::string& group, con
   }
 }
 
-void CheckLoadedResiduals(unsigned short dimension) {
-  auto config = MakeNEMOConfig(true);
+void CheckLoadedResiduals(unsigned short dimension, bool multizone) {
+  auto config = MakeNEMOConfig(multizone);
+  REQUIRE(config->GetComm_Level() == COMM_FULL);
   CTestGeometry geometry(dimension);
   CTestSolver flow(config.get(), dimension);
   flow.SeedResidualSums();
 
-  /* Exercise the actual reductions used before MAX and multizone BGS output. */
+  /* Exercise full communication with one local point and distinct residuals on each rank. */
   flow.SetResidual_RMS(&geometry, config.get());
-  flow.SetResidual_BGS(&geometry, config.get());
+  if (multizone) flow.SetResidual_BGS(&geometry, config.get());
 
   CNEMOCompOutput output(config.get(), dimension);
   output.SetHistoryOutputFields(config.get());
-  std::array<CSolver*, MAX_SOLS> solvers{};
-  solvers[FLOW_SOL] = &flow;
-  solvers[MESH_SOL] = &flow;
-  output.LoadHistoryData(config.get(), &geometry, solvers.data());
-
-  const unsigned short nVar = config->GetnSpecies() + dimension + 2;
-  const auto maxFields = ExpectedResidualFields("MAX", dimension);
-  const auto bgsFields = ExpectedResidualFields("BGS", dimension);
+  const auto nSpecies = config->GetnSpecies();
+  const unsigned short nVar = nSpecies + dimension + 2;
+  const auto rmsFields = ExpectedResidualFields("RMS", dimension, nSpecies);
+  const auto maxFields = ExpectedResidualFields("MAX", dimension, nSpecies);
+  const auto bgsFields = ExpectedResidualFields("BGS", dimension, nSpecies);
+  REQUIRE(rmsFields.size() == nVar);
   REQUIRE(maxFields.size() == nVar);
   REQUIRE(bgsFields.size() == nVar);
 
+  std::vector<double> initialBGS;
+  for (const auto& field : bgsFields) initialBGS.push_back(SU2_TYPE::GetValue(output.GetHistoryFieldValue(field)));
+
+  std::array<CSolver*, MAX_SOLS> solvers{};
+  solvers[FLOW_SOL] = &flow;
+  output.LoadHistoryData(config.get(), &geometry, solvers.data());
+
+  /* For amplitudes 1,...,N, the mean square is (N+1)(2N+1)/6 and the maximum is N.
+   * These expectations do not reuse the production residual getters or indexing helper. */
+  const auto nRanks = SU2_MPI::GetSize();
+  const double rmsLogShift = 0.5 * std::log10((nRanks + 1.0) * (2.0 * nRanks + 1.0) / 6.0);
+  const double maxLogShift = std::log10(nRanks);
+
   for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+    const auto rmsValue = SU2_TYPE::GetValue(output.GetHistoryFieldValue(rmsFields[iVar]));
     const auto maxValue = SU2_TYPE::GetValue(output.GetHistoryFieldValue(maxFields[iVar]));
     const auto bgsValue = SU2_TYPE::GetValue(output.GetHistoryFieldValue(bgsFields[iVar]));
     INFO("residual variable " << iVar);
+    CHECK(std::isfinite(rmsValue));
+    CHECK(rmsValue == Approx(-(static_cast<double>(iVar) + 1.0) + rmsLogShift));
     CHECK(std::isfinite(maxValue));
-    CHECK(maxValue == Approx(iVar == 2 ? -32.0 : -(static_cast<double>(iVar) + 22.0)));
-    CHECK(bgsValue == Approx(-(static_cast<double>(iVar) + 12.0)));
+    const bool zeroMaximum = iVar == 2 || (iVar == 3 && nRanks == 1);
+    CHECK(maxValue == Approx(zeroMaximum ? -32.0 : -(static_cast<double>(iVar) + 22.0) + maxLogShift));
+    CHECK(std::isfinite(bgsValue));
+    if (multizone) {
+      CHECK(bgsValue == Approx(-(static_cast<double>(iVar) + 12.0) + rmsLogShift));
+      CHECK(std::log10(SU2_TYPE::GetValue(flow.GetRes_Max_BGS(iVar))) ==
+            Approx(-(static_cast<double>(iVar) + 12.0) + maxLogShift));
+    } else {
+      CHECK(bgsValue == initialBGS[iVar]);
+    }
+  }
+
+  /* In MPI runs, species 3 has a positive maximum on the last rank despite rank 0 having zero. */
+  CHECK(flow.GetPoint_Max(3) == static_cast<unsigned long>(nRanks - 1));
+  if (multizone) CHECK(flow.GetPoint_Max_BGS(3) == static_cast<unsigned long>(nRanks - 1));
+  for (unsigned short iDim = 0; iDim < dimension; ++iDim) {
+    CHECK(SU2_TYPE::GetValue(flow.GetPoint_Max_Coord(3)[iDim]) == Approx(-nRanks * (iDim + 1.0)));
+    if (multizone) {
+      CHECK(SU2_TYPE::GetValue(flow.GetPoint_Max_Coord_BGS(3)[iDim]) == Approx(10.0 * nRanks + iDim + 1.0));
+    }
   }
 }
 
 }  // namespace
 
-TEST_CASE("NEMO MAX and BGS history fields use the species-first layout", "[NEMO][Output]") {
+TEST_CASE("NEMO residual history fields use the species-first layout", "[NEMO][Output]") {
   auto config = MakeNEMOConfig(false);
 
-  SECTION("2D") {
-    CNEMOCompOutput output(config.get(), 2);
+  for (unsigned short dimension : {2, 3}) {
+    CAPTURE(dimension);
+    CNEMOCompOutput output(config.get(), dimension);
     output.SetHistoryOutputFields(config.get());
-    CheckRegisteredGroup(output, "MAX_RES", "max", 2);
-    CheckRegisteredGroup(output, "BGS_RES", "bgs", 2);
-    CHECK(output.GetHistoryFields().count("MAX_DENSITY") == 0);
-    CHECK(output.GetHistoryFields().count("BGS_DENSITY") == 0);
-  }
-
-  SECTION("3D") {
-    CNEMOCompOutput output(config.get(), 3);
-    output.SetHistoryOutputFields(config.get());
-    CheckRegisteredGroup(output, "MAX_RES", "max", 3);
-    CheckRegisteredGroup(output, "BGS_RES", "bgs", 3);
+    CheckRegisteredGroup(output, "RMS", "rms", dimension, config->GetnSpecies());
+    CheckRegisteredGroup(output, "MAX", "max", dimension, config->GetnSpecies());
+    CheckRegisteredGroup(output, "BGS", "bgs", dimension, config->GetnSpecies());
     CHECK(output.GetHistoryFields().count("MAX_DENSITY") == 0);
     CHECK(output.GetHistoryFields().count("BGS_DENSITY") == 0);
   }
 }
 
-TEST_CASE("NEMO history loads finite MAX and multizone BGS residuals by species-first index", "[NEMO][Output]") {
-  SECTION("2D") { CheckLoadedResiduals(2); }
-  SECTION("3D") { CheckLoadedResiduals(3); }
+TEST_CASE("NEMO history loads reduced residuals by species-first index", "[NEMO][Output]") {
+  for (unsigned short dimension : {2, 3}) {
+    CAPTURE(dimension);
+    for (bool multizone : {false, true}) {
+      CAPTURE(multizone);
+      CheckLoadedResiduals(dimension, multizone);
+    }
+  }
 }
