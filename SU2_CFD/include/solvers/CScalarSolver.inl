@@ -134,9 +134,11 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
     }
   }
 
-  /*--- Upwind second order reconstruction and gradients ---*/
+  /*--- Upwind second order reconstruction and gradients. The reconstruction gradient is global to the
+   * case (it is needed as soon as any equation system reconstructs), so it is skipped here when this
+   * system does not reconstruct: only the reconstruction and the limiter read it. ---*/
 
-  if (config->GetReconstructionGradientRequired()) {
+  if (muscl && config->GetReconstructionGradientRequired()) {
     switch(config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, -1, true); break;
       case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1, true); break;
