@@ -594,10 +594,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         volumeDataSorter->SortConnectivity(config, geometry, true);
 
         LogOutputFiles("Paraview Multiblock");
-        fileWriter = new CParaviewVTMFileWriter(GetHistoryFieldValue("CUR_TIME"), config->GetiZone(), config->GetnZone());
-
-        /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
-        auto* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
+        auto* vtmWriter =
+            new CParaviewVTMFileWriter(GetHistoryFieldValue("CUR_TIME"), config->GetiZone(), config->GetnZone());
+        fileWriter = vtmWriter;
 
         /*--- then we write the data into the folder---*/
         vtmWriter->WriteFolderData(fileName, config, multiZoneHeaderString, volumeDataSorter, surfaceDataSorter, geometry);
@@ -760,12 +759,15 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
       LogOutputFiles("CGNS");
-      fileWriter = new CCGNSFileWriter(volumeDataSorter, false, config->GetWrt_Output_Double_Precision());
+      {
+        auto* cgnsWriter = new CCGNSFileWriter(volumeDataSorter, false, config->GetWrt_Output_Double_Precision());
 
-      /*--- Add the boundaries, named as the markers (the finite volume sorter knows which elements are halos). ---*/
-      if (const auto* fvmSorter = dynamic_cast<const CFVMDataSorter*>(volumeDataSorter))
-        static_cast<CCGNSFileWriter*>(fileWriter)->SetBoundaryMarkers(config, geometry, fvmSorter);
+        /*--- Add the boundaries, named as the markers (the finite volume sorter knows which elements are halos). ---*/
+        if (const auto* fvmSorter = dynamic_cast<const CFVMDataSorter*>(volumeDataSorter))
+          cgnsWriter->SetBoundaryMarkers(config, geometry, fvmSorter);
 
+        fileWriter = cgnsWriter;
+      }
       break;
 
     case OUTPUT_TYPE::SURFACE_CGNS:
@@ -783,11 +785,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortOutputData();
 
       LogOutputFiles("CGNS surface");
-      fileWriter = new CCGNSFileWriter(surfaceDataSorter, true, config->GetWrt_Output_Double_Precision());
+      {
+        auto* cgnsWriter = new CCGNSFileWriter(surfaceDataSorter, true, config->GetWrt_Output_Double_Precision());
 
-      /*--- One zone per plotted marker, named as the marker. ---*/
-      static_cast<CCGNSFileWriter*>(fileWriter)->SetSurfaceMarkers(config, geometry);
+        /*--- One zone per plotted marker, named as the marker. ---*/
+        cgnsWriter->SetSurfaceMarkers(config, geometry);
 
+        fileWriter = cgnsWriter;
+      }
       break;
 
     default:
