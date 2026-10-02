@@ -347,6 +347,8 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
       return medi::AMPI_MIN;
     } else if (MPI_MAX == op) {
       return medi::AMPI_MAX;
+    } else if (MPI_BOR == op) {
+      return medi::AMPI_BOR;
     } else {
       Error("Conversion not implemented", CURRENT_FUNCTION);
       return medi::AMPI_SUM;
