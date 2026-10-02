@@ -109,7 +109,21 @@ private:
    * \param[in] globalSize - The global size of the array over all processors
    * \param[in] offset - The displacement in the file view for the current processor
    */
-  void WriteDataArray(void *data, VTKDatatype type, unsigned long size, unsigned long globalSize, unsigned long offset);
+  void WriteDataArray(const void* data, VTKDatatype type, unsigned long size, unsigned long globalSize,
+                      unsigned long offset);
+
+  /*!
+   * \brief Write the first values of a buffer as an array of type T with ::WriteDataArray, the values are converted
+   *        if the buffer holds another type (e.g. double written as float, int64_t written as int32_t).
+   * \param[in] buffer - The data of this processor.
+   * \param[in] type - The vtk datatype, matching T.
+   * \param[in] size - The number of values of this processor to write.
+   * \param[in] globalSize - The global size of the array over all processors
+   * \param[in] offset - The displacement in the file view for the current processor
+   */
+  template <class T, class U>
+  void WriteDataArrayOfType(const vector<U>& buffer, VTKDatatype type, unsigned long size, unsigned long globalSize,
+                            unsigned long offset);
 
   /*!
    * \brief Get the type string and size of a VTK datatype

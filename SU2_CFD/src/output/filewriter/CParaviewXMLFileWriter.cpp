@@ -29,6 +29,7 @@
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 
 const string CParaviewXMLFileWriter::fileExt = ".vtu";
 
@@ -47,6 +48,17 @@ CParaviewXMLFileWriter::CParaviewXMLFileWriter(CParallelDataSorter *valDataSorte
 }
 
 CParaviewXMLFileWriter::~CParaviewXMLFileWriter()= default;
+
+template <class T, class U>
+void CParaviewXMLFileWriter::WriteDataArrayOfType(const vector<U>& buffer, VTKDatatype type, unsigned long size,
+                                                  unsigned long globalSize, unsigned long offset) {
+  if constexpr (std::is_same<T, U>::value) {
+    WriteDataArray(buffer.data(), type, size, globalSize, offset);
+  } else {
+    const vector<T> converted(buffer.begin(), buffer.begin() + size);
+    WriteDataArray(converted.data(), type, size, globalSize, offset);
+  }
+}
 
 void CParaviewXMLFileWriter::WriteData(string val_filename){
 
@@ -203,10 +215,9 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   auto writeRealArray = [&](unsigned long size, unsigned long globalSize, unsigned long offset) {
     if (realType == VTKDatatype::FLOAT64) {
-      WriteDataArray(dataBuffer.data(), realType, size, globalSize, offset);
+      WriteDataArrayOfType<double>(dataBuffer, realType, size, globalSize, offset);
     } else {
-      vector<float> buffer(dataBuffer.begin(), dataBuffer.begin() + size);
-      WriteDataArray(buffer.data(), realType, size, globalSize, offset);
+      WriteDataArrayOfType<float>(dataBuffer, realType, size, globalSize, offset);
     }
   };
 
@@ -248,15 +259,13 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   copyToBuffer(PYRAMID,       nParallel_Pyra, N_POINTS_PYRAMID);
 
   if (connInt64) {
-    WriteDataArray(connBuf.data(), connType, myElemStorage, GlobalElemStorage,
-                   dataSorter->GetnElemConnCumulative(rank));
-    WriteDataArray(offsetBuf.data(), connType, myElem, GlobalElem, dataSorter->GetnElemCumulative(rank));
+    WriteDataArrayOfType<int64_t>(connBuf, connType, myElemStorage, GlobalElemStorage,
+                                  dataSorter->GetnElemConnCumulative(rank));
+    WriteDataArrayOfType<int64_t>(offsetBuf, connType, myElem, GlobalElem, dataSorter->GetnElemCumulative(rank));
   } else {
-    vector<int32_t> connBuf32(connBuf.begin(), connBuf.end());
-    vector<int32_t> offsetBuf32(offsetBuf.begin(), offsetBuf.end());
-    WriteDataArray(connBuf32.data(), connType, myElemStorage, GlobalElemStorage,
-                   dataSorter->GetnElemConnCumulative(rank));
-    WriteDataArray(offsetBuf32.data(), connType, myElem, GlobalElem, dataSorter->GetnElemCumulative(rank));
+    WriteDataArrayOfType<int32_t>(connBuf, connType, myElemStorage, GlobalElemStorage,
+                                  dataSorter->GetnElemConnCumulative(rank));
+    WriteDataArrayOfType<int32_t>(offsetBuf, connType, myElem, GlobalElem, dataSorter->GetnElemCumulative(rank));
   }
 
   /*--- Load/write the cell type for all elements in the file. ---*/
@@ -344,7 +353,7 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
 }
 
-void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsigned long arraySize,
+void CParaviewXMLFileWriter::WriteDataArray(const void* data, VTKDatatype type, unsigned long arraySize,
                                             unsigned long globalSize, unsigned long offset){
 
   std::string typeStr;
