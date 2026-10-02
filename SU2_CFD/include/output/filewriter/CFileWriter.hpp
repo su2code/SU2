@@ -33,6 +33,7 @@
 #include <string>
 #include <cstring>
 #include <fstream>
+#include <utility>
 
 #include "../../output/filewriter/CParallelDataSorter.hpp"
 
@@ -167,6 +168,14 @@ protected:
    * \return
    */
   bool WriteMPIString(const std::string& str, unsigned short processor);
+
+  /*!
+   * \brief Get the position of the data of this rank in an array that holds the data of all ranks in rank order.
+   * \note Collective call, all ranks must call it.
+   * \param[in] localCount - The size of the data of this rank.
+   * \return The offset of this rank (the size of the data of the ranks before it) and the total size over all ranks.
+   */
+  std::pair<unsigned long, unsigned long> GetRankOffset(unsigned long localCount) const;
 
   /*!
    * \brief Write a string of each rank to the file, one after the other in rank order.

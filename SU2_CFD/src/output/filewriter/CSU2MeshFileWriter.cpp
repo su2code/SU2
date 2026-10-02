@@ -27,7 +27,6 @@
 
 #include "../../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
-#include <numeric>
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 const string CSU2MeshFileWriter::fileExt = ".su2";
@@ -58,12 +57,6 @@ void CSU2MeshFileWriter::WriteData(string val_filename) {
    strings to the file at the same time, one after the other in rank order. The global index of an element or
    point is its local index plus the number of elements or points of the ranks before this one. ---*/
 
-  auto offsetOfRank = [&](unsigned long localCount) {
-    vector<unsigned long> counts(size, localCount);
-    SU2_MPI::Allgather(&localCount, 1, MPI_UNSIGNED_LONG, counts.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-    return std::accumulate(counts.begin(), counts.begin() + rank, 0ul);
-  };
-
   ostringstream data;
 
   /*--- Write the connectivity, the type of each element is written before its nodes. ---*/
@@ -72,7 +65,7 @@ void CSU2MeshFileWriter::WriteData(string val_filename) {
   for (auto type : {TRIANGLE, QUADRILATERAL, TETRAHEDRON, HEXAHEDRON, PRISM, PYRAMID})
     nElem += dataSorter->GetnElem(type);
 
-  unsigned long offset = offsetOfRank(nElem);
+  unsigned long offset = GetRankOffset(nElem).first;
 
   nElem = 0;
   for (auto type : {TRIANGLE, QUADRILATERAL, TETRAHEDRON, HEXAHEDRON, PRISM, PYRAMID}) {
@@ -91,7 +84,7 @@ void CSU2MeshFileWriter::WriteData(string val_filename) {
 
   WriteMPIString("NPOIN= " + to_string(dataSorter->GetnPointsGlobal()) + "\n", MASTER_NODE);
 
-  offset = offsetOfRank(dataSorter->GetnPoints());
+  offset = GetRankOffset(dataSorter->GetnPoints()).first;
 
   data.str("");
   data.clear();

@@ -26,7 +26,6 @@
  */
 #include "../../../include/output/filewriter/CSU2MeshBinaryFileWriter.hpp"
 
-#include <numeric>
 #include <tuple>
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
 
@@ -104,13 +103,6 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
   /*--- Each rank writes the data of its own elements and points, at the position that follows the data of the
         ranks before it. The global offsets and indices of a rank are those of the ranks before it. ---*/
 
-  auto offsetOfRank = [&](unsigned long localCount) {
-    vector<unsigned long> counts(size, localCount);
-    SU2_MPI::Allgather(&localCount, 1, MPI_UNSIGNED_LONG, counts.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-    return std::make_pair(std::accumulate(counts.begin(), counts.begin() + rank, 0ul),
-                          std::accumulate(counts.begin(), counts.end(), 0ul));
-  };
-
   /*--- Section 1: element offsets, the starting connectivity-array position of each element, closed by the
         total size as sentinel offset[n_elem]. ---*/
 
@@ -121,10 +113,10 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
   }
 
   unsigned long connOffset, totalConnSize;
-  std::tie(connOffset, totalConnSize) = offsetOfRank(localConnSize);
+  std::tie(connOffset, totalConnSize) = GetRankOffset(localConnSize);
 
   unsigned long elemOffset, nElemGlobal;
-  std::tie(elemOffset, nElemGlobal) = offsetOfRank(localElemCount);
+  std::tie(elemOffset, nElemGlobal) = GetRankOffset(localElemCount);
 
   buffer.clear();
   buffer.reserve(localElemCount * sizeof(conn_t));
@@ -168,7 +160,7 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
   WriteMPIString(buffer, MASTER_NODE);
 
   unsigned long pointOffset, nPointsTotal;
-  std::tie(pointOffset, nPointsTotal) = offsetOfRank(dataSorter->GetnPoints());
+  std::tie(pointOffset, nPointsTotal) = GetRankOffset(dataSorter->GetnPoints());
 
   buffer.clear();
   buffer.reserve(dataSorter->GetnPoints() * (dataSorter->GetnDim() * sizeof(double) + sizeof(conn_t)));

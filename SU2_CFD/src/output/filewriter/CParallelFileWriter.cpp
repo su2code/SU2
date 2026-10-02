@@ -276,19 +276,23 @@ bool CFileWriter::OpenMPIFile(string val_filename, bool append){
   return true;
 }
 
+std::pair<unsigned long, unsigned long> CFileWriter::GetRankOffset(unsigned long localCount) const {
+  vector<unsigned long> counts(size, localCount);
+
+  SU2_MPI::Allgather(&localCount, 1, MPI_UNSIGNED_LONG, counts.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+  return std::make_pair(std::accumulate(counts.begin(), counts.begin() + rank, 0ul),
+                        std::accumulate(counts.begin(), counts.end(), 0ul));
+}
+
 bool CFileWriter::WriteMPIStringAll(const string &str){
 
   /*--- Each rank writes its own text at the position that follows the text of the ranks before it. ---*/
 
   const unsigned long sizeInBytes = str.size();
-  vector<unsigned long> sizes(size, sizeInBytes);
+  const auto offsetAndTotal = GetRankOffset(sizeInBytes);
 
-  SU2_MPI::Allgather(&sizeInBytes, 1, MPI_UNSIGNED_LONG, sizes.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-
-  const auto offsetInBytes = std::accumulate(sizes.begin(), sizes.begin() + rank, 0ul);
-  const auto totalSizeInBytes = std::accumulate(sizes.begin(), sizes.end(), 0ul);
-
-  return WriteMPIBinaryDataAll(str.data(), sizeInBytes, totalSizeInBytes, offsetInBytes);
+  return WriteMPIBinaryDataAll(str.data(), sizeInBytes, offsetAndTotal.second, offsetAndTotal.first);
 }
 
 bool CFileWriter::CloseMPIFile(){
