@@ -224,5 +224,27 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
 
   for (Int iDim = 0; iDim < nDim; iDim++) proj[iDim] -= normalProj * vector[iDim];
 }
+/*!
+ * \brief Check if a point lies inside an ellipsoid (ellipse in 2D) rotated about the z axis.
+ * \note Intermediate values are stored with an explicit type, because with AD types "auto" would hold
+ *       expression templates.
+ * \param[in] nDim - Number of dimensions, only the first nDim coordinates and semi-axes are used.
+ * \param[in] coord - Coordinates of the point.
+ * \param[in] center - Center of the ellipsoid.
+ * \param[in] axes - Semi-axes of the ellipsoid.
+ * \param[in] rotZ - Rotation of the ellipsoid about the z axis, in radians.
+ * \return True if the point is inside the ellipsoid or on its surface.
+ */
+template <class T, typename Int>
+inline bool PointInEllipsoid(Int nDim, const T* coord, const T* center, const T* axes, const T& rotZ) {
+  const T dx = coord[0] - center[0];
+  const T dy = coord[1] - center[1];
+  const T x = dx * cos(rotZ) + dy * sin(rotZ);
+  const T y = -dx * sin(rotZ) + dy * cos(rotZ);
+  T check = pow(x / axes[0], 2) + pow(y / axes[1], 2);
+  if (nDim == 3) check += pow((coord[2] - center[2]) / axes[2], 2);
+  return check <= 1;
+}
+
 /// @}
 }  // namespace GeometryToolbox
