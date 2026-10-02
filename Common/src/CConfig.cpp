@@ -4121,6 +4121,21 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                    "TIME_STEPPING, DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER", CURRENT_FUNCTION);
   }
 
+  if (Kind_HybridRANSLES != NO_HYBRIDRANSLES && !Time_Domain) {
+    SU2_MPI::Error("Hybrid RANS/LES models (HYBRID_RANSLES) require an unsteady simulation, set TIME_DOMAIN= YES.",
+                   CURRENT_FUNCTION);
+  }
+
+  /*--- The SA_* hybrid models are built on the SA model and the SST_* ones on the SST model. ---*/
+  const bool hybridSA = Kind_HybridRANSLES == SA_DES || Kind_HybridRANSLES == SA_DDES ||
+                        Kind_HybridRANSLES == SA_ZDES || Kind_HybridRANSLES == SA_EDDES;
+  const bool hybridSST = Kind_HybridRANSLES == SST_DDES || Kind_HybridRANSLES == SST_IDDES ||
+                         Kind_HybridRANSLES == SST_SIDDES || Kind_HybridRANSLES == SST_EDDES;
+  if ((hybridSA && Kind_Turb_Model != TURB_MODEL::SA) || (hybridSST && Kind_Turb_Model != TURB_MODEL::SST)) {
+    SU2_MPI::Error(string("The hybrid RANS/LES model (HYBRID_RANSLES) must match the turbulence model (KIND_TURB_MODEL): ") +
+                   "SA_* options require SA, SST_* options require SST.", CURRENT_FUNCTION);
+  }
+
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
 
@@ -6731,10 +6746,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES) {
           case NO_HYBRIDRANSLES: cout << "No Hybrid RANS/LES" << endl; break;
-          case SA_DES:   cout << "Detached Eddy Simulation (DES97) " << endl; break;
-          case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
-          case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
-          case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+          case SA_DES:         cout << "Detached Eddy Simulation (DES97) " << endl; break;
+          case SA_DDES:        cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
+          case SA_ZDES:        cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
+          case SA_EDDES:       cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+          case SST_DDES:       cout << "Delayed Detached Eddy Simulation (DDES)" << endl; break;
+          case SST_IDDES:      cout << "Improved Delayed Detached Eddy Simulation (IDDES)" << endl; break;
+          case SST_SIDDES:     cout << "Simplified Improved Delayed Detached Eddy Simulation (SIDDES)" << endl; break;
+          case SST_EDDES:      cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         if (Kind_HybridRANSLES != NO_HYBRIDRANSLES) {
           if (LES_FilterWidth > 0.0) cout << "User-specified LES filter width: " << LES_FilterWidth << endl;
