@@ -54,11 +54,13 @@ void CCGNSFileWriter::WriteData(string val_filename) {
   if (surfaceMarkers.empty()) {
     WriteZone("Zone");
   } else {
-    /*--- One zone per marker, the surface data is sorted again for each of them. ---*/
-    for (const auto& marker : surfaceMarkers) {
-      dataSorter->SortConnectivity(config, geometry, vector<string>{marker});
+    /*--- One zone per marker, the surface data is sorted again for each of them. The zones are named as the
+     markers, with names made unique within the 32 characters of CGNS. ---*/
+    const auto zoneNames = GetUniqueNames(surfaceMarkers);
+    for (size_t iMarker = 0; iMarker < surfaceMarkers.size(); ++iMarker) {
+      dataSorter->SortConnectivity(config, geometry, vector<string>{surfaceMarkers[iMarker]});
       dataSorter->SortOutputData();
-      WriteZone(marker);
+      WriteZone(zoneNames[iMarker]);
     }
   }
 
@@ -213,27 +215,35 @@ void CCGNSFileWriter::InitializeZone(const string& zoneName) {
   zoneData[1] = GlobalElem;
   zoneData[2] = 0;
 
-  CallCGNS(
-      cg_zone_write(cgnsFileID, cgnsBase, zoneName.substr(0, 32).c_str(), zoneData.data(), Unstructured, &cgnsZone));
+  CallCGNS(cg_zone_write(cgnsFileID, cgnsBase, zoneName.c_str(), zoneData.data(), Unstructured, &cgnsZone));
 }
 
-void CCGNSFileWriter::WriteBoundaries() {
+vector<string> CCGNSFileWriter::GetUniqueNames(const vector<string>& tags) const {
   /*--- CGNS names have at most 32 characters, longer tags are truncated. If two truncated tags are equal, a number is
-   appended to make the names of the sections, BCs and families unique. ---*/
+   appended to make the names unique. ---*/
 
   vector<string> names;
-  for (const auto& marker : boundaryMarkers) {
-    string name = marker.name.substr(0, 32);
+  for (const auto& tag : tags) {
+    string name = tag.substr(0, maxNameLength);
     for (unsigned long n = 1; std::find(names.begin(), names.end(), name) != names.end(); n++) {
       const string suffix = "_" + to_string(n);
-      name = marker.name.substr(0, 32 - suffix.size()) + suffix;
+      name = tag.substr(0, maxNameLength - suffix.size()) + suffix;
     }
-    if (rank == MASTER_NODE && name != marker.name.substr(0, 32)) {
-      cout << "CGNS output: the marker " << marker.name << " is written as " << name
-           << " (names have at most 32 characters)." << endl;
+    if (rank == MASTER_NODE && name != tag.substr(0, maxNameLength)) {
+      cout << "CGNS output: the marker " << tag << " is written as " << name << " (names have at most " << maxNameLength
+           << " characters)." << endl;
     }
     names.push_back(name);
   }
+  return names;
+}
+
+void CCGNSFileWriter::WriteBoundaries() {
+  /*--- The sections, BCs and families are named as the markers. ---*/
+
+  vector<string> tags;
+  for (const auto& marker : boundaryMarkers) tags.push_back(marker.name);
+  const auto names = GetUniqueNames(tags);
 
   for (size_t iMarker = 0; iMarker < boundaryMarkers.size(); ++iMarker) {
     const auto& marker = boundaryMarkers[iMarker];

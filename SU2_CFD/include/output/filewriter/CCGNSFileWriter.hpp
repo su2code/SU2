@@ -83,6 +83,9 @@ class CCGNSFileWriter final : public CFileWriter {
 
   /*--- Max connectivity entries per section, so that readers using 32-bit sizes can read it. ---*/
   static constexpr cgsize_t maxSectionEntries = std::numeric_limits<int32_t>::max();
+
+  /*--- Max length of the names of the CGNS nodes (zones, sections, BCs, families). ---*/
+  static constexpr size_t maxNameLength = 32;
 #endif
  public:
   /*!
@@ -135,9 +138,17 @@ class CCGNSFileWriter final : public CFileWriter {
 
   /*!
    * \brief Create a zone for the data currently held by the data sorter.
-   * \param[in] zoneName - Name of the zone.
+   * \param[in] zoneName - Name of the zone, at most maxNameLength characters.
    */
   void InitializeZone(const string& zoneName);
+
+  /*!
+   * \brief Get the names of CGNS nodes named as the markers. Tags longer than maxNameLength characters are truncated,
+   *        and a number is appended to a truncated tag equal to a previous name, so that the names are unique.
+   * \param[in] tags - Marker tags.
+   * \return The names, in the order of the tags.
+   */
+  vector<string> GetUniqueNames(const vector<string>& tags) const;
 
   /*!
    * \brief Write the boundary sections, BCs and families of the markers set with SetBoundaryMarkers.
