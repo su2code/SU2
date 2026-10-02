@@ -80,7 +80,7 @@ void CCGNSFileWriter::WriteData(string val_filename) {
 #endif
 }
 
-void CCGNSFileWriter::SetBoundaryMarkers(CConfig* valConfig, CGeometry* valGeometry,
+void CCGNSFileWriter::SetBoundaryMarkers(const CConfig* valConfig, const CGeometry* valGeometry,
                                          const CFVMDataSorter* volumeSorter) {
   boundaryMarkers.clear();
 

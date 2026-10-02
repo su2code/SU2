@@ -112,7 +112,7 @@ class CCGNSFileWriter final : public CFileWriter {
    * \param[in] valGeometry - Geometrical definition of the problem.
    * \param[in] volumeSorter - The volume data sorter, to find the boundary elements owned by this rank.
    */
-  void SetBoundaryMarkers(CConfig* valConfig, CGeometry* valGeometry, const CFVMDataSorter* volumeSorter);
+  void SetBoundaryMarkers(const CConfig* valConfig, const CGeometry* valGeometry, const CFVMDataSorter* volumeSorter);
 
   /*!
    * \brief Write a surface file with one zone per plotted marker, named as the marker. The data of the surface
