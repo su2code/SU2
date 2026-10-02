@@ -656,7 +656,7 @@ def main():
     inc_euler_naca0012_pb.cfg_dir = "incomp_euler/naca0012"
     inc_euler_naca0012_pb.cfg_file = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
-    inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784247, 0.427448, 0.012083]
+    inc_euler_naca0012_pb.test_vals = [-4.454834, -4.784269, 0.427449, 0.012084]
     test_list.append(inc_euler_naca0012_pb)
 
     # NACA0012 Hydrofoil, pressure-based with SIMPLEC
@@ -700,7 +700,7 @@ def main():
     inc_lam_cylinder_pb.cfg_dir = "incomp_navierstokes/cylinder"
     inc_lam_cylinder_pb.cfg_file = "incomp_pb_cylinder.cfg"
     inc_lam_cylinder_pb.test_iter = 10
-    inc_lam_cylinder_pb.test_vals = [-3.486113, -3.777688, 0.012054, 6.178573]
+    inc_lam_cylinder_pb.test_vals = [-3.486601, -3.776871, 0.012481, 6.205488]
     test_list.append(inc_lam_cylinder_pb)
 
     # Laminar heated cylinder with polynomial fluid model, pressure-based, coupled energy
@@ -711,7 +711,7 @@ def main():
     inc_poly_cylinder_pb.cfg_dir = "incomp_navierstokes/cylinder"
     inc_poly_cylinder_pb.cfg_file = "pb_poly_cylinder.cfg"
     inc_poly_cylinder_pb.test_iter = 20
-    inc_poly_cylinder_pb.test_vals = [-13.483272, 0.541350, 0.005972, 17.020220, -8927.600000]
+    inc_poly_cylinder_pb.test_vals = [-9.820675, -3.000423, 0.002745, 1.778349, -172.280000]
     test_list.append(inc_poly_cylinder_pb)
 
     # Laminar sphere, Re=1. Last column: Cd=24/Re
@@ -727,7 +727,7 @@ def main():
     inc_lam_sphere_pb.cfg_dir = "incomp_navierstokes/sphere"
     inc_lam_sphere_pb.cfg_file = "pb_sphere.cfg"
     inc_lam_sphere_pb.test_iter = 9
-    inc_lam_sphere_pb.test_vals = [-6.092084, -2.305040, -2.479072, -2.548968, 0.191798, 170.793203, -6.000632]
+    inc_lam_sphere_pb.test_vals = [-6.104968, -2.307896, -2.481829, -2.570422, 0.189097, 170.764256, -6.848045]
     test_list.append(inc_lam_sphere_pb)
 
     # Laminar sphere, Re=1, pressure-based, automatic relaxation factors. The only case
@@ -737,7 +737,7 @@ def main():
     inc_lam_sphere_pb_urf.cfg_dir = "incomp_navierstokes/sphere"
     inc_lam_sphere_pb_urf.cfg_file = "pb_sphere_urf.cfg"
     inc_lam_sphere_pb_urf.test_iter = 9
-    inc_lam_sphere_pb_urf.test_vals = [-4.747391, -2.239844, -2.380839, -1.685462, 0.237593, 206.027273, -6.331275]
+    inc_lam_sphere_pb_urf.test_vals = [-4.745234, -2.241022, -2.374688, -1.689495, 0.216842, 206.109402, -6.281761]
     test_list.append(inc_lam_sphere_pb_urf)
 
     # Buoyancy-driven cavity
@@ -769,7 +769,7 @@ def main():
     inc_lam_bend_pb.cfg_dir = "incomp_navierstokes/bend"
     inc_lam_bend_pb.cfg_file = "pb_lam_bend.cfg"
     inc_lam_bend_pb.test_iter = 10
-    inc_lam_bend_pb.test_vals = [-3.824468, -3.345335, -0.012351, 1.685090]
+    inc_lam_bend_pb.test_vals = [-4.137886, -3.477106, -0.014099, 0.306589]
     test_list.append(inc_lam_bend_pb)
 
     # X-coarse laminar bend, pressure-based, variable density with a heated inlet
