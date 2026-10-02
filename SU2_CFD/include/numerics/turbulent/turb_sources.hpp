@@ -80,6 +80,7 @@ class CSourceBase_TurbSA : public CNumerics {
   const bool axisymmetric = false;
 
   bool transition_LM;
+  bool transition_SLM;  /*!< \brief One-equation (simplified) LM model. */
 
   /*!
    * \brief Add contribution from diffusion due to axisymmetric formulation to 2D residual
@@ -195,7 +196,8 @@ class CSourceBase_TurbSA : public CNumerics {
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
         axisymmetric(config->GetAxisymmetric()),
-        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM),
+        transition_SLM(transition_LM && config->GetLMParsedOptions().SLM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     /*--- Setup the Jacobian pointer (size increased for Stochastic Backscatter Model). ---*/
@@ -219,6 +221,7 @@ class CSourceBase_TurbSA : public CNumerics {
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
     AD::SetPreaccIn(stochSource, 3);
+    if (transition_LM) AD::SetPreaccIn(intermittency_i, intermittency_eff_i);
 
     /*--- Common auxiliary variables and constants of the model. ---*/
     CSAVariables var;
@@ -322,6 +325,15 @@ class CSourceBase_TurbSA : public CNumerics {
         intermittency_eff_i = 1.0 - exp(-term_exponential);
         var.intermittency = intermittency_eff_i;
         var.interDestrFactor = 1;
+
+      } else if (transition_SLM) {
+
+        /*--- Lee and Baeder (AIAA 2021-1532), Eqs. 17-18: the scaled intermittency, which is zero in the laminar
+         * boundary layer, multiplies the production, and max(gamma_s, 0.1) the destruction. ---*/
+        const su2double c_e2 = 50.0;
+        const su2double gamma_s = max(min((min(intermittency_i, 1.0) - 1.0 / c_e2) / (1.0 - 1.0 / c_e2), 1.0), 0.0);
+        var.intermittency = gamma_s;
+        var.interDestrFactor = max(gamma_s, 0.1);
 
       } else if (transition_LM){
 
@@ -1001,6 +1013,16 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
         pk = pk * eff_intermittency;
+        // Check if the Prod_lim_k has to be introduced based on input options
+        if ((config->GetLMParsedOptions()).SLM && (config->GetLMParsedOptions()).Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) {
+          const su2double Re_theta_c_lim = 1100.0;
+          const su2double C_k = 1.0;
+          const su2double C_SEP = 1.0;
+          const su2double Re_v = Density_i * dist_i * dist_i * StrainMag_i / Laminar_Viscosity_i;
+          const su2double F_on_lim = min(max(Re_v/(2.2*Re_theta_c_lim)-1.0, 0.0), 3.0);
+          const su2double IntermittencyRelated = max(eff_intermittency-0.2, 0.0) * (1.0 - eff_intermittency);
+          pk = pk + 5*C_k * IntermittencyRelated * F_on_lim * max(3.0*C_SEP*Laminar_Viscosity_i - Eddy_Viscosity_i, 0.0) * StrainMag_i * VorticityMag;
+        }
         dk = min(max(eff_intermittency, 0.1), 1.0) * dk;
       }
 

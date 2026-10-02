@@ -40,6 +40,23 @@ class CTransLMVariable final : public CTurbVariable {
 protected:
   VectorType Intermittency_Eff;
   VectorType Intermittency_Sep;
+  
+  VectorType Corr_Rec;
+  VectorType Re_t;
+  VectorType Tu;
+  VectorType Lambda_theta;
+  VectorType duds;
+  VectorType Re_v;
+  VectorType Prod;
+  VectorType Destr;
+  VectorType F_onset1;
+  VectorType F_onset2;
+  VectorType F_onset3;
+  VectorType F_onset;
+
+  VectorType normal_x;
+  VectorType normal_y;
+  VectorType normal_z;
 
 public:
   /*!
@@ -71,6 +88,28 @@ public:
   void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_sep) override;
 
   /*!
+   * \brief Set Value of Transition Momentum Thickness Reynolds number from correlations.
+   */
+  void SetCorr_Rec(unsigned long iPoint, su2double val_Corr_Rec) override;
+
+  /*!
+   * \brief Set Value of Momentum Thickness Reynolds number from correlations (substitute to the second equation of original LM model).
+   */
+  void SetRe_t(unsigned long iPoint, su2double val_Re_t) override;
+  void SetTu(unsigned long iPoint, su2double val_Tu) override;
+  void SetLambda_theta(unsigned long iPoint, su2double val_Lambda_theta) override;
+  void Setduds(unsigned long iPoint, su2double val_duds) override;
+  void SetRe_v(unsigned long iPoint, su2double val_Re_v) override;
+  void SetProd(unsigned long iPoint, su2double val_Prod) override;
+  void SetDestr(unsigned long iPoint, su2double val_Destr) override;
+  void SetF_onset1(unsigned long iPoint, su2double val_F_onset1) override;
+  void SetF_onset2(unsigned long iPoint, su2double val_F_onset2) override;
+  void SetF_onset3(unsigned long iPoint, su2double val_F_onset3) override;
+  void SetF_onset(unsigned long iPoint, su2double val_F_onset) override;
+  void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) override;
+
+
+  /*!
    * \brief Calculate effective intermittency.
    */
   inline su2double GetIntermittencyEff(unsigned long iPoint) const override { return Intermittency_Eff(iPoint); }
@@ -80,4 +119,26 @@ public:
    */
   inline su2double GetIntermittencySep(unsigned long iPoint) const override { return Intermittency_Sep(iPoint); }
 
+  /*!
+   * \brief Get Value of Transition Momentum Thickness Reynolds number from correlations.
+   */
+  inline su2double GetCorr_Rec(unsigned long iPoint) const override { return Corr_Rec(iPoint); }
+
+  /*!
+   * \brief Get Value of Momentum Thickness Reynolds number from correlations (substitute to the second equation of original LM model).
+   */
+  inline su2double GetRe_t(unsigned long iPoint) const override { return Re_t(iPoint); }
+  inline su2double GetTu(unsigned long iPoint) const override { return Tu(iPoint); }
+  inline su2double GetLambda_theta(unsigned long iPoint) const override { return Lambda_theta(iPoint); }
+  inline su2double Getduds(unsigned long iPoint) const override { return duds(iPoint); }
+  inline su2double GetRe_v(unsigned long iPoint) const override { return Re_v(iPoint); }
+  inline su2double GetProd(unsigned long iPoint) const override { return Prod(iPoint); }
+  inline su2double GetDestr(unsigned long iPoint) const override { return Destr(iPoint); }
+  inline su2double GetF_onset1(unsigned long iPoint) const override { return F_onset1(iPoint); }
+  inline su2double GetF_onset2(unsigned long iPoint) const override { return F_onset2(iPoint); }
+  inline su2double GetF_onset3(unsigned long iPoint) const override { return F_onset3(iPoint); }
+  inline su2double GetF_onset(unsigned long iPoint) const override { return F_onset(iPoint); }
+  inline su2double GetNormal_x(unsigned long iPoint) const override {return normal_x(iPoint);};
+  inline su2double GetNormal_y(unsigned long iPoint) const override {return normal_y(iPoint);};
+  inline su2double GetNormal_z(unsigned long iPoint) const override {return normal_z(iPoint);};
 };

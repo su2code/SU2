@@ -553,6 +553,21 @@ def main():
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
+    # Simplified (one-equation) LM model on the 6:1 prolate spheroid at 15 deg, restarting from converged solutions
+    slm_spheroid_vals = {"sst_slm_menter": [-12.005703, -10.934023, -13.049797, -7.833317, -11.020316, 0.035351, 0.019157],
+                         "sst_slm_menter_crossflow": [-12.005701, -10.933421, -11.401809, -6.035958, -6.621244, 0.035351, 0.019157],
+                         "sa_slm_menter": [-10.467338, -8.467659, -12.443723, -6.570030, 0.035277, 0.017760],
+                         "sa_slm_menter_crossflow": [-10.475794, -8.467045, -12.157988, -5.847505, 0.035277, 0.017760]}
+    for model, vals in slm_spheroid_vals.items():
+        slm_spheroid = TestCase('slm_spheroid_' + model)
+        slm_spheroid.cfg_dir = "transition/prolate_spheroid"
+        slm_spheroid.cfg_file = model + ".cfg"
+        slm_spheroid.test_iter = 5
+        slm_spheroid.test_vals = vals
+        slm_spheroid.grid_file = "spheroid_tiny.su2"
+        slm_spheroid.decompress = True
+        test_list.append(slm_spheroid)
+
     # unsteady pitching NACA0015, SA
     unst_inc_turb_naca0015_sa           = TestCase('unst_inc_turb_naca0015_sa')
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
