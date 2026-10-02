@@ -408,7 +408,7 @@ def main():
     lam_naca0012_linelet.cfg_file  = "lam_NACA0012_LINELET.cfg"
     lam_naca0012_linelet.test_iter = 20
     lam_naca0012_linelet.test_vals = [-5.335771, -2.936187, -2.943926, 0.102449]
-    lam_naca0012_linelet.command   = TestCase.Command("mpirun -n 4", "SU2_CFD")
+    lam_naca0012_linelet.command   = TestCase.Command("mpirun --oversubscribe -n 4", "SU2_CFD")
     test_list.append(lam_naca0012_linelet)
 
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
