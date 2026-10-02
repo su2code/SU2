@@ -147,6 +147,11 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutputFields_ScalarMAX_RES(config);
   /// END_GROUP
 
+  /// BEGIN_GROUP: MAX_RES_LOC, DESCRIPTION: The global point ID and coordinates of the maximum residual of the solution variables.
+  AddHistoryOutputFields_MaxResLoc("FLOW", nDim + 1 + (heat ? 1 : 0));
+  AddHistoryOutputFields_TurbMaxResLoc(config);
+  /// END_GROUP
+
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block-gauss seidel residuals of the SOLUTION variables.
   /// DESCRIPTION: Maximum residual of the pressure.
   AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the pressure.", HistoryFieldType::RESIDUAL);
@@ -269,6 +274,8 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
       SetHistoryOutputValue("BGS_ENTHALPY", log10(flow_solver->GetRes_BGS(nDim + 1)));
     }
   }
+
+  SetHistoryOutputValues_MaxResLoc("FLOW", flow_solver, config, nDim + 1 + (heat ? 1 : 0));
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));

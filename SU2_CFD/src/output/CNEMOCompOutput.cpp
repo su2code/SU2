@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CNEMOCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author W. Maier, R. Sanchez
@@ -135,6 +135,11 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the energy.
   AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
   AddHistoryOutputFields_ScalarMAX_RES(config);
+  /// END_GROUP
+
+  /// BEGIN_GROUP: MAX_RES_LOC, DESCRIPTION: The global point ID and coordinates of the maximum residual of the solution variables.
+  AddHistoryOutputFields_MaxResLoc("FLOW", nSpecies + nDim + 2);
+  AddHistoryOutputFields_TurbMaxResLoc(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables.
@@ -419,6 +424,9 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(NEMO_solver->GetRes_Max(3)));
     SetHistoryOutputValue("MAX_ENERGY", log10(NEMO_solver->GetRes_Max(4)));
   }
+
+  SetHistoryOutputValues_MaxResLoc("FLOW", NEMO_solver, config);
+
   if (multiZone){
     SetHistoryOutputValue("BGS_DENSITY", log10(NEMO_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_MOMENTUM-X", log10(NEMO_solver->GetRes_BGS(1)));

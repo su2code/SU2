@@ -129,6 +129,11 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutputFields_ScalarMAX_RES(config);
   /// END_GROUP
 
+  /// BEGIN_GROUP: MAX_RES_LOC, DESCRIPTION: The global point ID and coordinates of the maximum residual of the solution variables.
+  AddHistoryOutputFields_MaxResLoc("FLOW", nDim + 2);
+  AddHistoryOutputFields_TurbMaxResLoc(config);
+  /// END_GROUP
+
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables.
   /// DESCRIPTION: Maximum residual of the density.
   AddHistoryOutput("BGS_DENSITY",    "bgs[Rho]",  ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the density.", HistoryFieldType::RESIDUAL);
@@ -424,6 +429,9 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(flow_solver->GetRes_Max(3)));
     SetHistoryOutputValue("MAX_ENERGY", log10(flow_solver->GetRes_Max(4)));
   }
+
+  SetHistoryOutputValues_MaxResLoc("FLOW", flow_solver, config);
+
   if (multiZone){
     SetHistoryOutputValue("BGS_DENSITY", log10(flow_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_MOMENTUM-X", log10(flow_solver->GetRes_BGS(1)));

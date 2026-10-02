@@ -1220,7 +1220,10 @@ void COutput::SetScreenOutput(const CConfig *config) {
     stringstream out;
     switch (field.screenFormat) {
       case ScreenOutputFormat::INTEGER:
-        PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(field.value), fieldWidth);
+        if (std::isnan(SU2_TYPE::GetValue(field.value)))
+          PrintingToolbox::PrintScreenFixed(out, field.value, fieldWidth);
+        else
+          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(field.value), fieldWidth);
         break;
       case ScreenOutputFormat::FIXED:
         PrintingToolbox::PrintScreenFixed(out, field.value, fieldWidth);

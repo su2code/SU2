@@ -112,6 +112,10 @@ void CFlowCompFEMOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
   /// END_GROUP
 
+  /// BEGIN_GROUP: MAX_RES_LOC, DESCRIPTION: The global point ID and coordinates of the maximum residual of the solution variables.
+  AddHistoryOutputFields_MaxResLoc("FLOW", nDim + 2);
+  /// END_GROUP
+
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
 
   /*--- Add analyze surface history fields --- */
@@ -250,6 +254,8 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
     SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(flow_solver->GetRes_Max(3)));
     SetHistoryOutputValue("MAX_ENERGY", log10(flow_solver->GetRes_Max(4)));
   }
+
+  SetHistoryOutputValues_MaxResLoc("FLOW", flow_solver, config);
 
   SetHistoryOutputValue("AOA", config->GetAoA());
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
