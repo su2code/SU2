@@ -546,12 +546,12 @@ def main():
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST, MUSCL_TURB with the VAN_ALBADA_EDGE limiter for flow and turbulence, frozen after LIMITER_ITER)
-    turb_naca0012_sst_muscl_edge           = TestCase('turb_naca0012_sst_muscl_edge')
-    turb_naca0012_sst_muscl_edge.cfg_dir   = "rans/naca0012"
-    turb_naca0012_sst_muscl_edge.cfg_file  = "turb_NACA0012_sst_muscl_edge.cfg"
+    turb_naca0012_sst_muscl_edge = TestCase('turb_naca0012_sst_muscl_edge')
+    turb_naca0012_sst_muscl_edge.cfg_dir = "rans/naca0012"
+    turb_naca0012_sst_muscl_edge.cfg_file = "turb_NACA0012_sst_muscl_edge.cfg"
     turb_naca0012_sst_muscl_edge.test_iter = 10
     turb_naca0012_sst_muscl_edge.test_vals = [-7.382360, -9.014488, -2.832761, 1.074785, 0.014914, -2.799879, 0.000000]
-    turb_naca0012_sst_muscl_edge.timeout   = 3200
+    turb_naca0012_sst_muscl_edge.timeout = 3200
     test_list.append(turb_naca0012_sst_muscl_edge)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
