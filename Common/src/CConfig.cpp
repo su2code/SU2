@@ -2158,6 +2158,9 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
+  /*!\brief MUSCL_FIRST_ORDER_WALL_ENDS \n DESCRIPTION: Reconstruct the flow to first order on the edges of points
+   * where a no-slip wall ends on a boundary continuing its surface, or has a sharp edge such as a trailing edge \ingroup Config*/
+  addBoolOption("MUSCL_FIRST_ORDER_WALL_ENDS", MUSCL_FirstOrderWallEnds, false);
   /*!\brief MUSCL_KAPPA_FLOW \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
   addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
   /*!\brief RAMP_MUSCL \n DESCRIPTION: Enable ramping of the MUSCL scheme from 1st to 2nd order using specified method*/
@@ -3095,7 +3098,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: ParMETIS load balancing weight for edges (equiv. to neighbors) */
   addLongOption("PARMETIS_EDGE_WEIGHT", ParMETIS_edgeWgt, 1);
 
-  /* DESCRIPTION: Weight ParMETIS graph edges by cell anisotropy and partition with coordinates */
+  /* DESCRIPTION: Weight ParMETIS graph edges by cell anisotropy and keep anisotropic lines on one rank */
   addBoolOption("PARMETIS_ANISOTROPY_WEIGHT", ParMETIS_anisotropyWgt, false);
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/

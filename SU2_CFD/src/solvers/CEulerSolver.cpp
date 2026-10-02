@@ -302,6 +302,101 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     nodes->NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
   }
 
+  /*--- The gradient is singular where a no-slip wall meets another kind of boundary. Unlimited
+   *    reconstruction across it gives a defect the first-order multigrid levels cannot correct. ---*/
+
+  if ((iMesh == MESH_0) && config->GetMUSCL_Flow() && config->GetMUSCL_FirstOrderWallEnds()) {
+    /*--- Only where the other boundary continues the wall surface does the condition jump along a
+     *    smooth surface. Where they meet at an angle, as at a wing root on a symmetry plane, the
+     *    flow is smooth. Halfway between parallel and perpendicular separates the two. ---*/
+    const su2double minAlignment = sqrt(0.5);
+
+    auto unitNormal = [&](unsigned short iMarker, long iVertex, su2double* normal) {
+      geometry->vertex[iMarker][iVertex]->GetNormal(normal);
+      const su2double area = GeometryToolbox::Norm(nDim, normal);
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) normal[iDim] /= max(area, EPS);
+    };
+
+    /*--- A sharp edge of the wall itself, such as a trailing edge, is singular as well. Its vertex
+     *    normal is much shorter than the area of the faces around it, cos(half the angle between
+     *    their normals); the same halfway threshold applies. ---*/
+    vector<su2double> wallArea(nPoint, 0.0);
+    for (unsigned short iWall = 0; iWall < config->GetnMarker_All(); iWall++) {
+      if (!config->GetViscous_Wall(iWall)) continue;
+      for (unsigned long iElem = 0; iElem < geometry->GetnElem_Bound(iWall); iElem++) {
+        const auto* elem = geometry->bound[iWall][iElem];
+        const auto nNodes = elem->GetnNodes();
+        su2double area = 0.0;
+        if (nDim == 2) {
+          su2double edge[MAXNDIM] = {0.0};
+          GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord(elem->GetNode(1)),
+                                    geometry->nodes->GetCoord(elem->GetNode(0)), edge);
+          area = GeometryToolbox::Norm(nDim, edge);
+        } else {
+          for (unsigned short iNode = 1; iNode + 1 < nNodes; iNode++) {
+            su2double a[3] = {0.0}, b[3] = {0.0}, c[3] = {0.0};
+            GeometryToolbox::Distance(3, geometry->nodes->GetCoord(elem->GetNode(iNode)),
+                                      geometry->nodes->GetCoord(elem->GetNode(0)), a);
+            GeometryToolbox::Distance(3, geometry->nodes->GetCoord(elem->GetNode(iNode + 1)),
+                                      geometry->nodes->GetCoord(elem->GetNode(0)), b);
+            GeometryToolbox::CrossProduct(a, b, c);
+            area += 0.5 * GeometryToolbox::Norm(3, c);
+          }
+        }
+        for (unsigned short iNode = 0; iNode < nNodes; iNode++) wallArea[elem->GetNode(iNode)] += area / nNodes;
+      }
+    }
+    const su2double minFlatness = cos(PI_NUMBER / 8);
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      bool wallEnds = false;
+      for (unsigned short iWall = 0; iWall < config->GetnMarker_All(); iWall++) {
+        const auto wallVertex = geometry->nodes->GetVertex(iPoint, iWall);
+        if (!config->GetViscous_Wall(iWall) || (wallVertex < 0)) continue;
+
+        const su2double vertexArea = GeometryToolbox::Norm(nDim, geometry->vertex[iWall][wallVertex]->GetNormal());
+        if (vertexArea < minFlatness * wallArea[iPoint]) wallEnds = true;
+
+        su2double wallNormal[MAXNDIM] = {0.0};
+        unitNormal(iWall, wallVertex, wallNormal);
+
+        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          const auto kindBC = config->GetMarker_All_KindBC(iMarker);
+          if (config->GetViscous_Wall(iMarker) || (kindBC == SEND_RECEIVE) || (kindBC == PERIODIC_BOUNDARY) ||
+              (kindBC == INTERNAL_BOUNDARY) || (kindBC == NEARFIELD_BOUNDARY) || (kindBC == FLUID_INTERFACE)) continue;
+          const auto iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
+          if (iVertex < 0) continue;
+          su2double normal[MAXNDIM] = {0.0};
+          unitNormal(iMarker, iVertex, normal);
+          if (fabs(GeometryToolbox::DotProduct(nDim, wallNormal, normal)) > minAlignment) wallEnds = true;
+        }
+      }
+      nodes->FirstOrderReconstruction(iPoint) = wallEnds;
+    }
+
+    unsigned long nFlagged = 0, nFlaggedGlobal = 0;
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) nFlagged += nodes->FirstOrderReconstruction(iPoint);
+    SU2_MPI::Allreduce(&nFlagged, &nFlaggedGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+    if (rank == MASTER_NODE)
+      cout << "First-order reconstruction at " << nFlaggedGlobal << " points where a no-slip wall ends or has a sharp edge." << endl;
+
+    /*--- A halo may lack one of the markers its owner has, so it takes the owner's flag. ---*/
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) || (config->GetMarker_All_SendRecv(iMarker) <= 0))
+        continue;
+      const auto markerS = iMarker, markerR = static_cast<unsigned short>(iMarker + 1);
+      const int sendTo = config->GetMarker_All_SendRecv(markerS) - 1;
+      const int receiveFrom = abs(config->GetMarker_All_SendRecv(markerR)) - 1;
+      vector<unsigned short> bufSend(geometry->nVertex[markerS]), bufRecv(geometry->nVertex[markerR]);
+      for (auto iVertex = 0ul; iVertex < geometry->nVertex[markerS]; iVertex++)
+        bufSend[iVertex] = nodes->FirstOrderReconstruction(geometry->vertex[markerS][iVertex]->GetNode());
+      SU2_MPI::Sendrecv(bufSend.data(), bufSend.size(), MPI_UNSIGNED_SHORT, sendTo, 0, bufRecv.data(), bufRecv.size(),
+                        MPI_UNSIGNED_SHORT, receiveFrom, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      for (auto iVertex = 0ul; iVertex < geometry->nVertex[markerR]; iVertex++)
+        nodes->FirstOrderReconstruction(geometry->vertex[markerR][iVertex]->GetNode()) = bufRecv[iVertex];
+    }
+  }
+
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   counter_local = 0;
@@ -1909,7 +2004,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    if (!muscl) {
+    if (!muscl || nodes->FirstOrderReconstruction(iPoint) || nodes->FirstOrderReconstruction(jPoint)) {
 
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);

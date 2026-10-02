@@ -344,6 +344,31 @@ class CPhysicalGeometry final : public CGeometry {
    * \return One weight per entry of the adjacency array.
    */
   vector<idx_t> ComputeAnisotropyEdgeWeights(long maxWeight) const;
+
+  /*!
+   * \brief Reads, for any global points of the linear partition, a value each rank holds for its own points.
+   * \param[in] wanted - Global indices to read.
+   * \param[in] localValue - Value of every local point.
+   * \return The value of each wanted point.
+   */
+  vector<unsigned long> FetchFromOwners(const vector<unsigned long>& wanted,
+                                        const vector<unsigned long>& localValue) const;
+
+  /*!
+   * \brief Links every point to the neighbour across its strongest anisotropic edge, chains of links are lines.
+   * \param[in] adjwgt - Anisotropy weight of every entry of the adjacency array.
+   * \return Global index of the linked neighbour, or of the point itself when no edge is strong enough.
+   */
+  vector<unsigned long> LinkAnisotropicLines(const vector<idx_t>& adjwgt) const;
+
+  /*!
+   * \brief Moves each line to the partition that holds most of its points.
+   * \param[in] link - Line links from LinkAnisotropicLines.
+   * \param[in,out] part - Partition of every local point.
+   * \param[out] longestLine - Number of points of the longest line.
+   * \return Number of points that changed partition, summed over all ranks.
+   */
+  unsigned long KeepLinesTogether(vector<unsigned long> link, vector<idx_t>& part, unsigned long& longestLine) const;
 #endif
 
   /*!

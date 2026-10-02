@@ -374,4 +374,9 @@ class CEulerVariable : public CFlowVariable {
    */
   su2vector<uint8_t> OutlierMitigation;
 
+  /*!
+   * \brief Points whose edges are reconstructed to first order (1), others use MUSCL (0).
+   */
+  su2vector<uint8_t> FirstOrderReconstruction;
+
 };
