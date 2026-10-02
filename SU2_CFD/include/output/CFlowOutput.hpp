@@ -102,6 +102,28 @@ protected:
   void AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config);
 
   /*!
+   * \brief Add history fields for the location (point ID and coordinates) of the maximum residual of each variable.
+   * \param[in] solver_tag - Identifier of the solver (e.g. "FLOW", "TURB").
+   * \param[in] nVar - Number of variables.
+   */
+  void AddHistoryOutputFields_MaxResLoc(const string& solver_tag, unsigned short nVar);
+
+  /*!
+   * \brief Add turbulence history fields for the location of the maximum residual.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AddHistoryOutputFields_TurbMaxResLoc(const CConfig* config);
+
+  /*!
+   * \brief Set history values for the location of the maximum residual of a solver.
+   * \param[in] solver_tag - Identifier of the solver (e.g. "FLOW", "TURB").
+   * \param[in] solver - The solver containing residual reduction data.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] nVar - Optional number of variables (0 uses solver->GetnVar()).
+   */
+  void SetHistoryOutputValues_MaxResLoc(const string& solver_tag, const CSolver* solver, const CConfig* config, unsigned short nVar = 0);
+
+  /*!
    * \brief Add scalar (turbulence/species) history fields for the BGS Residual (FVMComp, FVMInc, FVMNEMO).
    */
   void AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config);

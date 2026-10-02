@@ -4467,7 +4467,8 @@ protected:
                          su2double val_residual,
                          unsigned long val_point,
                          const su2double* val_coord) {
-    if (val_residual > Residual_Max[val_var]) {
+    if (val_residual > Residual_Max[val_var] ||
+        (val_residual == Residual_Max[val_var] && val_point < Point_Max[val_var])) {
       Residual_Max[val_var] = val_residual;
       Point_Max[val_var] = val_point;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -4486,11 +4487,12 @@ protected:
                              su2double val_residual,
                              unsigned long val_point,
                              const su2double* val_coord) {
-    if (val_residual > Residual_Max_BGS[val_var]) {
-    Residual_Max_BGS[val_var] = val_residual;
-    Point_Max_BGS[val_var] = val_point;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
+    if (val_residual > Residual_Max_BGS[val_var] ||
+        (val_residual == Residual_Max_BGS[val_var] && val_point < Point_Max_BGS[val_var])) {
+      Residual_Max_BGS[val_var] = val_residual;
+      Point_Max_BGS[val_var] = val_point;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
     }
   }
 

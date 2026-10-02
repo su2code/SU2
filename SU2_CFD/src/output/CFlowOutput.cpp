@@ -27,8 +27,8 @@
 
 #include <sstream>
 #include <string>
-#include <sstream>
 #include <iomanip>
+#include <limits>
 
 #include "../../include/output/CFlowOutput.hpp"
 
@@ -1155,6 +1155,96 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
   }
 }
 
+void CFlowOutput::AddHistoryOutputFields_MaxResLoc(const string& solver_tag, unsigned short nVar) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    const string varSuffix = solver_tag + "_" + std::to_string(iVar);
+    const string idName = "MAXLOC_ID-" + varSuffix;
+    const string xName  = "MAXLOC_X-" + varSuffix;
+    const string yName  = "MAXLOC_Y-" + varSuffix;
+
+    AddHistoryOutput(idName, idName, ScreenOutputFormat::INTEGER, "MAX_RES_LOC", "Global point ID of the maximum residual of " + solver_tag + " variable " + std::to_string(iVar) + ".");
+    AddHistoryOutput(xName, xName, ScreenOutputFormat::SCIENTIFIC, "MAX_RES_LOC", "X-coordinate of the maximum residual of " + solver_tag + " variable " + std::to_string(iVar) + ".");
+    AddHistoryOutput(yName, yName, ScreenOutputFormat::SCIENTIFIC, "MAX_RES_LOC", "Y-coordinate of the maximum residual of " + solver_tag + " variable " + std::to_string(iVar) + ".");
+
+    if (nDim == 3) {
+      const string zName = "MAXLOC_Z-" + varSuffix;
+      AddHistoryOutput(zName, zName, ScreenOutputFormat::SCIENTIFIC, "MAX_RES_LOC", "Z-coordinate of the maximum residual of " + solver_tag + " variable " + std::to_string(iVar) + ".");
+    }
+  }
+}
+
+void CFlowOutput::AddHistoryOutputFields_TurbMaxResLoc(const CConfig* config) {
+  unsigned short nTurbVar = 0;
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
+      nTurbVar = 1;
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        nTurbVar = 4;
+      }
+      break;
+    case TURB_FAMILY::KW:
+      nTurbVar = 2;
+      break;
+    case TURB_FAMILY::NONE:
+      nTurbVar = 0;
+      break;
+  }
+  if (nTurbVar > 0) {
+    AddHistoryOutputFields_MaxResLoc("TURB", nTurbVar);
+  }
+}
+
+void CFlowOutput::SetHistoryOutputValues_MaxResLoc(const string& solver_tag, const CSolver* solver, const CConfig* config, unsigned short nVar) {
+  if (solver == nullptr) return;
+
+  if (nVar == 0) {
+    nVar = solver->GetnVar();
+  }
+
+  const bool commFull = (config->GetComm_Level() == COMM_FULL);
+  if (!commFull) {
+    static bool warned = false;
+    if (!warned) {
+      bool isRequested = false;
+      for (const auto& f : requestedHistoryFields) {
+        if (f == "MAX_RES_LOC") { isRequested = true; break; }
+      }
+      if (!isRequested) {
+        for (const auto& f : requestedScreenFields) {
+          if (f == "MAX_RES_LOC") { isRequested = true; break; }
+        }
+      }
+      if (isRequested && rank == MASTER_NODE) {
+        std::cout << "Warning: Location of maximum residual (MAX_RES_LOC) is not globally reduced when COMM_LEVEL != FULL. Reporting NaN." << std::endl;
+      }
+      warned = true;
+    }
+
+    const su2double nan_val = std::numeric_limits<su2double>::quiet_NaN();
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const string varSuffix = solver_tag + "_" + std::to_string(iVar);
+      SetHistoryOutputValue("MAXLOC_ID-" + varSuffix, nan_val);
+      SetHistoryOutputValue("MAXLOC_X-" + varSuffix, nan_val);
+      SetHistoryOutputValue("MAXLOC_Y-" + varSuffix, nan_val);
+      if (nDim == 3) {
+        SetHistoryOutputValue("MAXLOC_Z-" + varSuffix, nan_val);
+      }
+    }
+    return;
+  }
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    const string varSuffix = solver_tag + "_" + std::to_string(iVar);
+    SetHistoryOutputValue("MAXLOC_ID-" + varSuffix, su2double(solver->GetPoint_Max(iVar)));
+    const su2double* coord = solver->GetPoint_Max_Coord(iVar);
+    SetHistoryOutputValue("MAXLOC_X-" + varSuffix, coord[0]);
+    SetHistoryOutputValue("MAXLOC_Y-" + varSuffix, coord[1]);
+    if (nDim == 3) {
+      SetHistoryOutputValue("MAXLOC_Z-" + varSuffix, coord[2]);
+    }
+  }
+}
+
 void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
   if (!multiZone) return;
 
@@ -1285,6 +1375,7 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    SetHistoryOutputValues_MaxResLoc("TURB", solver[TURB_SOL], config);
     SetHistoryOutputValue("LINSOL_ITER_TURB", solver[TURB_SOL]->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(solver[TURB_SOL]->GetResLinSolver()));
   }
