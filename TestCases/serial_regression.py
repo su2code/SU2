@@ -122,6 +122,14 @@ def main():
     wedge.test_vals = [-4.399745, 1.331048, -0.249527, 0.043953]
     test_list.append(wedge)
 
+    # Supersonic biparabolic airfoil
+    biparabolic           = TestCase('biparabolic')
+    biparabolic.cfg_dir   = "euler/biparabolic"
+    biparabolic.cfg_file  = "BIPARABOLIC.cfg"
+    biparabolic.test_iter = 25
+    biparabolic.test_vals = [-2.177255, 0.461450, 0.278865, 3.447917]
+    test_list.append(biparabolic)
+
     # ONERA M6 Wing
     oneram6           = TestCase('oneram6')
     oneram6.cfg_dir   = "euler/oneram6"
