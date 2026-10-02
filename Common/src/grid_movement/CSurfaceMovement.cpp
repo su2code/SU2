@@ -3701,8 +3701,7 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
   unsigned long iVertex;
   unsigned short iMarker, nDV_Camber = 0;
   su2double VarCoord[3] = {0.0, 0.0, 0.0}, VarCoordTrans[3] = {0.0, 0.0, 0.0}, *CoordTrans, *NormalTrans, ek, fk,
-            Coord[3] = {0.0, 0.0, 0.0}, TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, USTPCoord[2] = {0.0, 0.0},
-            LSTPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
+            Coord[3] = {0.0, 0.0, 0.0}, TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, AoA, ValCos, ValSin;
   vector<su2double> positions, values, X_Coord_upper, Y_Coord_upper, X_Coord_lower, Y_Coord_lower;
 
   // --- Check if the type of design variables is only HICKS_HENNE_CAMBER ---// // TODO: Extend to CAMBER + THICKNESS
@@ -3727,29 +3726,66 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
   }
 
   /*--- Compute the angle of attack, Leading-edge (LP) and Trailing-edge (TP) point.
-        We do this for upper and lower surface separately to detect blunt trailing edges ---*/
+        We do this for upper and lower surface separately to detect blunt trailing edges.
+        The TP candidate of each surface is its vertex with the largest x. Vertices whose normal
+        points mostly in x lie on a blunt trailing edge face and are skipped. ---*/
+
+  /*--- Candidates are compared lexicographically, so that ties are broken in the same way
+        for any partitioning and any vertex order. ---*/
+
+  auto IsGreater = [](const su2double* a, const su2double* b, int n) {
+    return lexicographical_compare(b, b + n, a, a + n);
+  };
+
+  const su2double Lowest = numeric_limits<su2double>::lowest();
+  su2double USTPCoord[2] = {Lowest, Lowest}, LSTPCoord[2] = {Lowest, Lowest};
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_DV(iMarker) == YES) {
-      CoordTrans = boundary->vertex[iMarker][0]->GetCoord();
-      LSTPCoord[0] = CoordTrans[0];
-      LSTPCoord[1] = CoordTrans[1];
-      USTPCoord[0] = CoordTrans[0];
-      USTPCoord[1] = CoordTrans[1];
-      for (iVertex = 1; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+      for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+        /*--- Halo vertices are owned by another rank and their normal can be incomplete. ---*/
+        if (!boundary->nodes->GetDomain(boundary->vertex[iMarker][iVertex]->GetNode())) continue;
+
         CoordTrans = boundary->vertex[iMarker][iVertex]->GetCoord();
-        NormalTrans = boundary->vertex[iMarker][0]->GetNormal();
-        if ((CoordTrans[0] > TPCoord[0]) && (abs(NormalTrans[1]) > abs(NormalTrans[0]))) {
-          if (NormalTrans[1] >= 0.0) {
-            USTPCoord[0] = CoordTrans[0];
-            USTPCoord[1] = CoordTrans[1];
-          } else {
-            LSTPCoord[0] = CoordTrans[0];
-            LSTPCoord[1] = CoordTrans[1];
-          }
+        NormalTrans = boundary->vertex[iMarker][iVertex]->GetNormal();
+        if (abs(NormalTrans[1]) <= abs(NormalTrans[0])) continue;
+        su2double* SurfTPCoord = (NormalTrans[1] >= 0.0) ? USTPCoord : LSTPCoord;
+        if (IsGreater(CoordTrans, SurfTPCoord, 2)) {
+          SurfTPCoord[0] = CoordTrans[0];
+          SurfTPCoord[1] = CoordTrans[1];
         }
       }
     }
+  }
+
+  /*--- Each rank only holds part of the airfoil, so the TP candidates of all ranks are gathered.
+        A rank without vertices on the design marker sends candidates that never win. The reduction
+        starts again from the sentinel, so every rank reduces the same data in the same order. ---*/
+
+  const int nProcessor = size;
+  vector<su2double> Buffer_Send_Coord = {USTPCoord[0], USTPCoord[1], LSTPCoord[0], LSTPCoord[1]};
+  vector<su2double> Buffer_Receive_Coord(4 * nProcessor);
+
+  SU2_MPI::Allgather(Buffer_Send_Coord.data(), 4, MPI_DOUBLE, Buffer_Receive_Coord.data(), 4, MPI_DOUBLE,
+                     SU2_MPI::GetComm());
+
+  USTPCoord[0] = USTPCoord[1] = LSTPCoord[0] = LSTPCoord[1] = Lowest;
+
+  for (int iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    const su2double* ProcUSTPCoord = &Buffer_Receive_Coord[4 * iProcessor];
+    const su2double* ProcLSTPCoord = ProcUSTPCoord + 2;
+    if (IsGreater(ProcUSTPCoord, USTPCoord, 2)) {
+      USTPCoord[0] = ProcUSTPCoord[0];
+      USTPCoord[1] = ProcUSTPCoord[1];
+    }
+    if (IsGreater(ProcLSTPCoord, LSTPCoord, 2)) {
+      LSTPCoord[0] = ProcLSTPCoord[0];
+      LSTPCoord[1] = ProcLSTPCoord[1];
+    }
+  }
+
+  if ((USTPCoord[0] == Lowest) || (LSTPCoord[0] == Lowest)) {
+    SU2_MPI::Error("Could not find the trailing edge on both sides of the airfoil.", CURRENT_FUNCTION);
   }
 
   /*--- Correct the TP coordinates if the trailing edge is blunt ---*/
@@ -3761,20 +3797,42 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
     TPCoord[1] = USTPCoord[1];
   }
 
-  Chord = 0.0;
+  /*--- The LP is the vertex farthest from the TP. The candidate of each rank is gathered with its distance.
+        A rank without vertices on the design marker sends a negative distance. ---*/
+
+  su2double LPData[3] = {-1.0, 0.0, 0.0}; /*--- Distance to the TP, x, y ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_DV(iMarker) == YES) {
       for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+        if (!boundary->nodes->GetDomain(boundary->vertex[iMarker][iVertex]->GetNode())) continue;
+
         CoordTrans = boundary->vertex[iMarker][iVertex]->GetCoord();
-        Distance = GeometryToolbox::Distance(2, CoordTrans, TPCoord);
-        if (Chord < Distance) {
-          Chord = Distance;
-          LPCoord[0] = CoordTrans[0];
-          LPCoord[1] = CoordTrans[1];
+        const su2double Candidate[3] = {GeometryToolbox::Distance(2, CoordTrans, TPCoord), CoordTrans[0],
+                                        CoordTrans[1]};
+        if (IsGreater(Candidate, LPData, 3)) {
+          for (unsigned short i = 0; i < 3; i++) LPData[i] = Candidate[i];
         }
       }
     }
   }
+
+  Buffer_Send_Coord.assign(LPData, LPData + 3);
+  Buffer_Receive_Coord.resize(3 * nProcessor);
+
+  SU2_MPI::Allgather(Buffer_Send_Coord.data(), 3, MPI_DOUBLE, Buffer_Receive_Coord.data(), 3, MPI_DOUBLE,
+                     SU2_MPI::GetComm());
+
+  LPData[0] = -1.0;
+
+  for (int iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    const su2double* ProcLPData = &Buffer_Receive_Coord[3 * iProcessor];
+    if (IsGreater(ProcLPData, LPData, 3)) {
+      for (unsigned short i = 0; i < 3; i++) LPData[i] = ProcLPData[i];
+    }
+  }
+
+  LPCoord[0] = LPData[1];
+  LPCoord[1] = LPData[2];
 
   AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0])) * 180 / PI_NUMBER;
 
@@ -3782,6 +3840,10 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
    * distribution ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+      /*--- Reset the variation, otherwise vertices on markers without design variables
+            receive the variation of the previous vertex. ---*/
+      VarCoord[1] = 0.0;
+
       if (config->GetMarker_All_DV(iMarker) == YES) {
         CoordTrans = boundary->vertex[iMarker][iVertex]->GetCoord();
         NormalTrans = boundary->vertex[iMarker][iVertex]->GetNormal();

@@ -1955,7 +1955,7 @@ def main():
     naca0012_def_file_camber.cfg_dir   = "deformation/naca0012"
     naca0012_def_file_camber.cfg_file  = "def_NACA0012_camber.cfg"
     naca0012_def_file_camber.test_iter = 10
-    naca0012_def_file_camber.test_vals = [0.00854844]
+    naca0012_def_file_camber.test_vals = [0.0201692]
     naca0012_def_file_camber.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
     naca0012_def_file_camber.timeout   = 1600
     naca0012_def_file_camber.tol       = 1e-8
