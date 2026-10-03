@@ -39,6 +39,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <map>
 
 #include "CFileWriter.hpp"
 
@@ -62,6 +63,13 @@ class CCGNSFileWriter final : public CFileWriter {
   vector<BoundaryMarker> boundaryMarkers; /*!< \brief Markers written as boundaries of a volume file. */
 
   vector<string> surfaceMarkers; /*!< \brief Markers written as one zone each in a surface file. */
+
+  /*--- Names of the CGNS nodes, decided by PrepareNames before the file is opened. ---*/
+  vector<string> boundaryNames;                  /*!< \brief Boundary sections, BCs and families, per marker. */
+  string volumeZoneName = "Zone";                /*!< \brief Zone of a volume file. */
+  string solutionName = "Fields";                /*!< \brief Flow solution node of each zone. */
+  std::map<unsigned short, string> sectionNames; /*!< \brief Element sections of the zones, per element type. */
+
   CConfig* config = nullptr;     /*!< \brief Config, to sort the surface data of each marker. */
   CGeometry* geometry = nullptr; /*!< \brief Geometry, to sort the surface data of each marker. */
 
@@ -146,9 +154,26 @@ class CCGNSFileWriter final : public CFileWriter {
    * \brief Get the names of CGNS nodes named as the markers. Tags longer than maxNameLength characters are truncated,
    *        and a number is appended to a truncated tag equal to a previous name, so that the names are unique.
    * \param[in] tags - Marker tags.
+   * \param[in] taken - Names that are already used.
    * \return The names, in the order of the tags.
    */
-  vector<string> GetUniqueNames(const vector<string>& tags) const;
+  vector<string> GetUniqueNames(const vector<string>& tags, vector<string> taken = {}) const;
+
+  /*!
+   * \brief Decide the names of the CGNS nodes before the file is opened. The children of a node need unique names:
+   *        in a zone the element sections (volume and boundary), GridCoordinates, ZoneBC, ZoneType and the solution,
+   *        in the base the zone and the families. The boundary sections, BCs and families keep the marker names,
+   *        which the SU2 CGNS reader takes as marker tags after removing the spaces: a marker named GridCoordinates,
+   *        ZoneBC or ZoneType is written with a space ("Zone BC") and read back unchanged. An internal node (a volume
+   *        section, the solution "Fields" or the zone "Zone") whose name equals a marker name gets the prefix "SU2 ",
+   *        with a space, which marker names cannot contain.
+   */
+  void PrepareNames();
+
+  /*!
+   * \brief Number of sections the elements of a type are split into (see WriteConnectivity).
+   */
+  cgsize_t SectionCount(GEO_TYPE type) const;
 
   /*!
    * \brief Write the boundary sections, BCs and families of the markers set with SetBoundaryMarkers.
