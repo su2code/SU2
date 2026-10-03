@@ -1885,6 +1885,37 @@ def main():
     cgns_writer.new_output = True
     test_list.append(cgns_writer)
 
+    # The CGNS output of a 2D mesh is read back as mesh, with the restart written by the same run.
+    # The read-back test must run after the test that writes the files.
+    cgns_output = TestCase('cgns_output')
+    cgns_output.cfg_dir = "output_writers"
+    cgns_output.cfg_file = "cgns_output.cfg"
+    cgns_output.test_iter = 2
+    cgns_output.test_vals = [-1.684071, 0.454658, 3.802834, -2.624573, 6.956844, 0.091480]
+    test_list.append(cgns_output)
+
+    cgns_mesh_readback = TestCase('cgns_mesh_readback')
+    cgns_mesh_readback.cfg_dir = "output_writers"
+    cgns_mesh_readback.cfg_file = "cgns_mesh_readback.cfg"
+    cgns_mesh_readback.test_iter = 2
+    cgns_mesh_readback.test_vals = [-2.480775, 0.352445, 2.998807, -3.103293, 6.892515, 0.085107]
+    test_list.append(cgns_mesh_readback)
+
+    # Same for a 3D mesh with mixed elements, whose boundaries are written as MIXED sections.
+    cgns_output_bend = TestCase('cgns_output_bend')
+    cgns_output_bend.cfg_dir = "output_writers"
+    cgns_output_bend.cfg_file = "cgns_output_bend.cfg"
+    cgns_output_bend.test_iter = 2
+    cgns_output_bend.test_vals = [-2.413023, -2.210141, -2.545448, -3.057828, 2.475696]
+    test_list.append(cgns_output_bend)
+
+    cgns_mesh_readback_bend = TestCase('cgns_mesh_readback_bend')
+    cgns_mesh_readback_bend.cfg_dir = "output_writers"
+    cgns_mesh_readback_bend.cfg_file = "cgns_mesh_readback_bend.cfg"
+    cgns_mesh_readback_bend.test_iter = 2
+    cgns_mesh_readback_bend.test_vals = [-3.256728, -2.769844, -3.007840, -3.567315, 4.318459]
+    test_list.append(cgns_mesh_readback_bend)
+
     ######################################
     ### RUN CHT TEST WITH FILEDIFF     ###
     ######################################
@@ -1932,6 +1963,45 @@ def main():
     stl_writer_test.test_file      = "surface_flow.stl"
     pass_list.append(stl_writer_test.run_filediff())
     test_list.append(stl_writer_test)
+
+    # The ASCII writers write in parallel, compare their files with those of the previous writers.
+    # ITER= 0 (test_iter = -1): the restart solution is written without iterating.
+    ascii_restart_writer = TestCase('ascii_restart_writer')
+    ascii_restart_writer.cfg_dir = "output_writers"
+    ascii_restart_writer.cfg_file = "ascii_output.cfg"
+    ascii_restart_writer.test_iter = -1
+    ascii_restart_writer.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    ascii_restart_writer.timeout = 1600
+    ascii_restart_writer.reference_file = "restart_flow.csv.ref"
+    ascii_restart_writer.test_file = "restart_flow.csv"
+    pass_list.append(ascii_restart_writer.run_filediff())
+    test_list.append(ascii_restart_writer)
+
+    for tag, test_file in [("ascii_paraview_writer", "flow.vtk"), ("ascii_tecplot_writer", "flow.dat"),
+                           ("ascii_surface_paraview_writer", "surface_flow.vtk"),
+                           ("ascii_surface_tecplot_writer", "surface_flow.dat")]:
+        ascii_writer = TestCase(tag)
+        ascii_writer.cfg_dir = "output_writers"
+        ascii_writer.cfg_file = "ascii_output.cfg"
+        ascii_writer.test_iter = -1
+        ascii_writer.command = TestCase.Command("mpirun -n 2", "SU2_SOL")
+        ascii_writer.timeout = 1600
+        ascii_writer.reference_file = test_file + ".ref"
+        ascii_writer.test_file = test_file
+        pass_list.append(ascii_writer.run_filediff())
+        test_list.append(ascii_writer)
+
+    # SU2 mesh file written by SU2_DEF without deformation
+    ascii_mesh_writer = TestCase('ascii_mesh_writer')
+    ascii_mesh_writer.cfg_dir = "output_writers"
+    ascii_mesh_writer.cfg_file = "ascii_output.cfg"
+    ascii_mesh_writer.test_iter = -1
+    ascii_mesh_writer.command = TestCase.Command("mpirun -n 2", "SU2_DEF")
+    ascii_mesh_writer.timeout = 1600
+    ascii_mesh_writer.reference_file = "mesh_out.su2.ref"
+    ascii_mesh_writer.test_file = "mesh_out.su2"
+    pass_list.append(ascii_mesh_writer.run_filediff())
+    test_list.append(ascii_mesh_writer)
 
     ######################################
     ### RUN SU2_DEF TESTS              ###

@@ -87,7 +87,8 @@ void CParaviewVTMFileWriter::WriteData(string val_filename){
 
 }
 
-void CParaviewVTMFileWriter::AddDataset(const string& foldername, string name, const string& file, CParallelDataSorter* dataSorter){
+void CParaviewVTMFileWriter::AddDataset(const string& foldername, string name, const string& file,
+                                        CParallelDataSorter* dataSorter, bool doublePrecision){
 
   /*--- Construct the full file name incl. folder ---*/
   /*--- Note that the folder name is simply the filename ---*/
@@ -96,7 +97,7 @@ void CParaviewVTMFileWriter::AddDataset(const string& foldername, string name, c
 
   /*--- Create an XML writer and dump data into file ---*/
 
-  CParaviewXMLFileWriter XMLWriter(dataSorter);
+  CParaviewXMLFileWriter XMLWriter(dataSorter, doublePrecision);
   XMLWriter.WriteData(fullFilename);
 
   /*--- Add the dataset to the vtm file ---*/
@@ -136,7 +137,7 @@ void CParaviewVTMFileWriter::WriteFolderData(const string& foldername, CConfig *
   StartBlock(std::move(multiZoneHeaderString));
 
   StartBlock("Internal");
-  AddDataset(foldername,"Internal", "Internal", volumeDataSorter);
+  AddDataset(foldername, "Internal", "Internal", volumeDataSorter, config->GetWrt_Output_Double_Precision());
   EndBlock();
 
   /*--- Open a block for the boundary ---*/
@@ -180,7 +181,7 @@ void CParaviewVTMFileWriter::WriteFolderData(const string& foldername, CConfig *
 
       /*--- Add the dataset ---*/
 
-      AddDataset(foldername, markerTag, markerTag, surfaceDataSorter);
+      AddDataset(foldername, markerTag, markerTag, surfaceDataSorter, config->GetWrt_Output_Double_Precision());
 
     }
   }

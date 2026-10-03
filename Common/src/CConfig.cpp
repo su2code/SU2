@@ -1263,6 +1263,10 @@ void CConfig::SetConfig_Options() {
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief WRT_RESTART_COMPACT \n DESCRIPTION: Minimize the size of restart files \n Options: NO, YES \ingroup Config */
   addBoolOption("WRT_RESTART_COMPACT", Wrt_Restart_Compact, true);
+  /*!\brief WRT_OUTPUT_DOUBLE_PRECISION \n DESCRIPTION: Write the fields of the volume and surface files (CGNS and
+   Paraview XML) in double precision instead of single, the coordinates are always written in double precision by the
+   CGNS writer. \n Options: NO, YES \ingroup Config */
+  addBoolOption("WRT_OUTPUT_DOUBLE_PRECISION", Wrt_Output_Double_Precision, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief WRT_RESTART_OVERWRITE \n DESCRIPTION: overwrite restart files or append iteration number. \n Options: YES, NO \ingroup Config */
