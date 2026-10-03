@@ -361,24 +361,21 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   END_SU2_OMP_FOR
 
   /*--- Unsteady variable density: continuity is V d(rho)/dt + sum(m_f) = 0. The density of the old
-   *    time levels follows from their enthalpy (species are not taken into account). ---*/
+   *    time levels is the one the flow solver computes from their enthalpy and species
+   *    (CIncEulerSolver::RecomputeDensity_time_n). ---*/
 
   if (config->GetTime_Domain() && config->GetVariable_Density_Model()) {
     const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
     const su2double dt = config->GetDelta_UnstTimeND();
-    CFluidModel* fluid_model = flow_solver->GetFluidModel();
-    const auto h_idx = nDim + 1;
-    CVariable* flow_vars = solver_container[FLOW_SOL]->GetNodes();
+    const auto* flow_vars = su2staticcast_p<const CFlowVariable*>(flow_nodes);
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-      const su2double rho_np1 = flow_nodes->GetDensity(iPoint);
-      fluid_model->SetTDState_h(flow_vars->GetSolution_time_n(iPoint)[h_idx]);
-      const su2double rho_n = fluid_model->GetDensity();
+      const su2double rho_np1 = flow_vars->GetDensity(iPoint);
+      const su2double rho_n = flow_vars->GetDensity_time_n(iPoint);
       su2double dRhodt = (rho_np1 - rho_n) / dt;
       if (second_order) {
-        fluid_model->SetTDState_h(flow_vars->GetSolution_time_n1(iPoint)[h_idx]);
-        const su2double rho_nm1 = fluid_model->GetDensity();
+        const su2double rho_nm1 = flow_vars->GetDensity_time_n1(iPoint);
         dRhodt = (3.0 * rho_np1 - 4.0 * rho_n + rho_nm1) / (2.0 * dt);
       }
       LinSysRes(iPoint, 0) += geometry->nodes->GetVolume(iPoint) * dRhodt;
