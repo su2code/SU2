@@ -70,14 +70,10 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   const int NCOORDS = 3;
   const unsigned short nDim = dataSorter->GetnDim();
-  unsigned short iDim = 0;
 
   /*--- Array containing the field names we want to output ---*/
 
   const vector<string>& fieldNames = dataSorter->GetFieldNames();
-
-  unsigned long iPoint, iElem;
-
 
   OpenMPIFile(val_filename);
 
@@ -153,8 +149,8 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   /*--- Loop over all variables that have been registered in the output. ---*/
 
-  unsigned short iField, VarCounter = varStart;
-  for (iField = varStart; iField < fieldNames.size(); iField++) {
+  unsigned short VarCounter = varStart;
+  for (unsigned short iField = varStart; iField < fieldNames.size(); iField++) {
 
     string fieldname = fieldNames[iField];
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
@@ -221,8 +217,8 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
     }
   };
 
-  for (iPoint = 0; iPoint < myPoint; iPoint++) {
-    for (iDim = 0; iDim < NCOORDS; iDim++) {
+  for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
+    for (unsigned short iDim = 0; iDim < NCOORDS; iDim++) {
       if (nDim == 2 && iDim == 2) {
         dataBuffer[iPoint*NCOORDS + iDim] = 0.0;
       } else {
@@ -238,11 +234,10 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   vector<int64_t> connBuf(myElemStorage);
   vector<int64_t> offsetBuf(myElem);
   unsigned long iStorage = 0, iElemID = 0;
-  unsigned short iNode = 0;
 
   auto copyToBuffer = [&](GEO_TYPE type, unsigned long nElem, unsigned short nPoints){
-    for (iElem = 0; iElem < nElem; iElem++) {
-      for (iNode = 0; iNode < nPoints; iNode++){
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+      for (unsigned short iNode = 0; iNode < nPoints; iNode++){
         connBuf[iStorage+iNode] = static_cast<int64_t>(dataSorter->GetElemConnectivity(type, iElem, iNode)) - 1;
       }
       iStorage += nPoints;
@@ -286,7 +281,7 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   /*--- Loop over all variables that have been registered in the output. ---*/
 
   VarCounter = varStart;
-  for (iField = varStart; iField < fieldNames.size(); iField++) {
+  for (unsigned short iField = varStart; iField < fieldNames.size(); iField++) {
 
     /*--- Check whether this field is a vector or scalar. ---*/
 
@@ -315,8 +310,8 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
       /*--- Load up the buffer for writing this rank's vector data. ---*/
 
-      for (iPoint = 0; iPoint < myPoint; iPoint++) {
-        for (iDim = 0; iDim < NCOORDS; iDim++) {
+      for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
+        for (unsigned short iDim = 0; iDim < NCOORDS; iDim++) {
           if (nDim == 2 && iDim == 2) {
             dataBuffer[iPoint*NCOORDS + iDim] = 0.0;
           } else {
@@ -335,7 +330,7 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
       /*--- For now, create a temp 1D buffer to load up the data for writing.
        This will be replaced with a derived data type most likely. ---*/
 
-      for (iPoint = 0; iPoint < myPoint; iPoint++) {
+      for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
         dataBuffer[iPoint] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter,iPoint));
       }
 

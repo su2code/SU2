@@ -43,10 +43,6 @@ void CTecplotFileWriter::WriteData(string val_filename){
 
   const vector<string> fieldNames = dataSorter->GetFieldNames();
 
-  unsigned long iVar;
-
-  unsigned long iPoint, iElem;
-
   /*--- Reduce the total number of each element. ---*/
 
   unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
@@ -74,7 +70,7 @@ void CTecplotFileWriter::WriteData(string val_filename){
   header << "TITLE = \"Visualization of the solution\"" << endl;
 
   header << "VARIABLES = ";
-  for (iVar = 0; iVar < fieldNames.size()-1; iVar++) {
+  for (auto iVar = 0ul; iVar < fieldNames.size()-1; iVar++) {
     header << "\"" << fieldNames[iVar] << "\",";
   }
   header << "\"" << fieldNames[fieldNames.size()-1] << "\"" << endl;
@@ -115,8 +111,8 @@ void CTecplotFileWriter::WriteData(string val_filename){
 
   /*--- Write surface and volumetric solution data. ---*/
 
-  for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-    for (iVar = 0; iVar < fieldNames.size(); iVar++)
+  for (auto iPoint = 0ul; iPoint < dataSorter->GetnPoints(); iPoint++) {
+    for (auto iVar = 0ul; iVar < fieldNames.size(); iVar++)
       data << dataSorter->GetData(iVar, iPoint) << "\t";
     data << endl;
   }
@@ -126,62 +122,54 @@ void CTecplotFileWriter::WriteData(string val_filename){
   data.str("");
   data.clear();
 
-
   /*--- Write connectivity data. ---*/
 
-  {
-    {
-
-      for (iElem = 0; iElem < nParallel_Line; iElem++) {
-        data << dataSorter->GetElemConnectivity(LINE, iElem, 0) << "\t";
-        data << dataSorter->GetElemConnectivity(LINE, iElem, 1)<< "\n";
-      }
+  for (auto iElem = 0ul; iElem < nParallel_Line; iElem++) {
+    data << dataSorter->GetElemConnectivity(LINE, iElem, 0) << "\t";
+    data << dataSorter->GetElemConnectivity(LINE, iElem, 1)<< "\n";
+  }
 
 
-      for (iElem = 0; iElem < nParallel_Tria; iElem++) {
-        data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 0) << "\t";
-        data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 1) << "\t";
-        data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2) << "\t";
-        data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2) << "\n";
-      }
+  for (auto iElem = 0ul; iElem < nParallel_Tria; iElem++) {
+    data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 0) << "\t";
+    data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 1) << "\t";
+    data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2) << "\t";
+    data << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2) << "\n";
+  }
 
-      for (iElem = 0; iElem < nParallel_Quad; iElem++) {
-        data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 0) << "\t";
-        data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 1) << "\t";
-        data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 2) << "\t";
-        data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 3) << "\n";
-      }
+  for (auto iElem = 0ul; iElem < nParallel_Quad; iElem++) {
+    data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 0) << "\t";
+    data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 1) << "\t";
+    data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 2) << "\t";
+    data << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 3) << "\n";
+  }
 
-      for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
-        data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 1) << "\t";
-        data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2) << "\t";
-        data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t";
-        data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\n";
-      }
+  for (auto iElem = 0ul; iElem < nParallel_Tetr; iElem++) {
+    data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 1) << "\t";
+    data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2) << "\t";
+    data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t";
+    data << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\n";
+  }
 
-      for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
-        data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 1) << "\t";
-        data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 3) << "\t";
-        data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 5) << "\t";
-        data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 6) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 7) << "\n";
-      }
+  for (auto iElem = 0ul; iElem < nParallel_Hexa; iElem++) {
+    data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 1) << "\t";
+    data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 3) << "\t";
+    data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 5) << "\t";
+    data << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 6) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 7) << "\n";
+  }
 
-      for (iElem = 0; iElem < nParallel_Pris; iElem++) {
-        data << dataSorter->GetElemConnectivity(PRISM, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 1) << "\t";
-        data << dataSorter->GetElemConnectivity(PRISM, iElem, 1) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 2) << "\t";
-        data << dataSorter->GetElemConnectivity(PRISM, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 4) << "\t";
-        data << dataSorter->GetElemConnectivity(PRISM, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 5) << "\n";
-      }
+  for (auto iElem = 0ul; iElem < nParallel_Pris; iElem++) {
+    data << dataSorter->GetElemConnectivity(PRISM, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 1) << "\t";
+    data << dataSorter->GetElemConnectivity(PRISM, iElem, 1) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 2) << "\t";
+    data << dataSorter->GetElemConnectivity(PRISM, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 4) << "\t";
+    data << dataSorter->GetElemConnectivity(PRISM, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 5) << "\n";
+  }
 
-      for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
-        data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 1) << "\t";
-        data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 3) << "\t";
-        data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t";
-        data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\n";
-      }
-
-
-    }
+  for (auto iElem = 0ul; iElem < nParallel_Pyra; iElem++) {
+    data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 1) << "\t";
+    data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 3) << "\t";
+    data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t";
+    data << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\n";
   }
 
   WriteMPIStringAll(data.str());
