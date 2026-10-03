@@ -118,7 +118,9 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL();
+  /*--- The edge limiter (VAN_ALBADA_EDGE) is applied in the flux kernel and needs no point values. ---*/
   const bool limiter = (config->GetKind_SlopeLimit() != LIMITER::NONE) &&
+                       (config->GetKind_SlopeLimit() != LIMITER::VAN_ALBADA_EDGE) &&
                        (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Clear residual and system matrix, not needed for
@@ -132,9 +134,11 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
     }
   }
 
-  /*--- Upwind second order reconstruction and gradients ---*/
+  /*--- Upwind second order reconstruction and gradients. The reconstruction gradient is global to the
+   * case (it is needed as soon as any equation system reconstructs), so it is skipped here when this
+   * system does not reconstruct: only the reconstruction and the limiter read it. ---*/
 
-  if (config->GetReconstructionGradientRequired()) {
+  if (muscl && config->GetReconstructionGradientRequired()) {
     switch(config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, -1, true); break;
       case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1, true); break;
@@ -174,8 +178,13 @@ void CScalarSolver<VariableType>::SumEdgeFluxes(const CGeometry* geometry) {
 template <class VariableType>
 template <class Scheme>
 void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CSolver** solver_container,
-                                                    const CConfig* config, const ScalarFluxOptions& opt) {
+                                                    const CConfig* config, const ScalarFluxOptions& optIn) {
   SU2_ZONE_SCOPED
+
+  /*--- The reconstructed face values are kept within the bounds that clip the solution. ---*/
+  auto opt = optIn;
+  opt.lowerLimit = lowerlimit;
+  opt.upperLimit = upperlimit;
 
   using Double = typename Scheme::Double;
   constexpr int nDim = Scheme::nDim;
@@ -217,11 +226,13 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
       /*--- Bounded scalar divergence correction, per edge; the ReducerStrategy equivalent runs
        * in a per-point pass below, where the diagonal is not written from the edge loop. ---*/
       if (opt.boundedScalar && !ReducerStrategy) {
-        LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -massFlux);
-        LinSysRes.AddBlock(jPoint, nodes->GetSolution(jPoint), massFlux);
+        const su2double rho_i = flowNodes->GetDensity(iPoint), rho_j = flowNodes->GetDensity(jPoint);
+        const su2double q = BoundedScalarDivergenceFlux(massFlux, rho_i, rho_j);
+        LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -q);
+        LinSysRes.AddBlock(jPoint, nodes->GetSolution(jPoint), q);
         if (opt.implicit) {
-          Jacobian.AddVal2Diag(iPoint, -massFlux);
-          Jacobian.AddVal2Diag(jPoint, massFlux);
+          Jacobian.AddVal2Diag(iPoint, -q / (Conservative ? rho_i : 1.0));
+          Jacobian.AddVal2Diag(jPoint, q / (Conservative ? rho_j : 1.0));
         }
       }
     }
@@ -239,15 +250,19 @@ void CScalarSolver<VariableType>::EdgeFluxResidual(const CGeometry* geometry, CS
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
         const auto* solution = nodes->GetSolution(iPoint);
+        const su2double rho_i = flowNodes->GetDensity(iPoint);
         su2double divergence = 0;
 
-        for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
+        for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+          const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+          const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
           const auto sign = (iPoint == geometry->edges->GetNode(iEdge, 0)) ? 1 : -1;
-          const su2double edgeMassFlux = sign * (*edgeMassFluxes)[iEdge];
-          divergence += edgeMassFlux;
-          LinSysRes.AddBlock(iPoint, solution, -edgeMassFlux);
+          const su2double q = BoundedScalarDivergenceFlux(sign * (*edgeMassFluxes)[iEdge], rho_i,
+                                                          flowNodes->GetDensity(jPoint));
+          divergence += q;
+          LinSysRes.AddBlock(iPoint, solution, -q);
         }
-        if (opt.implicit) Jacobian.AddVal2Diag(iPoint, -divergence);
+        if (opt.implicit) Jacobian.AddVal2Diag(iPoint, -divergence / (Conservative ? rho_i : 1.0));
       }
       END_SU2_OMP_FOR
     }
@@ -282,8 +297,9 @@ void CScalarSolver<VariableType>::BoundaryFluxResidual(const CGeometry* geometry
 
     Double massFlux = 0.0;
     if (opt.boundedScalar) {
+      const auto* ghostPrim = ghostFlowNodes->GetPrimitive(iVertex);
       massFlux = BoundedScalarBCFlux(iPoint, opt.implicit, flowNodes->GetDensity(iPoint),
-                                     &ghostFlowNodes->GetPrimitive(iVertex)[prim_idx.Velocity()], normal.data());
+                                     &ghostPrim[prim_idx.Velocity()], normal.data(), &ghostPrim[prim_idx.Density()]);
     }
 
     const auto res = flux.ComputeFlux(opt, iPoint, side_i, iVertex, side_j, normal, massFlux);
@@ -347,7 +363,8 @@ void CScalarSolver<VariableType>::FluidInterfaceFluxResidual(const CGeometry* ge
         su2double massFlux = 0.0;
         if (optConv.boundedScalar) {
           massFlux = BoundedScalarBCFlux(iPoint, optConv.implicit, flowNodes->GetDensity(iPoint),
-                                         &PrimVar_j[prim_idx.Velocity()], normal.data());
+                                         &PrimVar_j[prim_idx.Velocity()], normal.data(), &PrimVar_j[prim_idx.Density()],
+                                         weight);
         }
 
         const auto res = flux.ComputeFlux(optConv, iPoint, side_i, iVertex, side_j, normal, massFlux);
