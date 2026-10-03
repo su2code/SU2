@@ -150,7 +150,7 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   /*--- Loop over all variables that have been registered in the output. ---*/
 
   unsigned short VarCounter = varStart;
-  for (unsigned short iField = varStart; iField < fieldNames.size(); iField++) {
+  for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
 
     string fieldname = fieldNames[iField];
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
@@ -281,7 +281,7 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   /*--- Loop over all variables that have been registered in the output. ---*/
 
   VarCounter = varStart;
-  for (unsigned short iField = varStart; iField < fieldNames.size(); iField++) {
+  for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
 
     /*--- Check whether this field is a vector or scalar. ---*/
 

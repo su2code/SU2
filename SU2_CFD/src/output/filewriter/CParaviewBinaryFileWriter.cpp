@@ -233,7 +233,7 @@ void CParaviewBinaryFileWriter::WritePointData() {
    vector, written with its "_y" (and "_z") components, which are then skipped. ---*/
 
   unsigned short VarCounter = varStart;
-  for (unsigned short iField = varStart; iField < fieldNames.size(); iField++) {
+  for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
 
     string fieldname = fieldNames[iField];
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
