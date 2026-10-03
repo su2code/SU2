@@ -117,6 +117,14 @@ protected:
   void LoadHistoryDataScalar(const CConfig* config, const CSolver* const* solver);
 
   /*!
+   * \brief Recompute history output field values that can be used as objective functions in the (multiphysics) discrete adjoint solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   */
+  void LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) override;
+
+  /*!
    * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.

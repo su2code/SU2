@@ -318,9 +318,11 @@ public:
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] force - Reduce on a coarse level too, where it is skipped by default.
    */
-  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config);
+  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config, bool force = false);
 
   /*!
    * \brief Communicate the value of the max residual and RMS residual.
@@ -392,6 +394,16 @@ public:
    * \return Value of the average local CFL number.
    */
   inline su2double GetAvg_CFL_Local(void) const { return Avg_CFL_Local; }
+
+  /*!
+   * \brief Set min/max/avg local CFL summary statistics.
+   * \param[in] val_cfl - Uniform CFL value to report.
+   */
+  inline void SetCFL_Local_Stats(su2double val_cfl) {
+    Min_CFL_Local = val_cfl;
+    Max_CFL_Local = val_cfl;
+    Avg_CFL_Local = val_cfl;
+  }
 
   /*!
    * \brief Get the number of variables of the problem.
@@ -572,6 +584,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \return flame thickness value.
+   */
+  virtual su2double GetFlameThickness() const {return 1.0;}
 
   /*!
    * \brief Compute the projection of a variable for MUSCL reconstruction.
@@ -764,6 +782,22 @@ public:
                                     unsigned long Iteration,
                                     unsigned short RunTime_EqSystem,
                                     bool Output) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ApplyPressureVelocityCorrection(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -4286,6 +4320,25 @@ public:
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
 
+  /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] periodic - Flag for periodic boundary conditions.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  inline virtual void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) { }
+
+  /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  inline virtual void ComputeHbyA(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
+  
   /*!
    * \brief Save snapshot or POD data using libROM
    * \param[in] geometry - Geometrical definition of the problem.

@@ -169,7 +169,7 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
 
   su2double dist_ij_2[MAXNDIM] = {0.0};
   GeometryToolbox::Distance(nDim, Coord_j, Coord_i, dist_ij_2);
-  dist_ij = GeometryToolbox::SquaredNorm(nDim, dist_ij_2);
+  dist_ij = GeometryToolbox::Norm(nDim, dist_ij_2);
 
     for (auto iVar = 0ul; iVar < nVar; iVar++) {
       for (auto jVar = 0ul; jVar < nVar; jVar++) {
@@ -359,6 +359,6 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
 
   }
 
-  return ResidualType<>(Flux, Jacobian_j, Jacobian_j);
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }

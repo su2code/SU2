@@ -113,4 +113,9 @@ class CSpeciesVariable : public CScalarVariable {
    * \param[in] iPoint - Point index.
    */
   inline void SetHeatRelease(unsigned long iPoint, su2double val_heatRelease) { HeatRelease(iPoint) = val_heatRelease; }
+
+  /*!
+   * \brief Get the mass diffusivity container, for a per-species gather by point and equation.
+   */
+  inline const MatrixType& GetDiffusivity() const { return Diffusivity; }
 };
