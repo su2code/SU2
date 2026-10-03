@@ -243,7 +243,10 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
         nCoeff++;
       }
     }
-    nodes->SetMomCoeff(iPoint, (nCoeff > 0) ? Sum_Coeff / nCoeff : 0.0);
+    if (nCoeff > 0)
+      nodes->SetMomCoeff(iPoint, Sum_Coeff / nCoeff);
+    else
+      nodes->SetMomCoeff(iPoint, 0.0);
   }
   END_SU2_OMP_FOR
 
