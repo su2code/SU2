@@ -762,9 +762,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       {
         auto* cgnsWriter = new CCGNSFileWriter(volumeDataSorter, false, config->GetWrt_Output_Double_Precision());
 
-        /*--- Add the boundaries, named as the markers (the finite volume sorter knows which elements are halos). ---*/
-        if (const auto* fvmSorter = dynamic_cast<const CFVMDataSorter*>(volumeDataSorter))
-          cgnsWriter->SetBoundaryMarkers(config, geometry, fvmSorter);
+        /*--- Write the boundaries, named as the markers. This needs to know which boundary elements are halo copies,
+         which only the finite volume data sorter knows: the files of the FEM solver have no boundaries. ---*/
+        if (!femOutput)
+          cgnsWriter->SetBoundaryMarkers(config, geometry, static_cast<const CFVMDataSorter*>(volumeDataSorter));
 
         fileWriter = cgnsWriter;
       }
