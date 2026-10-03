@@ -4473,7 +4473,8 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
 
   const auto coloring = colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(
       CCompressedSparsePatternUL(adjacency), 1, false, true);
-  const auto nColors = coloring.getOuterSize();
+  /*--- unsigned long because it is communicated as MPI_UNSIGNED_LONG below. ---*/
+  const unsigned long nColors = coloring.getOuterSize();
 
   /*--- Sort linelets by color. ---*/
   std::vector<std::vector<unsigned long>> sortedLinelets;
