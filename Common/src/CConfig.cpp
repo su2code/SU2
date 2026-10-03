@@ -4252,6 +4252,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support streamwise periodicity.",
                      CURRENT_FUNCTION);
     }
+    /*--- The solution of the previous time step is only stored with dual time stepping. ---*/
+    if (TimeMarching == TIME_MARCHING::TIME_STEPPING) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_MARCHING= TIME_STEPPING,\n"
+                     "       use DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER.", CURRENT_FUNCTION);
+    }
 
     /*--- With SIMPLEC the momentum coefficient a_P - sum(a_nb) is the pseudo-time term alone, removing
      * it leaves nothing. ---*/
