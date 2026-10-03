@@ -1619,7 +1619,7 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
   /*--- Paving order: a no-slip wall first, a slip wall next, everything else last. ---*/
   auto tierOfBC = [](unsigned short bc) -> char {
     if ((bc == HEAT_FLUX) || (bc == ISOTHERMAL) || (bc == CHT_WALL_INTERFACE) || (bc == SMOLUCHOWSKI_MAXWELL)) return 0;
-    return (bc == EULER_WALL) ? 1 : 2;
+    return ((bc == EULER_WALL) || (bc == SYMMETRY_PLANE)) ? 1 : 2;
   };
 
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
@@ -2322,6 +2322,63 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     byLayer[iColumn][layerOf[iPoint]].push_back(iPoint);
   }
 
+  /*--- A boundary run with an odd number of seeds, and every node where two boundaries meet,
+   *    leaves one column a single node wide. Two such columns side by side are emitted together,
+   *    so the domain gets square cells instead of a file of narrow ones. ---*/
+  vector<long> partnerOf(nColumn, -1);
+  {
+    auto isNarrow = [&](unsigned long iColumn) {
+      return isSeeded[iColumn] && (byLayer[iColumn].size() > 1) && (byLayer[iColumn][0].size() == 1);
+    };
+
+    /*--- Both columns must stand shoulder to shoulder over every layer they share, otherwise the
+     *    cells the merge makes are not compact. ---*/
+    auto aligned = [&](unsigned long iColumn, unsigned long jColumn) {
+      const auto nCommon = std::min(byLayer[iColumn].size(), byLayer[jColumn].size());
+      for (auto iLayer = 1ul; iLayer < nCommon; ++iLayer) {
+        const auto iPoint = byLayer[iColumn][iLayer].front();
+        const auto jPoint = byLayer[jColumn][iLayer].front();
+        bool touch = false;
+        for (auto kPoint : fine_grid->nodes->GetPoints(iPoint)) touch = touch || (kPoint == jPoint);
+        if (!touch) return false;
+      }
+      return nCommon > 1;
+    };
+
+    /*--- Taken in global index order, so the pairing does not depend on the partitioning. ---*/
+    vector<unsigned long> narrow;
+    for (auto iColumn = 0ul; iColumn < nColumn; ++iColumn)
+      if (isNarrow(iColumn)) narrow.push_back(iColumn);
+    std::sort(narrow.begin(), narrow.end(), [&](unsigned long a, unsigned long b) {
+      return fine_grid->nodes->GetGlobalIndex(byLayer[a][0].front()) <
+             fine_grid->nodes->GetGlobalIndex(byLayer[b][0].front());
+    });
+
+    for (auto iColumn : narrow) {
+      if (partnerOf[iColumn] >= 0) continue;
+      auto best = NO_COLUMN;
+      auto bestKey = std::numeric_limits<unsigned long>::max();
+
+      for (auto jPoint : fine_grid->nodes->GetPoints(byLayer[iColumn][1].front())) {
+        const auto jColumn = columnOf[jPoint];
+        if ((jColumn == NO_COLUMN) || (jColumn == iColumn)) continue;
+        if ((partnerOf[jColumn] >= 0) || !isNarrow(jColumn)) continue;
+        if (tierOf[jColumn] != tierOf[iColumn]) continue;
+        if (!aligned(iColumn, jColumn)) continue;
+
+        const auto key = fine_grid->nodes->GetGlobalIndex(byLayer[jColumn][0].front());
+        if (key < bestKey) {
+          bestKey = key;
+          best = jColumn;
+        }
+      }
+
+      if (best == NO_COLUMN) continue;
+      partnerOf[iColumn] = static_cast<long>(best);
+      partnerOf[best] = static_cast<long>(iColumn);
+    }
+  }
+
   auto emitGroup = [&](const vector<unsigned long>& group) {
     nodes->SetChildren_CV(Index_CoarseCV, group);
     for (auto iPoint : group) {
@@ -2334,6 +2391,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
   auto minDepth = std::numeric_limits<unsigned long>::max(), maxDepth = 0ul;
   vector<unsigned long> group;
+  vector<vector<unsigned long>> paired;
 
   /*--- Hand a set of nodes out as coarse CVs, each connected and within the size limit. ---*/
   vector<char> inSet(nPointFine, 0);
@@ -2379,7 +2437,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
     auto iLayer = 0ul;
     if (isSeeded[iColumn]) {
-      /*--- The boundary row is a coarse CV of its own, which fixes the footprint above it. ---*/
+      /*--- The boundary row is a coarse CV of its own, which fixes the footprint above it. A
+       *    paired column keeps its own row, which may hold a boundary condition of its own. ---*/
       const auto baseCV = emitGroup(layers[0]);
       ct[P_CVS]++;
       ct[P_COVERED] += layers[0].size();
@@ -2387,19 +2446,35 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
       iLayer = 1;
     }
 
+    /*--- Of a pair, the column of lower index emits what stands above both boundary rows. ---*/
+    if ((partnerOf[iColumn] >= 0) && (partnerOf[iColumn] < static_cast<long>(iColumn))) continue;
+
+    const auto* emitted = &layers;
+    if (partnerOf[iColumn] > static_cast<long>(iColumn)) {
+      const auto& other = byLayer[partnerOf[iColumn]];
+      paired = layers;
+      for (auto k = 1ul; k < other.size(); ++k) {
+        if (k < paired.size())
+          paired[k].insert(paired[k].end(), other[k].begin(), other[k].end());
+        else
+          paired.push_back(other[k]);
+      }
+      emitted = &paired;
+    }
+
     /*--- Above it, consecutive layers are blocked so the coarse cell coarsens by the same ratio
      *    along the column as the patch does across it. ---*/
-    while (iLayer < layers.size()) {
+    while (iLayer < emitted->size()) {
       group.clear();
-      const auto block = BlockFor(maxAgglomSize, layers[iLayer].size());
-      for (auto k = 0ul; (k < block) && (iLayer < layers.size()); ++k) {
-        if (!group.empty() && (group.size() + layers[iLayer].size() > static_cast<size_t>(maxAgglomSize))) break;
-        group.insert(group.end(), layers[iLayer].begin(), layers[iLayer].end());
+      const auto block = BlockFor(maxAgglomSize, (*emitted)[iLayer].size());
+      for (auto k = 0ul; (k < block) && (iLayer < emitted->size()); ++k) {
+        if (!group.empty() && (group.size() + (*emitted)[iLayer].size() > static_cast<size_t>(maxAgglomSize))) break;
+        group.insert(group.end(), (*emitted)[iLayer].begin(), (*emitted)[iLayer].end());
         iLayer++;
       }
       /*--- A single layer wider than the limit still has to go somewhere. ---*/
       if (group.empty()) {
-        group = layers[iLayer];
+        group = (*emitted)[iLayer];
         iLayer++;
       }
       emitConnected(group);

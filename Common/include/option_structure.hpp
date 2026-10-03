@@ -80,6 +80,7 @@ const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDB
 enum: unsigned int{MAX_SOLS = 14};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
+const unsigned short MAX_MGLEVELS = 10;       /*!< \brief Maximum number of coarse multigrid levels, which bounds the per-level arrays of the multigrid integration. */
 const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;            /*!< \brief No Runge-Kutta iteration. */
 
@@ -1234,6 +1235,8 @@ struct CMGOptions {
   bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
   su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
+  bool MG_Linear_Prolongation{false};     /*!< \brief Prolong the correction with a limited least-squares
+                                                 gradient instead of piecewise-constant injection. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Iterations per mesh during FMG startup, and the length of each level's CFL ramp. 0 = no iteration budget. */
   su2double MG_Startup_Convergence{-2.0}; /*!< \brief FMG: orders of magnitude (log10) that CONV_FIELD must drop on the
                                                  active level before promoting to the next finer one. Negative is a
@@ -2875,6 +2878,7 @@ enum class MPI_QUANTITIES {
   COORDINATES          ,  /*!< \brief Vertex coordinates communication. */
   COORDINATES_OLD      ,  /*!< \brief Old vertex coordinates communication. */
   MAX_LENGTH           ,  /*!< \brief Maximum length communication. */
+  WALL_DISTANCE        ,  /*!< \brief Wall distance and roughness of the nearest wall communication. */
   GRID_VELOCITY        ,  /*!< \brief Grid velocity communication. */
   SOLUTION_EDDY        ,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
   STOCH_SOURCE_LANG    ,  /*!< \brief Stochastic source term for Langevin equations communication. */

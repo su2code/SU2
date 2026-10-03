@@ -2104,6 +2104,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Pave the coarse grid with advancing fronts raised from boundaries
    * that carry a stretched layer normal to themselves. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
+  /*!\brief MG_LINEAR_PROLONGATION\n DESCRIPTION: Prolong the multigrid correction with a limited least-squares
+   * gradient over the coarse control volume instead of injecting the parent value into every child. Coarse CVs on
+   * walls and symmetry planes keep the constant operator. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_LINEAR_PROLONGATION", MGOptions.MG_Linear_Prolongation, false);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
    * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
@@ -2112,8 +2116,9 @@ void CConfig::SetConfig_Options() {
    * DEFAULT: -2 \ingroup Config*/
   addDoubleOption("MG_STARTUP_CONVERGENCE", MGOptions.MG_Startup_Convergence, -2.0);
   /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio
-   * between successive iterations exceeds this value for MG_STARTUP_STAGNATION_ITER consecutive iterations, promote to
-   * the next finer level without waiting out MG_STARTUP_ITER. 0 disables it. DEFAULT: 0.99 \ingroup Config*/
+   * between successive iterations stays between this value and its inverse for MG_STARTUP_STAGNATION_ITER consecutive
+   * iterations, promote to the next finer level without waiting out MG_STARTUP_ITER. 0 disables it.
+   * DEFAULT: 0.99 \ingroup Config*/
   addDoubleOption("MG_STARTUP_STAGNATION", MGOptions.MG_Startup_Stagnation, 0.99);
   /*!\brief MG_STARTUP_STAGNATION_ITER\n DESCRIPTION: Consecutive stalled iterations required before Full-MG promotes
    * on stagnation. 0 disables it, as MG_STARTUP_STAGNATION= 0 does. DEFAULT: 5 \ingroup Config*/
@@ -4978,6 +4983,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   Kappa_4th_Flow = jst_coeff[1];
   Kappa_2nd_AdjFlow = jst_adj_coeff[0];
   Kappa_4th_AdjFlow = jst_adj_coeff[1];
+
+  /*--- The multigrid integration carries per-level arrays of this size. ---*/
+
+  if (nMGLevels > MAX_MGLEVELS) {
+    SU2_MPI::Error("MGLEVEL is larger than the supported maximum of " + std::to_string(MAX_MGLEVELS) + ".",
+                   CURRENT_FUNCTION);
+  }
 
   /*--- Fill MG smooth vectors to size nMGLevels+1.
    Use parsed values (truncating or extending by repeat) or defaults if not set. ---*/
