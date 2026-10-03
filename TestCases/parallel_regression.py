@@ -497,6 +497,14 @@ def main():
     turb_flatplate_sst_roughBCAupoix.test_vals = [-5.278728, -2.302982, -2.890419, 0.227585, -1.393786, 3.192601, -0.188729, 0.0071821]
     test_list.append(turb_flatplate_sst_roughBCAupoix)
 
+    # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA, restart from a solution without wall functions
+    turb_wallfunction_flatplate_sa_restart           = TestCase('turb_sa_wallfunction_flatplate_restart')
+    turb_wallfunction_flatplate_sa_restart.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
+    turb_wallfunction_flatplate_sa_restart.cfg_file  = "turb_SA_flatplate_restart.cfg"
+    turb_wallfunction_flatplate_sa_restart.test_iter = 10
+    turb_wallfunction_flatplate_sa_restart.test_vals = [-3.610670, -1.998660, -1.869358, 1.868910, -5.285409, 10.000000, -2.197291, -0.052388, 0.002010]
+    test_list.append(turb_wallfunction_flatplate_sa_restart)
+
     # ONERA M6 Wing
     turb_oneram6           = TestCase('turb_oneram6')
     turb_oneram6.cfg_dir   = "rans/oneram6"
