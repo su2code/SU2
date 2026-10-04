@@ -660,8 +660,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    *    a tie, NO_CV if there is none. A compact merge must join the two through at least as many fine
    *    edges as the smaller one has children. Neighbours an earlier merge in the same pass emptied are
    *    not revived. ---*/
-  auto bestPartner = [&](unsigned long iCV, unsigned short maxPartnerSize, bool keepOffPartition,
-                             bool compact) {
+  auto bestPartner = [&](unsigned long iCV, unsigned short maxPartnerSize, bool keepOffPartition, bool compact) {
     auto best = NO_CV;
     auto best_nChildren = std::numeric_limits<unsigned short>::max();
     su2double best_area = -1.0;

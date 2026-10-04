@@ -2426,9 +2426,9 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig* config, CGeometry* geometry
 
   unsigned long Local_Nodes[N_POINTS_HEXAHEDRON];
 
-  vector<vector<unsigned long> > Line_List;
-  vector<vector<unsigned long> > BoundTria_List;
-  vector<vector<unsigned long> > BoundQuad_List;
+  vector<vector<unsigned long>> Line_List;
+  vector<vector<unsigned long>> BoundTria_List;
+  vector<vector<unsigned long>> BoundQuad_List;
 
   vector<unsigned long> Marker_Local;
 
@@ -2967,14 +2967,14 @@ void CPhysicalGeometry::SetSendReceive(const CConfig* config) {
   unsigned short iNode, jNode;
   vector<unsigned long>::iterator it;
 
-  vector<vector<unsigned long> >
+  vector<vector<unsigned long>>
       SendTransfLocal; /*!< \brief Vector to store the type of transformation for this send point. */
-  vector<vector<unsigned long> >
+  vector<vector<unsigned long>>
       ReceivedTransfLocal; /*!< \brief Vector to store the type of transformation for this received point. */
-  vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point
-                                                     index of the node that must me sended. */
-  vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the
-                                                         point index of the node that must me sended. */
+  vector<vector<unsigned long>> SendDomainLocal;     /*!< \brief SendDomain[from domain][to domain] and return the point
+                                                        index of the node that must me sended. */
+  vector<vector<unsigned long>> ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the
+                                                        point index of the node that must me sended. */
 
   unordered_map<unsigned long, unsigned long>::const_iterator MI;
 
@@ -4426,7 +4426,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
 }
 
 void CPhysicalGeometry::SetPoint_Connectivity() {
-  vector<vector<unsigned long> > points(nPoint);
+  vector<vector<unsigned long>> points(nPoint);
 
   SU2_OMP_PARALLEL {
     unsigned short Node_Neighbor, iNode, iNeighbor;
@@ -4434,7 +4434,7 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
 
     /*--- Loop over all the elements ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      vector<vector<long> > elems(nPoint);
+      vector<vector<long>> elems(nPoint);
 
       for (iElem = 0; iElem < nElem; iElem++) {
         /*--- Loop over all the nodes of an element ---*/
@@ -7382,8 +7382,8 @@ vector<unsigned long> CPhysicalGeometry::FetchFromOwners(const vector<unsigned l
     sendIndex[slot] = wanted[k];
     slotOf[k] = slot;
   }
-  SU2_MPI::Alltoallv(sendIndex.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvIndex.data(),
-                     nRecv.data(), recvDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+  SU2_MPI::Alltoallv(sendIndex.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvIndex.data(), nRecv.data(),
+                     recvDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   vector<unsigned long> reply(recvIndex.size()), answer(sendIndex.size()), result(wanted.size());
   for (auto k = 0ul; k < recvIndex.size(); k++) reply[k] = localValue[recvIndex[k] - firstIndex];
@@ -7549,9 +7549,8 @@ vector<idx_t> CPhysicalGeometry::ComputeAnisotropyEdgeWeights(long maxWeight) co
   sendIndex.reserve(sendDisp[size]);
   for (const auto& list : request) sendIndex.insert(sendIndex.end(), list.begin(), list.end());
 
-  SU2_MPI::Alltoallv(sendIndex.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvIndex.data(),
-                     nRecv.data(), recvDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-
+  SU2_MPI::Alltoallv(sendIndex.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvIndex.data(), nRecv.data(),
+                     recvDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   vector<passivedouble> replyCoord(recvIndex.size() * nDim), remoteCoord(sendIndex.size() * nDim);
   for (auto i = 0ul; i < recvIndex.size(); i++)
@@ -7701,8 +7700,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
                                        tpwgts.data(), &ubvec, options, &edgecut, part.data(), &comm);
   if (err != METIS_OK) SU2_MPI::Error("Partitioning failed.", CURRENT_FUNCTION);
   if (rank == MASTER_NODE) {
-    cout << " graph partitioning complete (" << edgecut << (anisotropic ? " weighted" : "") << " edge cuts)."
-         << endl;
+    cout << " graph partitioning complete (" << edgecut << (anisotropic ? " weighted" : "") << " edge cuts)." << endl;
   }
 
   /*--- A line split between ranks loses its strongest couplings in the preconditioner, and its
