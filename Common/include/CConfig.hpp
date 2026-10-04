@@ -88,7 +88,8 @@ private:
   string PhaseName;               /*!< \brief Name of the phase in the chemical mechanism file used in Cantera. */
   unsigned short n_GasCompositionNames; /*!<\brief Number of gases in mixture composition for Cantera. */
   bool Combustion;                      /*!< \brief Flag for Combustion Detailed chemistry problems using Cantera. */
-  su2double Spark_Temperature; /*!< \bried Spark temperature used for ignition in detailed chemistry using Cantera. */
+  bool Chemical_Source_Jacobian;        /*!< \brief Flag for the diagonal chemical source Jacobian in the species equations. */
+  su2double Spark_Temperature; /*!< \brief Spark temperature used for ignition in detailed chemistry using Cantera. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -3411,6 +3412,14 @@ public:
   unsigned long GetInnerIter(void) const { return InnerIter; }
 
   /*!
+   * \brief Get the iteration counter that times a spark ignition.
+   * \return Outer iteration (multizone), time iteration (unsteady) or inner iteration.
+   */
+  unsigned long GetIgnitionIter() const {
+    return Multizone_Problem ? OuterIter : (Time_Domain ? TimeIter : InnerIter);
+  }
+
+  /*!
    * \brief Set the current physical time.
    * \param[in] val_t - Current physical time.
    */
@@ -4111,13 +4120,11 @@ public:
   /*!
    * \brief Returns the gas composition used in Cantera.
    */
-  string GetChemical_GasComposition(unsigned short val_index = 0) const { return GasCompositionNames[val_index]; }
-
-  /*!
-   * \brief Set the gas composition used in Cantera.
-   */
-  void SetChemical_GasComposition(unsigned short val_index, string gas_composition) const {
-    GasCompositionNames[val_index] = gas_composition;
+  string GetChemical_GasComposition(unsigned short val_index = 0) const {
+    if (val_index >= n_GasCompositionNames) {
+      SU2_MPI::Error("Index out of range for GAS_COMPOSITION_NAMES.", CURRENT_FUNCTION);
+    }
+    return GasCompositionNames[val_index];
   }
 
   /*!
@@ -4127,10 +4134,15 @@ public:
   bool GetCombustion(void) const { return Combustion; }
 
   /*!
+   * \brief Get whether the diagonal chemical sink Jacobian is added to the implicit species equations.
+   */
+  bool GetChemical_Source_Jacobian(void) const { return Chemical_Source_Jacobian; }
+
+  /*!
    * \brief Get High temperature applied during spark ignition.
    * \return Spark Temperature.
    */
-  const su2double GetSpark_Temperature(void) const {
+  su2double GetSpark_Temperature(void) const {
     return Spark_Temperature;
   }
 

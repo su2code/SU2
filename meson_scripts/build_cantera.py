@@ -96,6 +96,12 @@ def main():
         default="",
         help="Value of SU2's -march= target (cpu-arch option), kept in sync so Eigen template code Cantera and SU2 both instantiate is not ODR-mixed across incompatible vectorization ISAs",
     )
+    parser.add_argument(
+        "--jobs",
+        type=int,
+        default=4,
+        help="Number of parallel SCons jobs (0 uses all available cores)",
+    )
     args = parser.parse_args()
 
     if not os.path.exists(os.path.join(args.source, "SConstruct")):
@@ -129,20 +135,30 @@ def main():
         [scons, "build", "install", "prefix=" + args.prefix]
         + CANTERA_SCONS_ARGS
         + ["extra_inc_dirs=" + eigen_shim_dir]
-        + ["-j{}".format(multiprocessing.cpu_count())]
+        + ["-j{}".format(args.jobs if args.jobs > 0 else multiprocessing.cpu_count())]
     )
     if args.boost_inc_dir:
         scons_command.append("boost_inc_dir=" + args.boost_inc_dir)
     if args.cpu_arch:
         scons_command.append("cc_flags=-march=" + args.cpu_arch)
 
-    result = subprocess.run(scons_command, cwd=args.source)
+    # Cantera adds $CONDA_PREFIX paths to its flags, which would make the build depend on the shell.
+    scons_env = {key: value for key, value in os.environ.items() if key != "CONDA_PREFIX"}
+
+    result = subprocess.run(scons_command, cwd=args.source, env=scons_env)
     if result.returncode != 0:
         sys.exit(
             "Cantera build failed (see output above). If SCons could not find Boost headers, "
             "set -Dcantera-boost-inc-dir=<path-to-boost-headers> and reconfigure, "
             "or install Boost development headers (e.g. the 'libboost-dev' package)."
         )
+
+    # With system_fmt=n the installed headers include "cantera/ext/...", which SCons leaves
+    # in the source tree only; copy them next to the installed headers.
+    ext_src = os.path.join(args.source, "include", "cantera", "ext")
+    ext_dst = os.path.join(args.prefix, "include", "cantera", "ext")
+    if os.path.isdir(ext_src):
+        shutil.copytree(ext_src, ext_dst, dirs_exist_ok=True)
 
     # meson tracks this custom_target as always-stale, so re-running scons here is cheap
     # once Cantera itself is up to date; the stamp file just gives meson an output to track.

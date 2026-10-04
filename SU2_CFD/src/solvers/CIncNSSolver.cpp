@@ -57,6 +57,12 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
   if (config->GetCombustion()) flamelet_config_options = config->GetFlameletParsedOptions();
 
+  if ((config->GetKind_FluidModel() == FLUID_MIXTURE || config->GetKind_FluidModel() == FLUID_CANTERA) &&
+      config->GetEnergy_Equation()) {
+    EnthalpyDiffusion.resize(nPoint, config->GetnSpecies()) = su2double(0.0);
+    GradEnthalpyDiffusion.resize(nPoint, config->GetnSpecies()) = su2double(0.0);
+  }
+
   /*--- Set the initial Streamwise periodic pressure drop value. ---*/
 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
@@ -79,30 +85,29 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Setting temperature, enthalpy and thermophysical properties for ignition in reacting flows. ---*/
   if (energy && combustion) {
-    unsigned long spark_iter_start, spark_duration;
     bool ignition = false;
+    su2double spark_radius_squared = 0.0;
 
     /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
     if (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
-      auto spark_init = flamelet_config_options.spark_init;
-      spark_iter_start = ceil(spark_init[4]);
-      spark_duration = ceil(spark_init[5]);
-      unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+      const auto& spark_init = flamelet_config_options.spark_init;
+      const unsigned long spark_iter_start = ceil(spark_init[4]);
+      const unsigned long spark_duration = ceil(spark_init[5]);
+      const unsigned long iter = config->GetIgnitionIter();
       ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
+      spark_radius_squared = spark_init[3] * spark_init[3];
     }
 
     SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
     if (ignition) {
+      CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (auto i_point = 0u; i_point < nPoint; i_point++) {
-        /*--- Retrieve fluid model. ---*/
-        CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
         /*--- Apply ignition temperature within spark radius. ---*/
-        su2double dist_from_center = 0, spark_radius = flamelet_config_options.spark_init[3];
-        dist_from_center =
-            GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
-        if (dist_from_center < pow(spark_radius, 2)) {
+        const su2double dist_from_center = GeometryToolbox::SquaredDistance(
+            nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
+        if (dist_from_center < spark_radius_squared) {
           /*--- Retrieve scalars solution. ---*/
           su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(i_point);
           /*--- Set high temperature for ignition. ---*/
@@ -126,6 +131,8 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+
+  if (EnthalpyDiffusion.rows() > 0) ComputeEnthalpyDiffusionTerms(solver_container, config);
 
   /*--- Compute gradient for MUSCL reconstruction ---*/
 
@@ -360,19 +367,6 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
   const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
   const su2double* Coord_j = geometry->nodes->GetCoord(jPoint);
 
-  /*--- Obtain fluid model for computing the enthalpy diffusion terms. ---*/
-
-  CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
-
-  /*--- Helper function that retrieves enthalpy diffusion terms. ---*/
-  auto GetEnthalpyDiffusionTerms = [&](unsigned long Point, const su2double* Species, su2double* EnthalpyDiffusion,
-                                       su2double* GradEnthalpyDiffusion) {
-    FluidModel->SetTDState_T(nodes->GetPrimitive(Point)[prim_idx.Temperature()], Species);
-    FluidModel->SetEddyViscosity(nodes->GetPrimitive(Point)[prim_idx.EddyViscosity()]);
-    FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion);
-    if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion);
-  };
-
   /*--- set maximum static array ---*/
 
   static constexpr size_t MAXNVAR_SPECIES = 20UL;
@@ -389,14 +383,12 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
   numerics->ComputeProjectedGradient(nDim, n_species, Normal, Coord_i, Coord_j, Species_Grad_i, Species_Grad_j, true,
                                      Species_i, Species_j, ProjGradScalarVarNoCorr, Proj_Mean_GradScalarVar);
 
-  /*--- Get enthalpy diffusion terms and its gradient(for implicit) for each species at iPoint and jPoint. ---*/
+  /*--- Enthalpy diffusion terms and their gradient (for implicit) were stored per point in Preprocessing. ---*/
 
-  su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
-  su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
-  su2double EnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
-  su2double GradEnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
-  GetEnthalpyDiffusionTerms(iPoint, Species_i, EnthalpyDiffusion_i, GradEnthalpyDiffusion_i);
-  GetEnthalpyDiffusionTerms(jPoint, Species_j, EnthalpyDiffusion_j, GradEnthalpyDiffusion_j);
+  const su2double* EnthalpyDiffusion_i = EnthalpyDiffusion[iPoint];
+  const su2double* EnthalpyDiffusion_j = EnthalpyDiffusion[jPoint];
+  const su2double* GradEnthalpyDiffusion_i = GradEnthalpyDiffusion[iPoint];
+  const su2double* GradEnthalpyDiffusion_j = GradEnthalpyDiffusion[jPoint];
 
   /*--- Compute Enthalpy diffusion flux and its jacobian (for implicit iterations) ---*/
   su2double flux_enthalpy_diffusion = 0.0;
@@ -413,6 +405,23 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
 
   numerics->SetHeatFluxDiffusion(flux_enthalpy_diffusion);
   if (implicit) numerics->SetJacHeatFluxDiffusion(jac_flux_enthalpy_diffusion);
+}
+
+void CIncNSSolver::ComputeEnthalpyDiffusionTerms(CSolver** solver_container, const CConfig* config) {
+  SU2_ZONE_SCOPED
+
+  CFluidModel* fluid_model = GetFluidModel();
+  CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    fluid_model->SetTDState_T(nodes->GetPrimitive(iPoint)[prim_idx.Temperature()], speciesNodes->GetSolution(iPoint));
+    fluid_model->SetEddyViscosity(nodes->GetPrimitive(iPoint)[prim_idx.EddyViscosity()]);
+    fluid_model->GetEnthalpyDiffusivity(EnthalpyDiffusion[iPoint]);
+    if (implicit) fluid_model->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion[iPoint]);
+  }
+  END_SU2_OMP_FOR
 }
 
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {

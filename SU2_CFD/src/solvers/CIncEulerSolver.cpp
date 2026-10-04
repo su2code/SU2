@@ -359,8 +359,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     case FLUID_CANTERA:
 
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
-      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidCantera(Pressure_Thermodynamic, config);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
@@ -888,15 +886,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     case FLUID_CANTERA:
       ModelTable << "CANTERA";
-      Unit << "N.m/kg.K";
-      NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp() / config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();
-      Unit.str("");
-      Unit << "g/mol";
-      NonDimTable << "Molecular weight" << config->GetMolecular_Weight() << 1.0 << Unit.str() << config->GetMolecular_Weight();
-      Unit.str("");
-      Unit << "N.m/kg.K";
-      NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
-      Unit.str("");
+      if (viscous) {
+        Unit << "N.m/kg.K";
+        NonDimTable << "Spec. Heat (Cp)" << config->GetSpecificHeatCp_FreeStream() << 1.0 << Unit.str() << config->GetSpecificHeatCp_FreeStream();
+        Unit.str("");
+      }
       Unit << "Pa";
       NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();
       Unit.str("");
@@ -1581,10 +1575,14 @@ void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, un
   SU2_ZONE_SCOPED
   const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
   const su2double enthalpy = primitive[prim_idx.Enthalpy()];
+  fluidModel->SetTemperatureGuess(primitive[prim_idx.Temperature()]);
   fluidModel->SetTDState_h(enthalpy, scalar);
 
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
   primitive[prim_idx.Density()] = fluidModel->GetDensity();
+
+  /*--- A failed state evaluation is flagged as non-physical so that the caller falls back to the cell values. ---*/
+  if (fluidModel->GetStateFailed()) primitive[prim_idx.Temperature()] = -1.0;
 }
 
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,

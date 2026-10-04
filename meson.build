@@ -389,6 +389,7 @@ if get_option('enable-cantera')
                            '--prefix', cantera_prefix,
                            '--stamp', '@OUTPUT@',
                            '--eigen-inc-dir', join_paths(meson.current_source_dir(), 'externals', 'eigen')]
+  cantera_build_command += ['--jobs', get_option('cantera-build-jobs').to_string()]
   if get_option('cantera-boost-inc-dir') != ''
     cantera_build_command += ['--boost-inc-dir', get_option('cantera-boost-inc-dir')]
   endif

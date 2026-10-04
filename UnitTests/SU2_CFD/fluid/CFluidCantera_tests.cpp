@@ -92,4 +92,76 @@ TEST_CASE("Fluid_Cantera_Combustion", "[Reacting_flow]") {
   CHECK(sourceTerm_H2 == Approx(-0.13633797171426));
   CHECK(sourceTerm_O2 == Approx(-2.16321066087493));
 }
+TEST_CASE("Fluid_Cantera_LargeMechanism", "[Multicomponent_flow]") {
+  /*--- Three transported species in a mechanism with more species than the transported set. ---*/
+
+  SU2_COMPONENT val_software = SU2_COMPONENT::SU2_CFD;
+  CConfig config("multicomponent_cantera_gri30.cfg", val_software, true);
+  CFluidCantera fluid(config.GetPressure_Thermodynamic(), &config);
+
+  const su2double* scalar = config.GetSpecies_Init();
+  fluid.SetTDState_T(300.0, scalar);
+  const su2double density = fluid.GetDensity();
+  CHECK(density > 1.0);
+  CHECK(density < 1.4);
+  CHECK(fluid.GetMassDiffusivity(0) > 0.0);
+  CHECK(fluid.GetLaminarViscosity() > 0.0);
+
+  /*--- Temperature recovered from the enthalpy of a given state. ---*/
+
+  fluid.SetTDState_T(1500.0, scalar);
+  const su2double enthalpy = fluid.GetEnthalpy();
+  fluid.SetTDState_h(enthalpy, scalar);
+  CHECK(fluid.GetStateFailed() == false);
+  CHECK(fluid.GetTemperature() == Approx(1500.0).margin(1e-4));
+
+  /*--- The result does not depend on the temperature guess, which is used only once. ---*/
+
+  fluid.SetTemperatureGuess(1490.0);
+  fluid.SetTDState_h(enthalpy, scalar);
+  CHECK(fluid.GetTemperature() == Approx(1500.0).margin(1e-4));
+  fluid.SetTemperatureGuess(5.0);
+  fluid.SetTDState_h(enthalpy, scalar);
+  CHECK(fluid.GetStateFailed() == false);
+  CHECK(fluid.GetTemperature() == Approx(1500.0).margin(1e-4));
+
+  /*--- An enthalpy outside the range of the thermodynamic data is flagged. ---*/
+
+  fluid.SetTDState_h(1e12, scalar);
+  CHECK(fluid.GetStateFailed() == true);
+}
+TEST_CASE("Fluid_Cantera_SourceJacobian", "[Reacting_flow]") {
+  /*--- Diagonal chemical source Jacobian of the one-step methane mechanism. ---*/
+
+  SU2_COMPONENT val_software = SU2_COMPONENT::SU2_CFD;
+  CConfig config("one_step_ch4.cfg", val_software, true);
+  CFluidCantera fluid(config.GetPressure_Thermodynamic(), &config);
+
+  const su2double temperature = 1800.0;
+  su2double scalar[4] = {0.2226, 0.05, 0.0446, 0.05};
+  fluid.SetTDState_T(temperature, scalar);
+  fluid.ComputeChemicalSourceTerm();
+
+  const su2double source_O2 = fluid.GetChemicalSourceTerm(0);
+  const su2double source_CH4 = fluid.GetChemicalSourceTerm(2);
+  CHECK(source_CH4 < 0.0);
+
+  /*--- Reactants are consumed, so their Jacobian is negative; products have no sink. ---*/
+
+  CHECK(fluid.GetChemicalSourceJacobian(0) < 0.0);
+  CHECK(fluid.GetChemicalSourceJacobian(1) == 0.0);
+  CHECK(fluid.GetChemicalSourceJacobian(2) < 0.0);
+  CHECK(fluid.GetChemicalSourceJacobian(3) == 0.0);
+
+  /*--- The rate is first order in CH4. The finite difference also contains the density change from moving N2
+   *    into CH4, which the Jacobian (at fixed density) does not, hence the tolerance. ---*/
+
+  const su2double delta = 1e-6;
+  scalar[2] += delta;
+  fluid.SetTDState_T(temperature, scalar);
+  fluid.ComputeChemicalSourceTerm();
+  const su2double slope_CH4 = (fluid.GetChemicalSourceTerm(2) - source_CH4) / delta;
+  CHECK(fluid.GetChemicalSourceJacobian(2) == Approx(slope_CH4).epsilon(0.1));
+  CHECK(source_O2 < 0.0);
+}
 #endif

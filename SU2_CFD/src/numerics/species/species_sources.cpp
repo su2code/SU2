@@ -138,7 +138,12 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 template <class T>
 CSourceCombustion_Species<T>::CSourceCombustion_Species(unsigned short val_nDim, unsigned short val_nVar,
                                                         const CConfig* config)
-    : CSourceBase_Species(val_nDim, val_nVar, config) {}
+    : CSourceBase_Species(val_nDim, val_nVar, config),
+      chemical_jacobian(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT &&
+                        config->GetChemical_Source_Jacobian()) {
+  Chemical_Source_Jacobian_i = nullptr;
+  Chemical_Source_Jacobian_j = nullptr;
+}
 
 template <class T>
 CNumerics::ResidualType<> CSourceCombustion_Species<T>::ComputeResidual(const CConfig* config) {
@@ -159,6 +164,11 @@ CNumerics::ResidualType<> CSourceCombustion_Species<T>::ComputeResidual(const CC
     residual[iVar] += Volume * Chemical_Source_Term_i[iVar];
   }
 
+  if (chemical_jacobian && Chemical_Source_Jacobian_i != nullptr) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      jacobian[iVar][iVar] = Volume * Chemical_Source_Jacobian_i[iVar];
+    }
+  }
 
   AD::SetPreaccOut(residual, nVar);
   AD::EndPreacc();

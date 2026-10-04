@@ -1287,14 +1287,16 @@ void CConfig::SetConfig_Options() {
   addStringOption("TRANSPORT_MODEL", TransportModel, string("mixture-averaged"));
   /*!\brief CHEMICAL_MECHANISM_FILE \n DESCRIPTION: Chemical reaction mechanism \n OPTIONS: see Cantera homepage \n DEFAULT: h2o2.yaml \ingroup Config*/
   addStringOption("CHEMICAL_MECHANISM_FILE", ChemicalMechanismFile, string("h2o2.yaml"));
-  /*!\brief PHASE_NAME \n DESCRIPTION: name of the phase in the chemical mechanism file \n OPTIONS: see Cantera homepage \n DEFAULT: gri30 \ingroup Config*/
+  /*!\brief PHASE_NAME \n DESCRIPTION: name of the phase in the chemical mechanism file \n OPTIONS: see Cantera homepage \n DEFAULT: ohmech \ingroup Config*/
   addStringOption("PHASE_NAME", PhaseName, string("ohmech"));
   /*!\brief GAS_COMPOSITION_NAMES \n DESCRIPTION: Gas composition names \n OPTIONS: see Cantera homepage \n DEFAULT: \ingroup Config*/
   addStringListOption("GAS_COMPOSITION_NAMES", n_GasCompositionNames, GasCompositionNames);
-  /*\brief COMBUSTION \n DESCRIPTION: Combustion Detailed chemistry using Cantera \n DEFAULT: false \ingroup Config*/
+  /*!\brief COMBUSTION \n DESCRIPTION: Combustion Detailed chemistry using Cantera \n DEFAULT: false \ingroup Config*/
   addBoolOption("COMBUSTION", Combustion, false);
   /*!\brief SPARK_TEMPERATURE \n DESCRIPTION: Spark temperature used for ignition in detailed chemistry using Cantera \n DEFAULT: 1000 K \ingroup Config*/
   addDoubleOption("SPARK_TEMPERATURE", Spark_Temperature, 1000.0);
+  /*!\brief CHEMICAL_SOURCE_JACOBIAN \n DESCRIPTION: Add the diagonal chemical sink Jacobian to the implicit species equations \n DEFAULT: true \ingroup Config*/
+  addBoolOption("CHEMICAL_SOURCE_JACOBIAN", Chemical_Source_Jacobian, true);
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
@@ -4427,7 +4429,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     if ((Kind_FluidModel != FLUID_CANTERA) && (Combustion == true)) {
       SU2_MPI::Error(
-          "The use of COMBUSTION=YES requires the use of FLUID_MIXTURE=FLUID_CANTERA,\n"
+          "The use of COMBUSTION=YES requires the use of FLUID_MODEL=FLUID_CANTERA,\n"
           "detailed chemistry cannot be performed with other fluid models",
           CURRENT_FUNCTION);
     }
@@ -4465,7 +4467,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
       if (Ref_Inc_NonDim != DIMENSIONAL) {
         SU2_MPI::Error(
-            "The use of FLUID_CANTERA requiere the option INC_NONDIM= DIMENSIONAL, the nondimensionalization is "
+            "The use of FLUID_CANTERA requires the option INC_NONDIM= DIMENSIONAL, the nondimensionalization is "
             "currently unavailable.",
             CURRENT_FUNCTION);
       }

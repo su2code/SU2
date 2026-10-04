@@ -204,9 +204,20 @@ class CFluidModel {
   inline virtual su2double GetChemicalSourceTerm(int iVar) { return 0.0; }
 
   /*!
+   * \brief Get the derivative of the chemical source term of a species with respect to its own mass fraction.
+   * \param[in] iVar - index of species.
+   */
+  inline virtual su2double GetChemicalSourceJacobian(int iVar) { return 0.0; }
+
+  /*!
    * \brief Get Heat release due to combustion.
    */
   inline virtual su2double GetHeatRelease() { return 0.0; }
+
+  /*!
+   * \brief Whether the last state evaluation failed and the state must be treated as non-physical.
+   */
+  inline virtual bool GetStateFailed() const { return false; }
 
   /*!
    * \brief Get the enthalpy diffusivity terms for all species being solved.
@@ -391,6 +402,12 @@ class CFluidModel {
    * \param[in] val_scalars - Scalar mass fractions.
    */
   virtual void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) {}
+
+  /*!
+   * \brief Virtual member. Initial temperature for the next iterative SetTDState_h call.
+   * \param[in] val_temperature - Temperature guess, e.g. the previous value at the point.
+   */
+  virtual void SetTemperatureGuess(su2double val_temperature) {}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

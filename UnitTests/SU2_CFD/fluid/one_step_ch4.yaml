@@ -1,0 +1,82 @@
+description: One-step methane mechanism CH4 + 2 O2 => CO2 + 2 H2O used by the Cantera
+  unit tests.
+units: {length: cm, quantity: mol, activation-energy: cal/mol}
+phases:
+- name: ch4_one_step
+  thermo: ideal-gas
+  elements: [O, H, C, N]
+  species: [O2, H2O, CH4, CO2, N2]
+  kinetics: gas
+  reactions: all
+  transport: mixture-averaged
+  state: {T: 300.0, P: 101325.0}
+species:
+- name: O2
+  composition: {O: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3500.0]
+    data:
+    - [3.78245636, -0.00299673416, 9.84730201e-06, -9.68129509e-09, 3.24372837e-12,
+      -1063.94356, 3.65767573]
+    - [3.28253784, 0.00148308754, -7.57966669e-07, 2.09470555e-10, -2.16717794e-14,
+      -1088.45772, 5.45323129]
+  transport: {model: gas, geometry: linear, diameter: 3.46, well-depth: 107.4, polarizability: 1.6,
+    rotational-relaxation: 3.8}
+  note: TPIS89
+- name: H2O
+  composition: {H: 2, O: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3500.0]
+    data:
+    - [4.19864056, -0.0020364341, 6.52040211e-06, -5.48797062e-09, 1.77197817e-12,
+      -30293.7267, -0.849032208]
+    - [3.03399249, 0.00217691804, -1.64072518e-07, -9.7041987e-11, 1.68200992e-14,
+      -30004.2971, 4.9667701]
+  transport: {model: gas, geometry: nonlinear, diameter: 2.6, well-depth: 572.4, dipole: 1.84,
+    rotational-relaxation: 4.0}
+  note: L 8/89
+- name: CH4
+  composition: {C: 1, H: 4}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3500.0]
+    data:
+    - [5.14987613, -0.0136709788, 4.91800599e-05, -4.84743026e-08, 1.66693956e-11,
+      -10246.6476, -4.64130376]
+    - [0.074851495, 0.0133909467, -5.73285809e-06, 1.22292535e-09, -1.0181523e-13,
+      -9468.34459, 18.437318]
+  transport: {model: gas, geometry: nonlinear, diameter: 3.75, well-depth: 141.4,
+    polarizability: 2.6, rotational-relaxation: 13.0}
+  note: L 8/88
+- name: CO2
+  composition: {C: 1, O: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 3500.0]
+    data:
+    - [2.35677352, 0.00898459677, -7.12356269e-06, 2.45919022e-09, -1.43699548e-13,
+      -48371.9697, 9.90105222]
+    - [3.85746029, 0.00441437026, -2.21481404e-06, 5.23490188e-10, -4.72084164e-14,
+      -48759.166, 2.27163806]
+  transport: {model: gas, geometry: linear, diameter: 3.76, well-depth: 244.0, polarizability: 2.65,
+    rotational-relaxation: 2.1}
+  note: L 7/88
+- name: N2
+  composition: {N: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [3.298677, 0.0014082404, -3.963222e-06, 5.641515e-09, -2.444854e-12, -1020.8999,
+      3.950372]
+    - [2.92664, 0.0014879768, -5.68476e-07, 1.0097038e-10, -6.753351e-15, -922.7977,
+      5.980528]
+  transport: {model: gas, geometry: linear, diameter: 3.62, well-depth: 97.53, polarizability: 1.76,
+    rotational-relaxation: 4.0}
+  note: '121286'
+reactions:
+- equation: ' CH4 + 2 O2 => CO2 + 2 H2O '
+  rate-constant: {A: 11000000000.0, b: 0.0, Ea: 20000}
+  orders: {CH4: 1.0, O2: 0.5}

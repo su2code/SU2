@@ -37,6 +37,7 @@ class CSpeciesVariable : public CScalarVariable {
  protected:
   MatrixType Diffusivity; /*!< \brief Matrix (nPoint,nVar) of mass diffusivities for scalar transport. */
   MatrixType SpeciesSourceTerm; /*!< \brief Matrix (nPoint, nVar) of chemical source terms for species transport*/
+  MatrixType SpeciesSourceJacobian; /*!< \brief Matrix (nPoint, nVar) of the diagonal chemical source Jacobian. */
   VectorType HeatRelease; /*!< \brief Vector of heat release due to combustion for species transport*/
 
  public:
@@ -100,6 +101,21 @@ class CSpeciesVariable : public CScalarVariable {
    * \return Pointer to the chemical source term
    */
   inline const su2double* GetChemicalSourceTerm(unsigned long iPoint) const { return SpeciesSourceTerm[iPoint]; }
+
+  /*!
+   * \brief Set the derivative of the chemical source term of a species with respect to its own mass fraction.
+   * \param[in] val_jacobian - the derivative.
+   * \param[in] val_ivar - species index.
+   */
+  inline void SetChemicalSourceJacobian(unsigned long iPoint, su2double val_jacobian, unsigned short val_ivar) {
+    SpeciesSourceJacobian(iPoint, val_ivar) = val_jacobian;
+  }
+
+  /*!
+   * \brief Get the diagonal chemical source Jacobian of a point.
+   * \return Pointer to the derivatives of the species source terms with respect to their own mass fractions.
+   */
+  inline const su2double* GetChemicalSourceJacobian(unsigned long iPoint) const { return SpeciesSourceJacobian[iPoint]; }
 
   /*!
    * \brief Get heat release due to combustion

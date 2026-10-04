@@ -34,6 +34,7 @@ CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long n
   Diffusivity.resize(nPoint, nVar + 1) = su2double(0.0);
   if (config->GetCombustion()) {
     SpeciesSourceTerm.resize(nPoint, nVar + 1) = su2double(0.0);
+    SpeciesSourceJacobian.resize(nPoint, nVar + 1) = su2double(0.0);
     HeatRelease.resize(nPoint) = su2double(0.0);
   }
 

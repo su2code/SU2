@@ -39,6 +39,14 @@
 #include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 
+namespace {
+/*--- Species label used in output field names: the Cantera species name, otherwise the index. ---*/
+std::string SpeciesOutputLabel(const CConfig* config, unsigned short iVar) {
+  return (config->GetKind_FluidModel() == FLUID_CANTERA) ? config->GetChemical_GasComposition(iVar)
+                                                         : std::to_string(iVar);
+}
+}  // namespace
+
 
 CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_output) :
   CFVMOutput(config, nDim, fem_output),
@@ -1546,7 +1554,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
     switch (config->GetKind_Species_Model()) {
       case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-          AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+          AddVolumeOutput("LIMITER_SPECIES_" + SpeciesOutputLabel(config, iVar), "Limiter_Species_" + SpeciesOutputLabel(config, iVar), "LIMITER", "Limiter value of the transported species " + SpeciesOutputLabel(config, iVar));
       break;
       case SPECIES_MODEL::FLAMELET: {
         const auto& flamelet_config_options = config->GetFlameletParsedOptions();
@@ -1617,7 +1625,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       if (config->GetPyCustomSource()) {
         for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
-          AddVolumeOutput("SPECIES_UDS_" + std::to_string(iVar), "Species_UDS_" + std::to_string(iVar), "SOURCE", "Species User Defined Source " + std::to_string(iVar));
+          AddVolumeOutput("SPECIES_UDS_" + SpeciesOutputLabel(config, iVar), "Species_UDS_" + SpeciesOutputLabel(config, iVar), "SOURCE", "Species User Defined Source " + SpeciesOutputLabel(config, iVar));
         }
       }
     break;
@@ -1807,6 +1815,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
           if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
             SetVolumeOutputValue("LIMITER_SPECIES_" + config->GetChemical_GasComposition(iVar), iPoint,
                                  Node_Species->GetLimiter(iPoint, iVar));
+          if (config->GetPyCustomSource())
+            SetVolumeOutputValue("SPECIES_UDS_" + config->GetChemical_GasComposition(iVar), iPoint,
+                                 Node_Species->GetUserDefinedSource()(iPoint, iVar));
         } else {
           SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
           SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
