@@ -7394,67 +7394,69 @@ vector<unsigned long> CPhysicalGeometry::FetchFromOwners(const vector<unsigned l
   return result;
 }
 
-vector<unsigned long> CPhysicalGeometry::LinkAnisotropicLines(const vector<idx_t>& adjwgt) const {
-  /*--- An edge at least this many times shorter than its element joins its points into a line. ---*/
+vector<unsigned long> CPhysicalGeometry::LinkAnisotropicLines(const vector<idx_t>& adjwgt,
+                                                              vector<char>& lineEdge) const {
+  /*--- An edge at least this many times shorter than its element can join its points into a line. ---*/
   constexpr idx_t LINE_WEIGHT = 4;
 
   const unsigned long firstIndex = CLinearPartitioner(Global_nPointDomain, 0).GetFirstIndexOnRank(rank);
+  const vector<unsigned long> neighbor(adjacency.begin(), adjacency.end());
 
-  /*--- Edges are ordered by weight, then by their end points, so every point picks the same edge its
-   *    neighbour would and the links form a forest whose only cycles are mutual pairs. ---*/
-  vector<unsigned long> link(nPoint);
+  vector<unsigned long> strongest(nPoint, 0);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+    for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; k++)
+      strongest[iPoint] = max(strongest[iPoint], static_cast<unsigned long>(adjwgt[k]));
+  const auto neighborStrongest = FetchFromOwners(neighbor, strongest);
+
+  /*--- An edge joins a line if it is the strongest at one end, or nearly so at both. Equal or
+   *    slowly varying spacing then keeps a line whole instead of splitting it where weights tie. ---*/
+  lineEdge.assign(adjacency.size(), 0);
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    const unsigned long iGlobal = firstIndex + iPoint;
-    link[iPoint] = iGlobal;
-    idx_t bestWeight = LINE_WEIGHT - 1;
-    unsigned long bestLo = 0, bestHi = 0;
     for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; k++) {
-      const auto jGlobal = static_cast<unsigned long>(adjacency[k]);
-      const auto lo = min(iGlobal, jGlobal), hi = max(iGlobal, jGlobal);
-      const bool better = (adjwgt[k] > bestWeight) ||
-                          ((adjwgt[k] == bestWeight) && ((lo < bestLo) || ((lo == bestLo) && (hi < bestHi))));
-      if (better) {
-        bestWeight = adjwgt[k];
-        bestLo = lo;
-        bestHi = hi;
-        link[iPoint] = jGlobal;
+      const auto w = static_cast<unsigned long>(adjwgt[k]);
+      if (w < static_cast<unsigned long>(LINE_WEIGHT)) continue;
+      const bool strongestAtEnd = (w == strongest[iPoint]) || (w == neighborStrongest[k]);
+      const bool strongAtBoth = (2 * w >= strongest[iPoint]) && (2 * w >= neighborStrongest[k]);
+      lineEdge[k] = strongestAtEnd || strongAtBoth;
+    }
+  }
+
+  /*--- Each line is named by its lowest global index, found by propagating labels along the line
+   *    edges and pointer jumping. ---*/
+  vector<unsigned long> root(nPoint);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) root[iPoint] = firstIndex + iPoint;
+  for (;;) {
+    unsigned long changed = 0, changedGlobal = 0;
+    const auto neighborRoot = FetchFromOwners(neighbor, root);
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; k++) {
+        if (lineEdge[k] && (neighborRoot[k] < root[iPoint])) {
+          root[iPoint] = neighborRoot[k];
+          changed++;
+        }
       }
     }
-  }
-  return link;
-}
-
-unsigned long CPhysicalGeometry::KeepLinesTogether(vector<unsigned long> link, vector<idx_t>& part,
-                                                   unsigned long& longestLine) const {
-  CLinearPartitioner pointPartitioner(Global_nPointDomain, 0);
-  const unsigned long firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
-
-  /*--- The lower point of a mutual pair becomes the root of its line. ---*/
-  {
-    const auto linkOfLink = FetchFromOwners(link, link);
+    const auto rootOfRoot = FetchFromOwners(root, root);
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-      const unsigned long iGlobal = firstIndex + iPoint;
-      if ((linkOfLink[iPoint] == iGlobal) && (iGlobal < link[iPoint])) link[iPoint] = iGlobal;
-    }
-  }
-
-  /*--- Pointer jumping links every point to the root of its line. ---*/
-  for (;;) {
-    const auto linkOfLink = FetchFromOwners(link, link);
-    unsigned long changed = 0, changedGlobal = 0;
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-      if (linkOfLink[iPoint] != link[iPoint]) {
-        link[iPoint] = linkOfLink[iPoint];
+      if (rootOfRoot[iPoint] < root[iPoint]) {
+        root[iPoint] = rootOfRoot[iPoint];
         changed++;
       }
     }
     SU2_MPI::Allreduce(&changed, &changedGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     if (changedGlobal == 0) break;
   }
+  return root;
+}
+
+unsigned long CPhysicalGeometry::KeepLinesTogether(const vector<unsigned long>& root, vector<idx_t>& part,
+                                                   unsigned long& longestLine) const {
+  CLinearPartitioner pointPartitioner(Global_nPointDomain, 0);
+  const unsigned long firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
 
   /*--- The owner of each root counts in which partitions its line lies. ---*/
   vector<int> nSend(size, 0), nRecv(size), sendDisp(size + 1, 0), recvDisp(size + 1, 0);
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) nSend[pointPartitioner.GetRankContainingIndex(link[iPoint])] += 2;
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) nSend[pointPartitioner.GetRankContainingIndex(root[iPoint])] += 2;
   SU2_MPI::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, SU2_MPI::GetComm());
   for (int iRank = 0; iRank < size; iRank++) {
     sendDisp[iRank + 1] = sendDisp[iRank] + nSend[iRank];
@@ -7463,8 +7465,8 @@ unsigned long CPhysicalGeometry::KeepLinesTogether(vector<unsigned long> link, v
   vector<unsigned long> sendBuf(sendDisp[size]), recvBuf(recvDisp[size]);
   vector<int> next(sendDisp.begin(), sendDisp.end() - 1);
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    auto& slot = next[pointPartitioner.GetRankContainingIndex(link[iPoint])];
-    sendBuf[slot++] = link[iPoint];
+    auto& slot = next[pointPartitioner.GetRankContainingIndex(root[iPoint])];
+    sendBuf[slot++] = root[iPoint];
     sendBuf[slot++] = static_cast<unsigned long>(part[iPoint]);
   }
   SU2_MPI::Alltoallv(sendBuf.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvBuf.data(), nRecv.data(),
@@ -7495,7 +7497,7 @@ unsigned long CPhysicalGeometry::KeepLinesTogether(vector<unsigned long> link, v
   }
 
   /*--- Every point takes the partition of its line, unless that would leave a rank without points. ---*/
-  const auto chosen = FetchFromOwners(link, decision);
+  const auto chosen = FetchFromOwners(root, decision);
   vector<unsigned long> count(size, 0), countGlobal(size);
   for (const auto iPart : chosen) count[iPart]++;
   SU2_MPI::Allreduce(count.data(), countGlobal.data(), size, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
@@ -7675,20 +7677,14 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
 
   const bool anisotropic = config->GetParMETIS_AnisotropyWeight();
   vector<idx_t> adjwgt;
-  vector<unsigned long> lineLink;
+  vector<unsigned long> lineRoot;
   if (anisotropic) {
     constexpr long maxWeight = (sizeof(idx_t) >= 8) ? 1000000 : 1000;
     adjwgt = ComputeAnisotropyEdgeWeights(maxWeight);
-    lineLink = LinkAnisotropicLines(adjwgt);
-
-    const vector<unsigned long> neighbor(adjacency.begin(), adjacency.end());
-    const auto neighborLink = FetchFromOwners(neighbor, lineLink);
-    const unsigned long firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; k++) {
-        if ((lineLink[iPoint] == neighbor[k]) || (neighborLink[k] == firstIndex + iPoint)) adjwgt[k] = maxWeight;
-      }
-    }
+    vector<char> lineEdge;
+    lineRoot = LinkAnisotropicLines(adjwgt, lineEdge);
+    for (auto k = 0ul; k < adjwgt.size(); k++)
+      if (lineEdge[k]) adjwgt[k] = maxWeight;
     wgtflag = 3;
   }
 
@@ -7714,7 +7710,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
 
   if (anisotropic) {
     unsigned long longestLine = 0;
-    const auto moved = KeepLinesTogether(lineLink, part, longestLine);
+    const auto moved = KeepLinesTogether(lineRoot, part, longestLine);
     /*--- The imbalance is measured in the vertex weights ParMETIS balances. ---*/
     vector<unsigned long> load(size, 0), loadGlobal(size);
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) load[part[iPoint]] += vwgt[iPoint];

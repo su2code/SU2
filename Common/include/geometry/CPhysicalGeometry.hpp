@@ -355,20 +355,22 @@ class CPhysicalGeometry final : public CGeometry {
                                         const vector<unsigned long>& localValue) const;
 
   /*!
-   * \brief Links every point to the neighbour across its strongest anisotropic edge, chains of links are lines.
+   * \brief Joins points into lines along the strong anisotropic edges and names each line by its lowest global index.
    * \param[in] adjwgt - Anisotropy weight of every entry of the adjacency array.
-   * \return Global index of the linked neighbour, or of the point itself when no edge is strong enough.
+   * \param[out] lineEdge - Whether each entry of the adjacency array is a line edge.
+   * \return Global index of the root of the line of every local point, the point itself when it is on no line.
    */
-  vector<unsigned long> LinkAnisotropicLines(const vector<idx_t>& adjwgt) const;
+  vector<unsigned long> LinkAnisotropicLines(const vector<idx_t>& adjwgt, vector<char>& lineEdge) const;
 
   /*!
    * \brief Moves each line to the partition that holds most of its points.
-   * \param[in] link - Line links from LinkAnisotropicLines.
+   * \param[in] root - Line roots from LinkAnisotropicLines.
    * \param[in,out] part - Partition of every local point.
    * \param[out] longestLine - Number of points of the longest line.
    * \return Number of points that changed partition, summed over all ranks.
    */
-  unsigned long KeepLinesTogether(vector<unsigned long> link, vector<idx_t>& part, unsigned long& longestLine) const;
+  unsigned long KeepLinesTogether(const vector<unsigned long>& root, vector<idx_t>& part,
+                                  unsigned long& longestLine) const;
 #endif
 
   /*!

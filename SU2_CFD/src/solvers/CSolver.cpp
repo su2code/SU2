@@ -1915,8 +1915,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      *    not depend on how many ranks split the preconditioner. The finest grid decides for all levels. ---*/
 
     if (config->GetCFL_AdaptResidual()) {
-      constexpr size_t trendWindow = 5, jumpWindow = 3;
-      constexpr passivedouble growBelow = 0.01, shrinkAbove = 0.03, jumpAbove = 0.75;
+      constexpr size_t trendWindow = 5, jumpWindow = 3, spikeWindow = 5, frozenWindow = 30;
+      constexpr passivedouble growBelow = 0.01, shrinkAbove = 0.03, jumpAbove = 0.75, spikeAbove = 1.0;
+      constexpr passivedouble frozenSpread = 0.01, frozenCut = 0.6;
       constexpr passivedouble linearBrake = 0.5, linearFailure = 0.8;
       constexpr unsigned long stagnationIters = 150, quietIters = 20;
 
@@ -1937,14 +1938,41 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         for (auto iVar = 0u; iVar < solverFlow->GetnVar(); iVar++)
           logRes[iVar] = log10(SU2_TYPE::GetValue(solverFlow->GetRes_RMS(iVar)));
         ResJump_History.push_back(logRes);
-        if (ResJump_History.size() > jumpWindow + 1) ResJump_History.erase(ResJump_History.begin());
+        if (ResJump_History.size() > spikeWindow + 1) ResJump_History.erase(ResJump_History.begin());
         bool jump = false;
         if (ResJump_History.size() > jumpWindow) {
+          const auto& past = ResJump_History[ResJump_History.size() - 1 - jumpWindow];
           vector<passivedouble> rise(logRes.size());
-          for (auto iVar = 0u; iVar < logRes.size(); iVar++) rise[iVar] = logRes[iVar] - ResJump_History.front()[iVar];
+          for (auto iVar = 0u; iVar < logRes.size(); iVar++) rise[iVar] = logRes[iVar] - past[iVar];
           sort(rise.begin(), rise.end());
           const auto n = rise.size();
           jump = (0.5 * (rise[(n - 1) / 2] + rise[n / 2]) > jumpAbove);
+        }
+        /*--- A spike in a single equation, such as the energy at a stagnation corner, is the first sign of
+         *    a CFL that is too high even when the other residuals do not move. ---*/
+        if (ResJump_History.size() > spikeWindow) {
+          for (auto iVar = 0u; iVar < logRes.size(); iVar++)
+            jump = jump || (logRes[iVar] - ResJump_History.front()[iVar] > spikeAbove);
+        }
+
+        /*--- Flow residuals that stop moving at a high CFL are stuck, not converging: the turbulence
+         *    residual may still fall, so it is left out of this test. ---*/
+        passivedouble flowMean = 0.0;
+        for (const auto value : logRes) flowMean += value / logRes.size();
+        ResFlow_History.push_back(flowMean);
+        if (ResFlow_History.size() > frozenWindow + 1) ResFlow_History.erase(ResFlow_History.begin());
+        const bool frozen = (ResFlow_History.size() > frozenWindow) && (iter >= startingIter + frozenWindow) &&
+                            (*max_element(ResFlow_History.begin(), ResFlow_History.end()) -
+                                 *min_element(ResFlow_History.begin(), ResFlow_History.end()) <
+                             frozenSpread) &&
+                            (iter > CFL_LastEvent + frozenWindow) && (iter > CFL_LastFrozen + frozenWindow);
+        if (frozen) {
+          CFL_Cap = frozenCut * ((CFL_Cap > 0.0) ? min(CFL_Cap, avgCFL) : avgCFL);
+          CFL_Ceiling = CFL_Cap;
+          CFL_LastFrozen = iter;
+          if (rank == MASTER_NODE)
+            cout << "CFL_ADAPT_RESIDUAL: flow residuals frozen at iteration " << iter << ", CFL capped at " << CFL_Cap
+                 << "." << endl;
         }
 
         /*--- Halve the CFL on a jump or a failed linear solve and keep it below a ceiling. A second event
