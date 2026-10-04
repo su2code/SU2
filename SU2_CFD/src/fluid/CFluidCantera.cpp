@@ -46,7 +46,8 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
       Chemical_MechanismFile(config->GetChemical_MechanismFile()),
       Phase_Name(config->GetPhase_Name()),
       Combustion(config->GetCombustion()),
-      Chemistry_Min_Temperature(config->GetCantera_DC_Min_Temp()) {
+      Chemistry_Min_Temperature(config->GetCantera_DC_Min_Temp()),
+      Correction_Velocity(config->GetCantera_Correction_Velocity()) {
   try {
     sol = std::shared_ptr<Cantera::Solution>(newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model));
     const auto& thermo = *sol->thermo();
@@ -116,8 +117,9 @@ void CFluidCantera::ComputeChemicalSourceTerm() {
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     const size_t k = speciesIndices[iVar];
     chemicalSourceTerm[iVar] = molarMasses[k] * netProductionRates[k];
-    /*--- The destruction rate is taken proportional to the mass fraction of the species. ---*/
-    chemicalSourceJacobian[iVar] = -molarMasses[k] * destructionRates[k] / std::max(massFractions[k], 1e-10);
+    /*--- The destruction rate is taken proportional to the mass fraction; the derivative is w.r.t. rho*Y. ---*/
+    chemicalSourceJacobian[iVar] =
+        -molarMasses[k] * destructionRates[k] / (Density * std::max(massFractions[k], 1e-10));
     Heat_Release -= enthalpyFormation[iVar] * chemicalSourceTerm[iVar];
   }
 }
@@ -127,10 +129,12 @@ void CFluidCantera::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const
   sol->thermo()->getEnthalpy_RT_ref(enthalpiesSpecies.data());
   const su2double RT = GasConstant * Temperature;
   const size_t last = speciesIndices[n_species_mixture - 1];
-  const su2double h_last = RT * enthalpiesSpecies[last] / molarMasses[last];
+  /*--- With the correction velocity every species enthalpy is taken relative to the mixture enthalpy. ---*/
+  const su2double h_ref = Correction_Velocity ? Enthalpy : su2double(0.0);
+  const su2double h_last = RT * enthalpiesSpecies[last] / molarMasses[last] - h_ref;
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     const size_t k = speciesIndices[iVar];
-    const su2double h_k = RT * enthalpiesSpecies[k] / molarMasses[k];
+    const su2double h_k = RT * enthalpiesSpecies[k] / molarMasses[k] - h_ref;
     enthalpy_diffusions[iVar] = Density * (h_k * massDiffusivity[k] - h_last * massDiffusivity[last]) +
                                 Mu_Turb * (h_k - h_last) / Schmidt_Turb_Number;
   }
@@ -140,10 +144,11 @@ void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusio
   UpdateDiffusivity();
   sol->thermo()->getCp_R_ref(specificHeatSpecies.data());
   const size_t last = speciesIndices[n_species_mixture - 1];
-  const su2double cp_last = GasConstant * specificHeatSpecies[last] / molarMasses[last];
+  const su2double cp_ref = Correction_Velocity ? Cp : su2double(0.0);
+  const su2double cp_last = GasConstant * specificHeatSpecies[last] / molarMasses[last] - cp_ref;
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     const size_t k = speciesIndices[iVar];
-    const su2double cp_k = GasConstant * specificHeatSpecies[k] / molarMasses[k];
+    const su2double cp_k = GasConstant * specificHeatSpecies[k] / molarMasses[k] - cp_ref;
     grad_enthalpy_diffusions[iVar] = Density * (cp_k * massDiffusivity[k] - cp_last * massDiffusivity[last]) +
                                      Mu_Turb * (cp_k - cp_last) / Schmidt_Turb_Number;
   }

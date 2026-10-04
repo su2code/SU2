@@ -103,7 +103,7 @@ constexpr passivedouble STD_REF_TEMP = 298.15;  /*!< \brief Standard reference t
  * \note Sizes the stack storage of the species edge-flux kernel, which is the performance-critical
  *       user of this limit, and the static arrays of the species solver. Larger values slow the kernel down.
  */
-constexpr unsigned short MAX_TRANSPORTED_SPECIES = 8;
+constexpr unsigned short MAX_TRANSPORTED_SPECIES = 12;
 constexpr passivedouble EPS = 1.0E-16;        /*!< \brief Error scale. */
 constexpr passivedouble TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
 

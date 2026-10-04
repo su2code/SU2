@@ -1299,6 +1299,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("CHEMICAL_SOURCE_JACOBIAN", Chemical_Source_Jacobian, true);
   /*!\brief CANTERA_DC_MIN_TEMP \n DESCRIPTION: Temperature [K] below which the chemical source terms are set to zero \n DEFAULT: 500 K \ingroup Config*/
   addDoubleOption("CANTERA_DC_MIN_TEMP", Cantera_DC_Min_Temp, 500.0);
+  /*!\brief CANTERA_CORRECTION_VELOCITY \n DESCRIPTION: Correct the species diffusion fluxes so that they sum to zero \n DEFAULT: true \ingroup Config*/
+  addBoolOption("CANTERA_CORRECTION_VELOCITY", Cantera_Correction_Velocity, true);
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/

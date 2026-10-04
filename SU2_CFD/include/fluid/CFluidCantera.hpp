@@ -58,6 +58,7 @@ class CFluidCantera final : public CFluidModel {
   const string Phase_Name;                /*!< \brief Name of the phase used for in cantera*/
   const bool Combustion;                  /*!< \brief Flag for problems involving combustion.*/
   const su2double Chemistry_Min_Temperature; /*!< \brief Temperature below which the chemistry is skipped. */
+  const bool Correction_Velocity;            /*!< \brief The diffusive species fluxes are corrected to sum to zero. */
 
   su2double Heat_Release{0.0};                 /*!< \brief heat release due to combustion */
   bool stateFailed{false};                     /*!< \brief The last state evaluation did not converge. */
@@ -152,7 +153,8 @@ class CFluidCantera final : public CFluidModel {
   inline su2double GetChemicalSourceTerm(int ivar) override { return chemicalSourceTerm[ivar]; }
 
   /*!
-   * \brief Get the derivative of the chemical source term with respect to the own mass fraction (always <= 0).
+   * \brief Get the derivative of the chemical source term with respect to the own density-weighted mass fraction
+   *        (always <= 0).
    * \param[in] ivar - index of species.
    */
   inline su2double GetChemicalSourceJacobian(int ivar) override { return chemicalSourceJacobian[ivar]; }

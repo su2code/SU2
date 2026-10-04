@@ -90,6 +90,7 @@ private:
   bool Combustion;                      /*!< \brief Flag for Combustion Detailed chemistry problems using Cantera. */
   bool Chemical_Source_Jacobian;        /*!< \brief Flag for the diagonal chemical source Jacobian in the species equations. */
   su2double Cantera_DC_Min_Temp;        /*!< \brief Temperature below which the chemical source terms are set to zero. */
+  bool Cantera_Correction_Velocity;     /*!< \brief Flag for the correction velocity of the species diffusion fluxes. */
   su2double Spark_Temperature; /*!< \brief Spark temperature used for ignition in detailed chemistry using Cantera. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
@@ -4143,6 +4144,11 @@ public:
    * \brief Get the temperature below which the chemical source terms are set to zero.
    */
   su2double GetCantera_DC_Min_Temp(void) const { return Cantera_DC_Min_Temp; }
+
+  /*!
+   * \brief Get whether the species diffusion fluxes are corrected to sum to zero.
+   */
+  bool GetCantera_Correction_Velocity(void) const { return Cantera_Correction_Velocity; }
 
   /*!
    * \brief Get High temperature applied during spark ignition.
