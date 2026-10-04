@@ -143,7 +143,9 @@ def main():
         scons_command.append("cc_flags=-march=" + args.cpu_arch)
 
     # Cantera adds $CONDA_PREFIX paths to its flags, which would make the build depend on the shell.
-    scons_env = {key: value for key, value in os.environ.items() if key != "CONDA_PREFIX"}
+    scons_env = {
+        key: value for key, value in os.environ.items() if key != "CONDA_PREFIX"
+    }
 
     result = subprocess.run(scons_command, cwd=args.source, env=scons_env)
     if result.returncode != 0:
