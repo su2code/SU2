@@ -110,7 +110,7 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
   nPrimVar = nVar;
 
   if (nVar > MAXNVAR)
-    SU2_MPI::Error("Increase static array size MAXNVAR for CSpeciesVariable and proceed.", CURRENT_FUNCTION);
+    SU2_MPI::Error("The number of species equations exceeds MAX_TRANSPORTED_SPECIES.", CURRENT_FUNCTION);
 
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -337,9 +337,16 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   CFluidModel* fluid_model = solver_container[FLOW_SOL]->GetFluidModel();
   fluid_model->SetMassDiffusivityModel(config);
 
+  /*--- The flow solver evaluates the Cantera mass diffusivities together with the enthalpy diffusion. ---*/
+  const bool diffusivity_from_flow = (config->GetKind_FluidModel() == FLUID_CANTERA) && config->GetEnergy_Equation();
+
   /*--- Set the laminar mass Diffusivity and chemical source term for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
+    /*--- Chemical source terms are only used by the residual of the points owned by this rank. ---*/
+    const bool chemistry = combustion && (iPoint < nPointDomain);
+    if (diffusivity_from_flow && !chemistry) continue;
+
     su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
     if (ignition) {
       /*--- Apply ignition temperature within spark radius. ---*/
@@ -350,21 +357,19 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
     const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     fluid_model->SetTDState_T(temperature, scalar);
 
-    /*--- Chemical source terms are only used by the residual of the points owned by this rank. ---*/
-    const bool chemistry = combustion && (iPoint < nPointDomain);
     if (chemistry) {
       fluid_model->ComputeChemicalSourceTerm();
       nodes->SetHeatRelease(iPoint, fluid_model->GetHeatRelease());
-    }
-    /*--- Recompute viscosity, important  to get diffusivity correct across MPI ranks. ---*/
-    nodes->SetLaminarViscosity(iPoint, fluid_model->GetLaminarViscosity());
-    /*--- Set the laminar mass Diffusivity for the species solver. ---*/
-    for (auto iVar = 0u; iVar <= nVar; iVar++) {
-      nodes->SetDiffusivity(iPoint, fluid_model->GetMassDiffusivity(iVar), iVar);
-      if (chemistry) {
+      for (auto iVar = 0u; iVar <= nVar; iVar++) {
         nodes->SetChemicalSourceTerm(iPoint, fluid_model->GetChemicalSourceTerm(iVar), iVar);
         nodes->SetChemicalSourceJacobian(iPoint, fluid_model->GetChemicalSourceJacobian(iVar), iVar);
       }
+    }
+    if (!diffusivity_from_flow) {
+      /*--- Recompute viscosity, important  to get diffusivity correct across MPI ranks. ---*/
+      nodes->SetLaminarViscosity(iPoint, fluid_model->GetLaminarViscosity());
+      /*--- Set the laminar mass Diffusivity for the species solver. ---*/
+      for (auto iVar = 0u; iVar <= nVar; iVar++) nodes->SetDiffusivity(iPoint, fluid_model->GetMassDiffusivity(iVar), iVar);
     }
   }  // iPoint
   END_SU2_OMP_FOR

@@ -45,7 +45,8 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
       Transport_Model(config->GetTransport_Model()),
       Chemical_MechanismFile(config->GetChemical_MechanismFile()),
       Phase_Name(config->GetPhase_Name()),
-      Combustion(config->GetCombustion()) {
+      Combustion(config->GetCombustion()),
+      Chemistry_Min_Temperature(config->GetCantera_DC_Min_Temp()) {
   try {
     sol = std::shared_ptr<Cantera::Solution>(newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model));
     const auto& thermo = *sol->thermo();
@@ -99,6 +100,12 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
 }
 
 void CFluidCantera::ComputeChemicalSourceTerm() {
+  if (Temperature < Chemistry_Min_Temperature) {
+    std::fill(chemicalSourceTerm.begin(), chemicalSourceTerm.end(), 0.0);
+    std::fill(chemicalSourceJacobian.begin(), chemicalSourceJacobian.end(), 0.0);
+    Heat_Release = 0.0;
+    return;
+  }
   try {
     sol->kinetics()->getNetProductionRates(netProductionRates.data());
     sol->kinetics()->getDestructionRates(destructionRates.data());

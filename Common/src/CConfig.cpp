@@ -1297,6 +1297,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("SPARK_TEMPERATURE", Spark_Temperature, 1000.0);
   /*!\brief CHEMICAL_SOURCE_JACOBIAN \n DESCRIPTION: Add the diagonal chemical sink Jacobian to the implicit species equations \n DEFAULT: true \ingroup Config*/
   addBoolOption("CHEMICAL_SOURCE_JACOBIAN", Chemical_Source_Jacobian, true);
+  /*!\brief CANTERA_DC_MIN_TEMP \n DESCRIPTION: Temperature [K] below which the chemical source terms are set to zero \n DEFAULT: 500 K \ingroup Config*/
+  addDoubleOption("CANTERA_DC_MIN_TEMP", Cantera_DC_Min_Temp, 500.0);
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
@@ -6040,6 +6042,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*--- Once consistency is checked set the var that is used throughout the code. ---*/
     nSpecies = nSpecies_Init;
+
+    if (nSpecies > MAX_TRANSPORTED_SPECIES) {
+      SU2_MPI::Error("The species model supports at most " + to_string(MAX_TRANSPORTED_SPECIES) +
+                         " transported species equations, but " + to_string(nSpecies) +
+                         " were given. Increase MAX_TRANSPORTED_SPECIES in option_structure.hpp.",
+                     CURRENT_FUNCTION);
+    }
 
     /*--- Check whether some variables (or their sums) are in physical bounds. [0,1] for species related quantities. ---*/
     /*--- Note, only for species transport, not for flamelet model ---*/

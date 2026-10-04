@@ -156,7 +156,7 @@ constexpr size_t Dynamic = size_t(-1);
  * \note The scalar numerics cap the equation count at this value and error above it, so a
  *       configuration that fits them fits these kernels.
  */
-constexpr size_t MaxScalarVar = 8;
+constexpr size_t MaxScalarVar = MAX_TRANSPORTED_SPECIES;
 
 /*!
  * \brief Residual of one edge, accumulated by the convective and the diffusive terms.

@@ -27,6 +27,7 @@
 
 #include "../../include/solvers/CIncNSSolver.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
+#include "../../include/variables/CSpeciesVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/solvers/CFVMFlowSolverBase.inl"
 
@@ -369,8 +370,6 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
 
   /*--- set maximum static array ---*/
 
-  static constexpr size_t MAXNVAR_SPECIES = 20UL;
-
   /*--- Species variables, and its gradients ---*/
   const su2double* Species_i = speciesNodes->GetSolution(iPoint);
   const su2double* Species_j = speciesNodes->GetSolution(jPoint);
@@ -378,8 +377,8 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
   CMatrixView<const su2double> Species_Grad_j = speciesNodes->GetGradient(jPoint);
 
   /*--- Compute Projected gradient for species variables ---*/
-  su2double ProjGradScalarVarNoCorr[MAXNVAR_SPECIES]{0.0};
-  su2double Proj_Mean_GradScalarVar[MAXNVAR_SPECIES]{0.0};
+  su2double ProjGradScalarVarNoCorr[MAX_TRANSPORTED_SPECIES]{0.0};
+  su2double Proj_Mean_GradScalarVar[MAX_TRANSPORTED_SPECIES]{0.0};
   numerics->ComputeProjectedGradient(nDim, n_species, Normal, Coord_i, Coord_j, Species_Grad_i, Species_Grad_j, true,
                                      Species_i, Species_j, ProjGradScalarVarNoCorr, Proj_Mean_GradScalarVar);
 
@@ -414,12 +413,21 @@ void CIncNSSolver::ComputeEnthalpyDiffusionTerms(CSolver** solver_container, con
   CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
+  /*--- The species solver reads the mass diffusivities evaluated here instead of computing them again. ---*/
+  const bool share_diffusivity = (config->GetKind_FluidModel() == FLUID_CANTERA);
+  auto* species = share_diffusivity ? su2staticcast_p<CSpeciesVariable*>(speciesNodes) : nullptr;
+  const unsigned short nSpecies = config->GetnSpecies();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     fluid_model->SetTDState_T(nodes->GetPrimitive(iPoint)[prim_idx.Temperature()], speciesNodes->GetSolution(iPoint));
     fluid_model->SetEddyViscosity(nodes->GetPrimitive(iPoint)[prim_idx.EddyViscosity()]);
     fluid_model->GetEnthalpyDiffusivity(EnthalpyDiffusion[iPoint]);
     if (implicit) fluid_model->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion[iPoint]);
+    if (share_diffusivity) {
+      for (unsigned short iVar = 0; iVar <= nSpecies; iVar++)
+        species->SetDiffusivity(iPoint, fluid_model->GetMassDiffusivity(iVar), iVar);
+    }
   }
   END_SU2_OMP_FOR
 }

@@ -41,7 +41,7 @@ class CSpeciesVariable : public CScalarVariable {
   VectorType HeatRelease; /*!< \brief Vector of heat release due to combustion for species transport*/
 
  public:
-  static constexpr size_t MAXNVAR = 20; /*!< \brief Max number of variables for static arrays. Increase, if necessary. */
+  static constexpr size_t MAXNVAR = MAX_TRANSPORTED_SPECIES; /*!< \brief Max number of variables for static arrays. */
 
   /*!
    * \brief Constructor of the class.

@@ -89,6 +89,7 @@ private:
   unsigned short n_GasCompositionNames; /*!<\brief Number of gases in mixture composition for Cantera. */
   bool Combustion;                      /*!< \brief Flag for Combustion Detailed chemistry problems using Cantera. */
   bool Chemical_Source_Jacobian;        /*!< \brief Flag for the diagonal chemical source Jacobian in the species equations. */
+  su2double Cantera_DC_Min_Temp;        /*!< \brief Temperature below which the chemical source terms are set to zero. */
   su2double Spark_Temperature; /*!< \brief Spark temperature used for ignition in detailed chemistry using Cantera. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
@@ -1192,7 +1193,7 @@ private:
 
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
-  su2double Max_Vel2;                   /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+  su2double Max_Vel2{0.0};              /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
   su2double RangePressure[2];           /*!< \brief The pressure difference pmax-pmin in the domain for the target mass flow rate scaling. */
   bool topology_optimization;           /*!< \brief If the structural solver should consider a variable density field to penalize element stiffness. */
   string top_optim_output_file;         /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
@@ -4137,6 +4138,11 @@ public:
    * \brief Get whether the diagonal chemical sink Jacobian is added to the implicit species equations.
    */
   bool GetChemical_Source_Jacobian(void) const { return Chemical_Source_Jacobian; }
+
+  /*!
+   * \brief Get the temperature below which the chemical source terms are set to zero.
+   */
+  su2double GetCantera_DC_Min_Temp(void) const { return Cantera_DC_Min_Temp; }
 
   /*!
    * \brief Get High temperature applied during spark ignition.

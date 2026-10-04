@@ -57,6 +57,7 @@ class CFluidCantera final : public CFluidModel {
   const string Chemical_MechanismFile;    /*!< \brief Chemical reaction mechanism used for in cantera*/
   const string Phase_Name;                /*!< \brief Name of the phase used for in cantera*/
   const bool Combustion;                  /*!< \brief Flag for problems involving combustion.*/
+  const su2double Chemistry_Min_Temperature; /*!< \brief Temperature below which the chemistry is skipped. */
 
   su2double Heat_Release{0.0};                 /*!< \brief heat release due to combustion */
   bool stateFailed{false};                     /*!< \brief The last state evaluation did not converge. */
@@ -140,7 +141,7 @@ class CFluidCantera final : public CFluidModel {
   }
 
   /*!
-   * \brief Compute chemical source term and heat release from the current state.
+   * \brief Compute chemical source term and heat release from the current state, zero below the minimum temperature.
    */
   void ComputeChemicalSourceTerm() override;
 

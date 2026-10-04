@@ -163,5 +163,20 @@ TEST_CASE("Fluid_Cantera_SourceJacobian", "[Reacting_flow]") {
   const su2double slope_CH4 = (fluid.GetChemicalSourceTerm(2) - source_CH4) / delta;
   CHECK(fluid.GetChemicalSourceJacobian(2) == Approx(slope_CH4).epsilon(0.1));
   CHECK(source_O2 < 0.0);
+
+  /*--- Below CANTERA_DC_MIN_TEMP (500 K by default) the chemistry is skipped. ---*/
+
+  scalar[2] -= delta;
+  fluid.SetTDState_T(400.0, scalar);
+  fluid.ComputeChemicalSourceTerm();
+  for (int iVar = 0; iVar < 4; iVar++) {
+    CHECK(fluid.GetChemicalSourceTerm(iVar) == 0.0);
+    CHECK(fluid.GetChemicalSourceJacobian(iVar) == 0.0);
+  }
+  CHECK(fluid.GetHeatRelease() == 0.0);
+
+  fluid.SetTDState_T(600.0, scalar);
+  fluid.ComputeChemicalSourceTerm();
+  CHECK(fluid.GetChemicalSourceTerm(2) != 0.0);
 }
 #endif

@@ -1805,7 +1805,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         if(multicomponent && energy){
           /*--- retrieve number of species that are solved and set maximum static array ---*/
           int n_species = config->GetnSpecies();
-          static constexpr size_t MAXNVAR_SPECIES = 20UL;
           /*--- Obtain fluid model for computing the enthalpy diffusion terms. ---*/
           CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
           /*--- retrieve species gradient needed for multicomponent. ---*/
@@ -1813,8 +1812,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
           /*--- Set thermodynamic state. ---*/
           FluidModel->SetTDState_T(nodes->GetTemperature(iPoint),solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint));
           /*--- Get enthalpy diffusion terms and its gradients(for implicit). ---*/
-          su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
-          su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+          su2double EnthalpyDiffusion_i[MAX_TRANSPORTED_SPECIES]{0.0};
+          su2double GradEnthalpyDiffusion_i[MAX_TRANSPORTED_SPECIES]{0.0};
           FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_i);
           if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_i);
           /*--- Compute Enthalpy diffusion flux and its jacobian (for implicit iterations) ---*/
@@ -2219,9 +2218,9 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   static su2double MaxVel2;
   const su2double epsilon2_default = 4.1;
 
-  /*--- For now, only the finest mesh level stores the Beta for all levels. ---*/
+  /*--- For now, only the finest active mesh level stores the Beta for all levels. ---*/
 
-  if (iMesh == MESH_0) {
+  if (iMesh == config->GetFinestMesh()) {
     SU2_OMP_MASTER
     MaxVel2 = 0.0;
     END_SU2_OMP_MASTER
