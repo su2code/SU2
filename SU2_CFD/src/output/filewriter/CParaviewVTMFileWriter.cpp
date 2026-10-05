@@ -137,7 +137,7 @@ void CParaviewVTMFileWriter::WriteFolderData(const string& foldername, CConfig *
   StartBlock(std::move(multiZoneHeaderString));
 
   StartBlock("Internal");
-  AddDataset(foldername, "Internal", "Internal", volumeDataSorter, config->GetWrt_Output_Double_Precision());
+  AddDataset(foldername, "Internal", "Internal", volumeDataSorter, config->GetVolume_Output_Double_Precision());
   EndBlock();
 
   /*--- Open a block for the boundary ---*/
@@ -181,7 +181,7 @@ void CParaviewVTMFileWriter::WriteFolderData(const string& foldername, CConfig *
 
       /*--- Add the dataset ---*/
 
-      AddDataset(foldername, markerTag, markerTag, surfaceDataSorter, config->GetWrt_Output_Double_Precision());
+      AddDataset(foldername, markerTag, markerTag, surfaceDataSorter, config->GetVolume_Output_Double_Precision());
 
     }
   }

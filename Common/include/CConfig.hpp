@@ -747,7 +747,6 @@ private:
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
   bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Wrt_Restart_Compact,                /*!< \brief Write compact restart files with minimum nr. of variables. */
-  Wrt_Output_Double_Precision,        /*!< \brief Write the fields of the volume and surface files in double. */
   Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
@@ -836,6 +835,7 @@ private:
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
   unsigned short Mesh_Out_FileFormat; /*!< \brief Mesh output format. */
   TAB_OUTPUT Tab_FileFormat;          /*!< \brief Format of the output files. */
+  VOLUME_OUTPUT_PRECISION Volume_Output_Precision; /*!< \brief Floating-point type of the volume and surface fields. */
   unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
@@ -5684,10 +5684,13 @@ public:
   bool GetWrt_Restart_Compact(void) const { return Wrt_Restart_Compact; }
 
   /*!
-   * \brief Flag for whether the fields of the volume and surface files are written in double precision.
+   * \brief Flag for whether the fields of the volume and surface files (CGNS and Paraview XML) are written in
+   *        double precision.
    * \return <code>TRUE</code> means that double precision is used.
    */
-  bool GetWrt_Output_Double_Precision(void) const { return Wrt_Output_Double_Precision; }
+  bool GetVolume_Output_Double_Precision(void) const {
+    return Volume_Output_Precision == VOLUME_OUTPUT_PRECISION::DOUBLE;
+  }
 
   /*!
    * \brief Flag for whether restart solution files are overwritten.

@@ -556,7 +556,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
       LogOutputFiles("Paraview");
-      fileWriter = new CParaviewXMLFileWriter(volumeDataSorter, config->GetWrt_Output_Double_Precision());
+      fileWriter = new CParaviewXMLFileWriter(volumeDataSorter, config->GetVolume_Output_Double_Precision());
 
       break;
 
@@ -682,7 +682,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortOutputData();
 
       LogOutputFiles("Paraview surface");
-      fileWriter = new CParaviewXMLFileWriter(surfaceDataSorter, config->GetWrt_Output_Double_Precision());
+      fileWriter = new CParaviewXMLFileWriter(surfaceDataSorter, config->GetVolume_Output_Double_Precision());
 
       break;
 
@@ -760,7 +760,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       LogOutputFiles("CGNS");
       {
-        auto* cgnsWriter = new CCGNSFileWriter(volumeDataSorter, false, config->GetWrt_Output_Double_Precision());
+        auto* cgnsWriter = new CCGNSFileWriter(volumeDataSorter, false, config->GetVolume_Output_Double_Precision());
 
         /*--- Write the boundaries, named as the markers. This needs to know which boundary elements are halo copies,
          which only the finite volume data sorter knows: the files of the FEM solver have no boundaries. ---*/
@@ -787,7 +787,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       LogOutputFiles("CGNS surface");
       {
-        auto* cgnsWriter = new CCGNSFileWriter(surfaceDataSorter, true, config->GetWrt_Output_Double_Precision());
+        auto* cgnsWriter = new CCGNSFileWriter(surfaceDataSorter, true, config->GetVolume_Output_Double_Precision());
 
         /*--- One zone per plotted marker, named as the marker. ---*/
         cgnsWriter->SetSurfaceMarkers(config, geometry);
