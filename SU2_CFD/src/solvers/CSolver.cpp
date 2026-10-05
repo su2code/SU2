@@ -262,7 +262,8 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       JCOUNT           = nDim;
       break;
     case PERIODIC_LIM_PRIM_1:
-      COUNT_PER_POINT  = nPrimVarGrad*2;
+      /*--- Min and max of the solution, min and max of the reconstruction increments. ---*/
+      COUNT_PER_POINT  = nPrimVarGrad*4;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nPrimVarGrad;
       break;
@@ -336,6 +337,31 @@ namespace PeriodicCommHelpers {
         break;
     }
   }
+
+  /*--- Whether a periodic marker with these angles rotates the vector components of the solution. ---*/
+  bool isRotation(const su2double* angles) {
+    return angles[0] != 0.0 || angles[1] != 0.0 || angles[2] != 0.0;
+  }
+}
+
+su2activematrix* CSolver::GetPeriodicProjections(const CConfig& config) {
+
+  if (!rotate_periodic) return nullptr;
+
+  bool rotation = false;
+  for (auto iMarker = 0u; iMarker < config.GetnMarker_All(); iMarker++) {
+    if (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
+    rotation |= PeriodicCommHelpers::isRotation(config.GetPeriodicRotAngles(config.GetMarker_All_TagBound(iMarker)));
+  }
+  if (!rotation) return nullptr;
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    if (PeriodicProj.rows() != nPoint) PeriodicProj.resize(nPoint, 2*nPrimVarGrad) = su2double(0.0);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  return &PeriodicProj;
 }
 
 void CSolver::InitiatePeriodicComms(CGeometry *geometry,
@@ -391,6 +417,25 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     else GeometryToolbox::Rotate(rotMatrix3D, origin, direction, rotated);
   };
 
+  /*--- Rotates, in place, the range [vMin, vMax] of each component of a vector: each term
+   of the product with the rotation matrix takes its smallest and its largest value. ---*/
+  auto RotateBox = [&](su2double* vMin, su2double* vMax) {
+    su2double rotMin[3] = {0.0}, rotMax[3] = {0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      for (auto jDim = 0u; jDim < nDim; jDim++) {
+        const su2double rotMatrix_ij = (nDim == 2) ? rotMatrix2D[iDim][jDim] : rotMatrix3D[iDim][jDim];
+        const su2double fromMin = rotMatrix_ij * vMin[jDim];
+        const su2double fromMax = rotMatrix_ij * vMax[jDim];
+        rotMin[iDim] += min(fromMin, fromMax);
+        rotMax[iDim] += max(fromMin, fromMax);
+      }
+    }
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      vMin[iDim] = rotMin[iDim];
+      vMax[iDim] = rotMax[iDim];
+    }
+  };
+
   string Marker_Tag;
 
   /*--- Set the size of the data packet and type depending on quantity. ---*/
@@ -420,6 +465,36 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   auto& gradient = PeriodicCommHelpers::selectGradient(base_nodes, commType);
   auto& limiter = PeriodicCommHelpers::selectLimiter(base_nodes, commType);
   auto& field = PeriodicCommHelpers::selectField(base_nodes, commType);
+
+  /*--- Updates the range [Sol_Min, Sol_Max] of each variable with the values of a neighbor,
+   the velocity of the neighbor (variables 1 to nDim) is rotated first if requested. ---*/
+  auto UpdateMinMax = [&](const su2double* values, bool rotateVelocity) {
+    if (rotateVelocity) {
+      for (auto iVar = 0u; iVar < ICOUNT; iVar++) rotPrim_j[iVar] = values[iVar];
+      Rotate(zeros, &values[1], &rotPrim_j[1]);
+      values = rotPrim_j;
+    }
+    for (auto iVar = 0u; iVar < ICOUNT; iVar++) {
+      Sol_Min[iVar] = min(Sol_Min[iVar], values[iVar]);
+      Sol_Max[iVar] = max(Sol_Max[iVar], values[iVar]);
+    }
+  };
+
+  /*--- Reconstruction increments of all variables from a point to the middle
+   of the edge to one of its neighbors, computed as in computeLimiters_impl. ---*/
+  auto ReconstructionIncrements = [&](unsigned long point_i, unsigned long point_j, su2double* increments) {
+    const su2double kappa = config->GetMUSCL_Kappa_Flow();
+    const auto* coord_i = geometry->nodes->GetCoord(point_i);
+    const auto* coord_j = geometry->nodes->GetCoord(point_j);
+
+    for (auto iVar = 0u; iVar < ICOUNT; iVar++) {
+      su2double proj = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        proj += 0.5 * (coord_j[iDim] - coord_i[iDim]) * gradient(point_i, iVar, iDim);
+      const su2double cent = 0.5 * (field(point_j, iVar) - field(point_i, iVar));
+      increments[iVar] = LimiterHelpers<>::umusclProjection(proj, cent, kappa);
+    }
+  };
 
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
@@ -478,6 +553,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
         } else {
           GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix3D);
         }
+
+        /*--- Whether the vector components of the solution are rotated for this marker. ---*/
+
+        const bool rotation = rotate_periodic && PeriodicCommHelpers::isRotation(angles);
 
         /*--- Compute the offset in the recv buffer for this point. ---*/
 
@@ -945,11 +1024,15 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Max[iVar] = base_nodes->GetSolution_Max()(iPoint, iVar);
             }
 
+            /*--- The velocity of each neighbour is rotated before taking the min and max of its
+             components (the rotated min and max vectors do not bound the rotated components).
+             The min/max stored so far (the value of the point, or what was accumulated from
+             other periodic pairs) are a range for each component, which is rotated as a box. ---*/
+
+            if (rotation) RotateBox(&Sol_Min[1], &Sol_Max[1]);
+
             for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-              for (iVar = 0; iVar < ICOUNT; iVar++) {
-                Sol_Min[iVar] = min(Sol_Min[iVar], field(jPoint, iVar));
-                Sol_Max[iVar] = max(Sol_Max[iVar], field(jPoint, iVar));
-              }
+              UpdateMinMax(field[jPoint], rotation);
             }
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
@@ -957,11 +1040,34 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               bufDSend[buf_offset+ICOUNT+iVar] = Sol_Max[iVar];
             }
 
-            /*--- Rotate the momentum components of the min/max. ---*/
-
-            if (rotate_periodic) {
+            /*--- Preserve the original arithmetic for translational periodicity, including its AD recording. ---*/
+            if (rotate_periodic && !rotation) {
               Rotate(zeros, &Sol_Min[1], &bufDSend[buf_offset+1]);
               Rotate(zeros, &Sol_Max[1], &bufDSend[buf_offset+ICOUNT+1]);
+            }
+
+            /*--- The limiters of the velocity components cannot be compared across a rotation
+             (second phase). Instead, we also send the min and max, over "our" edges, of the
+             reconstruction increments (computed as in computeLimiters_impl) with the velocity
+             part rotated, the periodic match then computes its limiters with the complete
+             stencil. Without rotation these are zero, i.e. they have no effect. ---*/
+
+            if (commType == PERIODIC_LIM_PRIM_1) {
+
+              for (auto iVar = 0u; iVar < ICOUNT; iVar++)
+                Sol_Min[iVar] = Sol_Max[iVar] = 0.0;
+
+              if (rotation) {
+                for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+                  ReconstructionIncrements(iPoint, jPoint, rotPrim_i);
+                  UpdateMinMax(rotPrim_i, true);
+                }
+              }
+
+              for (auto iVar = 0u; iVar < ICOUNT; iVar++) {
+                bufDSend[buf_offset+2*ICOUNT+iVar] = Sol_Min[iVar];
+                bufDSend[buf_offset+3*ICOUNT+iVar] = Sol_Max[iVar];
+              }
             }
 
             break;
@@ -977,7 +1083,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               bufDSend[buf_offset+iVar] = limiter(iPoint, iVar);
             }
 
-            if (rotate_periodic) {
+            /*--- The limiters of the velocity components cannot be compared across a rotation,
+             they were computed with the complete stencil (see the first phase), we send
+             a value that is never the minimum. ---*/
+
+            if (rotation) {
+              for (auto iDim = 0u; iDim < nDim; iDim++)
+                bufDSend[buf_offset+1+iDim] = std::numeric_limits<passivedouble>::max();
+            } else if (rotate_periodic) {
               Rotate(zeros, &limiter(iPoint,1), &bufDSend[buf_offset+1]);
             }
 
@@ -1296,6 +1409,18 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 su2double Solution_Max = max(base_nodes->GetSolution_Max()(iPoint, iVar),
                                              bufDRecv[buf_offset+ICOUNT+iVar]);
                 base_nodes->GetSolution_Max()(iPoint, iVar) = Solution_Max;
+              }
+
+              /*--- Min/max reconstruction increments over the edges of the periodic match,
+               used to start the search over "our" edges (only with rotation). ---*/
+
+              if ((commType == PERIODIC_LIM_PRIM_1) && !PeriodicProj.empty()) {
+                for (auto iVar = 0u; iVar < ICOUNT; iVar++) {
+                  PeriodicProj(iPoint, iVar) = min(PeriodicProj(iPoint, iVar),
+                                                   bufDRecv[buf_offset+2*ICOUNT+iVar]);
+                  PeriodicProj(iPoint, ICOUNT+iVar) = max(PeriodicProj(iPoint, ICOUNT+iVar),
+                                                          bufDRecv[buf_offset+3*ICOUNT+iVar]);
+                }
               }
 
               break;

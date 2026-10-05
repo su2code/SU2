@@ -422,20 +422,28 @@ def main():
     test_list.append(poiseuille_profile)
 
     # 2D rotational periodic sector without limiter (Jacobian of the periodic points)
-    periodic2d_no_limiter           = TestCase('periodic2d_no_limiter')
-    periodic2d_no_limiter.cfg_dir   = "navierstokes/periodic2D"
-    periodic2d_no_limiter.cfg_file  = "no_limiter.cfg"
+    periodic2d_no_limiter = TestCase('periodic2d_no_limiter')
+    periodic2d_no_limiter.cfg_dir = "navierstokes/periodic2D"
+    periodic2d_no_limiter.cfg_file = "no_limiter.cfg"
     periodic2d_no_limiter.test_iter = 100
     periodic2d_no_limiter.test_vals = [-3.216881, -0.582813, -0.629049, 2.266141, -1.056877, -811.470000]
     test_list.append(periodic2d_no_limiter)
 
     # 2D rotational periodic sector with multigrid
-    periodic2d_multigrid           = TestCase('periodic2d_multigrid')
-    periodic2d_multigrid.cfg_dir   = "navierstokes/periodic2D"
-    periodic2d_multigrid.cfg_file  = "multigrid.cfg"
+    periodic2d_multigrid = TestCase('periodic2d_multigrid')
+    periodic2d_multigrid.cfg_dir = "navierstokes/periodic2D"
+    periodic2d_multigrid.cfg_file = "multigrid.cfg"
     periodic2d_multigrid.test_iter = 300
     periodic2d_multigrid.test_vals = [-4.422778, -1.615251, -1.453736, 1.047350, -1.410225, -2060.600000]
     test_list.append(periodic2d_multigrid)
+
+    # 2D rotational periodic sector with limiter
+    periodic2d = TestCase('periodic2d')
+    periodic2d.cfg_dir = "navierstokes/periodic2D"
+    periodic2d.cfg_file = "config.cfg"
+    periodic2d.test_iter = 100
+    periodic2d.test_vals = [-3.266248, -0.617784, -0.620252, 2.216476, -1.007761, -1035.000000]
+    test_list.append(periodic2d)
 
     ##########################
     ### Compressible RANS  ###
