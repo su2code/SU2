@@ -360,29 +360,6 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   }
   END_SU2_OMP_FOR
 
-  /*--- Unsteady variable density: continuity is V d(rho)/dt + sum(m_f) = 0. The density of the old
-   *    time levels is the one the flow solver computes from their enthalpy and species
-   *    (CIncEulerSolver::RecomputeDensity_time_n). ---*/
-
-  if (config->GetTime_Domain() && config->GetVariable_Density_Model()) {
-    const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
-    const su2double dt = config->GetDelta_UnstTimeND();
-    const auto* flow_vars = su2staticcast_p<const CFlowVariable*>(flow_nodes);
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-      const su2double rho_np1 = flow_vars->GetDensity(iPoint);
-      const su2double rho_n = flow_vars->GetDensity_time_n(iPoint);
-      su2double dRhodt = (rho_np1 - rho_n) / dt;
-      if (second_order) {
-        const su2double rho_nm1 = flow_vars->GetDensity_time_n1(iPoint);
-        dRhodt = (3.0 * rho_np1 - 4.0 * rho_n + rho_nm1) / (2.0 * dt);
-      }
-      LinSysRes(iPoint, 0) += geometry->nodes->GetVolume(iPoint) * dRhodt;
-    }
-    END_SU2_OMP_FOR
-  }
-
   /*--- Now add corrections to the previously computed mass fluxes for boundary conditions which alter the mass flux.
   geometry->vertex[...]->GetNormal() returns the normal pointing into the domain, so accumulating with -= below
   (rather than negating Normal first, as CIncEulerSolver does) yields the outward mass flux used as the RHS here. ---*/
@@ -510,6 +487,35 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     }
   }
 
+}
+
+void CPoissonSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                          unsigned short iRKStep, unsigned short iMesh,
+                                          unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
+
+  /*--- Unsteady variable density: continuity is V d(rho)/dt + sum(m_f) = 0. The density of the old
+   *    time levels is the one the flow solver computes from their enthalpy and species
+   *    (CIncEulerSolver::RecomputeDensity_time_n). With constant density the term is zero. ---*/
+
+  if (!config->GetVariable_Density_Model()) return;
+
+  const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const su2double dt = config->GetDelta_UnstTimeND();
+  const auto* flow_vars = su2staticcast_p<const CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    const su2double rho_np1 = flow_vars->GetDensity(iPoint);
+    const su2double rho_n = flow_vars->GetDensity_time_n(iPoint);
+    su2double dRhodt = (rho_np1 - rho_n) / dt;
+    if (second_order) {
+      const su2double rho_nm1 = flow_vars->GetDensity_time_n1(iPoint);
+      dRhodt = (3.0 * rho_np1 - 4.0 * rho_n + rho_nm1) / (2.0 * dt);
+    }
+    LinSysRes(iPoint, 0) += geometry->nodes->GetVolume(iPoint) * dRhodt;
+  }
+  END_SU2_OMP_FOR
 }
 
 void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
