@@ -152,7 +152,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, const CSolver* fl
    * With a flow solver on the same geometry this was already done by the flow solver, and the values are
    * accumulated, so it must not be done twice. ---*/
   if (!flow) {
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    for (auto iPeriodic = 1u; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
       InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
       InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);

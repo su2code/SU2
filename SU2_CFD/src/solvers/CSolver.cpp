@@ -703,7 +703,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
               if ((!boundary_i || boundary_j) && geometry->nodes->GetDomain(iPoint)) {
                 if (msw) {
-                  Sensor_i = fmax(Sensor_i, fabs(Pressure_j - Pressure_i)) / fmin(Pressure_i, Pressure_j);
+                  Sensor_i = fmax(Sensor_i, fabs(Pressure_j - Pressure_i) / fmin(Pressure_i, Pressure_j));
                 } else {
                   Sensor_i += (Pressure_j - Pressure_i);
                   Sensor_j += (Pressure_i + Pressure_j);
