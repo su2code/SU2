@@ -209,7 +209,8 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
         /*--- Identify the boundary by string name and retrive heatflux from config ---*/
         const auto Marker_StringTag = config->GetMarker_All_TagBound(iMarker);
-        const su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
+        su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
+        if (config->GetIntegrated_HeatFlux()) Wall_HeatFlux /= geometry->GetSurfaceArea(config, iMarker);
 
         for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
