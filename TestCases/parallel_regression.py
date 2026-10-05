@@ -421,6 +421,14 @@ def main():
     poiseuille_profile.tol       = [0.001, 0.001, 1e-5, 1e-5, 1e-5]
     test_list.append(poiseuille_profile)
 
+    # 2D rotational periodic sector without limiter (Jacobian of the periodic points)
+    periodic2d_no_limiter           = TestCase('periodic2d_no_limiter')
+    periodic2d_no_limiter.cfg_dir   = "navierstokes/periodic2D"
+    periodic2d_no_limiter.cfg_file  = "no_limiter.cfg"
+    periodic2d_no_limiter.test_iter = 100
+    periodic2d_no_limiter.test_vals = [-3.216881, -0.582813, -0.629049, 2.266141, -1.056877, -811.470000]
+    test_list.append(periodic2d_no_limiter)
+
     ##########################
     ### Compressible RANS  ###
     ##########################
@@ -1244,7 +1252,7 @@ def main():
     Aachen_3D_restart.cfg_file = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
     Aachen_3D_restart.tol = 0.00001
-    Aachen_3D_restart.test_vals = [-7.701420, -8.504728, -6.014939, -6.468223, -5.801124, -4.607179, -5.550665, -5.300778, -3.804188, -5.255983, -5.763060, -3.609605, -2.229249, -2.880453, -0.563469]
+    Aachen_3D_restart.test_vals = [-7.701423, -8.504851, -6.014951, -6.472219, -5.802012, -4.609768, -5.550659, -5.300718, -3.804222, -5.255983, -5.763064, -3.609604, -2.229253, -2.880518, -0.563484]
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
@@ -1252,7 +1260,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.941917, -12.212515, -19.254664, -13.545311, -19.087161, -13.454459, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.910586, -12.203941, -19.198816, -13.489664, -19.033845, -13.400589, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1277,7 +1285,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632227, -8.894736, -9.348706]
+    multi_interface.test_vals          = [-8.634558, -8.895554, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 

@@ -553,7 +553,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 }
               }
 
-              /*--- Rotate the momentum columns of the Jacobian. ---*/
+              /*--- Rotate the momentum rows and columns of the Jacobian, the residual of the
+               periodic match is Q*R(Q^T*U), so its Jacobian is Q*J*Q^T. First the rows. ---*/
 
               if (rotate_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
@@ -568,6 +569,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                     jacBlock[3][iVar] = rotMatrix3D[2][0]*block(1, iVar) + rotMatrix3D[2][1]*block(2, iVar) +
                                         rotMatrix3D[2][2]*block(3, iVar);
                   }
+                }
+
+                /*--- Then the columns, i.e. the momentum part of each row. ---*/
+
+                for (auto iRow = 0u; iRow < nVar; iRow++) {
+                  su2double rotated[3] = {0.0};
+                  Rotate(zeros, &jacBlock[iRow][1], rotated);
+                  for (auto jDim = 0u; jDim < nDim; jDim++) jacBlock[iRow][1+jDim] = rotated[jDim];
                 }
               }
 
