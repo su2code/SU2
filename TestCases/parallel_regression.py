@@ -25,7 +25,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+# make print(*args) function available in PY2.6+, doesn't work on PY < 2.6
 from __future__ import print_function
 
 import sys
@@ -37,6 +37,28 @@ def main():
        to make sure nothing is broken. '''
 
     test_list = []
+
+    ##########################################
+    ### Combustion with Detailed Chemistry ###
+    ##########################################
+
+    # 2D planar laminar premixed methane flame on isothermal burner (restart)
+    cfd_cantera_dc_ch4 = TestCase('cfd_cantera_dc_ch4')
+    cfd_cantera_dc_ch4.cfg_dir = "combustion/1step_methane_air"
+    cfd_cantera_dc_ch4.cfg_file = "2d_slit_burner_fluid.cfg"
+    cfd_cantera_dc_ch4.test_iter = 10
+    cfd_cantera_dc_ch4.test_vals = [-10.539588, -12.650786, -5.649832, -13.470491, -17.249262, 94.854000]
+    cfd_cantera_dc_ch4.new_output = True
+    test_list.append(cfd_cantera_dc_ch4)
+
+    # 2D planar laminar premixed hydrogen flame on isothermal burner (restart)
+    cfd_cantera_dc_h2 = TestCase('cfd_cantera_dc_h2')
+    cfd_cantera_dc_h2.cfg_dir = "combustion/h2o2_hydrogen_air"
+    cfd_cantera_dc_h2.cfg_file = "2d_slit_burner_fluid.cfg"
+    cfd_cantera_dc_h2.test_iter = 10
+    cfd_cantera_dc_h2.test_vals = [-10.539588, -12.650786, -5.649832, -13.470491, -17.249262, 94.854000]
+    cfd_cantera_dc_h2.new_output = True
+    test_list.append(cfd_cantera_dc_h2)
 
     #######################
     ### Flamelet solver ###
