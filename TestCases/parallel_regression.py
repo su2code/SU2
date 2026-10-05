@@ -445,6 +445,14 @@ def main():
     periodic2d.test_vals = [-3.266248, -0.617784, -0.620252, 2.216476, -1.007761, -1035.000000]
     test_list.append(periodic2d)
 
+    # 3D rotational periodic pipe sector with nodes on the rotation axis
+    periodic3d_axis           = TestCase('periodic3d_axis')
+    periodic3d_axis.cfg_dir = "navierstokes/periodic3D_axis"
+    periodic3d_axis.cfg_file = "config.cfg"
+    periodic3d_axis.test_iter = 100
+    periodic3d_axis.test_vals = [-3.353165, 0.157501, 2.051458, -9.594400, -9.594400]
+    test_list.append(periodic3d_axis)
+
     ##########################
     ### Compressible RANS  ###
     ##########################

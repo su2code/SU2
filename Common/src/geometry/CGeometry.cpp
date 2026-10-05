@@ -1194,6 +1194,56 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
   using PointMarkerSet = std::unordered_set<PointMarkerPair, decltype(pairHash)>;
   std::vector<PointMarkerSet> Points_Send_All(size, PointMarkerSet(0, pairHash));
 
+  /*--- Points on a rotation axis are their own periodic match. The other copies of their control
+   volume are obtained by applying the rotation 1, 2, ... N-1 times (N = 360 deg / angle), instead
+   of once in each direction. Therefore, the vertex on the first marker of the pair sends N-1 times
+   to itself, and the vertex on the second marker does not send. ---*/
+
+  const unsigned long nMarker_All = config->GetnMarker_All();
+  PeriodicAxisPoints = false;
+
+  /*--- Number of copies of the domain around the rotation axis of a periodic marker (N). ---*/
+
+  auto nCopiesAroundAxis = [&](unsigned short jMarker) {
+    /*--- Tolerance, in radians, to accept the rotation angle as an integer fraction of 360 degrees. ---*/
+    constexpr passivedouble angleTol = 1e-4;
+
+    /*--- The trace of a rotation matrix is 1 + 2 cos(angle). ---*/
+    const auto markerTag = config->GetMarker_All_TagBound(jMarker);
+    const su2double* angles = config->GetPeriodicRotAngles(markerTag);
+    su2double rotMatrix[MAXNDIM][MAXNDIM];
+    GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotMatrix);
+    su2double cosAngle = 0.5 * (rotMatrix[0][0] + rotMatrix[1][1] + rotMatrix[2][2] - 1.0);
+    if (nDim == 2) cosAngle = cos(angles[2]);
+    cosAngle = min(cosAngle, 1.0);
+    cosAngle = max(cosAngle, -1.0);
+    const su2double angle = acos(cosAngle);
+
+    const int nCopy = (angle > angleTol) ? SU2_TYPE::Int(2 * PI_NUMBER / angle + 0.5) : 0;
+
+    if (fabs(nCopy * angle - 2 * PI_NUMBER) > angleTol) {
+      SU2_MPI::Error(
+          "Periodic points on the rotation axis require an angle that divides 360 degrees (marker " + markerTag + ").",
+          CURRENT_FUNCTION);
+    }
+    return nCopy;
+  };
+
+  /*--- Number of sends of a vertex (1 for the points that are not on a rotation axis),
+   and whether it is on a rotation axis. ---*/
+
+  auto nSendOfVertex = [&](unsigned short jMarker, unsigned long jVertex, bool& onAxis) -> unsigned long {
+    const auto* vert = geometry->vertex[jMarker][jVertex];
+    onAxis = (static_cast<int>(vert->GetDonorProcessor()) == rank) &&
+             (static_cast<unsigned long>(vert->GetDonorPoint()) == vert->GetNode());
+    if (!onAxis) return 1;
+    if (config->GetMarker_All_PerBound(jMarker) > config->GetnMarker_Periodic() / 2) return 0;
+
+    PeriodicAxisPoints = true;
+    return nCopiesAroundAxis(jMarker) - 1;
+  };
+  bool onAxis = false;
+
   /*--- Loop through all of our periodic markers and track
    our sends with each rank. ---*/
 
@@ -1213,8 +1263,11 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
 
           iRank = static_cast<int>(geometry->vertex[iMarker][iVertex]->GetDonorProcessor());
 
-          /*--- Store the (point, marker) pair in the set for the destination rank. ---*/
-          Points_Send_All[iRank].insert(std::make_pair(iPoint, static_cast<unsigned long>(iMarker)));
+          /*--- Store the (point, marker) pair in the set for the destination rank,
+           once for each time the vertex sends (see above). ---*/
+          const auto nCopy = nSendOfVertex(iMarker, iVertex, onAxis);
+          for (auto iCopy = 0ul; iCopy < nCopy; iCopy++)
+            Points_Send_All[iRank].insert(std::make_pair(iPoint, iMarker + iCopy * nMarker_All));
         }
       }
     }
@@ -1305,6 +1358,9 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
   Local_Marker_PeriodicRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]];
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++) Local_Marker_PeriodicRecv[iRecv] = 0;
 
+  Local_Copy_PeriodicSend.assign(nPoint_PeriodicSend[nPeriodicSend], 0);
+  Local_Copy_PeriodicRecv.assign(nPoint_PeriodicRecv[nPeriodicRecv], 0);
+
   /*--- We allocate the buffers for communicating values in a later step
    once we know the maximum packet size that we need to communicate. This
    memory is deallocated and reallocated automatically in the case that
@@ -1325,11 +1381,12 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
     req_PeriodicRecv = new SU2_MPI::Request[nPeriodicRecv];
   }
 
-  /*--- Allocate arrays for sending the periodic point index and marker
-   index to the recv rank so that it can store the local values. Therefore,
-   the recv rank can quickly loop through the buffers to unpack the data. ---*/
+  /*--- Allocate arrays for sending the periodic point index, the marker index,
+   and the copy index (for points on a rotation axis) to the recv rank so that
+   it can store the local values. Therefore, the recv rank can quickly loop
+   through the buffers to unpack the data. ---*/
 
-  unsigned short nPackets = 2;
+  const unsigned short nPackets = 3;
   auto* idSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend] * nPackets];
   for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend] * nPackets; iSend++) idSend[iSend] = 0;
 
@@ -1366,17 +1423,24 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
             if (iRank == destRank) {
               /*--- Check if we have already added this (point, marker) pair
                for this destination rank. Use the result if insert(), which is
-               a pair whose second element is success. ---*/
-              const auto pointMarkerPair = std::make_pair(iPoint, static_cast<unsigned long>(iMarker));
-              const auto insertResult = Points_Send_All[destRank].insert(pointMarkerPair);
-              if (insertResult.second) {
-                Local_Point_PeriodicSend[ii] = iPoint;
-                Local_Marker_PeriodicSend[ii] = static_cast<unsigned long>(iMarker);
-                jj = ii * nPackets;
-                idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
-                jj++;
-                idSend[jj] = static_cast<unsigned long>(iPeriodic);
-                ii++;
+               a pair whose second element is success. Points on a rotation
+               axis send more than once (see above). ---*/
+              const auto nCopy = nSendOfVertex(iMarker, iVertex, onAxis);
+              for (auto iCopy = 0ul; iCopy < nCopy; iCopy++) {
+                const auto pointMarkerPair = std::make_pair(iPoint, iMarker + iCopy * nMarker_All);
+                const auto insertResult = Points_Send_All[destRank].insert(pointMarkerPair);
+                if (insertResult.second) {
+                  Local_Point_PeriodicSend[ii] = iPoint;
+                  Local_Marker_PeriodicSend[ii] = static_cast<unsigned long>(iMarker);
+                  Local_Copy_PeriodicSend[ii] = onAxis ? iCopy + 1 : 0;
+                  jj = ii * nPackets;
+                  idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+                  jj++;
+                  idSend[jj] = static_cast<unsigned long>(iPeriodic);
+                  jj++;
+                  idSend[jj] = Local_Copy_PeriodicSend[ii];
+                  ii++;
+                }
               }
             }
           }
@@ -1484,6 +1548,8 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
     Local_Point_PeriodicRecv[iRecv] = idRecv[ii];
     ii++;
     Local_Marker_PeriodicRecv[iRecv] = idRecv[ii];
+    ii++;
+    Local_Copy_PeriodicRecv[iRecv] = idRecv[ii];
     ii++;
   }
 

@@ -342,8 +342,14 @@ class CGeometry {
                                               a particular vertex to be sent in periodic comms. */
       *Local_Marker_PeriodicRecv{nullptr}; /*!< \brief Data structure holding the local index of the periodic marker for
                                               a particular vertex to be received in periodic comms. */
-  su2double* bufD_PeriodicRecv{nullptr};   /*!< \brief Data structure for su2double periodic receive. */
-  su2double* bufD_PeriodicSend{nullptr};   /*!< \brief Data structure for su2double periodic send. */
+  vector<unsigned long> Local_Copy_PeriodicSend; /*!< \brief For points on a rotation axis, which are their own periodic
+                                                    match, the number of times the rotation is applied to the data
+                                                    sent (one send per other copy of the control volume). Zero for
+                                                    all other points. */
+  vector<unsigned long> Local_Copy_PeriodicRecv; /*!< \brief Same as Local_Copy_PeriodicSend, for the data received. */
+  bool PeriodicAxisPoints{false};              /*!< \brief Whether this rank has periodic points on a rotation axis. */
+  su2double* bufD_PeriodicRecv{nullptr};       /*!< \brief Data structure for su2double periodic receive. */
+  su2double* bufD_PeriodicSend{nullptr};       /*!< \brief Data structure for su2double periodic send. */
   unsigned short* bufS_PeriodicRecv{nullptr};  /*!< \brief Data structure for unsigned long periodic receive. */
   unsigned short* bufS_PeriodicSend{nullptr};  /*!< \brief Data structure for unsigned long periodic send. */
   SU2_MPI::Request* req_PeriodicSend{nullptr}; /*!< \brief Data structure for periodic send requests. */

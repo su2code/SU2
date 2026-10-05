@@ -342,6 +342,25 @@ namespace PeriodicCommHelpers {
   bool isRotation(const su2double* angles) {
     return angles[0] != 0.0 || angles[1] != 0.0 || angles[2] != 0.0;
   }
+
+  /*--- Replaces a rotation matrix by the matrix that applies the same rotation nRot times. ---*/
+  void applyRotationNTimes(unsigned long nRot, su2double rotMatrix[3][3]) {
+    su2double rotOnce[3][3], rotPrev[3][3];
+    for (auto iDim = 0u; iDim < 3; iDim++)
+      for (auto jDim = 0u; jDim < 3; jDim++)
+        rotOnce[iDim][jDim] = rotMatrix[iDim][jDim];
+
+    for (auto iRot = 1ul; iRot < nRot; iRot++) {
+      for (auto iDim = 0u; iDim < 3; iDim++)
+        for (auto jDim = 0u; jDim < 3; jDim++)
+          rotPrev[iDim][jDim] = rotMatrix[iDim][jDim];
+
+      for (auto iDim = 0u; iDim < 3; iDim++)
+        for (auto jDim = 0u; jDim < 3; jDim++)
+          rotMatrix[iDim][jDim] = rotOnce[iDim][0]*rotPrev[0][jDim] + rotOnce[iDim][1]*rotPrev[1][jDim] +
+                                  rotOnce[iDim][2]*rotPrev[2][jDim];
+    }
+  }
 }
 
 su2activematrix* CSolver::GetPeriodicProjections(const CConfig& config) {
@@ -554,6 +573,32 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
           GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix3D);
         }
 
+        /*--- Points on a rotation axis are their own periodic match, they send once for every
+         other copy of their control volume, i.e. with the rotation applied more than once. ---*/
+
+        const auto nRot = geometry->Local_Copy_PeriodicSend[msg_offset + iSend];
+
+        if (nRot > 1) {
+          if (nDim==2) {
+            const su2double PsiTotal = nRot*Psi;
+            GeometryToolbox::RotationMatrix(PsiTotal, rotMatrix2D);
+          } else {
+            PeriodicCommHelpers::applyRotationNTimes(nRot, rotMatrix3D);
+          }
+        }
+
+        /*--- The neighbors on periodic faces are skipped where edges must be counted once, because
+         the periodic match also has these edges. From the second copy of a point on a rotation
+         axis onwards, the edges on the face of this marker (not along the axis) are new. ---*/
+
+        const auto donorMarker = (nRot > 1) ? config->GetMarker_Periodic_Donor(Marker_Tag) : 0;
+
+        auto sharedEdge = [&](unsigned long jPoint) {
+          if (!geometry->nodes->GetPeriodicBoundary(jPoint)) return false;
+          return (nRot < 2) || (geometry->nodes->GetVertex(jPoint, iPeriodic) < 0) ||
+                 (geometry->nodes->GetVertex(jPoint, donorMarker) >= 0);
+        };
+
         /*--- Whether the vector components of the solution are rotated for this marker. ---*/
 
         const bool rotation = rotate_periodic && PeriodicCommHelpers::isRotation(angles);
@@ -587,7 +632,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                that we avoid double counting neighbors on both sides. If
                not, increment the count of neighbors for the donor. ---*/
 
-              if (!geometry->nodes->GetPeriodicBoundary(jPoint))
+              if (!sharedEdge(jPoint))
                 nNeighbor++;
             }
 
@@ -705,7 +750,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
+              if (!sharedEdge(jPoint)) {
 
                 /*--- Solution differences ---*/
 
@@ -771,7 +816,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (geometry->nodes->GetPeriodicBoundary(jPoint)) continue;
+              if (sharedEdge(jPoint)) continue;
 
               /*--- Use density instead of pressure for incomp. flows. ---*/
 
@@ -914,7 +959,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
+              if (!sharedEdge(jPoint)) {
 
                 /*--- Get coordinates for the neighbor point. ---*/
 
@@ -1204,13 +1249,20 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
       nRecv = (geometry->nPoint_PeriodicRecv[jRecv+1] -
                geometry->nPoint_PeriodicRecv[jRecv]);
 
-      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+      /*--- Points on a rotation axis receive more than once, in that case
+       the loop is not shared by the threads (one chunk). ---*/
+
+      SU2_OMP_FOR_STAT(geometry->PeriodicAxisPoints ? nRecv + 1 : size_t(OMP_MIN_SIZE))
       for (iRecv = 0; iRecv < nRecv; iRecv++) {
 
         /*--- Get the local index for this communicated data. ---*/
 
         iPoint    = geometry->Local_Point_PeriodicRecv[msg_offset  + iRecv];
         iPeriodic = geometry->Local_Marker_PeriodicRecv[msg_offset + iRecv];
+
+        /*--- For points on a rotation axis, which copy of the control volume this is (0 otherwise). ---*/
+
+        const auto iCopy = geometry->Local_Copy_PeriodicRecv[msg_offset + iRecv];
 
         /*--- While all periodic face data was accumulated, we only store
          the values for the current pair of periodic faces. This is slightly
@@ -1283,6 +1335,18 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
                 Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
+                /*--- A point on a rotation axis accumulates the residual and the diagonal block of all
+                 the copies of its control volume, the blocks of its neighbors (which are the same in
+                 all copies, up to the rotation) need the same factor, iCopy+1 after this copy. ---*/
+
+                if (iCopy > 0) {
+                  const passivedouble factor = (iCopy + 1.0) / iCopy;
+                  for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+                    auto* block = Jacobian.GetBlock(iPoint, jPoint);
+                    for (auto iEntry = 0; iEntry < nVar*nVar; iEntry++) block[iEntry] *= factor;
+                  }
+                }
+
                 if (iPeriodic == val_periodic_index + nPeriodic/2) {
                   for (iVar = 0; iVar < nVar; iVar++) {
                     LinSysRes(iPoint, iVar) = 0.0;
@@ -1317,6 +1381,22 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               }
 
+              /*--- A point on a rotation axis takes the average over all the copies of its control
+               volume (running average over the copies received), which removes the velocity
+               normal to the axis: a vector that is the same in all the copies is along the axis. ---*/
+
+              else if (iCopy > 0) {
+
+                for (auto iVar = 0u; iVar < nVar; iVar++) {
+                  const su2double average = base_nodes->GetSolution(iPoint, iVar) +
+                    (bufDRecv[buf_offset] - base_nodes->GetSolution(iPoint, iVar)) / su2double(iCopy + 1);
+                  base_nodes->SetSolution(iPoint, iVar, average);
+                  base_nodes->SetSolution_Old(iPoint, iVar, average);
+                  buf_offset++;
+                }
+
+              }
+
               break;
 
             case PERIODIC_LAPLACIAN:
@@ -1324,7 +1404,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               /*--- Adjust the undivided Laplacian. The accumulation was
                with a subtraction before communicating, so now just add. ---*/
 
-              for (iVar = 0; iVar < nVar; iVar++)
+              for (auto iVar = 0u; iVar < nVar; iVar++)
                 base_nodes->AddUnd_Lapl(iPoint, iVar, bufDRecv[buf_offset+iVar]);
 
               break;
