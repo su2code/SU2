@@ -429,6 +429,14 @@ def main():
     periodic2d_no_limiter.test_vals = [-3.216881, -0.582813, -0.629049, 2.266141, -1.056877, -811.470000]
     test_list.append(periodic2d_no_limiter)
 
+    # 2D rotational periodic sector with multigrid
+    periodic2d_multigrid           = TestCase('periodic2d_multigrid')
+    periodic2d_multigrid.cfg_dir   = "navierstokes/periodic2D"
+    periodic2d_multigrid.cfg_file  = "multigrid.cfg"
+    periodic2d_multigrid.test_iter = 300
+    periodic2d_multigrid.test_vals = [-4.422778, -1.615251, -1.453736, 1.047350, -1.410225, -2060.600000]
+    test_list.append(periodic2d_multigrid)
+
     ##########################
     ### Compressible RANS  ###
     ##########################
