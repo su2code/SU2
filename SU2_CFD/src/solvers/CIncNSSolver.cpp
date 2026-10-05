@@ -255,7 +255,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 
     /*--- First, compute helping terms based on relative distance (0,l) between periodic markers ---*/
     su2double dot_product = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       dot_product += (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodic_Translation(0)[iDim];
 
     /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature ---*/
