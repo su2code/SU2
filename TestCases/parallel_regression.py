@@ -780,6 +780,14 @@ def main():
     inc_heatTransfer_BC.test_vals = [-8.904266, -7.745636, -8.064003, -1.079197, -1671.000000]
     test_list.append(inc_heatTransfer_BC)
 
+    # 2D pin array, periodic with a body force, flow and weakly coupled heat equation
+    inc_periodic_weak_heat           = TestCase('inc_periodic_weak_heat')
+    inc_periodic_weak_heat.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    inc_periodic_weak_heat.cfg_file  = "periodic_weak_heat.cfg"
+    inc_periodic_weak_heat.test_iter = 10
+    inc_periodic_weak_heat.test_vals = [-4.712559, -5.747243, -5.751727, 873.702714]
+    test_list.append(inc_periodic_weak_heat)
+
     ############################
     ### Incompressible RANS  ###
     ############################

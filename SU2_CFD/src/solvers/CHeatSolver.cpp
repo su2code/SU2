@@ -148,12 +148,16 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, const CSolver* fl
     ghostNodes = make_unique<CHeatVariable>(Solution_Inf[0], maxMarkerVertices, nDim, nVar, config);
   }
 
-  /*--- Communicate and store volume and the number of neighbors for any dual CVs that lie on on periodic markers. ---*/
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  /*--- Communicate and store volume and the number of neighbors for any dual CVs that lie on on periodic markers.
+   * With a flow solver on the same geometry this was already done by the flow solver, and the values are
+   * accumulated, so it must not be done twice. ---*/
+  if (!flow) {
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    }
   }
   /*--- Store if implicit scheme is used. This has implications on the Residual and Jacobian handling for periodic
    * boundaries  ---*/
