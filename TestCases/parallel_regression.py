@@ -332,6 +332,14 @@ def main():
     ramp.test_vals_aarch64 = [-13.648406, -8.014579, -0.076277, 0.054839]
     test_list.append(ramp)
 
+    # Supersonic ramp with the NISHIKAWA_R4 limiter
+    ramp_r4 = TestCase('ramp_r4')
+    ramp_r4.cfg_dir = "euler/ramp"
+    ramp_r4.cfg_file = "inv_ramp_r4.cfg"
+    ramp_r4.test_iter = 10
+    ramp_r4.test_vals = [-2.786698, 2.796608, -0.076172, 0.054828]
+    test_list.append(ramp_r4)
+
     ramp_msw = TestCase('ramp_msw')
     ramp_msw.cfg_dir = "euler/ramp"
     ramp_msw.cfg_file = "inv_ramp_msw.cfg"
