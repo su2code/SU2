@@ -421,18 +421,18 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
    of the product with the rotation matrix takes its smallest and its largest value. ---*/
   auto RotateBox = [&](su2double* vMin, su2double* vMax) {
     su2double rotMin[3] = {0.0}, rotMax[3] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
+    for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++) {
       for (auto jDim = 0u; jDim < nDim; jDim++) {
-        const su2double rotMatrix_ij = (nDim == 2) ? rotMatrix2D[iDim][jDim] : rotMatrix3D[iDim][jDim];
+        const su2double rotMatrix_ij = (nDim == 2) ? rotMatrix2D[iCoordinate][jDim] : rotMatrix3D[iCoordinate][jDim];
         const su2double fromMin = rotMatrix_ij * vMin[jDim];
         const su2double fromMax = rotMatrix_ij * vMax[jDim];
-        rotMin[iDim] += min(fromMin, fromMax);
-        rotMax[iDim] += max(fromMin, fromMax);
+        rotMin[iCoordinate] += min(fromMin, fromMax);
+        rotMax[iCoordinate] += max(fromMin, fromMax);
       }
     }
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      vMin[iDim] = rotMin[iDim];
-      vMax[iDim] = rotMax[iDim];
+    for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++) {
+      vMin[iCoordinate] = rotMin[iCoordinate];
+      vMax[iCoordinate] = rotMax[iCoordinate];
     }
   };
 
@@ -470,13 +470,13 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
    the velocity of the neighbor (variables 1 to nDim) is rotated first if requested. ---*/
   auto UpdateMinMax = [&](const su2double* values, bool rotateVelocity) {
     if (rotateVelocity) {
-      for (auto iVar = 0u; iVar < ICOUNT; iVar++) rotPrim_j[iVar] = values[iVar];
+      for (auto iField = 0u; iField < ICOUNT; iField++) rotPrim_j[iField] = values[iField];
       Rotate(zeros, &values[1], &rotPrim_j[1]);
       values = rotPrim_j;
     }
-    for (auto iVar = 0u; iVar < ICOUNT; iVar++) {
-      Sol_Min[iVar] = min(Sol_Min[iVar], values[iVar]);
-      Sol_Max[iVar] = max(Sol_Max[iVar], values[iVar]);
+    for (auto iField = 0u; iField < ICOUNT; iField++) {
+      Sol_Min[iField] = min(Sol_Min[iField], values[iField]);
+      Sol_Max[iField] = max(Sol_Max[iField], values[iField]);
     }
   };
 
@@ -487,12 +487,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     const auto* coord_i = geometry->nodes->GetCoord(point_i);
     const auto* coord_j = geometry->nodes->GetCoord(point_j);
 
-    for (auto iVar = 0u; iVar < ICOUNT; iVar++) {
+    for (auto iField = 0u; iField < ICOUNT; iField++) {
       su2double proj = 0.0;
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        proj += 0.5 * (coord_j[iDim] - coord_i[iDim]) * gradient(point_i, iVar, iDim);
-      const su2double cent = 0.5 * (field(point_j, iVar) - field(point_i, iVar));
-      increments[iVar] = LimiterHelpers<>::umusclProjection(proj, cent, kappa);
+      for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++)
+        proj += 0.5 * (coord_j[iCoordinate] - coord_i[iCoordinate]) * gradient(point_i, iField, iCoordinate);
+      const su2double cent = 0.5 * (field(point_j, iField) - field(point_i, iField));
+      increments[iField] = LimiterHelpers<>::umusclProjection(proj, cent, kappa);
     }
   };
 
@@ -1054,8 +1054,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             if (commType == PERIODIC_LIM_PRIM_1) {
 
-              for (auto iVar = 0u; iVar < ICOUNT; iVar++)
-                Sol_Min[iVar] = Sol_Max[iVar] = 0.0;
+              for (auto iField = 0u; iField < ICOUNT; iField++)
+                Sol_Min[iField] = Sol_Max[iField] = 0.0;
 
               if (rotation) {
                 for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
@@ -1064,9 +1064,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 }
               }
 
-              for (auto iVar = 0u; iVar < ICOUNT; iVar++) {
-                bufDSend[buf_offset+2*ICOUNT+iVar] = Sol_Min[iVar];
-                bufDSend[buf_offset+3*ICOUNT+iVar] = Sol_Max[iVar];
+              for (auto iField = 0u; iField < ICOUNT; iField++) {
+                bufDSend[buf_offset+2*ICOUNT+iField] = Sol_Min[iField];
+                bufDSend[buf_offset+3*ICOUNT+iField] = Sol_Max[iField];
               }
             }
 
@@ -1088,8 +1088,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              a value that is never the minimum. ---*/
 
             if (rotation) {
-              for (auto iDim = 0u; iDim < nDim; iDim++)
-                bufDSend[buf_offset+1+iDim] = std::numeric_limits<passivedouble>::max();
+              for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++)
+                bufDSend[buf_offset+1+iCoordinate] = std::numeric_limits<passivedouble>::max();
             } else if (rotate_periodic) {
               Rotate(zeros, &limiter(iPoint,1), &bufDSend[buf_offset+1]);
             }
@@ -1415,11 +1415,11 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                used to start the search over "our" edges (only with rotation). ---*/
 
               if ((commType == PERIODIC_LIM_PRIM_1) && !PeriodicProj.empty()) {
-                for (auto iVar = 0u; iVar < ICOUNT; iVar++) {
-                  PeriodicProj(iPoint, iVar) = min(PeriodicProj(iPoint, iVar),
-                                                   bufDRecv[buf_offset+2*ICOUNT+iVar]);
-                  PeriodicProj(iPoint, ICOUNT+iVar) = max(PeriodicProj(iPoint, ICOUNT+iVar),
-                                                          bufDRecv[buf_offset+3*ICOUNT+iVar]);
+                for (auto iField = 0u; iField < ICOUNT; iField++) {
+                  PeriodicProj(iPoint, iField) = min(PeriodicProj(iPoint, iField),
+                                                   bufDRecv[buf_offset+2*ICOUNT+iField]);
+                  PeriodicProj(iPoint, ICOUNT+iField) = max(PeriodicProj(iPoint, ICOUNT+iField),
+                                                          bufDRecv[buf_offset+3*ICOUNT+iField]);
                 }
               }
 
