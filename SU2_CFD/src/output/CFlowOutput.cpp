@@ -1732,26 +1732,27 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   }
 
   switch (config->GetKind_Trans_Model()) {
-    case TURB_TRANS_MODEL::LM:
+    case TURB_TRANS_MODEL::LM: {
+      const auto& data = *Node_Trans->GetTransitionData(iPoint);
       SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Trans->GetSolution(iPoint, 0));
-      SetVolumeOutputValue("RE_V", iPoint, Node_Trans->GetRe_v(iPoint));
-      SetVolumeOutputValue("RE_THETA_CORR", iPoint, Node_Trans->GetCorr_Rec(iPoint));
-      SetVolumeOutputValue("PROD", iPoint, Node_Trans->GetProd(iPoint));
-      SetVolumeOutputValue("DESTR", iPoint, Node_Trans->GetDestr(iPoint));
-      SetVolumeOutputValue("F_ONSET1", iPoint, Node_Trans->GetF_onset1(iPoint));
-      SetVolumeOutputValue("F_ONSET2", iPoint, Node_Trans->GetF_onset2(iPoint));
-      SetVolumeOutputValue("F_ONSET3", iPoint, Node_Trans->GetF_onset3(iPoint));
-      SetVolumeOutputValue("F_ONSET", iPoint, Node_Trans->GetF_onset(iPoint));
-      SetVolumeOutputValue("LAMBDA_THETA", iPoint, Node_Trans->GetLambda_theta(iPoint));
-      SetVolumeOutputValue("DU_DS", iPoint, Node_Trans->Getduds(iPoint));
+      SetVolumeOutputValue("RE_V", iPoint, data.vorticityReynolds);
+      SetVolumeOutputValue("RE_THETA_CORR", iPoint, data.criticalReynolds);
+      SetVolumeOutputValue("PROD", iPoint, data.production);
+      SetVolumeOutputValue("DESTR", iPoint, data.destruction);
+      SetVolumeOutputValue("F_ONSET1", iPoint, data.onset1);
+      SetVolumeOutputValue("F_ONSET2", iPoint, data.onset2);
+      SetVolumeOutputValue("F_ONSET3", iPoint, data.onset3);
+      SetVolumeOutputValue("F_ONSET", iPoint, data.onset);
+      SetVolumeOutputValue("LAMBDA_THETA", iPoint, data.pressureGradient);
+      SetVolumeOutputValue("DU_DS", iPoint, data.streamwiseVelocityGradient);
       if (!(config->GetLMParsedOptions()).SLM) {
         SetVolumeOutputValue("RE_THETA_T", iPoint, Node_Trans->GetSolution(iPoint, 1));
       } else {
-        SetVolumeOutputValue("RE_THETA_T", iPoint, Node_Trans->GetRe_t(iPoint));
-        SetVolumeOutputValue("TU", iPoint, Node_Trans->GetTu(iPoint));
-        SetVolumeOutputValue("NORMAL_X", iPoint, Node_Trans->GetNormal_x(iPoint));
-        SetVolumeOutputValue("NORMAL_Y", iPoint, Node_Trans->GetNormal_y(iPoint));
-        SetVolumeOutputValue("NORMAL_Z", iPoint, Node_Trans->GetNormal_z(iPoint));
+        SetVolumeOutputValue("RE_THETA_T", iPoint, data.momentumThicknessReynolds);
+        SetVolumeOutputValue("TU", iPoint, data.turbulenceIntensity);
+        SetVolumeOutputValue("NORMAL_X", iPoint, Node_Trans->GetTransitionWallNormal(iPoint)[0]);
+        SetVolumeOutputValue("NORMAL_Y", iPoint, Node_Trans->GetTransitionWallNormal(iPoint)[1]);
+        SetVolumeOutputValue("NORMAL_Z", iPoint, Node_Trans->GetTransitionWallNormal(iPoint)[2]);
       }
       SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
       SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
@@ -1761,6 +1762,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("RES_RE_THETA_T", iPoint, trans_solver->LinSysRes(iPoint, 1));
       }
       break;
+    }
 
     case TURB_TRANS_MODEL::NONE: break;
   }

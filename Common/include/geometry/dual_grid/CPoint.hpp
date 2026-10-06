@@ -535,7 +535,7 @@ class CPoint {
    */
   template <typename Normals_type>
   inline void SetNormal(unsigned long iPoint, Normals_type const& normal) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Normals(iPoint, iDim) = normal[iDim];
+    for (auto iDim = 0u; iDim < nDim; iDim++) Normals(iPoint, iDim) = normal[iDim];
   }
 
   /*!

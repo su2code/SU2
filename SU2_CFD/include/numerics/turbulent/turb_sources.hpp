@@ -331,7 +331,10 @@ class CSourceBase_TurbSA : public CNumerics {
         /*--- Lee and Baeder (AIAA 2021-1532), Eqs. 17-18: the scaled intermittency, which is zero in the laminar
          * boundary layer, multiplies the production, and max(gamma_s, 0.1) the destruction. ---*/
         const su2double c_e2 = 50.0;
-        const su2double gamma_s = max(min((min(intermittency_i, 1.0) - 1.0 / c_e2) / (1.0 - 1.0 / c_e2), 1.0), 0.0);
+        const su2double limitedIntermittency = min(intermittency_i, 1.0);
+        const su2double scaledIntermittency = (limitedIntermittency - 1.0 / c_e2) / (1.0 - 1.0 / c_e2);
+        const su2double cappedIntermittency = min(scaledIntermittency, 1.0);
+        const su2double gamma_s = max(cappedIntermittency, 0.0);
         var.intermittency = gamma_s;
         var.interDestrFactor = max(gamma_s, 0.1);
 
