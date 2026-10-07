@@ -773,7 +773,7 @@ def main():
     test_list.append(sp_pipeSlice_3d_dp_hf_tp)
 
     # Same with the energy equation, periodic temperature and an integrated wall heat
-    sp_pipeSlice_3d_dp_ihf_tp           = TestCase('sp_pipeSlice_3d_dp_ihf_tp')
+    sp_pipeSlice_3d_dp_ihf_tp = TestCase('sp_pipeSlice_3d_dp_ihf_tp')
     sp_pipeSlice_3d_dp_ihf_tp.cfg_dir = "incomp_navierstokes/streamwise_periodic/pipeSlice_3d"
     sp_pipeSlice_3d_dp_ihf_tp.cfg_file = "sp_pipeSlice_3d_dp_ihf_tp.cfg"
     sp_pipeSlice_3d_dp_ihf_tp.test_iter = 10
