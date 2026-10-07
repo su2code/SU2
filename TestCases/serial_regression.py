@@ -1725,6 +1725,19 @@ def main():
     test_list.append(pywrapper_custom_inlet)
     pass_list.append(pywrapper_custom_inlet.run_test(args.tsan, args.asan))
 
+    # Bounds checks of the matrix views
+    pywrapper_matrix_view_bounds = TestCase('pywrapper_matrix_view_bounds')
+    pywrapper_matrix_view_bounds.cfg_dir = "py_wrapper/matrix_view_bounds"
+    pywrapper_matrix_view_bounds.cfg_file = "heat_rectangle.cfg"
+    pywrapper_matrix_view_bounds.test_iter = 10
+    pywrapper_matrix_view_bounds.test_vals = [-5.122599, -4.820574, 127.760000]
+    pywrapper_matrix_view_bounds.command = TestCase.Command(exec = "python", param = "run.py")
+    pywrapper_matrix_view_bounds.timeout = 1600
+    pywrapper_matrix_view_bounds.tol = 0.00001
+    pywrapper_matrix_view_bounds.enabled_with_asan = False
+    test_list.append(pywrapper_matrix_view_bounds)
+    pass_list.append(pywrapper_matrix_view_bounds.run_test(args.tsan, args.asan))
+
     # Tests summary
     print('==================================================================')
     print('Summary of the serial tests')
