@@ -523,6 +523,12 @@ class CGeometry {
    */
   void AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint);
 
+  /*! \brief Sum partial scalar or vector geometry data over periodic copies (called by the master). */
+  void SumPeriodicGeometry(const CConfig* config, su2activematrix& values, int vectorIndex);
+
+  /*! \brief Refresh donor volumes after a mesh update. */
+  void UpdatePeriodicVolumes(const CConfig* config);
+
   /*!
    * \brief Routine to launch non-blocking recvs only for all periodic communication with neighboring partitions.
    * \note This routine is called by any class that has loaded data into the generic communication buffers.

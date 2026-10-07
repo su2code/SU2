@@ -1555,6 +1555,77 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
 
   delete[] idSend;
   delete[] idRecv;
+  ComputeModifiedSymmetryNormals(config);
+}
+
+void CGeometry::SumPeriodicGeometry(const CConfig* config, su2activematrix& values, int vectorIndex) {
+  if (!nPeriodicSend && !nPeriodicRecv) return;
+  const auto count = values.cols();
+  AllocatePeriodicComms(count);
+  for (auto iPair = 1u; iPair <= config->GetnMarker_Periodic() / 2; ++iPair) {
+    PostPeriodicRecvs(this, config, COMM_TYPE::DOUBLE, count);
+    for (auto iMessage = 0; iMessage < nPeriodicSend; ++iMessage) {
+      for (auto iSend = nPoint_PeriodicSend[iMessage]; iSend < nPoint_PeriodicSend[iMessage + 1]; ++iSend) {
+        const auto iPoint = Local_Point_PeriodicSend[iSend];
+        auto* buffer = bufD_PeriodicSend + count * iSend;
+        for (auto iVar = 0u; iVar < count; ++iVar) buffer[iVar] = values(iPoint, iVar);
+        if (vectorIndex >= 0) {
+          const auto* angles =
+              config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(Local_Marker_PeriodicSend[iSend]));
+          su2double rotation[3][3], vector[3] = {};
+          GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotation);
+          /*--- Axis points contribute the rotated normal of each additional copy. ---*/
+          const auto nCopies = max(1ul, Local_Copy_PeriodicSend[iSend]);
+          for (auto iCopy = 0ul; iCopy < nCopies; ++iCopy) {
+            std::copy(buffer + vectorIndex, buffer + vectorIndex + nDim, vector);
+            for (auto iDim = 0u; iDim < nDim; ++iDim) {
+              buffer[vectorIndex + iDim] = 0;
+              for (auto jDim = 0u; jDim < nDim; ++jDim)
+                buffer[vectorIndex + iDim] += rotation[iDim][jDim] * vector[jDim];
+            }
+          }
+        }
+      }
+#ifdef HAVE_MPI
+      PostPeriodicSends(this, config, COMM_TYPE::DOUBLE, count, iMessage);
+#else
+      const auto message = PeriodicRecv2Neighbor[rank];
+      const auto start = count * nPoint_PeriodicSend[iMessage];
+      const auto end = count * nPoint_PeriodicSend[iMessage + 1];
+      std::copy(bufD_PeriodicSend + start, bufD_PeriodicSend + end,
+                bufD_PeriodicRecv + count * nPoint_PeriodicRecv[message]);
+#endif
+    }
+    for (auto iMessage = 0; iMessage < nPeriodicRecv; ++iMessage) {
+      auto message = iMessage;
+#ifdef HAVE_MPI
+      SU2_MPI::Status status;
+      int index;
+      SU2_MPI::Waitany(nPeriodicRecv, req_PeriodicRecv, &index, &status);
+      message = PeriodicRecv2Neighbor[status.MPI_SOURCE];
+#endif
+      for (auto iRecv = nPoint_PeriodicRecv[message]; iRecv < nPoint_PeriodicRecv[message + 1]; ++iRecv) {
+        const auto periodic = Local_Marker_PeriodicRecv[iRecv];
+        if (periodic != iPair && periodic != iPair + config->GetnMarker_Periodic() / 2) continue;
+        const auto iPoint = Local_Point_PeriodicRecv[iRecv];
+        for (auto iVar = 0u; iVar < count; ++iVar) values(iPoint, iVar) += bufD_PeriodicRecv[count * iRecv + iVar];
+      }
+    }
+    SU2_MPI::Waitall(nPeriodicSend, req_PeriodicSend, MPI_STATUS_IGNORE);
+  }
+}
+
+void CGeometry::UpdatePeriodicVolumes(const CConfig* config) {
+  if (!config->GetnMarker_Periodic() || (!nPeriodicSend && !nPeriodicRecv)) return;
+  AllocatePeriodicComms(1);
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    su2activematrix volumes(nPoint, 1);
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) volumes(iPoint, 0) = nodes->GetVolume(iPoint);
+    SumPeriodicGeometry(config, volumes, -1);
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint)
+      nodes->SetPeriodicVolume(iPoint, volumes(iPoint, 0) - nodes->GetVolume(iPoint));
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
@@ -2800,6 +2871,7 @@ void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) 
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetMaxLength(config);
+  geometry_container[MESH_0]->UpdatePeriodicVolumes(config);
 
   for (unsigned short iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     /*--- Update the control volume structures ---*/
@@ -2807,6 +2879,7 @@ void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) 
     geometry_container[iMesh]->SetControlVolume(geometry_container[iMesh - 1], UPDATE);
     geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh - 1], config, UPDATE);
     geometry_container[iMesh]->SetCoord(geometry_container[iMesh - 1]);
+    geometry_container[iMesh]->UpdatePeriodicVolumes(config);
   }
 
   /*--- Compute the global surface areas for all markers. ---*/
@@ -2943,6 +3016,46 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
     }
   }
 
+  std::vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> periodicNormals(nMarker);
+  std::vector<bool> periodicPoints(nPoint, false);
+  if (nPeriodicRecv)
+    for (auto i = 0; i < nPoint_PeriodicRecv[nPeriodicRecv]; ++i) periodicPoints[Local_Point_PeriodicRecv[i]] = true;
+
+  /*--- A slip wall meeting a periodic face needs the normal of the complete
+   * wall patch. Keep markers separate to preserve distinct corner constraints. ---*/
+  if (config->GetnMarker_Periodic() && (nPeriodicSend || nPeriodicRecv)) {
+    for (auto iCfgMarker = 0u; iCfgMarker < config->GetnMarker_CfgFile(); ++iCfgMarker) {
+      const auto tag = config->GetMarker_CfgFile_TagBound(iCfgMarker);
+      const auto kind = config->GetMarker_CfgFile_KindBC(tag);
+      if (kind != SYMMETRY_PLANE && kind != EULER_WALL) continue;
+      su2activematrix normals(nPoint, nDim);
+      normals = su2double(0);
+      for (const auto iMarker : symMarkers) {
+        if (config->GetMarker_All_TagBound(iMarker) != tag) continue;
+        for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; ++iVertex) {
+          const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+          for (auto iDim = 0u; iDim < nDim; ++iDim) normals(iPoint, iDim) = vertex[iMarker][iVertex]->GetNormal(iDim);
+        }
+      }
+      SumPeriodicGeometry(config, normals, 0);
+      for (const auto iMarker : symMarkers) {
+        if (config->GetMarker_All_TagBound(iMarker) != tag) continue;
+        for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; ++iVertex) {
+          const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+          if (!periodicPoints[iPoint]) continue;
+          const auto area = GeometryToolbox::Norm(nDim, normals[iPoint]);
+          if (area <= MIN_AREA) continue;
+          auto& normal = symmetryNormals[iMarker][iVertex];
+          auto& areaNormal = periodicNormals[iMarker][iVertex];
+          for (auto iDim = 0u; iDim < nDim; ++iDim) {
+            areaNormal[iDim] = normals(iPoint, iDim);
+            normal[iDim] = areaNormal[iDim] / area;
+          }
+        }
+      }
+    }
+  }
+
   /*--- Merge the normals of curved markers to be independent of how surfaces are divided. ---*/
 
   std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>> mergedNormals;
@@ -2959,7 +3072,11 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       if (count < 2) continue;
 
       std::array<su2double, MAXNDIM> normal = {};
-      vertex[iMarker][iVertex]->GetNormal(normal.data());
+      const auto corrected = periodicNormals[iMarker].find(iVertex);
+      if (corrected != periodicNormals[iMarker].end())
+        normal = corrected->second;
+      else
+        vertex[iMarker][iVertex]->GetNormal(normal.data());
 
       auto result = mergedNormals.emplace(iPoint, normal);
       const auto inserted = result.second;
