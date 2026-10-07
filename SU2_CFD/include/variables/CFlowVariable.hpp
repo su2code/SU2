@@ -206,6 +206,13 @@ class CFlowVariable : public CVariable {
   inline const MatrixType& GetLimiter_Primitive() const final { return Limiter_Primitive; }
 
   /*!
+   * \brief Number of primitive variables that have a gradient/limiter column, from the start of
+   *        the primitive row. Some convective schemes (see EulerNPrimVarGrad) size this smaller
+   *        than the full primitive count.
+   */
+  inline unsigned long GetnPrimVarGrad() const { return nPrimVarGrad; }
+
+  /*!
    * \brief Get the new solution of the problem (Classical RK4).
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.

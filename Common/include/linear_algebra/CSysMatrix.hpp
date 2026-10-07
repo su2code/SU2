@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cassert>
+#include <optional>
 
 /*--- In forward mode the matrix is not of a built-in type. ---*/
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
@@ -111,36 +112,14 @@ struct CSysMatrixComms {
 };
 
 /*!
- * \brief std::max/std::min, usable from both host and device code. Calling std::max/std::min
- *        directly from a SU2_CUDA_HOST_DEVICE function compiles without error but is not
- *        actually valid without --expt-relaxed-constexpr which is not used in this build.
- */
-template <class T>
-SU2_CUDA_HOST_DEVICE inline T QuantMax(T a, T b) noexcept {
-#ifdef __CUDA_ARCH__
-  return max(a, b);
-#else
-  return std::max(a, b);
-#endif
-}
-template <class T>
-SU2_CUDA_HOST_DEVICE inline T QuantMin(T a, T b) noexcept {
-#ifdef __CUDA_ARCH__
-  return min(a, b);
-#else
-  return std::min(a, b);
-#endif
-}
-
-/*!
- * \brief Reconstruct the float row-scale from a stored int8 binary exponent.
- *        The exponent \p e was packed as (e + 127) into the IEEE 754 biased-exponent field
- *        with a zero mantissa, giving an exact power of two: 2^e.
+ * \brief Reconstruct the float row-scale from a stored uint8 binary exponent.
+ *        \p e is stored already biased, i.e. it is the IEEE 754 biased-exponent field itself, so
+ *        shifting it into place with a zero mantissa gives the exact power of two 2^(e-127).
  *        This is the inverse of the encoding in EncodeQuantBlock.
  * \note Branches on __CUDA_ARCH__, plain memcpy compiles for the device but does not work!
  */
-SU2_CUDA_HOST_DEVICE inline float DecodeQuantScale(int8_t e) noexcept {
-  const uint32_t bits = static_cast<uint32_t>(QuantMax(0, static_cast<int>(e) + 127)) << 23;
+SU2_CUDA_HOST_DEVICE FORCEINLINE float DecodeQuantScale(uint8_t e) noexcept {
+  const uint32_t bits = static_cast<uint32_t>(e) << 23;
 #ifdef __CUDA_ARCH__
   return __uint_as_float(bits);
 #else
@@ -162,28 +141,38 @@ SU2_CUDA_HOST_DEVICE inline float DecodeQuantScale(int8_t e) noexcept {
  *       host-only (not SU2_CUDA_HOST_DEVICE).
  */
 template <class F>
-SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* __restrict qv, unsigned long nVar,
-                                                unsigned long r) noexcept {
+SU2_CUDA_HOST_DEVICE FORCEINLINE void EncodeQuantRow(const F& f, uint8_t& qs, int8_t* __restrict qv, unsigned long nVar,
+                                                     unsigned long r) noexcept {
 #ifdef __CUDA_ARCH__
-  auto passive = [&](unsigned long row, unsigned long col) { return f(row, col); };
+#define EQR_PASSIVE(ROW, COL) f(ROW, COL)
 #else
-  auto passive = [&](unsigned long row, unsigned long col) { return SU2_TYPE::PassiveValue(f(row, col)); };
+#define EQR_PASSIVE(ROW, COL) SU2_TYPE::PassiveValue(f(ROW, COL))
+  using std::max;
+  using std::min;
 #endif
-  constexpr uint32_t eps_bits = 0x34000000u;
+  constexpr uint32_t eps_bits = 0x34000000u;  // ~1.2e-7
   uint32_t max_abs_bits = eps_bits;
   for (auto c = 0ul; c < nVar; ++c) {
-    const float fv = static_cast<float>(passive(r, c));
+    const auto fv = static_cast<float>(EQR_PASSIVE(r, c));
 #ifdef __CUDA_ARCH__
     const uint32_t fb = __float_as_uint(fv);
 #else
     uint32_t fb;
     memcpy(&fb, &fv, sizeof(fb));
 #endif
-    max_abs_bits = QuantMax(max_abs_bits, fb & 0x7FFFFFFFu);
+    /*--- Masking the mantissa as well as the sign leaves the exponent alone in place, which is
+     * all the scale needs (the max of the exponents is the exponent of the max). ---*/
+    max_abs_bits = max(max_abs_bits, fb & 0x7F800000u);
   }
-  const int e = QuantMin(127, QuantMax(-128, static_cast<int>(max_abs_bits >> 23) - 133));
-  qs = static_cast<int8_t>(e);
-  const uint32_t inv_bits = static_cast<uint32_t>(127 - e) << 23;
+  /*--- Add 1 (round up the exponent) and subtract 7 (to divide by 128. which is the int8 range
+   * for "qv") = -6. The 127 float offset is NOT removed, so the stored value is the biased
+   * exponent of the scale and DecodeQuantScale can use it as exponent bits directly. The
+   * eps_bits floor puts the result in [98, 249], so it always fits in uint8 without clamping. ---*/
+  qs = static_cast<uint8_t>((max_abs_bits >> 23) - 6);
+  /*--- 1/scale = 2^-(qs-127), whose biased exponent is 254 - qs. Because max_abs_bits holds the
+   * exponent already shifted into place with a zero mantissa, that whole expression collapses to
+   * one subtraction: (254 - ((max_abs_bits >> 23) - 6)) << 23 == (260 << 23) - max_abs_bits. ---*/
+  const uint32_t inv_bits = 0x82000000u /* 260 << 23 */ - max_abs_bits;
 #ifdef __CUDA_ARCH__
   const float inv_rscale = __uint_as_float(inv_bits);
 #else
@@ -191,9 +180,11 @@ SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* 
   memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
 #endif
   for (auto c = 0ul; c < nVar; ++c) {
-    qv[c] =
-        static_cast<int8_t>(QuantMax(-128.f, QuantMin(127.f, roundf(static_cast<float>(passive(r, c)) * inv_rscale))));
+    /*--- Truncate and add 0.5 away from 0, equivalent to roundf, but inline. ---*/
+    const float t = max(-128.f, min(127.f, static_cast<float>(EQR_PASSIVE(r, c) * inv_rscale)));
+    qv[c] = static_cast<int8_t>(t + copysignf(0.5f, t));
   }
+#undef EQR_PASSIVE
 }
 
 /*!
@@ -202,8 +193,8 @@ SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* 
  *        the host path).
  */
 template <class F>
-SU2_CUDA_HOST_DEVICE inline void EncodeQuantBlock(const F& f, int8_t* __restrict qs, int8_t* __restrict qv,
-                                                  unsigned long nVar) noexcept {
+SU2_CUDA_HOST_DEVICE FORCEINLINE void EncodeQuantBlock(const F& f, uint8_t* __restrict qs, int8_t* __restrict qv,
+                                                       unsigned long nVar) noexcept {
   for (auto r = 0ul; r < nVar; ++r) EncodeQuantRow(f, qs[r], qv + r * nVar, nVar, r);
 }
 
@@ -216,10 +207,11 @@ SU2_CUDA_HOST_DEVICE inline void EncodeQuantBlock(const F& f, int8_t* __restrict
 template <class ScalarType>
 struct CBlockView {
   using QuantType = std::conditional_t<std::is_const_v<ScalarType>, const int8_t, int8_t>;
+  using QuantScaleType = std::conditional_t<std::is_const_v<ScalarType>, const uint8_t, uint8_t>;
 
-  ScalarType* ptr = nullptr;  ///< Full-precision block; non-null iff not quantized.
-  QuantType* qs = nullptr;    ///< Per-row binary exponent; non-null iff quantized.
-  QuantType* qv = nullptr;    ///< Quantized values (row-major); non-null iff quantized.
+  ScalarType* ptr = nullptr;     ///< Full-precision block; non-null iff not quantized.
+  QuantScaleType* qs = nullptr;  ///< Per-row biased binary exponent; non-null iff quantized.
+  QuantType* qv = nullptr;       ///< Quantized values (row-major); non-null iff quantized.
   unsigned long nVar = 0;
 
   /*! \brief False when the block is not present in the sparsity pattern. */
@@ -312,10 +304,13 @@ class CSysMatrix {
   LDU<ScalarType> gpu;          /*!< \brief Device matrix (all pointers to GPU memory). */
   LDU<ScalarType> ilu;          /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
   LDU<ScalarType> gpu_ilu;      /*!< \brief ILU factorization, device (values and pattern in GPU memory). */
-  ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi preconditioner. */
+  ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi or LU-SGS preconditioner. */
 
   /*--- Quantized off-diagonal storage (used when quantized_mode == true). ---*/
   using QuantType = int8_t;
+  /*!< \brief Row scales are stored as the biased float exponent, hence unsigned, see
+   *          DecodeQuantScale. */
+  using QuantScaleType = uint8_t;
 
   /*! \brief Set by Initialize() when preconditioner == Q_LU_SGS, Q_JACOBI or Q_IDENTITY.
    *         mat.l and mat.u are NOT allocated; off-diagonal blocks live in q_scale/q_blocks
@@ -328,16 +323,16 @@ class CSysMatrix {
 #else
   static constexpr bool quantized_mode = false;
 #endif
-  /*!< \brief Per-row exponents; .l/.u sized [nnz_l/u * nVar], .d [nPoint * nVar]. .l/.u are
+  /*!< \brief Per-row biased exponents; .l/.u sized [nnz_l/u * nVar], .d [nPoint * nVar]. .l/.u are
    *          populated during assembly (quantized on the fly); .d is populated by
    *          QuantizeDiagonalBlocks(). .l/.u are pinned (cudaMallocHost) rather than
    *          aligned_alloc when useCuda, so HtDTransfer()'s async uploads them. */
-  LDU<QuantType> q_scale;
+  LDU<QuantScaleType> q_scale;
   /*!< \brief Quantized block entries; .l/.u sized [nnz_l/u * nVar * nEqn], .d [nPoint * nVar * nEqn]. */
   LDU<QuantType> q_blocks;
 
   /*!< \brief Device mirrors of the quantized storage, only allocated when quantized_mode. */
-  LDU<QuantType> d_q_scale;
+  LDU<QuantScaleType> d_q_scale;
   LDU<QuantType> d_q_blocks;
 
   bool useCuda = false; /*!< \brief Whether CUDA is enabled. */
@@ -362,7 +357,7 @@ class CSysMatrix {
    * rows in level k only depend on rows in levels < k. The same table drives the forward
    * (increasing level) and backward (decreasing level) substitution, because the U pattern is
    * the transpose of the L pattern. Used directly by the host/OMP substitution, and flattened
-   * into ilu_level_ptr / d_ilu_level_idx below for the GPU triangular solves. */
+   * into ilu_level_ptr / d_precond_level_idx below for the GPU triangular solves. */
   CCompressedSparsePatternUL levels_ilu;
 
   /*!< \brief Coloring of the (domain-only) ILU dependency graph, used only by the GPU iterative
@@ -379,29 +374,45 @@ class CSysMatrix {
   vector<su2uint> ilu_color_ptr;      /*!< \brief Start of each color in d_ilu_color_idx, size nColors+1. */
   su2uint* d_ilu_color_idx = nullptr; /*!< \brief Row indices, grouped by color. */
 
-  vector<su2uint> ilu_level_ptr;      /*!< \brief Start of each level in d_ilu_level_idx, size nLevels+1. */
-  su2uint* d_ilu_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
+  vector<su2uint> precond_level_ptr;      /*!< \brief Start of each level in d_precond_level_idx, size nLevels+1. */
+  su2uint* d_precond_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
 
   /*--- The per-color (factorization) and per-level (triangular solves) kernel launch sequences
    * are identical on every call: same grid/block sizes, same device pointers (all fixed members,
    * allocated once). Each is captured once into a CUDA graph and replayed to remove
    * host-side launch overhead without changing the parallelization. ---*/
   mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;
-  mutable struct CUgraphExec_st* ilu_apply_graph_exec = nullptr;
-  mutable const ScalarType* ilu_apply_graph_vec = nullptr; /*!< \brief Pointers the apply graph
-                                                            * was captured with, to detect when
-                                                            * it must be recaptured. */
-  mutable ScalarType* ilu_apply_graph_prod = nullptr;
-  /*--- Non-default stream, needed for two mutually exclusive uses that never overlap on a given
-   * matrix (quantized_mode and ILU are alternative preconditioner choices, decided once in
-   * Initialize()): (1) the ILU build/apply CUDA graphs below, since the legacy default stream
-   * cannot be captured into a graph; (2) HtDTransfer's async H2D transfer of the quantized L/U
-   * blocks, so that transfer can run concurrently (copy engine) with kernels issued on the
-   * default stream (e.g. QuantizeDiagonalBlocksGPU, on the SM) instead of queueing behind them on
-   * the same stream. Because the two uses are mutually exclusive, sharing one stream (rather than
-   * a dedicated one per use) needs no extra synchronization between them. htd_event marks the end
-   * of the H2D transfer specifically, so the default-stream kernel that first reads the result
-   * (the quantized SpMV) can wait on it without a host-side block. ---*/
+
+  /*!< \brief Whether a build may refine the factors already on the device instead of computing
+   * them exactly. TransposeInPlace() clears it for good: from then on this matrix is used in
+   * both orientations, and the factors of one are a bad starting point for the other, which the
+   * ilu_gpu_sweeps colored sweeps cannot recover from. It is not restored after a build because
+   * the orientation flips again on the next one (and the solver refills the matrix in between
+   * without going through TransposeInPlace). Only the discrete adjoint transposes, so the primal
+   * keeps refining as before. */
+  mutable bool ilu_can_refine = true;
+  mutable struct CUgraphExec_st* precond_fwd_graph_exec = nullptr;  // ILU or LU-SGS forward only
+  mutable struct CUgraphExec_st* precond_bwd_graph_exec = nullptr;  // LU-SGS backward only
+  mutable const ScalarType* precond_fwd_graph_vec = nullptr;        /*!< \brief Pointers the apply graph
+                                                                     * was captured with, to detect when
+                                                                     * it must be recaptured (the
+                                                                     * executable graph itself is then
+                                                                     * updated in place, not rebuilt,
+                                                                     * see InstantiateOrUpdateGraph). */
+  mutable ScalarType* precond_fwd_graph_prod = nullptr;
+  mutable ScalarType* precond_bwd_graph_prod = nullptr;
+
+  /*--- Non-default stream, needed for two uses: (1) the preconditioner build/apply CUDA graphs
+   * below, since the legacy default stream cannot be captured into a graph; (2) HtDTransfer's
+   * async H2D transfer of the quantized L/U blocks, so that transfer can run concurrently (copy
+   * engine) with kernels issued on the default stream (e.g. QuantizeDiagonalBlocksGPU, on the SM)
+   * instead of queueing behind them on the same stream. The two are mutually exclusive for ILU
+   * (never quantized) but not for Q_LU_SGS, which uses both; sharing one stream still needs no
+   * extra synchronization, and in fact gives the right answer for free: the apply graph is
+   * launched into aux_stream, hence ordered after the transfer of the quantized blocks its
+   * kernels read. htd_event marks the end of the H2D transfer specifically, so a *default*-stream
+   * kernel that reads the result (the quantized SpMV) can wait on it without a host-side
+   * block. ---*/
   mutable struct CUstream_st* aux_stream = nullptr;
   mutable struct CUevent_st* htd_event = nullptr;
 
@@ -599,12 +610,14 @@ class CSysMatrix {
    * \param[in] vec - Input vector (nEqn entries).
    * \param[in,out] prod - Accumulation output (nVar entries).
    */
-  inline void QuantizedMatVecAdd(const QuantType* qs, const QuantType* qv, const ScalarType* vec,
+  inline void QuantizedMatVecAdd(const QuantScaleType* qs, const QuantType* qv, const ScalarType* vec,
                                  ScalarType* prod) const;
 
   /*! \brief Quantize one nVar×nVar block (row-major) into the int8 scale+value arrays.
    *         Called on the hot assembly path (SetBlocks/UpdateBlocks in Q_LU_SGS mode). */
-  void QuantizeBlock(const ScalarType* blk, QuantType* qs, QuantType* qv) const;
+  inline void QuantizeBlock(const ScalarType* blk, QuantScaleType* qs, QuantType* qv) const {
+    EncodeQuantBlock([&](unsigned long r, unsigned long c) { return blk[r * nVar + c]; }, qs, qv, nVar);
+  }
 
   /*! \brief Full-row product using quantized L/D/U (Q_LU_SGS SpMV path). */
   inline void QuantizedRowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
@@ -661,6 +674,31 @@ class CSysMatrix {
    */
   void ComputeILUPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
 
+  /*!
+   * \brief Build the LU-SGS preconditioner on the device
+   */
+  void BuildLU_SGSPreconditionerGPU();
+
+  /*!
+   * \brief Apply the LU-SGS preconditioner forward pass on the device
+   */
+  void ComputeLU_SGSForwardGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
+
+  /*!
+   * \brief Apply the LU-SGS preconditioner backward pass on the device
+   */
+  void ComputeLU_SGSBackwardGPU(CSysVector<ScalarType>& prod) const;
+
+  /*!
+   * \brief Apply the forward pass of the LU-SGS preconditioner
+   */
+  void ComputeLU_SGSPreconditionerForward(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
+
+  /*!
+   * \brief Apply the backward pass of the LU-SGS preconditioner
+   */
+  void ComputeLU_SGSPreconditionerBackward(CSysVector<ScalarType>& prod) const;
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -682,15 +720,15 @@ class CSysMatrix {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] needTranspPtr - If the L/U transpose maps should be built, used for "SetDiagonalAsColumnSum".
-   * \param[in] grad_mode - Gradient smoothing mode, only used to detect the right preconditioner type.
    * \param[in] allow_quant - Quantization is only possible with solvers that "set and forget" the off-diagonal
    *            blocks of the matrix. Solvers that perform multiple updates would lose too much information, so
    *            that pattern is not supported with quantization (the code will hit null pointers). It is up to
    *            the solver to declare whether it will "set and forget".
+   * \param[in] override_prec - Decide if, and with what argument to override the preconditioner.
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
-                  bool grad_mode = false, bool allow_quant = false);
+                  bool allow_quant = false, std::optional<unsigned short> override_prec = std::nullopt);
 
   /*!
    * \brief Compresses off-diagonal blocks into quantized form for use with USE_QUANTIZATION.
@@ -925,6 +963,7 @@ class CSysMatrix {
     static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
     constexpr size_t blkSz = MatTypeSIMD::StaticSize;
     assert(blkSz == nVar * nEqn);
+    constexpr size_t nVar = MatTypeSIMD::StaticNRows;
 
     /*--- "Transpose" the blocks, scale, and possibly convert types,
      * giving the compiler the chance to vectorize all of these. ---*/
@@ -951,9 +990,11 @@ class CSysMatrix {
           bii[i] -= blk_i[k][i];
           bjj[i] -= blk_j[k][i];
         }
-        QuantizeBlock(blk_j[k], &q_scale.u[iEdge[k] * nVar], &q_blocks.u[iEdge[k] * blkSz]);
+        EncodeQuantBlock([&, k](unsigned long r, unsigned long c) { return blk_j[k][r * nVar + c]; },
+                         &q_scale.u[iEdge[k] * nVar], &q_blocks.u[iEdge[k] * blkSz], nVar);
         const auto k_l = edge_ptr_l[iEdge[k]];
-        QuantizeBlock(blk_i[k], &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+        EncodeQuantBlock([&, k](unsigned long r, unsigned long c) { return blk_i[k][r * nVar + c]; },
+                         &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz], nVar);
       } else {
         auto bij = &mat.u[iEdge[k] * blkSz];
         auto bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
@@ -1029,6 +1070,80 @@ class CSysMatrix {
   }
 
   /*!
+   * \brief Set the four blocks of an edge, for fluxes whose i and j contributions are independent.
+   * \note The diagonal blocks are accumulated, the off-diagonal blocks are set.
+   */
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void SetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& jac_ii,
+                        const MatrixType& jac_ij, const MatrixType& jac_ji, const MatrixType& jac_jj,
+                        OtherType mask = 1) {
+    const auto blkSz = nVar * nEqn;
+    auto* bii = &mat.d[iPoint * blkSz];
+    auto* bjj = &mat.d[jPoint * blkSz];
+    unsigned long iVar, jVar, offset = 0;
+
+    if (quantized_mode) {
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bii[offset] += PassiveAssign(jac_ii[iVar][jVar] * mask);
+          bjj[offset] += PassiveAssign(jac_jj[iVar][jVar] * mask);
+          bij_buf[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+          bji_buf[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        }
+      QuantizeBlock(bij_buf, &q_scale.u[iEdge * nVar], &q_blocks.u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+      return;
+    }
+
+    auto* bij = &mat.u[iEdge * blkSz];
+    auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bii[offset] += PassiveAssign(jac_ii[iVar][jVar] * mask);
+        bjj[offset] += PassiveAssign(jac_jj[iVar][jVar] * mask);
+        bij[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+        bji[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        ++offset;
+      }
+    }
+  }
+
+  /*!
+   * \brief Set the off-diagonal blocks of an edge, the diagonal being assembled elsewhere.
+   */
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void SetOffDiagBlocks(unsigned long iEdge, const MatrixType& jac_ij, const MatrixType& jac_ji,
+                               OtherType mask = 1) {
+    const auto blkSz = nVar * nEqn;
+    unsigned long iVar, jVar, offset = 0;
+
+    if (quantized_mode) {
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bij_buf[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+          bji_buf[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        }
+      QuantizeBlock(bij_buf, &q_scale.u[iEdge * nVar], &q_blocks.u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+      return;
+    }
+
+    auto* bij = &mat.u[iEdge * blkSz];
+    auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bij[offset] = PassiveAssign(jac_ij[iVar][jVar] * mask);
+        bji[offset] = PassiveAssign(jac_ji[iVar][jVar] * mask);
+        ++offset;
+      }
+    }
+  }
+
+  /*!
    * \brief SIMD version, does the update for multiple edges.
    * \note Nothing is updated if the mask is 0.
    */
@@ -1039,6 +1154,7 @@ class CSysMatrix {
     static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
     constexpr size_t blkSz = MatTypeSIMD::StaticSize;
     assert(blkSz == nVar * nEqn);
+    constexpr size_t nVar = MatTypeSIMD::StaticNRows;
 
     /*--- "Transpose" the blocks, scale, and possibly convert types,
      * giving the compiler the chance to vectorize all of these. ---*/
@@ -1057,9 +1173,11 @@ class CSysMatrix {
       if (mask[k] == 0) continue;
 
       if (quantized_mode) {
-        QuantizeBlock(blk_j[k], &q_scale.u[iEdge[k] * nVar], &q_blocks.u[iEdge[k] * blkSz]);
+        EncodeQuantBlock([&, k](unsigned long r, unsigned long c) { return blk_j[k][r * nVar + c]; },
+                         &q_scale.u[iEdge[k] * nVar], &q_blocks.u[iEdge[k] * blkSz], nVar);
         const auto k_l = edge_ptr_l[iEdge[k]];
-        QuantizeBlock(blk_i[k], &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+        EncodeQuantBlock([&, k](unsigned long r, unsigned long c) { return blk_i[k][r * nVar + c]; },
+                         &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz], nVar);
       } else {
         ScalarType* bij = &mat.u[iEdge[k] * blkSz];
         ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
@@ -1227,6 +1345,11 @@ class CSysMatrix {
    */
   void ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                                 const CConfig* config) const;
+
+  /*!
+   * \brief Build the LU-SGS preconditioner.
+   */
+  void BuildLU_SGSPreconditioner();
 
   /*!
    * \brief Multiply CSysVector by the preconditioner

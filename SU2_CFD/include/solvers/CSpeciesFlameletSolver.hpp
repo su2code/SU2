@@ -37,8 +37,14 @@
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
+  const su2double default_flame_thickness{1.0};
+  su2double global_flame_thickness;
+  bool calc_flame_thickness{false};
   FluidFlamelet_ParsedOptions flamelet_config_options;
   bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
+  /*!< \brief Number of points outside the manifold domain, shared across OpenMP threads so it can be
+   *          accumulated atomically and reduced by the master thread alone in Preprocessing. */
+  unsigned long n_not_in_domain_local = 0;
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -82,10 +88,11 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] iPoint - node ID.
    * \param[in] scalars - local scalar solution.
    * \param[in] table_source_names - variable names of scalar source terms.
+   * \param[in] F - flame thickness correction factor.
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
   unsigned long SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
-                                 const vector<su2double>& scalars);
+                                 const vector<su2double>& scalars, const su2double F=1.0);
 
   /*!
    * \brief Retrieve passive look-up data from manifold.
@@ -106,6 +113,22 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   unsigned long SetPreferentialDiffusionScalars(CFluidModel* fluid_model_local,
                                                 unsigned long iPoint, const vector<su2double>& scalars);
+  
+  /*!
+   * \brief Calculate correction factor for flame propagation on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - node ID.
+   * \return - flame thickness correction factor.
+   */                                              
+  su2double ThickenedFlameCorrection(const CGeometry* geometry, unsigned long iPoint) const;   
+
+  /*!
+   * \brief Approximate the minimum flame thickness value used for the thickened flame model.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \return - approximate flame thickness value.
+   */
+  su2double GetOverallFlameThickness(CGeometry* geometry,  CSolver** solver_container) const;
 
  public:
   /*!
@@ -114,7 +137,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  CSpeciesFlameletSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh);
+  CSpeciesFlameletSolver(CGeometry* geometry, CConfig* config, const CSolver* flow_solver, unsigned short iMesh);
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -201,14 +224,19 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
                                   unsigned short val_marker) override;
 
   /*!
-   * \brief Compute the fluxes due to viscous and preferential diffusion effects of the flamelet species at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \brief Compute the spatial integration using the CScalarFlux_Flamelet edge kernel, which adds
+   *        the preferential diffusion terms to the species convection and diffusion.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
-   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                        const CConfig* config) final;
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                       CConfig* config, unsigned short iMesh) final;
+
+  /*!
+   * \brief Obtain the overall flame thickness value.
+   * \return flame thickness value.
+   */
+  su2double GetFlameThickness() const override {return global_flame_thickness;}
 };

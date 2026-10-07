@@ -1,6 +1,7 @@
 /*!
  * \file quantization_tests.cpp
- * \brief Unit tests for the int8 row-scaled block quantization used by Q_LU_SGS.
+ * \brief Unit tests for the row-scaled block quantization used by Q_LU_SGS (int8 values, with
+ *        one uint8 per-row scale holding the biased float exponent).
  * \author P. Gomes
  * \version 8.5.0 "Harrier"
  *
@@ -28,8 +29,10 @@
 #include "catch.hpp"
 #include "../../../Common/include/linear_algebra/CSysMatrix.hpp"
 
+#include <cmath>
+
 /*--- Row-major access into a flat quantized block, matching CBlockView's decode. ---*/
-static su2double Decode(const int8_t* qs, const int8_t* qv, unsigned long nVar, unsigned long r, unsigned long c) {
+static su2double Decode(const uint8_t* qs, const int8_t* qv, unsigned long nVar, unsigned long r, unsigned long c) {
   return static_cast<su2double>(qv[r * nVar + c]) * DecodeQuantScale(qs[r]);
 }
 
@@ -43,12 +46,14 @@ TEST_CASE("Quantization round-trip is stable for well-behaved values", "[LinearA
   const su2double row[nVar] = {3.0, -2.0, 1.5, 0.75};
   auto f = [&](unsigned long, unsigned long c) { return row[c]; };
 
-  int8_t qs1[nVar], qv1[nVar * nVar];
+  uint8_t qs1[nVar];
+  int8_t qv1[nVar * nVar];
   EncodeQuantBlock(f, qs1, qv1, nVar);
 
   auto decoded = [&](unsigned long, unsigned long c) { return Decode(qs1, qv1, nVar, 0, c); };
 
-  int8_t qs2[nVar], qv2[nVar * nVar];
+  uint8_t qs2[nVar];
+  int8_t qv2[nVar * nVar];
   EncodeQuantBlock(decoded, qs2, qv2, nVar);
 
   CHECK(qs2[0] == qs1[0]);
@@ -57,7 +62,8 @@ TEST_CASE("Quantization round-trip is stable for well-behaved values", "[LinearA
   /*--- A second decode/encode cycle from the now-stable representation must
    * reproduce the exact same codes again. ---*/
   auto decoded2 = [&](unsigned long, unsigned long c) { return Decode(qs2, qv2, nVar, 0, c); };
-  int8_t qs3[nVar], qv3[nVar * nVar];
+  uint8_t qs3[nVar];
+  int8_t qv3[nVar * nVar];
   EncodeQuantBlock(decoded2, qs3, qv3, nVar);
 
   CHECK(qs3[0] == qs2[0]);
@@ -65,8 +71,8 @@ TEST_CASE("Quantization round-trip is stable for well-behaved values", "[LinearA
 }
 
 TEST_CASE("Quantization saturates and truncates with a known, bounded error", "[LinearAlgebra]") {
-  /*--- One row engineered so that, at the scale it forces (2^0 = 1 here, since the
-   * largest magnitude in the row is in [64, 128)):
+  /*--- One row engineered so that, at the scale it forces (2^0 = 1 here, stored as the biased
+   * exponent 127, since the largest magnitude in the row is in [64, 128)):
    *   col 0:  127.9 -> rounds to 128, clamped to  127 (int8 max), error ~0.9 (close to
    *           the theoretical worst case: clamping can only ever push a value that
    *           rounds to +128 down to +127, an error that approaches but never reaches
@@ -82,10 +88,11 @@ TEST_CASE("Quantization saturates and truncates with a known, bounded error", "[
   const su2double row[nVar] = {127.9, -127.9, 0.2, 60.0};
   auto f = [&](unsigned long, unsigned long c) { return row[c]; };
 
-  int8_t qs[nVar], qv[nVar * nVar];
+  uint8_t qs[nVar];
+  int8_t qv[nVar * nVar];
   EncodeQuantBlock(f, qs, qv, nVar);
 
-  CHECK(qs[0] == 0);
+  CHECK(static_cast<int>(qs[0]) == 127);   // Biased exponent of 2^0.
   CHECK(static_cast<int>(qv[0]) == 127);   // Saturated at the int8 maximum.
   CHECK(static_cast<int>(qv[1]) == -128);  // Hits the int8 minimum exactly.
   CHECK(static_cast<int>(qv[2]) == 0);     // Truncated to zero.

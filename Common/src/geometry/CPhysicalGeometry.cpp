@@ -52,6 +52,8 @@
 #include "../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../include/geometry/primal_grid/CVertexMPI.hpp"
 
+#include "../../../Common/include/tracy_structure.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
@@ -5745,9 +5747,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
       }
     }
     if (marker_flag == INFLOW) {
-      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow";
     } else {
-      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow";
     }
     char buffer[50];
 
@@ -7667,8 +7669,8 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
   /*--- Compute the metrics with a final loop over the vertices. Also
    compute the local min and max values here for reporting. ---*/
 
-  su2double orthoMin = 1.e6, arMin = 1.e6, vrMin = 1.e6;
-  su2double orthoMax = 0.0, arMax = 0.0, vrMax = 0.0;
+  su2double orthoMin = 1.e6, arMin = 1.e6, vrMin = 1.e6, volMin = 1.e6;
+  su2double orthoMax = 0.0, arMax = 0.0, vrMax = 0.0, volMax = 0.0;
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Orthogonality[iPoint] = Orthogonality[iPoint] / SurfaceArea[iPoint];
     orthoMin = min(Orthogonality[iPoint], orthoMin);
@@ -7681,6 +7683,12 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
     Volume_Ratio[iPoint] = SubVolume_Max[iPoint] / SubVolume_Min[iPoint];
     vrMin = min(Volume_Ratio[iPoint], vrMin);
     vrMax = max(Volume_Ratio[iPoint], vrMax);
+
+    /*--- The dual CV's own volume, not a ratio: a collapsed cell can have a normal aspect
+     ratio and sub-volume ratio yet still be degenerate in absolute size. ---*/
+    const su2double Volume_i = SU2_TYPE::GetValue(nodes->GetVolume(iPoint));
+    volMin = min(Volume_i, volMin);
+    volMax = max(Volume_i, volMax);
   }
 
   /*--- Reduction to find the min and max values globally. ---*/
@@ -7697,6 +7705,10 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
   SU2_MPI::Allreduce(&vrMin, &Global_VR_Min, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&vrMax, &Global_VR_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
+  su2double Global_Vol_Min, Global_Vol_Max;
+  SU2_MPI::Allreduce(&volMin, &Global_Vol_Min, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&volMax, &Global_Vol_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+
   /*--- Print the summary to the console for the user. ---*/
 
   PrintingToolbox::CTablePrinter MetricsTable(&std::cout);
@@ -7708,6 +7720,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
     MetricsTable << "Orthogonality Angle (deg.)" << Global_Ortho_Min << Global_Ortho_Max;
     MetricsTable << "CV Face Area Aspect Ratio" << Global_AR_Min << Global_AR_Max;
     MetricsTable << "CV Sub-Volume Ratio" << Global_VR_Min << Global_VR_Max;
+    MetricsTable << "CV Volume" << Global_Vol_Min << Global_Vol_Max;
     MetricsTable.PrintFooter();
   }
 
@@ -7939,8 +7952,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     char str_buf[CGNS_STRING_SIZE], fname[100];
     unsigned short iVar;
     strcpy(fname, filename.c_str());
-    int nRestart_Vars = 5, nFields;
-    int* Restart_Vars = new int[5];
+    int nRestart_Vars = SU2_RESTART_HEADER_SIZE, nFields;
+    int* Restart_Vars = new int[SU2_RESTART_HEADER_SIZE];
     passivedouble* Restart_Data = nullptr;
     int Restart_Iter = 0;
     passivedouble Restart_Meta_Passive[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -7970,7 +7983,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (Restart_Vars[0] != 535532) {
+    if (Restart_Vars[0] != SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                          string("SU2 reads/writes binary restart files by default.\n") +
                          string("Note that backward compatibility for ASCII restart files is\n") +
@@ -7978,9 +7991,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
                      CURRENT_FUNCTION);
     }
 
-    /*--- Store the number of fields for simplicity. ---*/
+    /*--- Store the number of fields for simplicity. The file may have been written by
+     a build of different precision, in which case the data needs to be converted. ---*/
 
     nFields = Restart_Vars[1];
+    const int scalarSize = GetSU2BinaryScalarSize(Restart_Vars[SU2_RESTART_PRECISION_IDX]);
 
     /*--- Read the variable names from the file. Note that we are adopting a
      fixed length of 33 for the string length to match with CGNS. This is
@@ -8002,28 +8017,45 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     /*--- Read in the data for the restart at all local points. ---*/
 
-    ret = fread(Restart_Data, sizeof(passivedouble), nFields * GetnPointDomain(), fhw);
-    if (ret != static_cast<unsigned long>(nFields) * GetnPointDomain()) {
+    const unsigned long nScalars = static_cast<unsigned long>(nFields) * GetnPointDomain();
+
+    if (scalarSize == static_cast<int>(sizeof(passivedouble))) {
+      ret = fread(Restart_Data, scalarSize, nScalars, fhw);
+    } else {
+      vector<char> buffer(nScalars * scalarSize);
+      ret = fread(buffer.data(), scalarSize, nScalars, fhw);
+      SU2BinaryDataToPassive(buffer.data(), scalarSize, nScalars, Restart_Data);
+    }
+    if (ret != nScalars) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
-    /*--- Compute (negative) displacements and grab the metadata. ---*/
+    /*--- Grab the metadata trailer, which only old files have. Without it the iteration
+     number and the metadata keep the zeros they were initialized with. ---*/
 
-    ret = sizeof(int) + 8 * sizeof(passivedouble);
-    fseek(fhw, -ret, SEEK_END);
+    const int nMeta =
+        GetSU2BinaryMetadataSize(Restart_Vars[SU2_RESTART_PRECISION_IDX], Restart_Vars[SU2_RESTART_METADATA_IDX]);
+    if (nMeta > 0) {
+      /*--- Compute (negative) displacements and jump to the trailer. ---*/
 
-    /*--- Read the external iteration. ---*/
+      ret = sizeof(int) + nMeta * scalarSize;
+      fseek(fhw, -ret, SEEK_END);
 
-    ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
-    if (ret != 1) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
-    }
+      /*--- Read the external iteration. ---*/
 
-    /*--- Read the metadata. ---*/
+      ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+      if (ret != 1) {
+        SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+      }
 
-    ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
-    if (ret != 8) {
-      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+      /*--- Read the metadata. ---*/
+
+      double meta_buf[SU2_RESTART_MAX_METADATA]; /*--- Correctly aligned for either precision. ---*/
+      ret = fread(meta_buf, scalarSize, nMeta, fhw);
+      if (ret != static_cast<unsigned long>(nMeta)) {
+        SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+      }
+      SU2BinaryDataToPassive(meta_buf, scalarSize, nMeta, Restart_Meta_Passive);
     }
 
     /*--- Close the file. ---*/
@@ -8066,7 +8098,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (Restart_Vars[0] != 535532) {
+    if (Restart_Vars[0] != SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                          string("SU2 reads/writes binary restart files by default.\n") +
                          string("Note that backward compatibility for ASCII restart files is\n") +
@@ -8074,9 +8106,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
                      CURRENT_FUNCTION);
     }
 
-    /*--- Store the number of fields for simplicity. ---*/
+    /*--- Store the number of fields for simplicity. The file may have been written by
+     a build of different precision, in which case the data needs to be converted. ---*/
 
     nFields = Restart_Vars[1];
+    const int scalarSize = GetSU2BinaryScalarSize(Restart_Vars[SU2_RESTART_PRECISION_IDX]);
 
     /*--- Read the variable names from the file. Note that we are adopting a
      fixed length of 33 for the string length to match with CGNS. This is
@@ -8110,9 +8144,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     delete[] mpi_str_buf;
 
-    /*--- We're writing only su2doubles in the data portion of the file. ---*/
+    /*--- The data portion of the file holds scalars of the precision recorded in the
+     header, which is not necessarily that of this build. Describe them as opaque
+     blocks of bytes so that the file views do not depend on the build precision. ---*/
 
-    etype = MPI_DOUBLE;
+    MPI_Type_contiguous(scalarSize, MPI_BYTE, &etype);
+    MPI_Type_commit(&etype);
 
     /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
      along with the string names of the variables. ---*/
@@ -8130,11 +8167,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++) {
       if (GetGlobal_to_Local_Point(iPoint_Global) > -1) {
         blocklen[counter] = nFields;
-        displace[counter] = iPoint_Global * nFields * sizeof(passivedouble);
+        displace[counter] = iPoint_Global * nFields * scalarSize;
         counter++;
       }
     }
-    MPI_Type_create_hindexed(GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+    MPI_Type_create_hindexed(GetnPointDomain(), blocklen, displace, etype, &filetype);
     MPI_Type_commit(&filetype);
 
     /*--- Set the view for the MPI file write, i.e., describe the location in
@@ -8146,31 +8183,45 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     Restart_Data = new passivedouble[nFields * GetnPointDomain()];
 
-    /*--- Collective call for all ranks to read from their view simultaneously. ---*/
+    /*--- Collective call for all ranks to read from their view simultaneously,
+     converting the data if the file precision does not match this build. ---*/
 
-    MPI_File_read_all(fhw, Restart_Data, nFields * GetnPointDomain(), MPI_DOUBLE, &status);
+    const unsigned long nScalars = static_cast<unsigned long>(nFields) * GetnPointDomain();
 
-    /*--- Free the derived datatype. ---*/
+    if (scalarSize == static_cast<int>(sizeof(passivedouble))) {
+      MPI_File_read_all(fhw, Restart_Data, nScalars, etype, &status);
+    } else {
+      vector<char> buffer(nScalars * scalarSize);
+      MPI_File_read_all(fhw, buffer.data(), nScalars, etype, &status);
+      SU2BinaryDataToPassive(buffer.data(), scalarSize, nScalars, Restart_Data);
+    }
+
+    /*--- Free the derived datatypes. ---*/
 
     MPI_Type_free(&filetype);
+    MPI_Type_free(&etype);
 
     /*--- Reset the file view before writing the metadata. ---*/
 
     MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, (char*)"native", MPI_INFO_NULL);
 
-    /*--- Access the metadata. ---*/
+    /*--- Access the metadata trailer, which only old files have. Without it the iteration
+     number and the metadata keep the zeros they were initialized with. ---*/
 
-    if (rank == MASTER_NODE) {
+    const int nMeta =
+        GetSU2BinaryMetadataSize(Restart_Vars[SU2_RESTART_PRECISION_IDX], Restart_Vars[SU2_RESTART_METADATA_IDX]);
+    if (nMeta > 0 && rank == MASTER_NODE) {
       /*--- External iteration. ---*/
       disp = (nRestart_Vars * sizeof(int) + nFields * CGNS_STRING_SIZE * sizeof(char) +
-              nFields * Restart_Vars[2] * sizeof(passivedouble));
+              static_cast<unsigned long>(nFields) * Restart_Vars[2] * scalarSize);
       MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
 
       /*--- Additional doubles for AoA, AoS, etc. ---*/
 
-      disp = (nRestart_Vars * sizeof(int) + nFields * CGNS_STRING_SIZE * sizeof(char) +
-              nFields * Restart_Vars[2] * sizeof(passivedouble) + 1 * sizeof(int));
-      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
+      disp += sizeof(int);
+      double meta_buf[SU2_RESTART_MAX_METADATA]; /*--- Correctly aligned for either precision. ---*/
+      MPI_File_read_at(fhw, disp, meta_buf, nMeta * scalarSize, MPI_BYTE, MPI_STATUS_IGNORE);
+      SU2BinaryDataToPassive(meta_buf, scalarSize, nMeta, Restart_Meta_Passive);
     }
 
     /*--- Communicate metadata. ---*/
@@ -8278,7 +8329,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (magic_number == 535532) {
+    if (magic_number == SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                          string("SU2 reads/writes binary restart files by default.\n") +
                          string("Note that backward compatibility for ASCII restart files is\n") +
@@ -8316,7 +8367,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (magic_number == 535532) {
+    if (magic_number == SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                          string("SU2 reads/writes binary restart files by default.\n") +
                          string("Note that backward compatibility for ASCII restart files is\n") +
@@ -10225,7 +10276,6 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
   if (!WallADT->IsEmpty()) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
-
     SU2_OMP_PARALLEL {
       CPHYSGEO_PARFOR
       for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {
