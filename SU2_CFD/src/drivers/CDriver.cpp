@@ -676,7 +676,8 @@ void CDriver::InitializeGeometry(CConfig* config, CGeometry **&geometry, bool du
    *    numerical settings, they depend only on the grid coordinates and the weighting.
    *    Combinations not covered here (e.g. auxiliary variable gradients) are computed on
    *    first use, and on moving/deforming grids the terms are recomputed after each mesh
-   *    update. ---*/
+   *    update. With periodic boundaries the terms include the contributions of the periodic
+   *    neighbors (the periodic comms of the geometry were prepared above). ---*/
 
   if (!dummy && !fem_solver && config->GetLSQMetricCaching()) {
 
@@ -687,14 +688,14 @@ void CDriver::InitializeGeometry(CConfig* config, CGeometry **&geometry, bool du
     const bool lsqGradRecon = config->GetReconstructionGradientRequired() &&
                               ((kindGradRecon == LEAST_SQUARES) || (kindGradRecon == WEIGHTED_LEAST_SQUARES));
 
-    if (lsqGrad) computeLSQGradientMetrics(*geometry[MESH_0], kindGrad == WEIGHTED_LEAST_SQUARES);
-    if (lsqGradRecon) computeLSQGradientMetrics(*geometry[MESH_0], kindGradRecon == WEIGHTED_LEAST_SQUARES);
+    if (lsqGrad) computeLSQGradientMetrics(*geometry[MESH_0], *config, kindGrad == WEIGHTED_LEAST_SQUARES);
+    if (lsqGradRecon) computeLSQGradientMetrics(*geometry[MESH_0], *config, kindGradRecon == WEIGHTED_LEAST_SQUARES);
 
     /*--- The coarse multigrid levels only compute gradients for the viscous fluxes. ---*/
 
     if (lsqGrad && config->GetViscous()) {
       for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-        computeLSQGradientMetrics(*geometry[iMesh], kindGrad == WEIGHTED_LEAST_SQUARES);
+        computeLSQGradientMetrics(*geometry[iMesh], *config, kindGrad == WEIGHTED_LEAST_SQUARES);
       }
     }
   }
