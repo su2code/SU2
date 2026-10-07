@@ -538,7 +538,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
         /*--- Dot product ---*/
         const su2double dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);
 
-        LinSysRes(iPoint, nDim+1) += scalar_factor*dot_product;
+        /*--- Normal points into the fluid: q_periodic = q + k grad(T_recovered).n. ---*/
+        LinSysRes(iPoint, nDim+1) -= scalar_factor*dot_product;
       } // if streamwise_periodic
       break;
 
