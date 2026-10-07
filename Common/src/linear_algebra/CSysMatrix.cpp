@@ -945,9 +945,39 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long
 }
 
 template <class ScalarType>
+void CSysMatrix<ScalarType>::ProjectPeriodic(const CSysVector<ScalarType>& input, CSysVector<ScalarType>& output,
+                                             CGeometry* geometry, const CConfig* config) const {
+  geometry->AllocatePeriodicComms(nVar + 1);
+  SU2_OMP_SAFE_GLOBAL_ACCESS(periodicBuffer.resize(nPoint, nVar + 1);)
+  SU2_OMP_FOR_STAT(omp_heavy_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+    for (auto iVar = 0u; iVar < nVar; ++iVar) periodicBuffer(iPoint, iVar) = input(iPoint, iVar);
+    periodicBuffer(iPoint, nVar) = 1;
+  }
+  END_SU2_OMP_FOR
+  SU2_OMP_SAFE_GLOBAL_ACCESS(geometry->SumPeriodicGeometry(config, periodicBuffer, periodicVectorIndex);)
+  SU2_OMP_FOR_STAT(omp_heavy_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+    for (auto iVar = 0u; iVar < nVar; ++iVar)
+      output(iPoint, iVar) = ActiveAssign<ScalarType>(periodicBuffer(iPoint, iVar) / periodicBuffer(iPoint, nVar));
+  END_SU2_OMP_FOR
+  CSysMatrixComms::Initiate(output, geometry, config);
+  CSysMatrixComms::Complete(output, geometry, config);
+}
+
+template <class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                  CGeometry* geometry, const CConfig* config) const {
   SU2_ZONE_SCOPED
+
+  const bool periodic = HasPeriodicProjection() && config->GetnMarker_Periodic();
+  if (periodic) {
+    if (projectedInput.GetLocSize() != nPoint * nVar) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(projectedInput.Initialize(nPoint, nPointDomain, nVar, ScalarType(0));)
+    }
+    ProjectPeriodic(vec, projectedInput, geometry, config);
+  }
+  const auto& input = periodic ? projectedInput : vec;
 
   if (useCuda) {
 #ifdef SU2_ENABLE_CUDA_KERNELS
@@ -983,14 +1013,25 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& v
   if (quantized_mode) {
     SU2_OMP_FOR_DYN(omp_heavy_size)
     for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
-      QuantizedRowProduct(vec, row_i, &prod[row_i * nVar]);
+      QuantizedRowProduct(input, row_i, &prod[row_i * nVar]);
     }
     END_SU2_OMP_FOR
   } else {
     SU2_OMP_FOR_DYN(omp_heavy_size)
     for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
-      RowProduct(vec, row_i, &prod[row_i * nVar]);
+      RowProduct(input, row_i, &prod[row_i * nVar]);
     }
+    END_SU2_OMP_FOR
+  }
+
+  if (periodic) {
+    /*--- K = P A P + I-P. P is an orthogonal average of periodic copies,
+     * so transposing A also gives the transpose of the complete operator.
+     * I-P enforces consistency without introducing missing-neighbour rows. ---*/
+    ProjectPeriodic(prod, prod, geometry, config);
+    SU2_OMP_FOR_STAT(omp_heavy_size)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint)
+      for (auto iVar = 0u; iVar < nVar; ++iVar) prod(iPoint, iVar) += vec(iPoint, iVar) - projectedInput(iPoint, iVar);
     END_SU2_OMP_FOR
   }
 

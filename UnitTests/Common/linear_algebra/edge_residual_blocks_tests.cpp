@@ -26,6 +26,7 @@
  */
 
 #include "catch.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../UnitQuadTestCase.hpp"
 
 /*--- A block whose entries are all different, so a mixed-up index reads back wrong. ---*/
@@ -164,4 +165,172 @@ TEST_CASE("SetBlocks and SetOffDiagBlocks with quantized off-diagonal storage", 
     CheckBlock(matrix, iPoint, jPoint, nVar, jac_ij_new, quantTol);
     CheckBlock(matrix, jPoint, iPoint, nVar, jac_ji_new, quantTol);
   }
+}
+
+TEST_CASE("Complete periodic implicit operator and transpose", "[Periodic][LinearAlgebra]") {
+  const auto kind = GENERATE(0u, 1u, 2u, 3u);
+  const bool rotation = kind == 1;
+  const auto nPairs = kind > 1 ? kind : 1u;
+  UnitQuadTestCase field;
+  const auto start = field.config_options.find("MARKER_HEATFLUX=");
+  const auto end = field.config_options.find("VISCOSITY_MODEL=");
+  field.config_options.replace(start, end - start,
+                               nPairs == 1 ? "MARKER_CUSTOM= (y_minus,y_plus,z_plus,z_minus)\n"
+                                           : (nPairs == 2 ? "MARKER_CUSTOM= (z_plus,z_minus)\n" : ""));
+  std::string periodic = rotation ? "MARKER_PERIODIC= (x_minus,x_plus, 0,0.5,0.5, 90,0,0, 1,0,0"
+                                  : "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0";
+  if (nPairs > 1) periodic += ", y_minus,y_plus, 0,0,0, 0,0,0, 0,1,0";
+  if (nPairs > 2) periodic += ", z_minus,z_plus, 0,0,0, 0,0,0, 0,0,1";
+  field.AddOption(periodic + ")");
+  /*--- Avoid asking a float Krylov solver to converge below roundoff. ---*/
+  field.AddOption("LINEAR_SOLVER= BCGSTAB\nLINEAR_SOLVER_PREC= JACOBI\nLINEAR_SOLVER_ITER= 150");
+  field.AddOption(sizeof(su2mixedfloat) == sizeof(float) ? "LINEAR_SOLVER_ERROR= 1e-6" : "LINEAR_SOLVER_ERROR= 1e-10");
+  field.InitConfig();
+  field.InitGeometry(true);
+  for (auto pair = 1u; pair <= nPairs; ++pair) field.geometry->MatchPeriodic(field.config.get(), pair);
+  field.geometry->PreprocessPeriodicComms(field.geometry.get(), field.config.get());
+  field.InitSolver();
+  auto& matrix = field.solver[FLOW_SOL]->Jacobian;
+  const auto nVar = field.solver[FLOW_SOL]->GetnVar();
+  const auto nPoint = field.geometry->GetnPoint();
+  const auto nDomain = field.geometry->GetnPointDomain();
+  unsigned long globalPoints = 0;
+  SU2_MPI::Allreduce(&nDomain, &globalPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  REQUIRE(nDomain > 0);
+  const auto size = globalPoints * nVar;
+  std::vector<su2double> partialA(size * size, 0), partialP(size * size, 0), A(size * size), P(size * size);
+  matrix.SetValZero();
+  for (auto i = 0ul; i < nPoint; ++i) {
+    const auto globalI = field.geometry->nodes->GetGlobalIndex(i);
+    std::vector<unsigned long> columns = {i};
+    for (auto j : field.geometry->nodes->GetPoints(i)) columns.push_back(j);
+    for (auto j : columns) {
+      const auto globalJ = field.geometry->nodes->GetGlobalIndex(j);
+      auto* block = matrix.GetBlock(i, j);
+      REQUIRE(block != nullptr);
+      for (auto a = 0u; a < nVar; ++a)
+        for (auto b = 0u; b < nVar; ++b) {
+          /*--- Nonsymmetric blocks expose mistakes in the reverse operator. ---*/
+          const auto value =
+              (i == j && a == b ? 3.0 : 0.0) + 0.001 * (1 + a + 2 * b) + (i == j ? 0 : 0.002 * (1 + globalI));
+          block[a * nVar + b] = value;
+          if (i < nDomain)
+            partialA[(globalI * nVar + a) * size + globalJ * nVar + b] = SU2_TYPE::GetValue(block[a * nVar + b]);
+        }
+    }
+    if (i < nDomain)
+      for (auto a = 0u; a < nVar; ++a) partialP[(globalI * nVar + a) * size + globalI * nVar + a] = 1;
+  }
+  SU2_MPI::Allreduce(partialA.data(), A.data(), A.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(partialP.data(), P.data(), P.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  for (auto pair = 1u; pair <= nPairs; ++pair) {
+    std::fill(partialP.begin(), partialP.end(), 0);
+    for (auto i = 0ul; i < nDomain; ++i) {
+      const auto globalI = field.geometry->nodes->GetGlobalIndex(i);
+      for (auto a = 0u; a < nVar; ++a)
+        std::copy_n(P.data() + (globalI * nVar + a) * size, size, partialP.data() + (globalI * nVar + a) * size);
+    }
+    for (auto marker = 0u; marker < field.geometry->GetnMarker(); ++marker) {
+      if (field.config->GetMarker_All_KindBC(marker) != PERIODIC_BOUNDARY) continue;
+      const auto index = static_cast<unsigned short>(field.config->GetMarker_All_PerBound(marker));
+      if (index != pair && index != pair + nPairs) continue;
+      const auto* angles = field.config->GetPeriodicRotAngles(field.config->GetMarker_All_TagBound(marker));
+      su2double q[3][3];
+      GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], q);
+      for (auto vertex = 0ul; vertex < field.geometry->GetnVertex(marker); ++vertex) {
+        const auto* point = field.geometry->vertex[marker][vertex];
+        const auto i = point->GetNode();
+        if (i >= nDomain) continue;
+        const auto globalI = field.geometry->nodes->GetGlobalIndex(i);
+        const auto donor = point->GetDonorGlobalIndex();
+        for (auto a = 0u; a < nVar; ++a)
+          for (auto j = 0ul; j < size; ++j) {
+            auto value = P[(globalI * nVar + a) * size + j];
+            if (a >= 1 && a <= 3) {
+              for (auto b = 1u; b <= 3; ++b) value += q[b - 1][a - 1] * P[(donor * nVar + b) * size + j];
+            } else {
+              value += P[(donor * nVar + a) * size + j];
+            }
+            partialP[(globalI * nVar + a) * size + j] = 0.5 * value;
+          }
+      }
+    }
+    SU2_MPI::Allreduce(partialP.data(), P.data(), P.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  }
+  auto product = [&](const std::vector<su2double>& mat, const std::vector<su2double>& x, bool transpose = false) {
+    std::vector<su2double> result(size, 0);
+    for (auto i = 0ul; i < size; ++i)
+      for (auto j = 0ul; j < size; ++j) result[i] += (transpose ? mat[j * size + i] : mat[i * size + j]) * x[j];
+    return result;
+  };
+  std::vector<su2double> x(size), y(size);
+  for (auto i = 0ul; i < size; ++i) {
+    x[i] = sin(0.1 * i);
+    y[i] = cos(0.07 * i);
+  }
+  const auto px = product(P, x), py = product(P, y);
+  auto reference = product(P, product(A, px));
+  auto transposeReference = product(P, product(A, py, true));
+  for (auto i = 0ul; i < size; ++i) {
+    reference[i] += x[i] - px[i];
+    transposeReference[i] += y[i] - py[i];
+  }
+  CSysVector<su2mixedfloat> input(nPoint, nDomain, nVar), output(nPoint, nDomain, nVar),
+      transposeOutput(nPoint, nDomain, nVar);
+  for (auto i = 0ul; i < nPoint; ++i)
+    for (auto a = 0u; a < nVar; ++a) input(i, a) = x[field.geometry->nodes->GetGlobalIndex(i) * nVar + a];
+  SU2_OMP_PARALLEL { matrix.MatrixVectorProduct(input, output, field.geometry.get(), field.config.get()); }
+  END_SU2_OMP_PARALLEL
+  su2double error = 0;
+  for (auto i = 0ul; i < nDomain; ++i)
+    for (auto a = 0u; a < nVar; ++a)
+      error = std::max(error, fabs(SU2_TYPE::GetValue(output(i, a)) -
+                                   reference[field.geometry->nodes->GetGlobalIndex(i) * nVar + a]));
+  CHECK(error < 1e-5);
+  CSysSolve<su2mixedfloat> system;
+  CSysVector<su2double> rhs(nPoint, nDomain, nVar), solution(nPoint, nDomain, nVar);
+  solution = su2double(0);
+  for (auto i = 0ul; i < nPoint; ++i)
+    for (auto a = 0u; a < nVar; ++a) rhs(i, a) = reference[field.geometry->nodes->GetGlobalIndex(i) * nVar + a];
+  SU2_OMP_PARALLEL { system.Solve(matrix, rhs, solution, field.geometry.get(), field.config.get()); }
+  END_SU2_OMP_PARALLEL
+  error = 0;
+  for (auto i = 0ul; i < nDomain; ++i)
+    for (auto a = 0u; a < nVar; ++a)
+      error = std::max(
+          error, fabs(SU2_TYPE::GetValue(solution(i, a)) - x[field.geometry->nodes->GetGlobalIndex(i) * nVar + a]));
+  CHECK(error < 1e-5);
+  SU2_OMP_PARALLEL { matrix.TransposeInPlace(); }
+  END_SU2_OMP_PARALLEL
+  for (auto i = 0ul; i < nPoint; ++i)
+    for (auto a = 0u; a < nVar; ++a) input(i, a) = y[field.geometry->nodes->GetGlobalIndex(i) * nVar + a];
+  SU2_OMP_PARALLEL { matrix.MatrixVectorProduct(input, transposeOutput, field.geometry.get(), field.config.get()); }
+  END_SU2_OMP_PARALLEL
+  error = 0;
+  su2double dotForward = 0, dotTranspose = 0;
+  for (auto i = 0ul; i < nDomain; ++i)
+    for (auto a = 0u; a < nVar; ++a) {
+      const auto global = field.geometry->nodes->GetGlobalIndex(i) * nVar + a;
+      error = std::max(error, fabs(SU2_TYPE::GetValue(transposeOutput(i, a)) - transposeReference[global]));
+      dotForward += y[global] * SU2_TYPE::GetValue(output(i, a));
+      dotTranspose += x[global] * SU2_TYPE::GetValue(transposeOutput(i, a));
+    }
+  CHECK(error < 1e-5);
+  su2double dots[] = {dotForward, dotTranspose}, globalDots[2] = {};
+  SU2_MPI::Allreduce(dots, globalDots, 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  CHECK(globalDots[0] == Approx(globalDots[1]).margin(1e-4));
+  SU2_OMP_PARALLEL { matrix.TransposeInPlace(); }
+  END_SU2_OMP_PARALLEL
+  solution = su2double(0);
+  for (auto i = 0ul; i < nPoint; ++i)
+    for (auto a = 0u; a < nVar; ++a)
+      rhs(i, a) = transposeReference[field.geometry->nodes->GetGlobalIndex(i) * nVar + a];
+  SU2_OMP_PARALLEL { system.Solve_b(matrix, rhs, solution, field.geometry.get(), field.config.get()); }
+  END_SU2_OMP_PARALLEL
+  error = 0;
+  for (auto i = 0ul; i < nDomain; ++i)
+    for (auto a = 0u; a < nVar; ++a)
+      error = std::max(
+          error, fabs(SU2_TYPE::GetValue(solution(i, a)) - y[field.geometry->nodes->GetGlobalIndex(i) * nVar + a]));
+  CHECK(error < 1e-5);
 }

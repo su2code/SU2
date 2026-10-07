@@ -210,7 +210,7 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE::UNSIGNED_SHORT;
       break;
     case PERIODIC_RESIDUAL:
-      COUNT_PER_POINT  = nVar + nVar*nVar + 1;
+      COUNT_PER_POINT  = Jacobian.HasPeriodicProjection() ? nVar + 1 : nVar + nVar*nVar + 1;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case PERIODIC_IMPLICIT:
@@ -667,7 +667,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              contributions to the Jacobian block diagonal, i.e., the
              impact of the point upon itself, J_ii. ---*/
 
-            if (implicit_periodic) {
+            if (implicit_periodic && !Jacobian.HasPeriodicProjection()) {
 
               const auto block = Jacobian.GetBlockView(iPoint, iPoint);
 
@@ -1198,7 +1198,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   su2double Time_Step, Volume;
 
   su2double **Jacobian_i = nullptr;
-  if ((commType == PERIODIC_RESIDUAL) && implicit_periodic) {
+  if ((commType == PERIODIC_RESIDUAL) && implicit_periodic && !Jacobian.HasPeriodicProjection()) {
     Jacobian_i = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
       Jacobian_i[iVar] = new su2double [nVar];
@@ -1305,7 +1305,13 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               /*--- Add contributions to total residual. ---*/
 
-              LinSysRes.AddBlock(iPoint, &bufDRecv[buf_offset]);
+              if (Jacobian.HasPeriodicProjection()) {
+                const auto copies = iCopy > 0 ? iCopy : 1ul;
+                for (auto iVar = 0u; iVar < nVar; ++iVar)
+                  LinSysRes(iPoint, iVar) = (copies * LinSysRes(iPoint, iVar) + bufDRecv[buf_offset + iVar]) / (copies + 1);
+              } else {
+                LinSysRes.AddBlock(iPoint, &bufDRecv[buf_offset]);
+              }
               buf_offset += nVar;
 
               /*--- Check the computed time step against the donor
@@ -1324,7 +1330,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                the passive face such that it does not participate in
                the linear solve. ---*/
 
-              if (implicit_periodic) {
+              if (implicit_periodic && !Jacobian.HasPeriodicProjection()) {
 
                 for (iVar = 0; iVar < nVar; iVar++) {
                   for (jVar = 0; jVar < nVar; jVar++) {
@@ -1366,6 +1372,16 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                solution at the matching face during the solve. Here,
                we are updating the solution at the passive nodes
                using the new solution from the master. ---*/
+
+              if (implicit_periodic && Jacobian.HasPeriodicProjection()) {
+                const auto copies = iCopy > 0 ? iCopy : 1ul;
+                for (auto iVar = 0u; iVar < nVar; ++iVar) {
+                  const auto value = (copies * base_nodes->GetSolution(iPoint, iVar) + bufDRecv[buf_offset + iVar]) / (copies + 1);
+                  base_nodes->SetSolution(iPoint, iVar, value);
+                  base_nodes->SetSolution_Old(iPoint, iVar, value);
+                }
+                break;
+              }
 
               if ((implicit_periodic) &&
                   (iPeriodic == val_periodic_index + nPeriodic/2)) {

@@ -45,6 +45,17 @@ SU2_RESTORE_WARNING
 #include <memory>
 
 namespace {
+/*--- Both forward and reverse solves must use the periodic host product. ---*/
+void checkPeriodicSolver(bool projection, unsigned short kindSolver, const CConfig* config) {
+  if (!projection || !config->GetnMarker_Periodic()) return;
+  if (config->GetCUDA()) SU2_MPI::Error("Implicit periodic coupling requires ENABLE_CUDA= NO.", CURRENT_FUNCTION);
+  if (kindSolver == PASTIX_LU || kindSolver == PASTIX_LDLT)
+    SU2_MPI::Error(
+        "Direct PaStiX solves do not assemble periodic constraints. Use FGMRES with "
+        "LINEAR_SOLVER_PREC= PASTIX_LU instead.",
+        CURRENT_FUNCTION);
+}
+
 /*!
  * \brief Epsilon used in CSysSolve depending on datatype to
  * decide if the linear system is already solved.
@@ -1451,6 +1462,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
     }
   }
 
+  checkPeriodicSolver(Jacobian.HasPeriodicProjection(), KindSolver, config);
+
   const bool nested = SetupInnerSolver(KindSolver, config);
 
   /*--- Stop the recording for the linear solver ---*/
@@ -1674,6 +1687,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
       break;
     }
   }
+
+  checkPeriodicSolver(Jacobian.HasPeriodicProjection(), KindSolver, config);
 
   const bool nested = SetupInnerSolver(KindSolver, config);
 

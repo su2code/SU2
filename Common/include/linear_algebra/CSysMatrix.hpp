@@ -257,6 +257,13 @@ class CSysMatrix {
  private:
   friend struct CSysMatrixComms;
 
+  int periodicVectorIndex{-2}; /*!< \brief -2 disables periodic projection; -1 denotes scalar variables. */
+  mutable CSysVector<ScalarType> projectedInput;
+  mutable su2activematrix periodicBuffer;
+
+  void ProjectPeriodic(const CSysVector<ScalarType>& input, CSysVector<ScalarType>& output, CGeometry* geometry,
+                       const CConfig* config) const;
+
   const int rank; /*!< \brief MPI Rank. */
   const int size; /*!< \brief MPI Size. */
 
@@ -700,6 +707,10 @@ class CSysMatrix {
   void ComputeLU_SGSPreconditionerBackward(CSysVector<ScalarType>& prod) const;
 
  public:
+  /*! \brief Keep all partial periodic rows and couple their matching unknowns in the product. */
+  void SetPeriodicProjection(int vectorIndex) { periodicVectorIndex = vectorIndex; }
+  bool HasPeriodicProjection() const { return periodicVectorIndex >= -1; }
+
   /*!
    * \brief Constructor of the class.
    */

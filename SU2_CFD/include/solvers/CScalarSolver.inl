@@ -498,7 +498,8 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
     const su2double dt = nodes->GetDelta_Time(iPoint);
 
     if (dt != 0.0) {
-      su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+      su2double Vol = geometry->nodes->GetVolume(iPoint);
+      if (!Jacobian.HasPeriodicProjection()) Vol += geometry->nodes->GetPeriodicVolume(iPoint);
       Jacobian.AddVal2Diag(iPoint, Vol / dt);
     } else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
