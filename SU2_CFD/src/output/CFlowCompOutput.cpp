@@ -787,13 +787,13 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(su2vector<std::shared_ptr<CT
     }
     file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
     // This captures NaNs
-    if(std::isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
+    if(std::isnan(SU2_TYPE::GetValue(BladePerf->GetInletState().GetAbsFlowAngle()))){
       file.width(30); file << "0.0000";
     }
     else {
       file.width(30); file << BladePerf->GetInletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
     }
-    if(std::isnan(BladePerf->GetInletState().GetFlowAngle())){
+    if(std::isnan(SU2_TYPE::GetValue(BladePerf->GetInletState().GetFlowAngle()))){
       file.width(30); file << "0.0000";
     }
     else{
@@ -850,13 +850,13 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(su2vector<std::shared_ptr<CT
       file.width(30); file << BladePerf->GetOutletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
     }
     file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
-    if(std::isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
+    if(std::isnan(SU2_TYPE::GetValue(BladePerf->GetInletState().GetAbsFlowAngle()))){
       file.width(30); file << "0.0000";
     }
     else {
       file.width(30); file << BladePerf->GetOutletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
     }
-    if(std::isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
+    if(std::isnan(SU2_TYPE::GetValue(BladePerf->GetInletState().GetAbsFlowAngle()))){
       file.width(30); file << "0.0000";
     }
     else{
