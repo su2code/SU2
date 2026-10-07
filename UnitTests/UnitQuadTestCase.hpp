@@ -61,6 +61,16 @@ struct UnitQuadTestCase {
    */
   void AddOption(const std::string& optionLine) { config_options += optionLine + "\n"; }
 
+  /*! \brief Replace one existing base option without repeating its key. */
+  void SetOption(const std::string& optionLine) {
+    const auto key = optionLine.substr(0, optionLine.find('=') + 1);
+    const auto start = config_options.find(key);
+    if (start == std::string::npos)
+      AddOption(optionLine);
+    else
+      config_options.replace(start, config_options.find('\n', start) - start, optionLine);
+  }
+
   /*!
    * \brief Initialize the config structure
    */
@@ -83,10 +93,13 @@ struct UnitQuadTestCase {
   /*!
    * \brief Initialize the geometry
    */
-  void InitGeometry() {
+  void InitGeometry(bool partition = false) {
     cout.rdbuf(nullptr);
     {
-      auto aux_geometry = std::unique_ptr<CGeometry>(new CPhysicalGeometry(config.get(), 0, 1));
+      const auto rank = partition ? SU2_MPI::GetRank() : 0;
+      const auto size = partition ? SU2_MPI::GetSize() : 1;
+      auto aux_geometry = std::unique_ptr<CGeometry>(new CPhysicalGeometry(config.get(), rank, size));
+      if (partition) aux_geometry->SetColorGrid_Parallel(config.get());
       geometry = std::unique_ptr<CGeometry>(new CPhysicalGeometry(aux_geometry.get(), config.get()));
     }
     geometry->SetSendReceive(config.get());

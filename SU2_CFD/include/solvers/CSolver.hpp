@@ -133,6 +133,8 @@ protected:
 
   /*--- End variables that need to go. ---*/
 
+  su2activevector periodicNeighborCount; /*!< \brief Partial periodic stencil count, including shared edges. */
+
   su2activevector iPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2activevector jPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
 
