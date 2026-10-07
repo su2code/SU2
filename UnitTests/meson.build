@@ -50,6 +50,9 @@ if get_option('enable-tests')
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)
+    test('Periodic solver support', python,
+         args: files('Common/check_periodic_support.py') + [test_driver.full_path()],
+         timeout: 120)
     test('NEMO convergence field migration', python,
          args: files('SU2_CFD/output/check_nemo_convergence_migration.py') + [test_driver.full_path()],
          timeout: 300)

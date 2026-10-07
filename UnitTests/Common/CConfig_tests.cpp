@@ -87,3 +87,33 @@ TEST_CASE("INIT_OPTION_INC defaults", "[Config]") {
         INIT_OPTION_INC::OPERATING_PRESSURE);
   CHECK(GetInitOptionInc(ideal_gas_options + "INIT_OPTION_INC= DENSITY_INIT\n") == INIT_OPTION_INC::DENSITY_INIT);
 }
+
+TEST_CASE("Periodic Continuous support", "[.PeriodicSupportContinuous]") {
+  auto base = base_options;
+  base.erase(0, base.find("MESH_FORMAT="));
+  const std::string custom = "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)";
+  base.replace(base.find(custom), custom.size(), "MARKER_CUSTOM= (z_minus)\nMARKER_SYM= (z_plus)");
+  std::stringstream options(
+      base +
+      "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)\nSOLVER= "
+      "NAVIER_STOKES\nMACH_NUMBER= 0.2\nREYNOLDS_NUMBER= 1000000\nMATH_PROBLEM= CONTINUOUS_ADJOINT\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+}
+
+TEST_CASE("Periodic Radiation support", "[.PeriodicSupportRadiation]") {
+  auto base = base_options;
+  const std::string custom = "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)";
+  base.replace(base.find(custom), custom.size(), "MARKER_CUSTOM= (z_minus)\nMARKER_SYM= (z_plus)");
+  std::stringstream options(
+      base + "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)\nRADIATION_MODEL= P1\nINC_ENERGY_EQUATION= YES\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+}
+
+TEST_CASE("Periodic Structure support", "[.PeriodicSupportStructure]") {
+  auto base = base_options;
+  base.erase(0, base.find("MESH_FORMAT="));
+  const std::string custom = "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)";
+  base.replace(base.find(custom), custom.size(), "MARKER_CUSTOM= (z_minus)\nMARKER_SYM= (z_plus)");
+  std::stringstream options(base + "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)\nSOLVER= ELASTICITY\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+}
