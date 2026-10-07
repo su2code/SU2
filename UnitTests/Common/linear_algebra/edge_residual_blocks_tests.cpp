@@ -183,8 +183,8 @@ TEST_CASE("Complete periodic implicit operator and transpose", "[Periodic][Linea
   if (nPairs > 2) periodic += ", z_minus,z_plus, 0,0,0, 0,0,0, 0,0,1";
   field.AddOption(periodic + ")");
   /*--- Avoid asking a float Krylov solver to converge below roundoff. ---*/
-  field.AddOption("LINEAR_SOLVER= BCGSTAB\nLINEAR_SOLVER_PREC= JACOBI\nLINEAR_SOLVER_ITER= 150");
-  field.AddOption(sizeof(su2mixedfloat) == sizeof(float) ? "LINEAR_SOLVER_ERROR= 1e-6" : "LINEAR_SOLVER_ERROR= 1e-10");
+  field.AddOption("LINEAR_SOLVER_PREC= JACOBI\nLINEAR_SOLVER_ITER= 150");
+  field.AddOption(sizeof(su2mixedfloat) == sizeof(float) ? "LINEAR_SOLVER_ERROR= 1e-7" : "LINEAR_SOLVER_ERROR= 1e-10");
   field.InitConfig();
   field.InitGeometry(true);
   for (auto pair = 1u; pair <= nPairs; ++pair) field.geometry->MatchPeriodic(field.config.get(), pair);
@@ -287,6 +287,9 @@ TEST_CASE("Complete periodic implicit operator and transpose", "[Periodic][Linea
       error = std::max(error, fabs(SU2_TYPE::GetValue(output(i, a)) -
                                    reference[field.geometry->nodes->GetGlobalIndex(i) * nVar + a]));
   CHECK(error < 1e-5);
+  /*--- Krylov solution accuracy depends on the arithmetic used by its basis. ---*/
+  const auto solveTolerance =
+      sizeof(su2mixedfloat) == sizeof(float) ? sqrt(std::numeric_limits<float>::epsilon()) : 1e-5;
   CSysSolve<su2mixedfloat> system;
   CSysVector<su2double> rhs(nPoint, nDomain, nVar), solution(nPoint, nDomain, nVar);
   solution = su2double(0);
@@ -299,7 +302,7 @@ TEST_CASE("Complete periodic implicit operator and transpose", "[Periodic][Linea
     for (auto a = 0u; a < nVar; ++a)
       error = std::max(
           error, fabs(SU2_TYPE::GetValue(solution(i, a)) - x[field.geometry->nodes->GetGlobalIndex(i) * nVar + a]));
-  CHECK(error < 1e-5);
+  CHECK(error < solveTolerance);
   SU2_OMP_PARALLEL { matrix.TransposeInPlace(); }
   END_SU2_OMP_PARALLEL
   for (auto i = 0ul; i < nPoint; ++i)
@@ -332,5 +335,5 @@ TEST_CASE("Complete periodic implicit operator and transpose", "[Periodic][Linea
     for (auto a = 0u; a < nVar; ++a)
       error = std::max(
           error, fabs(SU2_TYPE::GetValue(solution(i, a)) - y[field.geometry->nodes->GetGlobalIndex(i) * nVar + a]));
-  CHECK(error < 1e-5);
+  CHECK(error < solveTolerance);
 }
