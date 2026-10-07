@@ -937,9 +937,10 @@ void Finalize();
 
 /*--- If we compile under OSX we have to overload some of the operators for
  *   complex numbers to avoid the use of the standard operators
- *  (they use a lot of functions that are only defined for doubles) ---*/
+ *  (they use a lot of functions that are only defined for doubles).
+ *   The MSVC STL needs the same overloads when su2double is an AD type. ---*/
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || (defined(_MSC_VER) && (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)))
 
 namespace std {
 
