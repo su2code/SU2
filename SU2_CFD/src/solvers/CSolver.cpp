@@ -250,7 +250,7 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       JCOUNT           = nDim;
       break;
     case PERIODIC_AUXVAR_LS:
-      COUNT_PER_POINT = nDim*nDim + base_nodes->GetnAuxVar()*nDim;
+      COUNT_PER_POINT = static_cast<unsigned long>(nDim)*nDim + base_nodes->GetnAuxVar()*nDim;
       MPI_TYPE = COMM_TYPE::DOUBLE;
       ICOUNT = base_nodes->GetnAuxVar();
       JCOUNT = nDim;
