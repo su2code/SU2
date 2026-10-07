@@ -31,6 +31,7 @@
 #include "../../SU2_CFD/include/solvers/CSolver.hpp"
 #include "../../SU2_CFD/include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../SU2_CFD/include/gradients/computeGradientsLeastSquares.hpp"
+#include "../UnitQuadTestCase.hpp"
 
 /*!
  * \brief Base class for gradient tests using a unit cube geometry.
@@ -154,3 +155,40 @@ TEST_CASE("GG", "[Gradients]") { testGreenGauss<LinearFunction>(); }
 TEST_CASE("LS", "[Gradients]") { testLeastSquares<LinearFunction>(false); }
 
 TEST_CASE("WLS", "[Gradients]") { testLeastSquares<LinearFunction>(true); }
+
+TEST_CASE("Periodic auxiliary Green-Gauss gradient", "[Gradients][Periodic]") {
+  const bool rotation = GENERATE(false, true);
+  UnitQuadTestCase field;
+  const string custom = "MARKER_CUSTOM= ( x_minus, x_plus, z_plus, z_minus)";
+  field.config_options.replace(field.config_options.find(custom), custom.size(), "MARKER_CUSTOM= (z_plus, z_minus)");
+  field.AddOption(rotation ? "MARKER_PERIODIC= (x_minus,x_plus, 0,0.5,0.5, 90,0,0, 1,0,0)"
+                           : "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)");
+  field.AddOption("VORTICITY_CONFINEMENT= YES");
+  field.InitConfig();
+  field.InitGeometry();
+  field.geometry->MatchPeriodic(field.config.get(), 1);
+  field.geometry->PreprocessPeriodicComms(field.geometry.get(), field.config.get());
+  field.InitSolver();
+
+  auto* solver = field.solver[FLOW_SOL];
+  auto* nodes = solver->GetNodes();
+  REQUIRE(nodes->GetnAuxVar() == 1);
+  for (auto iPoint = 0ul; iPoint < field.geometry->GetnPoint(); ++iPoint) {
+    const auto* coord = field.geometry->nodes->GetCoord(iPoint);
+    const auto y = coord[1] - 0.5;
+    const auto z = coord[2] - 0.5;
+    nodes->SetAuxVar(iPoint, 0, rotation ? 2.0 + y * y + z * z : 2.0 + 3.0 * coord[1] - coord[2]);
+  }
+  solver->SetAuxVar_Gradient_GG(field.geometry.get(), field.config.get());
+
+  su2double error = 0.0;
+  for (auto iPoint = 0ul; iPoint < field.geometry->GetnPointDomain(); ++iPoint) {
+    const auto* coord = field.geometry->nodes->GetCoord(iPoint);
+    if (rotation && (coord[1] == 0.0 || coord[1] == 1.0 || coord[2] == 0.0 || coord[2] == 1.0)) continue;
+    const su2double expected[3] = {0.0, rotation ? 2.0 * (coord[1] - 0.5) : 3.0,
+                                   rotation ? 2.0 * (coord[2] - 0.5) : -1.0};
+    for (auto iDim = 0u; iDim < 3; ++iDim)
+      error = max(error, abs(nodes->GetAuxVarGradient(iPoint, 0, iDim) - expected[iDim]));
+  }
+  CHECK(error < 1e-9);
+}
