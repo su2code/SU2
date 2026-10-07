@@ -1387,11 +1387,11 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               else if (iCopy > 0) {
 
-                for (auto iVar = 0u; iVar < nVar; iVar++) {
-                  const su2double average = base_nodes->GetSolution(iPoint, iVar) +
-                    (bufDRecv[buf_offset] - base_nodes->GetSolution(iPoint, iVar)) / su2double(iCopy + 1);
-                  base_nodes->SetSolution(iPoint, iVar, average);
-                  base_nodes->SetSolution_Old(iPoint, iVar, average);
+                for (auto iField = 0u; iField < nVar; iField++) {
+                  const su2double average = base_nodes->GetSolution(iPoint, iField) +
+                    (bufDRecv[buf_offset] - base_nodes->GetSolution(iPoint, iField)) / su2double(iCopy + 1);
+                  base_nodes->SetSolution(iPoint, iField, average);
+                  base_nodes->SetSolution_Old(iPoint, iField, average);
                   buf_offset++;
                 }
 
@@ -1404,8 +1404,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               /*--- Adjust the undivided Laplacian. The accumulation was
                with a subtraction before communicating, so now just add. ---*/
 
-              for (auto iVar = 0u; iVar < nVar; iVar++)
-                base_nodes->AddUnd_Lapl(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+              for (auto iField = 0u; iField < nVar; iField++)
+                base_nodes->AddUnd_Lapl(iPoint, iField, bufDRecv[buf_offset+iField]);
 
               break;
 
