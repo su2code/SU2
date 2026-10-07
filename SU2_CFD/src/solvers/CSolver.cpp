@@ -622,12 +622,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
           case PERIODIC_LAPLACIAN:
 
             if (intersectingPairs) {
-              for (auto iVar = 0u; iVar < nVar; ++iVar)
-                bufDSend[buf_offset + iVar] = base_nodes->GetUndivided_Laplacian(iPoint, iVar);
+              for (auto iField = 0u; iField < nVar; ++iField)
+                bufDSend[buf_offset + iField] = base_nodes->GetUndivided_Laplacian(iPoint, iField);
               if (rotate_periodic) Rotate(zeros, &bufDSend[buf_offset + 1], &Und_Lapl[1]);
               if (rotate_periodic)
-                for (auto iDim = 0u; iDim < nDim; ++iDim)
-                  bufDSend[buf_offset + 1 + iDim] = Und_Lapl[1 + iDim];
+                for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate)
+                  bufDSend[buf_offset + 1 + iCoordinate] = Und_Lapl[1 + iCoordinate];
               break;
             }
 
@@ -816,33 +816,35 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Rmatrix stores the upper triangle of the normal equations;
                * entry (2,1) is a duplicate of (0,2) used by the LS factorization. ---*/
               su2double matrix[3][3] = {}, rotated[3][3] = {};
-              for (auto iDim = 0u; iDim < nDim; ++iDim)
+              for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate)
                 for (auto jDim = 0u; jDim < nDim; ++jDim)
-                  matrix[iDim][jDim] = base_nodes->GetRmatrix(iPoint, min(iDim,jDim), max(iDim,jDim));
-              for (auto iDim = 0u; iDim < nDim; ++iDim)
+                  matrix[iCoordinate][jDim] =
+                      base_nodes->GetRmatrix(iPoint, min(iCoordinate,jDim), max(iCoordinate,jDim));
+              for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate)
                 for (auto jDim = 0u; jDim < nDim; ++jDim)
                   for (auto kDim = 0u; kDim < nDim; ++kDim)
                     for (auto lDim = 0u; lDim < nDim; ++lDim) {
-                      const auto qik = nDim == 2 ? rotMatrix2D[iDim][kDim] : rotMatrix3D[iDim][kDim];
+                      const auto qik = nDim == 2 ? rotMatrix2D[iCoordinate][kDim] : rotMatrix3D[iCoordinate][kDim];
                       const auto qjl = nDim == 2 ? rotMatrix2D[jDim][lDim] : rotMatrix3D[jDim][lDim];
-                      rotated[iDim][jDim] += qik * matrix[kDim][lDim] * qjl;
+                      rotated[iCoordinate][jDim] += qik * matrix[kDim][lDim] * qjl;
                     }
-              for (auto iDim = 0u; iDim < nDim; ++iDim)
+              for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate)
                 for (auto jDim = 0u; jDim < nDim; ++jDim)
-                  bufDSend[buf_offset++] = iDim <= jDim ? rotated[iDim][jDim] :
-                      (nDim == 3 && iDim == 2 && jDim == 1 ? rotated[0][2] : su2double(0));
-              for (auto iVar = 0u; iVar < ICOUNT; ++iVar)
-                Rotate(zeros, gradient[iPoint][iVar], rotBlock[iVar]);
+                  bufDSend[buf_offset++] = iCoordinate <= jDim ? rotated[iCoordinate][jDim] :
+                      (nDim == 3 && iCoordinate == 2 && jDim == 1 ? rotated[0][2] : su2double(0));
+              for (auto iField = 0u; iField < ICOUNT; ++iField)
+                Rotate(zeros, gradient[iPoint][iField], rotBlock[iField]);
               if (rotate_periodic) {
-                for (auto iDim = 0u; iDim < nDim; ++iDim) {
+                for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate) {
                   su2double velocity[3] = {}, rotatedVelocity[3] = {};
-                  for (auto jDim = 0u; jDim < nDim; ++jDim) velocity[jDim] = rotBlock[1+jDim][iDim];
+                  for (auto jDim = 0u; jDim < nDim; ++jDim) velocity[jDim] = rotBlock[1+jDim][iCoordinate];
                   Rotate(zeros, velocity, rotatedVelocity);
-                  for (auto jDim = 0u; jDim < nDim; ++jDim) rotBlock[1+jDim][iDim] = rotatedVelocity[jDim];
+                  for (auto jDim = 0u; jDim < nDim; ++jDim) rotBlock[1+jDim][iCoordinate] = rotatedVelocity[jDim];
                 }
               }
-              for (auto iVar = 0u; iVar < ICOUNT; ++iVar)
-                for (auto iDim = 0u; iDim < nDim; ++iDim) bufDSend[buf_offset++] = rotBlock[iVar][iDim];
+              for (auto iField = 0u; iField < ICOUNT; ++iField)
+                for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate)
+                  bufDSend[buf_offset++] = rotBlock[iField][iCoordinate];
               break;
             }
 
