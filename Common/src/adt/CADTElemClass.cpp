@@ -26,6 +26,9 @@
  */
 
 #include "../../include/adt/CADTElemClass.hpp"
+#include "../../include/CConfig.hpp"
+#include "../../include/linear_algebra/blas_structure.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/parallelization/mpi_structure.hpp"
 #include "../../include/option_structure.hpp"
 
@@ -258,6 +261,121 @@ CADTElemClass::CADTElemClass(unsigned short val_nDim, vector<su2double>& val_coo
   for (auto& vec : BBoxTargets) vec.reserve(200);
   for (auto& vec : FrontLeaves) vec.reserve(200);
   for (auto& vec : FrontLeavesNew) vec.reserve(200);
+}
+
+void CADTElemClass::SetPeriodicWallSearch(const CConfig* config) {
+  periodicTranslations.clear();
+  periodicDual.clear();
+  if (IsEmpty() || !config->GetnMarker_Periodic()) return;
+  for (auto marker = 0u; marker < config->GetnMarker_CfgFile(); ++marker) {
+    const auto tag = config->GetMarker_CfgFile_TagBound(marker);
+    if (config->GetMarker_CfgFile_KindBC(tag) != PERIODIC_BOUNDARY ||
+        config->GetMarker_CfgFile_PerBound(tag) > config->GetnMarker_Periodic() / 2)
+      continue;
+    const auto* angles = config->GetPeriodicRotAngles(tag);
+    su2double rotation[3][3];
+    GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotation);
+    for (auto i = 0u; i < nDim; ++i)
+      for (auto j = 0u; j < nDim; ++j)
+        if (fabs(rotation[i][j] - (i == j)) > 1e-12) {
+          periodicTranslations.clear();
+          return;
+        }
+    array<su2double, 3> translation{};
+    const auto* shift = config->GetPeriodicTranslation(tag);
+    std::copy(shift, shift + nDim, translation.begin());
+    periodicTranslations.push_back(translation);
+  }
+  const auto count = periodicTranslations.size();
+  if (!count || count > nDim) {
+    periodicTranslations.clear();
+    return;
+  }
+  // ponytail: independent translations; dependent generators need lattice reduction.
+  vector<array<su2double, 3>> orthogonal;
+  for (const auto& translation : periodicTranslations) {
+    auto vector = translation;
+    for (const auto& basis : orthogonal) {
+      const auto projection = GeometryToolbox::DotProduct(nDim, vector.data(), basis.data());
+      for (auto d = 0u; d < nDim; ++d) vector[d] -= projection * basis[d];
+    }
+    const auto length = GeometryToolbox::Norm(nDim, vector.data());
+    if (length <= 1e-12 * GeometryToolbox::Norm(nDim, translation.data())) {
+      periodicTranslations.clear();
+      return;
+    }
+    for (auto d = 0u; d < nDim; ++d) vector[d] /= length;
+    orthogonal.push_back(vector);
+  }
+  su2activematrix gram(count, count);
+  for (auto i = 0u; i < count; ++i)
+    for (auto j = 0u; j < count; ++j)
+      gram(i, j) = GeometryToolbox::DotProduct(nDim, periodicTranslations[i].data(), periodicTranslations[j].data());
+  /*--- Distinct translation pairs form the basis of the periodic cell. ---*/
+  CBlasStructure::inverse(count, gram);
+  periodicDual.resize(count);
+  for (auto i = 0u; i < count; ++i)
+    for (auto d = 0u; d < nDim; ++d)
+      for (auto j = 0u; j < count; ++j) periodicDual[i][d] += gram(i, j) * periodicTranslations[j][d];
+  for (auto d = 0u; d < nDim; ++d) {
+    wallMin[d] = wallMax[d] = coorPoints[d];
+    for (auto i = d; i < coorPoints.size(); i += nDim) {
+      wallMin[d] = min(wallMin[d], coorPoints[i]);
+      wallMax[d] = max(wallMax[d], coorPoints[i]);
+    }
+  }
+}
+
+void CADTElemClass::DetermineNearestPeriodicElement(const su2double* coor, su2double& dist, unsigned short& markerID,
+                                                    unsigned long& elemID, int& rankID) {
+  /*--- An improving image must lie inside the wall bounding box expanded by
+   * the current distance. Project that box onto the dual lattice basis to
+   * bound every integer shift, including skew cells and images beyond +/-1. ---*/
+  array<long, 3> lower{}, upper{}, index{};
+  const auto count = periodicTranslations.size();
+  for (auto i = 0u; i < count; ++i) {
+    su2double lo = 0, hi = 0;
+    for (auto d = 0u; d < nDim; ++d) {
+      const auto a = periodicDual[i][d] * (wallMin[d] - coor[d]);
+      const auto b = periodicDual[i][d] * (wallMax[d] - coor[d]);
+      lo += min(a, b);
+      hi += max(a, b);
+    }
+    const auto radius = dist * GeometryToolbox::Norm(nDim, periodicDual[i].data());
+    lower[i] = static_cast<long>(ceil(SU2_TYPE::GetValue(lo - radius)));
+    upper[i] = static_cast<long>(floor(SU2_TYPE::GetValue(hi + radius)));
+    if (lower[i] > upper[i]) return;
+    index[i] = lower[i];
+  }
+  const auto thread = omp_get_thread_num();
+  for (;;) {
+    array<su2double, 3> query{};
+    for (auto d = 0u; d < nDim; ++d) {
+      query[d] = coor[d];
+      for (auto i = 0u; i < count; ++i) query[d] += index[i] * periodicTranslations[i][d];
+    }
+    su2double candidate;
+    unsigned short marker;
+    unsigned long elem;
+    int rank;
+    DetermineNearestElement_impl(BBoxTargets[thread], FrontLeaves[thread], FrontLeavesNew[thread], query.data(),
+                                 candidate, marker, elem, rank);
+    if (candidate < dist) {
+      dist = candidate;
+      markerID = marker;
+      elemID = elem;
+      rankID = rank;
+    }
+    auto i = 0u;
+    for (; i < count; ++i) {
+      if (index[i] < upper[i]) {
+        ++index[i];
+        break;
+      }
+      index[i] = lower[i];
+    }
+    if (i == count) break;
+  }
 }
 
 bool CADTElemClass::DetermineContainingElement_impl(vector<unsigned long>& frontLeaves,
