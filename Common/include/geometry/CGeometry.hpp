@@ -1909,6 +1909,11 @@ class CGeometry {
   const su2vector<su2uint>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
+   * \brief Whether the edge coloring was already built (by a solver or on first use).
+   */
+  bool HasEdgeColoring() const { return !edgeColoring.empty(); }
+
+  /*!
    * \brief Get the edge coloring.
    * \note This method computes the coloring if that has not been done yet.
    * \note Can be instructed to determine and use the maximum edge color group size between 1 and

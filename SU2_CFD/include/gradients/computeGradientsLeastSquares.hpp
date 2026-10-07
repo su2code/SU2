@@ -464,11 +464,10 @@ void computeLSQMetrics(CGeometry& geometry, const CConfig& config, bool weighted
   }
   END_SU2_OMP_FOR
 
-  /*--- Declare the cache valid and make sure the edge coloring is available before the
-   *    first cached evaluation, building it here avoids a race on its lazy construction. ---*/
+  /*--- Declare the cache valid. Note that the edge coloring is deliberately NOT built here,
+   *    the solvers build it (and derive the reducer strategy from its efficiency). ---*/
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    geometry.GetEdgeColoring();
     geometry.SetLSQMetricCacheValid(weighted);
   } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -524,6 +523,15 @@ void computeGradientsLeastSquaresCached(CSolver* solver,
    *    w*dist_ij*(u_j - u_i) for BOTH end points. A race-free edge coloring is required
    *    with multiple threads, the "natural" coloring (single color, used with the
    *    reducer strategy) forces the fallback to a thread-safe loop over nodes. ---*/
+
+  /*--- The coloring is normally built by the solver constructors, if a solver did not do it
+   *    (e.g. solvers without an edge-loop residual) build it here in a thread-safe manner. ---*/
+
+  if (!geometry.HasEdgeColoring()) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      geometry.GetEdgeColoring();
+    } END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   const auto& coloring = geometry.GetEdgeColoring();
 
