@@ -81,6 +81,21 @@ protected:
   vector<su2double> NonLinRes_Series; /*!< \brief Vector holding the nonlinear residual indicator series. */
   su2double Old_Func,  /*!< \brief Old value of the nonlinear residual indicator. */
   New_Func;            /*!< \brief Current value of the nonlinear residual indicator. */
+  /*--- State of CFL_ADAPT_RESIDUAL, a negative ceiling or cap means none is active. ---*/
+  vector<passivedouble> ResTrend_History;             /*!< \brief Recent mean log residuals. */
+  vector<vector<passivedouble>> ResJump_History;      /*!< \brief Recent log residuals of the flow variables. */
+  vector<passivedouble> ResFlow_History;              /*!< \brief Recent mean log residuals of the flow variables. */
+  bool ResTrend_Increase = false;                     /*!< \brief The residual trend allows a larger CFL. */
+  bool ResTrend_Reduce = false;                       /*!< \brief The residual trend requires a smaller CFL. */
+  passivedouble ResTrend_Best = 1e30;                 /*!< \brief Lowest mean log residual so far. */
+  unsigned long ResTrend_LastBest = 0;                /*!< \brief Iteration of that minimum. */
+  bool CFL_Cut = false;                               /*!< \brief Halve the CFL in this update. */
+  passivedouble CFL_Ceiling = -1.0;                   /*!< \brief Temporary ceiling after a cut. */
+  passivedouble CFL_Cap = -1.0;                       /*!< \brief Lasting limit learned from repeated events. */
+  vector<passivedouble> CFL_EventValues;              /*!< \brief CFL at each cut. */
+  unsigned long CFL_LastEvent = 0;                    /*!< \brief Iteration of the last cut. */
+  unsigned long CFL_LastStagnation = 0;               /*!< \brief Iteration of the last stagnation cap. */
+  unsigned long CFL_LastFrozen = 0;                   /*!< \brief Iteration of the last frozen-residual cap. */
   unsigned short nVar,           /*!< \brief Number of variables of the problem. */
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */

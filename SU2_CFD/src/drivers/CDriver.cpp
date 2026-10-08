@@ -881,10 +881,6 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
-    /*--- Find closest, most normal, neighbor to a surface point ---*/
-
-    geometry[iMGlevel]->FindNormal_Neighbor(config);
-
     /*--- Store our multigrid index. ---*/
 
     geometry[iMGlevel]->SetMGLevel(iMGlevel);
@@ -933,6 +929,18 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
   /*--- Perform a few preprocessing routines and communications. ---*/
 
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+
+    /*--- SetCoord centred a halo agglomerate on the partial child list this rank holds. Take
+     the owner's coordinate, otherwise coarse stencils depend on the partitioning. ---*/
+
+    if (iMGlevel > MESH_0) {
+      geometry[iMGlevel]->InitiateComms(geometry[iMGlevel], config, MPI_QUANTITIES::COORDINATES);
+      geometry[iMGlevel]->CompleteComms(geometry[iMGlevel], config, MPI_QUANTITIES::COORDINATES);
+
+      /*--- Find closest, most normal, neighbor to a surface point ---*/
+
+      geometry[iMGlevel]->FindNormal_Neighbor(config);
+    }
 
     /*--- Compute the max length. ---*/
 
@@ -1805,7 +1813,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         /*--- Compressible flow Ideal gas ---*/
         numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGrad_Flow(nDim, nVar_Flow, true, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGrad_Flow(nDim, nVar_Flow, false, config);
+          numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGrad_Flow(nDim, nVar_Flow, true, config);
 
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1816,7 +1824,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         /*--- Compressible flow Real gas ---*/
         numerics[MESH_0][FLOW_SOL][visc_term] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, true, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics[iMGlevel][FLOW_SOL][visc_term] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, false, config);
+          numerics[iMGlevel][FLOW_SOL][visc_term] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, true, config);
 
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1828,7 +1836,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       /*--- Incompressible flow, use preconditioning method ---*/
       numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, true, config);
       for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, false, config);
+        numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, true, config);
 
       /*--- Definition of the boundary condition method ---*/
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
