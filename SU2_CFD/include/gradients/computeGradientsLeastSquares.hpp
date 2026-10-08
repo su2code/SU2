@@ -535,7 +535,11 @@ void computeGradientsLeastSquaresCached(CSolver* solver,
 
   const auto& coloring = geometry.GetEdgeColoring();
 
-  const bool safeColoring = (omp_get_max_threads() == 1) || (coloring.getOuterSize() > 1);
+  /*--- The coloring is empty for a grid without edges (dummy geometry of a dry run), the
+   *    edge loop must not be used in that case (the outer size of an empty pattern wraps). ---*/
+
+  const bool safeColoring = !coloring.empty() &&
+                            ((omp_get_max_threads() == 1) || (coloring.getOuterSize() > 1));
 
   if (safeColoring) {
     const size_t groupSize = geometry.GetEdgeColorGroupSize();
