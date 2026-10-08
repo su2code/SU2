@@ -1533,6 +1533,21 @@ void COutput::CheckHistoryOutput(unsigned short nZone) {
   FieldsToRemove.clear();
   for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
     if (historyOutput_Map.count(convFields[iField_Conv]) == 0){
+      /*--- NEMO density residuals now identify each species explicitly. Do not
+       * discard an obsolete selector, which could weaken a mixed stopping criterion.
+       * Check the registered replacement so other solvers and zones are unaffected. ---*/
+      const auto& field = convFields[iField_Conv];
+      const auto zonePos = field.find('[');
+      const auto base = field.substr(0, zonePos);
+      if (base == "MAX_DENSITY" || base == "BGS_DENSITY" ||
+          base == "REL_MAX_DENSITY" || base == "REL_BGS_DENSITY") {
+        const auto replacement = base + "_0" + (zonePos == string::npos ? "" : field.substr(zonePos));
+        if (historyOutput_Map.count(replacement) != 0) {
+          SU2_MPI::Error("Obsolete NEMO CONV_FIELD '" + field + "': select explicit species density residuals, "
+                         "for example '" + replacement + "' for species 0. List every species that must meet "
+                         "CONV_RESIDUAL_MINVAL; the obsolete field cannot be ignored.", CURRENT_FUNCTION);
+        }
+      }
       if (!removedField) {
         if(rank == MASTER_NODE) cout << "Ignoring Convergence Field(s): ";
         removedField = true;
