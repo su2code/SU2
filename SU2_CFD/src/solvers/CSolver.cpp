@@ -337,27 +337,26 @@ namespace PeriodicCommHelpers {
         break;
     }
   }
-
-  /*--- Whether a periodic marker with these angles rotates the vector components of the solution. ---*/
-  bool isRotation(const su2double* angles) {
-    return angles[0] != 0.0 || angles[1] != 0.0 || angles[2] != 0.0;
-  }
 }
 
-su2activematrix* CSolver::GetPeriodicProjections(const CConfig& config) {
+su2activematrix* CSolver::GetPeriodicProjections(const CGeometry& geometry, const CConfig& config) {
 
   if (!rotate_periodic) return nullptr;
 
   bool rotation = false;
   for (auto iMarker = 0u; iMarker < config.GetnMarker_All(); iMarker++) {
     if (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
-    rotation |= PeriodicCommHelpers::isRotation(config.GetPeriodicRotAngles(config.GetMarker_All_TagBound(iMarker)));
+    rotation |= GeometryToolbox::HasRotation(config.GetPeriodicRotAngles(config.GetMarker_All_TagBound(iMarker)));
   }
   if (!rotation) return nullptr;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-    if (PeriodicProj.rows() != nPoint) PeriodicProj.resize(nPoint, 2*nPrimVarGrad) = su2double(0.0);
+    if (PeriodicProj.empty() && geometry.nPeriodicRecv > 0) {
+      for (auto iRecv = 0; iRecv < geometry.nPoint_PeriodicRecv[geometry.nPeriodicRecv]; ++iRecv)
+        PeriodicProjIndex.emplace(geometry.Local_Point_PeriodicRecv[iRecv], PeriodicProjIndex.size());
+      PeriodicProj.resize(PeriodicProjIndex.size(), 2*nPrimVarGrad);
+    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -420,20 +419,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   /*--- Rotates, in place, the range [vMin, vMax] of each component of a vector: each term
    of the product with the rotation matrix takes its smallest and its largest value. ---*/
   auto RotateBox = [&](su2double* vMin, su2double* vMax) {
-    su2double rotMin[3] = {0.0}, rotMax[3] = {0.0};
-    for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++) {
-      for (auto jDim = 0u; jDim < nDim; jDim++) {
-        const su2double rotMatrix_ij = (nDim == 2) ? rotMatrix2D[iCoordinate][jDim] : rotMatrix3D[iCoordinate][jDim];
-        const su2double fromMin = rotMatrix_ij * vMin[jDim];
-        const su2double fromMax = rotMatrix_ij * vMax[jDim];
-        rotMin[iCoordinate] += min(fromMin, fromMax);
-        rotMax[iCoordinate] += max(fromMin, fromMax);
-      }
-    }
-    for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++) {
-      vMin[iCoordinate] = rotMin[iCoordinate];
-      vMax[iCoordinate] = rotMax[iCoordinate];
-    }
+    if (nDim == 2) GeometryToolbox::RotateBox(rotMatrix2D, vMin, vMax);
+    else GeometryToolbox::RotateBox(rotMatrix3D, vMin, vMax);
   };
 
   string Marker_Tag;
@@ -488,11 +475,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     const auto* coord_j = geometry->nodes->GetCoord(point_j);
 
     for (auto iField = 0u; iField < ICOUNT; iField++) {
-      su2double proj = 0.0;
-      for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++)
-        proj += 0.5 * (coord_j[iCoordinate] - coord_i[iCoordinate]) * gradient(point_i, iField, iCoordinate);
-      const su2double cent = 0.5 * (field(point_j, iField) - field(point_i, iField));
-      increments[iField] = LimiterHelpers<>::umusclProjection(proj, cent, kappa);
+      increments[iField] = LimiterHelpers<>::reconstructionIncrement(nDim, coord_i, coord_j,
+                           gradient[point_i][iField], field(point_i, iField), field(point_j, iField), kappa);
     }
   };
 
@@ -556,7 +540,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
         /*--- Whether the vector components of the solution are rotated for this marker. ---*/
 
-        const bool rotation = rotate_periodic && PeriodicCommHelpers::isRotation(angles);
+        const bool rotation = rotate_periodic && GeometryToolbox::HasRotation(angles);
 
         /*--- Compute the offset in the recv buffer for this point. ---*/
 
@@ -1415,11 +1399,12 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                used to start the search over "our" edges (only with rotation). ---*/
 
               if ((commType == PERIODIC_LIM_PRIM_1) && !PeriodicProj.empty()) {
+                auto* projections = GetPeriodicProjection(iPoint);
+                assert(projections != nullptr);
                 for (auto iField = 0u; iField < ICOUNT; iField++) {
-                  PeriodicProj(iPoint, iField) = min(PeriodicProj(iPoint, iField),
-                                                   bufDRecv[buf_offset+2*ICOUNT+iField]);
-                  PeriodicProj(iPoint, ICOUNT+iField) = max(PeriodicProj(iPoint, ICOUNT+iField),
-                                                          bufDRecv[buf_offset+3*ICOUNT+iField]);
+                  projections[iField] = min(projections[iField], bufDRecv[buf_offset+2*ICOUNT+iField]);
+                  projections[ICOUNT+iField] = max(projections[ICOUNT+iField],
+                                                   bufDRecv[buf_offset+3*ICOUNT+iField]);
                 }
               }
 

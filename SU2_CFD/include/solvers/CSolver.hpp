@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <iostream>
 #include <set>
+#include <unordered_map>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -146,7 +147,8 @@ protected:
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
-  su2activematrix PeriodicProj;  /*!< \brief Min and max reconstruction increments over the edges of the rotational periodic matches of each point (for limiters). */
+  su2activematrix PeriodicProj;  /*!< \brief Min/max reconstruction increments at periodic receive points (for limiters). */
+  std::unordered_map<unsigned long, size_t> PeriodicProjIndex;  /*!< \brief Local point to compact projection row. */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
@@ -4235,10 +4237,18 @@ public:
   /*!
    * \brief Storage for the limiters with rotational periodicity: the min and max, over the edges of the periodic
    *        matches of each point, of the reconstruction increments (communicated with PERIODIC_LIM_PRIM_1).
+   * \param[in] geometry - Periodic receive points of this mesh level.
    * \param[in] config - Definition of the particular problem.
-   * \return The matrix (nPoint x 2*nPrimVarGrad, min then max), nullptr if no periodic marker rotates the solution.
+   * \return The matrix (unique periodic receive points x 2*nPrimVarGrad, min then max), nullptr without rotation.
    */
-  su2activematrix* GetPeriodicProjections(const CConfig& config);
+  su2activematrix* GetPeriodicProjections(const CGeometry& geometry, const CConfig& config);
+
+  /*! \brief Reconstruction increment bounds for a periodic receive point, nullptr for other points. */
+  inline su2double* GetPeriodicProjection(unsigned long iPoint) {
+    const auto& indices = PeriodicProjIndex;
+    const auto it = indices.find(iPoint);
+    return it == indices.end() ? nullptr : PeriodicProj[it->second];
+  }
 
   /*!
    * \brief Retrieve the solver name for output purposes.

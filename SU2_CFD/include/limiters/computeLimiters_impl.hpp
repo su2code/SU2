@@ -116,7 +116,7 @@ void computeLimiters_impl(CSolver* solver,
   su2activematrix* periodicProj = nullptr;
 
   if (periodic && (kindPeriodicComm1 == PERIODIC_LIM_PRIM_1))
-    periodicProj = solver->GetPeriodicProjections(config);
+    periodicProj = solver->GetPeriodicProjections(geometry, config);
 
   /*--- Initialize all min/max field values if we have
    *    periodic comms. otherwise do it inside main loop. ---*/
@@ -126,7 +126,7 @@ void computeLimiters_impl(CSolver* solver,
     if (periodicProj != nullptr)
     {
       SU2_OMP_FOR_STAT(chunkSize)
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+      for (auto iPoint = 0ul; iPoint < periodicProj->rows(); ++iPoint)
         for (auto iVar = 0ul; iVar < periodicProj->cols(); ++iVar)
           (*periodicProj)(iPoint,iVar) = 0.0;
       END_SU2_OMP_FOR
@@ -183,18 +183,20 @@ void computeLimiters_impl(CSolver* solver,
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
       projMax[iVar] = projMin[iVar] = 0.0;
 
-    if (periodicProj != nullptr)
+    if (periodicProj != nullptr && nodes->GetPeriodicBoundary(iPoint))
     {
       /*--- Start from the min/max over the edges of the periodic matches. ---*/
 
-      for (auto iVar = varBegin; iVar < varEnd; ++iVar)
-      {
-        const auto& periodicMin = (*periodicProj)(iPoint, iVar);
-        const auto& periodicMax = (*periodicProj)(iPoint, periodicProj->cols()/2 + iVar);
-        AD::SetPreaccIn(periodicMin);
-        AD::SetPreaccIn(periodicMax);
-        projMin[iVar] = periodicMin;
-        projMax[iVar] = periodicMax;
+      const auto* projections = solver->GetPeriodicProjection(iPoint);
+      if (projections != nullptr) {
+        for (auto iVar = varBegin; iVar < varEnd; ++iVar) {
+          const auto& periodicMin = projections[iVar];
+          const auto& periodicMax = projections[periodicProj->cols()/2 + iVar];
+          AD::SetPreaccIn(periodicMin);
+          AD::SetPreaccIn(periodicMax);
+          projMin[iVar] = periodicMin;
+          projMax[iVar] = periodicMax;
+        }
       }
     }
 
@@ -205,25 +207,13 @@ void computeLimiters_impl(CSolver* solver,
       const auto coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
-      /*--- Distance vector from iPoint to face (middle of the edge). ---*/
-
-      su2double dist_ij[nDim] = {0.0};
-
-      for(size_t iDim = 0; iDim < nDim; ++iDim)
-        dist_ij[iDim] = 0.5 * (coord_j[iDim] - coord_i[iDim]);
-
       /*--- Project each variable, update min/max. ---*/
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
-        su2double proj = 0.0;
-
-        for(size_t iDim = 0; iDim < nDim; ++iDim)
-          proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
-
         AD::SetPreaccIn(field(jPoint,iVar));
-        const su2double cent = 0.5 * (field(jPoint,iVar) - field(iPoint,iVar));
-        proj = LimiterHelpers<>::umusclProjection(proj, cent, umusclKappa);
+        const su2double proj = LimiterHelpers<>::reconstructionIncrement(nDim, coord_i, coord_j,
+                              gradient[iPoint][iVar], field(iPoint,iVar), field(jPoint,iVar), umusclKappa);
 
         projMax[iVar] = max(projMax[iVar], proj);
         projMin[iVar] = min(projMin[iVar], proj);

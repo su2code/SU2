@@ -72,6 +72,18 @@ struct LimiterHelpers
 {
   FORCEINLINE static Type epsilon() {return std::numeric_limits<passivedouble>::epsilon();}
 
+  /*! \brief MUSCL reconstruction increment from a point to the middle of an edge. */
+  template <class Int>
+  FORCEINLINE static Type reconstructionIncrement(Int nDim, const Type* coord_i, const Type* coord_j,
+                                                  const Type* gradient, const Type& value_i,
+                                                  const Type& value_j, const Type& kappa) {
+    Type proj = 0.0;
+    for (Int iDim = 0; iDim < nDim; ++iDim)
+      proj += 0.5 * (coord_j[iDim] - coord_i[iDim]) * gradient[iDim];
+    const Type cent = 0.5 * (value_j - value_i);
+    return umusclProjection(proj, cent, kappa);
+  }
+
   FORCEINLINE static Type umusclProjection(const Type& grad_proj, const Type& delta, const Type& kappa)
   {
     /*-------------------------------------------------------------------*/
