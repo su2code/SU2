@@ -474,8 +474,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     const auto* coord_i = geometry->nodes->GetCoord(point_i);
     const auto* coord_j = geometry->nodes->GetCoord(point_j);
 
+    su2double dist_ij[3] = {0.0};
+    for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate)
+      dist_ij[iCoordinate] = 0.5 * (coord_j[iCoordinate] - coord_i[iCoordinate]);
+
     for (auto iField = 0u; iField < ICOUNT; iField++) {
-      increments[iField] = LimiterHelpers<>::reconstructionIncrement(nDim, coord_i, coord_j,
+      increments[iField] = LimiterHelpers<>::reconstructionIncrement(nDim, dist_ij,
                            gradient[point_i][iField], field(point_i, iField), field(point_j, iField), kappa);
     }
   };

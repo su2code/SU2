@@ -68,14 +68,18 @@ TEST_CASE("Rotation of component bounds encloses every corner", "[PeriodicLimite
 }
 
 TEST_CASE("Shared reconstruction increment has the MUSCL scaling", "[PeriodicLimiter]") {
-  const su2double coord_i[3] = {1.0, 2.0, 3.0}, coord_j[3] = {3.0, 0.0, 4.0};
+  const su2double halfEdge[3] = {1.0, -1.0, 0.5};
   const su2double gradient[3] = {2.0, -1.0, 3.0};
   for (const auto kappa : {-1.0, 0.0, 0.5, 1.0}) {
-    const auto increment = LimiterHelpers<>::reconstructionIncrement(3, coord_i, coord_j, gradient, su2double(7.0),
+    const auto increment = LimiterHelpers<>::reconstructionIncrement(3, halfEdge, gradient, su2double(7.0),
                                                                      su2double(15.0), su2double(kappa));
     CHECK(increment == Approx(4.5 - 0.5 * kappa));
-    const auto linearIncrement = LimiterHelpers<>::reconstructionIncrement(
-        3, coord_i, coord_j, gradient, su2double(7.0), su2double(16.0), su2double(kappa));
+    CHECK(LimiterHelpers<>::reconstructionIncrement(2, halfEdge, gradient, su2double(7.0), su2double(15.0),
+                                                    su2double(kappa)) == Approx(3.0 + kappa));
+    CHECK(LimiterHelpers<>::reconstructionIncrement(2, halfEdge, gradient, su2double(7.0), su2double(13.0),
+                                                    su2double(kappa)) == Approx(3.0));
+    const auto linearIncrement = LimiterHelpers<>::reconstructionIncrement(3, halfEdge, gradient, su2double(7.0),
+                                                                           su2double(16.0), su2double(kappa));
     CHECK(linearIncrement == Approx(4.5));
   }
 }

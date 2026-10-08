@@ -225,13 +225,15 @@ inline bool HasRotation(const Scalar* angles) {
 /*! \brief Rotate component bounds in place, enclosing the rotated box. */
 template <class Scalar, int nDim>
 inline void RotateBox(const Scalar R[][nDim], Scalar* vMin, Scalar* vMax) {
+  using std::max;
+  using std::min;
   Scalar rotMin[nDim] = {0.0}, rotMax[nDim] = {0.0};
   for (int iDim = 0; iDim < nDim; ++iDim) {
     for (int jDim = 0; jDim < nDim; ++jDim) {
       const Scalar fromMin = R[iDim][jDim] * vMin[jDim];
       const Scalar fromMax = R[iDim][jDim] * vMax[jDim];
-      rotMin[iDim] += std::min(fromMin, fromMax);
-      rotMax[iDim] += std::max(fromMin, fromMax);
+      rotMin[iDim] += min(fromMin, fromMax);
+      rotMax[iDim] += max(fromMin, fromMax);
     }
   }
   for (int iDim = 0; iDim < nDim; ++iDim) {

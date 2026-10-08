@@ -207,12 +207,18 @@ void computeLimiters_impl(CSolver* solver,
       const auto coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
+      /*--- Distance vector from iPoint to face (middle of the edge). ---*/
+
+      su2double dist_ij[nDim] = {0.0};
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        dist_ij[iDim] = 0.5 * (coord_j[iDim] - coord_i[iDim]);
+
       /*--- Project each variable, update min/max. ---*/
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
         AD::SetPreaccIn(field(jPoint,iVar));
-        const su2double proj = LimiterHelpers<>::reconstructionIncrement(nDim, coord_i, coord_j,
+        const su2double proj = LimiterHelpers<>::reconstructionIncrement(nDim, dist_ij,
                               gradient[iPoint][iVar], field(iPoint,iVar), field(jPoint,iVar), umusclKappa);
 
         projMax[iVar] = max(projMax[iVar], proj);
