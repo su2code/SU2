@@ -124,7 +124,8 @@ public:
    * \param[in] dataSorter - Datasorter object containing the actual data. Note, data must be sorted.
    */
   //void AddDataset(string name, string file, CParallelDataSorter* dataSorter);
-  void AddDataset(const string& foldername, string name, const string& file, CParallelDataSorter* dataSorter);
+  void AddDataset(const string& foldername, string name, const string& file, CParallelDataSorter* dataSorter,
+                  bool doublePrecision);
 
   /*!
    * \brief Start a new block
