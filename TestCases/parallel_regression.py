@@ -369,9 +369,9 @@ def main():
     test_list.append(flatplate)
 
     # Laminar flat plate with the WALL_DISTANCE limiter
-    flatplate_wall_limiter           = TestCase('flatplate_wall_limiter')
-    flatplate_wall_limiter.cfg_dir   = "navierstokes/flatplate"
-    flatplate_wall_limiter.cfg_file  = "lam_flatplate_wall_limiter.cfg"
+    flatplate_wall_limiter = TestCase('flatplate_wall_limiter')
+    flatplate_wall_limiter.cfg_dir = "navierstokes/flatplate"
+    flatplate_wall_limiter.cfg_file = "lam_flatplate_wall_limiter.cfg"
     flatplate_wall_limiter.test_iter = 20
     flatplate_wall_limiter.test_vals = [-5.373432, 0.105283, 0.001249, 0.027725, 2.361600, -2.333900, 0.000000, 0.000000]
     test_list.append(flatplate_wall_limiter)
