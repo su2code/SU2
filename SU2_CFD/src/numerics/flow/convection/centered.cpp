@@ -161,17 +161,25 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
     /*--- Residual contributions ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
+    for (iVar = 0; iVar < nVar; iVar++)
       ProjFlux[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
-      /*--- Jacobian contributions ---*/
-      /*--- Implicit terms ---*/
-      if (implicit) {
-        for (iDim = 0; iDim < nDim+1; iDim++){
-          Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
-          Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+    /*--- Jacobian of -ProjVelocity * 0.5*U, with U = (rho, rho*u, rho*h), w.r.t. the primitives (p, u, h), added
+     once. The density depends on h (variable density models) and not on the pressure. ---*/
+    if (implicit) {
+      auto addGridJacobian = [&](su2double **Jac, su2double rho, const su2double *vel, su2double h, su2double T,
+                                 su2double cp) {
+        const su2double dRhodh = variable_density ? su2double(-rho / (T * cp)) : su2double(0.0);
+        const su2double factor = 0.5*ProjVelocity;
+        Jac[0][nDim+1] -= factor*dRhodh;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Jac[iDim+1][iDim+1] -= factor*rho;
+          Jac[iDim+1][nDim+1] -= factor*vel[iDim]*dRhodh;
         }
-      }
+        Jac[nDim+1][nDim+1] -= factor*(rho + h*dRhodh);
+      };
+      addGridJacobian(Jacobian_i, DensityInc_i, Velocity_i, Enthalpy_i, Temperature_i, Cp_i);
+      addGridJacobian(Jacobian_j, DensityInc_j, Velocity_j, Enthalpy_j, Temperature_j, Cp_j);
     }
   }
 
@@ -401,17 +409,25 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
     /*--- Residual contributions ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
+    for (iVar = 0; iVar < nVar; iVar++)
       ProjFlux[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
-      /*--- Jacobian contributions ---*/
-      /*--- Implicit terms ---*/
-      if (implicit) {
-        for (iDim = 0; iDim < nDim+1; iDim++){
-          Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
-          Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+    /*--- Jacobian of -ProjVelocity * 0.5*U, with U = (rho, rho*u, rho*h), w.r.t. the primitives (p, u, h), added
+     once. The density depends on h (variable density models) and not on the pressure. ---*/
+    if (implicit) {
+      auto addGridJacobian = [&](su2double **Jac, su2double rho, const su2double *vel, su2double h, su2double T,
+                                 su2double cp) {
+        const su2double dRhodh = variable_density ? su2double(-rho / (T * cp)) : su2double(0.0);
+        const su2double factor = 0.5*ProjVelocity;
+        Jac[0][nDim+1] -= factor*dRhodh;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Jac[iDim+1][iDim+1] -= factor*rho;
+          Jac[iDim+1][nDim+1] -= factor*vel[iDim]*dRhodh;
         }
-      }
+        Jac[nDim+1][nDim+1] -= factor*(rho + h*dRhodh);
+      };
+      addGridJacobian(Jacobian_i, DensityInc_i, Velocity_i, Enthalpy_i, Temperature_i, Cp_i);
+      addGridJacobian(Jacobian_j, DensityInc_j, Velocity_j, Enthalpy_j, Temperature_j, Cp_j);
     }
   }
 
