@@ -246,10 +246,10 @@ def main():
     # mesh format. The regression case below then loads that freshly generated
     # .su2b file, using a copy of inv_NACA0012_Roe.cfg with MESH_FILENAME and
     # MESH_FORMAT swapped to point at it.
-    naca0012_su2bin_convert           = TestCase('naca0012_su2bin_convert')
-    naca0012_su2bin_convert.cfg_dir   = "euler/naca0012"
-    naca0012_su2bin_convert.cfg_file  = "mesh_su2_to_su2bin.cfg"
-    naca0012_su2bin_convert.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
+    naca0012_su2bin_convert = TestCase('naca0012_su2bin_convert')
+    naca0012_su2bin_convert.cfg_dir = "euler/naca0012"
+    naca0012_su2bin_convert.cfg_file = "mesh_su2_to_su2bin.cfg"
+    naca0012_su2bin_convert.command = TestCase.Command("mpirun -n 2", "SU2_DEF")
     test_list.append(naca0012_su2bin_convert)
 
     naca0012_su2bin_cfg_path = "euler/naca0012/inv_NACA0012_Roe_su2bin.cfg"
@@ -264,7 +264,7 @@ def main():
 
     naca0012           = TestCase('naca0012')
     naca0012.cfg_dir   = "euler/naca0012"
-    naca0012.cfg_file  = "inv_NACA0012_Roe_su2bin.cfg"
+    naca0012.cfg_file = "inv_NACA0012_Roe_su2bin.cfg"
     naca0012.test_iter = 20
     naca0012.test_vals = [-4.026356, -3.521920, 0.274929, 0.009852]
     test_list.append(naca0012)
@@ -300,7 +300,7 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals         = [-1.315764, 4.158361, 0.002646, 0.114559]
+    polar_naca0012.test_vals = [-1.315764, 4.158361, 0.002646, 0.114559]
     polar_naca0012.test_vals_aarch64 = [-1.083394, 4.386134, 0.001588, 0.033513]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-i 11")
     # flaky test on arm64
@@ -341,9 +341,9 @@ def main():
     test_list.append(ramp_msw)
 
     # MFR_coupling
-    MFR_coupling           = TestCase('MFR_coupling')
-    MFR_coupling.cfg_dir   = "euler/turbofan_MFR_coupling"
-    MFR_coupling.cfg_file  = "MFR_coupling.cfg"
+    MFR_coupling = TestCase('MFR_coupling')
+    MFR_coupling.cfg_dir = "euler/turbofan_MFR_coupling"
+    MFR_coupling.cfg_file = "MFR_coupling.cfg"
     MFR_coupling.test_iter = 100
     MFR_coupling.test_vals = [-211.240000, 150.030000, 20.151000]
     test_list.append(MFR_coupling)
@@ -361,9 +361,9 @@ def main():
     test_list.append(flatplate)
 
     # Supersonic laminar flat plate
-    flatplate_supersonic           = TestCase('flatplate_supersonic')
-    flatplate_supersonic.cfg_dir   = "navierstokes/flatplate"
-    flatplate_supersonic.cfg_file  = "flatplate_supersonic.cfg"
+    flatplate_supersonic = TestCase('flatplate_supersonic')
+    flatplate_supersonic.cfg_dir = "navierstokes/flatplate"
+    flatplate_supersonic.cfg_file = "flatplate_supersonic.cfg"
     flatplate_supersonic.test_iter = 100
     flatplate_supersonic.test_vals = [100.000000, -2.940836, -0.677210, -0.570631, 2.495392, 0.001469]
     test_list.append(flatplate_supersonic)
@@ -418,7 +418,7 @@ def main():
     poiseuille_profile.test_iter = 10
     poiseuille_profile.test_vals = [-12.003186, -7.623957, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.007498, -7.226926, -0.000000, 2.089953]
-    poiseuille_profile.tol       = [0.001, 0.001, 1e-5, 1e-5, 1e-5]
+    poiseuille_profile.tol = [0.001, 0.001, 1e-5, 1e-5, 1e-5]
     test_list.append(poiseuille_profile)
 
     ##########################
@@ -482,17 +482,17 @@ def main():
     test_list.append(turb_flatplate_CC_Sarkar)
 
     # FLAT PLATE, ROUGHNESS BC KNOPP SST
-    turb_flatplate_sst_roughBCKnopp           = TestCase('turb_sst_flatplate_roughBCKnopp')
-    turb_flatplate_sst_roughBCKnopp.cfg_dir   = "rans/flatplate/roughness/bc_knopp"
-    turb_flatplate_sst_roughBCKnopp.cfg_file  = "turb_SST_flatplate_roughBCKnopp.cfg"
+    turb_flatplate_sst_roughBCKnopp = TestCase('turb_sst_flatplate_roughBCKnopp')
+    turb_flatplate_sst_roughBCKnopp.cfg_dir = "rans/flatplate/roughness/bc_knopp"
+    turb_flatplate_sst_roughBCKnopp.cfg_file = "turb_SST_flatplate_roughBCKnopp.cfg"
     turb_flatplate_sst_roughBCKnopp.test_iter = 10
     turb_flatplate_sst_roughBCKnopp.test_vals = [-5.058634, -2.460850, -2.847064, 0.447200, -2.595042, 1.497149, -0.188079, 0.004571]
     test_list.append(turb_flatplate_sst_roughBCKnopp)
 
     # FLAT PLATE, ROUGHNESS BC AUPOIX SST
-    turb_flatplate_sst_roughBCAupoix           = TestCase('turb_sst_flatplate_roughBCAupoix')
-    turb_flatplate_sst_roughBCAupoix.cfg_dir   = "rans/flatplate/roughness/bc_aupoix"
-    turb_flatplate_sst_roughBCAupoix.cfg_file  = "turb_SST_flatplate_roughBCAupoix.cfg"
+    turb_flatplate_sst_roughBCAupoix = TestCase('turb_sst_flatplate_roughBCAupoix')
+    turb_flatplate_sst_roughBCAupoix.cfg_dir = "rans/flatplate/roughness/bc_aupoix"
+    turb_flatplate_sst_roughBCAupoix.cfg_file = "turb_SST_flatplate_roughBCAupoix.cfg"
     turb_flatplate_sst_roughBCAupoix.test_iter = 10
     turb_flatplate_sst_roughBCAupoix.test_vals = [-5.278728, -2.302982, -2.890419, 0.227585, -1.393786, 3.192601, -0.188729, 0.0071821]
     test_list.append(turb_flatplate_sst_roughBCAupoix)
@@ -1183,14 +1183,14 @@ def main():
     test_list.append(ddes_flatplate)
 
     # Stochastic BackScatter (SBS) model
-    sbs_backward_step            = TestCase('sbs_backward_step')
-    sbs_backward_step.cfg_dir    = "backscatter/backward_step"
-    sbs_backward_step.cfg_file   = "backwardStep.cfg"
-    sbs_backward_step.test_iter  = 3
-    sbs_backward_step.test_vals  = [-6.352884, -3.465372, -5.507901, -3.906545, -9.506305, -6.365236, -6.331021, -6.331028]
-    sbs_backward_step.unsteady   = True
+    sbs_backward_step = TestCase('sbs_backward_step')
+    sbs_backward_step.cfg_dir = "backscatter/backward_step"
+    sbs_backward_step.cfg_file = "backwardStep.cfg"
+    sbs_backward_step.test_iter = 3
+    sbs_backward_step.test_vals = [-6.352884, -3.465372, -5.507901, -3.906545, -9.506305, -6.365236, -6.331021, -6.331028]
+    sbs_backward_step.unsteady = True
     sbs_backward_step.decompress = True
-    sbs_backward_step.grid_file  = "backward_step.su2"
+    sbs_backward_step.grid_file = "backward_step.su2"
     test_list.append(sbs_backward_step)
 
     # unsteady pitching NACA0015, SA
@@ -1300,8 +1300,8 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632227, -8.894736, -9.348706]
-    multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
+    multi_interface.test_vals = [-8.632227, -8.894736, -9.348706]
+    multi_interface.test_vals_aarch64 = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
     ######################################
@@ -1321,10 +1321,10 @@ def main():
     # Channel_2D, native SU2 binary mesh format (.su2b)
     # channel_2D_WA.cfg loads channel_2D_su2bin.su2b directly, so SU2_DEF must
     # first convert channel_2D.su2 (3 zones) into that binary mesh.
-    channel_2D_su2bin_convert           = TestCase('channel_2D_su2bin_convert')
-    channel_2D_su2bin_convert.cfg_dir   = "sliding_interface/channel_2D"
-    channel_2D_su2bin_convert.cfg_file  = "mesh_su2_to_su2bin.cfg"
-    channel_2D_su2bin_convert.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
+    channel_2D_su2bin_convert = TestCase('channel_2D_su2bin_convert')
+    channel_2D_su2bin_convert.cfg_dir = "sliding_interface/channel_2D"
+    channel_2D_su2bin_convert.cfg_file = "mesh_su2_to_su2bin.cfg"
+    channel_2D_su2bin_convert.command = TestCase.Command("mpirun -n 2", "SU2_DEF")
     test_list.append(channel_2D_su2bin_convert)
 
     channel_2D           = TestCase('channel_2D')
@@ -1812,17 +1812,17 @@ def main():
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model solving enthalpy equation using preconditioning +  JST convective scheme
-    species2_primitiveVenturi_JST           = TestCase('species2_primitiveVenturi_JST.cfg')
-    species2_primitiveVenturi_JST.cfg_dir   = "species_transport/venturi_primitive_3species"
-    species2_primitiveVenturi_JST.cfg_file  = "species2_primitiveVenturi_JST.cfg"
+    species2_primitiveVenturi_JST = TestCase('species2_primitiveVenturi_JST.cfg')
+    species2_primitiveVenturi_JST.cfg_dir = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_JST.cfg_file = "species2_primitiveVenturi_JST.cfg"
     species2_primitiveVenturi_JST.test_iter = 50
     species2_primitiveVenturi_JST.test_vals = [-6.035464, -7.071918, -7.201080, -1.142940, -8.348316, 10.000000, -3.223791, 10.000000, -4.435519, 0.049048, 0.014468, 0.020068, 0.014512, 25.000000]
     test_list.append(species2_primitiveVenturi_JST)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model solving enthalpy equation using preconditioning + Lax-Friedrich convective scheme
-    species2_primitiveVenturi_Lax_Friedrich           = TestCase('species2_primitiveVenturi_Lax_Friedrich.cfg')
-    species2_primitiveVenturi_Lax_Friedrich.cfg_dir   = "species_transport/venturi_primitive_3species"
-    species2_primitiveVenturi_Lax_Friedrich.cfg_file  = "species2_primitiveVenturi_Lax_Friedrich.cfg"
+    species2_primitiveVenturi_Lax_Friedrich = TestCase('species2_primitiveVenturi_Lax_Friedrich.cfg')
+    species2_primitiveVenturi_Lax_Friedrich.cfg_dir = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_Lax_Friedrich.cfg_file = "species2_primitiveVenturi_Lax_Friedrich.cfg"
     species2_primitiveVenturi_Lax_Friedrich.test_iter = 50
     species2_primitiveVenturi_Lax_Friedrich.test_vals = [-6.092441, -6.981653, -6.982959, -1.195023, -8.245626, 10.000000, -3.472515, 8.000000, -5.356121, 0.048943, 0.014468, 0.020007, 0.014468, 12.500000]
     test_list.append(species2_primitiveVenturi_Lax_Friedrich)
@@ -1840,7 +1840,7 @@ def main():
     species_primitiveVenturi_boundedscalar.cfg_dir     = "species_transport/venturi_primitive_3species"
     species_primitiveVenturi_boundedscalar.cfg_file    = "species2_primitiveVenturi_boundedscalar.cfg"
     species_primitiveVenturi_boundedscalar.test_iter   = 50
-    species_primitiveVenturi_boundedscalar.test_vals   = [-5.537734, -4.375388, -4.475128, -5.597904, -0.870563, -5.633513, 5.000000, -1.461524, 5.000000, -4.142508, 5.000000, -1.727874, 0.000438, 0.000438, 0.000000, 0.000000]
+    species_primitiveVenturi_boundedscalar.test_vals = [-5.537734, -4.375388, -4.475128, -5.597904, -0.870563, -5.633513, 5.000000, -1.461524, 5.000000, -4.142508, 5.000000, -1.727874, 0.000438, 0.000438, 0.000000, 0.000000]
     test_list.append(species_primitiveVenturi_boundedscalar)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including inlet markers for turbulent intensity and viscosity ratios
@@ -1861,9 +1861,9 @@ def main():
     test_list.append(species3_primitiveVenturi_inletFile)
 
     # 3 species (2 eq) primitive venturi mixing with new flux and value boundary conditions
-    species3_primitiveVenturi_fluxvalue           = TestCase('species3_primitiveVenturi_fluxvalue')
-    species3_primitiveVenturi_fluxvalue.cfg_dir   = "species_transport/venturi_primitive_3species"
-    species3_primitiveVenturi_fluxvalue.cfg_file  = "species3_primitiveVenturi_flux_value.cfg"
+    species3_primitiveVenturi_fluxvalue = TestCase('species3_primitiveVenturi_fluxvalue')
+    species3_primitiveVenturi_fluxvalue.cfg_dir = "species_transport/venturi_primitive_3species"
+    species3_primitiveVenturi_fluxvalue.cfg_file = "species3_primitiveVenturi_flux_value.cfg"
     species3_primitiveVenturi_fluxvalue.test_iter = 50
     species3_primitiveVenturi_fluxvalue.test_vals = [-4.563242, -5.504658, -0.861266, -5.822957, -6.458367, 1.257912, 0.122219, 0.317705, 0.817988, 0.241494, 0.102507, 0.004981, 0.134006]
     test_list.append(species3_primitiveVenturi_fluxvalue)
@@ -1878,9 +1878,9 @@ def main():
     test_list.append(species_passive_val)
 
     # rectangle active 2-species transport
-    species_active_transport_temp_limits           = TestCase('species_active_transport_temp_limits')
-    species_active_transport_temp_limits.cfg_dir   = "species_transport/passive_transport_validation"
-    species_active_transport_temp_limits.cfg_file  = "active_species_transport_temp_limits.cfg"
+    species_active_transport_temp_limits = TestCase('species_active_transport_temp_limits')
+    species_active_transport_temp_limits.cfg_dir = "species_transport/passive_transport_validation"
+    species_active_transport_temp_limits.cfg_file = "active_species_transport_temp_limits.cfg"
     species_active_transport_temp_limits.test_iter = 50
     species_active_transport_temp_limits.test_vals = [-1.785041, -2.565628, 2.460433, -3.188111, 9.000000, -5.551493, 3.000000, -5.826106, 1.456438, 0.998134, 0.001475, 0.456829]
     species_active_transport_temp_limits.test_vals_aarch64 = [-1.785041, -2.565628, 2.460433, -3.188111, 9.000000, -5.551493, 3.000000, -5.826106, 1.456438, 0.998134, 0.001475, 0.456829]

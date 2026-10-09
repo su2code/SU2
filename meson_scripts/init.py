@@ -26,7 +26,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, subprocess, urllib.request, zipfile, time
+import sys, os, subprocess, urllib.parse, urllib.request, zipfile, time
 
 
 def remove_file(path, retries=3, sleep=0.1):
@@ -309,7 +309,10 @@ def download_module(name, alt_name, git_repo, commit_sha, download_url=None):
 
             if not os.path.exists(filepath) and not os.path.exists(alt_filepath):
                 try:
-                    urllib.request.urlretrieve(url, filename)
+                    if urllib.parse.urlsplit(url).scheme != "https":
+                        raise ValueError("Dependency download URLs must use HTTPS")
+                    # B310 audited: URLs use HTTPS; urllib rejects file/custom redirects.
+                    urllib.request.urlretrieve(url, filename)  # nosec B310
                 except Exception as e:
                     print(e)
                     print("Download of module " + name + " failed.")
