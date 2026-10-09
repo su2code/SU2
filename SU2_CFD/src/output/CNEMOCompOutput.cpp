@@ -437,6 +437,10 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetAerodynamicCoefficients(config, NEMO_solver);
 
+  /*--- Fixed CL finite difference step, uses the AOA set above. ---*/
+
+  if (config->GetFixed_CL_Mode()) SetFixedCLFiniteDifference(config);
+
   SetHeatCoefficients(config, NEMO_solver);
 
   SetRotatingFrameCoefficients(NEMO_solver);

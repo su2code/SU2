@@ -365,13 +365,30 @@ protected:
   void SetFixedCLScreenOutput(const CConfig *config);
 
   /*!
-   * \brief Determines if the screen output should be written.
-   * \note In fixed CL mode the start and the end of the finite difference step are always written,
-   *       since SetFixedCLScreenOutput writes the meta data file with the finite difference derivatives.
-   * \param[in] config - Definition of the particular problem per zone.
-   * \return <TRUE> if screen output should be written.
+   * \brief Check if the fixed CL driver changed the AoA at the current iteration
+   *        (in finite difference mode this is the start of the finite difference step).
+   * \return <TRUE> if the AoA was changed.
    */
-  bool WriteScreenOutput(const CConfig *config) override;
+  bool FixedCLStartFD() const {
+    return fabs(GetHistoryFieldValue("CL_DRIVER_COMMAND")) > EPS;
+  }
+
+  /*!
+   * \brief Check if the AoA was restored at the current iteration
+   *        (in finite difference mode this is the end of the finite difference step).
+   * \return <TRUE> if the AoA is equal to the previous AoA.
+   */
+  bool FixedCLEndFD() const {
+    return GetHistoryFieldValue("AOA") == GetHistoryFieldValue("PREV_AOA");
+  }
+
+  /*!
+   * \brief Store the iteration at which the finite difference step of the fixed CL driver starts and
+   *        write the meta data file with the finite difference derivatives at its end.
+   * \note Called every iteration, independently of the screen output frequency.
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  void SetFixedCLFiniteDifference(const CConfig *config);
 
   /*!
    * \brief Compute the ratio of the stochastic energy backscatter to the turbulent energy dissipation.

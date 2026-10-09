@@ -4245,7 +4245,7 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
 void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
   PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
 
-  if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
+  if (FixedCLStartFD()){
     FixedCLSummary.AddColumn("Fixed CL Mode", 40);
     FixedCLSummary.AddColumn("Value", 30);
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
@@ -4255,7 +4255,6 @@ void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
     FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
     if (config->GetFinite_Difference_Mode()){
       FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
-      lastInnerIter = curInnerIter - 1;
     }
     else
       FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
@@ -4263,7 +4262,7 @@ void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
     SetScreenHeader(config);
   }
 
-  else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
+  else if (config->GetFinite_Difference_Mode() && FixedCLEndFD()){
     FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
     FixedCLSummary.AddColumn("Value", 30);
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
@@ -4276,27 +4275,24 @@ void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
     }
     FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
     FixedCLSummary.PrintFooter();
+  }
+}
+
+void CFlowOutput::SetFixedCLFiniteDifference(const CConfig *config){
+
+  /*--- This runs every iteration, independently of the screen output frequency, otherwise the finite
+   * difference step can end without writing dCL/dAlpha and dCX/dCL to the meta data file. ---*/
+
+  if (!config->GetFinite_Difference_Mode()) return;
+
+  if (FixedCLStartFD()){
+    lastInnerIter = curInnerIter - 1;
+  }
+  else if (FixedCLEndFD()){
     curInnerIter = lastInnerIter;
     WriteMetaData(config);
     curInnerIter = config->GetInnerIter();
   }
-}
-
-bool CFlowOutput::WriteScreenOutput(const CConfig *config) {
-
-  /*--- In fixed CL mode, SetFixedCLScreenOutput stores the iteration at which the finite difference
-   * step starts and, at its end, writes the meta data file with dCL/dAlpha and dCX/dCL. These events
-   * must not depend on the screen output frequency (e.g. when the finite difference step ends due to
-   * ITER_DCL_DALPHA), otherwise the adjoint reads stale derivatives from the meta data file. ---*/
-
-  if (config->GetFixed_CL_Mode() && config->GetFinite_Difference_Mode() &&
-      !(config->GetMultizone_Problem() && !config->GetWrt_ZoneConv())) {
-    const bool startFD = fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16;
-    const bool endFD = historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value;
-    if (startFD || endFD) return true;
-  }
-
-  return COutput::WriteScreenOutput(config);
 }
 
 void CFlowOutput::AddTurboOutput(unsigned short nZone){
