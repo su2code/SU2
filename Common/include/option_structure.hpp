@@ -1547,23 +1547,6 @@ enum FLAMELET_PREF_DIFF_SCALARS {
 };
 
 /*!
- * \brief Preferential diffusion flux term index within one control variable's block of
- * coefficients: the molecular coefficients of the major species occupy [0, n_major_species),
- * and the thermal (Soret) coefficient occupies index n_major_species. The major species
- * themselves are configured at run time with PREFERENTIAL_DIFFUSION_MAJOR_SPECIES, so their
- * count is not a compile-time constant.
- */
-static inline unsigned short FlameletPDThermalTerm(unsigned short n_major_species) { return n_major_species; }
-
-/*!
- * \brief Number of preferential diffusion flux coefficients per control variable: one molecular
- * coefficient per major species plus the single thermal (Soret) coefficient.
- */
-static inline unsigned short FlameletPDTermsPerCV(unsigned short n_major_species) {
-  return n_major_species + 1;
-}
-
-/*!
  * \brief Flame initialization options for the flamelet solver.
  */
 enum class FLAMELET_INIT_TYPE {
@@ -1596,24 +1579,6 @@ static const MapType<std::string, FLAMELET_ENTHALPY_BC> Flamelet_Enthalpy_BC_Map
 };
 
 /*!
- * \brief Selects which preferential diffusion method is active in the flamelet scalar solver.
- * BETA_CORRECTION (default): β-scalar viscous flux correction (constant-Lewis formulation,
- * Mukundakumar et al.).
- * SOURCE_TERM: major-species model B2 of Schepers & van Oijen, C&F 280 (2025) 114332 —
- * runtime Eq. (14) fluxes (molecular D_{phi_k,i} grad(Y_i) for i in {H2, H2O, H} plus thermal
- * D^T_{phi_k} grad(T)) combined with the Eq. (16) closure source of the non-major species.
- */
-enum class FLAMELET_PD_METHOD {
-  BETA_CORRECTION, /*!< \brief β-scalar viscous flux correction applied to the diffusion operator. */
-  SOURCE_TERM,     /*!< \brief Major-species PD fluxes + non-major closure source terms. */
-};
-
-static const MapType<std::string, FLAMELET_PD_METHOD> Flamelet_PD_Method_Map = {
-  MakePair("BETA_CORRECTION", FLAMELET_PD_METHOD::BETA_CORRECTION)
-  MakePair("SOURCE_TERM",     FLAMELET_PD_METHOD::SOURCE_TERM)
-};
-
-/*!
  * \brief Structure containing parsed options for flamelet fluid model.
  */
 struct FluidFlamelet_ParsedOptions {
@@ -1641,11 +1606,6 @@ struct FluidFlamelet_ParsedOptions {
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
   bool thickenedflame_correction{true}; /*!< \brief Thickened flame correction. */
-  unsigned short n_pd_major_species = 0;   /*!< \brief Number of preferential diffusion major species (SOURCE_TERM method). */
-  std::string* pd_major_species_names;     /*!< \brief Names of the preferential diffusion major species; the manifold
-                                                variables "D_<cv>_<species>" are composed from these. */
-  bool verbose_misses = false;                   /*!< \brief Print per-CV breakdown of manifold miss counts. */
-  FLAMELET_PD_METHOD pd_method = FLAMELET_PD_METHOD::BETA_CORRECTION; /*!< \brief Active PD term selection. */
   su2double Flame_T_ignition = 5000;    /*!< \brief Ignition temperature for the flame, used for initialization. */
 
 };

@@ -2441,22 +2441,4 @@ public:
   inline virtual su2double GetHbyACorrection(unsigned long iPoint, unsigned short iDim) { return 0.0; }
 
   inline virtual void SetHbyACorrection(unsigned long iPoint, unsigned short iDim, su2double val_HbyAcorrection) { }
-  inline virtual const su2double *GetScalarSourcesPD(unsigned long iPoint) const { return nullptr; }
-
-  /*!
-   * \brief Get an Eq. (14) preferential diffusion flux coefficient (flamelet SOURCE_TERM method).
-   * \param[in] iPoint - Node index.
-   * \param[in] iCV - Control variable index.
-   * \param[in] iTerm - Major species index (molecular), or n_major_species for the thermal coefficient.
-   */
-  inline virtual su2double GetPDFluxCoeff(unsigned long iPoint, unsigned short iCV, unsigned short iTerm) const {
-    return 0.0;
-  }
-
-  inline virtual void SetHullMissDevCV1(unsigned long iPoint, su2double val) {}
-  inline virtual su2double GetHullMissDevCV1(unsigned long iPoint) const { return 0.0; }
-  inline virtual void SetHullMissDevCV2(unsigned long iPoint, su2double val) {}
-  inline virtual su2double GetHullMissDevCV2(unsigned long iPoint) const { return 0.0; }
-  inline virtual void SetZLevelDist(unsigned long iPoint, su2double val) {}
-  inline virtual su2double GetZLevelDist(unsigned long iPoint) const { return 0.0; }
 };

@@ -37,7 +37,6 @@ struct CPrimitiveIndices;
 class CFlowOutput : public CFVMOutput{
 protected:
   unsigned long lastInnerIter;
-  su2double flamelet_pv_range = 1.0; /*!< \brief Global PV range for C+ flame resolution index; refreshed each output write. */
 
   /*!
    * \brief Constructor of the class
@@ -168,21 +167,6 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void SetVolumeOutputFieldsScalarMisc(const CConfig* config);
-
-  /*!
-   * \brief Compute the per-write global quantities the volume output needs (flamelet progress
-   *        variable range for the C+ index). Collective; must not be reached per point.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The container holding all solution data.
-   */
-  void PrepareVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
-
-  /*!
-   * \brief Add flamelet mesh quality diagnostic fields (FLAME_QUALITY group).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetVolumeOutputFieldsFlameMeshQuality(const CConfig* config);
 
   /*!
    * \brief Set all scalar (turbulence/species) volume field values for a point.

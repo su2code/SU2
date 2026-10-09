@@ -98,15 +98,6 @@ protected:
   string historyFilename;   /*!< \brief The history filename*/
   ofstream histFile;        /*!< \brief Output file stream for the history */
 
-  /*! \brief A dedicated output file for all "Probe"-type custom outputs that share one [x,y,z] location. */
-  struct ProbeHistoryFile {
-    std::vector<string> coords;  /*!< \brief Target coordinates (as parsed), used to group outputs at the same point. */
-    std::vector<string> names;   /*!< \brief Names of all custom outputs probed at this location. */
-    ofstream file;                /*!< \brief Output file stream, one row appended per history write. */
-  };
-  /*! \brief One file per unique probe location in CUSTOM_OUTPUTS (MASTER_NODE only, populated in PrepareProbeHistoryFiles). */
-  std::vector<ProbeHistoryFile> probeHistoryFiles;
-
   bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
   bool maxTimeDelayActive;  /*! \brief: Flag for delaying stop at max_time with 2nd order time stepping. */
 
@@ -847,20 +838,6 @@ protected:
   void PrepareHistoryFile(CConfig *config);
 
   /*!
-   * \brief Open one dedicated file per "Probe"-type CUSTOM_OUTPUTS entry and write its header.
-   *        MASTER_NODE only, called once during history output preprocessing.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void PrepareProbeHistoryFiles(const CConfig *config);
-
-  /*!
-   * \brief Append one row (iteration indices + value) to each dedicated probe history file.
-   *        MASTER_NODE only. Reads already-computed history field values, no extra solver work.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetProbeHistoryFileOutput(const CConfig *config);
-
-  /*!
    * \brief Load up the values of the requested volume fields into ::Local_Data array.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -988,17 +965,6 @@ protected:
    * \param[in] solver - The container holding all solution data.
    * \param[in] iPoint - Index of the point.
    */
-  /*!
-   * \brief Prepare per-write quantities before the volume data point loop runs.
-   * Anything global (a reduction over ranks, a sweep over all points) belongs here rather than in
-   * LoadVolumeData: that is called once per point, so a rank owning no points would never execute
-   * it, and a collective placed inside it would hang every other rank.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The container holding all solution data.
-   */
-  inline virtual void PrepareVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver){}
-
   inline virtual void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){}
 
   /*!

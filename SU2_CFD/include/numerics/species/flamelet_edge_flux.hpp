@@ -28,7 +28,6 @@
 #pragma once
 
 #include "species_edge_flux.hpp"
-#include "../../variables/CSpeciesFlameletVariable.hpp"
 
 /*!
  * \class CScalarFlux_Flamelet
@@ -51,10 +50,7 @@ class CScalarFlux_Flamelet final
   explicit CScalarFlux_Flamelet(const CConfig& config)
       : Base(config),
         preferentialDiffusion(config.GetFlameletParsedOptions().preferential_diffusion),
-        nControlVars(config.GetFlameletParsedOptions().n_control_vars),
-        pdMethod(config.GetFlameletParsedOptions().pd_method),
-        nMajorSpecies(config.GetFlameletParsedOptions().n_pd_major_species),
-        pdTermsPerCV(FlameletPDTermsPerCV(config.GetFlameletParsedOptions().n_pd_major_species)) {}
+        nControlVars(config.GetFlameletParsedOptions().n_control_vars) {}
 
   /*!
    * \brief Preferential diffusion, two terms with the shape of the ordinary diffusion but of
@@ -71,11 +67,6 @@ class CScalarFlux_Flamelet final
                                        const Vector<Double, nDim>& normal, const Vector<Double, nDim>& vector_ij,
                                        EdgeResidual<Double, nVar>& res) const {
     if (!preferentialDiffusion) return;
-
-    if (pdMethod == FLAMELET_PD_METHOD::SOURCE_TERM) {
-      sourceTermFluxes(idx, opt, iPoint, side_i, jPoint, side_j, rho, normal, vector_ij, res);
-      return;
-    }
 
     const Double dist2_ij = fmax(squaredNorm(vector_ij), EPS);
     const Double proj_vector_ij = dot(vector_ij, normal) / dist2_ij;
@@ -146,109 +137,6 @@ class CScalarFlux_Flamelet final
  private:
   const bool preferentialDiffusion;
   const unsigned short nControlVars;
-  const FLAMELET_PD_METHOD pdMethod;
-  const unsigned short nMajorSpecies;
-  const unsigned short pdTermsPerCV;
-
-  /*!
-   * \brief Resolved preferential diffusion fluxes of the SOURCE_TERM method, Eq. (14) of
-   *        Schepers & van Oijen (C&F 280, 2025): for each controlling variable phi_k,
-   *          J_{phi_k} = - sum_sp D_{phi_k,sp} grad(Y_sp) - (D^T_{phi_k}/T) grad(T),
-   *        entering the transport equation as -div(J). The major species mass fractions are the
-   *        solver's auxiliary variables, so their CFD-resolved gradients drive the flux, which is
-   *        the point of tabulating a coefficient per species instead of pre-contracting them
-   *        against the one-dimensional flamelet gradients.
-   * \note The tabulated coefficients are already density weighted (kg/(m s), or W/m for the
-   *       enthalpy row), unlike the kinematic diffusivity the ordinary term uses, so they are
-   *       averaged directly and NOT multiplied by rho. The 1/T of the thermal flux is not
-   *       tabulated and is applied here with the local temperature.
-   * \note Explicit: the coefficients and the major species are manifold lookups, so there is no
-   *       exact Jacobian with respect to the transported scalars. The implicit part is a
-   *       stabilising self-diffusion added to the Jacobian alone, below.
-   */
-  template <class VariableType>
-  FORCEINLINE void sourceTermFluxes(const FlowIndices& idx, const ScalarFluxOptions& opt, Int iPoint,
-                                    const EdgeSide<VariableType>& side_i, Int jPoint,
-                                    const EdgeSide<VariableType>& side_j, const CPair<Double>& rho,
-                                    const Vector<Double, nDim>& normal, const Vector<Double, nDim>& vector_ij,
-                                    EdgeResidual<Double, nVar>& res) const {
-    const Double dist2_ij = fmax(squaredNorm(vector_ij), EPS);
-    const Double proj_vector_ij = dot(vector_ij, normal) / dist2_ij;
-
-    const Double T_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.Temperature());
-    const Double T_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.Temperature());
-    const auto gradT_i = gatherVariables<nDim>(iPoint, side_i.flowNodes->GetGradient_Primitive(), idx.Temperature());
-    const auto gradT_j = gatherVariables<nDim>(jPoint, side_j.flowNodes->GetGradient_Primitive(), idx.Temperature());
-
-    /*--- The scalar solvers are templated on CSpeciesVariable, which does not carry the Eq. (14)
-     coefficients. Only the flamelet solver instantiates this flux, and only on its own interior
-     edges, so its container is what these sides hold. ---*/
-    const auto& pdCoeff_i = static_cast<const CSpeciesFlameletVariable&>(side_i.scalarNodes).GetPDFluxCoeffs();
-    const auto& pdCoeff_j = static_cast<const CSpeciesFlameletVariable&>(side_j.scalarNodes).GetPDFluxCoeffs();
-
-    for (auto iScalar = 0u; iScalar < nControlVars; ++iScalar) {
-      /*--- Molecular terms, one per major species. ---*/
-      for (auto iSp = 0u; iSp < nMajorSpecies; ++iSp) {
-        const auto col = iScalar * pdTermsPerCV + iSp;
-
-        const Double Y_i = gatherVariables(iPoint, side_i.scalarNodes.GetAuxVar(), iSp);
-        const Double Y_j = gatherVariables(jPoint, side_j.scalarNodes.GetAuxVar(), iSp);
-        const auto gradY_i = gatherVariables<nDim>(iPoint, side_i.scalarNodes.GetAuxVarGradient(), iSp);
-        const auto gradY_j = gatherVariables<nDim>(jPoint, side_j.scalarNodes.GetAuxVarGradient(), iSp);
-
-        const Double D = 0.5 * (gatherVariables(iPoint, pdCoeff_i, col) +
-                                gatherVariables(jPoint, pdCoeff_j, col));
-
-        const Double projGrad = projectedGradient(opt, gradY_i, gradY_j, Y_i, Y_j, normal, vector_ij, dist2_ij);
-
-        res.flux_i(iScalar) -= D * projGrad;
-        if (!opt.oneSided) res.flux_j(iScalar) += D * projGrad;
-      }
-
-      /*--- Thermal (Soret) term. ---*/
-      const auto colT = iScalar * pdTermsPerCV + FlameletPDThermalTerm(nMajorSpecies);
-      const Double Dth = 0.5 * (gatherVariables(iPoint, pdCoeff_i, colT) / T_i +
-                                gatherVariables(jPoint, pdCoeff_j, colT) / T_j);
-
-      const Double projGradT = projectedGradient(opt, gradT_i, gradT_j, T_i, T_j, normal, vector_ij, dist2_ij);
-
-      res.flux_i(iScalar) -= Dth * projGradT;
-      if (!opt.oneSided) res.flux_j(iScalar) += Dth * projGradT;
-
-      /*--- Stabilisation. The fluxes above are explicit, and explicit diffusion carries a limit on
-       the pseudo time step that the flame front cells reach first. A self-diffusion of the
-       controlling variable is added to the Jacobian ALONE: the residual still holds exactly the
-       Eq. (14) fluxes, so the converged solution is untouched, while the positive definite
-       operator lifts that limit the way an implicit treatment of a real self-diffusion would.
-       D_stab is the baseline diffusivity scaled by how much larger the Eq. (14) coefficients are,
-       capped so a vanishing baseline cannot make it unbounded. ---*/
-      if (opt.implicit) {
-        const Double Dbase_i = rho.i * gatherVariables(iPoint, side_i.scalarNodes.GetDiffusivity(), iScalar);
-        const Double Dbase_j = rho.j * gatherVariables(jPoint, side_j.scalarNodes.GetDiffusivity(), iScalar);
-
-        Double mag_i = fabs(gatherVariables(iPoint, pdCoeff_i, colT) / T_i);
-        Double mag_j = fabs(gatherVariables(jPoint, pdCoeff_j, colT) / T_j);
-        for (auto iSp = 0u; iSp < nMajorSpecies; ++iSp) {
-          const auto col = iScalar * pdTermsPerCV + iSp;
-          mag_i += fabs(gatherVariables(iPoint, pdCoeff_i, col));
-          mag_j += fabs(gatherVariables(jPoint, pdCoeff_j, col));
-        }
-        const Double Dstab = fmin(0.5 * (mag_i + mag_j), C_STAB_MAX * 0.5 * (Dbase_i + Dbase_j));
-
-        res.jac_ii(iScalar, iScalar) += Dstab * proj_vector_ij / rho.i;
-        if (!opt.oneSided) {
-          res.jac_ij(iScalar, iScalar) -= Dstab * proj_vector_ij / rho.j;
-          res.jac_ji(iScalar, iScalar) -= Dstab * proj_vector_ij / rho.i;
-          res.jac_jj(iScalar, iScalar) += Dstab * proj_vector_ij / rho.j;
-        }
-      }
-    }
-  }
-
-  /*!
-   * \brief Cap on the stabilising diffusivity, as a multiple of the baseline diffusion.
-   */
-  static constexpr passivedouble C_STAB_MAX = 100.0;
 
   /*!
    * \brief Auxiliary variable holding the beta scalar of a controlling variable.
