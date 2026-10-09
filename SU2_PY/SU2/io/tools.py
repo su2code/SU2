@@ -30,6 +30,7 @@
 # -------------------------------------------------------------------
 
 import os
+import re
 import shutil, glob
 from SU2.util import ordered_bunch
 from .historyMap import history_header_map as historyOutFields
@@ -272,21 +273,29 @@ optnames_geo = [
 ]
 
 # SU2_GEO numbers the stations of GEO_LOCATION_STATIONS from 1 (STATION1_*),
-# see SU2_GEO.cpp, so the names cover stations 1 to 20.
-PerStation = []
-for i in range(1, 21):
-    PerStation.append("STATION" + str(i) + "_AREA")
-    PerStation.append("STATION" + str(i) + "_LENGTH")
-    PerStation.append("STATION" + str(i) + "_WIDTH")
-    PerStation.append("STATION" + str(i) + "_WATERLINE_WIDTH")
-    PerStation.append("STATION" + str(i) + "_HEIGHT")
-    PerStation.append("STATION" + str(i) + "_THICKNESS")
-    PerStation.append("STATION" + str(i) + "_CHORD")
-    PerStation.append("STATION" + str(i) + "_LE_RADIUS")
-    PerStation.append("STATION" + str(i) + "_TOC")
-    PerStation.append("STATION" + str(i) + "_TWIST")
+# see SU2_GEO.cpp, and does not limit their number.
+optnames_geo_station = [
+    "AREA",
+    "LENGTH",
+    "WIDTH",
+    "WATERLINE_WIDTH",
+    "HEIGHT",
+    "THICKNESS",
+    "CHORD",
+    "LE_RADIUS",
+    "TOC",
+    "TWIST",
+]
 
-optnames_geo.extend(PerStation)
+optnames_geo_station_regex = re.compile(
+    r"^STATION[1-9][0-9]*_(%s)$" % "|".join(optnames_geo_station)
+)
+
+
+def is_optname_geo(name):
+    """Check if name is a geometry function, including STATION#_* for any station."""
+    return name in optnames_geo or bool(optnames_geo_station_regex.match(name))
+
 
 #: optnames_geo
 

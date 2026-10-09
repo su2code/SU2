@@ -105,7 +105,7 @@ def function(func_name, config, state=None):
             multipoint(config, state)
 
         # Geometry
-        elif func_name in su2io.optnames_geo:
+        elif su2io.is_optname_geo(func_name):
             geometry(func_name, config, state)
 
         else:
@@ -890,8 +890,8 @@ def geometry(func_name, config, state=None):
 
     # return output
     funcs = su2util.ordered_bunch()
-    for key in su2io.optnames_geo:
-        if key in state["FUNCTIONS"]:
+    for key in state["FUNCTIONS"]:
+        if su2io.is_optname_geo(key):
             funcs[key] = state["FUNCTIONS"][key]
     return funcs
 
