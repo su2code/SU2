@@ -27,10 +27,25 @@
 #include "catch.hpp"
 #include "../../SU2_CFD/include/solvers/CSolver.hpp"
 
-TEST_CASE("Rotation of component bounds encloses every corner", "[PeriodicLimiter]") {
-  const su2double noAngles[3] = {0.0, 0.0, 0.0}, negativeAngle[3] = {0.0, -0.5, 0.0};
+TEST_CASE("Configured zero angles select translation and tiny angles select rotation", "[PeriodicLimiter]") {
+  const su2double noAngles[3] = {0.0, -0.0, 0.0}, negativeAngle[3] = {0.0, -0.5, 0.0};
   CHECK_FALSE(GeometryToolbox::HasRotation(noAngles));
   CHECK(GeometryToolbox::HasRotation(negativeAngle));
+  const su2double deg2rad = PI_NUMBER / 180.0;
+  for (int iDim = 0; iDim < 3; ++iDim) {
+    su2double angles[3] = {0.0, 0.0, 0.0};
+    angles[iDim] = su2double(0.0) * deg2rad;
+    CHECK_FALSE(GeometryToolbox::HasRotation(angles));
+    angles[iDim] *= -1.0;
+    CHECK_FALSE(GeometryToolbox::HasRotation(angles));
+    angles[iDim] = su2double(1.0e-18) * deg2rad;
+    CHECK(GeometryToolbox::HasRotation(angles));
+    angles[iDim] *= -1.0;
+    CHECK(GeometryToolbox::HasRotation(angles));
+  }
+}
+
+TEST_CASE("Rotation of component bounds encloses every corner", "[PeriodicLimiter]") {
   auto checkCorners = [](auto& rotation, auto& lower, auto& upper) {
     constexpr int nDim = sizeof(lower) / sizeof(lower[0]);
     su2double expectedMin[nDim], expectedMax[nDim];

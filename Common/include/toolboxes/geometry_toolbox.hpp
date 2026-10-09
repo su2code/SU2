@@ -219,6 +219,7 @@ inline void Rotate(const Scalar R[][nDim], const Scalar* O, const Scalar* d, Sca
 /*! \return Whether any of the three supplied rotation angles is nonzero. */
 template <class Scalar>
 inline bool HasRotation(const Scalar* angles) {
+  // Configured zero stays exact after degree conversion and negation; retain every nonzero rotation.
   return angles[0] != 0.0 || angles[1] != 0.0 || angles[2] != 0.0;
 }
 
@@ -236,10 +237,8 @@ inline void RotateBox(const Scalar R[][nDim], Scalar* vMin, Scalar* vMax) {
       rotMax[iDim] += max(fromMin, fromMax);
     }
   }
-  for (int iDim = 0; iDim < nDim; ++iDim) {
-    vMin[iDim] = rotMin[iDim];
-    vMax[iDim] = rotMax[iDim];
-  }
+  std::copy_n(rotMin, nDim, vMin);
+  std::copy_n(rotMax, nDim, vMax);
 }
 
 /*! \brief Tangent projection  */
