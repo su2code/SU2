@@ -263,8 +263,9 @@ class CSysMatrix {
   /*!< \brief Maximum number of variables the matrix can handle. The static
    * size is needed for fast, per-thread, static memory allocation. */
   enum : size_t { MAXNVAR = 20 };
-  static_assert(MAXNVAR >= MAX_TRANSPORTED_SPECIES,
-                "CSysMatrix::MAXNVAR must hold the species equations: raise MAXNVAR together with MAX_TRANSPORTED_SPECIES.");
+  static_assert(
+      MAXNVAR >= MAX_TRANSPORTED_SPECIES,
+      "CSysMatrix::MAXNVAR must hold the species equations: raise MAXNVAR together with MAX_TRANSPORTED_SPECIES.");
 
   enum { OMP_MAX_SIZE_L = 8192 }; /*!< \brief Max. chunk size used in light parallel for loops. */
   enum { OMP_MAX_SIZE_H = 512 };  /*!< \brief Max. chunk size used in heavy parallel for loops. */
