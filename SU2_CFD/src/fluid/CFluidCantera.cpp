@@ -2,14 +2,14 @@
  * \file CFluidCantera.cpp
  * \brief Defines the multicomponent incompressible Ideal Gas model for reacting flows.
  * \author T. Economon, Cristopher Morales Ubal
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 #include <algorithm>
 #include <cmath>
 
-#ifdef USE_CANTERA
+#ifdef HAVE_CANTERA
 #include <cantera/core.h>
 #include <cantera/kinetics/Reaction.h>
 
@@ -49,7 +49,7 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
       Chemistry_Min_Temperature(config->GetCantera_DC_Min_Temp()),
       Correction_Velocity(config->GetCantera_Correction_Velocity()) {
   try {
-    sol = std::shared_ptr<Cantera::Solution>(newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model));
+    sol = newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model);
     const auto& thermo = *sol->thermo();
     const size_t nSpeciesMechanism = thermo.nSpecies();
 
@@ -70,12 +70,12 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
       const string name = config->GetChemical_GasComposition(iVar);
       const size_t index = thermo.speciesIndex(name);
       if (index == npos) {
-        SU2_MPI::Error("Species '" + name + "' of GAS_COMPOSITION_NAMES is not part of phase '" + Phase_Name +
+        SU2_MPI::Error("Species '" + name + "' of CANTERA_SPECIES_NAMES is not part of phase '" + Phase_Name +
                            "' in " + Chemical_MechanismFile + ".",
                        CURRENT_FUNCTION);
       }
       if (std::find(speciesIndices.begin(), speciesIndices.begin() + iVar, index) != speciesIndices.begin() + iVar) {
-        SU2_MPI::Error("Species '" + name + "' appears more than once in GAS_COMPOSITION_NAMES.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Species '" + name + "' appears more than once in CANTERA_SPECIES_NAMES.", CURRENT_FUNCTION);
       }
       speciesIndices[iVar] = index;
     }

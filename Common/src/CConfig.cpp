@@ -1288,24 +1288,24 @@ void CConfig::SetConfig_Options() {
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
 
   /*!\par CONFIG_CATEGORY: Cantera fluid model \ingroup Config*/
-  /*!\brief TRANSPORT_MODEL \n DESCRIPTION: Transport model \n OPTIONS: see Cantera homepage \n DEFAULT: mixture-averaged \ingroup Config*/
-  addStringOption("TRANSPORT_MODEL", TransportModel, string("mixture-averaged"));
-  /*!\brief CHEMICAL_MECHANISM_FILE \n DESCRIPTION: Chemical reaction mechanism \n OPTIONS: see Cantera homepage \n DEFAULT: h2o2.yaml \ingroup Config*/
-  addStringOption("CHEMICAL_MECHANISM_FILE", ChemicalMechanismFile, string("h2o2.yaml"));
-  /*!\brief PHASE_NAME \n DESCRIPTION: name of the phase in the chemical mechanism file \n OPTIONS: see Cantera homepage \n DEFAULT: ohmech \ingroup Config*/
-  addStringOption("PHASE_NAME", PhaseName, string("ohmech"));
-  /*!\brief GAS_COMPOSITION_NAMES \n DESCRIPTION: Gas composition names \n OPTIONS: see Cantera homepage \n DEFAULT: \ingroup Config*/
-  addStringListOption("GAS_COMPOSITION_NAMES", n_GasCompositionNames, GasCompositionNames);
-  /*!\brief COMBUSTION \n DESCRIPTION: Combustion Detailed chemistry using Cantera \n DEFAULT: false \ingroup Config*/
-  addBoolOption("COMBUSTION", Combustion, false);
-  /*!\brief SPARK_TEMPERATURE \n DESCRIPTION: Spark temperature used for ignition in detailed chemistry using Cantera \n DEFAULT: 1000 K \ingroup Config*/
-  addDoubleOption("SPARK_TEMPERATURE", Spark_Temperature, 1000.0);
-  /*!\brief CHEMICAL_SOURCE_JACOBIAN \n DESCRIPTION: Add the diagonal chemical sink Jacobian to the implicit species equations \n DEFAULT: true \ingroup Config*/
-  addBoolOption("CHEMICAL_SOURCE_JACOBIAN", Chemical_Source_Jacobian, true);
+  /*!\brief CANTERA_MECHANISM_FILE \n DESCRIPTION: Chemical reaction mechanism file (YAML) \n OPTIONS: see Cantera homepage \n DEFAULT: none, required \ingroup Config*/
+  addStringOption("CANTERA_MECHANISM_FILE", cantera_ParsedOptions.mechanism_file, string(""));
+  /*!\brief CANTERA_PHASE_NAME \n DESCRIPTION: Name of the phase in the chemical mechanism file \n OPTIONS: see Cantera homepage \n DEFAULT: none, required \ingroup Config*/
+  addStringOption("CANTERA_PHASE_NAME", cantera_ParsedOptions.phase_name, string(""));
+  /*!\brief CANTERA_TRANSPORT_MODEL \n DESCRIPTION: Transport model \n OPTIONS: see Cantera homepage \n DEFAULT: mixture-averaged \ingroup Config*/
+  addStringOption("CANTERA_TRANSPORT_MODEL", cantera_ParsedOptions.transport_model, string("mixture-averaged"));
+  /*!\brief CANTERA_SPECIES_NAMES \n DESCRIPTION: Names of the species in the mechanism, the last one is the remainder \n DEFAULT: none, required \ingroup Config*/
+  addStringListOption("CANTERA_SPECIES_NAMES", cantera_ParsedOptions.n_species_names, cantera_ParsedOptions.species_names);
+  /*!\brief CANTERA_COMBUSTION \n DESCRIPTION: Add the chemical source terms of the detailed chemistry to the species equations \n DEFAULT: false \ingroup Config*/
+  addBoolOption("CANTERA_COMBUSTION", cantera_ParsedOptions.combustion, false);
+  /*!\brief CANTERA_SPARK_TEMPERATURE \n DESCRIPTION: Temperature [K] inside the spark region while the spark is active \n DEFAULT: 1000 K \ingroup Config*/
+  addDoubleOption("CANTERA_SPARK_TEMPERATURE", cantera_ParsedOptions.spark_temperature, 1000.0);
+  /*!\brief CANTERA_SOURCE_JACOBIAN \n DESCRIPTION: Add the diagonal chemical sink Jacobian to the implicit species equations \n DEFAULT: true \ingroup Config*/
+  addBoolOption("CANTERA_SOURCE_JACOBIAN", cantera_ParsedOptions.source_jacobian, true);
   /*!\brief CANTERA_DC_MIN_TEMP \n DESCRIPTION: Temperature [K] below which the chemical source terms are set to zero \n DEFAULT: 500 K \ingroup Config*/
-  addDoubleOption("CANTERA_DC_MIN_TEMP", Cantera_DC_Min_Temp, 500.0);
+  addDoubleOption("CANTERA_DC_MIN_TEMP", cantera_ParsedOptions.min_temperature, 500.0);
   /*!\brief CANTERA_CORRECTION_VELOCITY \n DESCRIPTION: Correct the species diffusion fluxes so that they sum to zero \n DEFAULT: true \ingroup Config*/
-  addBoolOption("CANTERA_CORRECTION_VELOCITY", Cantera_Correction_Velocity, true);
+  addBoolOption("CANTERA_CORRECTION_VELOCITY", cantera_ParsedOptions.correction_velocity, true);
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
@@ -4438,26 +4438,38 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
     }
 
-    if ((Kind_FluidModel != FLUID_CANTERA) && (Combustion == true)) {
+    if ((Kind_FluidModel != FLUID_CANTERA) && cantera_ParsedOptions.combustion) {
       SU2_MPI::Error(
-          "The use of COMBUSTION=YES requires the use of FLUID_MODEL=FLUID_CANTERA,\n"
+          "The use of CANTERA_COMBUSTION=YES requires the use of FLUID_MODEL=FLUID_CANTERA,\n"
           "detailed chemistry cannot be performed with other fluid models",
           CURRENT_FUNCTION);
     }
 
-    if ((flamelet_ParsedOptions.ignition_method != FLAMELET_INIT_TYPE::SPARK) && (Combustion == true)) {
+    if ((flamelet_ParsedOptions.ignition_method != FLAMELET_INIT_TYPE::SPARK) && cantera_ParsedOptions.combustion) {
       SU2_MPI::Error(
-          "The use of COMBUSTION=YES requires the use of FLAME_INIT_METHOD=SPARK,\n"
+          "The use of CANTERA_COMBUSTION=YES requires the use of FLAME_INIT_METHOD=SPARK,\n"
           "Other ignition methods are not currently available",
           CURRENT_FUNCTION);
     }
 
     if (Kind_FluidModel == FLUID_CANTERA) {
-      /*--- Check whether the number of entries of the GAS_COMPOSITION_NAMES equals the number of transported scalar
-       equations solved + 1.--- */
-      if (n_GasCompositionNames != nSpecies_Init + 1) {
+      if (Kind_Regime != ENUM_REGIME::INCOMPRESSIBLE || Kind_Solver == MAIN_SOLVER::INC_EULER) {
         SU2_MPI::Error(
-            "The use of FLUID_CANTERA requires the number of entries for GAS_COMPOSITION_NAMES,\n"
+            "FLUID_CANTERA is only available for the incompressible viscous solvers, "
+            "SOLVER= INC_NAVIER_STOKES or INC_RANS.",
+            CURRENT_FUNCTION);
+      }
+      if (cantera_ParsedOptions.mechanism_file.empty() || cantera_ParsedOptions.phase_name.empty()) {
+        SU2_MPI::Error(
+            "The use of FLUID_CANTERA requires CANTERA_MECHANISM_FILE and CANTERA_PHASE_NAME to be set,\n"
+            "there are no default values.",
+            CURRENT_FUNCTION);
+      }
+      /*--- Check whether the number of entries of the CANTERA_SPECIES_NAMES equals the number of transported scalar
+       equations solved + 1.--- */
+      if (cantera_ParsedOptions.n_species_names != nSpecies_Init + 1) {
+        SU2_MPI::Error(
+            "The use of FLUID_CANTERA requires the number of entries for CANTERA_SPECIES_NAMES,\n"
             "to be equal to the number of entries of SPECIES_INIT + 1",
             CURRENT_FUNCTION);
       }
@@ -6053,10 +6065,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nSpecies = nSpecies_Init;
 
     if (nSpecies > MAX_TRANSPORTED_SPECIES) {
-      SU2_MPI::Error("The species model supports at most " + to_string(MAX_TRANSPORTED_SPECIES) +
-                         " transported species equations, but " + to_string(nSpecies) +
-                         " were given. Increase MAX_TRANSPORTED_SPECIES in option_structure.hpp.",
-                     CURRENT_FUNCTION);
+      SU2_MPI::Error(
+          "The species model supports at most " + to_string(MAX_TRANSPORTED_SPECIES) +
+              " transported species equations (the number of SPECIES_INIT entries, one less than the species of a\n"
+              "mixture), but " + to_string(nSpecies) + " were given.\n"
+              "To run more species, increase MAX_TRANSPORTED_SPECIES in Common/include/option_structure.hpp and\n"
+              "recompile. If the compiler then reports a failed static_assert, raise the limit it names as well\n"
+              "(for example MAXNVAR of CSysMatrix in Common/include/linear_algebra/CSysMatrix.hpp).",
+          CURRENT_FUNCTION);
     }
 
     /*--- Check whether some variables (or their sums) are in physical bounds. [0,1] for species related quantities. ---*/

@@ -35,8 +35,9 @@ if __name__ == "__main__":
     if sys.version_info[0] < 3:
         raise Exception("Script must be run using Python 3")
 
-    # Preconfigure
-    preconfigure.run(own_meson=True)
+    # Preconfigure, Cantera is large and only downloaded when it is enabled
+    use_cantera = any(arg.lower() == "-denable-cantera=true" for arg in sys.argv[1:])
+    preconfigure.run(own_meson=True, own_cantera=use_cantera)
 
     # Add paths for meson and ninja to environment
     os.environ["NINJA"] = sys.path[0] + os.path.sep + "ninja"

@@ -27,7 +27,6 @@
 
 #include "../../include/solvers/CIncNSSolver.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
-#include "../../include/variables/CSpeciesVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/solvers/CFVMFlowSolverBase.inl"
 
@@ -58,8 +57,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
   if (config->GetCombustion()) flamelet_config_options = config->GetFlameletParsedOptions();
 
-  if ((config->GetKind_FluidModel() == FLUID_MIXTURE || config->GetKind_FluidModel() == FLUID_CANTERA) &&
-      config->GetEnergy_Equation()) {
+  if (config->GetMulticomponentFluid() && config->GetEnergy_Equation()) {
     EnthalpyDiffusion.resize(nPoint, config->GetnSpecies()) = su2double(0.0);
     GradEnthalpyDiffusion.resize(nPoint, config->GetnSpecies()) = su2double(0.0);
   }
@@ -86,18 +84,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Setting temperature, enthalpy and thermophysical properties for ignition in reacting flows. ---*/
   if (energy && combustion) {
-    bool ignition = false;
-    su2double spark_radius_squared = 0.0;
-
-    /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
-    if (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
-      const auto& spark_init = flamelet_config_options.spark_init;
-      const unsigned long spark_iter_start = ceil(spark_init[4]);
-      const unsigned long spark_duration = ceil(spark_init[5]);
-      const unsigned long iter = config->GetIgnitionIter();
-      ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
-      spark_radius_squared = spark_init[3] * spark_init[3];
-    }
+    const bool ignition = flamelet_config_options.SparkActive(config->GetIgnitionIter());
 
     SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
@@ -106,9 +93,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (auto i_point = 0u; i_point < nPoint; i_point++) {
         /*--- Apply ignition temperature within spark radius. ---*/
-        const su2double dist_from_center = GeometryToolbox::SquaredDistance(
-            nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
-        if (dist_from_center < spark_radius_squared) {
+        if (flamelet_config_options.InSpark(nDim, geometry->nodes->GetCoord(i_point))) {
           /*--- Retrieve scalars solution. ---*/
           su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(i_point);
           /*--- Set high temperature for ignition. ---*/
@@ -338,9 +323,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 CNumerics::ResidualType<> CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry,
                                                          CSolver **solver_container, CNumerics *numerics,
                                                          CConfig *config) {
-  const bool energy_multicomponent =
-      (config->GetKind_FluidModel() == FLUID_MIXTURE || config->GetKind_FluidModel() == FLUID_CANTERA) &&
-      config->GetEnergy_Equation();
+  const bool energy_multicomponent = config->GetMulticomponentFluid() && config->GetEnergy_Equation();
 
   /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
   if (energy_multicomponent) {
@@ -413,9 +396,10 @@ void CIncNSSolver::ComputeEnthalpyDiffusionTerms(CSolver** solver_container, con
   CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  /*--- The species solver reads the mass diffusivities evaluated here instead of computing them again. ---*/
-  const bool share_diffusivity = (config->GetKind_FluidModel() == FLUID_CANTERA);
-  auto* species = share_diffusivity ? su2staticcast_p<CSpeciesVariable*>(speciesNodes) : nullptr;
+  /*--- Mass diffusivities are evaluated here and stored in the flow variables, from where the species solver copies
+   *    them (CSpeciesSolver::Preprocessing), instead of being computed again. ---*/
+  const bool store_diffusivity = (config->GetKind_FluidModel() == FLUID_CANTERA);
+  auto* flowNodes = static_cast<CIncNSVariable*>(nodes);
   const unsigned short nSpecies = config->GetnSpecies();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -424,9 +408,9 @@ void CIncNSSolver::ComputeEnthalpyDiffusionTerms(CSolver** solver_container, con
     fluid_model->SetEddyViscosity(nodes->GetPrimitive(iPoint)[prim_idx.EddyViscosity()]);
     fluid_model->GetEnthalpyDiffusivity(EnthalpyDiffusion[iPoint]);
     if (implicit) fluid_model->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion[iPoint]);
-    if (share_diffusivity) {
+    if (store_diffusivity) {
       for (unsigned short iVar = 0; iVar <= nSpecies; iVar++)
-        species->SetDiffusivity(iPoint, fluid_model->GetMassDiffusivity(iVar), iVar);
+        flowNodes->SetMassDiffusivity(iPoint, fluid_model->GetMassDiffusivity(iVar), iVar);
     }
   }
   END_SU2_OMP_FOR

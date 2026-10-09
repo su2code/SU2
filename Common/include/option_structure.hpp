@@ -100,10 +100,11 @@ constexpr passivedouble STD_REF_TEMP = 298.15;  /*!< \brief Standard reference t
 
 /*!
  * \brief Maximum number of transported species (scalar equations of the species model).
- * \note Sizes the stack storage of the species edge-flux kernel, which is the performance-critical
- *       user of this limit, and the static arrays of the species solver. Larger values slow the kernel down.
+ * \note Sizes the stack storage of the species edge-flux kernel and the static arrays of the species solver. It
+ *       must not exceed the limits of the linear algebra (CSysMatrix::MAXNVAR), the multigrid and the limiters;
+ *       static_asserts at those places fail to compile when it does, and name the limit to raise.
  */
-constexpr unsigned short MAX_TRANSPORTED_SPECIES = 12;
+constexpr unsigned short MAX_TRANSPORTED_SPECIES = 20;
 constexpr passivedouble EPS = 1.0E-16;        /*!< \brief Error scale. */
 constexpr passivedouble TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
 
@@ -1623,6 +1624,43 @@ struct FluidFlamelet_ParsedOptions {
   bool thickenedflame_correction{true}; /*!< \brief Thickened flame correction. */
   su2double Flame_T_ignition = 5000;    /*!< \brief Ignition temperature for the flame, used for initialization. */
 
+  /*!
+   * \brief Whether the artificial spark is active at the given iteration.
+   * \param[in] iter - Iteration counter that times the spark, see CConfig::GetIgnitionIter().
+   */
+  bool SparkActive(unsigned long iter) const {
+    if (ignition_method != FLAMELET_INIT_TYPE::SPARK) return false;
+    const unsigned long start = static_cast<unsigned long>(std::ceil(SU2_TYPE::GetValue(spark_init[4])));
+    const unsigned long duration = static_cast<unsigned long>(std::ceil(SU2_TYPE::GetValue(spark_init[5])));
+    return (iter >= start) && (iter <= start + duration);
+  }
+
+  /*!
+   * \brief Whether a point is inside the spark region.
+   * \param[in] nDim - Number of dimensions.
+   * \param[in] coord - Coordinates of the point.
+   */
+  bool InSpark(unsigned short nDim, const su2double* coord) const {
+    su2double dist2 = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) dist2 += (coord[iDim] - spark_init[iDim]) * (coord[iDim] - spark_init[iDim]);
+    return dist2 < spark_init[3] * spark_init[3];
+  }
+};
+
+/*!
+ * \brief Structure containing the parsed options of the Cantera detailed chemistry model (FLUID_CANTERA).
+ */
+struct CanteraOptions {
+  std::string mechanism_file;                      /*!< \brief Chemical reaction mechanism file, required. */
+  std::string phase_name;                          /*!< \brief Name of the phase in the mechanism file, required. */
+  std::string transport_model = "mixture-averaged"; /*!< \brief Cantera transport model. */
+  unsigned short n_species_names = 0;              /*!< \brief Number of species names. */
+  std::string* species_names = nullptr;            /*!< \brief Names of the species, the last one is the remainder. */
+  bool combustion = false;                         /*!< \brief Add the chemical source terms to the species equations. */
+  su2double spark_temperature = 1000.0;            /*!< \brief Temperature inside the spark region while it is active. */
+  bool source_jacobian = true;                     /*!< \brief Diagonal chemical sink Jacobian in the implicit species equations. */
+  su2double min_temperature = 500.0;               /*!< \brief Temperature below which the chemistry is skipped. */
+  bool correction_velocity = true;                 /*!< \brief Correction velocity of the species diffusion fluxes. */
 };
 
 /*!

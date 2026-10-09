@@ -89,7 +89,7 @@ def run(
     own_opdi=True,
     own_mpp=True,
     own_cool=True,
-    own_cantera=True,
+    own_cantera=False,
     own_mel=True,
     own_fado=True,
     own_mlpcpp=True,
@@ -149,9 +149,9 @@ if __name__ == "__main__":
         action="store_false",
     )
     parser.add_argument(
-        "--no-cantera",
-        help="do not download own copy of Cantera",
-        action="store_false",
+        "--with-cantera",
+        help="download own copy of Cantera, needed for -Denable-cantera=true",
+        action="store_true",
     )
     parser.add_argument(
         "--no-mel", help="do not download own copy of MEL", action="store_false"
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         own_opdi=args.no_opdi,
         own_mpp=args.no_mpp,
         own_cool=args.no_coolprop,
-        own_cantera=args.no_cantera,
+        own_cantera=args.with_cantera,
         own_mel=args.no_mel,
         own_fado=args.no_fado,
         own_mlpcpp=args.no_mlpcpp,

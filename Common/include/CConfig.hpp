@@ -82,16 +82,7 @@ private:
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
   string FluidName;               /*!< \brief name of the applied fluid. */
-  string TransportModel;          /*!< \brief name transport model used in Cantera. */
-  string* GasCompositionNames;    /*!< \brief gas composition used in Cantera. */
-  string ChemicalMechanismFile;   /*!< \brief Chemical Reaction mechanism used in Cantera. */
-  string PhaseName;               /*!< \brief Name of the phase in the chemical mechanism file used in Cantera. */
-  unsigned short n_GasCompositionNames; /*!<\brief Number of gases in mixture composition for Cantera. */
-  bool Combustion;                      /*!< \brief Flag for Combustion Detailed chemistry problems using Cantera. */
-  bool Chemical_Source_Jacobian;        /*!< \brief Flag for the diagonal chemical source Jacobian in the species equations. */
-  su2double Cantera_DC_Min_Temp;        /*!< \brief Temperature below which the chemical source terms are set to zero. */
-  bool Cantera_Correction_Velocity;     /*!< \brief Flag for the correction velocity of the species diffusion fluxes. */
-  su2double Spark_Temperature; /*!< \brief Spark temperature used for ignition in detailed chemistry using Cantera. */
+  CanteraOptions cantera_ParsedOptions; /*!< \brief Options of the Cantera detailed chemistry model. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -4106,58 +4097,75 @@ public:
   string GetFluid_Name(void) const { return FluidName; }
 
   /*!
+   * \brief Returns the options of the Cantera detailed chemistry model.
+   */
+  const CanteraOptions& GetCanteraParsedOptions() const { return cantera_ParsedOptions; }
+
+  /*!
    * \brief Returns the transport model used in Cantera.
    */
-  string GetTransport_Model(void) const { return TransportModel; }
+  const string& GetTransport_Model() const { return cantera_ParsedOptions.transport_model; }
 
   /*!
-   * \brief Returns the chemical reaction mechanism (mechanism.yaml) used in Cantera.
+   * \brief Returns the chemical reaction mechanism file used in Cantera.
    */
-  string GetChemical_MechanismFile(void) const { return ChemicalMechanismFile; }
+  const string& GetChemical_MechanismFile() const { return cantera_ParsedOptions.mechanism_file; }
 
   /*!
-   * \brief Returns the name of the pase in the chemical reaction mechanism file used in Cantera.
+   * \brief Returns the name of the phase in the chemical reaction mechanism file used in Cantera.
    */
-  string GetPhase_Name(void) const { return PhaseName; }
+  const string& GetPhase_Name() const { return cantera_ParsedOptions.phase_name; }
 
   /*!
-   * \brief Returns the gas composition used in Cantera.
+   * \brief Returns the name of a species of the Cantera mixture, checked against the number of names.
    */
-  string GetChemical_GasComposition(unsigned short val_index = 0) const {
-    if (val_index >= n_GasCompositionNames) {
-      SU2_MPI::Error("Index out of range for GAS_COMPOSITION_NAMES.", CURRENT_FUNCTION);
+  const string& GetChemical_GasComposition(unsigned short val_index = 0) const {
+    if (val_index >= cantera_ParsedOptions.n_species_names) {
+      SU2_MPI::Error("Index out of range for CANTERA_SPECIES_NAMES.", CURRENT_FUNCTION);
     }
-    return GasCompositionNames[val_index];
+    return cantera_ParsedOptions.species_names[val_index];
+  }
+
+  /*!
+   * \brief Returns the label of a transported species in output fields: its name for Cantera, otherwise its index.
+   */
+  string GetSpecies_Label(unsigned short val_index) const {
+    return (Kind_FluidModel == FLUID_CANTERA) ? GetChemical_GasComposition(val_index) : to_string(val_index);
   }
 
   /*!
    * \brief Get information about the Combustion-Detailed chemistry using Cantera.
    * \return <code>TRUE</code> if combustion-detailed chemistry using Cantera is used; otherwise <code>FALSE</code>.
    */
-  bool GetCombustion(void) const { return Combustion; }
+  bool GetCombustion() const { return cantera_ParsedOptions.combustion; }
 
   /*!
    * \brief Get whether the diagonal chemical sink Jacobian is added to the implicit species equations.
    */
-  bool GetChemical_Source_Jacobian(void) const { return Chemical_Source_Jacobian; }
+  bool GetChemical_Source_Jacobian() const { return cantera_ParsedOptions.source_jacobian; }
 
   /*!
    * \brief Get the temperature below which the chemical source terms are set to zero.
    */
-  su2double GetCantera_DC_Min_Temp(void) const { return Cantera_DC_Min_Temp; }
+  su2double GetCantera_DC_Min_Temp() const { return cantera_ParsedOptions.min_temperature; }
 
   /*!
    * \brief Get whether the species diffusion fluxes are corrected to sum to zero.
    */
-  bool GetCantera_Correction_Velocity(void) const { return Cantera_Correction_Velocity; }
+  bool GetCantera_Correction_Velocity() const { return cantera_ParsedOptions.correction_velocity; }
 
   /*!
    * \brief Get High temperature applied during spark ignition.
    * \return Spark Temperature.
    */
-  su2double GetSpark_Temperature(void) const {
-    return Spark_Temperature;
-  }
+  su2double GetSpark_Temperature() const { return cantera_ParsedOptions.spark_temperature; }
+
+  /*!
+   * \brief Whether the fluid is a mixture of transported species with their own enthalpy diffusion
+   *        (FLUID_MIXTURE or FLUID_CANTERA).
+   */
+  bool GetMulticomponentFluid() const { return (Kind_FluidModel == FLUID_MIXTURE) || (Kind_FluidModel == FLUID_CANTERA); }
+
 
   /*!
    * \brief Option to define the density model for incompressible flows.

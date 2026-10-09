@@ -1420,7 +1420,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool bounded_scalar = config->GetBounded_Scalar();
-  const bool multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) || (config->GetKind_FluidModel() == FLUID_CANTERA));
+  const bool multicomponent = config->GetMulticomponentFluid();
 
   const su2double kappa = config->GetMUSCL_Kappa_Flow();
   const su2double musclRamp = config->GetMUSCLRampValue() * config->GetNewtonKrylovRelaxation();
@@ -1493,11 +1493,14 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         Primitive_i[iVar] = V_i[iVar];
         Primitive_j[iVar] = V_j[iVar];
       }
-      if(multicomponent){
+      /*--- A failed evaluation of the fluid state is a non-physical reconstruction, like a negative temperature. ---*/
+      bool state_failed = false;
+      if (multicomponent) {
         const su2double* scalar_i = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
         const su2double* scalar_j = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(jPoint);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j);
+        const bool failed_i = ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i);
+        const bool failed_j = ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j);
+        state_failed = failed_i || failed_j;
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found,
@@ -1507,14 +1510,17 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
        incompressible flow, only the temperature and density need to be
        checked. Pressure is the dynamic pressure (can be negative). ---*/
 
-      if (config->GetEnergy_Equation()) {
-        const bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
-        const bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
+      if (config->GetEnergy_Equation() || state_failed) {
+        bool bad_recon = state_failed;
+        if (config->GetEnergy_Equation()) {
+          const bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
+          const bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
 
-        const bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
-        const bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
+          const bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
+          const bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
 
-        bool bad_recon = neg_temperature_i || neg_temperature_j || neg_density_i || neg_density_j;
+          bad_recon = bad_recon || neg_temperature_i || neg_temperature_j || neg_density_i || neg_density_j;
+        }
         bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
         counter_local += bad_recon;
 
@@ -1570,7 +1576,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
 }
 
-void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim,
+bool CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim,
                                                      const su2double* scalar, su2double* primitive) {
   SU2_ZONE_SCOPED
   const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
@@ -1581,8 +1587,7 @@ void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, un
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
   primitive[prim_idx.Density()] = fluidModel->GetDensity();
 
-  /*--- A failed state evaluation is flagged as non-physical so that the caller falls back to the cell values. ---*/
-  if (fluidModel->GetStateFailed()) primitive[prim_idx.Temperature()] = -1.0;
+  return fluidModel->GetStateFailed();
 }
 
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -1604,8 +1609,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
-  const bool multicomponent =
-      ((config->GetKind_FluidModel() == FLUID_MIXTURE) || (config->GetKind_FluidModel() == FLUID_CANTERA));
+  const bool multicomponent = config->GetMulticomponentFluid();
 
   AD::StartNoSharedReading();
 
@@ -2413,9 +2417,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent =
-      (config->GetKind_FluidModel() == FLUID_MIXTURE || config->GetKind_FluidModel() == FLUID_CANTERA) &&
-      config->GetEnergy_Equation();
+  const bool energy_multicomponent = config->GetMulticomponentFluid() && config->GetEnergy_Equation();
   const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   su2double Normal[MAXNDIM] = {0.0};
@@ -2611,9 +2613,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent =
-      (config->GetKind_FluidModel() == FLUID_MIXTURE || config->GetKind_FluidModel() == FLUID_CANTERA) &&
-      config->GetEnergy_Equation();
+  const bool energy_multicomponent = config->GetMulticomponentFluid() && config->GetEnergy_Equation();
   const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -2903,9 +2903,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent =
-      (config->GetKind_FluidModel() == FLUID_MIXTURE || config->GetKind_FluidModel() == FLUID_CANTERA) &&
-      config->GetEnergy_Equation();
+  const bool energy_multicomponent = config->GetMulticomponentFluid() && config->GetEnergy_Equation();
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double Normal[MAXNDIM] = {0.0};

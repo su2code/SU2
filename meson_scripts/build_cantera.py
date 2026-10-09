@@ -107,7 +107,7 @@ def main():
     if not os.path.exists(os.path.join(args.source, "SConstruct")):
         sys.exit(
             "Cantera sources not found in '{}'.\n"
-            "Run './preconfigure.py' (or 'git submodule update --init subprojects/cantera') "
+            "Run './preconfigure.py --with-cantera' (or 'git submodule update --init subprojects/cantera') "
             "before configuring with -Denable-cantera=true.".format(args.source)
         )
 

@@ -135,18 +135,16 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
-template <class T>
-CSourceCombustion_Species<T>::CSourceCombustion_Species(unsigned short val_nDim, unsigned short val_nVar,
-                                                        const CConfig* config)
+CSourceCombustion_Species::CSourceCombustion_Species(unsigned short val_nDim, unsigned short val_nVar,
+                                                     const CConfig* config)
     : CSourceBase_Species(val_nDim, val_nVar, config),
       chemical_jacobian(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT &&
                         config->GetChemical_Source_Jacobian()) {
+  Chemical_Source_Term_i = nullptr;
   Chemical_Source_Jacobian_i = nullptr;
-  Chemical_Source_Jacobian_j = nullptr;
 }
 
-template <class T>
-CNumerics::ResidualType<> CSourceCombustion_Species<T>::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CSourceCombustion_Species::ComputeResidual(const CConfig* config) {
   /*--- Preaccumulation ---*/
   AD::StartPreacc();
   AD::SetPreaccIn(Volume);
@@ -155,7 +153,7 @@ CNumerics::ResidualType<> CSourceCombustion_Species<T>::ComputeResidual(const CC
   /*--- Initialization. ---*/
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     residual[iVar] = 0.0;
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       jacobian[iVar][jVar] = 0.0;
     }
   }
@@ -180,6 +178,3 @@ CNumerics::ResidualType<> CSourceCombustion_Species<T>::ComputeResidual(const CC
 template class CSourceAxisymmetric_Species<CEulerVariable::CIndices<unsigned short> >;
 template class CSourceAxisymmetric_Species<CIncEulerVariable::CIndices<unsigned short> >;
 template class CSourceAxisymmetric_Species<CNEMOEulerVariable::CIndices<unsigned short> >;
-template class CSourceCombustion_Species<CIncEulerVariable::CIndices<unsigned short> >;
-template class CSourceCombustion_Species<CEulerVariable::CIndices<unsigned short> >;
-template class CSourceCombustion_Species<CNEMOEulerVariable::CIndices<unsigned short> >;

@@ -377,7 +377,8 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
                                                                                      : LIMITER::NONE),
         musclFlow(config.GetMUSCL_Flow() && config.GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {
     if (nEqn > Size) {
-      SU2_MPI::Error("The number of equations exceeds MAX_TRANSPORTED_SPECIES, the size of the static arrays.", CURRENT_FUNCTION);
+      SU2_MPI::Error("The number of equations exceeds MAX_TRANSPORTED_SPECIES, the size of the static arrays. Increase it\n"
+                     "in Common/include/option_structure.hpp and recompile.", CURRENT_FUNCTION);
     }
   }
 

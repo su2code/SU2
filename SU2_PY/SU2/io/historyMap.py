@@ -238,16 +238,10 @@ history_header_map = {
         "HEADER": "bgs[P]",
         "TYPE": "RESIDUAL",
     },
-    'BGS_SPECIES_" + std::to_string(iVar': {
+    'BGS_SPECIES_" + config->GetSpecies_Label(iVar': {
         "DESCRIPTION": "BGS residual of " "transported species.",
         "GROUP": "BGS_RES",
-        "HEADER": 'bgs[rho*Y_" + ' 'std::to_string(iVar)+"]',
-        "TYPE": "RESIDUAL",
-    },
-    'BGS_SPECIES_" + config->GetChemical_GasComposition(iVar': {
-        "DESCRIPTION": "BGS residual of " "transported species.",
-        "GROUP": "BGS_RES",
-        "HEADER": 'bgs[rho*Y_" + ' 'config->GetChemical_GasComposition(iVar)+"]',
+        "HEADER": 'bgs[rho*Y_" + ' 'config->GetSpecies_Label(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "BGS_TEMPERATURE": {
@@ -587,10 +581,10 @@ history_header_map = {
         "HEADER": "d[Secondary_Over_Uniformity]",
         "TYPE": "D_COEFFICIENT",
     },
-    'D_SURFACE_SPECIES_" + std::to_string(iVar': {
+    'D_SURFACE_SPECIES_" + config->GetSpecies_Label(iVar': {
         "DESCRIPTION": "Derivative " "value",
         "GROUP": "D_SPECIES_COEFF",
-        "HEADER": 'd[Avg_Species_" + ' "std::to_string(iVar]",
+        "HEADER": 'd[Avg_Species_" + ' "config->GetSpecies_Label(iVar]",
         "TYPE": "D_COEFFICIENT",
     },
     "D_SURFACE_STATIC_PRESSURE": {
@@ -816,16 +810,10 @@ history_header_map = {
         "HEADER": "max[A_Rho]",
         "TYPE": "RESIDUAL",
     },
-    'MAX_ADJ_SPECIES_" + std::to_string(iVar': {
+    'MAX_ADJ_SPECIES_" + config->GetSpecies_Label(iVar': {
         "DESCRIPTION": "Maximum residual " "of the adjoint " "transported " "species.",
         "GROUP": "MAX_RES",
-        "HEADER": 'max[A_rho*Y_" + ' "std::to_string(iVar) + " '"]',
-        "TYPE": "RESIDUAL",
-    },
-    'MAX_ADJ_SPECIES_" + config->GetChemical_GasComposition(iVar': {
-        "DESCRIPTION": "Maximum residual " "of the adjoint " "transported " "species.",
-        "GROUP": "MAX_RES",
-        "HEADER": 'max[A_rho*Y_" + ' "config->GetChemical_GasComposition(iVar) + " '"]',
+        "HEADER": 'max[A_rho*Y_" + ' "config->GetSpecies_Label(iVar) + " '"]',
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_TEMPERATURE": {
@@ -918,16 +906,10 @@ history_header_map = {
         "HEADER": "max[P]",
         "TYPE": "RESIDUAL",
     },
-    'MAX_SPECIES_" + config->GetChemical_GasComposition(iVar': {
+    'MAX_SPECIES_" + config->GetSpecies_Label(iVar': {
         "DESCRIPTION": "Maximum residual of " "transported species.",
         "GROUP": "MAX_RES",
-        "HEADER": 'max[rho*Y_" + ' 'config->GetChemical_GasComposition(iVar)+"]',
-        "TYPE": "RESIDUAL",
-    },
-    'MAX_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "Maximum residual of " "transported species.",
-        "GROUP": "MAX_RES",
-        "HEADER": 'max[rho*Y_" + ' 'std::to_string(iVar)+"]',
+        "HEADER": 'max[rho*Y_" + ' 'config->GetSpecies_Label(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "MAX_TEMPERATURE": {
@@ -1075,24 +1057,14 @@ history_header_map = {
         "HEADER": "rms[A_P1]",
         "TYPE": "RESIDUAL",
     },
-    'RMS_ADJ_SPECIES_" + std::to_string(iVar': {
+    'RMS_ADJ_SPECIES_" + config->GetSpecies_Label(iVar': {
         "DESCRIPTION": "Root-mean square "
         "residual of the "
         "adjoint "
         "transported "
         "species.",
         "GROUP": "RMS_RES",
-        "HEADER": 'rms[A_rho*Y_" + ' "std::to_string(iVar) + " '"]',
-        "TYPE": "RESIDUAL",
-    },
-    'RMS_ADJ_SPECIES_" + config->GetChemical_GasComposition(iVar': {
-        "DESCRIPTION": "Root-mean square "
-        "residual of the "
-        "adjoint "
-        "transported "
-        "species.",
-        "GROUP": "RMS_RES",
-        "HEADER": 'rms[A_rho*Y_" + ' "config->GetChemical_GasComposition(iVar) + " '"]',
+        "HEADER": 'rms[A_rho*Y_" + ' "config->GetSpecies_Label(iVar) + " '"]',
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_TEMPERATURE": {
@@ -1206,16 +1178,10 @@ history_header_map = {
         "HEADER": "rms[R]",
         "TYPE": "RESIDUAL",
     },
-    'RMS_SPECIES_" + std::to_string(iVar': {
+    'RMS_SPECIES_" + config->GetSpecies_Label(iVar': {
         "DESCRIPTION": "Root-mean square " "residual of " "transported species.",
         "GROUP": "RMS_RES",
-        "HEADER": 'rms[rho*Y_" + ' 'std::to_string(iVar)+"]',
-        "TYPE": "RESIDUAL",
-    },
-    'RMS_SPECIES_" + config->GetChemical_GasComposition(iVar': {
-        "DESCRIPTION": "Root-mean square " "residual of " "transported species.",
-        "GROUP": "RMS_RES",
-        "HEADER": 'rms[rho*Y_" + ' 'config->GetChemical_GasComposition(iVar)+"]',
+        "HEADER": 'rms[rho*Y_" + ' 'config->GetSpecies_Label(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "RMS_TEMPERATURE": {
@@ -1390,26 +1356,15 @@ history_header_map = {
         "HEADER": "Secondary_Over_Uniformity",
         "TYPE": "COEFFICIENT",
     },
-    'SURFACE_SPECIES_" + std::to_string(iVar': {
+    'SURFACE_SPECIES_" + config->GetSpecies_Label(iVar': {
         "DESCRIPTION": "Total average "
         'species " + '
-        "std::to_string(iVar) "
+        "config->GetSpecies_Label(iVar) "
         '+ " on all '
         "markers set in "
         "MARKER_ANALYZE",
         "GROUP": "SPECIES_COEFF",
-        "HEADER": 'Avg_Species_" + ' "std::to_string(iVar",
-        "TYPE": "COEFFICIENT",
-    },
-    'SURFACE_SPECIES_" + config->GetChemical_GasComposition(iVar': {
-        "DESCRIPTION": "Total average "
-        'species " + '
-        "std::to_string(iVar) "
-        '+ " on all '
-        "markers set in "
-        "MARKER_ANALYZE",
-        "GROUP": "SPECIES_COEFF",
-        "HEADER": 'Avg_Species_" + ' "config->GetChemical_GasComposition(iVar",
+        "HEADER": 'Avg_Species_" + ' "config->GetSpecies_Label(iVar",
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_SPECIES_VARIANCE": {
@@ -1735,10 +1690,10 @@ history_header_map = {
         "HEADER": "dtavg[Secondary_Over_Uniformity]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
-    'TAVG_D_SURFACE_SPECIES_" + std::to_string(iVar': {
+    'TAVG_D_SURFACE_SPECIES_" + config->GetSpecies_Label(iVar': {
         "DESCRIPTION": "weighted " "time " "average " "derivative " "value",
         "GROUP": "TAVG_D_SPECIES_COEFF",
-        "HEADER": 'dtavg[Avg_Species_" ' "+ " "std::to_string(iVar]",
+        "HEADER": 'dtavg[Avg_Species_" ' "+ " "config->GetSpecies_Label(iVar]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_STATIC_PRESSURE": {
@@ -1981,10 +1936,10 @@ history_header_map = {
         "HEADER": "tavg[Secondary_Over_Uniformity]",
         "TYPE": "TAVG_COEFFICIENT",
     },
-    'TAVG_SURFACE_SPECIES_" + std::to_string(iVar': {
+    'TAVG_SURFACE_SPECIES_" + config->GetSpecies_Label(iVar': {
         "DESCRIPTION": "weighted " "time average " "value",
         "GROUP": "TAVG_SPECIES_COEFF",
-        "HEADER": 'tavg[Avg_Species_" ' "+ " "std::to_string(iVar]",
+        "HEADER": 'tavg[Avg_Species_" ' "+ " "config->GetSpecies_Label(iVar]",
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_SURFACE_STATIC_PRESSURE": {

@@ -47,7 +47,7 @@ def init_submodules(
     own_opdi=True,
     own_mpp=True,
     own_cool=True,
-    own_cantera=True,
+    own_cantera=False,
     own_mel=True,
     own_fado=True,
     own_mlpcpp=True,

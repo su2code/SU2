@@ -2,14 +2,14 @@
  * \file CFluidCantera.hpp
  * \brief  Defines the multicomponent incompressible Ideal Gas model for reacting flows.
  * \author T. Economon, Cristopher Morales Ubal
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,8 +33,7 @@
 
 #include "CFluidModel.hpp"
 
-#if defined(HAVE_CANTERA)
-#define USE_CANTERA
+#ifdef HAVE_CANTERA
 namespace Cantera {
 class Solution;
 }
@@ -48,7 +47,7 @@ class Solution;
  */
 class CFluidCantera final : public CFluidModel {
  private:
-#ifdef USE_CANTERA
+#ifdef HAVE_CANTERA
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double Prandtl_Turb_Number;    /*!< \brief Prandlt turbulent number.*/
@@ -115,7 +114,7 @@ class CFluidCantera final : public CFluidModel {
    */
   CFluidCantera(su2double val_operating_pressure, const CConfig* config);
 
-#ifdef USE_CANTERA
+#ifdef HAVE_CANTERA
   /*!
    * \brief Get fluid laminar viscosity.
    */

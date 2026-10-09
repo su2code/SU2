@@ -110,7 +110,8 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
   nPrimVar = nVar;
 
   if (nVar > MAXNVAR)
-    SU2_MPI::Error("The number of species equations exceeds MAX_TRANSPORTED_SPECIES.", CURRENT_FUNCTION);
+    SU2_MPI::Error("The number of species equations exceeds MAX_TRANSPORTED_SPECIES. Increase it in\n"
+                     "Common/include/option_structure.hpp and recompile.", CURRENT_FUNCTION);
 
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -320,39 +321,31 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
                                    bool Output) {
   SU2_ZONE_SCOPED
   const bool combustion = config->GetCombustion();
-  bool ignition = false;
-  su2double spark_radius_squared = 0.0;
-
-  /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
-  if (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
-    const auto& spark_init = flamelet_config_options.spark_init;
-    const unsigned long spark_iter_start = ceil(spark_init[4]);
-    const unsigned long spark_duration = ceil(spark_init[5]);
-    const unsigned long iter = config->GetIgnitionIter();
-    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
-    spark_radius_squared = spark_init[3] * spark_init[3];
-  }
+  const bool ignition = flamelet_config_options.SparkActive(config->GetIgnitionIter());
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   CFluidModel* fluid_model = solver_container[FLOW_SOL]->GetFluidModel();
   fluid_model->SetMassDiffusivityModel(config);
 
-  /*--- The flow solver evaluates the Cantera mass diffusivities together with the enthalpy diffusion. ---*/
+  /*--- The flow solver evaluates the Cantera mass diffusivities together with the enthalpy diffusion
+   *    (CIncNSSolver::ComputeEnthalpyDiffusionTerms) and stores them in its variables. ---*/
   const bool diffusivity_from_flow = (config->GetKind_FluidModel() == FLUID_CANTERA) && config->GetEnergy_Equation();
+  const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Set the laminar mass Diffusivity and chemical source term for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
     /*--- Chemical source terms are only used by the residual of the points owned by this rank. ---*/
     const bool chemistry = combustion && (iPoint < nPointDomain);
-    if (diffusivity_from_flow && !chemistry) continue;
+    if (diffusivity_from_flow) {
+      for (auto iVar = 0u; iVar <= nVar; iVar++) nodes->SetDiffusivity(iPoint, flowNodes->GetDiffusivity(iPoint, iVar), iVar);
+      if (!chemistry) continue;
+    }
 
     su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
-    if (ignition) {
+    if (ignition && flamelet_config_options.InSpark(nDim, geometry->nodes->GetCoord(iPoint))) {
       /*--- Apply ignition temperature within spark radius. ---*/
-      const su2double dist_from_center = GeometryToolbox::SquaredDistance(
-          nDim, geometry->nodes->GetCoord(iPoint), flamelet_config_options.spark_init.data());
-      if (dist_from_center < spark_radius_squared) temperature = config->GetSpark_Temperature();
+      temperature = config->GetSpark_Temperature();
     }
     const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     fluid_model->SetTDState_T(temperature, scalar);
@@ -659,7 +652,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool axisymmetric = config->GetAxisymmetric();
-  const bool combustion =config->GetCombustion();
+  const bool combustion = config->GetCombustion();
 
   if (axisymmetric) {
     CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
@@ -717,8 +710,8 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
       /*--- Set Chemical Source Term  ---*/
 
-      numerics->SetChemicalSourceTerm(nodes->GetChemicalSourceTerm(iPoint), nullptr);
-      numerics->SetChemicalSourceJacobian(nodes->GetChemicalSourceJacobian(iPoint), nullptr);
+      numerics->SetChemicalSourceTerm(nodes->GetChemicalSourceTerm(iPoint));
+      numerics->SetChemicalSourceJacobian(nodes->GetChemicalSourceJacobian(iPoint));
 
       /*--- Set volume of the dual cell. ---*/
 

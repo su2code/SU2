@@ -98,7 +98,6 @@ class CSourceAxisymmetric_Species : public CSourceBase_Species {
  * \ingroup SourceDiscr
  * \author C.Morales Ubal
  */
-template <class FlowIndices>
 class CSourceCombustion_Species : public CSourceBase_Species {
   const bool chemical_jacobian; /*!< \brief Add the diagonal chemical sink Jacobian to the implicit system. */
 

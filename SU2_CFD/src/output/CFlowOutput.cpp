@@ -39,15 +39,6 @@
 #include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 
-namespace {
-/*--- Species label used in output field names: the Cantera species name, otherwise the index. ---*/
-std::string SpeciesOutputLabel(const CConfig* config, unsigned short iVar) {
-  return (config->GetKind_FluidModel() == FLUID_CANTERA) ? config->GetChemical_GasComposition(iVar)
-                                                         : std::to_string(iVar);
-}
-}  // namespace
-
-
 CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_output) :
   CFVMOutput(config, nDim, fem_output),
   lastInnerIter(curInnerIter) {
@@ -92,11 +83,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     /// DESCRIPTION: Average Species
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      if(config->GetKind_FluidModel()==FLUID_CANTERA){
-        AddHistoryOutput("SURFACE_SPECIES_" + config->GetChemical_GasComposition(iVar), "Avg_Species_" + config->GetChemical_GasComposition(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + config->GetChemical_GasComposition(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-      }else{
-        AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-      }    
+      AddHistoryOutput("SURFACE_SPECIES_" + config->GetSpecies_Label(iVar), "Avg_Species_" + config->GetSpecies_Label(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + config->GetSpecies_Label(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);    
     }
     /// DESCRIPTION: Species Variance
     AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
@@ -138,11 +125,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     /// DESCRIPTION: Average Species
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      if(config->GetKind_FluidModel()==FLUID_CANTERA){
-        AddHistoryOutputPerSurface("SURFACE_SPECIES_" + config->GetChemical_GasComposition(iVar), "Avg_Species_" + config->GetChemical_GasComposition(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-      }else{
-        AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-      }
+      AddHistoryOutputPerSurface("SURFACE_SPECIES_" + config->GetSpecies_Label(iVar), "Avg_Species_" + config->GetSpecies_Label(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
     }
     /// DESCRIPTION: Species Variance
     AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
@@ -522,12 +505,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
     if (species) {
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++) {
         su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
-        if (config->GetKind_FluidModel() == FLUID_CANTERA) {
-          SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + config->GetChemical_GasComposition(iVar), Species,
-                                          iMarker_Analyze);
-        } else {
-          SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
-        }
+        SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + config->GetSpecies_Label(iVar), Species, iMarker_Analyze);
         Tot_Surface_Species[iVar] += Species;
         if (iVar == 0)
           config->SetSurface_Species_0(iMarker_Analyze, Species);
@@ -564,11 +542,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
   if (species) {
     for (unsigned short iVar = 0; iVar < nSpecies; iVar++) {
-      if (config->GetKind_FluidModel() == FLUID_CANTERA) {
-        SetHistoryOutputValue("SURFACE_SPECIES_" + config->GetChemical_GasComposition(iVar), Tot_Surface_Species[iVar]);
-      } else {
-        SetHistoryOutputValue("SURFACE_SPECIES_" + std::to_string(iVar), Tot_Surface_Species[iVar]);
-      }
+      SetHistoryOutputValue("SURFACE_SPECIES_" + config->GetSpecies_Label(iVar), Tot_Surface_Species[iVar]);
     }
 
     SetAnalyzeSurfaceSpeciesVariance(solver, geometry, config, Surface_Species_Total, Surface_MassFlow_Abs_Total,
@@ -1090,11 +1064,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        if (config->GetKind_FluidModel()==FLUID_CANTERA){
-          AddHistoryOutput("RMS_SPECIES_" + config->GetChemical_GasComposition(iVar), "rms[rho*Y_" + config->GetChemical_GasComposition(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
-        }else{
-          AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
-        }       
+        AddHistoryOutput("RMS_SPECIES_" + config->GetSpecies_Label(iVar), "rms[rho*Y_" + config->GetSpecies_Label(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);       
       }
       break;
     }
@@ -1162,11 +1132,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        if (config->GetKind_FluidModel()==FLUID_CANTERA){
-          AddHistoryOutput("MAX_SPECIES_" + config->GetChemical_GasComposition(iVar), "max[rho*Y_" + config->GetChemical_GasComposition(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
-        }else{
-          AddHistoryOutput("MAX_SPECIES_" + std::to_string(iVar), "max[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
-        }
+        AddHistoryOutput("MAX_SPECIES_" + config->GetSpecies_Label(iVar), "max[rho*Y_" + config->GetSpecies_Label(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
       }
       break;
     }
@@ -1230,11 +1196,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        if (config->GetKind_FluidModel()==FLUID_CANTERA){
-          AddHistoryOutput("BGS_SPECIES_" + config->GetChemical_GasComposition(iVar), "bgs[rho*Y_" + config->GetChemical_GasComposition(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
-        }else{
-          AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
-        }
+        AddHistoryOutput("BGS_SPECIES_" + config->GetSpecies_Label(iVar), "bgs[rho*Y_" + config->GetSpecies_Label(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
       }
       break;
     }
@@ -1347,18 +1309,10 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
   switch(config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        if (config->GetKind_FluidModel()==FLUID_CANTERA){
-          SetHistoryOutputValue("RMS_SPECIES_" + config->GetChemical_GasComposition(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
-          SetHistoryOutputValue("MAX_SPECIES_" + config->GetChemical_GasComposition(iVar), log10(solver[SPECIES_SOL]->GetRes_Max(iVar)));
-          if (multiZone) {
-            SetHistoryOutputValue("BGS_SPECIES_" + config->GetChemical_GasComposition(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
-          }
-        }else{
-          SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
-          SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_Max(iVar)));
-          if (multiZone) {
-            SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
-          }
+        SetHistoryOutputValue("RMS_SPECIES_" + config->GetSpecies_Label(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
+        SetHistoryOutputValue("MAX_SPECIES_" + config->GetSpecies_Label(iVar), log10(solver[SPECIES_SOL]->GetRes_Max(iVar)));
+        if (multiZone) {
+          SetHistoryOutputValue("BGS_SPECIES_" + config->GetSpecies_Label(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
         }
       }
       SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
@@ -1434,13 +1388,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        if (config->GetKind_FluidModel() == FLUID_CANTERA) {
-          AddVolumeOutput("SPECIES_" + config->GetChemical_GasComposition(iVar), "Species_" + config->GetChemical_GasComposition(iVar), "SOLUTION",
-                          "Species_" + config->GetChemical_GasComposition(iVar) + " mass fraction");
-        } else {
-          AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION",
-                          "Species_" + std::to_string(iVar) + " mass fraction");
-        }
+        AddVolumeOutput("SPECIES_" + config->GetSpecies_Label(iVar), "Species_" + config->GetSpecies_Label(iVar), "SOLUTION",
+                        "Species_" + config->GetSpecies_Label(iVar) + " mass fraction");
       }
       break;
     case SPECIES_MODEL::FLAMELET: {
@@ -1491,13 +1440,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
-        if (config->GetKind_FluidModel() == FLUID_CANTERA) {
-          AddVolumeOutput("RES_SPECIES_" + config->GetChemical_GasComposition(iVar),
-                          "Residual_Species_" + config->GetChemical_GasComposition(iVar), "RESIDUAL",
-                          "Residual of the transported species " + config->GetChemical_GasComposition(iVar));
-        } else {
-          AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
-        }
+        AddVolumeOutput("RES_SPECIES_" + config->GetSpecies_Label(iVar), "Residual_Species_" + config->GetSpecies_Label(iVar), "RESIDUAL", "Residual of the transported species " + config->GetSpecies_Label(iVar));
       }
       break;
     case SPECIES_MODEL::FLAMELET: {
@@ -1554,7 +1497,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
     switch (config->GetKind_Species_Model()) {
       case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-          AddVolumeOutput("LIMITER_SPECIES_" + SpeciesOutputLabel(config, iVar), "Limiter_Species_" + SpeciesOutputLabel(config, iVar), "LIMITER", "Limiter value of the transported species " + SpeciesOutputLabel(config, iVar));
+          AddVolumeOutput("LIMITER_SPECIES_" + config->GetSpecies_Label(iVar), "Limiter_Species_" + config->GetSpecies_Label(iVar), "LIMITER", "Limiter value of the transported species " + config->GetSpecies_Label(iVar));
       break;
       case SPECIES_MODEL::FLAMELET: {
         const auto& flamelet_config_options = config->GetFlameletParsedOptions();
@@ -1582,19 +1525,15 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
-        if (config->GetKind_FluidModel() == FLUID_CANTERA) {
-          AddVolumeOutput("DIFFUSIVITY_" + config->GetChemical_GasComposition(iVar), "Diffusivity_" + config->GetChemical_GasComposition(iVar), "PRIMITIVE",
-                          "Diffusivity of the transported species " + config->GetChemical_GasComposition(iVar));
-          if (config->GetCombustion() == true) {
-            AddVolumeOutput("CHEMICAL_SOURCE_TERM_" + config->GetChemical_GasComposition(iVar),
-                            "Chemical_Source_Term_" + config->GetChemical_GasComposition(iVar), "PRIMITIVE",
-                            "Chemical source term of the transported species " + config->GetChemical_GasComposition(iVar));
-          }
-        } else {
-          AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
+        AddVolumeOutput("DIFFUSIVITY_" + config->GetSpecies_Label(iVar), "Diffusivity_" + config->GetSpecies_Label(iVar), "PRIMITIVE",
+                        "Diffusivity of the transported species " + config->GetSpecies_Label(iVar));
+        if (config->GetCombustion()) {
+          AddVolumeOutput("CHEMICAL_SOURCE_TERM_" + config->GetSpecies_Label(iVar),
+                          "Chemical_Source_Term_" + config->GetSpecies_Label(iVar), "PRIMITIVE",
+                          "Chemical source term of the transported species " + config->GetSpecies_Label(iVar));
         }
       }
-      if (config->GetCombustion() == true)
+      if (config->GetCombustion())
         AddVolumeOutput("HEAT_RELEASE", "Heat_Release", "PRIMITIVE", "Heat release due to combustion");
       break;
     default:
@@ -1625,7 +1564,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       if (config->GetPyCustomSource()) {
         for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
-          AddVolumeOutput("SPECIES_UDS_" + SpeciesOutputLabel(config, iVar), "Species_UDS_" + SpeciesOutputLabel(config, iVar), "SOURCE", "Species User Defined Source " + SpeciesOutputLabel(config, iVar));
+          AddVolumeOutput("SPECIES_UDS_" + config->GetSpecies_Label(iVar), "Species_UDS_" + config->GetSpecies_Label(iVar), "SOURCE", "Species User Defined Source " + config->GetSpecies_Label(iVar));
         }
       }
     break;
@@ -1803,33 +1742,18 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        if (config->GetKind_FluidModel() == FLUID_CANTERA) {
-          SetVolumeOutputValue("SPECIES_" + config->GetChemical_GasComposition(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
-          SetVolumeOutputValue("RES_SPECIES_" + config->GetChemical_GasComposition(iVar), iPoint,
-                               solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-          SetVolumeOutputValue("DIFFUSIVITY_" + config->GetChemical_GasComposition(iVar), iPoint,
-                               Node_Species->GetDiffusivity(iPoint, iVar));
-          if (config->GetCombustion() == true)
-            SetVolumeOutputValue("CHEMICAL_SOURCE_TERM_" + config->GetChemical_GasComposition(iVar), iPoint,
-                                 Node_Species->GetChemicalSourceTerm(iPoint, iVar));
-          if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
-            SetVolumeOutputValue("LIMITER_SPECIES_" + config->GetChemical_GasComposition(iVar), iPoint,
-                                 Node_Species->GetLimiter(iPoint, iVar));
-          if (config->GetPyCustomSource())
-            SetVolumeOutputValue("SPECIES_UDS_" + config->GetChemical_GasComposition(iVar), iPoint,
-                                 Node_Species->GetUserDefinedSource()(iPoint, iVar));
-        } else {
-          SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
-          SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-          SetVolumeOutputValue("DIFFUSIVITY_" + std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint, iVar));
-          if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
-            SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
-          if (config->GetPyCustomSource()) {
-            SetVolumeOutputValue("SPECIES_UDS_" + std::to_string(iVar), iPoint, Node_Species->GetUserDefinedSource()(iPoint, iVar));
-          }
-        }
+        const auto label = config->GetSpecies_Label(iVar);
+        SetVolumeOutputValue("SPECIES_" + label, iPoint, Node_Species->GetSolution(iPoint, iVar));
+        SetVolumeOutputValue("RES_SPECIES_" + label, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
+        SetVolumeOutputValue("DIFFUSIVITY_" + label, iPoint, Node_Species->GetDiffusivity(iPoint, iVar));
+        if (config->GetCombustion())
+          SetVolumeOutputValue("CHEMICAL_SOURCE_TERM_" + label, iPoint, Node_Species->GetChemicalSourceTerm(iPoint, iVar));
+        if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
+          SetVolumeOutputValue("LIMITER_SPECIES_" + label, iPoint, Node_Species->GetLimiter(iPoint, iVar));
+        if (config->GetPyCustomSource())
+          SetVolumeOutputValue("SPECIES_UDS_" + label, iPoint, Node_Species->GetUserDefinedSource()(iPoint, iVar));
       }
-      if (config->GetCombustion() == true)
+      if (config->GetCombustion())
         SetVolumeOutputValue("HEAT_RELEASE", iPoint, Node_Species->GetHeatRelease(iPoint));
       break;
     }
