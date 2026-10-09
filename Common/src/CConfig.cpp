@@ -2394,6 +2394,20 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Enable preferential diffusion for FGM simulations. \n DEFAULT: false */
   addBoolOption("PREFERENTIAL_DIFFUSION", flamelet_ParsedOptions.preferential_diffusion, false);
 
+  /* DESCRIPTION: Print per-CV breakdown of manifold miss counts (Progress variable / Enthalpy / Mixture fraction / Hull). \n DEFAULT: false */
+  addBoolOption("FLAMELET_VERBOSE_MISSES", flamelet_ParsedOptions.verbose_misses, false);
+
+  /* DESCRIPTION: Active preferential diffusion terms. BETA_CORRECTION (default): β-scalar viscous flux
+   * correction. SOURCE_TERM: PD closure source terms for non-major species. COMBINED: both. */
+  addEnumOption("PREFERENTIAL_DIFFUSION_METHOD", flamelet_ParsedOptions.pd_method, Flamelet_PD_Method_Map, FLAMELET_PD_METHOD::BETA_CORRECTION);
+
+  /* DESCRIPTION: Major species carrying the resolved Eq. (14) preferential diffusion fluxes of the
+   * SOURCE_TERM method. The manifold variables are composed from these names, so the order and
+   * spelling must match the table: species "H2" implies "D_<cv>_H2" for every controlling variable
+   * <cv> and the mass fraction "Y-H2". Required when PREFERENTIAL_DIFFUSION_METHOD= SOURCE_TERM. */
+  addStringListOption("PREFERENTIAL_DIFFUSION_MAJOR_SPECIES", flamelet_ParsedOptions.n_pd_major_species,
+                      flamelet_ParsedOptions.pd_major_species_names);
+
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
@@ -6018,6 +6032,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- Check if flame ignition temperature is valid ---*/
     if (flamelet_ParsedOptions.Flame_T_ignition <= Inc_Temperature_Init) {
       SU2_MPI::Error("Flame ignition temperature must be higher than the initial temperature of the flow field.", CURRENT_FUNCTION);
+    }
+
+    /*--- The SOURCE_TERM preferential diffusion method resolves the Eq. (14) flux of a set of major
+     species at run time, so that set has to be named: the manifold variables looked up
+     ("D_<cv>_<species>", "Y-<species>") are composed from these names. Without them there is nothing
+     to look up and the method degenerates silently to no preferential diffusion at all. ---*/
+    if (flamelet_ParsedOptions.preferential_diffusion &&
+        flamelet_ParsedOptions.pd_method == FLAMELET_PD_METHOD::SOURCE_TERM &&
+        flamelet_ParsedOptions.n_pd_major_species == 0) {
+      SU2_MPI::Error("PREFERENTIAL_DIFFUSION_METHOD= SOURCE_TERM requires PREFERENTIAL_DIFFUSION_MAJOR_SPECIES "
+                     "to list the major species carried by the resolved preferential diffusion flux "
+                     "(e.g. PREFERENTIAL_DIFFUSION_MAJOR_SPECIES= (H2, H2O, H)).", CURRENT_FUNCTION);
     }
   }
 
