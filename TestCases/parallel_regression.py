@@ -457,6 +457,14 @@ def main():
     turb_flatplate.test_vals = [-0.187388, 0.003749, 10.000000, -1.406182]
     test_list.append(turb_flatplate)
 
+    # Flat plate, standard SST-2003 with the far-field values of the NASA TMR
+    turb_flatplate_sst_tmr           = TestCase('turb_flatplate_sst_tmr')
+    turb_flatplate_sst_tmr.cfg_dir   = "rans/flatplate"
+    turb_flatplate_sst_tmr.cfg_file  = "turb_SST_flatplate_tmr.cfg"
+    turb_flatplate_sst_tmr.test_iter = 19
+    turb_flatplate_sst_tmr.test_vals = [-5.225275, 0.259404, -5.804219, 7.702339, -0.187496, 0.003596]
+    test_list.append(turb_flatplate_sst_tmr)
+
     # Flat plate (compressible) with species inlet
     turb_flatplate_species           = TestCase('turb_flatplate_species')
     turb_flatplate_species.cfg_dir   = "rans/flatplate"
