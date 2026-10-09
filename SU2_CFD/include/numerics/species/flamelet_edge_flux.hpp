@@ -187,6 +187,10 @@ class CScalarFlux_Flamelet final
     const auto& pdCoeff_j = static_cast<const CSpeciesFlameletVariable&>(side_j.scalarNodes).GetPDFluxCoeffs();
 
     for (auto iScalar = 0u; iScalar < nControlVars; ++iScalar) {
+      /*--- Magnitude of the Eq. (14) flux on each side, accumulated as the terms are applied, for
+       the stabilising diffusivity below. ---*/
+      Double fluxMag_i = 0.0, fluxMag_j = 0.0;
+
       /*--- Molecular terms, one per major species. ---*/
       for (auto iSp = 0u; iSp < nMajorSpecies; ++iSp) {
         const auto col = iScalar * pdTermsPerCV + iSp;
@@ -196,13 +200,19 @@ class CScalarFlux_Flamelet final
         const auto gradY_i = gatherVariables<nDim>(iPoint, side_i.scalarNodes.GetAuxVarGradient(), iSp);
         const auto gradY_j = gatherVariables<nDim>(jPoint, side_j.scalarNodes.GetAuxVarGradient(), iSp);
 
-        const Double D = 0.5 * (gatherVariables(iPoint, pdCoeff_i, col) +
-                                gatherVariables(jPoint, pdCoeff_j, col));
+        const Double c_i = gatherVariables(iPoint, pdCoeff_i, col);
+        const Double c_j = gatherVariables(jPoint, pdCoeff_j, col);
+        const Double D = 0.5 * (c_i + c_j);
 
         const Double projGrad = projectedGradient(opt, gradY_i, gradY_j, Y_i, Y_j, normal, vector_ij, dist2_ij);
 
         res.flux_i(iScalar) -= D * projGrad;
         if (!opt.oneSided) res.flux_j(iScalar) += D * projGrad;
+
+        if (opt.implicit) {
+          fluxMag_i += fabs(c_i) * sqrt(fmax(squaredNorm(gradY_i), EPS));
+          fluxMag_j += fabs(c_j) * sqrt(fmax(squaredNorm(gradY_j), EPS));
+        }
       }
 
       /*--- Thermal (Soret) term. ---*/
@@ -226,14 +236,21 @@ class CScalarFlux_Flamelet final
         const Double Dbase_i = rho.i * gatherVariables(iPoint, side_i.scalarNodes.GetDiffusivity(), iScalar);
         const Double Dbase_j = rho.j * gatherVariables(jPoint, side_j.scalarNodes.GetDiffusivity(), iScalar);
 
-        Double mag_i = fabs(gatherVariables(iPoint, pdCoeff_i, colT) / T_i);
-        Double mag_j = fabs(gatherVariables(jPoint, pdCoeff_j, colT) / T_j);
-        for (auto iSp = 0u; iSp < nMajorSpecies; ++iSp) {
-          const auto col = iScalar * pdTermsPerCV + iSp;
-          mag_i += fabs(gatherVariables(iPoint, pdCoeff_i, col));
-          mag_j += fabs(gatherVariables(jPoint, pdCoeff_j, col));
-        }
-        const Double Dstab = fmin(0.5 * (mag_i + mag_j), C_STAB_MAX * 0.5 * (Dbase_i + Dbase_j));
+        /*--- Recast the flux bound as a self diffusivity, |J| <= D_stab |grad phi|, so the implicit
+         operator dominates the explicit flux without damping more than the flux itself warrants.
+         Scaling by the control variable's own gradient is what keeps it that tight: dropping it
+         leaves D_stab at the raw coefficient magnitude, which over damps and cancels the very CFL
+         gain the term exists to provide. Where grad(phi) vanishes while the cross gradients do not
+         the bound degenerates, so it is capped against the baseline diffusion. ---*/
+        fluxMag_i += fabs(gatherVariables(iPoint, pdCoeff_i, colT) / T_i) * sqrt(fmax(squaredNorm(gradT_i), EPS));
+        fluxMag_j += fabs(gatherVariables(jPoint, pdCoeff_j, colT) / T_j) * sqrt(fmax(squaredNorm(gradT_j), EPS));
+
+        const auto gradPhi_i = gatherVariables<nDim>(iPoint, side_i.scalarNodes.GetGradient(), iScalar);
+        const auto gradPhi_j = gatherVariables<nDim>(jPoint, side_j.scalarNodes.GetGradient(), iScalar);
+
+        const Double Dstab_i = fmin(fluxMag_i / sqrt(fmax(squaredNorm(gradPhi_i), EPS)), C_STAB_MAX * Dbase_i);
+        const Double Dstab_j = fmin(fluxMag_j / sqrt(fmax(squaredNorm(gradPhi_j), EPS)), C_STAB_MAX * Dbase_j);
+        const Double Dstab = 0.5 * (Dstab_i + Dstab_j);
 
         res.jac_ii(iScalar, iScalar) += Dstab * proj_vector_ij / rho.i;
         if (!opt.oneSided) {
