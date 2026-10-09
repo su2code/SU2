@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../Common/include/containers/CLookUpTable.hpp"
+#include "../../../Common/include/containers/CLookUpTable.hpp"
 #if defined(HAVE_MLPCPP)
 #define MLP_CUSTOM_TYPE su2double
 #include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
