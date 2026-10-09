@@ -37,6 +37,7 @@
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
+  FluidFlamelet_ParsedOptions flamelet_config_options;
   const su2double default_flame_thickness{1.0};
   su2double global_flame_thickness;
   bool calc_flame_thickness{false};

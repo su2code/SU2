@@ -36,7 +36,6 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncNSSolver final : public CIncEulerSolver {
-  FluidFlamelet_ParsedOptions flamelet_config_options;
   su2double TemperatureLimits[2];
   su2activematrix EnthalpyDiffusion;     /*!< \brief Enthalpy diffusion coefficient of each species at each point. */
   su2activematrix GradEnthalpyDiffusion; /*!< \brief Temperature derivative of EnthalpyDiffusion. */
@@ -47,6 +46,14 @@ class CIncNSSolver final : public CIncEulerSolver {
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeEnthalpyDiffusionTerms(CSolver** solver_container, const CConfig* config);
+
+  /*!
+   * \brief Set the temperature, enthalpy and properties of the points inside the ignition spark.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ApplySpark(CGeometry* geometry, CSolver** solver_container, const CConfig* config);
 
   /*!
    * \brief Generic implementation of the isothermal, heatflux and heat-transfer/convection walls.

@@ -215,9 +215,9 @@ class CFluidModel {
   inline virtual su2double GetHeatRelease() { return 0.0; }
 
   /*!
-   * \brief Whether the last state evaluation failed and the state must be treated as non-physical.
+   * \brief Whether the last temperature-from-enthalpy iteration failed, so the state is non-physical.
    */
-  inline virtual bool GetStateFailed() const { return false; }
+  inline virtual bool GetTemperatureIterationFailed() const { return false; }
 
   /*!
    * \brief Get the enthalpy diffusivity terms for all species being solved.

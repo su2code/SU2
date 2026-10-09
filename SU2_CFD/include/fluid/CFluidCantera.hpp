@@ -48,7 +48,7 @@ class Solution;
 class CFluidCantera final : public CFluidModel {
  private:
 #ifdef HAVE_CANTERA
-  const int n_species_mixture;            /*!< \brief Number of species in mixture. */
+  const size_t n_species_mixture;           /*!< \brief Number of species in mixture. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double Prandtl_Turb_Number;    /*!< \brief Prandlt turbulent number.*/
   const su2double Schmidt_Turb_Number;    /*!< \brief Schmidt turbulent number.*/
@@ -60,16 +60,16 @@ class CFluidCantera final : public CFluidModel {
   const bool Correction_Velocity;            /*!< \brief The diffusive species fluxes are corrected to sum to zero. */
 
   su2double Heat_Release{0.0};                 /*!< \brief heat release due to combustion */
-  bool stateFailed{false};                     /*!< \brief The last state evaluation did not converge. */
+  bool temperatureIterationFailed{false};                     /*!< \brief The last temperature-from-enthalpy iteration did not converge. */
   double minTemperature{0.0};                  /*!< \brief Lower temperature bound of the Newton iteration. */
   double maxTemperature{0.0};                  /*!< \brief Upper temperature bound of the Newton iteration. */
   double temperatureGuess{0.0};                /*!< \brief Start of the next temperature iteration, 0 if unset. */
-  std::shared_ptr<Cantera::Solution> sol;      /*!< \brief Object needed to describe a chemically-reacting solution*/
+  const std::shared_ptr<Cantera::Solution> sol;      /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::vector<size_t> speciesIndices;          /*!< \brief Mechanism index of each transported species. */
   std::vector<su2double> chemicalSourceTerm;   /*!< \brief Chemical source term of the transported species. */
   std::vector<su2double> chemicalSourceJacobian; /*!< \brief Diagonal sink Jacobian of the transported species. */
   std::vector<su2double> enthalpyFormation;    /*!< \brief Enthalpy of formation of the transported species. */
-  std::vector<double> molarMasses;             /*!< \brief Molar masses of all mechanism species. */
+  const std::vector<double> molarMasses;             /*!< \brief Molar masses of all mechanism species. */
   std::vector<double> massFractions;           /*!< \brief Mass fractions of all mechanism species. */
   std::vector<double> netProductionRates;      /*!< \brief Net production rates of all mechanism species. */
   std::vector<double> destructionRates;        /*!< \brief Destruction rates of all mechanism species. */
@@ -166,7 +166,7 @@ class CFluidCantera final : public CFluidModel {
   /*!
    * \brief Whether the last state evaluation failed to converge or needed a temperature far outside the data range.
    */
-  inline bool GetStateFailed() const override { return stateFailed; }
+  inline bool GetTemperatureIterationFailed() const override { return temperatureIterationFailed; }
 
   /*!
    * \brief Get enthalpy diffusivity terms.

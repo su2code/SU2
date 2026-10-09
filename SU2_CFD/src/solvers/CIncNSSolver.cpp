@@ -55,7 +55,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     default:
       break;
   }
-  if (config->GetCombustion()) flamelet_config_options = config->GetFlameletParsedOptions();
 
   if (config->GetMulticomponentFluid() && config->GetEnergy_Equation()) {
     EnthalpyDiffusion.resize(nPoint, config->GetnSpecies()) = su2double(0.0);
@@ -67,6 +66,24 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
     // Note during restarts, the flow.meta is read first. But that sets the cfg-value so we are good here.
     SPvals.Streamwise_Periodic_PressureDrop = config->GetStreamwise_Periodic_PressureDrop();
+}
+
+void CIncNSSolver::ApplySpark(CGeometry* geometry, CSolver** solver_container, const CConfig* config) {
+  CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto i_point = 0u; i_point < nPoint; i_point++) {
+    if (!InSpark(config, geometry->nodes->GetCoord(i_point))) continue;
+    const su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(i_point);
+    nodes->SetTemperature(i_point, config->GetSpark_Temperature(), TemperatureLimits);
+    fluid_model_local->SetTDState_T(config->GetSpark_Temperature(), scalars);
+    nodes->SetSolution(i_point, nDim + 1, fluid_model_local->GetEnthalpy());
+    nodes->SetDensity(i_point, fluid_model_local->GetDensity());
+    nodes->SetSpecificHeatCp(i_point, fluid_model_local->GetCp());
+    nodes->SetSpecificHeatCv(i_point, fluid_model_local->GetCv());
+    nodes->SetThermalConductivity(i_point, fluid_model_local->GetThermalConductivity());
+    nodes->SetLaminarViscosity(i_point, fluid_model_local->GetLaminarViscosity());
+  }
+  END_SU2_OMP_FOR
 }
 
 void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -82,36 +99,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool energy = config->GetEnergy_Equation();
   const bool combustion = config->GetCombustion();
 
-  /*--- Setting temperature, enthalpy and thermophysical properties for ignition in reacting flows. ---*/
   if (energy && combustion) {
-    const bool ignition = flamelet_config_options.SparkActive(config->GetIgnitionIter());
-
     SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
-
-    if (ignition) {
-      CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
-      SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (auto i_point = 0u; i_point < nPoint; i_point++) {
-        /*--- Apply ignition temperature within spark radius. ---*/
-        if (flamelet_config_options.InSpark(nDim, geometry->nodes->GetCoord(i_point))) {
-          /*--- Retrieve scalars solution. ---*/
-          su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(i_point);
-          /*--- Set high temperature for ignition. ---*/
-          nodes->SetTemperature(i_point, config->GetSpark_Temperature(), TemperatureLimits);
-          /*--- Set thermodynamic state at high temperature. ---*/
-          fluid_model_local->SetTDState_T(config->GetSpark_Temperature(), scalars);
-          /*--- Set total enthalpy at high temperature. ---*/
-          nodes->SetSolution(i_point, nDim + 1, fluid_model_local->GetEnthalpy());
-          /*--- Set thermodynamics and transport properties at high temperature for consistency. ---*/
-          nodes->SetDensity(i_point, fluid_model_local->GetDensity());
-          nodes->SetSpecificHeatCp(i_point, fluid_model_local->GetCp());
-          nodes->SetSpecificHeatCv(i_point, fluid_model_local->GetCv());
-          nodes->SetThermalConductivity(i_point, fluid_model_local->GetThermalConductivity());
-          nodes->SetLaminarViscosity(i_point, fluid_model_local->GetLaminarViscosity());
-        }
-      }
-      END_SU2_OMP_FOR
-    }
+    if (SparkActive(config)) ApplySpark(geometry, solver_container, config);
   }
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/

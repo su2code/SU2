@@ -1494,13 +1494,13 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         Primitive_j[iVar] = V_j[iVar];
       }
       /*--- A failed evaluation of the fluid state is a non-physical reconstruction, like a negative temperature. ---*/
-      bool state_failed = false;
+      bool temperature_failed = false;
       if (multicomponent) {
         const su2double* scalar_i = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
         const su2double* scalar_j = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(jPoint);
         const bool failed_i = ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i);
         const bool failed_j = ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j);
-        state_failed = failed_i || failed_j;
+        temperature_failed = failed_i || failed_j;
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found,
@@ -1510,8 +1510,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
        incompressible flow, only the temperature and density need to be
        checked. Pressure is the dynamic pressure (can be negative). ---*/
 
-      if (config->GetEnergy_Equation() || state_failed) {
-        bool bad_recon = state_failed;
+      if (config->GetEnergy_Equation() || temperature_failed) {
+        bool bad_recon = temperature_failed;
         if (config->GetEnergy_Equation()) {
           const bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
           const bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
@@ -1587,7 +1587,7 @@ bool CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, un
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
   primitive[prim_idx.Density()] = fluidModel->GetDensity();
 
-  return fluidModel->GetStateFailed();
+  return fluidModel->GetTemperatureIterationFailed();
 }
 
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,

@@ -4356,6 +4356,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
             "to be equal to the number of entries of SPECIES_INIT + 1",
             CURRENT_FUNCTION);
       }
+      for (unsigned short i = 0; i < cantera_ParsedOptions.n_species_names; i++) {
+        for (unsigned short j = 0; j < i; j++) {
+          if (cantera_ParsedOptions.species_names[i] == cantera_ParsedOptions.species_names[j]) {
+            SU2_MPI::Error("Species '" + cantera_ParsedOptions.species_names[i] +
+                               "' appears more than once in CANTERA_SPECIES_NAMES.",
+                           CURRENT_FUNCTION);
+          }
+        }
+      }
       /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
        VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
        and it will remain constant through the complete domain. --- */

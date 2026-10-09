@@ -45,7 +45,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, const CSolv
 
   nVar = config->GetnSpecies();
 
-  if (config->GetCombustion()) flamelet_config_options = config->GetFlameletParsedOptions();
 
   Initialize(geometry, config, iMesh, nVar);
 
@@ -321,7 +320,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
                                    bool Output) {
   SU2_ZONE_SCOPED
   const bool combustion = config->GetCombustion();
-  const bool ignition = flamelet_config_options.SparkActive(config->GetIgnitionIter());
+  const bool ignition = SparkActive(config);
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   CFluidModel* fluid_model = solver_container[FLOW_SOL]->GetFluidModel();
@@ -343,7 +342,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
     }
 
     su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
-    if (ignition && flamelet_config_options.InSpark(nDim, geometry->nodes->GetCoord(iPoint))) {
+    if (ignition && InSpark(config, geometry->nodes->GetCoord(iPoint))) {
       /*--- Apply ignition temperature within spark radius. ---*/
       temperature = config->GetSpark_Temperature();
     }

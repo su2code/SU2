@@ -220,6 +220,23 @@ public:
   virtual ~CSolver(void);
 
   /*!
+   * \brief Whether the artificial ignition spark is active at the current iteration.
+   * \param[in] config - Definition of the particular problem.
+   */
+  static bool SparkActive(const CConfig* config) {
+    return config->GetFlameletParsedOptions().SparkActive(config->GetIgnitionIter());
+  }
+
+  /*!
+   * \brief Whether a point lies inside the artificial ignition spark region.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] coord - Coordinates of the point.
+   */
+  bool InSpark(const CConfig* config, const su2double* coord) const {
+    return config->GetFlameletParsedOptions().InSpark(nDim, coord);
+  }
+
+  /*!
    * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
    * \return Nodes of the solver.
    */
