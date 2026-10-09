@@ -37,6 +37,7 @@
 
 #include "../include/basic_types/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
+#include "../include/toolboxes/geometry_toolbox.hpp"
 #include "../include/toolboxes/SwapBytes.hpp"
 
 using namespace PrintingToolbox;
@@ -5558,12 +5559,28 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Streamwise Periodic Flow + Incompressible Euler: Not tested yet.", CURRENT_FUNCTION);
     if (nMarker_PerBound == 0)
       SU2_MPI::Error("A MARKER_PERIODIC pair has to be set with KIND_STREAMWISE_PERIODIC != NONE.", CURRENT_FUNCTION);
+    /*--- The first pair defines the streamwise direction used by every source. ---*/
+    const auto* translation = GetPeriodic_Translation(0);
+    if (GeometryToolbox::SquaredNorm(3, translation) == 0)
+      SU2_MPI::Error("The first streamwise periodic pair must have a nonzero translation.", CURRENT_FUNCTION);
+    const auto* angles = GetPeriodicRotAngles(Marker_PerBound[0]);
+    su2double rotation[3][3];
+    GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotation);
+    for (auto i = 0u; i < 3; ++i)
+      for (auto j = 0u; j < 3; ++j)
+        if (fabs(rotation[i][j] - (i == j)) > 1e-12)
+          SU2_MPI::Error("The first streamwise periodic pair must be purely translational.", CURRENT_FUNCTION);
+    if (Energy_Equation && Streamwise_Periodic_Temperature && (nMarker_HeatTransfer || nMarker_CHTInterface))
+      SU2_MPI::Error("STREAMWISE_PERIODIC_TEMPERATURE requires prescribed MARKER_HEATFLUX walls; "
+                     "MARKER_HEATTRANSFER and MARKER_CHT_INTERFACE are unsupported.", CURRENT_FUNCTION);
     if (Energy_Equation && Streamwise_Periodic_Temperature && nMarker_Isothermal != 0)
       SU2_MPI::Error("No MARKER_ISOTHERMAL marker allowed with STREAMWISE_PERIODIC_TEMPERATURE= YES, only MARKER_HEATFLUX & MARKER_SYM.", CURRENT_FUNCTION);
     if (Ref_Inc_NonDim != DIMENSIONAL)
       SU2_MPI::Error("Streamwise Periodicity only works with \"INC_NONDIM= DIMENSIONAL\", the nondimensionalization with source terms doesn;t work in general.", CURRENT_FUNCTION);
     if (Axisymmetric)
       SU2_MPI::Error("Streamwise Periodicity terms does not not have axisymmetric corrections.", CURRENT_FUNCTION);
+    if (nMGLevels != 0)
+      SU2_MPI::Error("Streamwise Periodicity does not support multigrid, use MGLEVEL= 0.", CURRENT_FUNCTION);
     if (!Energy_Equation) Streamwise_Periodic_Temperature = false;
   } else {
     /*--- Safety measure ---*/

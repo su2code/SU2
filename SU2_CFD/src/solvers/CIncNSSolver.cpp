@@ -209,7 +209,8 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
         /*--- Identify the boundary by string name and retrive heatflux from config ---*/
         const auto Marker_StringTag = config->GetMarker_All_TagBound(iMarker);
-        const su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
+        su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
+        if (config->GetIntegrated_HeatFlux()) Wall_HeatFlux /= geometry->GetSurfaceArea(config, iMarker);
 
         for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -254,8 +255,8 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 
     /*--- First, compute helping terms based on relative distance (0,l) between periodic markers ---*/
     su2double dot_product = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodic_Translation(0)[iDim]);
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      dot_product += (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodic_Translation(0)[iDim];
 
     /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature ---*/
     const su2double Pressure_Recovered = nodes->GetPressure(iPoint) - SPvals.Streamwise_Periodic_PressureDrop /
@@ -537,7 +538,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
         /*--- Dot product ---*/
         const su2double dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);
 
-        LinSysRes(iPoint, nDim+1) += scalar_factor*dot_product;
+        /*--- Normal points into the fluid: q_periodic = q + k grad(T_recovered).n. ---*/
+        LinSysRes(iPoint, nDim+1) -= scalar_factor*dot_product;
       } // if streamwise_periodic
       break;
 
