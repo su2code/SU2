@@ -39,6 +39,7 @@
 class CUpwHLLC_Flow final : public CNumerics {
 private:
   bool implicit, dynamic_grid;
+  bool useAccurateJacobian; /*!< \brief Jacobians computed exactly for fixed wave speeds (USE_ACCURATE_FLUX_JACOBIANS). */
   unsigned short iDim, jDim, iVar, jVar;
 
   su2double *IntermediateState;
@@ -55,6 +56,8 @@ private:
   su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
 
   su2double* Flux;        /*!< \brief The flux accross the face. */
+  bool fixedWaveSpeeds = false;     /*!< \brief Use fixed_sL, fixed_sR as wave speeds (verification of the Jacobians). */
+  su2double fixed_sL = 0.0, fixed_sR = 0.0;
   su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
@@ -79,6 +82,18 @@ public:
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
+  /*!
+   * \brief Fix the left and right wave speeds (relative to the face), for the verification of the Jacobians, which
+   *        treat them as constants.
+   * \param[in] active - Use the fixed values.
+   * \param[in] val_sL, val_sR - Left and right wave speeds.
+   */
+  inline void SetFixedWaveSpeeds(bool active, su2double val_sL, su2double val_sR) {
+    fixedWaveSpeeds = active;
+    fixed_sL = val_sL;
+    fixed_sR = val_sR;
+  }
+
 };
 
 /*!
@@ -91,6 +106,7 @@ public:
 class CUpwGeneralHLLC_Flow final : public CNumerics {
 private:
   bool implicit, dynamic_grid;
+  bool useAccurateJacobian; /*!< \brief Jacobians computed exactly for fixed wave speeds (USE_ACCURATE_FLUX_JACOBIANS). */
   unsigned short iDim, jDim, iVar, jVar;
 
   su2double *IntermediateState;
@@ -108,6 +124,8 @@ private:
   su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
 
   su2double* Flux;        /*!< \brief The flux accross the face. */
+  bool fixedWaveSpeeds = false;     /*!< \brief Use fixed_sL, fixed_sR as wave speeds (verification of the Jacobians). */
+  su2double fixed_sL = 0.0, fixed_sR = 0.0;
   su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
@@ -131,6 +149,18 @@ public:
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
+
+  /*!
+   * \brief Fix the left and right wave speeds (relative to the face), for the verification of the Jacobians, which
+   *        treat them as constants.
+   * \param[in] active - Use the fixed values.
+   * \param[in] val_sL, val_sR - Left and right wave speeds.
+   */
+  inline void SetFixedWaveSpeeds(bool active, su2double val_sL, su2double val_sR) {
+    fixedWaveSpeeds = active;
+    fixed_sL = val_sL;
+    fixed_sR = val_sR;
+  }
 
   /*!
    * \brief Compute the Average quantities for a general fluid flux between two nodes i and j.
