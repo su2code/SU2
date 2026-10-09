@@ -2082,6 +2082,12 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config, 
     }
   }
 
+  /*--- Floor the maximum residual like the RMS residual above, so an
+   *    exactly-zero residual (e.g. an inert species at a cold start)
+   *    cannot become a nonfinite log10 in screen or history output. ---*/
+
+  for (auto& residual : Residual_Max) residual = max(EPS*EPS, residual);
+
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
