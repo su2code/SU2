@@ -217,6 +217,12 @@ class CGeometry {
   unsigned long edgeColorGroupSize{1};     /*!< \brief Size of the edge groups within each color. */
   unsigned long elemColorGroupSize{1};     /*!< \brief Size of the element groups within each color. */
 
+  /*--- Cached least-squares gradient metric terms (see computeGradientsLeastSquares.hpp). ---*/
+
+  su2activematrix LSQMetricCache[2];            /*!< \brief Cached LSQ metrics S = inv(A), upper triangle stored
+                                                            row-wise, [0] unweighted, [1] inverse-distance weighted. */
+  bool LSQMetricCacheValid[2] = {false, false}; /*!< \brief Validity of the cached LSQ metrics per weighting. */
+
   ColMajorMatrix<uint8_t> CoarseGridColor_; /*!< \brief Coarse grid levels, colorized. */
 
  public:
@@ -1903,6 +1909,11 @@ class CGeometry {
   const su2vector<su2uint>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
+   * \brief Whether the edge coloring was already built (by a solver or on first use).
+   */
+  bool HasEdgeColoring() const { return !edgeColoring.empty(); }
+
+  /*!
    * \brief Get the edge coloring.
    * \note This method computes the coloring if that has not been done yet.
    * \note Can be instructed to determine and use the maximum edge color group size between 1 and
@@ -1918,6 +1929,28 @@ class CGeometry {
    * \brief Force the natural (sequential) edge coloring.
    */
   void SetNaturalEdgeColoring();
+
+  /*!
+   * \brief Get the cached least-squares metric terms (S = inv(A), upper triangle row-wise).
+   * \param[in] weighted - False for unweighted, true for inverse-distance weighting.
+   */
+  inline su2activematrix& GetLSQMetricCache(bool weighted) { return LSQMetricCache[weighted]; }
+  inline const su2activematrix& GetLSQMetricCache(bool weighted) const { return LSQMetricCache[weighted]; }
+
+  /*!
+   * \brief Check whether the cached least-squares metric terms are valid for a weighting.
+   */
+  inline bool LSQMetricCacheIsValid(bool weighted) const { return LSQMetricCacheValid[weighted]; }
+
+  /*!
+   * \brief Declare the cached least-squares metric terms valid for a weighting.
+   */
+  inline void SetLSQMetricCacheValid(bool weighted) { LSQMetricCacheValid[weighted] = true; }
+
+  /*!
+   * \brief Invalidate the cached least-squares metric terms (e.g. if node coordinates change).
+   */
+  inline void InvalidateLSQMetricCache() { LSQMetricCacheValid[0] = LSQMetricCacheValid[1] = false; }
 
   /*!
    * \brief Get the group size used in edge coloring.

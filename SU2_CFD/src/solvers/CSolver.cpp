@@ -243,11 +243,13 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       ICOUNT           = nPrimVarGrad;
       JCOUNT           = nDim;
       break;
+    /*--- With cached LSQ metrics (which already include the periodic contributions) only
+     *    the r.h.s. vectors are exchanged, otherwise also the normal matrix terms. ---*/
     case PERIODIC_SOL_LS:
     case PERIODIC_SOL_ULS:
     case PERIODIC_SOL_LS_R:
     case PERIODIC_SOL_ULS_R:
-      COUNT_PER_POINT  = nDim*nDim + nVar*nDim;
+      COUNT_PER_POINT  = (config->GetLSQMetricCaching()? 0 : nDim*nDim) + nVar*nDim;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nVar;
       JCOUNT           = nDim;
@@ -256,7 +258,7 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
     case PERIODIC_PRIM_ULS:
     case PERIODIC_PRIM_LS_R:
     case PERIODIC_PRIM_ULS_R:
-      COUNT_PER_POINT  = nDim*nDim + nPrimVarGrad*nDim;
+      COUNT_PER_POINT  = (config->GetLSQMetricCaching()? 0 : nDim*nDim) + nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nPrimVarGrad;
       JCOUNT           = nDim;
@@ -891,26 +893,30 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- We store and communicate the increments for the matching
              upper triangular matrix (weights) and the r.h.s. vector.
              These will be accumulated before completing the L-S gradient
-             calculation for each periodic point. ---*/
+             calculation for each periodic point. The matrix increments are
+             not needed with cached LSQ metrics, the geometry accounts for
+             them when building the metrics (computeGradientsLeastSquares.hpp). ---*/
 
-            if (nDim == 2) {
-              bufDSend[buf_offset] = r11;   buf_offset++;
-              bufDSend[buf_offset] = r12;   buf_offset++;
-              bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = r22;   buf_offset++;
-            }
-            if (nDim == 3) {
-              bufDSend[buf_offset] = r11;   buf_offset++;
-              bufDSend[buf_offset] = r12;   buf_offset++;
-              bufDSend[buf_offset] = r13;   buf_offset++;
+            if (!config->GetLSQMetricCaching()) {
+              if (nDim == 2) {
+                bufDSend[buf_offset] = r11;   buf_offset++;
+                bufDSend[buf_offset] = r12;   buf_offset++;
+                bufDSend[buf_offset] = 0.0;   buf_offset++;
+                bufDSend[buf_offset] = r22;   buf_offset++;
+              }
+              if (nDim == 3) {
+                bufDSend[buf_offset] = r11;   buf_offset++;
+                bufDSend[buf_offset] = r12;   buf_offset++;
+                bufDSend[buf_offset] = r13;   buf_offset++;
 
-              bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = r22;   buf_offset++;
-              bufDSend[buf_offset] = r23_a; buf_offset++;
+                bufDSend[buf_offset] = 0.0;   buf_offset++;
+                bufDSend[buf_offset] = r22;   buf_offset++;
+                bufDSend[buf_offset] = r23_a; buf_offset++;
 
-              bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = r23_b; buf_offset++;
-              bufDSend[buf_offset] = r33;   buf_offset++;
+                bufDSend[buf_offset] = 0.0;   buf_offset++;
+                bufDSend[buf_offset] = r23_b; buf_offset++;
+                bufDSend[buf_offset] = r33;   buf_offset++;
+              }
             }
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
@@ -1248,14 +1254,17 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
             case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
             case PERIODIC_PRIM_LS_R: case PERIODIC_PRIM_ULS_R:
 
-              /*--- For L-S, we build the upper triangular matrix and the
+              /*--- For L-S, we build the upper triangular matrix (unless the
+               LSQ metrics are cached, they already include it) and the
                r.h.s. vector by accumulating from all periodic partial
                control volumes. ---*/
 
-              for (iDim = 0; iDim < nDim; iDim++) {
-                for (jDim = 0; jDim < nDim; jDim++) {
-                  base_nodes->AddRmatrix(iPoint, iDim,jDim,bufDRecv[buf_offset]);
-                  buf_offset++;
+              if (!config->GetLSQMetricCaching()) {
+                for (iDim = 0; iDim < nDim; iDim++) {
+                  for (jDim = 0; jDim < nDim; jDim++) {
+                    base_nodes->AddRmatrix(iPoint, iDim,jDim,bufDRecv[buf_offset]);
+                    buf_offset++;
+                  }
                 }
               }
               for (iVar = 0; iVar < ICOUNT; iVar++) {
@@ -2217,7 +2226,8 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
   auto& rmatrix  = base_nodes->GetRmatrix();
 
   computeGradientsLeastSquares(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
-                               weighted, solution, 0, base_nodes->GetnAuxVar(), -1, gradient, rmatrix);
+                               weighted, solution, 0, base_nodes->GetnAuxVar(), -1, gradient, rmatrix,
+                               config->GetLSQMetricCaching());
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
@@ -2251,7 +2261,8 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? MPI_QUANTITIES::SOLUTION_GRAD_REC : MPI_QUANTITIES::SOLUTION_GRADIENT;
 
-  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel, gradient, rmatrix);
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel,
+                               gradient, rmatrix, config->GetLSQMetricCaching());
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
