@@ -38,7 +38,9 @@ private:
    */
   enum class VTKDatatype {
     FLOAT32,
+    FLOAT64,
     INT32,
+    INT64,
     UINT8
   };
 
@@ -46,6 +48,11 @@ private:
    * \brief Boolean storing whether we are on a big or little endian machine
    */
   bool bigEndian;
+
+  /*!
+   * \brief True to write the coordinates and fields in double precision instead of single.
+   */
+  bool doublePrecision = false;
 
   /*!
    * \brief The current data offset that is used to find data in the binary blob at the end of the file
@@ -70,7 +77,7 @@ public:
    * \brief Construct a file writer using field names and the data sorter.
    * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CParaviewXMLFileWriter(CParallelDataSorter* valDataSorter);
+  CParaviewXMLFileWriter(CParallelDataSorter* valDataSorter, bool valDoublePrecision = false);
 
   /*!
    * \brief Destructor
@@ -102,7 +109,21 @@ private:
    * \param[in] globalSize - The global size of the array over all processors
    * \param[in] offset - The displacement in the file view for the current processor
    */
-  void WriteDataArray(void *data, VTKDatatype type, unsigned long size, unsigned long globalSize, unsigned long offset);
+  void WriteDataArray(const void* data, VTKDatatype type, unsigned long size, unsigned long globalSize,
+                      unsigned long offset);
+
+  /*!
+   * \brief Write the first values of a buffer as an array of type T with ::WriteDataArray, the values are converted
+   *        if the buffer holds another type (e.g. double written as float, int64_t written as int32_t).
+   * \param[in] buffer - The data of this processor.
+   * \param[in] type - The vtk datatype, matching T.
+   * \param[in] size - The number of values of this processor to write.
+   * \param[in] globalSize - The global size of the array over all processors
+   * \param[in] offset - The displacement in the file view for the current processor
+   */
+  template <class T, class U>
+  void WriteDataArrayOfType(const vector<U>& buffer, VTKDatatype type, unsigned long size, unsigned long globalSize,
+                            unsigned long offset);
 
   /*!
    * \brief Get the type string and size of a VTK datatype
@@ -112,13 +133,21 @@ private:
    */
   inline void GetTypeInfo(const VTKDatatype type, string &typeStr, unsigned long &typeSize) const {
     switch (type) {
+      case VTKDatatype::FLOAT64:
+        typeStr = "\"Float64\"";
+        typeSize = sizeof(double);
+        break;
       case VTKDatatype::FLOAT32:
         typeStr = "\"Float32\"";
         typeSize = sizeof(float);
         break;
       case VTKDatatype::INT32:
         typeStr = "\"Int32\"";
-        typeSize = sizeof(int);
+        typeSize = sizeof(int32_t);
+        break;
+      case VTKDatatype::INT64:
+        typeStr = "\"Int64\"";
+        typeSize = sizeof(int64_t);
         break;
       case VTKDatatype::UINT8:
         typeStr = "\"UInt8\"";

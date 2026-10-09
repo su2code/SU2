@@ -2430,6 +2430,18 @@ static const MapType<std::string, TAB_OUTPUT> TabOutput_Map = {
 };
 
 /*!
+ * \brief Floating-point type of the fields of the volume and surface files (CGNS and Paraview XML).
+ */
+enum class VOLUME_OUTPUT_PRECISION {
+  SINGLE,             /*!< \brief Single precision (float). */
+  DOUBLE              /*!< \brief Double precision (double). */
+};
+static const MapType<std::string, VOLUME_OUTPUT_PRECISION> VolumeOutputPrecision_Map = {
+  MakePair("SINGLE", VOLUME_OUTPUT_PRECISION::SINGLE)
+  MakePair("DOUBLE", VOLUME_OUTPUT_PRECISION::DOUBLE)
+};
+
+/*!
  * \brief Type of volume sensitivity file formats (inout to SU2_DOT)
  */
 enum ENUM_SENSITIVITY {
