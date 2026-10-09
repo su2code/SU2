@@ -5018,6 +5018,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       Kind_Solver == MAIN_SOLVER::FEM_EULER)
     Kind_Turb_Model = TURB_MODEL::NONE;
 
+  /*--- SST has no engine or actuator-disk boundary conditions: the faces would get no turbulence flux at all.
+   Checked after the turbulence model of Euler zones is cleared (multizone). ---*/
+  if (Kind_Turb_Model == TURB_MODEL::SST &&
+      (nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_ActDiskInlet + nMarker_ActDiskOutlet) > 0) {
+    SU2_MPI::Error("MARKER_ENGINE_INFLOW, MARKER_ENGINE_EXHAUST and MARKER_ACTDISK are not supported with the SST model.",
+                   CURRENT_FUNCTION);
+  }
+
   Kappa_2nd_Flow = jst_coeff[0];
   Kappa_4th_Flow = jst_coeff[1];
   Kappa_2nd_AdjFlow = jst_adj_coeff[0];
@@ -6720,16 +6728,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 cout << "\nperturbing the Reynold's Stress Matrix towards " << eig_val_comp << " component turbulence";
                 if (uq_permute) cout << " (permuting eigenvectors)";
                 break;
-              case SST_OPTIONS::COMP_Wilcox:
-                cout << " with compressibility correction of Wilcox";
-                break;
-              case SST_OPTIONS::COMP_Sarkar:
-                cout << " with compressibility correction of Sarkar";
-                break;
               default:
                 cout << " with no production modification";
                 break;
             }
+            if (sstParsedOptions.compWilcox) cout << ", with compressibility correction of Wilcox";
+            if (sstParsedOptions.compSarkar) cout << ", with compressibility correction of Sarkar";
 
             if (sstParsedOptions.dll){
               cout << "\nusing non dimensional lower limits relative to infinity values clipping by Coefficients:" ;
