@@ -1270,6 +1270,11 @@ void CConfig::SetConfig_Options() {
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief WRT_RESTART_COMPACT \n DESCRIPTION: Minimize the size of restart files \n Options: NO, YES \ingroup Config */
   addBoolOption("WRT_RESTART_COMPACT", Wrt_Restart_Compact, true);
+  /*!\brief VOLUME_OUTPUT_PRECISION \n DESCRIPTION: Floating-point type of the fields of the volume and surface files
+   (CGNS and Paraview XML), the coordinates are always written in double precision by the CGNS writer.
+   \n Options: SINGLE, DOUBLE \ingroup Config */
+  addEnumOption("VOLUME_OUTPUT_PRECISION", Volume_Output_Precision, VolumeOutputPrecision_Map,
+                VOLUME_OUTPUT_PRECISION::SINGLE);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief WRT_RESTART_OVERWRITE \n DESCRIPTION: overwrite restart files or append iteration number. \n Options: YES, NO \ingroup Config */
@@ -2344,7 +2349,9 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_OUTPUT::TAB_CSV);
-  /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Set <ofstream>.precision(value) to specified value for SU2_DOT and HISTORY output. Useful for exact gradient validation. \n DEFAULT: 6 \ingroup Config */
+  /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Number of digits of the text outputs (SU2_DOT, HISTORY and screen).
+   Useful for exact gradient validation. It does not change the volume and surface files, see VOLUME_OUTPUT_PRECISION.
+   \n DEFAULT: 10 \ingroup Config */
   addUnsignedShortOption("OUTPUT_PRECISION", output_precision, 10);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);

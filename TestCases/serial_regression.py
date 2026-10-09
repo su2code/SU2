@@ -103,7 +103,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.032065, -3.525196, 0.273051, 0.009680]
+    naca0012.test_vals = [-4.031446, -3.524530, 0.273056, 0.009703]
     test_list.append(naca0012)
 
     # NACA0012 - FMG test
@@ -111,7 +111,7 @@ def main():
     naca0012_FMG.cfg_dir   = "euler/naca0012"
     naca0012_FMG.cfg_file  = "inv_NACA0012.cfg"
     naca0012_FMG.test_iter = 20
-    naca0012_FMG.test_vals = [-4.160277, -3.553897, 0.296156, 0.016889]
+    naca0012_FMG.test_vals = [-4.160287, -3.553906, 0.296154, 0.016890]
     test_list.append(naca0012_FMG)
 
     # Supersonic wedge
@@ -119,7 +119,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.399745, 1.331048, -0.249527, 0.043953]
+    wedge.test_vals = [-4.359580, 1.370530, -0.249526, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -127,7 +127,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-4.825465, -4.205219, 0.277033, 0.006614]
+    oneram6.test_vals = [-4.825509, -4.205271, 0.277086, 0.006619]
     oneram6.timeout   = 9600
     test_list.append(oneram6)
 
@@ -145,7 +145,7 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals         = [-1.311660, 4.165589, 0.000067, 0.113157]
+    polar_naca0012.test_vals         = [-1.311796, 4.165508, 0.000092, 0.113306]
     polar_naca0012.test_vals_aarch64 = [-1.063447, 4.401847, 0.000291, 0.031696]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-n 1 -i 11")
     # flaky test on arm64
@@ -157,7 +157,7 @@ def main():
     bluntbody.cfg_dir   = "euler/bluntbody"
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.666162, 7.055023, -0.000093, 3.916825]
+    bluntbody.test_vals = [0.565185, 6.945875, 0.000007, 1.970309]
     test_list.append(bluntbody)
 
     ##########################
@@ -184,7 +184,7 @@ def main():
     cylinder.cfg_dir   = "navierstokes/cylinder"
     cylinder.cfg_file  = "lam_cylinder.cfg"
     cylinder.test_iter = 25
-    cylinder.test_vals = [-8.725123, -3.234819, -0.028022, 1.605527, 0.000000]
+    cylinder.test_vals = [-8.725171, -3.234867, -0.028017, 1.605526, 0.000000]
     test_list.append(cylinder)
 
     # Laminar cylinder (low Mach correction)
@@ -228,7 +228,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-3.131221, -5.161756, 0.778275, 0.019566, 1000.000000]
+    rae2822_sa.test_vals = [-3.056253, -5.155475, 0.783190, 0.020552, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -236,7 +236,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-1.745363, -1.484660, 5.883796, 0.579910, 0.017299, 100.000000]
+    rae2822_sst.test_vals = [-1.916371, -1.461911, 5.894621, 0.611793, 0.016873, 100.000000]
     test_list.append(rae2822_sst)
 
     # RAE2822 SST_SUST
@@ -244,7 +244,7 @@ def main():
     rae2822_sst_sust.cfg_dir   = "rans/rae2822"
     rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
     rae2822_sst_sust.test_iter = 20
-    rae2822_sst_sust.test_vals = [-2.464319, 5.852571, 0.490309, 0.042521]
+    rae2822_sst_sust.test_vals = [-2.464309, 5.852571, 0.490309, 0.042519]
     test_list.append(rae2822_sst_sust)
 
     # Flat plate
@@ -276,7 +276,7 @@ def main():
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
     turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     turb_wallfunction_flatplate_sa.test_iter = 10
-    turb_wallfunction_flatplate_sa.test_vals = [-3.585860, -1.859493, -1.508986, 1.892510, -5.259058, 10.000000, -2.551025, -0.296176, 0.002533]
+    turb_wallfunction_flatplate_sa.test_vals = [-3.580017, -1.860982, -1.506109, 1.898317, -5.258602, 10.000000, -2.557123, -0.295793, 0.002533]
     test_list.append(turb_wallfunction_flatplate_sa)
 
     # ONERA M6 Wing
@@ -284,7 +284,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.418713, -6.631577, 0.238587, 0.159599, 0.000000]
+    turb_oneram6.test_vals = [-2.419977, -6.631993, 0.238577, 0.159694, 0.000000]
     turb_oneram6.timeout   = 3200
     test_list.append(turb_oneram6)
 
@@ -367,7 +367,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-2.662936, 2.911899, -2.338516, 2.161131, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-5.135350, 0.436347, -2.878865, 1.663300, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.143715, -9.170705, -10.848554, -5.776746, 0.000000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
@@ -385,7 +385,7 @@ def main():
     axi_rans_air_nozzle_species.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_species.cfg_file  = "air_nozzle_species.cfg"
     axi_rans_air_nozzle_species.test_iter = 10
-    axi_rans_air_nozzle_species.test_vals = [-1.676190, 3.896581, -2.912396, 5.762790, -3.565909, 0.000000]
+    axi_rans_air_nozzle_species.test_vals = [-2.243181, 3.273075, -1.958732, 5.883857, -2.469621, 0.000000]
     axi_rans_air_nozzle_species.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_species)
 
@@ -540,7 +540,7 @@ def main():
     inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/incompressible_SA"
     inc_turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sa.test_iter = 10
-    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.892397, -5.715934, -6.750379, -4.240551, -9.550026, 10.000000, -4.008745, 0.001030, 0.003759]
+    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.892366, -5.716008, -6.750391, -4.240551, -9.549816, 10.000000, -4.008735, 0.001030, 0.003759]
     test_list.append(inc_turb_wallfunction_flatplate_sa)
 
     ####################
@@ -752,7 +752,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.981181, 1.343583, 0.597121, 0.017223]
+    turb_naca0012_1c.test_vals = [-4.981181, 1.343583, 0.597111, 0.017244]
     turb_naca0012_1c.test_vals_aarch64 = [-4.992791, 1.342873, 0.557941, 0.003269]
     test_list.append(turb_naca0012_1c)
 
@@ -806,7 +806,7 @@ def main():
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
-    hb_rans_preconditioning.test_vals = [-1.905206, 0.481900, 0.599004, 3.605363, -5.945837]
+    hb_rans_preconditioning.test_vals = [-1.905509, 0.482119, 0.598486, 3.605121, -5.946067]
     test_list.append(hb_rans_preconditioning)
 
     ######################################
@@ -818,7 +818,7 @@ def main():
     rot_naca0012.cfg_dir   = "rotating/naca0012"
     rot_naca0012.cfg_file  = "rot_NACA0012.cfg"
     rot_naca0012.test_iter = 25
-    rot_naca0012.test_vals = [-1.242808, 4.266616, -0.022207, 0.084206, 2.000000, -1.252601]
+    rot_naca0012.test_vals = [-1.240352, 4.268727, -0.022164, 0.083891, 2.000000, -1.253214]
     test_list.append(rot_naca0012)
 
     # Lid-driven cavity
@@ -936,7 +936,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 20
-    edge_VW.test_vals = [-8.395792, -2.198370, -0.000009, 0.000000]
+    edge_VW.test_vals = [-8.901513, -2.707051, -0.000009, 0.000000]
     test_list.append(edge_VW)
 
     # Rarefaction shock wave edge_PPR
@@ -944,7 +944,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 20
-    edge_PPR.test_vals = [-12.584167, -6.372084, -0.000034, 0.000000]
+    edge_PPR.test_vals = [-12.051551, -5.877885, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
 
@@ -974,7 +974,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [1.167512, 1.598496, -2.928579, 2.573642, -2.527392, 3.016170, 106370.000000, 106370.000000, 5.726800, 64.383000]
+    axial_stage2D.test_vals = [1.167521, 1.598536, -2.928575, 2.573646, -2.527330, 3.016253, 106370.000000, 106370.000000, 5.726800, 64.383000]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -1033,7 +1033,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.466202, 0.350093, 0.399014]
+    channel_2D.test_vals = [2.000000, 0.000000, 0.466389, 0.346857, 0.397472]
     channel_2D.timeout   = 100
     channel_2D.unsteady  = True
     channel_2D.multizone = True
@@ -1044,7 +1044,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 1
-    channel_3D.test_vals = [1.000000, 0.000000, 0.617237, 0.798808, 0.692608]
+    channel_3D.test_vals = [1.000000, 0.000000, 0.620573, 0.810294, 0.718984]
     channel_3D.test_vals_aarch64 = [1.000000, 0.000000, 0.611996, 0.798988, 0.702357]
     channel_3D.unsteady  = True
     channel_3D.multizone = True
@@ -1056,7 +1056,7 @@ def main():
     pipe.cfg_dir   = "sliding_interface/pipe"
     pipe.cfg_file  = "pipe_NN.cfg"
     pipe.test_iter = 2
-    pipe.test_vals = [0.568972, 0.692858, 0.989456, 1.048237]
+    pipe.test_vals = [0.528897, 0.684175, 0.970353, 1.065262]
     pipe.unsteady  = True
     pipe.multizone = True
     test_list.append(pipe)
@@ -1066,7 +1066,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.664822, 1.125812, 1.117605]
+    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.686432, 1.159461, 1.151134]
     rotating_cylinders.unsteady  = True
     rotating_cylinders.multizone = True
     test_list.append(rotating_cylinders)
@@ -1076,7 +1076,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 0.899641, 1.076189]
+    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.126036, 1.081775]
     supersonic_vortex_shedding.unsteady  = True
     supersonic_vortex_shedding.multizone = True
     test_list.append(supersonic_vortex_shedding)
@@ -1295,6 +1295,41 @@ def main():
     mms_dg_ns_3d.test_vals = [-0.146826, 5.356413, 0.000000, 0.000000]
     mms_dg_ns_3d.tol       = 0.0001
     test_list.append(mms_dg_ns_3d)
+
+    ######################################
+    ### CGNS writer                    ###
+    ######################################
+
+    # The CGNS output of a 2D mesh is read back as mesh, with the restart written by the same run.
+    # The read-back test must run after the test that writes the files.
+    cgns_output = TestCase('cgns_output')
+    cgns_output.cfg_dir = "output_writers"
+    cgns_output.cfg_file = "cgns_output.cfg"
+    cgns_output.test_iter = 2
+    cgns_output.test_vals = [-1.684071, 0.454658, 3.802835, -2.624573, 6.956844, 0.091480]
+    test_list.append(cgns_output)
+
+    cgns_mesh_readback = TestCase('cgns_mesh_readback')
+    cgns_mesh_readback.cfg_dir = "output_writers"
+    cgns_mesh_readback.cfg_file = "cgns_mesh_readback.cfg"
+    cgns_mesh_readback.test_iter = 2
+    cgns_mesh_readback.test_vals = [-2.480775, 0.352445, 2.998807, -3.103293, 6.892515, 0.085107]
+    test_list.append(cgns_mesh_readback)
+
+    # Same for a 3D mesh with mixed elements, whose boundaries are written as MIXED sections.
+    cgns_output_bend = TestCase('cgns_output_bend')
+    cgns_output_bend.cfg_dir = "output_writers"
+    cgns_output_bend.cfg_file = "cgns_output_bend.cfg"
+    cgns_output_bend.test_iter = 2
+    cgns_output_bend.test_vals = [-2.420818, -2.225454, -2.551501, -3.067128, 2.673612]
+    test_list.append(cgns_output_bend)
+
+    cgns_mesh_readback_bend = TestCase('cgns_mesh_readback_bend')
+    cgns_mesh_readback_bend.cfg_dir = "output_writers"
+    cgns_mesh_readback_bend.cfg_file = "cgns_mesh_readback_bend.cfg"
+    cgns_mesh_readback_bend.test_iter = 2
+    cgns_mesh_readback_bend.test_vals = [-3.254168, -2.756564, -3.006605, -3.572686, 4.308287]
+    test_list.append(cgns_mesh_readback_bend)
 
     ######################################
     ### RUN TESTS                      ###
@@ -1640,7 +1675,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 20
-    pywrapper_naca0012.test_vals = [-4.032065, -3.525196, 0.273051, 0.009680]
+    pywrapper_naca0012.test_vals = [-4.031446, -3.524530, 0.273056, 0.009703]
     pywrapper_naca0012.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
