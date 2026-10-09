@@ -132,7 +132,7 @@ def main():
     cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
     cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
     cylinder_lowmach.test_iter = 25
-    cylinder_lowmach.test_vals         = [-8.730784, -3.268719, 0.318044, 1.770346, 0.000000]
+    cylinder_lowmach.test_vals = [-8.730784, -3.268719, 0.318044, 1.770346, 0.000000]
     cylinder_lowmach.test_vals_aarch64 = [-6.830996, -1.368850, -0.143956, 73.963354, 0]
     test_list.append(cylinder_lowmach)
 
@@ -149,7 +149,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.004080, -7.638116, -0.000000, 2.089953]
+    poiseuille_profile.test_vals = [-12.004080, -7.638116, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.004276, -7.636719, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
@@ -309,7 +309,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals         = [-5.583730, 1.228732, 0.381967, -0.046233]
+    turb_naca0012_3c.test_vals = [-5.583730, 1.228732, 0.381967, -0.046233]
     turb_naca0012_3c.test_vals_aarch64 = [-5.583737, 1.232005, 0.390258, -0.046305]
     test_list.append(turb_naca0012_3c)
 
@@ -327,7 +327,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals         = [-5.553988, 1.234031, 0.424168, -0.033501]
+    turb_naca0012_p1c2.test_vals = [-5.553988, 1.234031, 0.424168, -0.033501]
     turb_naca0012_p1c2.test_vals_aarch64 = [-5.548245, 1.236384, 0.381821, -0.050337]
     test_list.append(turb_naca0012_p1c2)
 
@@ -365,35 +365,35 @@ def main():
 
     # NACA0012 Hydrofoil, pressure-based. Exercises the OpenMP path of the Poisson
     # solver's boundary flux corrections (inlet, far-field, pressure outlet).
-    inc_euler_naca0012_pb           = TestCase('inc_euler_naca0012_pb')
-    inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
-    inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
+    inc_euler_naca0012_pb = TestCase('inc_euler_naca0012_pb')
+    inc_euler_naca0012_pb.cfg_dir = "incomp_euler/naca0012"
+    inc_euler_naca0012_pb.cfg_file = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
     inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784246, 0.427448, 0.012083]
     test_list.append(inc_euler_naca0012_pb)
 
     # Laminar cylinder, pressure-based. Viscous counterpart of the hydrofoil above, so the
     # threaded momentum and Rhie-Chow stages run with wall markers present.
-    inc_lam_cylinder_pb          = TestCase('inc_lam_cylinder_pb')
-    inc_lam_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
-    inc_lam_cylinder_pb.cfg_file  = "incomp_pb_cylinder.cfg"
+    inc_lam_cylinder_pb = TestCase('inc_lam_cylinder_pb')
+    inc_lam_cylinder_pb.cfg_dir = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder_pb.cfg_file = "incomp_pb_cylinder.cfg"
     inc_lam_cylinder_pb.test_iter = 10
     inc_lam_cylinder_pb.test_vals = [-3.486075, -3.777632, 0.012229, 6.178719]
     test_list.append(inc_lam_cylinder_pb)
 
     # Laminar sphere, pressure-based. The only 3D pressure-based case, and the one where the
     # alpha_p reduction sums over a different set of Jacobian diagonals per thread.
-    inc_lam_sphere_pb          = TestCase('inc_lam_sphere_pb')
-    inc_lam_sphere_pb.cfg_dir   = "incomp_navierstokes/sphere"
-    inc_lam_sphere_pb.cfg_file  = "pb_sphere.cfg"
+    inc_lam_sphere_pb = TestCase('inc_lam_sphere_pb')
+    inc_lam_sphere_pb.cfg_dir = "incomp_navierstokes/sphere"
+    inc_lam_sphere_pb.cfg_file = "pb_sphere.cfg"
     inc_lam_sphere_pb.test_iter = 9
     inc_lam_sphere_pb.test_vals = [-6.092084, -2.305039, -2.479072, -2.548968, 0.191798, 170.793204, -6.134920]
     test_list.append(inc_lam_sphere_pb)
 
     # Heated cylinder, pressure-based, coupled energy equation and variable density.
-    inc_poly_cylinder_pb          = TestCase('inc_poly_cylinder_pb')
-    inc_poly_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
-    inc_poly_cylinder_pb.cfg_file  = "pb_poly_cylinder.cfg"
+    inc_poly_cylinder_pb = TestCase('inc_poly_cylinder_pb')
+    inc_poly_cylinder_pb.cfg_dir = "incomp_navierstokes/cylinder"
+    inc_poly_cylinder_pb.cfg_file = "pb_poly_cylinder.cfg"
     inc_poly_cylinder_pb.test_iter = 20
     inc_poly_cylinder_pb.test_vals = [-13.483266, 0.541350, 0.005972, 17.020220, -8927.600000]
     test_list.append(inc_poly_cylinder_pb)
@@ -431,7 +431,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals         = [-8.230355, -2.426276, 0.018487, 1.902089, -173.000000]
+    inc_poly_cylinder.test_vals = [-8.230355, -2.426276, 0.018487, 1.902089, -173.000000]
     inc_poly_cylinder.test_vals_aarch64 = [-8.260165, -2.445453, 0.027209, 1.915447, -171.620000]
     test_list.append(inc_poly_cylinder)
 
@@ -488,7 +488,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals         = [-7.614070, -2.155206, 1.804022, 1.893004]
+    spinning_cylinder.test_vals = [-7.614070, -2.155206, 1.804022, 1.893004]
     spinning_cylinder.test_vals_aarch64 = [-8.008023, -2.611064, 1.497308, 1.487483]
     test_list.append(spinning_cylinder)
 
@@ -553,6 +553,21 @@ def main():
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
+    # Simplified (one-equation) LM model on the 6:1 prolate spheroid at 15 deg, restarting from converged solutions
+    slm_spheroid_vals = {"sst_slm_menter": [-12.005703, -10.934023, -13.049797, -7.833317, -11.020316, 0.035351, 0.019157],
+                         "sst_slm_menter_crossflow": [-12.005701, -10.933421, -11.401809, -6.035958, -6.621244, 0.035351, 0.019157],
+                         "sa_slm_menter": [-10.467338, -8.467659, -12.443723, -6.570030, 0.035277, 0.017760],
+                         "sa_slm_menter_crossflow": [-10.475794, -8.467045, -12.157988, -5.847505, 0.035277, 0.017760]}
+    for model, vals in slm_spheroid_vals.items():
+        slm_spheroid = TestCase('slm_spheroid_' + model)
+        slm_spheroid.cfg_dir = "transition/prolate_spheroid"
+        slm_spheroid.cfg_file = model + ".cfg"
+        slm_spheroid.test_iter = 5
+        slm_spheroid.test_vals = vals
+        slm_spheroid.grid_file = "spheroid_tiny.su2"
+        slm_spheroid.decompress = True
+        test_list.append(slm_spheroid)
+
     # unsteady pitching NACA0015, SA
     unst_inc_turb_naca0015_sa           = TestCase('unst_inc_turb_naca0015_sa')
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
@@ -589,7 +604,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 20
-    edge_PPR.test_vals         = [-12.338051, -6.157966, -0.000034, 0.000000]
+    edge_PPR.test_vals = [-12.338051, -6.157966, -0.000034, 0.000000]
     edge_PPR.test_vals_aarch64 = [ -7.139211, -0.980821, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
@@ -618,7 +633,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-4.367144, -2.487733, -2.079075, 1.728173, -1.464952, 3.225025, -471620.000000, 94.839000, -0.051124]
+    transonic_stator_restart.test_vals = [-4.367144, -2.487733, -2.079075, 1.728173, -1.464952, 3.225025, -471620.000000, 94.839000, -0.051124]
     transonic_stator_restart.test_vals_aarch64 = [-4.442510, -2.561369, -2.165778, 1.652750, -1.355494, 3.172712, -471620.000000, 94.843000, -0.043825]
     test_list.append(transonic_stator_restart)
 
@@ -627,7 +642,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632240, -8.894740, -9.348706]
+    multi_interface.test_vals = [-8.632240, -8.894740, -9.348706]
     multi_interface.test_vals_aarch64  = [-8.632229, -8.894737, -9.348730]
     test_list.append(multi_interface)
 
@@ -648,11 +663,11 @@ def main():
     # Channel_2D, native SU2 binary mesh format (.su2b)
     # channel_2D_WA.cfg loads channel_2D_su2bin.su2b directly, so SU2_DEF must
     # first convert channel_2D.su2 (3 zones) into that binary mesh.
-    channel_2D_su2bin_convert           = TestCase('channel_2D_su2bin_convert')
-    channel_2D_su2bin_convert.cfg_dir   = "sliding_interface/channel_2D"
-    channel_2D_su2bin_convert.cfg_file  = "mesh_su2_to_su2bin.cfg"
-    channel_2D_su2bin_convert.command   = TestCase.Command(exec = "SU2_DEF")
-    channel_2D_su2bin_convert.timeout   = 600
+    channel_2D_su2bin_convert = TestCase('channel_2D_su2bin_convert')
+    channel_2D_su2bin_convert.cfg_dir = "sliding_interface/channel_2D"
+    channel_2D_su2bin_convert.cfg_file = "mesh_su2_to_su2bin.cfg"
+    channel_2D_su2bin_convert.command = TestCase.Command(exec = "SU2_DEF")
+    channel_2D_su2bin_convert.timeout = 600
     test_list.append(channel_2D_su2bin_convert)
 
     channel_2D           = TestCase('channel_2D')
@@ -720,7 +735,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals         = [19.000000, -1.144102, -1.424986]
+    slinc_steady.test_vals = [19.000000, -1.144102, -1.424986]
     slinc_steady.test_vals_aarch64 = [19.000000, -1.154874, -1.378120]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
@@ -769,9 +784,9 @@ def main():
     test_list.append(dyn_fsi)
 
     # FSI+CHT, Static, 2D, new mesh solver, restart
-    fsi_cht_restart           = TestCase('fsi_cht_restart')
-    fsi_cht_restart.cfg_dir   = "fea_fsi/stat_fsi"
-    fsi_cht_restart.cfg_file  = "config_restart.cfg"
+    fsi_cht_restart = TestCase('fsi_cht_restart')
+    fsi_cht_restart.cfg_dir = "fea_fsi/stat_fsi"
+    fsi_cht_restart.cfg_file = "config_restart.cfg"
     fsi_cht_restart.test_iter = 0
     fsi_cht_restart.test_vals = [5.000000, 0.006352, -1.960362, -9.327033, -9.644570, -9.319618, 608.380000, -0.012974, 0.000000, 20.000000]
     fsi_cht_restart.multizone = True
@@ -794,7 +809,7 @@ def main():
     mms_fvm_inc_euler.cfg_dir   = "mms/fvm_incomp_euler"
     mms_fvm_inc_euler.cfg_file  = "inv_mms_jst.cfg"
     mms_fvm_inc_euler.test_iter = 20
-    mms_fvm_inc_euler.test_vals         = [-9.128034, -9.441406, 0.000000, 0.000000]
+    mms_fvm_inc_euler.test_vals = [-9.128034, -9.441406, 0.000000, 0.000000]
     mms_fvm_inc_euler.test_vals_aarch64 = [-9.128034, -9.441406, 0.000000, 0.000000]
     test_list.append(mms_fvm_inc_euler)
 

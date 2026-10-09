@@ -26,6 +26,7 @@
  */
 
 #include "../../include/solvers/CEulerSolver.hpp"
+#include "../../include/numerics/turbulent/transition/trans_correlations.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
@@ -1097,18 +1098,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
-  if (config->GetTurbulenceIntensity_FreeStream() *100 <= 1.3) {
-    if (config->GetTurbulenceIntensity_FreeStream() *100 >=0.027) {
-        Re_ThetaT_FreeStream = (1173.51-589.428*config->GetTurbulenceIntensity_FreeStream() *100+0.2196/
-        (config->GetTurbulenceIntensity_FreeStream() *100*config->GetTurbulenceIntensity_FreeStream() *100));
-      }
-    else {
-      Re_ThetaT_FreeStream = (1173.51-589.428*config->GetTurbulenceIntensity_FreeStream() *100+0.2196/(0.27*0.27));
-    }
-  }
-  else {
-    Re_ThetaT_FreeStream = 331.5*pow(config->GetTurbulenceIntensity_FreeStream() *100-0.5658,-0.671);
-  }
+  Re_ThetaT_FreeStream = TransLMCorrelations::FreestreamReThetaT(config->GetTurbulenceIntensity_FreeStream() * 100.0);
   config->SetReThetaT_FreeStream(Re_ThetaT_FreeStream);
 
   const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
@@ -9180,7 +9170,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
     Allreduce_inplace(nDim, TotalAreaVelocity);
 
     delete [] buffer;
-  
+
 #endif
 
     /*--- initialize spanwise average quantities ---*/

@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include "../transition_data.hpp"
+
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -807,6 +809,21 @@ public:
    * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
    */
   su2double GetIntermittencyEff() const { return intermittency_eff_i; }
+
+  /*! \brief Diagnostic values produced by the transition-model source term. */
+  virtual const TransitionLMData* GetTransitionData() const { return nullptr; }
+
+  /*!
+   * \brief Set the gradient of the auxiliary variables.
+   * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
+   * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.
+   */
+  inline virtual void SetAuxVar(su2double val_AuxVar) {}
+
+  /*!
+   * \brief Set the cross-flow strength Psi = |n . grad(e_omega)| d_w of the one-equation transition model.
+   */
+  inline virtual void SetCrossFlowStrength(su2double val_Psi) {}
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

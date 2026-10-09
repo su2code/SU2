@@ -36,6 +36,7 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
+#include "../transition_data.hpp"
 #include "../../../Common/include/containers/container_decorators.hpp"
 
 class CFluidModel;
@@ -1766,6 +1767,14 @@ public:
    * \param[in] Value of the effective intermittency (gamma_eff).
    */
   inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
+
+  /*! \brief Access the transition-model diagnostics at a point. */
+  virtual TransitionLMData* GetTransitionData(unsigned long iPoint) { return nullptr; }
+  virtual const TransitionLMData* GetTransitionData(unsigned long iPoint) const { return nullptr; }
+
+  /*! \brief Normal of the nearest wall element, stored by the simplified LM model. */
+  virtual su2double* GetTransitionWallNormal(unsigned long iPoint) { return nullptr; }
+  virtual const su2double* GetTransitionWallNormal(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief Set the value of the eddy viscosity.

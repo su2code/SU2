@@ -1324,6 +1324,8 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   const int source_second_term = SOURCE_SECOND_TERM + offset;
 
   const bool LM = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM;
+  LM_ParsedOptions options;
+  if(LM) options = config->GetLMParsedOptions();
 
   /*--- LM drives its interior loop and boundaries through its own CScalarFlux_TransLM edge kernel
    * (see CTransLMSolver), so conv_term/visc_term/conv_bound_term/visc_bound_term are never set
@@ -1345,7 +1347,10 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     auto& trans_source_first_term = numerics[iMGlevel][TRANS_SOL][source_first_term];
 
-    if (LM) trans_source_first_term = new CSourcePieceWise_TransLM<Indices>(nDim, nVar_Trans, config);
+    if (LM){
+      if (!options.SLM) trans_source_first_term = new CSourcePieceWise_TransLM<Indices>(nDim, nVar_Trans, config);
+      if (options.SLM) trans_source_first_term = new CSourcePieceWise_TransSLM<Indices>(nDim, nVar_Trans, config);
+    }
 
     numerics[iMGlevel][TRANS_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Trans, config);
   }
