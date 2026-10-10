@@ -554,6 +554,15 @@ def main():
     fem_euler_naca0012.test_vals = [-6.519946, -5.976944, 0.255551, 0.000028]
     test_list.append(fem_euler_naca0012)
 
+    # Periodic DG affine map: inverse translation must be rotated.
+    fem_periodic_affine = TestCase('fem_periodic_affine')
+    fem_periodic_affine.cfg_dir = "hom_euler/periodic_affine"
+    fem_periodic_affine.cfg_file = "periodic_affine.cfg"
+    fem_periodic_affine.test_iter = 1
+    fem_periodic_affine.ntest_vals = 5
+    fem_periodic_affine.test_vals = [2.083795, 4.631729, 4.386282, 3.676592, 7.559938]
+    test_list.append(fem_periodic_affine)
+
     ############################
     ### DG-FEM Navier-Stokes ###
     ############################
