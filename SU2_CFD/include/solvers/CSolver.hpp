@@ -146,6 +146,7 @@ protected:
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
+  su2activematrix PeriodicProj;  /*!< \brief Min and max reconstruction increments over the edges of the rotational periodic matches of each point (for limiters). */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
@@ -4230,6 +4231,14 @@ public:
    * \param[in] val_implicit_periodic - Flag controlling solution rotation for periodic BCs.
    */
   inline void SetRotatePeriodic(bool val_rotate_periodic) { rotate_periodic = val_rotate_periodic; }
+
+  /*!
+   * \brief Storage for the limiters with rotational periodicity: the min and max, over the edges of the periodic
+   *        matches of each point, of the reconstruction increments (communicated with PERIODIC_LIM_PRIM_1).
+   * \param[in] config - Definition of the particular problem.
+   * \return The matrix (nPoint x 2*nPrimVarGrad, min then max), nullptr if no periodic marker rotates the solution.
+   */
+  su2activematrix* GetPeriodicProjections(const CConfig& config);
 
   /*!
    * \brief Retrieve the solver name for output purposes.
