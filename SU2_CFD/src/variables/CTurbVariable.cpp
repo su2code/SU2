@@ -27,6 +27,7 @@
 
 
 #include "../../include/variables/CTurbVariable.hpp"
+#include "../../include/numerics/CNumerics.hpp"
 
 
 CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
@@ -35,7 +36,54 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
     turb_index.resize(nPoint) = su2double(1.0);
     intermittency.resize(nPoint) = su2double(1.0);
 
+    DES_LengthScale.resize(nPoint) = su2double(0.0);
+    
+    Vortex_Tilting.resize(nPoint);
+
    }
+
+
+void CTurbVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> VelGrad,
+                                        const su2double* Vorticity, su2double LaminarViscosity) {
+
+  su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];
+  su2double numerator, trace0, trace1, denominator;
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(VelGrad, nDim, nDim);
+  AD::SetPreaccIn(Vorticity, 3);
+  /*--- Eddy viscosity ---*/
+  AD::SetPreaccIn(muT(iPoint));
+  /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(LaminarViscosity);
+
+  CNumerics::ComputeMeanRateOfStrainMatrix(nDim, Strain, VelGrad);
+
+  Omega = GeometryToolbox::Norm(3, Vorticity);
+
+  StrainDotVort[0] = Strain[0][0]*Vorticity[0]+Strain[0][1]*Vorticity[1]+Strain[0][2]*Vorticity[2];
+  StrainDotVort[1] = Strain[1][0]*Vorticity[0]+Strain[1][1]*Vorticity[1]+Strain[1][2]*Vorticity[2];
+  StrainDotVort[2] = Strain[2][0]*Vorticity[0]+Strain[2][1]*Vorticity[1]+Strain[2][2]*Vorticity[2];
+
+  GeometryToolbox::CrossProduct(StrainDotVort, Vorticity, numVecVort);
+  numerator = sqrt(6.0) * GeometryToolbox::Norm(3, numVecVort);
+  /*--- 3 tr(S^2) - tr(S)^2, where tr(S^2) is the sum of the squares of all the components of S. ---*/
+  trace0 = 0.0;
+  for (auto iDim = 0u; iDim < 3; iDim++)
+    for (auto jDim = 0u; jDim < 3; jDim++) trace0 += 3.0 * pow(Strain[iDim][jDim], 2);
+  trace1 = pow(Strain[0][0] + Strain[1][1] + Strain[2][2],2.0);
+  denominator = pow(Omega, 2.0) * sqrt(max(trace0-trace1, 0.0));
+
+  /*--- Without vorticity or strain anisotropy the measure is undefined, make it neutral (F_KH = 1). ---*/
+  if (denominator < 1e-20) {
+    Vortex_Tilting(iPoint) = 1.0;
+  } else {
+    Vortex_Tilting(iPoint) = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/max(muT(iPoint), 1e-20));
+  }
+
+  AD::SetPreaccOut(Vortex_Tilting(iPoint));
+  AD::EndPreacc();
+}
 
 void CTurbVariable::RegisterEddyViscosity(bool input) {
   RegisterContainer(input, muT);

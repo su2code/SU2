@@ -1180,7 +1180,6 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
   const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
   const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
-
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
   } else if (sst_2003) {
@@ -1649,10 +1648,14 @@ static const MapType<std::string, WINDOW_FUNCTION> Window_Map = {
  */
 enum ENUM_HYBRIDRANSLES {
   NO_HYBRIDRANSLES = 0,  /*!< \brief No turbulence model. */
-  SA_DES   = 1,          /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation (DES)). */
-  SA_DDES  = 2,          /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Delta_max SGS ). */
-  SA_ZDES  = 3,          /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
-  SA_EDDES = 4           /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
+  SA_DES           = 1,  /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation (DES)). */
+  SA_DDES          = 2,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Delta_max SGS ). */
+  SA_ZDES          = 3,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
+  SA_EDDES         = 4,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
+  SST_DDES         = 5,  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): DDES). */
+  SST_IDDES        = 6,  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Improved DDES). */
+  SST_SIDDES       = 7,  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Simplified Improved DDES). */
+  SST_EDDES        = 8   /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Enhanced (SLA) DDES). */
 };
 static const MapType<std::string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
   MakePair("NONE", NO_HYBRIDRANSLES)
@@ -1660,6 +1663,10 @@ static const MapType<std::string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
   MakePair("SA_DDES", SA_DDES)
   MakePair("SA_ZDES", SA_ZDES)
   MakePair("SA_EDDES", SA_EDDES)
+  MakePair("SST_DDES", SST_DDES)
+  MakePair("SST_IDDES", SST_IDDES)
+  MakePair("SST_SIDDES", SST_SIDDES)
+  MakePair("SST_EDDES", SST_EDDES)
 };
 
 /*!
