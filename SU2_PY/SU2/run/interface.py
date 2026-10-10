@@ -30,7 +30,6 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
-import shlex
 import subprocess
 from ..io import Config
 from ..util import which
@@ -47,6 +46,7 @@ except KeyError as exc:
     ) from exc
 
 sys.path.append(SU2_RUN)
+quote = '"' if sys.platform == "win32" else ""
 
 # SU2 suite run command template
 base_Command = os.path.join(SU2_RUN, "%s")
@@ -98,7 +98,7 @@ def CFD(config):
 
         processes = konfig["NUMBER_PART"]
 
-        the_Command = "SU2_CFD_DIRECTDIFF %s" % tempname
+        the_Command = "SU2_CFD_DIRECTDIFF%s %s" % (quote, tempname)
 
     elif auto_diff:
         tempname = "config_CFD_AD.cfg"
@@ -106,7 +106,7 @@ def CFD(config):
 
         processes = konfig["NUMBER_PART"]
 
-        the_Command = "SU2_CFD_AD %s" % tempname
+        the_Command = "SU2_CFD_AD%s %s" % (quote, tempname)
 
     else:
         tempname = "config_CFD.cfg"
@@ -114,7 +114,7 @@ def CFD(config):
 
         processes = konfig["NUMBER_PART"]
 
-        the_Command = "SU2_CFD %s" % tempname
+        the_Command = "SU2_CFD%s %s" % (quote, tempname)
 
     the_Command = build_command(the_Command, processes)
     run_command(the_Command)
@@ -137,7 +137,7 @@ def DEF(config):
     # must run with rank 1
     processes = konfig["NUMBER_PART"]
 
-    the_Command = "SU2_DEF %s" % tempname
+    the_Command = "SU2_DEF%s %s" % (quote, tempname)
     the_Command = build_command(the_Command, processes)
     run_command(the_Command)
 
@@ -164,7 +164,7 @@ def DOT(config):
 
         processes = konfig["NUMBER_PART"]
 
-        the_Command = "SU2_DOT_AD %s" % tempname
+        the_Command = "SU2_DOT_AD%s %s" % (quote, tempname)
     else:
 
         tempname = "config_DOT.cfg"
@@ -172,7 +172,7 @@ def DOT(config):
 
         processes = konfig["NUMBER_PART"]
 
-        the_Command = "SU2_DOT %s" % tempname
+        the_Command = "SU2_DOT%s %s" % (quote, tempname)
 
     the_Command = build_command(the_Command, processes)
     run_command(the_Command)
@@ -195,7 +195,7 @@ def GEO(config):
     # must run with rank 1
     processes = konfig["NUMBER_PART"]
 
-    the_Command = "SU2_GEO %s" % tempname
+    the_Command = "SU2_GEO%s %s" % (quote, tempname)
     the_Command = build_command(the_Command, processes)
     run_command(the_Command)
 
@@ -217,7 +217,7 @@ def SOL(config):
     # must run with rank 1
     processes = konfig["NUMBER_PART"]
 
-    the_Command = "SU2_SOL %s" % tempname
+    the_Command = "SU2_SOL%s %s" % (quote, tempname)
     the_Command = build_command(the_Command, processes)
     run_command(the_Command)
 
@@ -239,7 +239,7 @@ def SOL_FSI(config):
     # must run with rank 1
     processes = konfig["NUMBER_PART"]
 
-    the_Command = "SU2_SOL %s 2" % tempname
+    the_Command = "SU2_SOL%s %s 2" % (quote, tempname)
     the_Command = build_command(the_Command, processes)
     run_command(the_Command)
 
@@ -255,14 +255,7 @@ def SOL_FSI(config):
 
 def build_command(the_Command, processes=0):
     """builds an mpi command for given number of processes"""
-    # quote the executable path, SU2_RUN may contain spaces
-    executable, _, arguments = the_Command.partition(" ")
-    executable = base_Command % executable
-    if sys.platform == "win32":
-        executable = '"%s"' % executable
-    else:
-        executable = shlex.quote(executable)
-    the_Command = "%s %s" % (executable, arguments) if arguments else executable
+    the_Command = quote + (base_Command % the_Command)
     if processes > 1:
         if not mpi_Command:
             raise RuntimeError("could not find an mpi interface")
