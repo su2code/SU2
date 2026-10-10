@@ -160,6 +160,22 @@ def main():
     bluntbody.test_vals = [0.666162, 7.055023, -0.000093, 3.916825]
     test_list.append(bluntbody)
 
+    # Inviscid channel with bump, subsonic
+    inv_channel           = TestCase('inv_channel')
+    inv_channel.cfg_dir   = "euler/channel"
+    inv_channel.cfg_file  = "inv_channel.cfg"
+    inv_channel.test_iter = 20
+    inv_channel.test_vals = [-4.417118, -1.270081, -2.008538, 1.033475, 5.000000, -0.426366, 0.000084, -0.002650, 1000.000000]
+    test_list.append(inv_channel)
+
+    # CRM DPW4 wing-body, transonic
+    inv_crm_jst           = TestCase('inv_crm_jst')
+    inv_crm_jst.cfg_dir   = "euler/CRM"
+    inv_crm_jst.cfg_file  = "inv_CRM_JST.cfg"
+    inv_crm_jst.test_iter = 20
+    inv_crm_jst.test_vals = [-2.051928, -1.904068, -1.904270, -1.771577, -1.441046]
+    test_list.append(inv_crm_jst)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
@@ -211,6 +227,14 @@ def main():
     poiseuille_profile.test_vals         = [-12.003115, -7.626023, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262299, -0.000000, 2.089953] #last 4 columns
     test_list.append(poiseuille_profile)
+
+    # Laminar NACA0012
+    lam_naca0012           = TestCase('lam_naca0012')
+    lam_naca0012.cfg_dir   = "navierstokes/naca0012"
+    lam_naca0012.cfg_file  = "lam_NACA0012.cfg"
+    lam_naca0012.test_iter = 20
+    lam_naca0012.test_vals = [-5.476464, -3.192186, -3.250615, -0.070066]
+    test_list.append(lam_naca0012)
 
     ##########################
     ### Compressible RANS  ###
@@ -357,6 +381,22 @@ def main():
     propeller.test_vals = [-3.389724, -8.410479, 0.000048, 0.056344]
     propeller.timeout   = 3200
     test_list.append(propeller)
+
+    # SST flat plate
+    turb_sst_flatplate           = TestCase('turb_sst_flatplate')
+    turb_sst_flatplate.cfg_dir   = "rans/flatplate"
+    turb_sst_flatplate.cfg_file  = "turb_SST_flatplate.cfg"
+    turb_sst_flatplate.test_iter = 20
+    turb_sst_flatplate.test_vals = [-5.350371, -2.389040, -2.941017, 0.134026, -2.673494, 5.640908]
+    test_list.append(turb_sst_flatplate)
+
+    # S809 wind turbine airfoil, SA
+    turb_s809           = TestCase('turb_s809')
+    turb_s809.cfg_dir   = "rans/s809"
+    turb_s809.cfg_file  = "turb_S809.cfg"
+    turb_s809.test_iter = 20
+    turb_s809.test_vals = [-4.630441, -3.675887, -3.599443, -2.233596, -10.265408]
+    test_list.append(turb_s809)
 
     #######################################
     ### Axisymmetric Compressible RANS  ###
