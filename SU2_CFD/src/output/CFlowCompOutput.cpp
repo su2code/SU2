@@ -470,6 +470,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetAerodynamicCoefficients(config, flow_solver);
 
+  /*--- Fixed CL finite difference step, uses the AOA set above. ---*/
+
+  if (config->GetFixed_CL_Mode()) SetFixedCLFiniteDifference(config);
+
   if (config->GetViscous()) {
     SetHistoryOutputValue("BUFFET", flow_solver->GetTotal_Buffet_Metric());
   }

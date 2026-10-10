@@ -365,6 +365,32 @@ protected:
   void SetFixedCLScreenOutput(const CConfig *config);
 
   /*!
+   * \brief Check if the fixed CL driver changed the AoA at the current iteration
+   *        (in finite difference mode this is the start of the finite difference step).
+   * \return <TRUE> if the AoA was changed.
+   */
+  bool FixedCLStartFD() const {
+    return fabs(GetHistoryFieldValue("CL_DRIVER_COMMAND")) > EPS;
+  }
+
+  /*!
+   * \brief Check if the AoA was restored at the current iteration
+   *        (in finite difference mode this is the end of the finite difference step).
+   * \return <TRUE> if the AoA is equal to the previous AoA.
+   */
+  bool FixedCLEndFD() const {
+    return GetHistoryFieldValue("AOA") == GetHistoryFieldValue("PREV_AOA");
+  }
+
+  /*!
+   * \brief Store the iteration at which the finite difference step of the fixed CL driver starts and
+   *        write the meta data file with the finite difference derivatives at its end.
+   * \note Called every iteration, independently of the screen output frequency.
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  void SetFixedCLFiniteDifference(const CConfig *config);
+
+  /*!
    * \brief Compute the ratio of the stochastic energy backscatter to the turbulent energy dissipation.
    * \param iPoint - Index of the point.
    * \param config - Definition of the particular problem.
