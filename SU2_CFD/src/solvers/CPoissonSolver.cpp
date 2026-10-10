@@ -168,14 +168,11 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
       su2double Vol = geometry->nodes->GetVolume(iPoint);
 
       /*--- The momentum equation is not assembled at a strong velocity BC, DeleteValsRowi zeroes
-       * the row and writes 1.0 on the diagonal, so there is no A_p to read. Nothing consumes the
-       * value stored here: edges touching the point take the coefficient of their other node, the
-       * velocity correction is overwritten in the boundary loop, and HbyA scales it by a numerator
-       * that is identically zero. Store a finite placeholder and skip the corrections below, which
-       * divide by zero for a transient removal factor of 1. ---*/
+       * the row and writes 1.0 on the diagonal, so there is no A_p to read. The coefficient of
+       * these points is set below from their neighbours, zero marks them until then. ---*/
 
       if (flow_nodes->GetStrongBC(iPoint)) {
-        nodes->SetMomCoeff(iPoint, Vol * flow_nodes->GetDensity(iPoint));
+        nodes->SetMomCoeff(iPoint, 0.0);
         continue;
       }
 
@@ -194,11 +191,13 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
         }
       }
 
-      /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
+      /*--- Add simplec neighbour contributions and optional time dependent term. The off-diagonal
+       * entries are -a_nb, so A_p + Sum_A_nb is a_P - sum(a_nb), which is only the pseudo-time term
+       * V/dt: the removal of the transient term must not be used with SIMPLEC. ---*/
 
       su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
-      su2double CorrectedA_p = A_p - Sum_A_nb - config->GetSIMPLE_Options().Transient_Term_Removal_Factor * (Vol / delT);
+      su2double CorrectedA_p = A_p + Sum_A_nb - config->GetSIMPLE_Options().Transient_Term_Removal_Factor * (Vol / delT);
 
       /*--- Invert the momentum coefficient to 1/a_p and scale by the volume and density so it can be used as diffusion coefficient in the poisson eq ---*/
 
@@ -225,7 +224,32 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
     */
   }
 
-  /*--- Insert MPI call here. ---*/
+  InitiateComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
+  CompleteComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
+
+  /*--- Points under a strong velocity BC take the average coefficient of their neighbours that have
+   * a momentum equation, which also sets the edges between two such points. The flags are only known
+   * on this rank's points, the zero set above marks the strong points of the other ranks. ---*/
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (!flow_nodes->GetStrongBC(iPoint)) continue;
+
+    su2double Sum_Coeff = 0.0;
+    unsigned short nCoeff = 0;
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+      if (!flow_nodes->GetStrongBC(jPoint) && nodes->GetMomCoeff(jPoint) > 0.0) {
+        Sum_Coeff += nodes->GetMomCoeff(jPoint);
+        nCoeff++;
+      }
+    }
+    if (nCoeff > 0)
+      nodes->SetMomCoeff(iPoint, Sum_Coeff / nCoeff);
+    else
+      nodes->SetMomCoeff(iPoint, 0.0);
+  }
+  END_SU2_OMP_FOR
+
   InitiateComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
   CompleteComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
 }
@@ -463,6 +487,35 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     }
   }
 
+}
+
+void CPoissonSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                          unsigned short iRKStep, unsigned short iMesh,
+                                          unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
+
+  /*--- Unsteady variable density: continuity is V d(rho)/dt + sum(m_f) = 0. The density of the old
+   *    time levels is the one the flow solver computes from their enthalpy and species
+   *    (CIncEulerSolver::RecomputeDensity_time_n). With constant density the term is zero. ---*/
+
+  if (!config->GetVariable_Density_Model()) return;
+
+  const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const su2double dt = config->GetDelta_UnstTimeND();
+  const auto* flow_vars = su2staticcast_p<const CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    const su2double rho_np1 = flow_vars->GetDensity(iPoint);
+    const su2double rho_n = flow_vars->GetDensity_time_n(iPoint);
+    su2double dRhodt = (rho_np1 - rho_n) / dt;
+    if (second_order) {
+      const su2double rho_nm1 = flow_vars->GetDensity_time_n1(iPoint);
+      dRhodt = (3.0 * rho_np1 - 4.0 * rho_n + rho_nm1) / (2.0 * dt);
+    }
+    LinSysRes(iPoint, 0) += geometry->nodes->GetVolume(iPoint) * dRhodt;
+  }
+  END_SU2_OMP_FOR
 }
 
 void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
