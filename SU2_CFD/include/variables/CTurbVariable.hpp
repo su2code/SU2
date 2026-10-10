@@ -118,8 +118,9 @@ public:
   /*!
    * \brief Set the vortex tilting measure for computation of the EDDES length scale
    * \param[in] iPoint - Point index.
+   * \param[in] VelGrad - Velocity gradient, starting at the first velocity component.
    */
-  void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
+  void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> VelGrad,
                          const su2double* Vorticity, su2double LaminarViscosity) override;
 
   /*!

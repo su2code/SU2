@@ -27,6 +27,7 @@
 
 
 #include "../../include/variables/CTurbVariable.hpp"
+#include "../../include/numerics/CNumerics.hpp"
 
 
 CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
@@ -42,43 +43,30 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
    }
 
 
-void CTurbVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
+void CTurbVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> VelGrad,
                                         const su2double* Vorticity, su2double LaminarViscosity) {
 
   su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];
   su2double numerator, trace0, trace1, denominator;
 
   AD::StartPreacc();
-  AD::SetPreaccIn(PrimGrad_Flow, nDim+1, nDim);
+  AD::SetPreaccIn(VelGrad, nDim, nDim);
   AD::SetPreaccIn(Vorticity, 3);
   /*--- Eddy viscosity ---*/
   AD::SetPreaccIn(muT(iPoint));
   /*--- Laminar viscosity --- */
   AD::SetPreaccIn(LaminarViscosity);
 
-  Strain[0][0] = PrimGrad_Flow[1][0];
-  Strain[1][0] = 0.5*(PrimGrad_Flow[2][0] + PrimGrad_Flow[1][1]);
-  Strain[0][1] = 0.5*(PrimGrad_Flow[1][1] + PrimGrad_Flow[2][0]);
-  Strain[1][1] = PrimGrad_Flow[2][1];
-  if (nDim == 3){
-    Strain[0][2] = 0.5*(PrimGrad_Flow[3][0] + PrimGrad_Flow[1][2]);
-    Strain[1][2] = 0.5*(PrimGrad_Flow[3][1] + PrimGrad_Flow[2][2]);
-    Strain[2][0] = 0.5*(PrimGrad_Flow[1][2] + PrimGrad_Flow[3][0]);
-    Strain[2][1] = 0.5*(PrimGrad_Flow[2][2] + PrimGrad_Flow[3][1]);
-    Strain[2][2] = PrimGrad_Flow[3][2];
-  }
+  CNumerics::ComputeMeanRateOfStrainMatrix(nDim, Strain, VelGrad);
 
-  Omega = sqrt(Vorticity[0]*Vorticity[0] + Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+  Omega = GeometryToolbox::Norm(3, Vorticity);
 
   StrainDotVort[0] = Strain[0][0]*Vorticity[0]+Strain[0][1]*Vorticity[1]+Strain[0][2]*Vorticity[2];
   StrainDotVort[1] = Strain[1][0]*Vorticity[0]+Strain[1][1]*Vorticity[1]+Strain[1][2]*Vorticity[2];
   StrainDotVort[2] = Strain[2][0]*Vorticity[0]+Strain[2][1]*Vorticity[1]+Strain[2][2]*Vorticity[2];
 
-  numVecVort[0] = StrainDotVort[1]*Vorticity[2] - StrainDotVort[2]*Vorticity[1];
-  numVecVort[1] = StrainDotVort[2]*Vorticity[0] - StrainDotVort[0]*Vorticity[2];
-  numVecVort[2] = StrainDotVort[0]*Vorticity[1] - StrainDotVort[1]*Vorticity[0];
-
-  numerator = sqrt(6.0) * sqrt(numVecVort[0]*numVecVort[0] + numVecVort[1]*numVecVort[1] + numVecVort[2]*numVecVort[2]);
+  GeometryToolbox::CrossProduct(StrainDotVort, Vorticity, numVecVort);
+  numerator = sqrt(6.0) * GeometryToolbox::Norm(3, numVecVort);
   /*--- 3 tr(S^2) - tr(S)^2, where tr(S^2) is the sum of the squares of all the components of S. ---*/
   trace0 = 0.0;
   for (auto iDim = 0u; iDim < 3; iDim++)

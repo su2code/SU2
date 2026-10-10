@@ -31,6 +31,7 @@
 #include <sstream>
 #include <vector>
 #include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
+#include "../../../SU2_CFD/include/variables/CTurbSSTVariable.hpp"
 #include "../../../SU2_CFD/include/numerics/NEMO/NEMO_diffusion.hpp"
 
 TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
@@ -240,6 +241,33 @@ TEST_CASE("NEMO corrected viscous residual returns distinct i and j Jacobians", 
       const su2double finite_difference = (flux_plus - flux_minus) / (2.0 * step);
       const su2double analytic = endpoint == 0 ? analytic_i : analytic_j;
       CHECK(finite_difference == Approx(analytic).epsilon(1.0e-8).margin(1.0e-10));
+    }
+  }
+}
+
+TEST_CASE("Vortex tilting uses a velocity-only gradient view", "[EDDES]") {
+  std::stringstream options;
+  options << "SOLVER= RANS\nKIND_TURB_MODEL= SST\nREYNOLDS_NUMBER= 5\n";
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+
+  for (unsigned short nDim : {2, 3}) {
+    const su2double constants[11] = {};
+    CTurbSSTVariable turb(1.0, 1.0, 1.0, 1, nDim, 2, constants, &config);
+
+    // Standard flow and five-species NEMO primitive layouts.
+    for (unsigned short velocityIndex : {1, 7}) {
+      su2activematrix gradient(velocityIndex + nDim, nDim);
+      gradient = su2double(100.0);
+      for (unsigned short i = 0; i < nDim; ++i)
+        for (unsigned short j = 0; j < nDim; ++j) gradient(i + velocityIndex, j) = i == j ? i + 1.0 : 0.0;
+      auto velocityGradient = CMatrixView<const su2double>(gradient) + velocityIndex;
+      const su2double vorticity[3] = {1.0, 1.0, 0.0};
+      turb.SetVortex_Tilting(0, velocityGradient, vorticity, 1.0);
+      REQUIRE(turb.GetVortex_Tilting(0) == Approx(0.5));
+
+      const su2double zeroVorticity[3] = {0.0, 0.0, 0.0};
+      turb.SetVortex_Tilting(0, velocityGradient, zeroVorticity, 1.0);
+      REQUIRE(turb.GetVortex_Tilting(0) == 1.0);
     }
   }
 }

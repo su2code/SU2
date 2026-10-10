@@ -222,9 +222,9 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
         auto Vorticity = flowNodes->GetVorticity(iPoint);
-        auto PrimGrad_Flow = flowNodes->GetGradient_Primitive(iPoint);
+        auto VelGrad = flowNodes->GetGradient_Primitive(iPoint) + prim_idx.Velocity();
         auto Laminar_Viscosity = flowNodes->GetLaminarViscosity(iPoint);
-        nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+        nodes->SetVortex_Tilting(iPoint, VelGrad, Vorticity, Laminar_Viscosity);
       }
       END_SU2_OMP_FOR
     }
