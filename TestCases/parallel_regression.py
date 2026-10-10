@@ -562,6 +562,14 @@ def main():
     turb_naca0012_sst_muscl_edge.timeout = 3200
     test_list.append(turb_naca0012_sst_muscl_edge)
 
+    # Keep applying the stored turbulence limiter after LIMITER_ITER.
+    turb_naca0012_sst_muscl_frozen = TestCase('turb_naca0012_sst_muscl_frozen')
+    turb_naca0012_sst_muscl_frozen.cfg_dir = "rans/naca0012"
+    turb_naca0012_sst_muscl_frozen.cfg_file = "turb_NACA0012_sst_muscl_frozen.cfg"
+    turb_naca0012_sst_muscl_frozen.test_iter = 10
+    turb_naca0012_sst_muscl_frozen.test_vals = [-8.102153, -9.310635, -3.623485, 1.071750, 0.015836, -2.241139, 0.000000]
+    test_list.append(turb_naca0012_sst_muscl_frozen)
+
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
     turb_naca0012_sst_sust           = TestCase('turb_naca0012_sst_sust')
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
@@ -1780,6 +1788,14 @@ def main():
     species2_primitiveVenturi_mixingmodel_boundedscalar.test_iter = 50
     species2_primitiveVenturi_mixingmodel_boundedscalar.test_vals = [-5.689301, -4.511142, -4.615272, -5.795460, -0.113345, -5.705122, 5.000000, -1.434208, 5.000000, -4.922106, 5.000000, -1.772145, 0.000318, 0.000318, 0.000000, 0.000000]
     test_list.append(species2_primitiveVenturi_mixingmodel_boundedscalar)
+
+    # Species edge limiting with variable density and bounded scalar transport, past LIMITER_ITER.
+    species2_primitiveVenturi_muscl_edge = TestCase('species2_primitiveVenturi_muscl_edge')
+    species2_primitiveVenturi_muscl_edge.cfg_dir = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_muscl_edge.cfg_file = "species2_primitiveVenturi_muscl_edge.cfg"
+    species2_primitiveVenturi_muscl_edge.test_iter = 50
+    species2_primitiveVenturi_muscl_edge.test_vals = [-5.709582, -4.522636, -4.634049, -5.815896, -0.074230, -5.653760, 5.000000, -1.427268, 5.000000, -4.986223, 5.000000, -1.791106, 0.000384, 0.000384, 0.000000, 0.000000]
+    test_list.append(species2_primitiveVenturi_muscl_edge)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity, thermal conductivity and inlet markers for SA turbulence model
     species2_primitiveVenturi_mixingmodel_viscosity           = TestCase('species2_primitiveVenturi_mixingmodel_viscosity')
