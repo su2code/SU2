@@ -156,7 +156,7 @@ constexpr size_t Dynamic = size_t(-1);
  * \note The scalar numerics cap the equation count at this value and error above it, so a
  *       configuration that fits them fits these kernels.
  */
-constexpr size_t MaxScalarVar = 8;
+constexpr size_t MaxScalarVar = MAX_TRANSPORTED_SPECIES;
 
 /*!
  * \brief Residual of one edge, accumulated by the convective and the diffusive terms.
@@ -179,10 +179,17 @@ struct EdgeResidual {
 
   /*!
    * \brief Zero the terms of the equations in use, so that both terms can accumulate into them.
-   * \note A static model zeroes its whole storage with constant trip counts; a dynamic one
-   *       zeroes the leading nVar rows and columns and leaves the rest of the backing untouched.
+   * \note The storage is constructed uninitialized, so that a dynamic model, whose backing is
+   *       sized for the maximum, only pays for zeroing the leading nVar rows and columns.
    */
-  FORCEINLINE explicit EdgeResidual(size_t nEqn) : nVar(nEqn) {
+  FORCEINLINE explicit EdgeResidual(size_t nEqn)
+      : flux_i(C2DUninitialized{}),
+        flux_j(C2DUninitialized{}),
+        jac_ii(C2DUninitialized{}),
+        jac_ij(C2DUninitialized{}),
+        jac_ji(C2DUninitialized{}),
+        jac_jj(C2DUninitialized{}),
+        nVar(nEqn) {
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
       flux_i(iVar) = 0.0;
       flux_j(iVar) = 0.0;

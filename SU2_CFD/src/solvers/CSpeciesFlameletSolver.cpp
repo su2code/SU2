@@ -84,26 +84,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   unsigned long n_not_in_domain_global = 0;
   vector<su2double> scalars_vector(nVar);
   
-  unsigned long spark_iter_start, spark_duration;
-  bool ignition = false;
+  const bool ignition = SparkActive(config);
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-
-  /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
-  unsigned long iter;
-  if (config->GetMultizone_Problem()) {
-    iter = config->GetOuterIter();
-  } else if (config->GetTime_Domain()) {
-    iter = config->GetTimeIter();
-  } else {
-    iter = config->GetInnerIter();
-  }
-  if ((flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK)) {
-    auto spark_init = flamelet_config_options.spark_init;
-    spark_iter_start = ceil(spark_init[4]);
-    spark_duration = ceil(spark_init[5]);
-    
-    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
-  }
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
                             n_not_in_domain_local = 0;)
@@ -148,11 +130,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
-      su2double dist_from_center = 0,
-                spark_radius = flamelet_config_options.spark_init[3];
-      dist_from_center = GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
       su2double T_local = flowNodes->GetTemperature(i_point);
-      if (dist_from_center < pow(spark_radius,2) && T_local < flamelet_config_options.Flame_T_ignition) {
+      if (InSpark(config, geometry->nodes->GetCoord(i_point)) && T_local < flamelet_config_options.Flame_T_ignition) {
         /*--- Add spark reaction rates to the sources that were just set by SetScalarSources ---*/
         const su2double* current_sources = nodes->GetScalarSources(i_point);
         for (auto iVar = 0u; iVar < nVar; iVar++) {

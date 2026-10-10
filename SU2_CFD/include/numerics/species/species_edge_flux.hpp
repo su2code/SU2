@@ -55,7 +55,60 @@ class CScalarFluxSpeciesBase : public CUpwScalarBase<Double, Derived, FlowIndice
   explicit CScalarFluxSpeciesBase(const CConfig& config)
       : Base(config, config.GetnSpecies()),
         turbulence(config.GetKind_Turb_Model() != TURB_MODEL::NONE),
+        correctionVelocity(config.GetKind_FluidModel() == FLUID_CANTERA && config.GetCantera_Correction_Velocity()),
         Sc_t(config.GetSchmidt_Number_Turbulent()) {}
+
+  /*!
+   * \brief Correction velocity of the diffusion fluxes of the transported species.
+   * \note With u_c = sum_l rho*D_l grad(Y_l) / rho over all species and Y_N = 1 - sum Y_k, the species
+   *       k gets the convective flux Y_k*rho*u_c, so that the diffusive fluxes sum to zero. The turbulent
+   *       part is the same for all species and cancels. The mass fraction of the face is frozen in the Jacobian.
+   */
+  template <class VariableType>
+  FORCEINLINE void diffusionCorrection(const ScalarFluxOptions& opt, Int iPoint, const EdgeSide<VariableType>& side_i,
+                                       Int jPoint, const EdgeSide<VariableType>& side_j, const CPair<Double>& rho,
+                                       const Vector<Double, Base::Size>& projGrad, const Double& proj_on_w_i,
+                                       const Double& proj_on_w_j, EdgeResidual<Double, nVar>& res) const {
+    if (!correctionVelocity) return;
+
+    const size_t nEqn = this->nEqn;
+    auto faceDiffusivity = [&](size_t iVar) {
+      const Double D_i = gatherVariables(iPoint, side_i.scalarNodes.GetDiffusivity(), iVar);
+      const Double D_j = gatherVariables(jPoint, side_j.scalarNodes.GetDiffusivity(), iVar);
+      return 0.5 * (rho.i * D_i + rho.j * D_j);
+    };
+
+    /*--- Difference of each species to the remainder, and the face mass flux of the correction. ---*/
+    const Double D_last = faceDiffusivity(nEqn);
+    Vector<Double, Base::Size> c;
+    Double massFlux = 0.0;
+    for (size_t iVar = 0; iVar < nEqn; ++iVar) {
+      c(iVar) = faceDiffusivity(iVar) - D_last;
+      massFlux += c(iVar) * projGrad(iVar);
+    }
+
+    for (size_t iVar = 0; iVar < nEqn; ++iVar) {
+      const Double Y_i = gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), iVar);
+      const Double Y_j = gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), iVar);
+      const Double Y_face = 0.5 * (Y_i + Y_j);
+
+      const Double flux = Y_face * massFlux;
+      res.flux_i(iVar) += flux;
+      if (!opt.oneSided) res.flux_j(iVar) -= flux;
+
+      if (opt.implicit) {
+        for (size_t jVar = 0; jVar < nEqn; ++jVar) {
+          const Double coeff = Y_face * c(jVar);
+          res.jac_ii(iVar, jVar) -= coeff * proj_on_w_i;
+          if (!opt.oneSided) {
+            res.jac_ij(iVar, jVar) += coeff * proj_on_w_j;
+            res.jac_ji(iVar, jVar) += coeff * proj_on_w_i;
+            res.jac_jj(iVar, jVar) -= coeff * proj_on_w_j;
+          }
+        }
+      }
+    }
+  }
 
   /*!
    * \brief Diffusion coefficients, an i/j average of (rho * mass diffusivity) per species, plus a
@@ -95,6 +148,7 @@ class CScalarFluxSpeciesBase : public CUpwScalarBase<Double, Derived, FlowIndice
 
  private:
   const bool turbulence;
+  const bool correctionVelocity;
   const su2double Sc_t;
 };
 

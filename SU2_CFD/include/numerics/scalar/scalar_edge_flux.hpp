@@ -237,6 +237,8 @@ class CAvgGradScalarBase {
       self->coefficientJacobians(opt, D, projGrad, res);
     }
 
+    self->diffusionCorrection(opt, iPoint, side_i, jPoint, side_j, rho, projGrad, proj_on_w_i, proj_on_w_j, res);
+
     self->extraDiffusionTerms(idx, opt, iPoint, side_i, jPoint, side_j, rho, normal, vector_ij, res);
   }
 
@@ -245,6 +247,13 @@ class CAvgGradScalarBase {
    */
   template <class... Ts>
   FORCEINLINE void coefficientJacobians(Ts&&...) const {}
+
+  /*!
+   * \brief Flux that couples the equations through the projected gradients, with the Jacobians
+   *        w.r.t. the conserved variables.
+   */
+  template <class... Ts>
+  FORCEINLINE void diffusionCorrection(Ts&&...) const {}
 
   /*!
    * \brief Diffusion of a model that transports more than one gradient, of states it
@@ -368,7 +377,8 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
                                                                                      : LIMITER::NONE),
         musclFlow(config.GetMUSCL_Flow() && config.GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {
     if (nEqn > Size) {
-      SU2_MPI::Error("Static arrays are too small for the requested equation count.", CURRENT_FUNCTION);
+      SU2_MPI::Error("The number of equations exceeds MAX_TRANSPORTED_SPECIES, the size of the static arrays. Increase it\n"
+                     "in Common/include/option_structure.hpp and recompile.", CURRENT_FUNCTION);
     }
   }
 

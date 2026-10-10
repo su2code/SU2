@@ -62,7 +62,9 @@ protected:
   const su2double delta [3][3] = {{1.0, 0.0, 0.0},{0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}; /*!< \brief Identity matrix. */
   const su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
-  *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
+  *Diffusion_Coeff_j, /*!< \brief Species diffusion coefficients at point j. */
+  *Chemical_Source_Term_i,     /*!< \brief Chemical source terms of the species at the point. */
+  *Chemical_Source_Jacobian_i; /*!< \brief Derivative of the chemical source terms w.r.t. the conserved species variables. */
   su2double
   Laminar_Viscosity_i,   /*!< \brief Laminar viscosity at point i. */
   Laminar_Viscosity_j;   /*!< \brief Laminar viscosity at point j. */
@@ -829,6 +831,18 @@ public:
     Diffusion_Coeff_i = val_diffusioncoeff_i;
     Diffusion_Coeff_j = val_diffusioncoeff_j;
   }
+
+  /*!
+   * \brief Set the chemical source term of the species at the point.
+   * \param[in] val_source_term - Chemical source terms.
+   */
+  inline void SetChemicalSourceTerm(const su2double* val_source_term) { Chemical_Source_Term_i = val_source_term; }
+
+  /*!
+   * \brief Set the diagonal Jacobian of the chemical source term w.r.t. the density-weighted species variables.
+   * \param[in] val_jacobian - Derivative of each source term w.r.t. its own species variable.
+   */
+  inline void SetChemicalSourceJacobian(const su2double* val_jacobian) { Chemical_Source_Jacobian_i = val_jacobian; }
 
   /*!
    * \brief Set the heat flux due to enthalpy diffusion

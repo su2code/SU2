@@ -33,6 +33,7 @@
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
+#include "../../include/fluid/CFluidCantera.hpp"
 #include "../../include/fluid/CFluidFlamelet.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
@@ -356,6 +357,12 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
       break;
 
+    case FLUID_CANTERA:
+
+      auxFluidModel = new CFluidCantera(Pressure_Thermodynamic, config);
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
+      break;
+
     default:
 
       SU2_MPI::Error("Fluid model not implemented for incompressible solver.", CURRENT_FUNCTION);
@@ -537,6 +544,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 
+      case FLUID_CANTERA:
+        fluidModel = new CFluidCantera(Pressure_ThermodynamicND, config);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
+        break;
+
       case INC_IDEAL_GAS_POLY:
         fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
         if (viscous) {
@@ -706,6 +718,15 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
+      
+      case VISCOSITYMODEL::CANTERA:
+        ModelTable << "CANTERA";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
 
       case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
@@ -768,6 +789,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
+        break;
+      
+      case CONDUCTIVITYMODEL::CANTERA:
+        ModelTable << "CANTERA";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        Unit.str("");
         break;
 
       case CONDUCTIVITYMODEL::POLYNOMIAL:
@@ -850,6 +878,19 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Unit << "N.m/kg.K";
       NonDimTable << "Gas Constant" << "--" << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
       Unit.str("");
+      Unit << "Pa";
+      NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+
+    case FLUID_CANTERA:
+      ModelTable << "CANTERA";
+      if (viscous) {
+        Unit << "N.m/kg.K";
+        NonDimTable << "Spec. Heat (Cp)" << config->GetSpecificHeatCp_FreeStream() << 1.0 << Unit.str() << config->GetSpecificHeatCp_FreeStream();
+        Unit.str("");
+      }
       Unit << "Pa";
       NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();
       Unit.str("");
@@ -1379,7 +1420,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool bounded_scalar = config->GetBounded_Scalar();
-  const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
+  const bool multicomponent = config->GetMulticomponentFluid();
 
   const su2double kappa = config->GetMUSCL_Kappa_Flow();
   const su2double musclRamp = config->GetMUSCLRampValue() * config->GetNewtonKrylovRelaxation();
@@ -1452,11 +1493,14 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         Primitive_i[iVar] = V_i[iVar];
         Primitive_j[iVar] = V_j[iVar];
       }
-      if(multicomponent){
+      /*--- A failed evaluation of the fluid state is a non-physical reconstruction, like a negative temperature. ---*/
+      bool temperature_failed = false;
+      if (multicomponent) {
         const su2double* scalar_i = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
         const su2double* scalar_j = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(jPoint);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j);
+        const bool failed_i = ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i);
+        const bool failed_j = ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j);
+        temperature_failed = failed_i || failed_j;
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found,
@@ -1466,14 +1510,17 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
        incompressible flow, only the temperature and density need to be
        checked. Pressure is the dynamic pressure (can be negative). ---*/
 
-      if (config->GetEnergy_Equation()) {
-        const bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
-        const bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
+      if (config->GetEnergy_Equation() || temperature_failed) {
+        bool bad_recon = temperature_failed;
+        if (config->GetEnergy_Equation()) {
+          const bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
+          const bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
 
-        const bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
-        const bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
+          const bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
+          const bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
 
-        bool bad_recon = neg_temperature_i || neg_temperature_j || neg_density_i || neg_density_j;
+          bad_recon = bad_recon || neg_temperature_i || neg_temperature_j || neg_density_i || neg_density_j;
+        }
         bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
         counter_local += bad_recon;
 
@@ -1529,15 +1576,18 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
 }
 
-void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim,
+bool CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim,
                                                      const su2double* scalar, su2double* primitive) {
   SU2_ZONE_SCOPED
   const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
   const su2double enthalpy = primitive[prim_idx.Enthalpy()];
+  fluidModel->SetTemperatureGuess(primitive[prim_idx.Temperature()]);
   fluidModel->SetTDState_h(enthalpy, scalar);
 
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
   primitive[prim_idx.Density()] = fluidModel->GetDensity();
+
+  return fluidModel->GetTemperatureIterationFailed();
 }
 
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -1559,7 +1609,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
-  const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
+  const bool multicomponent = config->GetMulticomponentFluid();
 
   AD::StartNoSharedReading();
 
@@ -1759,7 +1809,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         if(multicomponent && energy){
           /*--- retrieve number of species that are solved and set maximum static array ---*/
           int n_species = config->GetnSpecies();
-          static constexpr size_t MAXNVAR_SPECIES = 20UL;
           /*--- Obtain fluid model for computing the enthalpy diffusion terms. ---*/
           CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
           /*--- retrieve species gradient needed for multicomponent. ---*/
@@ -1767,8 +1816,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
           /*--- Set thermodynamic state. ---*/
           FluidModel->SetTDState_T(nodes->GetTemperature(iPoint),solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint));
           /*--- Get enthalpy diffusion terms and its gradients(for implicit). ---*/
-          su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
-          su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+          su2double EnthalpyDiffusion_i[MAX_TRANSPORTED_SPECIES]{0.0};
+          su2double GradEnthalpyDiffusion_i[MAX_TRANSPORTED_SPECIES]{0.0};
           FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_i);
           if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_i);
           /*--- Compute Enthalpy diffusion flux and its jacobian (for implicit iterations) ---*/
@@ -2173,9 +2222,9 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   static su2double MaxVel2;
   const su2double epsilon2_default = 4.1;
 
-  /*--- For now, only the finest mesh level stores the Beta for all levels. ---*/
+  /*--- For now, only the finest active mesh level stores the Beta for all levels. ---*/
 
-  if (iMesh == MESH_0) {
+  if (iMesh == config->GetFinestMesh()) {
     SU2_OMP_MASTER
     MaxVel2 = 0.0;
     END_SU2_OMP_MASTER
@@ -2368,7 +2417,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  const bool energy_multicomponent = config->GetMulticomponentFluid() && config->GetEnergy_Equation();
   const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   su2double Normal[MAXNDIM] = {0.0};
@@ -2564,7 +2613,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  const bool energy_multicomponent = config->GetMulticomponentFluid() && config->GetEnergy_Equation();
   const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -2854,7 +2903,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  const bool energy_multicomponent = config->GetMulticomponentFluid() && config->GetEnergy_Equation();
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double Normal[MAXNDIM] = {0.0};

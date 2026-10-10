@@ -13,7 +13,8 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CNEMOGas.cpp',
                       'fluid/CMutationTCLib.cpp',
                       'fluid/CSU2TCLib.cpp',
-                      'fluid/CDataDrivenFluid.cpp'])
+                      'fluid/CDataDrivenFluid.cpp',
+                      'fluid/CFluidCantera.cpp'])
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
@@ -199,11 +200,16 @@ if get_option('enable-gprof')
   profiling_args = ['-pg','-no-pie']
 endif
 
+
 if get_option('enable-normal')
+  dependencies_default = [su2_deps, common_dep]
+  if get_option('enable-cantera')
+    dependencies_default += cantera_dep
+  endif
   su2_cfd_lib = static_library('SU2core',
                                su2_cfd_src,
                                install : false,
-		               dependencies : [su2_deps, common_dep],
+		               dependencies : dependencies_default,
 		               cpp_args:  [default_warning_flags, su2_cpp_args])
   su2_cfd_dep = declare_dependency(link_with: su2_cfd_lib,
                                    include_directories: su2_cfd_include)
@@ -216,12 +222,15 @@ if get_option('enable-normal')
                        link_args: profiling_args)
 endif
 
+# Cantera works on plain doubles and is not differentiated, so the AD/DD builds compile without it.
+cantera_off_args = ['-UHAVE_CANTERA']
+
 if get_option('enable-autodiff')
   su2_cfd_lib_ad = static_library('SU2core_AD',
                                su2_cfd_src,
                                install : false,
 		               dependencies : [su2_deps, codi_dep, commonAD_dep],
-                               cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args])
+                               cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args, cantera_off_args])
   su2_cfd_dep_ad = declare_dependency(link_with: su2_cfd_lib_ad,
                                    include_directories: su2_cfd_include)
   su2_cfd_ad = executable('SU2_CFD_AD',
@@ -229,7 +238,7 @@ if get_option('enable-autodiff')
                           install : true,
                           install_rpath : '$ORIGIN/../lib',
                           dependencies : [su2_cfd_dep_ad, su2_deps, codi_dep, commonAD_dep],
-                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args] + profiling_args,
+                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args, cantera_off_args] + profiling_args,
                           link_args: profiling_args)
 endif
 
@@ -238,7 +247,7 @@ if get_option('enable-directdiff')
                                su2_cfd_src,
                                install : false,
 		               dependencies : [su2_deps, codi_dep, commonDD_dep],
-                               cpp_args: [default_warning_flags, su2_cpp_args, codi_for_args])
+                               cpp_args: [default_warning_flags, su2_cpp_args, codi_for_args, cantera_off_args])
   su2_cfd_dep_dd = declare_dependency(link_with: su2_cfd_lib_dd,
                                    include_directories: su2_cfd_include)
   su2_cfd_dd = executable('SU2_CFD_DIRECTDIFF',
@@ -246,7 +255,7 @@ if get_option('enable-directdiff')
                           install : true,
                           install_rpath : '$ORIGIN/../lib',
                           dependencies : [su2_cfd_dep_dd, su2_deps, codi_dep, commonDD_dep],
-                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args] + profiling_args,
+                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args, cantera_off_args] + profiling_args,
                           link_args: profiling_args)
 endif
 

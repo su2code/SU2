@@ -95,9 +95,9 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
     SU2_OMP_SAFE_GLOBAL_ACCESS(solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);)
   }
 
-  /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/
+  /*--- Copy the turbulence or species variables to the coarse levels ---*/
 
-  if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
+  if (RunTime_EqSystem == RUNTIME_TURB_SYS || RunTime_EqSystem == RUNTIME_SPECIES_SYS) {
 
     for (unsigned short iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
 
@@ -108,12 +108,25 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
                              geometry[iZone][iInst][iMesh+1],
                              config[iZone]);
 
-      SetRestricted_EddyVisc(RunTime_EqSystem,
-                             solver_container[iZone][iInst][iMesh][Solver_Position],
-                             solver_container[iZone][iInst][iMesh+1][Solver_Position],
-                             geometry[iZone][iInst][iMesh],
-                             geometry[iZone][iInst][iMesh+1],
-                             config[iZone]);
+      if (RunTime_EqSystem == RUNTIME_SPECIES_SYS) {
+        /*--- The flow solver on the coarse level needs the species gradient for the enthalpy diffusion. ---*/
+        CSolver* species_coarse = solver_container[iZone][iInst][iMesh+1][Solver_Position];
+        CGeometry* geometry_coarse = geometry[iZone][iInst][iMesh+1];
+        switch (config[iZone]->GetKind_Gradient_Method()) {
+          case GREEN_GAUSS: species_coarse->SetSolution_Gradient_GG(geometry_coarse, config[iZone], -1); break;
+          case WEIGHTED_LEAST_SQUARES: species_coarse->SetSolution_Gradient_LS(geometry_coarse, config[iZone], -1); break;
+          default: break;
+        }
+      }
+
+      if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
+        SetRestricted_EddyVisc(RunTime_EqSystem,
+                               solver_container[iZone][iInst][iMesh][Solver_Position],
+                               solver_container[iZone][iInst][iMesh+1][Solver_Position],
+                               geometry[iZone][iInst][iMesh],
+                               geometry[iZone][iInst][iMesh+1],
+                               config[iZone]);
+      }
     }
 
   }

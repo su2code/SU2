@@ -36,9 +36,12 @@
 class CSpeciesVariable : public CScalarVariable {
  protected:
   MatrixType Diffusivity; /*!< \brief Matrix (nPoint,nVar) of mass diffusivities for scalar transport. */
+  MatrixType SpeciesSourceTerm; /*!< \brief Matrix (nPoint, nVar) of chemical source terms for species transport*/
+  MatrixType SpeciesSourceJacobian; /*!< \brief Matrix (nPoint, nVar) of the diagonal chemical source Jacobian. */
+  VectorType HeatRelease; /*!< \brief Vector of heat release due to combustion for species transport*/
 
  public:
-  static constexpr size_t MAXNVAR = 20; /*!< \brief Max number of variables for static arrays. Increase, if necessary. */
+  static constexpr size_t MAXNVAR = MAX_TRANSPORTED_SPECIES; /*!< \brief Max number of variables for static arrays. */
 
   /*!
    * \brief Constructor of the class.
@@ -74,6 +77,58 @@ class CSpeciesVariable : public CScalarVariable {
    * \return Pointer to the mass diffusivities
    */
   inline const su2double* GetDiffusivity(unsigned long iPoint) const { return Diffusivity[iPoint]; }
+
+  /*!
+   * \brief Set the value of the chemical source term for species transport
+   * \param[in] val_sourceTerm - the chemical source term.
+   * \param[in] val_ivar        - eqn. index to the chemical source term.
+   */
+  inline void SetChemicalSourceTerm(unsigned long iPoint, su2double val_sourceTerm, unsigned short val_ivar) {
+    SpeciesSourceTerm(iPoint, val_ivar) = val_sourceTerm;
+  }
+
+  /*!
+   * \brief Get the value of the chemical source term for species transport
+   * \param[in] val_ivar - eqn. index to the chemical source term.
+   * \return Value of the chemical source term.
+   */
+  inline su2double GetChemicalSourceTerm(unsigned long iPoint, unsigned short val_ivar) const {
+    return SpeciesSourceTerm(iPoint, val_ivar);
+  }
+
+  /*!
+   * \brief Get the value of the chemical source term for species transport
+   * \return Pointer to the chemical source term
+   */
+  inline const su2double* GetChemicalSourceTerm(unsigned long iPoint) const { return SpeciesSourceTerm[iPoint]; }
+
+  /*!
+   * \brief Set the derivative of the chemical source term of a species with respect to its own mass fraction.
+   * \param[in] val_jacobian - the derivative.
+   * \param[in] val_ivar - species index.
+   */
+  inline void SetChemicalSourceJacobian(unsigned long iPoint, su2double val_jacobian, unsigned short val_ivar) {
+    SpeciesSourceJacobian(iPoint, val_ivar) = val_jacobian;
+  }
+
+  /*!
+   * \brief Get the diagonal chemical source Jacobian of a point.
+   * \return Pointer to the derivatives of the species source terms with respect to their own mass fractions.
+   */
+  inline const su2double* GetChemicalSourceJacobian(unsigned long iPoint) const { return SpeciesSourceJacobian[iPoint]; }
+
+  /*!
+   * \brief Get heat release due to combustion
+   * \param[in] iPoint - Point index.
+   * \return Value of the heat release due to combustion.
+   */
+  inline su2double GetHeatRelease(unsigned long iPoint) const { return HeatRelease(iPoint); }
+
+  /*!
+   * \brief Set heat release due to combustion.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetHeatRelease(unsigned long iPoint, su2double val_heatRelease) { HeatRelease(iPoint) = val_heatRelease; }
 
   /*!
    * \brief Get the mass diffusivity container, for a per-species gather by point and equation.
