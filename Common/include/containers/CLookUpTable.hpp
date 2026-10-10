@@ -82,6 +82,10 @@ class CLookUpTable {
 
   double memory_footprint_data = 0; /*!< \brief Memory footprint of the loaded table data. */
 
+  su2double hull_miss_dist_ = 0.0;  /*!< \brief Worst-case normalised distance to hull boundary (used to select the reporting level). */
+  su2double cv1_hull_dev_  = 0.0;  /*!< \brief Signed physical deviation in CV1 (query minus nearest hull node) at the worst-miss level. */
+  su2double cv2_hull_dev_  = 0.0;  /*!< \brief Signed physical deviation in CV2 (query minus nearest hull node) at the worst-miss level. */
+
   /*! \brief
    * Holds all connectivity data stored in the table for each level. First index
    * addresses the variable while second index addresses the point.
@@ -371,6 +375,18 @@ class CLookUpTable {
   std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_CV3);
 
   /*!
+   * \brief Distance from val_CV3 to the nearest table Z level (in physical Z units).
+   *        Returns 0 for 2D tables or when only one Z level exists.
+   */
+  inline su2double GetDistanceToNearestZLevel(su2double val_CV3) const {
+    if (table_dim < 3 || n_table_levels < 2) return 0.0;
+    auto it = std::lower_bound(z_values_levels.begin(), z_values_levels.end(), val_CV3);
+    su2double d_hi = (it != z_values_levels.end())   ? abs(*it - val_CV3) : su2double(1e30);
+    su2double d_lo = (it != z_values_levels.begin()) ? abs(*std::prev(it) - val_CV3) : su2double(1e30);
+    return (d_lo < d_hi) ? d_lo : d_hi;
+  }
+
+  /*!
    * \brief Determine the minimum and maximum value of the second controlling variable.
    * \returns Pair of minimum and maximum value of controlling variable 2.
    */
@@ -385,6 +401,37 @@ class CLookUpTable {
   inline std::pair<su2double*, su2double*> GetTableLimitsX(const unsigned long i_level = 0) const {
     return limits_table_x[i_level];
   }
+
+  /*!
+   * \brief Get the global Z-dimension limits of the table (min, max) as values.
+   * \returns Pair of (z_min, z_max); both zero for 2D tables.
+   */
+  inline std::pair<su2double, su2double> GetTableLimitsZ() const {
+    if (table_dim < 3) return {su2double(0), su2double(0)};
+    return {*limits_table_z.first, *limits_table_z.second};
+  }
+
+  /*!
+   * \brief Get the number of table levels (Z dimension slices).
+   */
+  inline unsigned long GetNTableLevels() const { return n_table_levels; }
+
+  /*!
+   * \brief Reset the hull-miss accumulators (call once per point before all lookups).
+   */
+  void ResetHullMissDistance() { hull_miss_dist_ = 0.0; cv1_hull_dev_ = 0.0; cv2_hull_dev_ = 0.0; }
+
+  /*!
+   * \brief Signed physical deviation in CV1 (query minus nearest hull node) at the worst-miss Z level.
+   *        Returns 0 if the last query was inside the hull.
+   */
+  su2double GetHullMissCV1Dev() const { return cv1_hull_dev_; }
+
+  /*!
+   * \brief Signed physical deviation in CV2 (query minus nearest hull node) at the worst-miss Z level.
+   *        Returns 0 if the last query was inside the hull.
+   */
+  su2double GetHullMissCV2Dev() const { return cv2_hull_dev_; }
 
   /*!
    * \brief Check whether requested set of variables are included in the table.
