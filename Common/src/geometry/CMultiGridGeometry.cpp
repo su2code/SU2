@@ -1157,7 +1157,14 @@ void CMultiGridGeometry::SetVertex(const CGeometry* fine_grid, const CConfig* co
       auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
       if (fine_grid->nodes->GetBoundary(iFinePoint)) {
         nodes->SetBoundary(iCoarsePoint, nMarker);
-        break;
+        nodes->SetPeriodicBoundary(iCoarsePoint, nodes->GetPeriodicBoundary(iCoarsePoint) ||
+                                                     fine_grid->nodes->GetPeriodicBoundary(iFinePoint));
+        nodes->SetPhysicalBoundary(iCoarsePoint, nodes->GetPhysicalBoundary(iCoarsePoint) ||
+                                                     fine_grid->nodes->GetPhysicalBoundary(iFinePoint));
+        nodes->SetSolidBoundary(
+            iCoarsePoint, nodes->GetSolidBoundary(iCoarsePoint) || fine_grid->nodes->GetSolidBoundary(iFinePoint));
+        nodes->SetViscousBoundary(
+            iCoarsePoint, nodes->GetViscousBoundary(iCoarsePoint) || fine_grid->nodes->GetViscousBoundary(iFinePoint));
       }
     }
 
