@@ -332,6 +332,14 @@ def main():
     ramp.test_vals_aarch64 = [-13.648406, -8.014579, -0.076277, 0.054839]
     test_list.append(ramp)
 
+    # Supersonic ramp with the NISHIKAWA_R4 limiter
+    ramp_r4 = TestCase('ramp_r4')
+    ramp_r4.cfg_dir = "euler/ramp"
+    ramp_r4.cfg_file = "inv_ramp_r4.cfg"
+    ramp_r4.test_iter = 10
+    ramp_r4.test_vals = [-2.786698, 2.796608, -0.076172, 0.054828]
+    test_list.append(ramp_r4)
+
     ramp_msw = TestCase('ramp_msw')
     ramp_msw.cfg_dir = "euler/ramp"
     ramp_msw.cfg_file = "inv_ramp_msw.cfg"
@@ -359,6 +367,14 @@ def main():
     flatplate.test_iter = 100
     flatplate.test_vals = [-8.165135, -2.690978, 0.001084, 0.036277, 2.361500, -2.325300, 0.000000, 0.000000]
     test_list.append(flatplate)
+
+    # Laminar flat plate with the WALL_DISTANCE limiter
+    flatplate_wall_limiter = TestCase('flatplate_wall_limiter')
+    flatplate_wall_limiter.cfg_dir = "navierstokes/flatplate"
+    flatplate_wall_limiter.cfg_file = "lam_flatplate_wall_limiter.cfg"
+    flatplate_wall_limiter.test_iter = 20
+    flatplate_wall_limiter.test_vals = [-5.373432, 0.105283, 0.001249, 0.027725, 2.361600, -2.333900, 0.000000, 0.000000]
+    test_list.append(flatplate_wall_limiter)
 
     # Supersonic laminar flat plate
     flatplate_supersonic           = TestCase('flatplate_supersonic')

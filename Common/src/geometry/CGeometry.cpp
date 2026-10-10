@@ -4538,12 +4538,25 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
   const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
   return 2 * Vol / GeometryToolbox::Norm(3, Normal);
 }
+
+/*--- Whether any equation system of a zone uses the WALL_DISTANCE slope limiter. ---*/
+bool UsesWallDistanceLimiter(const CConfig* config) {
+  constexpr auto wall = LIMITER::WALL_DISTANCE;
+  const bool turb = config->GetKind_Turb_Model() != TURB_MODEL::NONE;
+  const bool species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
+  const bool adjoint = config->GetContinuous_Adjoint();
+  return config->GetKind_SlopeLimit_Flow() == wall || (turb && config->GetKind_SlopeLimit_Turb() == wall) ||
+         (species && config->GetKind_SlopeLimit_Species() == wall) ||
+         (adjoint && config->GetKind_SlopeLimit_AdjFlow() == wall) ||
+         (adjoint && turb && config->GetKind_SlopeLimit_AdjTurb() == wall);
+}
 }  // namespace
 
 void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container,
                                     const int record_zone) {
   int nZone = config_container[ZONE_0]->GetnZone();
   bool allEmpty = true;
+  bool limiterNeedsWalls = false;
   vector<bool> wallDistanceNeeded(nZone, false);
 
   for (int iInst = 0; iInst < config_container[ZONE_0]->GetnTimeInstances(); iInst++) {
@@ -4555,6 +4568,12 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
           kindSolver == MAIN_SOLVER::DISC_ADJ_RANS || kindSolver == MAIN_SOLVER::DISC_ADJ_INC_RANS ||
           kindSolver == MAIN_SOLVER::FEM_LES || kindSolver == MAIN_SOLVER::FEM_RANS) {
         wallDistanceNeeded[iZone] = true;
+      }
+
+      /*--- The WALL_DISTANCE slope limiter also needs it (without it, it limits to first order everywhere). ---*/
+      if (UsesWallDistanceLimiter(config_container[iZone])) {
+        wallDistanceNeeded[iZone] = true;
+        limiterNeedsWalls = true;
       }
 
       /*--- Set the wall distances in all zones to the numerical limit.
@@ -4581,6 +4600,10 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
 
     /*--- If there are no viscous walls in the entire domain, set distances to zero ---*/
     if (allEmpty) {
+      if (limiterNeedsWalls) {
+        SU2_MPI::Error("The WALL_DISTANCE slope limiter needs viscous walls (it limits to first order near them).",
+                       CURRENT_FUNCTION);
+      }
       for (int iZone = 0; iZone < nZone; iZone++) {
         CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
         geometry->SetWallDistance(0.0);
