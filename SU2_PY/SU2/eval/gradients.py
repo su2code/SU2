@@ -109,7 +109,7 @@ def gradient(func_name, method, config, state=None):
                 grads = multipoint(func_name, config, state)
 
             # Geometry (actually a finite difference)
-            elif func_output in su2io.optnames_geo:
+            elif su2io.is_optname_geo(func_output):
                 grads = geometry(func_name, config, state)
 
             else:
@@ -1080,8 +1080,8 @@ def geometry(func_name, config, state=None):
 
     # return output
     grads = su2util.ordered_bunch()
-    for key in su2io.optnames_geo:
-        if key in state["GRADIENTS"]:
+    for key in state["GRADIENTS"]:
+        if su2io.is_optname_geo(key):
             grads[key] = state["GRADIENTS"][key]
     return grads
 
