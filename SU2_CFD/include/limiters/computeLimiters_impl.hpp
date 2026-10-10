@@ -109,11 +109,29 @@ void computeLimiters_impl(CSolver* solver,
 
   limiterDetails.preprocess(geometry, config, varBegin, varEnd, field);
 
+  /*--- With rotational periodicity, the first periodic comm. also brings the min/max
+   *    projections over the edges of the periodic matches (stored after each other),
+   *    because the limiters of the velocity cannot be compared across a rotation. ---*/
+
+  su2activematrix* periodicProj = nullptr;
+
+  if (periodic && (kindPeriodicComm1 == PERIODIC_LIM_PRIM_1))
+    periodicProj = solver->GetPeriodicProjections(geometry, config);
+
   /*--- Initialize all min/max field values if we have
    *    periodic comms. otherwise do it inside main loop. ---*/
 
   if (periodic)
   {
+    if (periodicProj != nullptr)
+    {
+      SU2_OMP_FOR_STAT(chunkSize)
+      for (auto iPoint = 0ul; iPoint < periodicProj->rows(); ++iPoint)
+        for (auto iVar = 0ul; iVar < periodicProj->cols(); ++iVar)
+          (*periodicProj)(iPoint,iVar) = 0.0;
+      END_SU2_OMP_FOR
+    }
+
     SU2_OMP_FOR_STAT(chunkSize)
     for (size_t iPoint = 0; iPoint < nPoint; ++iPoint)
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
@@ -165,6 +183,23 @@ void computeLimiters_impl(CSolver* solver,
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
       projMax[iVar] = projMin[iVar] = 0.0;
 
+    if (periodicProj != nullptr && nodes->GetPeriodicBoundary(iPoint))
+    {
+      /*--- Start from the min/max over the edges of the periodic matches. ---*/
+
+      const auto* projections = solver->GetPeriodicProjection(iPoint);
+      if (projections != nullptr) {
+        for (auto iVar = varBegin; iVar < varEnd; ++iVar) {
+          const auto& periodicMin = projections[iVar];
+          const auto& periodicMax = projections[periodicProj->cols()/2 + iVar];
+          AD::SetPreaccIn(periodicMin);
+          AD::SetPreaccIn(periodicMax);
+          projMin[iVar] = periodicMin;
+          projMax[iVar] = periodicMax;
+        }
+      }
+    }
+
     /*--- Compute max/min projection and values over direct neighbors. ---*/
 
     for (auto jPoint : geometry.nodes->GetPoints(iPoint)) {
@@ -175,22 +210,16 @@ void computeLimiters_impl(CSolver* solver,
       /*--- Distance vector from iPoint to face (middle of the edge). ---*/
 
       su2double dist_ij[nDim] = {0.0};
-
-      for(size_t iDim = 0; iDim < nDim; ++iDim)
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
         dist_ij[iDim] = 0.5 * (coord_j[iDim] - coord_i[iDim]);
 
       /*--- Project each variable, update min/max. ---*/
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
-        su2double proj = 0.0;
-
-        for(size_t iDim = 0; iDim < nDim; ++iDim)
-          proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
-
         AD::SetPreaccIn(field(jPoint,iVar));
-        const su2double cent = 0.5 * (field(jPoint,iVar) - field(iPoint,iVar));
-        proj = LimiterHelpers<>::umusclProjection(proj, cent, umusclKappa);
+        const su2double proj = LimiterHelpers<>::reconstructionIncrement(nDim, dist_ij,
+                              gradient[iPoint][iVar], field(iPoint,iVar), field(jPoint,iVar), umusclKappa);
 
         projMax[iVar] = max(projMax[iVar], proj);
         projMin[iVar] = min(projMin[iVar], proj);
@@ -224,7 +253,8 @@ void computeLimiters_impl(CSolver* solver,
   }
   END_SU2_OMP_FOR
 
-  /*--- Account for periodic effects, take the minimum limiter on each periodic pair. ---*/
+  /*--- Account for periodic effects, take the minimum limiter on each periodic pair
+   *    (except for the velocity with rotational periodicity). ---*/
   if (periodic)
   {
     for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)

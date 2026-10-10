@@ -27,6 +27,7 @@
 #pragma once
 
 #include <cmath>
+#include <algorithm>
 
 namespace GeometryToolbox {
 /// \addtogroup GeometryToolbox
@@ -213,6 +214,31 @@ inline void Rotate(const Scalar R[][nDim], const Scalar* O, const Scalar* d, Sca
     c[iDim] = O[iDim];
     for (int k = 0; k < nDim; ++k) c[iDim] += R[iDim][k] * d[k];
   }
+}
+
+/*! \return Whether any of the three supplied rotation angles is nonzero. */
+template <class Scalar>
+inline bool HasRotation(const Scalar* angles) {
+  // Configured zero stays exact after degree conversion and negation; retain every nonzero rotation.
+  return angles[0] != 0.0 || angles[1] != 0.0 || angles[2] != 0.0;
+}
+
+/*! \brief Rotate component bounds in place, enclosing the rotated box. */
+template <class Scalar, int nDim>
+inline void RotateBox(const Scalar R[][nDim], Scalar* vMin, Scalar* vMax) {
+  using std::max;
+  using std::min;
+  Scalar rotMin[nDim] = {0.0}, rotMax[nDim] = {0.0};
+  for (int iDim = 0; iDim < nDim; ++iDim) {
+    for (int jDim = 0; jDim < nDim; ++jDim) {
+      const Scalar fromMin = R[iDim][jDim] * vMin[jDim];
+      const Scalar fromMax = R[iDim][jDim] * vMax[jDim];
+      rotMin[iDim] += min(fromMin, fromMax);
+      rotMax[iDim] += max(fromMin, fromMax);
+    }
+  }
+  std::copy_n(rotMin, nDim, vMin);
+  std::copy_n(rotMax, nDim, vMax);
 }
 
 /*! \brief Tangent projection  */
