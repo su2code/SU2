@@ -1087,7 +1087,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
       p.Initialize(nBlk, nBlkDomain, nVar, nullptr);
       v.Initialize(nBlk, nBlkDomain, nVar, nullptr);
       z.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-      x_best.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+      if (config->GetComm_Level() == COMM_FULL) x_best.Initialize(nBlk, nBlkDomain, nVar, nullptr);
 
       bcg_ready = true;
     }
@@ -1137,7 +1137,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   ScalarType alpha = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
   ScalarType norm_best = norm_r;
-  x_best = x;
+  if (config->GetComm_Level() == COMM_FULL) x_best = x;
   p = ScalarType(0.0);
   v = ScalarType(0.0);
   r_0 = r;
