@@ -1,7 +1,7 @@
 /*!
  * \file hllc_jacobian_tests.cpp
  * \brief Finite-difference verification of the HLLC Jacobians (ideal and general gas, 2D and 3D), on fixed and moving
- *        faces, exact (USE_ACCURATE_FLUX_JACOBIANS) or default.
+ *        faces, exact (USE_EXACT_HLLC_JACOBIANS) or default.
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -31,6 +31,15 @@
 #include <memory>
 #include <sstream>
 #include "../../../SU2_CFD/include/numerics/flow/convection/hllc.hpp"
+
+struct HLLCJacobianTestAccess {
+  template <class Numerics>
+  static void SetFixedWaveSpeeds(Numerics& numerics, su2double sL, su2double sR) {
+    numerics.fixedWaveSpeeds = true;
+    numerics.fixed_sL = sL;
+    numerics.fixed_sR = sR;
+  }
+};
 
 namespace {
 
@@ -142,12 +151,12 @@ su2double ContactSpeed(unsigned short nDim, const State& Ui, const State& Uj, su
 std::unique_ptr<CConfig> MakeConfig(bool moving, bool accurate) {
   std::stringstream options;
   options << "SOLVER= EULER\nCONV_NUM_METHOD_FLOW= HLLC\nTIME_DISCRE_FLOW= EULER_IMPLICIT\n";
-  options << "USE_ACCURATE_FLUX_JACOBIANS= " << (accurate ? "YES" : "NO") << "\n";
+  options << "USE_EXACT_HLLC_JACOBIANS= " << (accurate ? "YES" : "NO") << "\n";
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 0.0 0.0 0.0\n";
   return std::make_unique<CConfig>(options, SU2_COMPONENT::SU2_CFD, false);
 }
 
-/*--- With USE_ACCURATE_FLUX_JACOBIANS= YES the Jacobians are exact for fixed wave speeds in all branches. By default
+/*--- With USE_EXACT_HLLC_JACOBIANS= YES the Jacobians are exact for fixed wave speeds in all branches. By default
  the derivative of p* is approximated (star states), the supersonic branches remain exact. ---*/
 template <class HLLC>
 void CheckAllBranches(unsigned short nDim, bool moving, su2double k, bool accurate) {
@@ -186,7 +195,7 @@ void CheckAllBranches(unsigned short nDim, bool moving, su2double k, bool accura
     const su2double supersonicSpeeds[2] = {dir > 0 ? 0.02 : -2.0, dir > 0 ? 2.0 : -0.02};
     const su2double starSpeeds[2] = {-2.0, 2.0};
     for (const auto* s : {supersonicSpeeds, starSpeeds}) {
-      numerics.SetFixedWaveSpeeds(true, s[0], s[1]);
+      HLLCJacobianTestAccess::SetFixedWaveSpeeds(numerics, s[0], s[1]);
       const bool supersonic = (s[0] > 0.0) || (s[1] < 0.0);
       const su2double sM = ContactSpeed(nDim, Ui, Uj, k, 0.8 * k, n, w, s[0], s[1]);
       CAPTURE(nDim, moving, k, accurate, dir, s[0], s[1], sM);
@@ -235,7 +244,7 @@ TEST_CASE("HLLC supersonic Jacobian uses reconstructed face enthalpy", "[HLLC-fa
           }
           numerics.SetNormal(normal);
           numerics.SetGridVel(gridVelocity, gridVelocity);
-          numerics.SetFixedWaveSpeeds(true, direction > 0 ? 2.0 : -4.0, direction > 0 ? 4.0 : -2.0);
+          HLLCJacobianTestAccess::SetFixedWaveSpeeds(numerics, direction > 0 ? 2.0 : -4.0, direction > 0 ? 4.0 : -2.0);
           const State state = Conservative(nDim, 1.2, velocity, 1.1, 0.0);
           for (su2double pressureOffset : {0.0, 0.1}) {
             auto evaluate = [&](const State& Ui, const State& Uj) {
