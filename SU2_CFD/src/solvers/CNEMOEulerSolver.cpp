@@ -1794,6 +1794,8 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
 
     /*--- Pass supplementary info to CNumerics ---*/
     SetNumericsThermoState(conv_numerics, nodes, iPoint, &node_inlet, 0);
+    if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+      conv_numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
     const bool dynamic_grid = config->GetGrid_Movement();
     if (dynamic_grid)
@@ -1852,6 +1854,8 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(
 
     /*--- Pass supplementary information to CNumerics ---*/
     SetNumericsThermoState(conv_numerics, nodes, iPoint, nodes, iPoint);
+    if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+      conv_numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
     const bool dynamic_grid = config->GetGrid_Movement();
     if (dynamic_grid)
