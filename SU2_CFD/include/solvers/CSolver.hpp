@@ -235,6 +235,8 @@ public:
     return base_nodes;
   }
 
+  bool HasPeriodicRotation(const CConfig& config) const;
+
   /*!
    * \brief Helper function to define the type and number of variables per point for each communication type.
    * \param[in] config - Definition of the particular problem.

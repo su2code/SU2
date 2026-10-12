@@ -263,7 +263,7 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       break;
     case PERIODIC_LIM_PRIM_1:
       /*--- Min and max of the solution, min and max of the reconstruction increments. ---*/
-      COUNT_PER_POINT  = nPrimVarGrad*4;
+      COUNT_PER_POINT  = nPrimVarGrad * (HasPeriodicRotation(*config) ? 4 : 2);
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nPrimVarGrad;
       break;
@@ -339,16 +339,18 @@ namespace PeriodicCommHelpers {
   }
 }
 
+bool CSolver::HasPeriodicRotation(const CConfig& config) const {
+  if (!rotate_periodic) return false;
+  // Use the global marker configuration so every MPI rank selects the same packet size.
+  for (auto iMarker = 0u; iMarker < config.GetnMarker_Periodic(); ++iMarker) {
+    if (GeometryToolbox::HasRotation(config.GetPeriodicRotAngles(config.GetMarker_PerBound(iMarker)))) return true;
+  }
+  return false;
+}
+
 su2activematrix* CSolver::GetPeriodicProjections(const CGeometry& geometry, const CConfig& config) {
 
-  if (!rotate_periodic) return nullptr;
-
-  bool rotation = false;
-  for (auto iMarker = 0u; iMarker < config.GetnMarker_All(); iMarker++) {
-    if (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
-    rotation |= GeometryToolbox::HasRotation(config.GetPeriodicRotAngles(config.GetMarker_All_TagBound(iMarker)));
-  }
-  if (!rotation) return nullptr;
+  if (!HasPeriodicRotation(config)) return nullptr;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
@@ -1040,7 +1042,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              part rotated, the periodic match then computes its limiters with the complete
              stencil. Without rotation these are zero, i.e. they have no effect. ---*/
 
-            if (commType == PERIODIC_LIM_PRIM_1) {
+            if ((commType == PERIODIC_LIM_PRIM_1) && (COUNT_PER_POINT == 4*ICOUNT)) {
 
               for (auto iField = 0u; iField < ICOUNT; iField++)
                 Sol_Min[iField] = Sol_Max[iField] = 0.0;
@@ -1402,7 +1404,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               /*--- Min/max reconstruction increments over the edges of the periodic match,
                used to start the search over "our" edges (only with rotation). ---*/
 
-              if ((commType == PERIODIC_LIM_PRIM_1) && !PeriodicProj.empty()) {
+              if ((commType == PERIODIC_LIM_PRIM_1) && (COUNT_PER_POINT == 4*ICOUNT) && !PeriodicProj.empty()) {
                 auto* projections = GetPeriodicProjection(iPoint);
                 assert(projections != nullptr);
                 for (auto iField = 0u; iField < ICOUNT; iField++) {

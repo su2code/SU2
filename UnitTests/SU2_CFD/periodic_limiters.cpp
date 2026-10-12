@@ -146,3 +146,37 @@ TEST_CASE("Periodic projection storage uses unique receive points", "[PeriodicLi
   solver.SetRotatePeriodic(false);
   CHECK(solver.GetPeriodicProjections(geometry, config) == nullptr);
 }
+
+TEST_CASE("Periodic limiter packets grow only for configured rotation", "[PeriodicLimiter][PeriodicPackets]") {
+  struct PacketSolver : CSolver {
+    CVariable* GetBaseClassPointerToNodes() override { return nullptr; }
+    PacketSolver() {
+      nPrimVarGrad = 5;
+      rotate_periodic = true;
+    }
+    unsigned short PacketSize(const CConfig& config) const {
+      unsigned short count = 0, rows = 0, cols = 0;
+      COMM_TYPE type;
+      GetPeriodicCommCountAndType(&config, PERIODIC_LIM_PRIM_1, count, type, rows, cols);
+      CHECK(type == COMM_TYPE::DOUBLE);
+      CHECK(rows == 5);
+      return count;
+    }
+  } solver;
+  for (const std::string angle : {"0", "45", "1e-18"}) {
+    for (const auto mixed : {false, true}) {
+      std::stringstream options;
+      options << "SOLVER= EULER\nMARKER_PERIODIC= (per1, per2, 0,0,0, 0,0," << angle << ", 1,0,0";
+      if (mixed) options << ", per3, per4, 0,0,0, 0,0,0, 0,1,0";
+      options << ")\n";
+      CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+      const auto expected = angle == "0" ? 10 : 20;
+      CHECK(solver.PacketSize(config) == expected);
+      config.SetnMarker_All(0);  // A rank without local periodic markers must still use the global packet format.
+      CHECK(solver.PacketSize(config) == expected);
+      solver.SetRotatePeriodic(false);
+      CHECK(solver.PacketSize(config) == 10);
+      solver.SetRotatePeriodic(true);
+    }
+  }
+}
