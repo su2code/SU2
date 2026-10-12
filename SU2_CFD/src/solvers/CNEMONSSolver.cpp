@@ -631,7 +631,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         const auto& RxnTable = FluidModel->GetCatalyticRecombination();
 
         /*--- Common catalytic flux factor ---*/
-        const su2double factor = gam*rho*sqrt(RuSI*Tw/2/PI_NUMBER)*Area;
+        const su2double factor = gam*rho*sqrt(Ru*Tw/2/PI_NUMBER)*Area;
 
         /*--- Compute catalytic recombination flux ---*/
         // Ref: 10.2514/6.2022-1636
