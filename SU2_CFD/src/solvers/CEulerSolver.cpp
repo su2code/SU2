@@ -34,6 +34,7 @@
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/fluid/CDataDrivenFluid.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
+#include "../../include/fluid/CFluidCantera.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../include/output/COutput.hpp"
@@ -910,6 +911,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CCoolProp(config->GetFluid_Name());
       break;
 
+    case FLUID_CANTERA:
+
+      auxFluidModel = new CFluidCantera(Pressure_FreeStream, config);
+      auxFluidModel->SetComposition(config->GetSpecies_Init());
+      break;
+
     default:
       SU2_MPI::Error("Unknown fluid model.", CURRENT_FUNCTION);
       break;
@@ -1159,6 +1166,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       case COOLPROP:
         FluidModel[thread] = new CCoolProp(config->GetFluid_Name());
         break;
+
+      case FLUID_CANTERA:
+        FluidModel[thread] = new CFluidCantera(Pressure_FreeStreamND, config);
+        FluidModel[thread]->SetComposition(config->GetSpecies_Init());
+        break;
     }
 
     GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
@@ -1263,6 +1275,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         NonDimTable.PrintFooter();
         break;
 
+      case VISCOSITYMODEL::CANTERA:
+        ModelTable << "CANTERA";
+        break;
+
       default:
         break;
 
@@ -1291,6 +1307,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
+        break;
+
+      case CONDUCTIVITYMODEL::CANTERA:
+        ModelTable << "CANTERA";
         break;
 
       default:
@@ -1336,6 +1356,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       break;
     case COOLPROP:
       ModelTable << "CoolProp library";
+      break;
+    case FLUID_CANTERA:
+      ModelTable << "FLUID_CANTERA";
       break;
     }
 
@@ -1857,6 +1880,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
+  CVariable* speciesNodes = solver_container[SPECIES_SOL] ? solver_container[SPECIES_SOL]->GetNodes() : nullptr;
+
   /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
@@ -1950,8 +1975,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
       if (!ideal_gas || low_mach_corr) {
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
+        const su2double* scalar_i = speciesNodes ? speciesNodes->GetSolution(iPoint) : nullptr;
+        const su2double* scalar_j = speciesNodes ? speciesNodes->GetSolution(jPoint) : nullptr;
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i, Secondary_i);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j, Secondary_j);
       }
 
       /*--- Low-Mach number correction. ---*/
@@ -1976,7 +2003,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       su2double RoeEnthalpy = (R * Primitive_j[prim_idx.Enthalpy()] + Primitive_i[prim_idx.Enthalpy()]) / (R+1);
 
-      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      /*--- A general equation of state gives the sound speed, with an enthalpy of arbitrary reference. ---*/
+      const bool neg_sound_speed = ideal_gas ? ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0) :
+          !(Primitive_i[prim_idx.SoundSpeed()] > 0.0 && Primitive_j[prim_idx.SoundSpeed()] > 0.0);
       bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
       bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
       counter_local += bad_recon;
@@ -2036,13 +2065,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
-                                                  su2double *primitive, su2double *secondary) {
+                                                  const su2double *scalar, su2double *primitive,
+                                                  su2double *secondary) {
   SU2_ZONE_SCOPED
   const CEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
   const su2double density = primitive[prim_idx.Density()];
   const su2double pressure = primitive[prim_idx.Pressure()];
   const su2double velocity2 = GeometryToolbox::SquaredNorm(nDim, &primitive[prim_idx.Velocity()]);
 
+  if (scalar) fluidModel->SetComposition(scalar);
   fluidModel->SetTDState_Prho(pressure, density);
 
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
@@ -7631,6 +7662,9 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
+  CVariable* speciesNodes = solver_container[SPECIES_SOL] ? solver_container[SPECIES_SOL]->GetNodes() : nullptr;
 
   /*--- Supersonic inlet flow: there are no outgoing characteristics,
    so all flow variables can be imposed at the inlet. ---*/
@@ -7650,14 +7684,28 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       Velocity[iDim] = Inlet_FlowDir[val_marker][iVertex][iDim] / config->GetVelocity_Ref();
     }
 
-    /*--- Density at the inlet from the gas law. ---*/
+    /*--- Density and static energy at the inlet from the equation of state, with the mixture
+     *    composition of the boundary node. ---*/
 
-    const su2double Density = Pressure / (Gas_Constant * Temperature);
+    su2double Density, StaticEnergy;
+    su2double Secondary_inlet[MAXNVAR] = {0.0};
+    if (ideal_gas) {
+      Density = Pressure / (Gas_Constant * Temperature);
+      StaticEnergy = Pressure / (Density * Gamma_Minus_One);
+    } else {
+      auto* fluidModel = GetFluidModel();
+      if (speciesNodes) fluidModel->SetComposition(speciesNodes->GetSolution(iPoint));
+      fluidModel->SetTDState_PT(Pressure, Temperature);
+      Density = fluidModel->GetDensity();
+      StaticEnergy = fluidModel->GetStaticEnergy();
+      Secondary_inlet[0] = fluidModel->GetdPdrho_e();
+      Secondary_inlet[1] = fluidModel->GetdPde_rho();
+    }
 
     /*--- Compute the energy from the specified state. ---*/
 
     const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
-    su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
+    su2double Energy = StaticEnergy + 0.5 * Velocity2;
     if (tkeNeeded) {
       const su2double* Turb_Properties = config->GetInlet_TurbVal(Marker_Tag);
       const su2double Intensity = Turb_Properties[0];
@@ -7689,6 +7737,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     conv_numerics->SetNormal(Normal);
     conv_numerics->SetPrimitive(V_domain, V_inlet);
+    if (!ideal_gas) conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), Secondary_inlet);
 
     if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -7722,6 +7771,8 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   auto *Normal = new su2double[nDim];
@@ -7770,6 +7821,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      if (!ideal_gas) conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -7807,6 +7859,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
        /*--- Primitive variables, and gradient ---*/
 
        visc_numerics->SetPrimitive(V_domain, V_domain);
+       if (!ideal_gas) visc_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
 
        /*--- Turbulent kinetic energy ---*/

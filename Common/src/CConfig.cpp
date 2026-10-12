@@ -4457,10 +4457,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     if (Kind_FluidModel == FLUID_CANTERA) {
-      if (Kind_Regime != ENUM_REGIME::INCOMPRESSIBLE || Kind_Solver == MAIN_SOLVER::INC_EULER) {
+      const bool compressible = (Kind_Solver == MAIN_SOLVER::NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::RANS);
+      if (!compressible && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS) {
         SU2_MPI::Error(
-            "FLUID_CANTERA is only available for the incompressible viscous solvers, "
-            "SOLVER= INC_NAVIER_STOKES or INC_RANS.",
+            "FLUID_CANTERA is only available for the viscous solvers, "
+            "SOLVER= INC_NAVIER_STOKES, INC_RANS, NAVIER_STOKES or RANS.",
             CURRENT_FUNCTION);
       }
       if (cantera_ParsedOptions.mechanism_file.empty() || cantera_ParsedOptions.phase_name.empty()) {
@@ -4477,13 +4478,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
             "to be equal to the number of entries of SPECIES_INIT + 1 (or CANTERA_SPECIES_NAMES to be omitted).",
             CURRENT_FUNCTION);
       }
-      /*--- Check whether the density model used is correct, in the case of FLUID_CANTERA the density model must be
-       VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
-       and it will remain constant through the complete domain. --- */
-      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
-        SU2_MPI::Error("The use of FLUID_CANTERA requires the INC_DENSITY_MODEL option to be VARIABLE",
-                       CURRENT_FUNCTION);
-      }
       /*--- Check whether the Kind scalar model used is correct, in the case of FLUID_CANTERA the kind scalar model must
        be SPECIES_TRANSPORT. Otherwise, if the scalar model is NONE, the species transport equations will not be solved.
        --- */
@@ -4492,11 +4486,46 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                        CURRENT_FUNCTION);
       }
 
-      if (Ref_Inc_NonDim != DIMENSIONAL) {
-        SU2_MPI::Error(
-            "The use of FLUID_CANTERA requires the option INC_NONDIM= DIMENSIONAL, the nondimensionalization is "
-            "currently unavailable.",
-            CURRENT_FUNCTION);
+      if (compressible) {
+        if (Ref_NonDim != DIMENSIONAL) {
+          SU2_MPI::Error(
+              "The use of FLUID_CANTERA requires the option REF_DIMENSIONALIZATION= DIMENSIONAL, the "
+              "nondimensionalization is currently unavailable.",
+              CURRENT_FUNCTION);
+        }
+        /*--- Only the upwind schemes with a general equation of state are available. ---*/
+        if (Kind_ConvNumScheme_Flow != SPACE_UPWIND ||
+            (Kind_Upwind_Flow != UPWIND::ROE && Kind_Upwind_Flow != UPWIND::HLLC) || Low_Mach_Corr) {
+          SU2_MPI::Error(
+              "The compressible FLUID_CANTERA model requires CONV_NUM_METHOD_FLOW= ROE or HLLC, "
+              "without LOW_MACH_CORR.",
+              CURRENT_FUNCTION);
+        }
+        /*--- These boundary conditions still assume a single ideal gas. ---*/
+        if (nMarker_FarField + nMarker_Inlet + nMarker_Outlet + nMarker_Riemann + nMarker_Giles +
+                nMarker_ActDiskInlet + nMarker_EngineInflow + nMarker_NearFieldBound > 0) {
+          SU2_MPI::Error(
+              "The compressible FLUID_CANTERA model supports the markers SUPERSONIC_INLET, SUPERSONIC_OUTLET, "
+              "EULER, SYM, HEATFLUX and ISOTHERMAL.",
+              CURRENT_FUNCTION);
+        }
+        /*--- The energy equation is always solved, this enables its multicomponent terms. ---*/
+        Energy_Equation = true;
+      } else {
+        /*--- Check whether the density model used is correct, in the case of FLUID_CANTERA the density model must be
+         VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
+         and it will remain constant through the complete domain. --- */
+        if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+          SU2_MPI::Error("The use of FLUID_CANTERA requires the INC_DENSITY_MODEL option to be VARIABLE",
+                         CURRENT_FUNCTION);
+        }
+
+        if (Ref_Inc_NonDim != DIMENSIONAL) {
+          SU2_MPI::Error(
+              "The use of FLUID_CANTERA requires the option INC_NONDIM= DIMENSIONAL, the nondimensionalization is "
+              "currently unavailable.",
+              CURRENT_FUNCTION);
+        }
       }
 
       if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CANTERA) {

@@ -52,6 +52,38 @@ std::vector<double> GetMolarMasses(Solution& solution) {
   solution.thermo()->getMolecularWeights(molarMasses.data());
   return molarMasses;
 }
+
+/*!
+ * \brief Newton-Raphson on temperature for value(T) = target, kept inside [minT, maxT].
+ * \note Without a positive initial temperature, the start is one Newton step from the reference temperature.
+ * \return Whether the iteration converged.
+ */
+template <class SetState, class Value, class Slope>
+bool SolveTemperature(double target, double& temperature, double minT, double maxT, const SetState& setState,
+                      const Value& value, const Slope& slope) {
+  /*--- Temperature tolerance in [K], high accuracy needed for restarts. ---*/
+  constexpr double tolerance = 1e-5;
+  constexpr int maxIterations = 20;
+
+  if (!(temperature > 0.0)) {
+    setState(STD_REF_TEMP);
+    temperature = STD_REF_TEMP + (target - value()) / slope();
+  }
+  temperature = std::clamp(temperature, minT, maxT);
+
+  for (int iter = 0; iter < maxIterations; iter++) {
+    setState(temperature);
+    const double delta = (target - value()) / slope();
+    if (!std::isfinite(delta)) return false;
+
+    const double next = std::clamp(temperature + delta, minT, maxT);
+    const bool inRange = (next == temperature + delta);
+    temperature = next;
+    if (!inRange) return false;
+    if (std::abs(delta) <= tolerance) return true;
+  }
+  return false;
+}
 }  // namespace
 
 CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* config)
@@ -66,6 +98,7 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
       Combustion(config->GetCanteraCombustion()),
       Chemistry_Min_Temperature(config->GetCantera_DC_Min_Temp()),
       Correction_Velocity(config->GetCantera_Correction_Velocity()),
+      Turbulent_Conductivity(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
       sol(LoadSolution(config)),
       molarMasses(GetMolarMasses(*sol)) {
   try {
@@ -202,15 +235,95 @@ void CFluidCantera::SetMassFractions(const su2double* val_scalars) {
 }
 
 void CFluidCantera::SetThermoState(double val_temperature) {
-  auto& thermo = *sol->thermo();
-  thermo.setState_TP(val_temperature, SU2_TYPE::GetValue(Pressure_Thermodynamic));
-  Temperature = val_temperature;
+  sol->thermo()->setState_TP(val_temperature, SU2_TYPE::GetValue(Pressure_Thermodynamic));
+  ReadThermoState();
+}
+
+void CFluidCantera::ReadThermoState() {
+  const auto& thermo = *sol->thermo();
+  Temperature = thermo.temperature();
   Density = thermo.density();
+  Pressure = thermo.pressure();
   Enthalpy = thermo.enthalpy_mass();
+  StaticEnergy = thermo.intEnergy_mass();
+  Entropy = thermo.entropy_mass();
   Cp = thermo.cp_mass();
   Cv = thermo.cv_mass();
+
+  /*--- Ideal gas mixture at frozen composition: P = rho*R*T and e = e(T). ---*/
+  const su2double gasConstant = Pressure / (Density * Temperature);
+  dPdrho_e = gasConstant * Temperature;
+  dPde_rho = Density * gasConstant / Cv;
+  dTdrho_e = 0.0;
+  dTde_rho = 1.0 / Cv;
+  SoundSpeed2 = Cp / Cv * gasConstant * Temperature;
+
   transportValid = false;
   diffusivityValid = false;
+}
+
+void CFluidCantera::SetComposition(const su2double* val_scalars) {
+  SetMassFractions(val_scalars);
+  try {
+    sol->thermo()->setMassFractions(massFractions.data());
+  } catch (const CanteraError& error) {
+    SU2_MPI::Error(string("Cantera error in SetComposition: ") + error.what(), CURRENT_FUNCTION);
+  }
+  transportValid = false;
+  diffusivityValid = false;
+}
+
+void CFluidCantera::SetTDState_rhoe(su2double rho, su2double e) {
+  double temperature = temperatureGuess;
+  temperatureGuess = 0.0;
+  bool converged = false;
+
+  try {
+    auto& thermo = *sol->thermo();
+    const double density = SU2_TYPE::GetValue(rho);
+    converged = SolveTemperature(
+        SU2_TYPE::GetValue(e), temperature, minTemperature, maxTemperature,
+        [&](double T) { thermo.setState_TD(T, density); }, [&] { return thermo.intEnergy_mass(); },
+        [&] { return thermo.cv_mass(); });
+    thermo.setState_TD(temperature, density);
+    ReadThermoState();
+  } catch (const CanteraError& error) {
+    SU2_MPI::Error(string("Cantera error in SetTDState_rhoe: ") + error.what(), CURRENT_FUNCTION);
+  }
+  temperatureIterationFailed = !converged;
+}
+
+void CFluidCantera::SetTDState_PT(su2double P, su2double T) {
+  try {
+    sol->thermo()->setState_TP(SU2_TYPE::GetValue(T), SU2_TYPE::GetValue(P));
+    ReadThermoState();
+  } catch (const CanteraError& error) {
+    SU2_MPI::Error(string("Cantera error in SetTDState_PT: ") + error.what(), CURRENT_FUNCTION);
+  }
+  temperatureIterationFailed = false;
+}
+
+void CFluidCantera::SetTDState_Prho(su2double P, su2double rho) {
+  try {
+    auto& thermo = *sol->thermo();
+    const double density = SU2_TYPE::GetValue(rho);
+    const double gasConstant = GasConstant / thermo.meanMolecularWeight();
+    thermo.setState_TD(SU2_TYPE::GetValue(P) / (density * gasConstant), density);
+    ReadThermoState();
+  } catch (const CanteraError& error) {
+    SU2_MPI::Error(string("Cantera error in SetTDState_Prho: ") + error.what(), CURRENT_FUNCTION);
+  }
+  temperatureIterationFailed = false;
+}
+
+void CFluidCantera::SetTDState_rhoT(su2double rho, su2double T) {
+  try {
+    sol->thermo()->setState_TD(SU2_TYPE::GetValue(T), SU2_TYPE::GetValue(rho));
+    ReadThermoState();
+  } catch (const CanteraError& error) {
+    SU2_MPI::Error(string("Cantera error in SetTDState_rhoT: ") + error.what(), CURRENT_FUNCTION);
+  }
+  temperatureIterationFailed = false;
 }
 
 void CFluidCantera::UpdateTransport() const {
@@ -246,41 +359,19 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
 }
 
 void CFluidCantera::SetTDState_h(const su2double val_enthalpy, const su2double* val_scalars) {
-  /*--- Temperature tolerance in [K], high accuracy needed for restarts. ---*/
-  constexpr double tolerance = 1e-5;
-  constexpr int maxIterations = 20;
-
   SetMassFractions(val_scalars);
-  const double enthalpy = SU2_TYPE::GetValue(val_enthalpy);
   double temperature = temperatureGuess;
   temperatureGuess = 0.0;
   bool converged = false;
 
   try {
-    sol->thermo()->setMassFractions(massFractions.data());
-
-    /*--- Without a guess, start from a single Newton step at the reference temperature. ---*/
-    if (!(temperature > 0.0)) {
-      sol->thermo()->setState_TP(STD_REF_TEMP, SU2_TYPE::GetValue(Pressure_Thermodynamic));
-      temperature = STD_REF_TEMP + (enthalpy - sol->thermo()->enthalpy_mass()) / sol->thermo()->cp_mass();
-    }
-    temperature = std::clamp(temperature, minTemperature, maxTemperature);
-
-    /*--- Newton-Raphson on temperature, kept inside the temperature bounds. ---*/
-    for (int iter = 0; iter < maxIterations; iter++) {
-      sol->thermo()->setState_TP(temperature, SU2_TYPE::GetValue(Pressure_Thermodynamic));
-      const double delta = (enthalpy - sol->thermo()->enthalpy_mass()) / sol->thermo()->cp_mass();
-      if (!std::isfinite(delta)) break;
-
-      const double next = std::clamp(temperature + delta, minTemperature, maxTemperature);
-      const bool inRange = (next == temperature + delta);
-      temperature = next;
-      if (!inRange) break;
-      if (std::abs(delta) <= tolerance) {
-        converged = true;
-        break;
-      }
-    }
+    auto& thermo = *sol->thermo();
+    thermo.setMassFractions(massFractions.data());
+    const double pressure = SU2_TYPE::GetValue(Pressure_Thermodynamic);
+    converged = SolveTemperature(
+        SU2_TYPE::GetValue(val_enthalpy), temperature, minTemperature, maxTemperature,
+        [&](double T) { thermo.setState_TP(T, pressure); }, [&] { return thermo.enthalpy_mass(); },
+        [&] { return thermo.cp_mass(); });
     SetThermoState(temperature);
   } catch (const CanteraError& error) {
     SU2_MPI::Error(string("Cantera error in SetTDState_h: ") + error.what(), CURRENT_FUNCTION);

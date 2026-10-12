@@ -912,6 +912,9 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
+  if (energy_multicomponent) {
+    AD::SetPreaccIn(HeatFluxDiffusion);
+  }
 
   unsigned short iVar, jVar, iDim;
 
@@ -1006,6 +1009,10 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
+
+  if (energy_multicomponent) {
+    Proj_Flux_Tensor[nVar - 1] += HeatFluxDiffusion;
+  }
 
   /*--- Compute the implicit part ---*/
 
