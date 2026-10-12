@@ -448,15 +448,17 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     if (implicit) {
       su2double Jacobian_i[MAXNVAR][MAXNVAR] = {{0.0}};
 
-      /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
+      /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations.
+       The residual depends on the temperatures of the wall point through the conduction
+       term (factor 1) and through the proportional control term (factor -C). ---*/
       const auto dTdU   = nodes->GetdTdU(iPoint);
       const auto dTvedU = nodes->GetdTvedU(iPoint);
       const su2double theta = GeometryToolbox::SquaredNorm(nDim, UnitNormal);
 
       for (auto iVar = 0ul; iVar < nVar; iVar++) {
-        Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dist_ij*dTdU[iVar] +
-                                              kve*theta/dist_ij*dTvedU[iVar])*Area;
-        Jacobian_i[nSpecies+nDim+1][iVar] = - kve*theta/dist_ij*dTvedU[iVar]*Area;
+        Jacobian_i[nSpecies+nDim][iVar]   = -(C-1.0)*(ktr*theta/dist_ij*dTdU[iVar] +
+                                                      kve*theta/dist_ij*dTvedU[iVar])*Area;
+        Jacobian_i[nSpecies+nDim+1][iVar] = -(C-1.0)*kve*theta/dist_ij*dTvedU[iVar]*Area;
       }
 
       /*--- Enforce the no-slip boundary condition in a strong way by
