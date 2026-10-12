@@ -1043,10 +1043,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   }
   config->SetReThetaT_FreeStream(Re_ThetaT_FreeStream);
 
-  const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (config->GetVelocity_Ref() * config->GetLength_Ref());
+  const su2double MassDiffusivityND =
+      config->GetDiffusivity_Constant() / (config->GetVelocity_Ref() * config->GetLength_Ref());
   config->SetDiffusivity_ConstantND(MassDiffusivityND);
 
-  /*--- Retrieve the values that are needed below ---*/
+  /*--- Local copies of values stored in the config ---*/
 
   const su2double Time_Ref              = config->GetTime_Ref();
   const su2double Froude                = config->GetFroude();

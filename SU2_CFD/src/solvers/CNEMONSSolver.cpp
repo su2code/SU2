@@ -221,10 +221,10 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
   } //iEdge
 }
 
-void CNEMONSSolver::SetWallVelocity_Strong(unsigned long iPoint, const su2double *val_velocity) {
+void CNEMONSSolver::SetWallVelocity_Strong(unsigned long iPoint, const su2double *velocity) {
 
   /*--- Store the wall velocity in the old solution, it is not changed by the update. ---*/
-  nodes->SetVelocity_Old(iPoint, val_velocity);
+  nodes->SetVelocity_Old(iPoint, velocity);
 
   /*--- Remove any contribution to the momentum residual and truncation error at this node. ---*/
   for (auto iDim = 0ul; iDim < nDim; iDim++)
@@ -232,9 +232,9 @@ void CNEMONSSolver::SetWallVelocity_Strong(unsigned long iPoint, const su2double
   nodes->SetVel_ResTruncError_Zero(iPoint);
 }
 
-void CNEMONSSolver::SetWallEnergyFlux_Weak(unsigned long iPoint, unsigned long jPoint, su2double val_Twall,
-                                           su2double val_Tvewall, su2double val_pcontrol, su2double val_area,
-                                           su2double val_dist, su2double *val_residual) const {
+void CNEMONSSolver::SetWallEnergyFlux_Weak(unsigned long iPoint, unsigned long jPoint, su2double Twall,
+                                           su2double Tvewall, su2double pcontrol, su2double area,
+                                           su2double dist, su2double *residual) const {
 
   /*--- Temperatures at the wall point (i) and at its closest normal neighbor (j) ---*/
   const su2double Ti   = nodes->GetTemperature(iPoint);
@@ -249,9 +249,9 @@ void CNEMONSSolver::SetWallEnergyFlux_Weak(unsigned long iPoint, unsigned long j
   /*--- Conductive heat flux from the normal neighbor, plus a term that is proportional
    to the difference between the target wall temperature and the current one. The
    second term drives the solution at the wall towards the target temperature. ---*/
-  val_residual[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
-                                   (ktr*(val_Twall-Ti) + kve*(val_Tvewall-Tvei))*val_pcontrol)*val_area/val_dist;
-  val_residual[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(val_Tvewall-Tvei)*val_pcontrol)*val_area/val_dist;
+  residual[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
+                               (ktr*(Twall-Ti) + kve*(Tvewall-Tvei))*pcontrol)*area/dist;
+  residual[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Tvewall-Tvei)*pcontrol)*area/dist;
 }
 
 void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,

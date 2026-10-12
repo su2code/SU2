@@ -931,9 +931,7 @@ void CFVMFlowSolverBase<V, R>::SetCompressibleNonDimValues(CConfig *config, su2d
   const su2double Gas_ConstantND = config->GetGas_Constant()/Gas_Constant_Ref;
   config->SetGas_ConstantND(Gas_ConstantND);
 
-  su2double ModVel_FreeStreamND = 0.0;
-  for (auto iDim = 0u; iDim < nDim; iDim++) ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
-  ModVel_FreeStreamND = sqrt(ModVel_FreeStreamND);
+  const su2double ModVel_FreeStreamND = GeometryToolbox::Norm(nDim, Velocity_FreeStreamND);
   config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
 
   const su2double Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;

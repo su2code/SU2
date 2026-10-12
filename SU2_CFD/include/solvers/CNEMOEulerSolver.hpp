@@ -62,7 +62,7 @@ protected:
 
   /*!
    * \brief Pass the thermodynamic derivatives and vib.-el. quantities of two points to a numerics object.
-   * \note The ratio of specific heats (Gamma) is not part of this set, the callers that need it set it.
+   * \note The ratio of specific heats (Gamma) is not passed.
    * \param[in,out] numerics - Numerics object that receives the data.
    * \param[in] nodes_i - Variable container of point i.
    * \param[in] iPoint - Index of point i in its container.

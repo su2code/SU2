@@ -1126,7 +1126,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   const su2double Temperature_ve_FreeStreamND = Temperature_ve_FreeStream/config->GetTemperature_ve_Ref();
   config->SetTemperature_ve_FreeStreamND(Temperature_ve_FreeStreamND);
 
-  /*--- Retrieve the values that are needed below ---*/
+  /*--- Local copies of values stored in the config ---*/
 
   const su2double Time_Ref            = config->GetTime_Ref();
   const su2double Froude              = config->GetFroude();
