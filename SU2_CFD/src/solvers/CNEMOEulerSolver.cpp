@@ -1788,10 +1788,6 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nSpecies+2] = Velocity[iDim];
         V_inlet[nSpecies+nDim+2] = Pressure;
         V_inlet[RHO_INDEX] = Density;
-        //V_inlet[H_INDEX] = H;
-        //V_inlet[A_INDEX] = A;
-        //V_inlet[RHO_CVTR_INDEX] = rcvtr;
-        //V_inlet[RHO_CVVE_INDEX] = rcvve;
 
         break;
 
@@ -1865,32 +1861,6 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-//      /*--- Viscous contribution ---*/
-//      if (viscous) {
-
-//        /*--- Set the normal vector and the coordinates ---*/
-//        visc_numerics->SetNormal(Normal);
-//        su2double Coord_Reflected[MAXNDIM];
-//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-//                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(), Coord_Reflected);
-
-//        /*--- Primitive variables, and gradient ---*/
-//        visc_numerics->SetPrimitive(V_domain, V_inlet);
-//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(), nodes->GetGradient_Primitive());
-
-//        /*--- Laminar viscosity ---*/
-//        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(), nodes->GetLaminarViscosity());
-
-//        /*--- Compute and update residual ---*/
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
-
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-//      }
     }
   }
 
@@ -2095,56 +2065,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-      /*--- Viscous contribution ---*/
-//      if (viscous) {
-
-//        /*--- Set the normal vector and the coordinates ---*/
-//        visc_numerics->SetNormal(Normal);
-//        su2double Coord_Reflected[MAXNDIM];
-//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-//                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(), Coord_Reflected);
-
-//        /*--- Primitive variables, and gradient ---*/
-//        visc_numerics->SetPrimitive(V_domain, V_outlet);
-//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(), nodes->GetGradient_Primitive());
-
-//        /*--- Conservative variables, and gradient ---*/
-//        visc_numerics->SetConservative(U_domain, U_outlet);
-
-//        /*--- Pass supplementary information to CNumerics ---*/
-//        visc_numerics->SetdPdU(nodes->GetdPdU(), node_infty->GetdPdU());
-//        visc_numerics->SetdTdU(nodes->GetdTdU(), node_infty->GetdTdU());
-//        visc_numerics->SetdTvedU(nodes->GetdTvedU(), node_infty->GetdTvedU());
-
-//        /*--- Species diffusion coefficients ---*/
-//        visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(),
-//                                         node_infty->GetDiffusionCoeff() );
-
-//        /*--- Laminar viscosity ---*/
-//        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(),
-//                                           node_infty->GetLaminarViscosity() );
-
-//        /*--- Thermal conductivity ---*/
-//        visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(),
-//                                              node_infty->GetThermalConductivity());
-
-//        /*--- Vib-el. thermal conductivity ---*/
-//        visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(),
-//                                                 node_infty->GetThermalConductivity_ve() );
-
-//        /*--- Laminar viscosity ---*/
-//        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(), nodes->GetLaminarViscosity());
-
-//        /*--- Compute and update residual ---*/
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
-
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-//      }
     }
   }
 

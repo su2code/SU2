@@ -117,18 +117,16 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
   unsigned long nonPhysicalPoints = 0;
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
-  //const bool tkeNeeded = (turb_model == TURB_MODEL::SST);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint ++) {
 
     /*--- Retrieve the value of the kinetic energy (if needed). ---*/
 
-    su2double eddy_visc = 0.0; //su2double turb_ke = 0.0;
+    su2double eddy_visc = 0.0;
 
     if (turb_model != TURB_MODEL::NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-      //if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
       nodes->SetEddyViscosity(iPoint, eddy_visc);
     }
@@ -449,15 +447,6 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
         SdYdn = 0.0;
         for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
           SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
-
-        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
-          Ys   = V[RHOS_INDEX+iSpecies]/rho;
-          //eves = nodes->CalcEve(config, V[TVE_INDEX], iSpecies);
-          //hs   = nodes->CalcHs(config, V[T_INDEX], eves, iSpecies);
-          //          Res_Visc[iSpecies] = -rho*Ds[iSpecies]*dYdn[iSpecies] + Ys*SdYdn;
-          //          Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
-          //          Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
-        }
       }
 
       /*--- Get node thermal conductivity ---*/
@@ -474,26 +463,6 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
 
       /*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-      //      /*--- Apply the non-catalytic wall boundary ---*/
-      //      // Note: We are re-calculating the chemistry residual and adding it to
-      //      //       the linear system to eliminate the contribution from the solution
-      //      //       (convention is to subtract sources)
-      //      sour_numerics->SetConservative(nodes->GetSolution(),
-      //                                     nodes->GetSolution() );
-      //      sour_numerics->SetPrimitive   (nodes->GetPrimVar() ,
-      //                                     nodes->GetPrimVar()  );
-      //      sour_numerics->SetdPdU        (nodes->GetdPdU()    ,
-      //                                     nodes->GetdPdU()     );
-      //      sour_numerics->SetdTdU        (nodes->GetdTdU()    ,
-      //                                     nodes->GetdTdU()     );
-      //      sour_numerics->SetdTvedU      (nodes->GetdTvedU()  ,
-      //                                     nodes->GetdTvedU()   );
-      //      sour_numerics->SetVolume      (geometry->nodes->GetVolume());
-      //      sour_numerics->ComputeChemistry(Res_Sour, Jacobian_i, config);
-      //      LinSysRes.AddBlock(iPoint, Res_Sour);
-      //      if (implicit)
-      //        Jacobian.AddBlock2Diag(iPoint, iPoint, Jacobian_i);
 
       /*--- Only change velocity-rows of the Jacobian (includes 1 in the diagonal)/
        Note that we need to add a contribution for moving walls to the Jacobian. ---*/
