@@ -388,7 +388,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool ionization = config->GetIonization();
-  su2double UnitNormal[MAXNDIM] = {0.0};
 
   if (ionization) {
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
@@ -403,13 +402,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   /*--- Retrieve the specified wall temperature ---*/
   const su2double Twall = config->GetIsothermal_Temperature(Marker_Tag);
 
-  su2double **Jacobian_i = nullptr;
-  if (implicit) {
-    Jacobian_i = new su2double* [nVar];
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      Jacobian_i[iVar] = new su2double [nVar] ();
-  }
-
   /*--- Loop over boundary points to calculate energy flux ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -421,6 +413,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Compute dual-grid area and boundary normal ---*/
     const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
     const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    su2double UnitNormal[MAXNDIM] = {0.0};
     for (auto iDim = 0ul; iDim < nDim; iDim++)
       UnitNormal[iDim] = Normal[iDim]/Area;
 
@@ -449,12 +442,8 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     SetWallEnergyFlux_Weak(iPoint, Point_Normal, Twall, Twall, C, Area, dist_ij, Res_Visc);
 
     /*--- Calculate Jacobian for implicit time stepping ---*/
+    su2double Jacobian_i[MAXNVAR][MAXNVAR] = {{0.0}};
     if (implicit) {
-
-      /*--- Initialize Jacobian to zero ---*/
-      for (auto iVar = 0ul; iVar < nVar; iVar++)
-        for (auto jVar = 0ul; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
 
       /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
       const auto dTdU   = nodes->GetdTdU(iPoint);
@@ -483,12 +472,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     }
   }
   END_SU2_OMP_FOR
-
-  if (Jacobian_i)
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      delete [] Jacobian_i[iVar];
-  delete [] Jacobian_i;
-
 }
 
 void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
@@ -503,8 +486,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                  sour_numerics, config, val_marker);
 
-  /*--- Local variables ---*/
-  su2double **dVdU;
+  /*--- Transformation matrix from conservative to primitive variables ---*/
+  su2double dVdU[MAXNVAR][MAXNVAR] = {{0.0}};
 
   /*--- Assign booleans ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -520,11 +503,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   const unsigned short RHO_INDEX   = nodes->GetRhoIndex();
   const unsigned short T_INDEX     = nodes->GetTIndex();
   const unsigned short TVE_INDEX   = nodes->GetTveIndex();
-
-  /*--- Allocate arrays ---*/
-  dVdU = new su2double*[nVar];
-  for (auto iVar = 0ul; iVar < nVar; iVar++)
-    dVdU[iVar] = new su2double[nVar];
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -675,10 +653,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
     }
   }
-
-  for (auto iVar = 0ul; iVar < nVar; iVar++)
-    delete [] dVdU[iVar];
-  delete [] dVdU;
 }
 
 void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,

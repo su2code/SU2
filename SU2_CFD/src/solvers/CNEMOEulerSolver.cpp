@@ -1637,10 +1637,10 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   su2double *U_domain;
-  auto *U_outlet = new su2double[nVar];
+  su2double U_outlet[MAXNVAR] = {0.0};
   su2double *V_domain, *V_outlet;
-  auto *Normal   = new su2double[nDim];
-  auto *Ys       = new su2double[nSpecies];
+  su2double Normal[MAXNDIM] = {0.0};
+  su2double Ys[MAXNVAR] = {0.0};
 
   const unsigned short T_INDEX       = nodes->GetTIndex();
   const unsigned short TVE_INDEX     = nodes->GetTveIndex();
@@ -1813,12 +1813,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
   }
-
-  /*--- Free locally allocated memory ---*/
-  delete [] U_outlet;
-  delete [] Normal;
-  delete [] Ys;
-
 }
 
 void CNEMOEulerSolver::BC_Supersonic_Inlet(
