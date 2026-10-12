@@ -439,12 +439,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     numerics->SetPrimitive   (nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
 
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdU  ( nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-    numerics->SetdTdU  ( nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-    numerics->SetdTvedU( nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-    numerics->SetEve   ( nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-    numerics->SetCvve  ( nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-    numerics->SetGamma ( nodes->GetGamma(iPoint),  nodes->GetGamma(jPoint));
+    SetNumericsThermoState(numerics, nodes, iPoint, nodes, jPoint);
 
     /*--- Set the largest convective eigenvalue ---*/
     numerics->SetLambda(nodes->GetLambda(iPoint), nodes->GetLambda(jPoint));
@@ -520,12 +515,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
       numerics->SetPrimitive   (V_i, V_j);
       numerics->SetConservative(U_i, U_j);
-      numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-      numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-      numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-      numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-      numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-      numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(jPoint));
+      SetNumericsThermoState(numerics, nodes, iPoint, nodes, jPoint);
 
     } else {
 
@@ -1539,12 +1529,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
                                   node_infty->GetPrimitive(0));
 
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
-      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
-      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-      conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
-      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
-      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      SetNumericsThermoState(conv_numerics, nodes, iPoint, node_infty, 0);
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
@@ -1580,12 +1565,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
                                           node_infty->GetGradient_Primitive(0));
 
         /*--- Pass supplementary information to CNumerics ---*/
-        visc_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
-        visc_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
-        visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint),
-                                 node_infty->GetdTvedU(0));
-        visc_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
-        visc_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
+        SetNumericsThermoState(visc_numerics, nodes, iPoint, node_infty, 0);
 
         /*--- Species diffusion coefficients ---*/
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
@@ -2049,12 +2029,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Passing supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
-      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
-      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-      conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
-      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
-      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      SetNumericsThermoState(conv_numerics, nodes, iPoint, node_infty, 0);
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
@@ -2142,11 +2117,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
                                 node_inlet.GetPrimitive(0));
 
     /*--- Pass supplementary info to CNumerics ---*/
-    conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
-    conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
-    conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
-    conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
-    conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
+    SetNumericsThermoState(conv_numerics, nodes, iPoint, &node_inlet, 0);
 
     const bool dynamic_grid = config->GetGrid_Movement();
     if (dynamic_grid)
@@ -2184,12 +2155,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
                                         node_inlet.GetGradient_Primitive(0));
 
       /*--- Pass supplementary information to CNumerics ---*/
-      visc_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
-      visc_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
-      visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint),
-                               node_inlet.GetdTvedU(0));
-      visc_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
-      visc_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
+      SetNumericsThermoState(visc_numerics, nodes, iPoint, &node_inlet, 0);
 
       /*--- Species diffusion coefficients ---*/
       visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
@@ -2256,13 +2222,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(
                                    nodes->GetSolution(iPoint));
 
     /*--- Pass supplementary information to CNumerics ---*/
-    conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), nodes->GetdPdU(iPoint));
-    conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), nodes->GetdTdU(iPoint));
-    conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint),
-                             nodes->GetdTvedU(iPoint));
-    conv_numerics->SetEve(nodes->GetEve(iPoint), nodes->GetEve(iPoint));
-    conv_numerics->SetCvve(nodes->GetCvve(iPoint), nodes->GetCvve(iPoint));
-    conv_numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(iPoint));
+    SetNumericsThermoState(conv_numerics, nodes, iPoint, nodes, iPoint);
 
     const bool dynamic_grid = config->GetGrid_Movement();
     if (dynamic_grid)

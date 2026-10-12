@@ -61,6 +61,24 @@ protected:
   CNEMOEulerVariable* node_infty = nullptr;
 
   /*!
+   * \brief Pass the thermodynamic derivatives and vib.-el. quantities of two points to a numerics object.
+   * \param[in,out] numerics - Numerics object that receives the data.
+   * \param[in] nodes_i - Variable container of point i.
+   * \param[in] iPoint - Index of point i in its container.
+   * \param[in] nodes_j - Variable container of point j.
+   * \param[in] jPoint - Index of point j in its container.
+   */
+  static void SetNumericsThermoState(CNumerics* numerics, CNEMOEulerVariable* nodes_i, unsigned long iPoint,
+                                     CNEMOEulerVariable* nodes_j, unsigned long jPoint) {
+    numerics->SetdPdU  (nodes_i->GetdPdU(iPoint),   nodes_j->GetdPdU(jPoint));
+    numerics->SetdTdU  (nodes_i->GetdTdU(iPoint),   nodes_j->GetdTdU(jPoint));
+    numerics->SetdTvedU(nodes_i->GetdTvedU(iPoint), nodes_j->GetdTvedU(jPoint));
+    numerics->SetEve   (nodes_i->GetEve(iPoint),    nodes_j->GetEve(jPoint));
+    numerics->SetCvve  (nodes_i->GetCvve(iPoint),   nodes_j->GetCvve(jPoint));
+    numerics->SetGamma (nodes_i->GetGamma(iPoint),  nodes_j->GetGamma(jPoint));
+  }
+
+  /*!
    * \brief Set the maximum value of the eigenvalue.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
