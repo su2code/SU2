@@ -674,6 +674,11 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   const unsigned short T_INDEX   = nodes->GetTIndex();
   const unsigned short VEL_INDEX = nodes->GetVelIndex();
   const unsigned short TVE_INDEX = nodes->GetTveIndex();
+  const unsigned short RHOS_INDEX = nodes->GetRhosIndex();
+
+  /*--- Universal gas constant [J/(kmol*K)] and molar masses [kg/kmol] ---*/
+  const su2double Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
+  const auto& Ms = FluidModel->GetSpeciesMolarMass();
 
   /*--- Loop over boundary points to calculate energy flux ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -722,8 +727,10 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
     /*--- Retrieve Primitive Gradients ---*/
     const auto Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
 
-    /*--- Calculate specific gas constant --- */
-    const su2double GasConstant = FluidModel->ComputeGasConstant();
+    /*--- Calculate specific gas constant of the mixture at the wall point --- */
+    su2double GasConstant = 0.0;
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
+      GasConstant += nodes->GetPrimitive(iPoint, RHOS_INDEX+iSpecies)/Density * Ru/Ms[iSpecies];
 
     /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
     const su2double dTn = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
@@ -732,11 +739,16 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
     /*--- Calculate molecular mean free path ---*/
     const su2double Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2.0*GasConstant*Ti));
 
-    /*--- Calculate Temperature Slip ---*/
-    su2double Tslip = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;
+    /*--- Calculate Temperature Slip. The jump of the vib.-el. temperature is the
+     jump of the temperature times the ratio of the thermal diffusivities and of
+     the normal gradients. It is written without the division by dTn, which can be
+     zero. A gas with no vib.-el. heat capacity has no jump. ---*/
+    const su2double SlipCoeff = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda;
+
+    su2double Tslip = SlipCoeff*dTn+Twall;
 
     su2double Tslip_ve = Twall;
-    if (dTven !=0) Tslip_ve = (Tslip-Twall)*(kve*rhoCvtr/dTn)/(ktr*rhoCvve/dTven)+Twall;
+    if (rhoCvve > EPS) Tslip_ve = SlipCoeff*dTven*(kve*rhoCvtr)/(ktr*rhoCvve)+Twall;
 
     /*--- Calculate temperature gradients tangent to surface ---*/
     su2double Vector_Tangent_dT[MAXNDIM] = {0.0}, Vector_Tangent_dTve[MAXNDIM] = {0.0};
