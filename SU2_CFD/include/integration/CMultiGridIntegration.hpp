@@ -104,10 +104,12 @@ private:
   /*!
    * \brief Set the value of the corrected fine grid solution.
    * \param[out] sol_fine - Pointer to the solution on the fine grid.
+   * \param[in] sol_flow - Flow solver on the fine grid, which flags the points that get no correction.
    * \param[in] geo_fine - Geometrical definition of the fine grid.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh);
+  void SetProlongated_Correction(CSolver *sol_fine, CSolver *sol_flow, CGeometry *geo_fine, CConfig *config,
+                                 unsigned short iMesh);
 
   /*!
    * \brief Compute the gradient in coarse grid using the fine grid information.
@@ -385,6 +387,11 @@ private:
   /*! \brief Limited least-squares gradient of the correction, indexed by coarse level.
    *  Allocated on first use, only when MG_LINEAR_PROLONGATION is on. */
   vector<CVectorOfMatrix> prolongGradient;
+
+  /*! \brief Coarse cells per level whose gradient fit is too ill-conditioned and keep the constant
+   *  operator, and whether that level has been reported. */
+  unsigned long prolongIllConditioned[MAX_MG_LEVELS + 1] = {};
+  bool prolongReported[MAX_MG_LEVELS + 1] = {};
 
   vector<passivedouble> mg_startup_conv_start; /*!< \brief Field values when the active level became active. */
   vector<passivedouble> mg_startup_conv_prev;  /*!< \brief Field values on the previous iteration. */

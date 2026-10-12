@@ -379,4 +379,9 @@ class CEulerVariable : public CFlowVariable {
    */
   su2vector<uint8_t> FirstOrderReconstruction;
 
+  /*!
+   * \brief Points, and their neighbours, where the multigrid correction is not prolongated (1), others (0).
+   */
+  su2vector<uint8_t> SkipMGCorrection;
+
 };

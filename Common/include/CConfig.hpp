@@ -842,7 +842,6 @@ private:
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
   unsigned long outlierMitigationParam[4]; /*!< \brief Parameters of outlier mitigation strategy. */
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
-  bool CFL_AdaptResidual; /*!< \brief Adapt the CFL on the nonlinear residual trend instead of the linear solve. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
   RefElemLength,         /*!< \brief Reference element length for computing the slope limiting epsilon. */
@@ -1756,7 +1755,6 @@ public:
   /*!
    * \brief Whether the adaptive CFL follows the nonlinear residual trend instead of the linear solve.
    */
-  bool GetCFL_AdaptResidual(void) const { return CFL_AdaptResidual; }
 
   /*!
    * \brief Get the outlier mitigation parameters.

@@ -1906,7 +1906,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
   /* DESCRIPTION: Adapt the CFL on the finest-grid nonlinear residuals instead of the linear solve, with a cut on divergence. */
-  addBoolOption("CFL_ADAPT_RESIDUAL", CFL_AdaptResidual, false);
   /* !\brief CFL_ADAPT_PARAM
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max)[, acceptable linear residual][, starting iteration]).
    * Parameters in square brackets are optional, parameter "starting iteration" only valid with parameter "acceptable linear residual".
@@ -2159,7 +2158,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
   /*!\brief MUSCL_FIRST_ORDER_WALL_ENDS \n DESCRIPTION: Reconstruct the flow to first order on the edges of points
-   * where a no-slip wall ends on a boundary continuing its surface, or has a sharp edge such as a trailing edge \ingroup Config*/
+   * where a no-slip wall ends on a boundary continuing its surface, or has a sharp edge such as a trailing edge, and
+   * skip the multigrid correction of the flow there \ingroup Config*/
   addBoolOption("MUSCL_FIRST_ORDER_WALL_ENDS", MUSCL_FirstOrderWallEnds, false);
   /*!\brief MUSCL_KAPPA_FLOW \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
   addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
@@ -5845,10 +5845,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /* Protect against using CFL adaption for non-flow or certain
    unsteady flow problems. */
-
-  if (CFL_AdaptResidual && OptionIsSet("OUTLIER_MITIGATION_PARAM")) {
-    SU2_MPI::Error("CFL_ADAPT_RESIDUAL cannot be combined with OUTLIER_MITIGATION_PARAM.", CURRENT_FUNCTION);
-  }
 
   if (CFL_Adapt && !GetFluidProblem()) {
     SU2_MPI::Error(string("CFL adaption only available for finite-volume fluid solvers.\n") +

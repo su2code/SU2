@@ -2159,7 +2159,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
               if (admissible(best)) {
                 candidates.push_back(best);
-                stepDir.push_back(bestStep);
+                stepDir.push_back(marching);
               } else if (!fine_grid->nodes->GetDomain(best) && (haloSlot[best] >= 0) &&
                          (haloClaim[best] == NO_COLUMN)) {
                 haloWanted.push_back(best);

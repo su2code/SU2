@@ -395,6 +395,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       for (auto iVertex = 0ul; iVertex < geometry->nVertex[markerR]; iVertex++)
         nodes->FirstOrderReconstruction(geometry->vertex[markerR][iVertex]->GetNode()) = bufRecv[iVertex];
     }
+
+    /*--- The coarse grid cannot represent the singular flow there, its correction is not prolongated to
+     *    those points and their neighbours. ---*/
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      bool skip = nodes->FirstOrderReconstruction(iPoint);
+      for (auto iNeigh = 0u; !skip && (iNeigh < geometry->nodes->GetnPoint(iPoint)); iNeigh++)
+        skip = nodes->FirstOrderReconstruction(geometry->nodes->GetPoint(iPoint, iNeigh));
+      nodes->SkipMGCorrection(iPoint) = skip;
+    }
   }
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
