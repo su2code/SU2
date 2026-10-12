@@ -218,3 +218,66 @@ TEST_CASE("HLLC Jacobians match finite differences", "[HLLC]") {
     }
   }
 }
+
+TEST_CASE("HLLC supersonic Jacobian uses reconstructed face enthalpy", "[HLLC-face]") {
+  for (unsigned short nDim : {2, 3}) {
+    for (bool moving : {false, true}) {
+      for (const bool accurate : {false, true}) {
+        for (su2double direction : {-1.0, 1.0}) {
+          auto config = MakeConfig(moving, accurate);
+          CUpwHLLC_Flow numerics(nDim, nDim + 2, config.get());
+          const su2double n2[3] = {0.8, 0.6, 0.0}, n3[3] = {2.0 / 7, 3.0 / 7, 6.0 / 7};
+          const auto* normal = nDim == 2 ? n2 : n3;
+          su2double velocity[3] = {}, gridVelocity[3] = {};
+          for (auto dim = 0u; dim < nDim; ++dim) {
+            velocity[dim] = direction * 2.5 * normal[dim];
+            gridVelocity[dim] = moving ? 0.3 * normal[dim] : 0.0;
+          }
+          numerics.SetNormal(normal);
+          numerics.SetGridVel(gridVelocity, gridVelocity);
+          numerics.SetFixedWaveSpeeds(true, direction > 0 ? 2.0 : -4.0, direction > 0 ? 4.0 : -2.0);
+          const State state = Conservative(nDim, 1.2, velocity, 1.1, 0.0);
+          for (su2double pressureOffset : {0.0, 0.1}) {
+            auto evaluate = [&](const State& Ui, const State& Uj) {
+              su2double Vi[20] = {}, Vj[20] = {}, Si[2], Sj[2];
+              Primitives(nDim, Ui, 0.0, Vi, Si);
+              Primitives(nDim, Uj, 0.0, Vj, Sj);
+              // A fixed pressure offset models independently reconstructed p and h.
+              Vi[nDim + 1] += pressureOffset;
+              Vj[nDim + 1] += pressureOffset;
+              Vi[nDim + 3] += pressureOffset / Ui[0];
+              Vj[nDim + 3] += pressureOffset / Uj[0];
+              numerics.SetPrimitive(Vi, Vj);
+              numerics.SetTurbKineticEnergy(0.0, 0.0);
+              const auto residual = numerics.ComputeResidual(config.get());
+              Result result{};
+              for (auto i = 0u; i < nDim + 2; ++i) {
+                result.flux[i] = residual.residual[i];
+                for (auto j = 0u; j < nDim + 2; ++j) {
+                  result.jac_i[i][j] = residual.jacobian_i[i][j];
+                  result.jac_j[i][j] = residual.jacobian_j[i][j];
+                }
+              }
+              return result;
+            };
+            CAPTURE(nDim, moving, accurate, direction, pressureOffset);
+            const auto reference = evaluate(state, state);
+            for (auto column = 0u; column < nDim + 2; ++column) {
+              State plus = state, minus = state;
+              const su2double step = 1e-6;
+              plus[column] += step;
+              minus[column] -= step;
+              const auto fp = direction > 0 ? evaluate(plus, state) : evaluate(state, plus);
+              const auto fm = direction > 0 ? evaluate(minus, state) : evaluate(state, minus);
+              for (auto row = 0u; row < nDim + 2; ++row) {
+                const su2double fd = (fp.flux[row] - fm.flux[row]) / (2 * step);
+                const su2double jac = direction > 0 ? reference.jac_i[row][column] : reference.jac_j[row][column];
+                CHECK(jac == Approx(fd).margin(1e-6));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
