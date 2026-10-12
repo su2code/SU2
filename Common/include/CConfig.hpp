@@ -835,6 +835,7 @@ private:
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
   unsigned short Mesh_Out_FileFormat; /*!< \brief Mesh output format. */
   TAB_OUTPUT Tab_FileFormat;          /*!< \brief Format of the output files. */
+  VOLUME_OUTPUT_PRECISION Volume_Output_Precision; /*!< \brief Floating-point type of the volume and surface fields. */
   unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
@@ -5681,6 +5682,15 @@ public:
    * \return Flag <code>TRUE</code> then the code will write compact restart files.
    */
   bool GetWrt_Restart_Compact(void) const { return Wrt_Restart_Compact; }
+
+  /*!
+   * \brief Flag for whether the fields of the volume and surface files (CGNS and Paraview XML) are written in
+   *        double precision.
+   * \return <code>TRUE</code> means that double precision is used.
+   */
+  bool GetVolume_Output_Double_Precision(void) const {
+    return Volume_Output_Precision == VOLUME_OUTPUT_PRECISION::DOUBLE;
+  }
 
   /*!
    * \brief Flag for whether restart solution files are overwritten.
