@@ -303,12 +303,14 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   /*--- Upwind second order reconstruction ---*/
   if (muscl && !center && !Output) {
 
-    /*--- Calculate the gradients ---*/
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetPrimitive_Gradient_GG(geometry, config, true);
-    }
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetPrimitive_Gradient_LS(geometry, config, true);
+    /*--- Gradient computation for MUSCL reconstruction. ---*/
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
+      default: break;
     }
 
     /*--- Limiter computation ---*/
