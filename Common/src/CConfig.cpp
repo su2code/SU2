@@ -4500,18 +4500,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         }
         /*--- Only the upwind schemes with a general equation of state are available. ---*/
         if (Kind_ConvNumScheme_Flow != SPACE_UPWIND ||
-            (Kind_Upwind_Flow != UPWIND::ROE && Kind_Upwind_Flow != UPWIND::HLLC) || Low_Mach_Corr) {
-          SU2_MPI::Error(
-              "The compressible FLUID_CANTERA model requires CONV_NUM_METHOD_FLOW= ROE or HLLC, "
-              "without LOW_MACH_CORR.",
-              CURRENT_FUNCTION);
+            (Kind_Upwind_Flow != UPWIND::ROE && Kind_Upwind_Flow != UPWIND::HLLC)) {
+          SU2_MPI::Error("The compressible FLUID_CANTERA model requires CONV_NUM_METHOD_FLOW= ROE or HLLC.",
+                         CURRENT_FUNCTION);
         }
         /*--- These boundary conditions still assume a single ideal gas. ---*/
-        if (nMarker_FarField + nMarker_Inlet + nMarker_Outlet + nMarker_Riemann + nMarker_Giles +
-                nMarker_ActDiskInlet + nMarker_EngineInflow + nMarker_NearFieldBound > 0) {
+        if (nMarker_FarField + nMarker_Inlet + nMarker_Outlet + nMarker_Giles + nMarker_ActDiskInlet +
+                nMarker_EngineInflow + nMarker_NearFieldBound > 0) {
           SU2_MPI::Error(
-              "The compressible FLUID_CANTERA model supports the markers SUPERSONIC_INLET, SUPERSONIC_OUTLET, "
-              "EULER, SYM, HEATFLUX and ISOTHERMAL.",
+              "The compressible FLUID_CANTERA model supports the markers RIEMANN, SUPERSONIC_INLET, "
+              "SUPERSONIC_OUTLET, EULER, SYM, HEATFLUX, ISOTHERMAL and CHT_INTERFACE.",
               CURRENT_FUNCTION);
         }
         /*--- The energy equation is always solved, this enables its multicomponent terms. ---*/
@@ -5546,7 +5544,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Without an explicit INIT_OPTION_INC each fluid model keeps the density it used before the option existed. ---*/
 
   if (!OptionIsSet("INIT_OPTION_INC")) {
-    if (Kind_FluidModel == FLUID_MIXTURE || Kind_FluidModel == FLUID_FLAMELET) {
+    if (Kind_FluidModel == FLUID_MIXTURE || Kind_FluidModel == FLUID_FLAMELET || Kind_FluidModel == FLUID_CANTERA) {
       Kind_InitOption_Inc = INIT_OPTION_INC::OPERATING_PRESSURE;
     } else {
       Kind_InitOption_Inc = INIT_OPTION_INC::DENSITY_INIT;

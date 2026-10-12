@@ -237,5 +237,15 @@ class CFluidCantera final : public CFluidModel {
    * \brief Set the state from density and temperature.
    */
   void SetTDState_rhoT(su2double rho, su2double T) override;
+
+  /*!
+   * \brief Set the state from enthalpy and entropy, with the ideal gas pressure dependence of the entropy.
+   */
+  void SetTDState_hs(su2double h, su2double s) override;
+
+  /*!
+   * \brief Set the state from pressure and entropy.
+   */
+  void SetTDState_Ps(su2double P, su2double s) override;
 #endif
 };
