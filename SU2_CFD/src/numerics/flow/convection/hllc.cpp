@@ -177,8 +177,9 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
   Energy_i = Enthalpy_i - Pressure_i / Density_i;
   Energy_j = Enthalpy_j - Pressure_j / Density_j;
 
-  SoundSpeed_i = sqrt((Enthalpy_i - 0.5 * sq_vel_i) * Gamma_Minus_One);
-  SoundSpeed_j = sqrt((Enthalpy_j - 0.5 * sq_vel_j) * Gamma_Minus_One);
+  /*--- With SST the total enthalpy contains k, which is not part of the speed of sound. ---*/
+  SoundSpeed_i = sqrt((Enthalpy_i - 0.5 * sq_vel_i - turb_ke_i) * Gamma_Minus_One);
+  SoundSpeed_j = sqrt((Enthalpy_j - 0.5 * sq_vel_j - turb_ke_j) * Gamma_Minus_One);
 
   /*--- Projected velocities ---*/
 
@@ -202,7 +203,8 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Roe-averaged speed of sound ---*/
 
-  RoeSoundSpeed  = sqrt( Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe ) );
+  const su2double RoeTke = ( sqrt(Density_j) * turb_ke_j + sqrt(Density_i) * turb_ke_i ) / Rrho;
+  RoeSoundSpeed  = sqrt( Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe - RoeTke ) );
 
   /*--- Speed of sound at L and R ---*/
 
@@ -310,7 +312,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_j[iVar][jVar] = 0;
 
-      GetInviscidProjJac(Velocity_i, &Energy_i, UnitNormal, 1.0, Jacobian_i);
+      GetInviscidProjJac(Velocity_i, &Energy_i, UnitNormal, 1.0, Jacobian_i, turb_ke_i);
 
     }
     else {
@@ -326,7 +328,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
       /*--- Computing pressure derivatives d/dU_L (PI) ---*/
 
-      dPI_dU[0] = 0.5 * Gamma_Minus_One * sq_vel_i;
+      dPI_dU[0] = Gamma_Minus_One * (0.5 * sq_vel_i - turb_ke_i);  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Gamma_Minus_One * Velocity_i[iDim];
       dPI_dU[nVar-1] = Gamma_Minus_One;
@@ -399,7 +401,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
       /*--- Computing d/dU_R (Sm) ---*/
 
-      dSm_dU[0] = ( ProjVelocity_j * ProjVelocity_j - sM * sR - 0.5 * Gamma_Minus_One * sq_vel_j ) / RHO;
+      dSm_dU[0] = ( ProjVelocity_j * ProjVelocity_j - sM * sR - Gamma_Minus_One * (0.5 * sq_vel_j - turb_ke_j) ) / RHO;
       for (iDim = 0; iDim < nDim; iDim++)
         dSm_dU[iDim+1] = - ( UnitNormal[iDim] * ( 2 * ProjVelocity_j - sR - sM) - Gamma_Minus_One * Velocity_j[iDim] ) / RHO;
       dSm_dU[nVar-1]  = - Gamma_Minus_One / RHO;
@@ -445,7 +447,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0;
 
-      GetInviscidProjJac(Velocity_j, &Energy_j, UnitNormal, 1.0, Jacobian_j);
+      GetInviscidProjJac(Velocity_j, &Energy_j, UnitNormal, 1.0, Jacobian_j, turb_ke_j);
 
     }
     else {
@@ -461,7 +463,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
       /*--- Computing d/dU_L (Sm) ---*/
 
-      dSm_dU[0] = ( - ProjVelocity_i * ProjVelocity_i + sM * sL + 0.5 * Gamma_Minus_One * sq_vel_i ) / RHO;
+      dSm_dU[0] = ( - ProjVelocity_i * ProjVelocity_i + sM * sL + Gamma_Minus_One * (0.5 * sq_vel_i - turb_ke_i) ) / RHO;
       for (iDim = 0; iDim < nDim; iDim++)
         dSm_dU[iDim+1] = ( UnitNormal[iDim] * ( 2 * ProjVelocity_i - sL - sM ) - Gamma_Minus_One * Velocity_i[iDim] ) / RHO;
       dSm_dU[nVar-1] = Gamma_Minus_One / RHO;
@@ -504,7 +506,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
       /*--- Computing pressure derivatives d/dU_R (PI) ---*/
 
-      dPI_dU[0] = 0.5 * Gamma_Minus_One * sq_vel_j;
+      dPI_dU[0] = Gamma_Minus_One * (0.5 * sq_vel_j - turb_ke_j);  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Gamma_Minus_One * Velocity_j[iDim];
       dPI_dU[nVar-1] = Gamma_Minus_One;
@@ -695,8 +697,9 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
   }
 
   Energy_i         = Enthalpy_i - Pressure_i / Density_i;
-  StaticEnthalpy_i = Enthalpy_i - 0.5 * sq_vel_i;
-  StaticEnergy_i   = Energy_i - 0.5 * sq_vel_i;
+  /*--- With SST the total energy and enthalpy contain k. ---*/
+  StaticEnthalpy_i = Enthalpy_i - 0.5 * sq_vel_i - turb_ke_i;
+  StaticEnergy_i   = Energy_i - 0.5 * sq_vel_i - turb_ke_i;
 
   Kappa_i = S_i[1] / Density_i;
   Chi_i   = S_i[0] - Kappa_i * StaticEnergy_i;
@@ -704,8 +707,8 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
 
   Energy_j         = Enthalpy_j - Pressure_j / Density_j;
-  StaticEnthalpy_j = Enthalpy_j - 0.5 * sq_vel_j;
-  StaticEnergy_j   = Energy_j - 0.5 * sq_vel_j;
+  StaticEnthalpy_j = Enthalpy_j - 0.5 * sq_vel_j - turb_ke_j;
+  StaticEnergy_j   = Energy_j - 0.5 * sq_vel_j - turb_ke_j;
 
   Kappa_j = S_j[1] / Density_j;
   Chi_j   = S_j[0] - Kappa_j * StaticEnergy_j;
@@ -747,7 +750,8 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
   /*--- Roe-averaged speed of sound ---*/
 
   //RoeSoundSpeed2 = RoeChi + RoeKappa * ( RoeEnthalpy - 0.5 * sq_velRoe );
-  RoeSoundSpeed  = sqrt( RoeChi + RoeKappa * ( RoeEnthalpy - 0.5 * sq_velRoe ) );
+  RoeSoundSpeed  = sqrt( RoeChi + RoeKappa * ( RoeEnthalpy - 0.5 * sq_velRoe
+                        - ( sqrt(Density_j) * turb_ke_j + sqrt(Density_i) * turb_ke_i ) / Rrho ) );
 
   /*--- Speed of sound at L and R ---*/
 
@@ -855,7 +859,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
           Jacobian_j[iVar][jVar] = 0;
 
 
-      GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, 1.0, Jacobian_i);
+      GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, 1.0, Jacobian_i, turb_ke_i);
 
     }
     else {
@@ -871,7 +875,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_L (PI) ---*/
 
-      dPI_dU[0] = Chi_i + 0.5 * Kappa_i * sq_vel_i;
+      dPI_dU[0] = Chi_i + Kappa_i * (0.5 * sq_vel_i - turb_ke_i);  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_i * Velocity_i[iDim];
       dPI_dU[nVar-1] = Kappa_i;
@@ -945,7 +949,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_R (PI) ---*/
 
-      dPI_dU[0] = Chi_j + 0.5 * Kappa_j * sq_vel_j;
+      dPI_dU[0] = Chi_j + Kappa_j * (0.5 * sq_vel_j - turb_ke_j);  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_j * Velocity_j[iDim];
       dPI_dU[nVar-1] = Kappa_j;
@@ -999,7 +1003,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0;
 
-      GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, UnitNormal, 1.0, Jacobian_j);
+      GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, UnitNormal, 1.0, Jacobian_j, turb_ke_j);
 
     }
     else {
@@ -1015,7 +1019,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_L (PI) ---*/
 
-      dPI_dU[0] = Chi_i + 0.5 * Kappa_i * sq_vel_i;
+      dPI_dU[0] = Chi_i + Kappa_i * (0.5 * sq_vel_i - turb_ke_i);  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_i * Velocity_i[iDim];
       dPI_dU[nVar-1] = Kappa_i;
@@ -1066,7 +1070,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
       /*--- Computing pressure derivatives d/dU_R (PI) ---*/
 
-      dPI_dU[0] = Chi_j + 0.5 * Kappa_j * sq_vel_j;
+      dPI_dU[0] = Chi_j + Kappa_j * (0.5 * sq_vel_j - turb_ke_j);  // k (SST) held fixed
       for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Kappa_j * Velocity_j[iDim];
       dPI_dU[nVar-1] = Kappa_j;

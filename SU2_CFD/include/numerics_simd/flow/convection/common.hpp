@@ -134,9 +134,11 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
  */
 template<size_t nDim, class RandomAccessIterator>
 FORCEINLINE MatrixDbl<nDim+2> pMatrix(const Double& gamma, const Double& density, const RandomAccessIterator& velocity,
-                                      const Double& projVel, const Double& speedSound, const VectorDbl<nDim>& normal) {
+                                      const Double& projVel, const Double& speedSound, const VectorDbl<nDim>& normal,
+                                      const Double& tke = Double(0.0)) {
   MatrixDbl<nDim+2> pMat;
-  const Double vel2 = 0.5*squaredNorm<nDim>(velocity);
+  /*--- With SST the total energy contains k (tke). ---*/
+  const Double vel2 = 0.5*squaredNorm<nDim>(velocity) + tke;
 
   if (nDim == 2) {
     pMat(0,0) = 1.0;
@@ -197,11 +199,13 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(const Double& gamma, const Double& density
 template<size_t nDim, class RandomAccessIterator>
 FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(const Double& gamma, const Double& density,
                                          const RandomAccessIterator& velocity, const Double& projVel,
-                                         const Double& speedSound, const VectorDbl<nDim>& normal) {
+                                         const Double& speedSound, const VectorDbl<nDim>& normal,
+                                         const Double& tke = Double(0.0)) {
   MatrixDbl<nDim+2> pMatInv;
 
   const Double c2 = pow(speedSound,2);
-  const Double vel2 = 0.5*squaredNorm<nDim>(velocity);
+  /*--- With SST the total energy contains k (tke), dp/drho = (gamma-1) (|u|^2/2 - k). ---*/
+  const Double vel2 = 0.5*squaredNorm<nDim>(velocity) - tke;
   const Double oneOnRho = 1 / density;
 
   if (nDim == 2) {
@@ -274,18 +278,29 @@ FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const PrimVarType& V,
 }
 
 /*!
+ * \brief Turbulence variables among the constructor arguments of a scheme (nullptr if there are none).
+ */
+inline const CVariable* findTurbVars() { return nullptr; }
+template<class T, class... Ts>
+const CVariable* findTurbVars(T& first, Ts&... rest) {
+  if constexpr (std::is_convertible<T, const CVariable*>::value) return first;
+  else return findTurbVars(rest...);
+}
+
+/*!
  * \brief Jacobian of the convective flux (compressible flow, ideal gas).
+ * \note With SST the total energy contains k (tke), which is held fixed.
  */
 template<size_t nDim, class RandomAccessIterator>
 FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(const Double& gamma, RandomAccessIterator velocity,
                                               const Double& energy, const VectorDbl<nDim>& normal,
-                                              const Double& scale) {
+                                              const Double& scale, const Double& tke = Double(0.0)) {
   MatrixDbl<nDim+2> jac;
 
   Double projVel = dot(velocity, normal);
   Double gamma_m_1 = gamma-1;
-  Double phi = 0.5*gamma_m_1*squaredNorm<nDim>(velocity);
-  Double a1 = gamma*energy - phi;
+  Double phi = gamma_m_1*(0.5*squaredNorm<nDim>(velocity) - tke);  // dp/drho, k held fixed
+  Double a1 = gamma*energy - gamma_m_1*(0.5*squaredNorm<nDim>(velocity) + tke);  // total enthalpy
 
   jac(0,0) = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
