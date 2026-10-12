@@ -30,6 +30,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include <algorithm>
+#include <limits>
 #include "../../include/variables/CEulerVariable.hpp"
 
 
@@ -50,53 +51,6 @@ static su2double applyGlobalTrend(su2double factor, passivedouble crossCycleRati
   if      (crossCycleRatio >= HI) factor *= SCALE_DOWN;
   else if (crossCycleRatio <  LO) factor *= SCALE_UP;
   return max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
-}
-
-/*!\cond PRIVATE
- *  Inverts the symmetric least-squares matrix. False means the stencil is too degenerate
- *  to define a gradient.
- \endcond */
-static bool invertLeastSquaresMatrix(unsigned short nDim, const su2double A[3][3], su2double inv[3][3]) {
-
-  /*--- Compare against the trace so the test does not depend on the mesh units. ---*/
-
-  su2double trace = 0.0;
-  for (auto iDim = 0u; iDim < nDim; iDim++) trace += A[iDim][iDim];
-  if (trace <= 0.0) return false;
-
-  const su2double scale = trace / su2double(nDim);
-
-  /*--- det/scale^nDim is the conditioning of the fit. At 1e-8 the inverse still carries about
-   *    nine digits; below it the gradient is noise and the control volume stays constant. ---*/
-  constexpr passivedouble REL_TOL = 1e-8;
-
-  if (nDim == 2) {
-    const su2double det = A[0][0]*A[1][1] - A[0][1]*A[0][1];
-    if (det <= REL_TOL * scale * scale) return false;
-
-    inv[0][0] =  A[1][1]/det;
-    inv[0][1] = -A[0][1]/det;
-    inv[1][0] = inv[0][1];
-    inv[1][1] =  A[0][0]/det;
-    return true;
-  }
-
-  const su2double a = A[0][0], b = A[0][1], c = A[0][2];
-  const su2double d = A[1][1], e = A[1][2], f = A[2][2];
-
-  const su2double det = a*(d*f - e*e) - b*(b*f - e*c) + c*(b*e - d*c);
-  if (det <= REL_TOL * scale * scale * scale) return false;
-
-  inv[0][0] = (d*f - e*e)/det;
-  inv[0][1] = (c*e - b*f)/det;
-  inv[0][2] = (b*e - c*d)/det;
-  inv[1][1] = (a*f - c*c)/det;
-  inv[1][2] = (b*c - a*e)/det;
-  inv[2][2] = (a*d - b*b)/det;
-  inv[1][0] = inv[0][1];
-  inv[2][0] = inv[0][2];
-  inv[2][1] = inv[1][2];
-  return true;
 }
 
 inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
@@ -660,6 +614,14 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
   unsigned short iRKLimit = config->GetnRKStep();
 
+  /*--- Wall end weights for every level, once the hierarchy exists. ---*/
+  if ((iMesh == MESH_0) && correctionWeight.empty()) {
+    const auto* flowNodes = dynamic_cast<const CEulerVariable*>(solver_container_fine[FLOW_SOL]->GetNodes());
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    ComputeCorrectionWeights(geometry[iZone][iInst], flowNodes, config->GetnMGLevels());
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
 
   PreSmoothing(RunTime_EqSystem, geometry, solver_container, config_container, solver_fine, numerics_fine,
@@ -1060,8 +1022,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
 }
 
-/*--- Largest condition number of the prolongation gradient fit that is still trusted. ---*/
-static constexpr passivedouble PROLONG_MAX_CONDITION = 1e5;
+/*--- Largest condition number of the stencil directions for which the prolongation gradient is fitted. ---*/
+static constexpr passivedouble PROLONG_MAX_CONDITION = 1e3;
 
 namespace {
 /*--- Condition number of a symmetric 2x2 or 3x3 matrix, infinite if it is not positive definite. ---*/
@@ -1094,6 +1056,39 @@ passivedouble FitConditionNumber(unsigned short nDim, const su2double A[3][3]) {
   }
   return (lmin > 0.0) ? lmax / lmin : big;
 }
+
+/*--- Inverse of a symmetric positive definite matrix by Cholesky factorization, which stays accurate
+ *    for the strong anisotropy of a boundary layer stencil. False if a pivot vanishes. ---*/
+bool CholeskyInverse(unsigned short n, const su2double A[3][3], su2double inv[3][3]) {
+  su2double L[3][3] = {{0.0}};
+  for (auto i = 0u; i < n; ++i) {
+    for (auto j = 0u; j <= i; ++j) {
+      su2double sum = A[i][j];
+      for (auto k = 0u; k < j; ++k) sum -= L[i][k] * L[j][k];
+      if (i == j) {
+        if (sum <= 1e-14 * A[i][i]) return false;
+        L[i][i] = sqrt(sum);
+      } else {
+        L[i][j] = sum / L[j][j];
+      }
+    }
+  }
+  for (auto c = 0u; c < n; ++c) {
+    su2double y[3] = {0.0}, x[3] = {0.0};
+    for (auto i = 0u; i < n; ++i) {
+      su2double sum = (i == c) ? 1.0 : 0.0;
+      for (auto k = 0u; k < i; ++k) sum -= L[i][k] * y[k];
+      y[i] = sum / L[i][i];
+    }
+    for (int i = n - 1; i >= 0; --i) {
+      su2double sum = y[i];
+      for (auto k = i + 1u; k < n; ++k) sum -= L[k][i] * x[k];
+      x[i] = sum / L[i][i];
+    }
+    for (auto i = 0u; i < n; ++i) inv[i][c] = x[i];
+  }
+  return true;
+}
 }  // namespace
 
 void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGeometry *geo_coarse,
@@ -1118,7 +1113,7 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
         SU2_MPI::Allreduce(local, global, 2, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
         if ((global[0] > 0) && (SU2_MPI::GetRank() == MASTER_NODE))
           cout << "MG level " << iMesh << ": linear prolongation keeps the constant operator in " << global[0]
-               << " of " << global[1] << " coarse cells (gradient fit condition number above "
+               << " of " << global[1] << " coarse cells (stencil direction condition number above "
                << PROLONG_MAX_CONDITION << ")." << endl;
       }
     }
@@ -1156,16 +1151,21 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
     const auto* Coord_i = geo_coarse->nodes->GetCoord(iPoint);
     const auto* Correction_i = nodes->GetSolution_Old(iPoint);
 
-    su2double Amat[MAXNDIM][MAXNDIM] = {{0.0}};
+    su2double Amat[MAXNDIM][MAXNDIM] = {{0.0}}, Bmat[MAXNDIM][MAXNDIM] = {{0.0}};
     su2double rhs[MAXNVAR][MAXNDIM] = {{0.0}};
 
     for (auto jPoint : geo_coarse->nodes->GetPoints(iPoint)) {
 
       su2double Distance[MAXNDIM] = {0.0};
       GeometryToolbox::Distance(nDim, geo_coarse->nodes->GetCoord(jPoint), Coord_i, Distance);
+      const su2double dist2 = GeometryToolbox::SquaredNorm(nDim, Distance);
+      if (dist2 <= 0.0) continue;
 
       for (auto iDim = 0u; iDim < nDim; iDim++)
-        for (auto jDim = 0u; jDim < nDim; jDim++) Amat[iDim][jDim] += Distance[iDim]*Distance[jDim];
+        for (auto jDim = 0u; jDim < nDim; jDim++) {
+          Amat[iDim][jDim] += Distance[iDim]*Distance[jDim];
+          Bmat[iDim][jDim] += Distance[iDim]*Distance[jDim]/dist2;
+        }
 
       const auto* Correction_j = nodes->GetSolution_Old(jPoint);
 
@@ -1175,16 +1175,14 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
       }
     }
 
-    /*--- On a strongly stretched agglomerate the fit cannot tell the slopes apart, so the cell keeps the
-     *    constant operator. ---*/
-    if (FitConditionNumber(nDim, Amat) > PROLONG_MAX_CONDITION) {
+    /*--- Stretching alone leaves the fit well posed. Only neighbours that do not span every direction
+     *    leave a slope undefined, and then the cell keeps the constant operator. ---*/
+    su2double Ainv[MAXNDIM][MAXNDIM] = {{0.0}};
+    if ((FitConditionNumber(nDim, Bmat) > PROLONG_MAX_CONDITION) || !CholeskyInverse(nDim, Amat, Ainv)) {
       SU2_OMP_ATOMIC
       prolongIllConditioned[iMesh]++;
       continue;
     }
-
-    su2double Ainv[MAXNDIM][MAXNDIM] = {{0.0}};
-    if (!invertLeastSquaresMatrix(nDim, Amat, Ainv)) continue;
 
     for (auto iVar = 0u; iVar < nVar; iVar++)
       for (auto iDim = 0u; iDim < nDim; iDim++) {
@@ -1363,6 +1361,60 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   }
 }
 
+void CMultiGridIntegration::ComputeCorrectionWeights(CGeometry** geometry, const CEulerVariable* flowNodes,
+                                                     unsigned short nLevels) {
+  /*--- Coarse CVs over which the correction fades in from a wall end. ---*/
+  constexpr unsigned long nBlend = 4;
+
+  correctionWeight.assign(nLevels, {});
+  if (!flowNodes) return;
+
+  /*--- Points of each level holding a wall end, passed down from the finest grid. ---*/
+  vector<char> wallEnd(geometry[MESH_0]->GetnPoint(), 0);
+  for (auto iPoint = 0ul; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++)
+    wallEnd[iPoint] = flowNodes->SkipMGCorrection(iPoint);
+
+  constexpr auto FAR = std::numeric_limits<unsigned long>::max();
+  vector<unsigned long> hops, front, next;
+
+  for (unsigned short iMesh = 0; iMesh < nLevels; iMesh++) {
+    const auto* fine = geometry[iMesh];
+    const auto* coarse = geometry[iMesh + 1];
+
+    vector<char> coarseWallEnd(coarse->GetnPoint(), 0);
+    hops.assign(coarse->GetnPoint(), FAR);
+    front.clear();
+    for (auto iCoarse = 0ul; iCoarse < coarse->GetnPointDomain(); iCoarse++)
+      for (auto iChild = 0u; iChild < coarse->nodes->GetnChildren_CV(iCoarse); iChild++)
+        if (wallEnd[coarse->nodes->GetChildren_CV(iCoarse, iChild)]) {
+          coarseWallEnd[iCoarse] = 1;
+          hops[iCoarse] = 0;
+          front.push_back(iCoarse);
+          break;
+        }
+
+    for (unsigned long d = 1; (d < nBlend) && !front.empty(); d++) {
+      next.clear();
+      for (auto iCoarse : front)
+        for (auto jCoarse : coarse->nodes->GetPoints(iCoarse))
+          if (hops[jCoarse] == FAR) {
+            hops[jCoarse] = d;
+            next.push_back(jCoarse);
+          }
+      front.swap(next);
+    }
+
+    auto& weight = correctionWeight[iMesh];
+    weight.assign(fine->GetnPoint(), 1.0);
+    for (auto iCoarse = 0ul; iCoarse < coarse->GetnPointDomain(); iCoarse++) {
+      if (hops[iCoarse] == FAR) continue;
+      for (auto iChild = 0u; iChild < coarse->nodes->GetnChildren_CV(iCoarse); iChild++)
+        weight[coarse->nodes->GetChildren_CV(iCoarse, iChild)] = passivedouble(hops[iCoarse]) / passivedouble(nBlend);
+    }
+    wallEnd.swap(coarseWallEnd);
+  }
+}
+
 void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CSolver *sol_flow, CGeometry *geo_fine,
                                                       CConfig *config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
@@ -1379,15 +1431,15 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CSolver
     if (skipHere && flowNodes->SkipMGCorrection(Point_Fine)) continue;
     auto* Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
     auto* Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
-      if (Residual_Fine[iVar] != Residual_Fine[iVar])
-        Residual_Fine[iVar] = 0.0;
 
-      su2double correction = factor * Residual_Fine[iVar];
+    /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      if (Residual_Fine[iVar] != Residual_Fine[iVar]) Residual_Fine[iVar] = 0.0;
 
-      Solution_Fine[iVar] += correction;
-    }
+    su2double relax = factor;
+    if ((iMesh < correctionWeight.size()) && !correctionWeight[iMesh].empty()) relax *= correctionWeight[iMesh][Point_Fine];
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) Solution_Fine[iVar] += relax * Residual_Fine[iVar];
   }
   END_SU2_OMP_FOR
 

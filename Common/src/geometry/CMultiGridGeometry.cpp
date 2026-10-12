@@ -69,6 +69,37 @@ vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<u
   return classOfEntity;
 }
 
+/*--- A symmetry plane met at an angle by the other boundaries of a 3D node imposes nothing they do
+ *    not, so the node is agglomerated as if it were not on the plane. A plane continuing their
+ *    surface keeps its own condition. ---*/
+bool AbsorbedSymmetry(const CGeometry* grid, const CConfig* config, unsigned long iPoint, unsigned short iMarker) {
+  const auto nDim = grid->GetnDim();
+  if ((nDim != 3) || (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE)) return false;
+
+  auto unitNormal = [&](unsigned short jMarker, su2double* n) {
+    const long iVertex = grid->nodes->GetVertex(iPoint, jMarker);
+    if (iVertex < 0) return false;
+    grid->vertex[jMarker][iVertex]->GetNormal(n);
+    const su2double nrm = GeometryToolbox::Norm(nDim, n);
+    if (nrm <= 0.0) return false;
+    for (unsigned short d = 0; d < nDim; ++d) n[d] /= nrm;
+    return true;
+  };
+
+  su2double nSym[3] = {0.0}, nOther[3] = {0.0};
+  if (!unitNormal(iMarker, nSym)) return false;
+
+  bool hasOther = false;
+  for (auto jMarker = 0u; jMarker < grid->GetnMarker(); jMarker++) {
+    const auto bc = config->GetMarker_All_KindBC(jMarker);
+    if ((bc == SEND_RECEIVE) || (bc == SYMMETRY_PLANE) || (grid->nodes->GetVertex(iPoint, jMarker) < 0)) continue;
+    if ((bc == PERIODIC_BOUNDARY) || !unitNormal(jMarker, nOther)) return false;
+    if (fabs(GeometryToolbox::DotProduct(nDim, nSym, nOther)) >= sqrt(0.5)) return false;
+    hasOther = true;
+  }
+  return hasOther;
+}
+
 }  // namespace
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
@@ -1023,6 +1054,7 @@ vector<char> CMultiGridGeometry::FindMixedBoundaryNodes(const CGeometry* fine_gr
     const auto bc = static_cast<short>(config->GetMarker_All_KindBC(iMarker));
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
+      if (AbsorbedSymmetry(fine_grid, config, iPoint, iMarker)) continue;
       if (firstBC[iPoint] < 0)
         firstBC[iPoint] = bc;
       else if (firstBC[iPoint] != bc)
@@ -1678,6 +1710,7 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
 
       std::array<su2double, MAXNDIM> n0{};
       for (unsigned short d = 0; d < nDim; ++d) n0[d] = Normal[d];
+
       seeds.node.push_back(iPoint);
       seeds.normal.push_back(n0);
       seeds.strength.push_back(strength);
@@ -1926,7 +1959,11 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   const short int maxAgglomSize = MaxAgglomSize(nDim);
 
   /*--- SeedFrontNodes returns the seeds ordered by anisotropy. ---*/
-  const auto seeds = SeedFrontNodes(fine_grid, config);
+  auto seeds = SeedFrontNodes(fine_grid, config);
+
+  /*--- A node where two conditions meet stays a CV of its own, and the column above it is paved
+   *    before any other, so no column from either side reaches over to the other. ---*/
+  for (auto si = 0ul; si < seeds.node.size(); ++si) seeds.tier[si] = mixedBC[seeds.node[si]] ? 0 : seeds.tier[si] + 1;
   vector<CWalkState> walkOf;
   const auto patches = BuildFrontPatches(seeds, fine_grid, config, mixedBC, walkOf);
 
@@ -2046,7 +2083,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
   /*--- One tier is paved out everywhere before the next starts, so an inherited column belongs to
    *    the tier that is running. ---*/
-  constexpr char N_TIER = 3;
+  constexpr char N_TIER = 4;
   vector<unsigned long> active;
   for (char tier = 0; tier < N_TIER; ++tier) {
     /*--- The columns of this tier still advancing, in seed order. A column that stops drops out at
@@ -2185,7 +2222,28 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
             return reached.size() == width;
           };
 
-          if (complete(candidates)) {
+          /*--- A column follows the stiff direction of the mesh. A step whose edges couple far more
+           *    weakly than the stiffest edge at their node runs along a thin layer, not across it,
+           *    and is left to a column crossing that layer. ---*/
+          auto stiffStep = [&](const vector<unsigned long>& set) {
+            constexpr passivedouble STIFF_FRACTION = 0.1;
+            su2double ratio = 0.0;
+            for (auto iPoint : layer[iColumn]) {
+              su2double wStep = 0.0, wMax = 0.0;
+              for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
+                const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
+                const auto iEdge = fine_grid->nodes->GetEdge(iPoint, iNeigh);
+                const su2double w = GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(iEdge)) *
+                                    (1.0 / fine_grid->nodes->GetVolume(iPoint) + 1.0 / fine_grid->nodes->GetVolume(jPoint));
+                wMax = std::max(wMax, w);
+                if (std::find(set.begin(), set.end(), jPoint) != set.end()) wStep = std::max(wStep, w);
+              }
+              ratio += (wMax > 0.0) ? wStep / wMax : 1.0;
+            }
+            return ratio >= STIFF_FRACTION * su2double(layer[iColumn].size());
+          };
+
+          if (complete(candidates) && stiffStep(candidates)) {
             for (auto jPoint : candidates) {
               columnOf[jPoint] = iColumn;
               layerOf[jPoint] = iRound;

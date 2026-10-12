@@ -102,7 +102,9 @@ protected:
   vector<passivedouble> CFLStall_History;             /*!< \brief Mean CFL over two stall windows. */
   unsigned long Stall_Streak = 0;                     /*!< \brief Consecutive iterations without envelope progress. */
   unsigned long CFL_LastStall = 0;                    /*!< \brief Iteration of the last stall cap. */
-  passivedouble CFL_StallValue = -1.0;                /*!< \brief Lowest CFL at which the residuals stalled. */
+  passivedouble CFL_StallCap = -1.0;                  /*!< \brief Cap set at the last stall, which cap increases respect. */
+  unsigned short Stall_Count = 0;                     /*!< \brief Stalls since the residual last fell well below one. */
+  passivedouble Res_AtStall = 0.0;                    /*!< \brief Mean log flow residual at the last stall. */
   unsigned short nVar,           /*!< \brief Number of variables of the problem. */
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */

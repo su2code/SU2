@@ -1927,7 +1927,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       constexpr passivedouble stuckSpread = 0.15, flipAmplitude = 0.03, flipProgress = 0.15;
       constexpr size_t stallWindow = 100;
       constexpr unsigned long stallPersist = 20;
-      constexpr passivedouble stallProgress = 0.1, stallGrowth = 1.1, stallCut = 0.5, stallRoom = 0.8;
+      constexpr unsigned short stallMaxCount = 3;
+      constexpr passivedouble stallProgress = 0.1, stallGrowth = 1.1, stallCut = 0.5, stallReset = 1.0;
 
       if (iMesh == MESH_0) {
         const passivedouble avgCFL = SU2_TYPE::GetValue(Avg_CFL_Local);
@@ -2065,10 +2066,15 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         } else {
           Stall_Streak = 0;
         }
+        /*--- Each further stall before the residual falls well below the last one cuts twice as hard. ---*/
+        if ((Stall_Count > 0) && (flowMean < Res_AtStall - stallReset)) Stall_Count = 0;
         if (stall) {
-          CFL_Cap = max(stallCut * ((CFL_Cap > 0.0) ? min(CFL_Cap, avgCFL) : avgCFL), cflMin);
+          Stall_Count = min<unsigned short>(Stall_Count + 1, stallMaxCount);
+          Res_AtStall = flowMean;
+          const passivedouble cut = pow(stallCut, Stall_Count);
+          CFL_Cap = max(cut * ((CFL_Cap > 0.0) ? min(CFL_Cap, avgCFL) : avgCFL), cflMin);
           CFL_Ceiling = CFL_Cap;
-          CFL_StallValue = (CFL_StallValue > 0.0) ? min(CFL_StallValue, avgCFL) : avgCFL;
+          CFL_StallCap = CFL_Cap;
           CFL_LastStall = iter;
           Stall_Streak = 0;
           if (rank == MASTER_NODE)
@@ -2105,8 +2111,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
         /*--- A cap that has held the CFL through a quiet, converging stretch is raised, so that it does not
          *    outlive the transient that caused it. A new event at the higher CFL brings it back down. It
-         *    stays below a CFL at which the residuals stalled. ---*/
-        const passivedouble probeLimit = (CFL_StallValue > 0.0) ? stallRoom * CFL_StallValue : 1e30;
+         *    stays below the cap set at the last stall. ---*/
+        const passivedouble probeLimit = (CFL_StallCap > 0.0) ? CFL_StallCap : 1e30;
         if ((CFL_Cap > 0.0) && (avgCFL > 0.95 * CFL_Cap) && (iter > max(CFL_LastEvent, CFL_LastStall) + capProbeQuiet) &&
             (iter > CFL_LastCapProbe + capProbeQuiet) && ResTrend_Increase && (ResRise < growBelowBest) &&
             (CFL_Cap < probeLimit)) {

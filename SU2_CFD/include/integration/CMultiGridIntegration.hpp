@@ -28,6 +28,8 @@
 #include "CIntegration.hpp"
 #include "../../../Common/include/containers/container_decorators.hpp"
 
+class CEulerVariable;
+
 /*!
  * \class CMultiGridIntegration
  * \ingroup Drivers
@@ -387,6 +389,15 @@ private:
   /*! \brief Limited least-squares gradient of the correction, indexed by coarse level.
    *  Allocated on first use, only when MG_LINEAR_PROLONGATION is on. */
   vector<CVectorOfMatrix> prolongGradient;
+  vector<vector<passivedouble>> correctionWeight; /*!< \brief Per level, weight of the correction near wall ends. */
+
+  /*!
+   * \brief Weight each level's prolongated correction from zero where a wall ends to one a few coarse CVs away.
+   * \param[in] geometry - Geometry of all levels of this zone and instance.
+   * \param[in] flowNodes - Flow variables of the finest grid, which flag the wall ends.
+   * \param[in] nLevels - Number of multigrid levels.
+   */
+  void ComputeCorrectionWeights(CGeometry** geometry, const CEulerVariable* flowNodes, unsigned short nLevels);
 
   /*! \brief Coarse cells per level whose gradient fit is too ill-conditioned and keep the constant
    *  operator, and whether that level has been reported. */
