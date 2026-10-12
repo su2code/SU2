@@ -79,6 +79,30 @@ protected:
   }
 
   /*!
+   * \brief Pass the transport properties of two points of the solver to a viscous numerics object.
+   * \param[in,out] numerics - Numerics object that receives the data.
+   * \param[in] iPoint - Index of point i.
+   * \param[in] jPoint - Index of point j.
+   */
+  void SetNumericsTransportState(CNumerics *numerics, unsigned long iPoint, unsigned long jPoint);
+
+  /*!
+   * \brief Compute the viscous flux between a boundary point and a prescribed boundary state,
+   *        and add it to the residual and to the Jacobian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of the boundary point.
+   * \param[in] Point_Normal - Index of the closest interior neighbor of the boundary point.
+   * \param[in] Normal - Normal vector of the boundary face, the same that is passed to the convective numerics.
+   * \param[in] nodes_bound - Variable container that holds the boundary state.
+   * \param[in] iPoint_bound - Index of the boundary state in its container.
+   */
+  void AddViscousBoundaryResidual(CGeometry *geometry, CNumerics *visc_numerics, const CConfig *config,
+                                  unsigned long iPoint, unsigned long Point_Normal, const su2double *Normal,
+                                  CNEMOEulerVariable *nodes_bound, unsigned long iPoint_bound);
+
+  /*!
    * \brief Set the maximum value of the eigenvalue.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

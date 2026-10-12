@@ -201,25 +201,8 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     /*--- Pass supplementary information to CNumerics ---*/
     SetNumericsThermoState(numerics, nodes, iPoint, nodes, jPoint);
 
-    /*--- Species diffusion coefficients ---*/
-    numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
-                                nodes->GetDiffusionCoeff(jPoint) );
-
-    /*--- Laminar viscosity ---*/
-    numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
-                                  nodes->GetLaminarViscosity(jPoint) );
-
-    /*--- Eddy viscosity ---*/
-    numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                               nodes->GetEddyViscosity(jPoint) );
-
-    /*--- Thermal conductivity ---*/
-    numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
-                                     nodes->GetThermalConductivity(jPoint));
-
-    /*--- Vib-el. thermal conductivity ---*/
-    numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
-                                        nodes->GetThermalConductivity_ve(jPoint) );
+    /*--- Transport properties ---*/
+    SetNumericsTransportState(numerics, iPoint, jPoint);
 
     /*--- Compute and update residual ---*/
     auto residual = numerics->ComputeResidual(config);
