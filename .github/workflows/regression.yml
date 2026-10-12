@@ -465,6 +465,15 @@ jobs:
           LD_LIBRARY_PATH: /github/workspace/install/lib
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
+      - name: Check NEMO convergence field migration
+        if: matrix.testdriver == 'test_driver'
+        uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
+        env:
+          OMPI_MCA_osc: pt2pt
+          LD_LIBRARY_PATH: /github/workspace/install/lib
+        with:
+          entrypoint: python3
+          args: src/SU2/UnitTests/SU2_CFD/output/check_nemo_convergence_migration.py /github/workspace/install/bin/test_driver
       - name: Post Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:

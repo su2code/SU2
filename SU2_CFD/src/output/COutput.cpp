@@ -556,7 +556,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
       LogOutputFiles("Paraview");
-      fileWriter = new CParaviewXMLFileWriter(volumeDataSorter);
+      fileWriter = new CParaviewXMLFileWriter(volumeDataSorter, config->GetVolume_Output_Double_Precision());
 
       break;
 
@@ -594,10 +594,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         volumeDataSorter->SortConnectivity(config, geometry, true);
 
         LogOutputFiles("Paraview Multiblock");
-        fileWriter = new CParaviewVTMFileWriter(GetHistoryFieldValue("CUR_TIME"), config->GetiZone(), config->GetnZone());
-
-        /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
-        auto* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
+        auto* vtmWriter =
+            new CParaviewVTMFileWriter(GetHistoryFieldValue("CUR_TIME"), config->GetiZone(), config->GetnZone());
+        fileWriter = vtmWriter;
 
         /*--- then we write the data into the folder---*/
         vtmWriter->WriteFolderData(fileName, config, multiZoneHeaderString, volumeDataSorter, surfaceDataSorter, geometry);
@@ -683,7 +682,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortOutputData();
 
       LogOutputFiles("Paraview surface");
-      fileWriter = new CParaviewXMLFileWriter(surfaceDataSorter);
+      fileWriter = new CParaviewXMLFileWriter(surfaceDataSorter, config->GetVolume_Output_Double_Precision());
 
       break;
 
@@ -760,8 +759,16 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
       LogOutputFiles("CGNS");
-      fileWriter = new CCGNSFileWriter(volumeDataSorter);
+      {
+        auto* cgnsWriter = new CCGNSFileWriter(volumeDataSorter, false, config->GetVolume_Output_Double_Precision());
 
+        /*--- Write the boundaries, named as the markers. This needs to know which boundary elements are halo copies,
+         which only the finite volume data sorter knows: the files of the FEM solver have no boundaries. ---*/
+        if (!femOutput)
+          cgnsWriter->SetBoundaryMarkers(config, geometry, static_cast<const CFVMDataSorter*>(volumeDataSorter));
+
+        fileWriter = cgnsWriter;
+      }
       break;
 
     case OUTPUT_TYPE::SURFACE_CGNS:
@@ -779,8 +786,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       surfaceDataSorter->SortOutputData();
 
       LogOutputFiles("CGNS surface");
-      fileWriter = new CCGNSFileWriter(surfaceDataSorter, true);
+      {
+        auto* cgnsWriter = new CCGNSFileWriter(surfaceDataSorter, true, config->GetVolume_Output_Double_Precision());
 
+        /*--- One zone per plotted marker, named as the marker. ---*/
+        cgnsWriter->SetSurfaceMarkers(config, geometry);
+
+        fileWriter = cgnsWriter;
+      }
       break;
 
     default:
@@ -1533,6 +1546,21 @@ void COutput::CheckHistoryOutput(unsigned short nZone) {
   FieldsToRemove.clear();
   for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
     if (historyOutput_Map.count(convFields[iField_Conv]) == 0){
+      /*--- NEMO density residuals now identify each species explicitly. Do not
+       * discard an obsolete selector, which could weaken a mixed stopping criterion.
+       * Check the registered replacement so other solvers and zones are unaffected. ---*/
+      const auto& field = convFields[iField_Conv];
+      const auto zonePos = field.find('[');
+      const auto base = field.substr(0, zonePos);
+      if (base == "MAX_DENSITY" || base == "BGS_DENSITY" ||
+          base == "REL_MAX_DENSITY" || base == "REL_BGS_DENSITY") {
+        const auto replacement = base + "_0" + (zonePos == string::npos ? "" : field.substr(zonePos));
+        if (historyOutput_Map.count(replacement) != 0) {
+          SU2_MPI::Error("Obsolete NEMO CONV_FIELD '" + field + "': select explicit species density residuals, "
+                         "for example '" + replacement + "' for species 0. List every species that must meet "
+                         "CONV_RESIDUAL_MINVAL; the obsolete field cannot be ignored.", CURRENT_FUNCTION);
+        }
+      }
       if (!removedField) {
         if(rank == MASTER_NODE) cout << "Ignoring Convergence Field(s): ";
         removedField = true;
