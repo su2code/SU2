@@ -53,6 +53,8 @@ if get_option('enable-tests')
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)
+    test('Multigrid configuration limits', python,
+         args: files('Common/check_multigrid_limits.py') + [test_driver.full_path()])
     test('NEMO convergence field migration', python,
          args: files('SU2_CFD/output/check_nemo_convergence_migration.py') + [test_driver.full_path()],
          timeout: 300)

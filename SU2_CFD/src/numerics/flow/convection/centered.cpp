@@ -31,7 +31,7 @@
 CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  variable_density = ((config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE) || (config->GetKind_DensityModel() == INC_DENSITYMODEL::FLAMELET));
+  variable_density = config->GetVariable_Density_Model();
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
   fix_factor = config->GetCent_Inc_Jac_Fix_Factor();
@@ -169,7 +169,7 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
     if (implicit) {
       auto addGridJacobian = [&](su2double **Jac, su2double rho, const su2double *vel, su2double h, su2double T,
                                  su2double cp) {
-        const su2double dRhodh = variable_density ? su2double(-rho / (T * cp)) : su2double(0.0);
+        const auto dRhodh = variable_density ? su2double(-rho / (T * cp)) : su2double(0.0);
         const su2double factor = 0.5*ProjVelocity;
         Jac[0][nDim+1] -= factor*dRhodh;
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -258,7 +258,7 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
 CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  variable_density = (config->GetVariable_Density_Model());
+  variable_density = config->GetVariable_Density_Model();
   energy           = config->GetEnergy_Equation();
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
@@ -417,7 +417,7 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
     if (implicit) {
       auto addGridJacobian = [&](su2double **Jac, su2double rho, const su2double *vel, su2double h, su2double T,
                                  su2double cp) {
-        const su2double dRhodh = variable_density ? su2double(-rho / (T * cp)) : su2double(0.0);
+        const auto dRhodh = variable_density ? su2double(-rho / (T * cp)) : su2double(0.0);
         const su2double factor = 0.5*ProjVelocity;
         Jac[0][nDim+1] -= factor*dRhodh;
         for (iDim = 0; iDim < nDim; iDim++) {

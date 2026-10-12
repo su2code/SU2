@@ -4994,11 +4994,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Restart || ((Kind_MGCycle == MG_CYCLE::FULL) && ContinuousAdjoint)) Kind_MGCycle = MG_CYCLE::V;
 
-  /*--- The multigrid arrays hold at most 10 coarse levels (CMultiGridIntegration::MAX_MG_LEVELS). Clamp instead of
-   stopping, MG_MIN_MESHSIZE can still reduce the number of levels during the agglomeration. ---*/
+  /*--- The multigrid arrays hold at most 10 coarse levels (CMultiGridIntegration::MAX_MG_LEVELS). ---*/
   if (nMGLevels > 10) {
-    if (rank == MASTER_NODE) cout << "WARNING: MGLEVEL > 10 is not supported, using MGLEVEL= 10." << endl;
-    nMGLevels = 10;
+    SU2_MPI::Error("MGLEVEL must be between 0 and 10; larger multigrid hierarchies are not supported.", CURRENT_FUNCTION);
   }
 
   FinestMesh = MESH_0;
