@@ -66,7 +66,12 @@ CANTERA_SCONS_ARGS = [
     "system_yamlcpp=n",
     "system_sundials=n",
     "system_highfive=n",
+    # Use Eigen instead of a detected system BLAS/LAPACK that SU2 does not link.
+    "system_blas_lapack=n",
     "logging=warning",
+    # The generated CLib needs doxygen at build time; SU2 only uses the C++ API.
+    "clib_legacy=y",
+    "debug=n",
 ]
 
 

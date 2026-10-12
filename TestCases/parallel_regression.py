@@ -42,7 +42,7 @@ def main():
     ### Combustion with Detailed Chemistry ###
     ##########################################
 
-    # 2D planar laminar premixed methane flame on isothermal burner (restart)
+    # 2D planar laminar premixed methane flame on isothermal burner
     cfd_cantera_dc_ch4 = TestCase('cfd_cantera_dc_ch4')
     cfd_cantera_dc_ch4.cfg_dir = "combustion/1step_methane_air"
     cfd_cantera_dc_ch4.cfg_file = "2d_slit_burner_fluid.cfg"
@@ -54,7 +54,7 @@ def main():
     # 2D planar laminar premixed hydrogen flame on isothermal burner (restart)
     cfd_cantera_dc_h2 = TestCase('cfd_cantera_dc_h2')
     cfd_cantera_dc_h2.cfg_dir = "combustion/h2o2_hydrogen_air"
-    cfd_cantera_dc_h2.cfg_file = "2d_slit_burner_fluid.cfg"
+    cfd_cantera_dc_h2.cfg_file = "2d_slit_burner_h2.cfg"
     cfd_cantera_dc_h2.test_iter = 10
     cfd_cantera_dc_h2.test_vals = [-10.539588, -12.650786, -5.649832, -13.470491, -17.249262, 94.854000]
     cfd_cantera_dc_h2.new_output = True
