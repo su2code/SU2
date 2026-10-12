@@ -62,6 +62,7 @@ protected:
 
   /*!
    * \brief Pass the thermodynamic derivatives and vib.-el. quantities of two points to a numerics object.
+   * \note The ratio of specific heats (Gamma) is not part of this set, the callers that need it set it.
    * \param[in,out] numerics - Numerics object that receives the data.
    * \param[in] nodes_i - Variable container of point i.
    * \param[in] iPoint - Index of point i in its container.
@@ -75,7 +76,6 @@ protected:
     numerics->SetdTvedU(nodes_i->GetdTvedU(iPoint), nodes_j->GetdTvedU(jPoint));
     numerics->SetEve   (nodes_i->GetEve(iPoint),    nodes_j->GetEve(jPoint));
     numerics->SetCvve  (nodes_i->GetCvve(iPoint),   nodes_j->GetCvve(jPoint));
-    numerics->SetGamma (nodes_i->GetGamma(iPoint),  nodes_j->GetGamma(jPoint));
   }
 
   /*!

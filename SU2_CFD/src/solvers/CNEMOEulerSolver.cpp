@@ -440,6 +440,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 
     /*--- Pass supplementary information to CNumerics ---*/
     SetNumericsThermoState(numerics, nodes, iPoint, nodes, jPoint);
+    numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(jPoint));
 
     /*--- Set the largest convective eigenvalue ---*/
     numerics->SetLambda(nodes->GetLambda(iPoint), nodes->GetLambda(jPoint));
@@ -516,6 +517,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       numerics->SetPrimitive   (V_i, V_j);
       numerics->SetConservative(U_i, U_j);
       SetNumericsThermoState(numerics, nodes, iPoint, nodes, jPoint);
+      numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(jPoint));
 
     } else {
 
@@ -1530,6 +1532,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
 
       /*--- Pass supplementary information to CNumerics ---*/
       SetNumericsThermoState(conv_numerics, nodes, iPoint, node_infty, 0);
+      conv_numerics->SetGamma(nodes->GetGamma(iPoint), node_infty->GetGamma(0));
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
@@ -2030,6 +2033,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 
       /*--- Passing supplementary information to CNumerics ---*/
       SetNumericsThermoState(conv_numerics, nodes, iPoint, node_infty, 0);
+      conv_numerics->SetGamma(nodes->GetGamma(iPoint), node_infty->GetGamma(0));
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
@@ -2223,6 +2227,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(
 
     /*--- Pass supplementary information to CNumerics ---*/
     SetNumericsThermoState(conv_numerics, nodes, iPoint, nodes, iPoint);
+    conv_numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(iPoint));
 
     const bool dynamic_grid = config->GetGrid_Movement();
     if (dynamic_grid)
