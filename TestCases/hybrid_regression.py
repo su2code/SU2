@@ -158,7 +158,7 @@ def main():
     periodic2d.cfg_dir   = "navierstokes/periodic2D"
     periodic2d.cfg_file  = "config.cfg"
     periodic2d.test_iter = 1400
-    periodic2d.test_vals = [-10.817607, -8.363541, -8.287457, -5.334100, -1.088412, -2945.200000]
+    periodic2d.test_vals = [-10.314545, -8.056213, -7.708669, -4.833054, -1.059806, -2953.400000]
     test_list.append(periodic2d)
 
     ##########################
@@ -602,7 +602,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.907561, -12.214137, -19.151426, -13.451780, -19.085218, -13.450796, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.959252, -12.213981, -19.314222, -13.600248, -19.076384, -13.444335, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -627,7 +627,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632240, -8.894740, -9.348706]
+    multi_interface.test_vals = [-8.634571, -8.895558, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632229, -8.894737, -9.348730]
     test_list.append(multi_interface)
 

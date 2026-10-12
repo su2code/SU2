@@ -949,7 +949,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
-    Aachen_3D_restart.test_vals = [-7.701421, -8.504727, -6.014939, -6.468221, -5.801125, -4.607173, -5.550665, -5.300779, -3.804187, -5.255982, -5.763060, -3.609601, -2.229250, -2.880453, -0.563470]
+    Aachen_3D_restart.test_vals = [-7.701424, -8.504850, -6.014951, -6.472217, -5.802013, -4.609762, -5.550659, -5.300718, -3.804222, -5.255982, -5.763064, -3.609600, -2.229254, -2.880518, -0.563485]
     Aachen_3D_restart.enabled_with_asan = False
     test_list.append(Aachen_3D_restart)
 
@@ -958,7 +958,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.944235, -12.212620, -19.261137, -13.549357, -19.083828, -13.444697, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.905642, -12.212181, -19.212554, -13.508053, -19.069991, -13.439494, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -983,7 +983,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632227, -8.894736, -9.348706]
+    multi_interface.test_vals = [-8.634558, -8.895554, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 

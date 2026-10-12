@@ -262,7 +262,8 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       JCOUNT           = nDim;
       break;
     case PERIODIC_LIM_PRIM_1:
-      COUNT_PER_POINT  = nPrimVarGrad*2;
+      /*--- Min and max of the solution, min and max of the reconstruction increments. ---*/
+      COUNT_PER_POINT  = nPrimVarGrad*4;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nPrimVarGrad;
       break;
@@ -336,6 +337,50 @@ namespace PeriodicCommHelpers {
         break;
     }
   }
+
+  /*--- Whether a periodic marker with these angles rotates the vector components of the solution. ---*/
+  bool isRotation(const su2double* angles) {
+    return angles[0] != 0.0 || angles[1] != 0.0 || angles[2] != 0.0;
+  }
+
+  /*--- Replaces a rotation matrix by the matrix that applies the same rotation nRot times. ---*/
+  void applyRotationNTimes(unsigned long nRot, su2double rotMatrix[3][3]) {
+    su2double rotOnce[3][3], rotPrev[3][3];
+    for (auto iDim = 0u; iDim < 3; iDim++)
+      for (auto jDim = 0u; jDim < 3; jDim++)
+        rotOnce[iDim][jDim] = rotMatrix[iDim][jDim];
+
+    for (auto iRot = 1ul; iRot < nRot; iRot++) {
+      for (auto iDim = 0u; iDim < 3; iDim++)
+        for (auto jDim = 0u; jDim < 3; jDim++)
+          rotPrev[iDim][jDim] = rotMatrix[iDim][jDim];
+
+      for (auto iDim = 0u; iDim < 3; iDim++)
+        for (auto jDim = 0u; jDim < 3; jDim++)
+          rotMatrix[iDim][jDim] = rotOnce[iDim][0]*rotPrev[0][jDim] + rotOnce[iDim][1]*rotPrev[1][jDim] +
+                                  rotOnce[iDim][2]*rotPrev[2][jDim];
+    }
+  }
+}
+
+su2activematrix* CSolver::GetPeriodicProjections(const CConfig& config) {
+
+  if (!rotate_periodic) return nullptr;
+
+  bool rotation = false;
+  for (auto iMarker = 0u; iMarker < config.GetnMarker_All(); iMarker++) {
+    if (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
+    rotation |= PeriodicCommHelpers::isRotation(config.GetPeriodicRotAngles(config.GetMarker_All_TagBound(iMarker)));
+  }
+  if (!rotation) return nullptr;
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    if (PeriodicProj.rows() != nPoint) PeriodicProj.resize(nPoint, 2*nPrimVarGrad) = su2double(0.0);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  return &PeriodicProj;
 }
 
 void CSolver::InitiatePeriodicComms(CGeometry *geometry,
@@ -391,6 +436,25 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     else GeometryToolbox::Rotate(rotMatrix3D, origin, direction, rotated);
   };
 
+  /*--- Rotates, in place, the range [vMin, vMax] of each component of a vector: each term
+   of the product with the rotation matrix takes its smallest and its largest value. ---*/
+  auto RotateBox = [&](su2double* vMin, su2double* vMax) {
+    su2double rotMin[3] = {0.0}, rotMax[3] = {0.0};
+    for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++) {
+      for (auto jDim = 0u; jDim < nDim; jDim++) {
+        const su2double rotMatrix_ij = (nDim == 2) ? rotMatrix2D[iCoordinate][jDim] : rotMatrix3D[iCoordinate][jDim];
+        const su2double fromMin = rotMatrix_ij * vMin[jDim];
+        const su2double fromMax = rotMatrix_ij * vMax[jDim];
+        rotMin[iCoordinate] += min(fromMin, fromMax);
+        rotMax[iCoordinate] += max(fromMin, fromMax);
+      }
+    }
+    for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++) {
+      vMin[iCoordinate] = rotMin[iCoordinate];
+      vMax[iCoordinate] = rotMax[iCoordinate];
+    }
+  };
+
   string Marker_Tag;
 
   /*--- Set the size of the data packet and type depending on quantity. ---*/
@@ -420,6 +484,36 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   auto& gradient = PeriodicCommHelpers::selectGradient(base_nodes, commType);
   auto& limiter = PeriodicCommHelpers::selectLimiter(base_nodes, commType);
   auto& field = PeriodicCommHelpers::selectField(base_nodes, commType);
+
+  /*--- Updates the range [Sol_Min, Sol_Max] of each variable with the values of a neighbor,
+   the velocity of the neighbor (variables 1 to nDim) is rotated first if requested. ---*/
+  auto UpdateMinMax = [&](const su2double* values, bool rotateVelocity) {
+    if (rotateVelocity) {
+      for (auto iField = 0u; iField < ICOUNT; iField++) rotPrim_j[iField] = values[iField];
+      Rotate(zeros, &values[1], &rotPrim_j[1]);
+      values = rotPrim_j;
+    }
+    for (auto iField = 0u; iField < ICOUNT; iField++) {
+      Sol_Min[iField] = min(Sol_Min[iField], values[iField]);
+      Sol_Max[iField] = max(Sol_Max[iField], values[iField]);
+    }
+  };
+
+  /*--- Reconstruction increments of all variables from a point to the middle
+   of the edge to one of its neighbors, computed as in computeLimiters_impl. ---*/
+  auto ReconstructionIncrements = [&](unsigned long point_i, unsigned long point_j, su2double* increments) {
+    const su2double kappa = config->GetMUSCL_Kappa_Flow();
+    const auto* coord_i = geometry->nodes->GetCoord(point_i);
+    const auto* coord_j = geometry->nodes->GetCoord(point_j);
+
+    for (auto iField = 0u; iField < ICOUNT; iField++) {
+      su2double proj = 0.0;
+      for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++)
+        proj += 0.5 * (coord_j[iCoordinate] - coord_i[iCoordinate]) * gradient(point_i, iField, iCoordinate);
+      const su2double cent = 0.5 * (field(point_j, iField) - field(point_i, iField));
+      increments[iField] = LimiterHelpers<>::umusclProjection(proj, cent, kappa);
+    }
+  };
 
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
@@ -479,6 +573,36 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
           GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix3D);
         }
 
+        /*--- Points on a rotation axis are their own periodic match, they send once for every
+         other copy of their control volume, i.e. with the rotation applied more than once. ---*/
+
+        const auto nRot = geometry->Local_Copy_PeriodicSend[msg_offset + iSend];
+
+        if (nRot > 1) {
+          if (nDim==2) {
+            const su2double PsiTotal = nRot*Psi;
+            GeometryToolbox::RotationMatrix(PsiTotal, rotMatrix2D);
+          } else {
+            PeriodicCommHelpers::applyRotationNTimes(nRot, rotMatrix3D);
+          }
+        }
+
+        /*--- The neighbors on periodic faces are skipped where edges must be counted once, because
+         the periodic match also has these edges. From the second copy of a point on a rotation
+         axis onwards, the edges on the face of this marker (not along the axis) are new. ---*/
+
+        const auto donorMarker = (nRot > 1) ? config->GetMarker_Periodic_Donor(Marker_Tag) : 0;
+
+        auto sharedEdge = [&](unsigned long jPoint) {
+          if (!geometry->nodes->GetPeriodicBoundary(jPoint)) return false;
+          return (nRot < 2) || (geometry->nodes->GetVertex(jPoint, iPeriodic) < 0) ||
+                 (geometry->nodes->GetVertex(jPoint, donorMarker) >= 0);
+        };
+
+        /*--- Whether the vector components of the solution are rotated for this marker. ---*/
+
+        const bool rotation = rotate_periodic && PeriodicCommHelpers::isRotation(angles);
+
         /*--- Compute the offset in the recv buffer for this point. ---*/
 
         buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
@@ -508,7 +632,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                that we avoid double counting neighbors on both sides. If
                not, increment the count of neighbors for the donor. ---*/
 
-              if (!geometry->nodes->GetPeriodicBoundary(jPoint))
+              if (!sharedEdge(jPoint))
                 nNeighbor++;
             }
 
@@ -553,7 +677,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 }
               }
 
-              /*--- Rotate the momentum columns of the Jacobian. ---*/
+              /*--- Rotate the momentum rows and columns of the Jacobian, the residual of the
+               periodic match is Q*R(Q^T*U), so its Jacobian is Q*J*Q^T. First the rows. ---*/
 
               if (rotate_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
@@ -568,6 +693,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                     jacBlock[3][iVar] = rotMatrix3D[2][0]*block(1, iVar) + rotMatrix3D[2][1]*block(2, iVar) +
                                         rotMatrix3D[2][2]*block(3, iVar);
                   }
+                }
+
+                /*--- Then the columns, i.e. the momentum part of each row. ---*/
+
+                for (auto iRow = 0u; iRow < nVar; iRow++) {
+                  su2double rotated[3] = {0.0};
+                  Rotate(zeros, &jacBlock[iRow][1], rotated);
+                  for (auto jDim = 0u; jDim < nDim; jDim++) jacBlock[iRow][1+jDim] = rotated[jDim];
                 }
               }
 
@@ -617,7 +750,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
+              if (!sharedEdge(jPoint)) {
 
                 /*--- Solution differences ---*/
 
@@ -683,7 +816,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (geometry->nodes->GetPeriodicBoundary(jPoint)) continue;
+              if (sharedEdge(jPoint)) continue;
 
               /*--- Use density instead of pressure for incomp. flows. ---*/
 
@@ -826,7 +959,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
+              if (!sharedEdge(jPoint)) {
 
                 /*--- Get coordinates for the neighbor point. ---*/
 
@@ -936,11 +1069,15 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Max[iVar] = base_nodes->GetSolution_Max()(iPoint, iVar);
             }
 
+            /*--- The velocity of each neighbour is rotated before taking the min and max of its
+             components (the rotated min and max vectors do not bound the rotated components).
+             The min/max stored so far (the value of the point, or what was accumulated from
+             other periodic pairs) are a range for each component, which is rotated as a box. ---*/
+
+            if (rotation) RotateBox(&Sol_Min[1], &Sol_Max[1]);
+
             for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-              for (iVar = 0; iVar < ICOUNT; iVar++) {
-                Sol_Min[iVar] = min(Sol_Min[iVar], field(jPoint, iVar));
-                Sol_Max[iVar] = max(Sol_Max[iVar], field(jPoint, iVar));
-              }
+              UpdateMinMax(field[jPoint], rotation);
             }
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
@@ -948,11 +1085,34 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               bufDSend[buf_offset+ICOUNT+iVar] = Sol_Max[iVar];
             }
 
-            /*--- Rotate the momentum components of the min/max. ---*/
-
-            if (rotate_periodic) {
+            /*--- Preserve the original arithmetic for translational periodicity, including its AD recording. ---*/
+            if (rotate_periodic && !rotation) {
               Rotate(zeros, &Sol_Min[1], &bufDSend[buf_offset+1]);
               Rotate(zeros, &Sol_Max[1], &bufDSend[buf_offset+ICOUNT+1]);
+            }
+
+            /*--- The limiters of the velocity components cannot be compared across a rotation
+             (second phase). Instead, we also send the min and max, over "our" edges, of the
+             reconstruction increments (computed as in computeLimiters_impl) with the velocity
+             part rotated, the periodic match then computes its limiters with the complete
+             stencil. Without rotation these are zero, i.e. they have no effect. ---*/
+
+            if (commType == PERIODIC_LIM_PRIM_1) {
+
+              for (auto iField = 0u; iField < ICOUNT; iField++)
+                Sol_Min[iField] = Sol_Max[iField] = 0.0;
+
+              if (rotation) {
+                for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+                  ReconstructionIncrements(iPoint, jPoint, rotPrim_i);
+                  UpdateMinMax(rotPrim_i, true);
+                }
+              }
+
+              for (auto iField = 0u; iField < ICOUNT; iField++) {
+                bufDSend[buf_offset+2*ICOUNT+iField] = Sol_Min[iField];
+                bufDSend[buf_offset+3*ICOUNT+iField] = Sol_Max[iField];
+              }
             }
 
             break;
@@ -968,7 +1128,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               bufDSend[buf_offset+iVar] = limiter(iPoint, iVar);
             }
 
-            if (rotate_periodic) {
+            /*--- The limiters of the velocity components cannot be compared across a rotation,
+             they were computed with the complete stencil (see the first phase), we send
+             a value that is never the minimum. ---*/
+
+            if (rotation) {
+              for (auto iCoordinate = 0u; iCoordinate < nDim; iCoordinate++)
+                bufDSend[buf_offset+1+iCoordinate] = std::numeric_limits<passivedouble>::max();
+            } else if (rotate_periodic) {
               Rotate(zeros, &limiter(iPoint,1), &bufDSend[buf_offset+1]);
             }
 
@@ -1082,13 +1249,20 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
       nRecv = (geometry->nPoint_PeriodicRecv[jRecv+1] -
                geometry->nPoint_PeriodicRecv[jRecv]);
 
-      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+      /*--- Points on a rotation axis receive more than once, in that case
+       the loop is not shared by the threads (one chunk). ---*/
+
+      SU2_OMP_FOR_STAT(geometry->PeriodicAxisPoints ? nRecv + 1 : size_t(OMP_MIN_SIZE))
       for (iRecv = 0; iRecv < nRecv; iRecv++) {
 
         /*--- Get the local index for this communicated data. ---*/
 
         iPoint    = geometry->Local_Point_PeriodicRecv[msg_offset  + iRecv];
         iPeriodic = geometry->Local_Marker_PeriodicRecv[msg_offset + iRecv];
+
+        /*--- For points on a rotation axis, which copy of the control volume this is (0 otherwise). ---*/
+
+        const auto iCopy = geometry->Local_Copy_PeriodicRecv[msg_offset + iRecv];
 
         /*--- While all periodic face data was accumulated, we only store
          the values for the current pair of periodic faces. This is slightly
@@ -1161,6 +1335,18 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
                 Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
+                /*--- A point on a rotation axis accumulates the residual and the diagonal block of all
+                 the copies of its control volume, the blocks of its neighbors (which are the same in
+                 all copies, up to the rotation) need the same factor, iCopy+1 after this copy. ---*/
+
+                if (iCopy > 0) {
+                  const passivedouble factor = (iCopy + 1.0) / iCopy;
+                  for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+                    auto* block = Jacobian.GetBlock(iPoint, jPoint);
+                    for (auto iEntry = 0; iEntry < nVar*nVar; iEntry++) block[iEntry] *= factor;
+                  }
+                }
+
                 if (iPeriodic == val_periodic_index + nPeriodic/2) {
                   for (iVar = 0; iVar < nVar; iVar++) {
                     LinSysRes(iPoint, iVar) = 0.0;
@@ -1195,6 +1381,22 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               }
 
+              /*--- A point on a rotation axis takes the average over all the copies of its control
+               volume (running average over the copies received), which removes the velocity
+               normal to the axis: a vector that is the same in all the copies is along the axis. ---*/
+
+              else if (iCopy > 0) {
+
+                for (auto iField = 0u; iField < nVar; iField++) {
+                  const su2double average = base_nodes->GetSolution(iPoint, iField) +
+                    (bufDRecv[buf_offset] - base_nodes->GetSolution(iPoint, iField)) / su2double(iCopy + 1);
+                  base_nodes->SetSolution(iPoint, iField, average);
+                  base_nodes->SetSolution_Old(iPoint, iField, average);
+                  buf_offset++;
+                }
+
+              }
+
               break;
 
             case PERIODIC_LAPLACIAN:
@@ -1202,8 +1404,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               /*--- Adjust the undivided Laplacian. The accumulation was
                with a subtraction before communicating, so now just add. ---*/
 
-              for (iVar = 0; iVar < nVar; iVar++)
-                base_nodes->AddUnd_Lapl(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+              for (auto iField = 0u; iField < nVar; iField++)
+                base_nodes->AddUnd_Lapl(iPoint, iField, bufDRecv[buf_offset+iField]);
 
               break;
 
@@ -1287,6 +1489,18 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 su2double Solution_Max = max(base_nodes->GetSolution_Max()(iPoint, iVar),
                                              bufDRecv[buf_offset+ICOUNT+iVar]);
                 base_nodes->GetSolution_Max()(iPoint, iVar) = Solution_Max;
+              }
+
+              /*--- Min/max reconstruction increments over the edges of the periodic match,
+               used to start the search over "our" edges (only with rotation). ---*/
+
+              if ((commType == PERIODIC_LIM_PRIM_1) && !PeriodicProj.empty()) {
+                for (auto iField = 0u; iField < ICOUNT; iField++) {
+                  PeriodicProj(iPoint, iField) = min(PeriodicProj(iPoint, iField),
+                                                   bufDRecv[buf_offset+2*ICOUNT+iField]);
+                  PeriodicProj(iPoint, ICOUNT+iField) = max(PeriodicProj(iPoint, ICOUNT+iField),
+                                                          bufDRecv[buf_offset+3*ICOUNT+iField]);
+                }
               }
 
               break;

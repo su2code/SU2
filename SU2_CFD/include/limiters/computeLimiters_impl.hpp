@@ -109,11 +109,29 @@ void computeLimiters_impl(CSolver* solver,
 
   limiterDetails.preprocess(geometry, config, varBegin, varEnd, field);
 
+  /*--- With rotational periodicity, the first periodic comm. also brings the min/max
+   *    projections over the edges of the periodic matches (stored after each other),
+   *    because the limiters of the velocity cannot be compared across a rotation. ---*/
+
+  su2activematrix* periodicProj = nullptr;
+
+  if (periodic && (kindPeriodicComm1 == PERIODIC_LIM_PRIM_1))
+    periodicProj = solver->GetPeriodicProjections(config);
+
   /*--- Initialize all min/max field values if we have
    *    periodic comms. otherwise do it inside main loop. ---*/
 
   if (periodic)
   {
+    if (periodicProj != nullptr)
+    {
+      SU2_OMP_FOR_STAT(chunkSize)
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < periodicProj->cols(); ++iVar)
+          (*periodicProj)(iPoint,iVar) = 0.0;
+      END_SU2_OMP_FOR
+    }
+
     SU2_OMP_FOR_STAT(chunkSize)
     for (size_t iPoint = 0; iPoint < nPoint; ++iPoint)
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
@@ -164,6 +182,21 @@ void computeLimiters_impl(CSolver* solver,
 
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
       projMax[iVar] = projMin[iVar] = 0.0;
+
+    if (periodicProj != nullptr)
+    {
+      /*--- Start from the min/max over the edges of the periodic matches. ---*/
+
+      for (auto iVar = varBegin; iVar < varEnd; ++iVar)
+      {
+        const auto& periodicMin = (*periodicProj)(iPoint, iVar);
+        const auto& periodicMax = (*periodicProj)(iPoint, periodicProj->cols()/2 + iVar);
+        AD::SetPreaccIn(periodicMin);
+        AD::SetPreaccIn(periodicMax);
+        projMin[iVar] = periodicMin;
+        projMax[iVar] = periodicMax;
+      }
+    }
 
     /*--- Compute max/min projection and values over direct neighbors. ---*/
 
@@ -224,7 +257,8 @@ void computeLimiters_impl(CSolver* solver,
   }
   END_SU2_OMP_FOR
 
-  /*--- Account for periodic effects, take the minimum limiter on each periodic pair. ---*/
+  /*--- Account for periodic effects, take the minimum limiter on each periodic pair
+   *    (except for the velocity with rotational periodicity). ---*/
   if (periodic)
   {
     for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
