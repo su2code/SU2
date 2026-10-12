@@ -292,8 +292,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
   /*--- Jacobians for the wave speeds held fixed (in the frame of the face). p* = rho_j (u_j - sR)(u_j - sM) + p_j
    = rho_i (u_i - sL)(u_i - sM) + p_i, so its derivative contains rho_j (sR - u_j) dsM/dU (or rho_i (sL - u_i) dsM/dU).
    By default the density of the other state is kept, as in the previous implementation (an inexact transcription
-   of the reference, see #2198): in our tests it was more robust with inexact linear solves than the exact
-   derivative, which USE_ACCURATE_FLUX_JACOBIANS= YES gives. ---*/
+   of the reference, see #2198). USE_ACCURATE_FLUX_JACOBIANS= YES gives the exact derivative. ---*/
 
   const su2double rhoPStar_R = useAccurateJacobian ? Density_j : Density_i;
   const su2double rhoPStar_L = useAccurateJacobian ? Density_i : Density_j;
@@ -310,7 +309,8 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_j[iVar][jVar] = 0;
 
-      GetInviscidProjJac(Velocity_i, &Energy_i, UnitNormal, 1.0, Jacobian_i);
+      const su2double chi = 0.0;
+      GetInviscidProjJac(Velocity_i, &Enthalpy_i, &chi, &Gamma_Minus_One, UnitNormal, 1.0, Jacobian_i);
 
     }
     else {
@@ -445,7 +445,8 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0;
 
-      GetInviscidProjJac(Velocity_j, &Energy_j, UnitNormal, 1.0, Jacobian_j);
+      const su2double chi = 0.0;
+      GetInviscidProjJac(Velocity_j, &Enthalpy_j, &chi, &Gamma_Minus_One, UnitNormal, 1.0, Jacobian_j);
 
     }
     else {
@@ -836,8 +837,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
   /*--- Jacobians for the wave speeds held fixed (in the frame of the face). p* = rho_j (u_j - sR)(u_j - sM) + p_j
    = rho_i (u_i - sL)(u_i - sM) + p_i, so its derivative contains rho_j (sR - u_j) dsM/dU (or rho_i (sL - u_i) dsM/dU).
    By default the density of the other state is kept, as in the previous implementation (an inexact transcription
-   of the reference, see #2198): in our tests it was more robust with inexact linear solves than the exact
-   derivative, which USE_ACCURATE_FLUX_JACOBIANS= YES gives. ---*/
+   of the reference, see #2198). USE_ACCURATE_FLUX_JACOBIANS= YES gives the exact derivative. ---*/
 
   const su2double rhoPStar_R = useAccurateJacobian ? Density_j : Density_i;
   const su2double rhoPStar_L = useAccurateJacobian ? Density_i : Density_j;
