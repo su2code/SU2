@@ -4603,6 +4603,20 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Catalytic wall recombination is not yet available for ionized flows in SU2_NEMO.", CURRENT_FUNCTION);
     }
 
+    /*--- A catalytic wall is an isothermal or heat flux wall with a condition for
+     the species. A name that matches no such wall would have no effect. ---*/
+    for (unsigned short iCat = 0; iCat < nWall_Catalytic; iCat++) {
+      bool found = false;
+      for (unsigned short iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
+        found = found || (Wall_Catalytic[iCat] == Marker_Isothermal[iMarker]);
+      for (unsigned short iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
+        found = found || (Wall_Catalytic[iCat] == Marker_HeatFlux[iMarker]);
+      if (!found) {
+        SU2_MPI::Error("CATALYTIC_WALL: the marker " + Wall_Catalytic[iCat] + " is not in MARKER_ISOTHERMAL\n"
+                       "or MARKER_HEATFLUX. The marker names are case-sensitive.", CURRENT_FUNCTION);
+      }
+    }
+
     if (!ideal_gas && !nemo) {
       if (Kind_Upwind_Flow != UPWIND::ROE && Kind_Upwind_Flow != UPWIND::HLLC && Kind_Centered_Flow != CENTERED::JST) {
         SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
