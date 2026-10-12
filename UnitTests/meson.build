@@ -44,9 +44,6 @@ if get_option('enable-tests')
   if get_option('enable-normal')
     unit_test_files = su2_cfd_tests + files(['test_driver.cpp'])
     dependencies_default = [su2_cfd_dep, common_dep, su2_deps, catch2_dep]
-    if get_option('enable-cantera')
-      dependencies_default += cantera_dep
-    endif
     test_driver = executable(
         'test_driver',
         unit_test_files,
