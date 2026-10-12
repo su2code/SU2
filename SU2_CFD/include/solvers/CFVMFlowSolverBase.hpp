@@ -57,6 +57,9 @@ class CFVMFlowSolverBase : public CSolver {
 
   su2activevector EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of transported scalars. */
 
+  su2activematrix EnthalpyDiffusion;     /*!< \brief Enthalpy diffusion coefficient of each species at each point. */
+  su2activematrix GradEnthalpyDiffusion; /*!< \brief Temperature derivative of EnthalpyDiffusion. */
+
   /*!
    * \brief Utility to set the value of a member variables safely, and so that the new values are seen by all threads.
    * \param[in] lhsRhsPairs - Pairs of destination and source e.g. a,0,b,-1.
@@ -356,6 +359,24 @@ class CFVMFlowSolverBase : public CSolver {
   CNumerics::ResidualType<> Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry,
                                                   CSolver **solver_container, CNumerics *numerics, CConfig *config);
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
+
+  /*!
+   * \brief Evaluate the enthalpy diffusion coefficients and mass diffusivities once per point for the edge loop.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeEnthalpyDiffusionTerms(CSolver** solver_container, const CConfig* config);
+
+  /*!
+   * \brief Set the energy flux due to species diffusion of an edge, and its Jacobian, in the viscous numerics.
+   * \param[in] iEdge - Edge for which the flux is computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_Enthalpy_Diffusion(unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                                  CNumerics* numerics, const CConfig* config) const;
 
   /*!
    * \brief Update the Jacobian for one edge with the fused convective and viscous contributions.

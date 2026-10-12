@@ -60,6 +60,15 @@ def main():
     cfd_cantera_dc_h2.new_output = True
     test_list.append(cfd_cantera_dc_h2)
 
+    # 2D supersonic channel, autoignition of lean premixed hydrogen-air (compressible solver)
+    cfd_cantera_dc_h2_supersonic = TestCase('cfd_cantera_dc_h2_supersonic')
+    cfd_cantera_dc_h2_supersonic.cfg_dir = "combustion/supersonic_h2_channel"
+    cfd_cantera_dc_h2_supersonic.cfg_file = "supersonic_h2_channel.cfg"
+    cfd_cantera_dc_h2_supersonic.test_iter = 100
+    cfd_cantera_dc_h2_supersonic.test_vals = [-3.505942, 2.433602, -5.524167, -4.961635, -4.478388, 10.000000]
+    cfd_cantera_dc_h2_supersonic.new_output = True
+    test_list.append(cfd_cantera_dc_h2_supersonic)
+
     #######################
     ### Flamelet solver ###
     #######################

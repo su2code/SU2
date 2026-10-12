@@ -83,6 +83,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
+  if (EnthalpyDiffusion.rows() > 0) ComputeEnthalpyDiffusionTerms(solver_container, config);
+
   /*--- Compute gradient for MUSCL reconstruction, for output (i.e. the
    turbulence solver, and post) only temperature and velocity are needed ---*/
 
@@ -138,6 +140,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == TURB_MODEL::SST);
+  CVariable* speciesNodes = solver_container[SPECIES_SOL] ? solver_container[SPECIES_SOL]->GetNodes() : nullptr;
 
   AD::StartNoSharedReading();
 
@@ -161,6 +164,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
     }
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
+
+    if (speciesNodes) GetFluidModel()->SetComposition(speciesNodes->GetSolution(iPoint));
 
     auto* ns_nodes = static_cast<CNSVariable*>(nodes);
     bool physical = ns_nodes->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
