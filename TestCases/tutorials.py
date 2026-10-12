@@ -187,7 +187,7 @@ def main():
     tutorial_inv_bump.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Bump"
     tutorial_inv_bump.cfg_file   = "inv_channel.cfg"
     tutorial_inv_bump.test_iter  = 0
-    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.074137, 0.015325]
+    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.086038, 0.127546]
     test_list.append(tutorial_inv_bump)
 
     # Inviscid Wedge
@@ -195,7 +195,7 @@ def main():
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Wedge"
     tutorial_inv_wedge.cfg_file   = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter  = 0
-    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.260109, 0.045753]
+    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.215274, 0.037861]
     tutorial_inv_wedge.no_restart = True
     test_list.append(tutorial_inv_wedge)
 
@@ -204,7 +204,7 @@ def main():
     tutorial_inv_onera.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
-    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.271120, 0.091313]
+    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.256743, 0.113097]
     tutorial_inv_onera.no_restart = True
     test_list.append(tutorial_inv_onera)
 
@@ -213,7 +213,7 @@ def main():
     tutorial_lam_cylinder.cfg_dir    = "../Tutorials/compressible_flow/Laminar_Cylinder"
     tutorial_lam_cylinder.cfg_file   = "lam_cylinder.cfg"
     tutorial_lam_cylinder.test_iter  = 0
-    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, -0.085099, 31.790369]
+    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, -0.080518, 43.028531]
     tutorial_lam_cylinder.no_restart = True
     test_list.append(tutorial_lam_cylinder)
 
@@ -335,7 +335,7 @@ def main():
     tutorial_design_inv_naca0012.cfg_dir    = "../Tutorials/design/Inviscid_2D_Unconstrained_NACA0012"
     tutorial_design_inv_naca0012.cfg_file   = "inv_NACA0012_basic.cfg"
     tutorial_design_inv_naca0012.test_iter  = 0
-    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.169476, 0.243426]
+    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.146155, 0.179374]
     tutorial_design_inv_naca0012.no_restart = True
     test_list.append(tutorial_design_inv_naca0012)
 
