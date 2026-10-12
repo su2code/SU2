@@ -203,6 +203,18 @@ TEST_CASE("Fluid_Cantera_Compressible", "[Multicomponent_flow]") {
   fluid.SetTDState_rhoT(density, temperature);
   CHECK(fluid.GetPressure() == Approx(pressure));
 
+  /*--- Round trips through the entropy-based states of the Riemann boundary condition. ---*/
+
+  const su2double entropy = fluid.GetEntropy();
+  const su2double enthalpy = fluid.GetEnthalpy();
+  fluid.SetTDState_hs(enthalpy, entropy);
+  CHECK(fluid.GetTemperatureIterationFailed() == false);
+  CHECK(fluid.GetTemperature() == Approx(temperature).margin(1e-4));
+  CHECK(fluid.GetPressure() == Approx(pressure));
+
+  fluid.SetTDState_Ps(pressure, entropy);
+  CHECK(fluid.GetTemperature() == Approx(temperature));
+
   /*--- Derivatives at frozen composition against central differences of the density-energy state. ---*/
 
   fluid.SetTDState_rhoe(density, energy);

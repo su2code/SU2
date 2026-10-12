@@ -1974,9 +1974,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
+      const su2double* scalar_i = speciesNodes ? speciesNodes->GetSolution(iPoint) : nullptr;
+      const su2double* scalar_j = speciesNodes ? speciesNodes->GetSolution(jPoint) : nullptr;
+
       if (!ideal_gas || low_mach_corr) {
-        const su2double* scalar_i = speciesNodes ? speciesNodes->GetSolution(iPoint) : nullptr;
-        const su2double* scalar_j = speciesNodes ? speciesNodes->GetSolution(jPoint) : nullptr;
         ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i, Secondary_i);
         ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j, Secondary_j);
       }
@@ -1984,7 +1985,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Low-Mach number correction. ---*/
 
       if (low_mach_corr) {
-        LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
+        LowMachPrimitiveCorrection(GetFluidModel(), nDim, scalar_i, scalar_j, Primitive_i, Primitive_j);
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
@@ -2085,6 +2086,7 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
 }
 
 void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned short nDim,
+                                              const su2double *scalar_i, const su2double *scalar_j,
                                               su2double *primitive_i, su2double *primitive_j) {
   SU2_ZONE_SCOPED
   unsigned short iDim;
@@ -2115,9 +2117,11 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
     primitive_j[iDim+1] = vel_j_corr;
   }
 
+  if (scalar_i) fluidModel->SetComposition(scalar_i);
   fluidModel->SetEnergy_Prho(primitive_i[nDim+1], primitive_i[nDim+2]);
   primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i;
 
+  if (scalar_j) fluidModel->SetComposition(scalar_j);
   fluidModel->SetEnergy_Prho(primitive_j[nDim+1], primitive_j[nDim+2]);
   primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j;
 
@@ -2576,6 +2580,8 @@ void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
    * density and static energy can change. */
 
   const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2590,7 +2596,11 @@ void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
       e_old -= 0.5 * pow(nodes->GetSolution(iPoint, jVar), 2) / rho_old;
       e_new -= 0.5 * pow(nodes->GetSolution(iPoint, jVar) + LinSysSol(iPoint, jVar), 2) / rho_new;
     }
-    ratio = fmax(ratio, fabs(e_new - e_old) / max(e_old, EPS));
+    /*--- A general equation of state has an arbitrary energy reference, rho*cv*T = P*rho/(dP/de) sets the scale. ---*/
+    su2double e_scale = e_old;
+    if (!ideal_gas)
+      e_scale = fmax(e_old, nodes->GetPressure(iPoint) * nodes->GetDensity(iPoint) / nodes->GetSecondary(iPoint)[1]);
+    ratio = fmax(ratio, fabs(e_new - e_old) / max(e_scale, EPS));
 
     su2double localUnderRelaxation = fmin(allowableRatio / fmax(ratio, EPS), 1);
 
@@ -5298,6 +5308,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
              tkeNeeded    = config->GetKind_Turb_Model() == TURB_MODEL::SST,
              ideal_gas    = config->GetKind_FluidModel() == STANDARD_AIR ||
                             config->GetKind_FluidModel() == IDEAL_GAS;
+  CVariable* speciesNodes = solver_container[SPECIES_SOL] ? solver_container[SPECIES_SOL]->GetNodes() : nullptr;
 
   su2double **P_Tensor = new su2double*[nVar],
             **invP_Tensor = new su2double*[nVar];
@@ -5345,6 +5356,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Energy_i = nodes->GetEnergy(iPoint);
       const su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
+      /*--- The internal and the boundary states have the mixture composition of the boundary node. ---*/
+      if (speciesNodes) GetFluidModel()->SetComposition(speciesNodes->GetSolution(iPoint));
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
       const auto Pressure_i = GetFluidModel()->GetPressure();

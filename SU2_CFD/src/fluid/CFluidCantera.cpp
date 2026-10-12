@@ -326,6 +326,40 @@ void CFluidCantera::SetTDState_rhoT(su2double rho, su2double T) {
   temperatureIterationFailed = false;
 }
 
+void CFluidCantera::SetTDState_hs(su2double h, su2double s) {
+  double temperature = 0.0;
+  bool converged = false;
+
+  try {
+    auto& thermo = *sol->thermo();
+    const double pressureRef = OneAtm;
+    converged = SolveTemperature(
+        SU2_TYPE::GetValue(h), temperature, minTemperature, maxTemperature,
+        [&](double T) { thermo.setState_TP(T, pressureRef); }, [&] { return thermo.enthalpy_mass(); },
+        [&] { return thermo.cp_mass(); });
+    thermo.setState_TP(temperature, pressureRef);
+
+    /*--- s(T, P) = s(T, P_ref) - R ln(P / P_ref). ---*/
+    const double gasConstant = GasConstant / thermo.meanMolecularWeight();
+    const double pressure = pressureRef * std::exp((thermo.entropy_mass() - SU2_TYPE::GetValue(s)) / gasConstant);
+    thermo.setState_TP(temperature, pressure);
+    ReadThermoState();
+  } catch (const CanteraError& error) {
+    SU2_MPI::Error(string("Cantera error in SetTDState_hs: ") + error.what(), CURRENT_FUNCTION);
+  }
+  temperatureIterationFailed = !converged;
+}
+
+void CFluidCantera::SetTDState_Ps(su2double P, su2double s) {
+  try {
+    sol->thermo()->setState_SP(SU2_TYPE::GetValue(s), SU2_TYPE::GetValue(P));
+    ReadThermoState();
+  } catch (const CanteraError& error) {
+    SU2_MPI::Error(string("Cantera error in SetTDState_Ps: ") + error.what(), CURRENT_FUNCTION);
+  }
+  temperatureIterationFailed = false;
+}
+
 void CFluidCantera::UpdateTransport() const {
   if (transportValid) return;
   try {

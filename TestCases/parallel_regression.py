@@ -69,6 +69,51 @@ def main():
     cfd_cantera_dc_h2_supersonic.new_output = True
     test_list.append(cfd_cantera_dc_h2_supersonic)
 
+    # Same case with multigrid
+    cfd_cantera_dc_h2_supersonic_mg = TestCase('cfd_cantera_dc_h2_supersonic_mg')
+    cfd_cantera_dc_h2_supersonic_mg.cfg_dir = "combustion/supersonic_h2_channel"
+    cfd_cantera_dc_h2_supersonic_mg.cfg_file = "supersonic_h2_channel_mg.cfg"
+    cfd_cantera_dc_h2_supersonic_mg.test_iter = 100
+    cfd_cantera_dc_h2_supersonic_mg.test_vals = [-3.506870, 2.421701, -5.524048, -4.962144, -4.473816, 10.000000]
+    cfd_cantera_dc_h2_supersonic_mg.new_output = True
+    test_list.append(cfd_cantera_dc_h2_supersonic_mg)
+
+    # 2D laminar channel, isothermal wall, O2/N2 (compressible solver, Riemann inlet/outlet)
+    cfd_cantera_channel_isothermal = TestCase('cfd_cantera_channel_isothermal')
+    cfd_cantera_channel_isothermal.cfg_dir = "combustion/channel_heat_transfer"
+    cfd_cantera_channel_isothermal.cfg_file = "channel_isothermal.cfg"
+    cfd_cantera_channel_isothermal.test_iter = 100
+    cfd_cantera_channel_isothermal.test_vals = [-5.437012, -0.595200, -18.587771, -6.032615, 1435.400000]
+    cfd_cantera_channel_isothermal.new_output = True
+    test_list.append(cfd_cantera_channel_isothermal)
+
+    # 2D laminar channel, uniform wall heat flux, O2/N2 (compressible solver)
+    cfd_cantera_channel_heatflux = TestCase('cfd_cantera_channel_heatflux')
+    cfd_cantera_channel_heatflux.cfg_dir = "combustion/channel_heat_transfer"
+    cfd_cantera_channel_heatflux.cfg_file = "channel_heatflux.cfg"
+    cfd_cantera_channel_heatflux.test_iter = 100
+    cfd_cantera_channel_heatflux.test_vals = [-6.365709, -1.088152, -18.601355, -6.031083, -200.000000]
+    cfd_cantera_channel_heatflux.new_output = True
+    test_list.append(cfd_cantera_channel_heatflux)
+
+    # 2D laminar channel at Mach 0.01 with low-Mach correction (compressible solver)
+    cfd_cantera_channel_lowmach = TestCase('cfd_cantera_channel_lowmach')
+    cfd_cantera_channel_lowmach.cfg_dir = "combustion/channel_heat_transfer"
+    cfd_cantera_channel_lowmach.cfg_file = "channel_lowmach.cfg"
+    cfd_cantera_channel_lowmach.test_iter = 100
+    cfd_cantera_channel_lowmach.test_vals = [-5.431092, -0.603142, -18.611317, -6.201586, 1414.500000]
+    cfd_cantera_channel_lowmach.new_output = True
+    test_list.append(cfd_cantera_channel_lowmach)
+
+    # Conjugate heat transfer, laminar channel (compressible solver) and solid wall
+    cfd_cantera_channel_cht = TestCase('cfd_cantera_channel_cht')
+    cfd_cantera_channel_cht.cfg_dir = "combustion/channel_heat_transfer"
+    cfd_cantera_channel_cht.cfg_file = "cht_channel.cfg"
+    cfd_cantera_channel_cht.test_iter = 100
+    cfd_cantera_channel_cht.test_vals = [-3.114587, 1.928624, -1.198387, 760.560000, -834.300000]
+    cfd_cantera_channel_cht.multizone = True
+    test_list.append(cfd_cantera_channel_cht)
+
     #######################
     ### Flamelet solver ###
     #######################
