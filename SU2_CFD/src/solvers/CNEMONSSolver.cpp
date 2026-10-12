@@ -270,13 +270,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   }
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  /*--- Set "Proportional control" coefficient ---*/
-  const su2double pcontrol = 1.0;
-
-  /*--- Get the locations of the primitive variables ---*/
-  const unsigned short T_INDEX = nodes->GetTIndex();
-  const unsigned short TVE_INDEX = nodes->GetTveIndex();
-
   /*--- Loop over all of the vertices on this boundary marker ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -293,25 +286,16 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     /*--- Initialize the convective & viscous residuals to zero ---*/
     for (auto iVar = 0ul; iVar < nVar; iVar++) {Res_Visc[iVar] = 0.0;}
 
-    /*--- Set the residual on the boundary with the specified heat flux ---*/
-    // TODO: Look into this!
-    // Note: Contributions from qtr and qve are used for proportional control
-    //       to drive the solution toward the specified heatflux more quickly.
-    const auto GradV  = nodes->GetGradient_Primitive(iPoint);
-    su2double dTdn   = 0.0;
-    su2double dTvedn = 0.0;
-    for (auto iDim = 0ul; iDim < nDim; iDim++) {
-      dTdn   += GradV[T_INDEX][iDim]*Normal[iDim];
-      dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
-    }
+    /*--- Set the residual on the boundary with the specified heat flux. The total energy
+     receives the specified flux, which is the sum of the conduction of both energy modes.
+     The vib.-el. energy receives the part conducted by the vib.-el. mode. With one
+     specified flux this part is not known, it is taken in proportion to the thermal
+     conductivities (same normal gradient of both temperatures at the wall). ---*/
     const su2double ktr = nodes->GetThermalConductivity(iPoint);
     const su2double kve = nodes->GetThermalConductivity_ve(iPoint);
 
-    /*--- Compute residual ---*/
-    Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
-                                    Wall_HeatFlux*Area;
-    Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
-                                    Wall_HeatFlux*Area;
+    Res_Visc[nSpecies+nDim]   = Wall_HeatFlux*Area;
+    Res_Visc[nSpecies+nDim+1] = Wall_HeatFlux*Area * kve/(ktr+kve);
 
     /*--- Impose the value of the velocity as a strong boundary
     condition (Dirichlet). Fix the velocity and remove any
