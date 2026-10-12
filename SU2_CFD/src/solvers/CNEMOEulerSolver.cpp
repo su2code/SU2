@@ -1355,8 +1355,10 @@ void CNEMOEulerSolver::AddViscousBoundaryResidual(CGeometry *geometry, CNumerics
                                  nodes_bound->GetSolution(iPoint_bound));
   visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
                               nodes_bound->GetPrimitive(iPoint_bound));
+  /*--- The boundary state has no gradient of its own, the gradient of the boundary point is used
+   for both states (the numerics average the two). ---*/
   visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                    nodes_bound->GetGradient_Primitive(iPoint_bound));
+                                    nodes->GetGradient_Primitive(iPoint));
 
   /*--- Pass supplementary information to CNumerics ---*/
   SetNumericsThermoState(visc_numerics, nodes, iPoint, nodes_bound, iPoint_bound);
