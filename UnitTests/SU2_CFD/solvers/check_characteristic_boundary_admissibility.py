@@ -2,10 +2,13 @@ import subprocess
 import sys
 
 for tag, expected in [
-    ("Boundary-negative-density", "Nonphysical characteristic boundary density"),
     (
-        "Boundary-invalid-thermo",
-        "Nonphysical characteristic boundary thermodynamic state",
+        "Boundary-invalid-pressure",
+        "Unable to construct an admissible static-pressure outflow state",
+    ),
+    (
+        "Boundary-backflow",
+        "requires an inflow state for backflow",
     ),
 ]:
     result = subprocess.run(

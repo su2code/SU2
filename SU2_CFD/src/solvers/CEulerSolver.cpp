@@ -26,6 +26,7 @@
  */
 
 #include "../../include/solvers/CEulerSolver.hpp"
+#include "../../include/solvers/characteristic_pressure_outlet.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
@@ -5308,7 +5309,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Density_i = nodes->GetDensity(iPoint);
 
       const auto Energy_i = nodes->GetEnergy(iPoint);
-      const su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+      const bool pressureOutflow = config->GetKind_Data_Riemann(Marker_Tag) == STATIC_PRESSURE;
+      const auto tke_i = pressureOutflow && tkeNeeded ? solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0) : su2double(0.0);
+      const su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i - tke_i;
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -5442,12 +5445,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Density_e = Density_i;
 
         /* --- Compute the boundary state u_e --- */
-        GetFluidModel()->SetTDState_Prho(Pressure_e, Density_e);
         for (auto iDim = 0u; iDim < nDim; iDim++)
           Velocity_e[iDim] = Velocity_i[iDim];
-
-        Velocity2_e = GeometryToolbox::SquaredNorm(nDim, Velocity_e);
-        Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+        Energy_e = Energy_i;  // The nonlinear outflow construction below supplies the pressure state.
         break;
 
       default:
@@ -5455,11 +5455,14 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         break;
       }
 
-      /*--- Compute P (matrix of right eigenvectors) ---*/
-      conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
+      if (!pressureOutflow) {
+        /*--- Compute P (matrix of right eigenvectors) ---*/
+        conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
 
-      /*--- Compute inverse P (matrix of left eigenvectors)---*/
-      conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+        /*--- Compute inverse P (matrix of left eigenvectors)---*/
+        conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+
+      }
 
       /*--- eigenvalues contribution due to grid motion ---*/
       su2double ProjVelocity_i = GeometryToolbox::DotProduct(nDim, Velocity_i, UnitNormal);
@@ -5484,20 +5487,33 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       u_e[nVar-1] = Energy_e*Density_e;
       u_i[nVar-1] = Energy_i*Density_i;
 
-      /*--- Compute the characteristic jumps ---*/
-      for (auto iVar = 0u; iVar < nVar; iVar++){
-        dw[iVar] = 0;
-        for (auto jVar = 0u; jVar < nVar; jVar++)
-          dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
+      if (!pressureOutflow) {
+        /*--- Compute the characteristic jumps ---*/
+        for (auto iVar = 0u; iVar < nVar; iVar++){
+          dw[iVar] = 0;
+          for (auto jVar = 0u; jVar < nVar; jVar++)
+            dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
+        }
+
+        /*--- Compute the boundary state u_b using characteristics ---*/
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          u_b[iVar] = u_i[iVar];
+          for (auto jVar = 0u; jVar < nVar; jVar++) {
+            if (Lambda_i[jVar] < 0)
+              u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
+          }
+        }
+
       }
 
-      /*--- Compute the boundary state u_b using characteristics ---*/
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        u_b[iVar] = u_i[iVar];
-        for (auto jVar = 0u; jVar < nVar; jVar++) {
-          if (Lambda_i[jVar] < 0)
-            u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
-        }
+      const auto gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : 0.0;
+      if (pressureOutflow) {
+        const auto status = PressureOutlet::State(*GetFluidModel(), nDim, u_i, UnitNormal, gridNormal, Pressure_e, u_b, tke_i);
+        if (status == PressureOutlet::Status::Backflow)
+          SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow on marker " + Marker_Tag, CURRENT_FUNCTION);
+        if (status != PressureOutlet::Status::Valid)
+          SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
+                         ". Check the prescribed pressure and the EOS validity range.", CURRENT_FUNCTION);
       }
 
       /*--- Compute the thermodynamic state in u_b ---*/
@@ -5514,7 +5530,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Velocity2_b = GeometryToolbox::SquaredNorm(nDim, Velocity_b);
 
       const su2double Energy_b = u_b[nVar-1]/Density_b;
-      const su2double StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
+      const su2double StaticEnergy_b = Energy_b - 0.5*Velocity2_b - tke_i;
       GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
       const auto boundaryPressure = SU2_TYPE::GetValue(GetFluidModel()->GetPressure());
       const auto boundaryTemperature = SU2_TYPE::GetValue(GetFluidModel()->GetTemperature());
@@ -5535,7 +5551,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Temperature_b = GetFluidModel()->GetTemperature();
       const su2double Enthalpy_b = Energy_b + Pressure_b/Density_b;
       const su2double Kappa_b = GetFluidModel()->GetdPde_rho() / Density_b;
-      const su2double Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
+      /*--- The flux Jacobian uses total enthalpy, so absorb the frozen k contribution into chi. ---*/
+      const su2double Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * (StaticEnergy_b + tke_i);
 
       /*--- Compute the residuals ---*/
       su2double Residual[MAXNVAR] = {0};
@@ -5567,14 +5584,39 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           DubDu[iVar][iVar]=1;
         }
 
-        /*--- Compute DubDu -= RNL---*/
-        for (auto iVar=0u; iVar<nVar; iVar++){
-          for (auto jVar=0u; jVar<nVar; jVar++){
-            for (auto kVar=0u; kVar<nVar; kVar++){
-              if (Lambda_i[kVar]<0)
-                DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
+        if (pressureOutflow) {
+          if (ProjVelocity_i < SoundSpeed_i) {
+            /*--- Differentiate the complete nonlinear boundary map, including a possible sonic limit. ---*/
+            for (auto jVar = 0u; jVar < nVar; ++jVar) {
+              su2double plus[MAXNVAR], minus[MAXNVAR], bPlus[MAXNVAR], bMinus[MAXNVAR];
+              for (auto k = 0u; k < nVar; ++k) plus[k] = minus[k] = u_i[k];
+              const auto scale = jVar == 0 ? Density_i : (jVar == nVar - 1 ? Density_i * SoundSpeed_i * SoundSpeed_i : Density_i * SoundSpeed_i);
+              const auto delta = 1e-5 * fmax(fabs(u_i[jVar]), scale);
+              plus[jVar] += delta;
+              minus[jVar] -= delta;
+              const bool validPlus = PressureOutlet::State(*GetFluidModel(), nDim, plus, UnitNormal, gridNormal, Pressure_e, bPlus, tke_i) == PressureOutlet::Status::Valid;
+              const bool validMinus = PressureOutlet::State(*GetFluidModel(), nDim, minus, UnitNormal, gridNormal, Pressure_e, bMinus, tke_i) == PressureOutlet::Status::Valid;
+              if (!validPlus && !validMinus)
+                SU2_MPI::Error("Unable to differentiate the static-pressure outflow state on marker " + Marker_Tag, CURRENT_FUNCTION);
+              for (auto iVar = 0u; iVar < nVar; ++iVar) {
+                if (validPlus && validMinus) DubDu[iVar][jVar] = (bPlus[iVar] - bMinus[iVar]) / (2 * delta);
+                else if (validPlus) DubDu[iVar][jVar] = (bPlus[iVar] - u_b[iVar]) / delta;
+                else DubDu[iVar][jVar] = (u_b[iVar] - bMinus[iVar]) / delta;
+              }
             }
           }
+          GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
+        } else {
+          /*--- Compute DubDu -= RNL---*/
+          for (auto iVar=0u; iVar<nVar; iVar++){
+            for (auto jVar=0u; jVar<nVar; jVar++){
+              for (auto kVar=0u; kVar<nVar; kVar++){
+                if (Lambda_i[kVar]<0)
+                  DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
+              }
+            }
+          }
+
         }
 
         /*--- Compute flux Jacobian in state b ---*/
