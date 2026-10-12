@@ -20,6 +20,7 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
                        'SU2_CFD/output/COutput_convergence_tests.cpp',
                        'SU2_CFD/gradients.cpp',
                        'SU2_CFD/solvers/CNEMOEulerSolver_tests.cpp',
+                       'SU2_CFD/solvers/characteristic_pressure_outlet_tests.cpp',
                        'SU2_CFD/nemo_viscous_assembly.cpp',
                        'SU2_CFD/windowing.cpp',
                        'Common/toolboxes/random_toolbox_tests.cpp',
@@ -50,6 +51,9 @@ if get_option('enable-tests')
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)
+    test('Characteristic boundary admissibility', python,
+         args: files('SU2_CFD/solvers/check_characteristic_boundary_admissibility.py') + [test_driver.full_path()],
+         timeout: 180)
     test('NEMO convergence field migration', python,
          args: files('SU2_CFD/output/check_nemo_convergence_migration.py') + [test_driver.full_path()],
          timeout: 300)

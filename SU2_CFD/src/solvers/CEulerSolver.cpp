@@ -5503,6 +5503,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       /*--- Compute the thermodynamic state in u_b ---*/
       su2double Velocity_b[MAXNDIM] = {0};
       const auto Density_b = u_b[0];
+      if (!(Density_b > 0.0) || !std::isfinite(SU2_TYPE::GetValue(Density_b))) {
+        SU2_MPI::Error("Nonphysical characteristic boundary density on marker " + Marker_Tag +
+                       ". Check the prescribed state and initialization; pressure continuation may be needed for a steady solve.",
+                       CURRENT_FUNCTION);
+      }
+
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Velocity_b[iDim] = u_b[iDim+1]/Density_b;
       const auto Velocity2_b = GeometryToolbox::SquaredNorm(nDim, Velocity_b);
@@ -5510,6 +5516,16 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const su2double Energy_b = u_b[nVar-1]/Density_b;
       const su2double StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
       GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
+      const auto boundaryPressure = SU2_TYPE::GetValue(GetFluidModel()->GetPressure());
+      const auto boundaryTemperature = SU2_TYPE::GetValue(GetFluidModel()->GetTemperature());
+      const auto boundarySoundSpeed2 = SU2_TYPE::GetValue(GetFluidModel()->GetSoundSpeed2());
+      if (!(boundaryPressure > 0.0 && boundaryTemperature > 0.0 && boundarySoundSpeed2 > 0.0) ||
+          !std::isfinite(boundaryPressure) || !std::isfinite(boundaryTemperature) || !std::isfinite(boundarySoundSpeed2)) {
+        SU2_MPI::Error("Nonphysical characteristic boundary thermodynamic state on marker " + Marker_Tag +
+                       ". Check the prescribed state and initialization; pressure continuation may be needed for a steady solve.",
+                       CURRENT_FUNCTION);
+      }
+
 
       /*--- Store number of Newton iterations at BC ---*/
       if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
