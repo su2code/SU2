@@ -642,9 +642,10 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         }
       }
 
+      /*--- Energy carried by the species fluxes. The species residuals already include the area. ---*/
       for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
-        Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies])*Area;
-        Res_Visc[nSpecies+nDim+1] += (Res_Visc[iSpecies]*eves[iSpecies])*Area;
+        Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs[iSpecies];
+        Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves[iSpecies];
       }
 
       /*--- Viscous contribution to the residual at the wall ---*/
