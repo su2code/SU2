@@ -80,8 +80,12 @@ void computeLimiters_impl(CSolver* solver,
 {
   constexpr size_t MAXNVAR = 32;
 
-  if (varEnd > MAXNVAR)
+  /*--- Called by all threads of a parallel region: only the master may call MPI (MPI_THREAD_FUNNELED). ---*/
+  if (varEnd > MAXNVAR) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     SU2_MPI::Error("Number of variables is too large, increase MAXNVAR.", CURRENT_FUNCTION);
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   const size_t nPointDomain = geometry.GetnPointDomain();
   const size_t nPoint = geometry.GetnPoint();
