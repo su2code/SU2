@@ -1423,47 +1423,19 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       /*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
       if (implicit) {
 
-        /*--- Allocate arrays needed for implicit solver ---*/
-        su2double Velocity[MAXNDIM] = {0.0};
-
-        /*--- Get species molar mass ---*/
-        auto& Ms = FluidModel->GetSpeciesMolarMass();
-
-        /*--- Initialize Jacobian ---*/
+        /*--- The residual of this condition is the pressure force only, so its Jacobian is the
+         derivative of the pressure, in the momentum equations. Terms of the convective flux
+         must not be added: the residual does not have them, and they make the implicit
+         system unstable at high CFL numbers. ---*/
         for (auto iVar = 0ul; iVar < nVar; iVar++)
           for (auto jVar = 0ul; jVar < nVar; jVar++)
             Jacobian_i[iVar][jVar] = 0.0;
 
-        /*--- Calculate state i ---*/
-        const su2double rho    = nodes->GetDensity(iPoint);
-        const su2double rhoE   = nodes->GetSolution(iPoint,nSpecies+nDim);
-        const su2double rhoEve = nodes->GetSolution(iPoint,nSpecies+nDim+1);
-        const auto dPdU    = nodes->GetdPdU(iPoint);
+        const auto dPdU = nodes->GetdPdU(iPoint);
+
         for (auto iDim = 0ul; iDim < nDim; iDim++)
-          Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
-
-        su2double conc = 0.0;
-        for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
-          const su2double cs = nodes->GetMassFraction(iPoint,iSpecies);
-          conc += cs * rho/Ms[iSpecies];
-
-          for (auto iDim = 0ul; iDim < nDim; iDim++) {
-            Jacobian_i[nSpecies+iDim][iSpecies] = dPdU[iSpecies] * UnitNormal[iDim];
-            Jacobian_i[iSpecies][nSpecies+iDim] = cs * UnitNormal[iDim];
-          }
-        }
-
-        for (auto iDim = 0ul; iDim < nDim; iDim++) {
-          for (auto jDim = 0ul; jDim < nDim; jDim++) {
-            Jacobian_i[nSpecies+iDim][nSpecies+jDim] = Velocity[iDim]*UnitNormal[jDim]
-                + dPdU[nSpecies+jDim]*UnitNormal[iDim];
-          }
-          Jacobian_i[nSpecies+iDim][nSpecies+nDim]   = dPdU[nSpecies+nDim]  *UnitNormal[iDim];
-          Jacobian_i[nSpecies+iDim][nSpecies+nDim+1] = dPdU[nSpecies+nDim+1]*UnitNormal[iDim];
-
-          Jacobian_i[nSpecies+nDim][nSpecies+iDim]   = (rhoE+P)/rho * UnitNormal[iDim];
-          Jacobian_i[nSpecies+nDim+1][nSpecies+iDim] = rhoEve/rho   * UnitNormal[iDim];
-        }
+          for (auto jVar = 0ul; jVar < nVar; jVar++)
+            Jacobian_i[nSpecies+iDim][jVar] = dPdU[jVar] * UnitNormal[iDim];
 
         /*--- Integrate over the dual-grid area ---*/
         for (auto iVar = 0ul; iVar < nVar; iVar++)
