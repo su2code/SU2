@@ -1929,6 +1929,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       constexpr unsigned long stallPersist = 20;
       constexpr unsigned short stallMaxCount = 3;
       constexpr passivedouble stallProgress = 0.1, stallGrowth = 1.1, stallCut = 0.5, stallReset = 1.0;
+      constexpr passivedouble oscCap = 0.5, oscReset = 3.0;
 
       if (iMesh == MESH_0) {
         const passivedouble avgCFL = SU2_TYPE::GetValue(Avg_CFL_Local);
@@ -2101,6 +2102,13 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
             CFL_Cap = (CFL_Cap > 0.0) ? min(CFL_Cap, cap) : cap;
           }
           if (regress) CFL_LastRegress = iter;
+          /*--- Flip-flops bound the CFL below the lowest level that produced one. ---*/
+          if (flip) {
+            CFL_OscLevel = (CFL_OscLevel > 0.0) ? min(CFL_OscLevel, avgCFL) : avgCFL;
+            Res_AtOsc = flowMean;
+            const passivedouble cap = max(oscCap * CFL_OscLevel, cflMin);
+            CFL_Cap = (CFL_Cap > 0.0) ? min(CFL_Cap, cap) : cap;
+          }
           CFL_Ceiling = (CFL_Cap > 0.0) ? min(cutFactor * avgCFL, CFL_Cap) : cutFactor * avgCFL;
           CFL_LastEvent = iter;
           if (rank == MASTER_NODE)
@@ -2111,8 +2119,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
         /*--- A cap that has held the CFL through a quiet, converging stretch is raised, so that it does not
          *    outlive the transient that caused it. A new event at the higher CFL brings it back down. It
-         *    stays below the cap set at the last stall. ---*/
-        const passivedouble probeLimit = (CFL_StallCap > 0.0) ? CFL_StallCap : 1e30;
+         *    stays below the cap set at the last stall and below the flip-flop limit. ---*/
+        if ((CFL_OscLevel > 0.0) && (flowMean < Res_AtOsc - oscReset)) CFL_OscLevel = -1.0;
+        passivedouble probeLimit = (CFL_StallCap > 0.0) ? CFL_StallCap : 1e30;
+        if (CFL_OscLevel > 0.0) probeLimit = min(probeLimit, max(oscCap * CFL_OscLevel, cflMin));
         if ((CFL_Cap > 0.0) && (avgCFL > 0.95 * CFL_Cap) && (iter > max(CFL_LastEvent, CFL_LastStall) + capProbeQuiet) &&
             (iter > CFL_LastCapProbe + capProbeQuiet) && ResTrend_Increase && (ResRise < growBelowBest) &&
             (CFL_Cap < probeLimit)) {
