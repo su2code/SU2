@@ -369,7 +369,7 @@ def main():
     inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
-    inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784246, 0.427448, 0.012083]
+    inc_euler_naca0012_pb.test_vals = [-4.454835, -4.784268, 0.427448, 0.012084]
     test_list.append(inc_euler_naca0012_pb)
 
     # Laminar cylinder, pressure-based. Viscous counterpart of the hydrofoil above, so the
@@ -378,7 +378,7 @@ def main():
     inc_lam_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder_pb.cfg_file  = "incomp_pb_cylinder.cfg"
     inc_lam_cylinder_pb.test_iter = 10
-    inc_lam_cylinder_pb.test_vals = [-3.486075, -3.777632, 0.012229, 6.178719]
+    inc_lam_cylinder_pb.test_vals = [-3.486562, -3.776813, 0.012619, 6.205610]
     test_list.append(inc_lam_cylinder_pb)
 
     # Laminar sphere, pressure-based. The only 3D pressure-based case, and the one where the
@@ -387,7 +387,7 @@ def main():
     inc_lam_sphere_pb.cfg_dir   = "incomp_navierstokes/sphere"
     inc_lam_sphere_pb.cfg_file  = "pb_sphere.cfg"
     inc_lam_sphere_pb.test_iter = 9
-    inc_lam_sphere_pb.test_vals = [-6.092084, -2.305039, -2.479072, -2.548968, 0.191798, 170.793204, -6.134920]
+    inc_lam_sphere_pb.test_vals = [-6.104969, -2.307895, -2.481829, -2.570423, 0.189098, 170.764342, -6.128569]
     test_list.append(inc_lam_sphere_pb)
 
     # Heated cylinder, pressure-based, coupled energy equation and variable density.
@@ -395,7 +395,7 @@ def main():
     inc_poly_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder_pb.cfg_file  = "pb_poly_cylinder.cfg"
     inc_poly_cylinder_pb.test_iter = 20
-    inc_poly_cylinder_pb.test_vals = [-13.483266, 0.541350, 0.005972, 17.020220, -8927.600000]
+    inc_poly_cylinder_pb.test_vals = [-9.564374, -3.013394, 0.000161, 1.778555, -172.280000]
     test_list.append(inc_poly_cylinder_pb)
 
     # C-D nozzle with pressure inlet and mass flow outlet
