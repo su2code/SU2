@@ -1389,6 +1389,12 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
+      /*--- Skip the nodes that are also on a viscous wall. The wall imposes the velocity strongly
+       (zero momentum residual, identity rows in the Jacobian) and it is applied before this
+       condition. Adding the pressure flux here would make the momentum equations active again,
+       and the velocity of the node would be set and reset in every iteration. ---*/
+      if (geometry->nodes->GetViscousBoundary(iPoint)) continue;
+
       /*--- Normal vector for this vertex (negative for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 
