@@ -138,7 +138,7 @@ TEST_CASE("Ordinary pressure outlet uses relative normal characteristics and the
           "[Pressure-outlet]") {
   for (auto dim : {2u, 3u})
     for (const auto moving : {false, true})
-      for (const auto normalMach : {.3, .99, 1.4})
+      for (const auto normalMach : {-.3, 0., .3, .99, 1.4})
         for (const auto ratio : {1., .95, 1.02, .001}) IdealOutlet(dim, normalMach, ratio, moving);
 }
 
@@ -146,7 +146,7 @@ TEST_CASE("Ordinary pressure outlet rejects nonpositive pressure", "[.][Ordinary
   IdealOutlet(2, .3, 0, false);
 }
 TEST_CASE("Ordinary pressure outlet requires data for backflow", "[.][Ordinary-backflow]") {
-  IdealOutlet(2, -.3, .95, false);
+  IdealOutlet(2, -1.4, .95, false);
 }
 
 TEST_CASE("Pressure outlet reconstruction is thread local", "[Pressure-outlet]") {

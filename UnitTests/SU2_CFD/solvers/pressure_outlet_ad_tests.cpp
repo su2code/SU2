@@ -40,8 +40,8 @@ TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressu
     gas->SetTDState_Prho(p, rho);
     const double e = SU2_TYPE::GetValue(gas->GetStaticEnergy()), a = SU2_TYPE::GetValue(gas->GetSoundSpeed());
     const su2double normal[2] = {1, 0};
-    for (const auto mach : {.3, .99, 1.4})
-      for (const auto ratio : {.95, .001}) {
+    for (const auto mach : {-.3, .3, .99, 1.4})
+      for (const auto ratio : {1., .95, .001}) {
         const double values[6] = {
             rho, rho * (mach * a + 20), rho * 5, rho * (e + .5 * (pow(mach * a + 20, 2) + 25)), ratio * p, 20};
         auto evaluate = [&](su2double* input, su2double* output) {

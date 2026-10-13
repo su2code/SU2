@@ -30,6 +30,7 @@
 #include "../../../SU2_CFD/include/solvers/characteristic_pressure_outlet.hpp"
 #include "../../../SU2_CFD/include/fluid/CVanDerWaalsGas.hpp"
 #include "../../../SU2_CFD/include/fluid/CPengRobinson.hpp"
+#include "../../../SU2_CFD/include/fluid/CDataDrivenFluid.hpp"
 
 namespace {
 void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
@@ -54,8 +55,8 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
   su2double state[4] = {139.72158881490299, 11271.637336535776, -2338.5053086132339, 221781581.74179047};
   if (backflow) {
     const auto oldVelocity = state[1] / state[0];
-    state[1] = state[0] * 10;
-    state[3] += .5 * state[0] * (100 - oldVelocity * oldVelocity);
+    state[1] = state[0] * -200;
+    state[3] += .5 * state[0] * (40000 - oldVelocity * oldVelocity);
   }
   const su2double grid[2] = {20, 0};
   for (auto p = 0ul; p < test.geometry->GetnPoint(); ++p) {
@@ -200,15 +201,42 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
       for (auto v = 0u; v < dim + 1; ++v) CHECK(withK[v] == Approx(SU2_TYPE::GetValue(plain[v])).epsilon(1e-8));
       CHECK(withK[dim + 1] == Approx(SU2_TYPE::GetValue(plain[dim + 1] + 17.5 * plain[0])).epsilon(1e-8));
       state[1] = -state[1];
-      CHECK(PressureOutlet::State(*gas, dim, state, normal, 0, p, unchanged) == PressureOutlet::Status::Backflow);
+      CHECK(PressureOutlet::State(*gas, dim, state, normal, 0, p, unchanged, 17.5) == PressureOutlet::Status::Valid);
+      state[1] = -2 * sound * rho;
+      state[dim + 1] = rho * (e + 2 * sound * sound + 17.5);
+      CHECK(PressureOutlet::State(*gas, dim, state, normal, 0, p, unchanged, 17.5) == PressureOutlet::Status::Backflow);
     }
   }
 }
 
-// Invalid data and pressure-only backflow must fail explicitly.
+// Invalid data and fully incoming pressure-only flow must fail explicitly.
 TEST_CASE("Characteristic pressure boundary rejects nonpositive pressure", "[.][Boundary-invalid-pressure]") {
   CharacteristicPressureFixture(0);
 }
 TEST_CASE("Characteristic pressure boundary requires data for backflow", "[.][Boundary-backflow]") {
   CharacteristicPressureFixture(1400000, true);
 }
+
+#ifdef HAVE_MLPCPP
+TEST_CASE("Pressure outlet follows the learned EOS without pressure-density inversion", "[Pressure-outlet]") {
+  std::stringstream options;
+  options << "SOLVER= EULER\nCONV_NUM_METHOD_FLOW= ROE\nFLUID_MODEL= DATADRIVEN_FLUID\nINTERPOLATION_METHOD= "
+             "MLP\nUSE_PINN= YES\n"
+             "FILENAMES_INTERPOLATOR= (src/SU2/UnitTests/SU2_CFD/fluid/MLP_nitrogen_outlet.mlp)\n";
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+  CDataDrivenFluid gas(&config, false);
+  gas.SetTDState_rhoe(16, 130000);
+  const su2double pressure = gas.GetPressure(), sound = gas.GetSoundSpeed(), entropy = gas.GetEntropy();
+  const su2double normal[2] = {1, 0};
+  for (const auto mach : {-.3, 0., .3}) {
+    su2double state[4] = {16, 16 * mach * sound, 0, 16 * (130000 + .5 * mach * mach * sound * sound)}, boundary[4];
+    REQUIRE(PressureOutlet::State(gas, 2, state, normal, 0, .98 * pressure, boundary) == PressureOutlet::Status::Valid);
+    const su2double velocity = boundary[1] / boundary[0];
+    gas.SetTDState_rhoe(boundary[0], boundary[3] / boundary[0] - .5 * velocity * velocity);
+    CHECK(SU2_TYPE::GetValue(gas.GetPressure()) == Approx(SU2_TYPE::GetValue(.98 * pressure)).epsilon(1e-7));
+    CHECK(SU2_TYPE::GetValue(gas.GetEntropy()) == Approx(SU2_TYPE::GetValue(entropy)).margin(1e-5));
+    CHECK(gas.GetTemperature() > 0);
+    CHECK(gas.GetSoundSpeed2() > 0);
+  }
+}
+#endif

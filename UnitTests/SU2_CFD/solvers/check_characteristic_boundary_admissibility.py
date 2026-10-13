@@ -3,6 +3,11 @@ import sys
 
 for tag, expected in [
     (
+        "Turbo-invalid-pressure",
+        "Unable to construct an admissible static-pressure outflow state",
+    ),
+    ("Turbo-backflow", "requires an inflow state for backflow"),
+    (
         "Ordinary-invalid-pressure",
         "Unable to construct an admissible static-pressure outflow state",
     ),

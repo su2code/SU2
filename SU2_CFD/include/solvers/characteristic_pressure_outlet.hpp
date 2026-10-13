@@ -45,6 +45,7 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
     return Status::InvalidState;
   su2double velocity[3] = {};
   for (auto d = 0u; d < nDim; ++d) velocity[d] = interior[d + 1] / rho;
+  // SST total energy contains frozen turbulent kinetic energy; the EOS needs thermal energy only.
   const su2double energy = interior[nDim + 1] / rho - .5 * GeometryToolbox::SquaredNorm(nDim, velocity) - turbulentK;
   fluid.SetTDState_rhoe(rho, energy);
   const auto pressure = fluid.GetPressure(), sound2 = fluid.GetSoundSpeed2();
@@ -56,7 +57,9 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
   if (!admissible()) return Status::InvalidState;
   const su2double sound = sqrt(sound2);
   const su2double normalVelocity = GeometryToolbox::DotProduct(nDim, velocity, normal) - gridNormal;
-  if (normalVelocity < 0) return Status::Backflow;
+  // Subsonic reverse flow retains one outgoing acoustic wave. Extrapolate entropy and tangential
+  // velocity from the interior, as in the existing pressure-outlet closure; fully incoming flow needs inlet data.
+  if (normalVelocity <= -sound) return Status::Backflow;
   if (normalVelocity >= sound) {
     for (auto v = 0u; v < nDim + 2; ++v) boundary[v] = interior[v];
     return Status::Valid;
@@ -70,7 +73,7 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
     const su2double boundarySound = fmax(targetSound, sonicSound);
     const su2double density = rho * pow(boundarySound / sound, 2 / gm1);
     const su2double q = normalVelocity + 2 * (sound - boundarySound) / gm1;
-    if (q < 0) return Status::Backflow;
+    if (q <= -boundarySound) return Status::Backflow;
     const su2double p = pressure * pow(density / rho, idealGamma);
     fluid.SetTDState_Prho(p, density);
     if (!admissible()) return Status::InvalidState;
@@ -84,27 +87,32 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
     return Status::Valid;
   }
 
-  using Pair = std::array<su2double, 2>;
-  Pair state = {rho, normalVelocity};
-  auto evaluate = [&](su2double logPressure, const Pair& y, Pair& derivative) {
-    if (!(y[0] > 0) || !std::isfinite(SU2_TYPE::GetValue(y[0] + y[1]))) return false;
+  // Along an isentrope: d(rho)/dp=1/a^2, de/dp=p/(rho^2*a^2), dq/dp=-1/(rho*a).
+  // Advancing thermal energy avoids relying on an iterative pressure/density inversion at every stage.
+  // Log pressure makes the step size independent of units.
+  using StateVector = std::array<su2double, 3>;  // Density, thermal energy, relative normal velocity.
+  StateVector state = {rho, energy, normalVelocity};
+  auto evaluate = [&](su2double logPressure, const StateVector& y, StateVector& derivative) {
+    if (!(y[0] > 0) || !std::isfinite(SU2_TYPE::GetValue(y[0] + y[1] + y[2]))) return false;
     const su2double p = exp(logPressure);
-    fluid.SetTDState_Prho(p, y[0]);
-    if (!admissible() || fabs(fluid.GetPressure() / p - 1) > 1e-6) return false;
+    fluid.SetTDState_rhoe(y[0], y[1]);
+    // RK stage predictors need not lie exactly on the pressure curve. Reject EOS clipping instead.
+    if (!admissible() || fabs(fluid.GetDensity() / y[0] - 1) > 1e-6 ||
+        fabs(fluid.GetStaticEnergy() - y[1]) > 1e-6 * (sound2 + fabs(y[1]))) return false;
     const auto a2 = fluid.GetSoundSpeed2();
-    derivative = {p / a2, -p / (y[0] * sqrt(a2))};
+    derivative = {p / a2, p * p / (y[0] * y[0] * a2), -p / (y[0] * sqrt(a2))};
     return true;
   };
-  auto step = [&](su2double x, const Pair& y, su2double h, Pair& out) {
-    Pair k1, k2, k3, k4, trial;
+  auto step = [&](su2double x, const StateVector& y, su2double h, StateVector& out) {
+    StateVector k1, k2, k3, k4, trial;
     if (!evaluate(x, y, k1)) return false;
-    for (auto k = 0u; k < 2; ++k) trial[k] = y[k] + .5 * h * k1[k];
+    for (auto k = 0u; k < 3; ++k) trial[k] = y[k] + .5 * h * k1[k];
     if (!evaluate(x + .5 * h, trial, k2)) return false;
-    for (auto k = 0u; k < 2; ++k) trial[k] = y[k] + .5 * h * k2[k];
+    for (auto k = 0u; k < 3; ++k) trial[k] = y[k] + .5 * h * k2[k];
     if (!evaluate(x + .5 * h, trial, k3)) return false;
-    for (auto k = 0u; k < 2; ++k) trial[k] = y[k] + h * k3[k];
+    for (auto k = 0u; k < 3; ++k) trial[k] = y[k] + h * k3[k];
     if (!evaluate(x + h, trial, k4)) return false;
-    for (auto k = 0u; k < 2; ++k) out[k] = y[k] + h * (k1[k] + 2 * k2[k] + 2 * k3[k] + k4[k]) / 6;
+    for (auto k = 0u; k < 3; ++k) out[k] = y[k] + h * (k1[k] + 2 * k2[k] + 2 * k3[k] + k4[k]) / 6;
     return evaluate(x + h, out, trial);
   };
   su2double x = log(pressure), end = log(targetPressure);
@@ -113,29 +121,37 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
   bool finished = false;
   for (auto iteration = 0u; iteration < 10000; ++iteration) {
     if (fabs(end - x) < 1e-13) {
+      // A negligible pressure interval can still carry an AD sensitivity.
+      StateVector derivative;
+      if (!evaluate(x, state, derivative)) return Status::InvalidState;
+      for (auto k = 0u; k < 3; ++k) state[k] += (end - x) * derivative[k];
+      x = end;
       finished = true;
       break;
     }
     if (fabs(h) > fabs(end - x)) h = end - x;
-    Pair coarse, half, fine;
+    // Step doubling controls the nonlinear integration error without assuming a constant gamma.
+    StateVector coarse, half, fine;
     bool valid = step(x, state, h, coarse) && step(x, state, .5 * h, half) && step(x + .5 * h, half, .5 * h, fine);
     su2double error = 1;
     if (valid)
       error =
-          fmax(fabs(fine[0] - coarse[0]) / (rho + fabs(fine[0])), fabs(fine[1] - coarse[1]) / (sound + fabs(fine[1])));
+          fmax(fabs(fine[0] - coarse[0]) / (rho + fabs(fine[0])), fmax(fabs(fine[1] - coarse[1]) / (fabs(energy) + sound2 + fabs(fine[1])),
+               fabs(fine[2] - coarse[2]) / (sound + fabs(fine[2]))));
     if (!valid || error > 1e-10) {
       h *= .5;
       if (fabs(h) < 1e-12) return Status::InvalidState;
       continue;
     }
     const su2double nextSound = sqrt(fluid.GetSoundSpeed2());
-    if (fine[1] >= nextSound) {
+    // Stop expansion where q-a changes sign: prescribed pressure can no longer enter the domain.
+    if (fine[2] >= nextSound) {
       su2double lower = 0, upper = 1;
       for (auto k = 0u; k < 40; ++k) {
         const su2double fraction = .5 * (lower + upper);
         if (!step(x, state, fraction * h * .5, half) || !step(x + fraction * h * .5, half, fraction * h * .5, fine))
           return Status::InvalidState;
-        if (fine[1] >= sqrt(fluid.GetSoundSpeed2()))
+        if (fine[2] >= sqrt(fluid.GetSoundSpeed2()))
           upper = fraction;
         else
           lower = fraction;
@@ -143,22 +159,22 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
       x += .5 * (lower + upper) * h;
       state = fine;
       // Bisection locates the sonic state but does not differentiate its moving root.
-      Pair derivative;
+      StateVector derivative;
       if (!evaluate(x, state, derivative)) return Status::InvalidState;
-      const su2double sonicResidual = state[1] - sqrt(fluid.GetSoundSpeed2());
+      const su2double sonicResidual = state[2] - sqrt(fluid.GetSoundSpeed2());
       constexpr double delta = 1e-5;
-      Pair shifted = state, unused;
-      shifted[0] += delta * derivative[0];
+      StateVector shifted = state, unused;
+      for (auto k = 0u; k < 3; ++k) shifted[k] += delta * derivative[k];
       if (!evaluate(x + delta, shifted, unused)) return Status::InvalidState;
       const double soundPlus = SU2_TYPE::GetValue(fluid.GetSoundSpeed());
       shifted = state;
-      shifted[0] -= delta * derivative[0];
+      for (auto k = 0u; k < 3; ++k) shifted[k] -= delta * derivative[k];
       if (!evaluate(x - delta, shifted, unused)) return Status::InvalidState;
       const double soundMinus = SU2_TYPE::GetValue(fluid.GetSoundSpeed());
-      const double slope = SU2_TYPE::GetValue(derivative[1]) - (soundPlus - soundMinus) / (2 * delta);
+      const double slope = SU2_TYPE::GetValue(derivative[2]) - (soundPlus - soundMinus) / (2 * delta);
       if (!std::isfinite(slope) || fabs(slope) < 1e-12) return Status::InvalidState;
       const su2double correction = -sonicResidual / slope;
-      for (auto k = 0u; k < 2; ++k) state[k] += correction * derivative[k];
+      for (auto k = 0u; k < 3; ++k) state[k] += correction * derivative[k];
       x += correction;
       finished = true;
       break;
@@ -168,12 +184,13 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
     if (error < 1e-12) h *= 2;
   }
   if (!finished) return Status::InvalidState;
-  if (state[1] < 0) return Status::Backflow;
-  fluid.SetTDState_Prho(exp(x), state[0]);
+  fluid.SetTDState_rhoe(state[0], state[1]);
   if (!admissible()) return Status::InvalidState;
+  if (fabs(fluid.GetPressure() / exp(x) - 1) > 1e-6) return Status::InvalidState;
+  if (state[2] <= -fluid.GetSoundSpeed()) return Status::Backflow;
   boundary[0] = state[0];
   for (auto d = 0u; d < nDim; ++d) {
-    velocity[d] += (state[1] - normalVelocity) * normal[d];
+    velocity[d] += (state[2] - normalVelocity) * normal[d];
     boundary[d + 1] = state[0] * velocity[d];
   }
   boundary[nDim + 1] =
@@ -195,6 +212,8 @@ inline Status Jacobian(CFluidModel& fluid, unsigned short nDim, const su2double*
       for (auto column = 0u; column < nVar; ++column) jacobian[row][column] = row == column ? 1 : 0;
     return Status::Valid;
   }
+  // Differentiate the complete EOS reconstruction, including the moving sonic limit. The one-sided
+  // fallback handles perturbations that leave the admissible EOS/characteristic range.
   for (auto column = 0u; column < nVar; ++column) {
     su2double plus[5], minus[5], bPlus[5], bMinus[5];
     for (auto k = 0u; k < nVar; ++k) plus[k] = minus[k] = interior[k];
