@@ -196,9 +196,9 @@ def main():
     test_list.append(cylinder_lowmach)
 
     # Laminar NACA0012 with linelet preconditioner (see #2877)
-    lam_naca0012_linelet           = TestCase('lam_naca0012_linelet')
-    lam_naca0012_linelet.cfg_dir   = "navierstokes/naca0012"
-    lam_naca0012_linelet.cfg_file  = "lam_NACA0012_LINELET.cfg"
+    lam_naca0012_linelet = TestCase('lam_naca0012_linelet')
+    lam_naca0012_linelet.cfg_dir = "navierstokes/naca0012"
+    lam_naca0012_linelet.cfg_file = "lam_NACA0012_LINELET.cfg"
     lam_naca0012_linelet.test_iter = 20
     lam_naca0012_linelet.test_vals = [-5.345015, -2.936895, -2.943468, 0.096348]
     test_list.append(lam_naca0012_linelet)
@@ -991,7 +991,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.634558, -8.895554, -9.348754]
+    multi_interface.test_vals = [-8.634558, -8.895554, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 

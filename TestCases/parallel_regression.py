@@ -403,12 +403,12 @@ def main():
     test_list.append(cylinder_lowmach)
 
     # Laminar NACA0012 with linelet preconditioner (see #2877), 4 ranks so that some partitions have no linelets
-    lam_naca0012_linelet           = TestCase('lam_naca0012_linelet')
-    lam_naca0012_linelet.cfg_dir   = "navierstokes/naca0012"
-    lam_naca0012_linelet.cfg_file  = "lam_NACA0012_LINELET.cfg"
+    lam_naca0012_linelet = TestCase('lam_naca0012_linelet')
+    lam_naca0012_linelet.cfg_dir = "navierstokes/naca0012"
+    lam_naca0012_linelet.cfg_file = "lam_NACA0012_LINELET.cfg"
     lam_naca0012_linelet.test_iter = 20
     lam_naca0012_linelet.test_vals = [-5.335771, -2.936187, -2.943926, 0.102449]
-    lam_naca0012_linelet.command   = TestCase.Command("mpirun --oversubscribe -n 4", "SU2_CFD")
+    lam_naca0012_linelet.command = TestCase.Command("mpirun --oversubscribe -n 4", "SU2_CFD")
     test_list.append(lam_naca0012_linelet)
 
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
@@ -1373,7 +1373,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.634558, -8.895554, -9.348754]
+    multi_interface.test_vals = [-8.634558, -8.895554, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
@@ -1921,7 +1921,7 @@ def main():
     species_primitiveVenturi_boundedscalar.cfg_dir     = "species_transport/venturi_primitive_3species"
     species_primitiveVenturi_boundedscalar.cfg_file    = "species2_primitiveVenturi_boundedscalar.cfg"
     species_primitiveVenturi_boundedscalar.test_iter   = 50
-    species_primitiveVenturi_boundedscalar.test_vals   = [-5.537693, -4.375350, -4.475070, -5.598473, -0.870550, -5.634473, 5.000000, -1.461564, 5.000000, -4.142774, 5.000000, -1.729589, 0.000437, 0.000437, 0.000000, 0.000000]
+    species_primitiveVenturi_boundedscalar.test_vals = [-5.537693, -4.375350, -4.475070, -5.598473, -0.870550, -5.634473, 5.000000, -1.461564, 5.000000, -4.142774, 5.000000, -1.729589, 0.000437, 0.000437, 0.000000, 0.000000]
     test_list.append(species_primitiveVenturi_boundedscalar)
 
     # 2 species (1 eq) primitive venturi mixing, unsteady and pressure-based
