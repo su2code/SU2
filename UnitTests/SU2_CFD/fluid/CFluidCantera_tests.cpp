@@ -39,7 +39,7 @@ TEST_CASE("Fluid_Cantera", "[Multicomponent_flow]") {
   /*--- Cantera fluid model unit test cases. ---*/
 
   SU2_COMPONENT val_software = SU2_COMPONENT::SU2_CFD;
-  CConfig config("multicomponent_cantera.cfg", val_software, true);
+  CConfig config("src/SU2/UnitTests/SU2_CFD/fluid/multicomponent_cantera.cfg", val_software, true);
 
   /*--- Create Cantera fluid model. ---*/
   CFluidCantera fluid(config.GetPressure_Thermodynamic(), &config);
@@ -60,7 +60,7 @@ TEST_CASE("Fluid_Cantera_Combustion", "[Reacting_flow]") {
   /*--- Cantera fluid model unit test cases. ---*/
 
   SU2_COMPONENT val_software = SU2_COMPONENT::SU2_CFD;
-  CConfig config("multicomponent_cantera.cfg", val_software, true);
+  CConfig config("src/SU2/UnitTests/SU2_CFD/fluid/multicomponent_cantera.cfg", val_software, true);
 
   /*--- Create Cantera fluid model. ---*/
   CFluidCantera fluid(config.GetPressure_Thermodynamic(), &config);
@@ -84,7 +84,7 @@ TEST_CASE("Fluid_Cantera_LargeMechanism", "[Multicomponent_flow]") {
   /*--- Three transported species in a mechanism with more species than the transported set. ---*/
 
   SU2_COMPONENT val_software = SU2_COMPONENT::SU2_CFD;
-  CConfig config("multicomponent_cantera_gri30.cfg", val_software, true);
+  CConfig config("src/SU2/UnitTests/SU2_CFD/fluid/multicomponent_cantera_gri30.cfg", val_software, true);
   CFluidCantera fluid(config.GetPressure_Thermodynamic(), &config);
 
   const su2double* scalar = config.GetSpecies_Init();
@@ -122,7 +122,7 @@ TEST_CASE("Fluid_Cantera_SourceJacobian", "[Reacting_flow]") {
   /*--- Diagonal chemical source Jacobian of the one-step methane mechanism. ---*/
 
   SU2_COMPONENT val_software = SU2_COMPONENT::SU2_CFD;
-  CConfig config("one_step_ch4.cfg", val_software, true);
+  CConfig config("src/SU2/UnitTests/SU2_CFD/fluid/one_step_ch4.cfg", val_software, true);
   CFluidCantera fluid(config.GetPressure_Thermodynamic(), &config);
 
   const su2double temperature = 1800.0;
