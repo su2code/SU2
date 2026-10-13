@@ -35,7 +35,7 @@ namespace {
 void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
   UnitQuadTestCase test;
   std::ostringstream options;
-  options << "SOLVER= EULER\nMESH_FORMAT= RECTANGLE\nMESH_BOX_SIZE= 5,5,5\n"
+  options << "SOLVER= EULER\nMESH_FORMAT= RECTANGLE\nMESH_BOX_SIZE= 5,129,5\n"
           << "REF_DIMENSIONALIZATION= DIMENSIONAL\nMACH_NUMBER= 0.1\n"
           << "FREESTREAM_OPTION= DENSITY_FS\nFREESTREAM_DENSITY= 230\nFREESTREAM_PRESSURE= 1500112\n"
           << "FLUID_MODEL= PR_GAS\nGAMMA_VALUE= 1.0125\nGAS_CONSTANT= 35.152\n"
@@ -70,8 +70,10 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
   }
   CUpwGeneralHLLC_Flow numerics(2, 4, test.config.get());
   for (auto marker = 0u; marker < test.config->GetnMarker_All(); ++marker)
-    if (test.config->GetMarker_All_TagBound(marker) == "x_plus")
-      solver->BC_Riemann(test.geometry.get(), test.solver, &numerics, nullptr, test.config.get(), marker);
+    if (test.config->GetMarker_All_TagBound(marker) == "x_plus") SU2_OMP_PARALLEL {
+        CUpwGeneralHLLC_Flow threadNumerics(2, 4, test.config.get());
+        solver->BC_Riemann(test.geometry.get(), test.solver, &threadNumerics, nullptr, test.config.get(), marker);
+      }
   for (auto p = 0ul; p < test.geometry->GetnPoint(); ++p)
     for (auto k = 0u; k < 4; ++k) CHECK(std::isfinite(SU2_TYPE::GetValue(solver->LinSysRes(p, k))));
   for (auto marker = 0u; marker < test.config->GetnMarker_All(); ++marker) {
@@ -97,6 +99,11 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
       };
       su2double reference[4];
       flux(state, reference);
+      const auto* primitive = solver->GetCharacPrimVar(marker, v);
+      CHECK(SU2_TYPE::GetValue(primitive[0]) == Approx(SU2_TYPE::GetValue(gas.GetTemperature())).epsilon(1e-8));
+      CHECK(SU2_TYPE::GetValue(primitive[3]) == Approx(SU2_TYPE::GetValue(gas.GetPressure())).epsilon(1e-8));
+      CHECK(SU2_TYPE::GetValue(primitive[4]) == Approx(SU2_TYPE::GetValue(gas.GetDensity())).epsilon(1e-8));
+      CHECK(SU2_TYPE::GetValue(primitive[6]) == Approx(SU2_TYPE::GetValue(gas.GetSoundSpeed())).epsilon(1e-8));
       for (auto k = 0u; k < 4; ++k)
         CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, k)) ==
               Approx(SU2_TYPE::GetValue(reference[k])).epsilon(1e-8));

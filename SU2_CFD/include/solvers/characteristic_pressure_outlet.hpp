@@ -37,7 +37,7 @@ enum class Status { Valid, InvalidState, Backflow };
 /*--- Integrate the outgoing acoustic invariant on the interior isentrope. A
  * pressure below the sonic limit cannot impose an incoming characteristic. ---*/
 inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* interior, const su2double* normal,
-                    su2double gridNormal, su2double targetPressure, su2double* boundary, su2double turbulentK = 0) {
+                    su2double gridNormal, su2double targetPressure, su2double* boundary, su2double turbulentK = 0, su2double idealGamma = 0) {
   for (auto v = 0u; v < nDim + 2; ++v)
     if (!std::isfinite(SU2_TYPE::GetValue(interior[v]))) return Status::InvalidState;
   const auto rho = interior[0];
@@ -45,7 +45,7 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
     return Status::InvalidState;
   su2double velocity[3] = {};
   for (auto d = 0u; d < nDim; ++d) velocity[d] = interior[d + 1] / rho;
-  const auto energy = interior[nDim + 1] / rho - .5 * GeometryToolbox::SquaredNorm(nDim, velocity) - turbulentK;
+  const su2double energy = interior[nDim + 1] / rho - .5 * GeometryToolbox::SquaredNorm(nDim, velocity) - turbulentK;
   fluid.SetTDState_rhoe(rho, energy);
   const auto pressure = fluid.GetPressure(), sound2 = fluid.GetSoundSpeed2();
   auto admissible = [&]() {
@@ -54,11 +54,33 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
     return p > 0 && t > 0 && a2 > 0 && std::isfinite(p + t + a2);
   };
   if (!admissible()) return Status::InvalidState;
-  const auto sound = sqrt(sound2);
-  const auto normalVelocity = GeometryToolbox::DotProduct(nDim, velocity, normal) - gridNormal;
+  const su2double sound = sqrt(sound2);
+  const su2double normalVelocity = GeometryToolbox::DotProduct(nDim, velocity, normal) - gridNormal;
   if (normalVelocity < 0) return Status::Backflow;
   if (normalVelocity >= sound) {
     for (auto v = 0u; v < nDim + 2; ++v) boundary[v] = interior[v];
+    return Status::Valid;
+  }
+
+  // The closed-form ideal-gas invariant avoids numerical integration in ordinary outlets.
+  if (idealGamma > 1) {
+    const su2double gm1 = idealGamma - 1;
+    const su2double sonicSound = (gm1 * normalVelocity + 2 * sound) / (idealGamma + 1);
+    const su2double targetSound = sound * pow(targetPressure / pressure, gm1 / (2 * idealGamma));
+    const su2double boundarySound = fmax(targetSound, sonicSound);
+    const su2double density = rho * pow(boundarySound / sound, 2 / gm1);
+    const su2double q = normalVelocity + 2 * (sound - boundarySound) / gm1;
+    if (q < 0) return Status::Backflow;
+    const su2double p = pressure * pow(density / rho, idealGamma);
+    fluid.SetTDState_Prho(p, density);
+    if (!admissible()) return Status::InvalidState;
+    boundary[0] = density;
+    for (auto d = 0u; d < nDim; ++d) {
+      velocity[d] += (q - normalVelocity) * normal[d];
+      boundary[d + 1] = density * velocity[d];
+    }
+    boundary[nDim + 1] =
+        density * (fluid.GetStaticEnergy() + .5 * GeometryToolbox::SquaredNorm(nDim, velocity) + turbulentK);
     return Status::Valid;
   }
 
@@ -66,7 +88,7 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
   Pair state = {rho, normalVelocity};
   auto evaluate = [&](su2double logPressure, const Pair& y, Pair& derivative) {
     if (!(y[0] > 0) || !std::isfinite(SU2_TYPE::GetValue(y[0] + y[1]))) return false;
-    const auto p = exp(logPressure);
+    const su2double p = exp(logPressure);
     fluid.SetTDState_Prho(p, y[0]);
     if (!admissible() || fabs(fluid.GetPressure() / p - 1) > 1e-6) return false;
     const auto a2 = fluid.GetSoundSpeed2();
@@ -106,11 +128,11 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
       if (fabs(h) < 1e-12) return Status::InvalidState;
       continue;
     }
-    const auto nextSound = sqrt(fluid.GetSoundSpeed2());
+    const su2double nextSound = sqrt(fluid.GetSoundSpeed2());
     if (fine[1] >= nextSound) {
       su2double lower = 0, upper = 1;
       for (auto k = 0u; k < 40; ++k) {
-        const auto fraction = .5 * (lower + upper);
+        const su2double fraction = .5 * (lower + upper);
         if (!step(x, state, fraction * h * .5, half) || !step(x + fraction * h * .5, half, fraction * h * .5, fine))
           return Status::InvalidState;
         if (fine[1] >= sqrt(fluid.GetSoundSpeed2()))
@@ -120,6 +142,24 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
       }
       x += .5 * (lower + upper) * h;
       state = fine;
+      // Bisection locates the sonic state but does not differentiate its moving root.
+      Pair derivative;
+      if (!evaluate(x, state, derivative)) return Status::InvalidState;
+      const su2double sonicResidual = state[1] - sqrt(fluid.GetSoundSpeed2());
+      constexpr double delta = 1e-5;
+      Pair shifted = state, unused;
+      shifted[0] += delta * derivative[0];
+      if (!evaluate(x + delta, shifted, unused)) return Status::InvalidState;
+      const double soundPlus = SU2_TYPE::GetValue(fluid.GetSoundSpeed());
+      shifted = state;
+      shifted[0] -= delta * derivative[0];
+      if (!evaluate(x - delta, shifted, unused)) return Status::InvalidState;
+      const double soundMinus = SU2_TYPE::GetValue(fluid.GetSoundSpeed());
+      const double slope = SU2_TYPE::GetValue(derivative[1]) - (soundPlus - soundMinus) / (2 * delta);
+      if (!std::isfinite(slope) || fabs(slope) < 1e-12) return Status::InvalidState;
+      const su2double correction = -sonicResidual / slope;
+      for (auto k = 0u; k < 2; ++k) state[k] += correction * derivative[k];
+      x += correction;
       finished = true;
       break;
     }
@@ -138,6 +178,41 @@ inline Status State(CFluidModel& fluid, unsigned short nDim, const su2double* in
   }
   boundary[nDim + 1] =
       state[0] * (fluid.GetStaticEnergy() + .5 * GeometryToolbox::SquaredNorm(nDim, velocity) + turbulentK);
+  return Status::Valid;
+}
+/*--- Differentiate the state map, rather than freezing the prescribed-pressure ghost state. ---*/
+inline Status Jacobian(CFluidModel& fluid, unsigned short nDim, const su2double* interior, const su2double* normal,
+                       su2double gridNormal, su2double pressure, const su2double* boundary, su2double** jacobian,
+                       su2double turbulentK = 0, su2double idealGamma = 0) {
+  const auto nVar = nDim + 2;
+  const su2double rho = interior[0];
+  su2double velocity[3] = {};
+  for (auto d = 0u; d < nDim; ++d) velocity[d] = interior[d + 1] / rho;
+  fluid.SetTDState_rhoe(rho, interior[nDim + 1] / rho - .5 * GeometryToolbox::SquaredNorm(nDim, velocity) - turbulentK);
+  const su2double sound = fluid.GetSoundSpeed();
+  if (GeometryToolbox::DotProduct(nDim, velocity, normal) - gridNormal >= sound) {
+    for (auto row = 0u; row < nVar; ++row)
+      for (auto column = 0u; column < nVar; ++column) jacobian[row][column] = row == column ? 1 : 0;
+    return Status::Valid;
+  }
+  for (auto column = 0u; column < nVar; ++column) {
+    su2double plus[5], minus[5], bPlus[5], bMinus[5];
+    for (auto k = 0u; k < nVar; ++k) plus[k] = minus[k] = interior[k];
+    double scale = SU2_TYPE::GetValue(rho);
+    if (column > 0) scale *= SU2_TYPE::GetValue(sound);
+    if (column == nVar - 1) scale *= SU2_TYPE::GetValue(sound);
+    const double delta = 1e-5 * fmax(fabs(SU2_TYPE::GetValue(interior[column])), scale);
+    plus[column] += delta;
+    minus[column] -= delta;
+    const bool validPlus = State(fluid, nDim, plus, normal, gridNormal, pressure, bPlus, turbulentK, idealGamma) == Status::Valid;
+    const bool validMinus = State(fluid, nDim, minus, normal, gridNormal, pressure, bMinus, turbulentK, idealGamma) == Status::Valid;
+    if (!validPlus && !validMinus) return Status::InvalidState;
+    for (auto row = 0u; row < nVar; ++row) {
+      if (validPlus && validMinus) jacobian[row][column] = (bPlus[row] - bMinus[row]) / (2 * delta);
+      else if (validPlus) jacobian[row][column] = (bPlus[row] - boundary[row]) / delta;
+      else jacobian[row][column] = (boundary[row] - bMinus[row]) / delta;
+    }
+  }
   return Status::Valid;
 }
 }  // namespace PressureOutlet
