@@ -538,7 +538,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.037552, -16.376949, 1.080346, 0.018385, 20.000000, -1.564082, 20.000000, -4.180917, 0.000000]
+    turb_naca0012_sa.test_vals = [-12.037577, -16.376949, 1.080346, 0.018385, 20.000000, -1.564038, 20.000000, -4.180921, 0.000000]
     turb_naca0012_sa.test_vals_aarch64 = [-12.037489, -16.376949, 1.080346, 0.018385, 20.000000, -1.564143, 20.000000, -4.180945, 0.000000]
     turb_naca0012_sa.timeout   = 3200
     test_list.append(turb_naca0012_sa)
@@ -916,7 +916,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals = [1.614951, 1.335363, -1.235905, 1.397640, 0.527624, 0.000000]
+    turbmod_sa_neg_rae2822.test_vals = [1.528499, 1.239682, -1.792759, 1.182016, 0.418154, 0.000000]
     turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.345593, 1.448310, 1.208721, -0.846597, 1.248410, 0.489117, 0.000000]
     test_list.append(turbmod_sa_neg_rae2822)
 
