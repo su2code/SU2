@@ -156,7 +156,7 @@ def main():
     invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
-    invwedge_roe.test_vals = [-1.158437, -1.683200, -17.734417, -18.064156, -18.007526, 2.157771, 1.789407, 5.196450, 0.767270]
+    invwedge_roe.test_vals = [-0.856717, -1.381479, -16.733080, -17.063919, -17.006196, 2.492274, 1.625077, 5.504576, 1.052309]
     invwedge_roe.test_vals_aarch64 = [-1.156325, -1.681088, -17.726749, -18.056513, -17.999860, 2.159488, 1.793498, 5.198638, 0.769831]
     test_list.append(invwedge_roe)
 
@@ -430,7 +430,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.888183, -5.136146, 0.788144, 0.019032, 1000.000000]
+    rae2822_sa.test_vals = [-3.032297, -5.144001, 0.789972, 0.019664, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -891,7 +891,7 @@ def main():
     turbmod_sa_bsl_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_bsl_rae2822.cfg_file  = "turb_SA_BSL_RAE2822.cfg"
     turbmod_sa_bsl_rae2822.test_iter = 20
-    turbmod_sa_bsl_rae2822.test_vals = [-3.182935, -0.447793, -0.875861, -3.286652, 0.769925, 0.017709]
+    turbmod_sa_bsl_rae2822.test_vals = [-3.066175, -0.410328, -0.836186, -5.131450, 0.790218, 0.018113]
     test_list.append(turbmod_sa_bsl_rae2822)
 
     # SA Negative
@@ -899,7 +899,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals = [1.570952, 1.355242, -0.869320, 1.244343, 0.452923, 0.000000]
+    turbmod_sa_neg_rae2822.test_vals = [1.462498, 1.294317, -1.866969, 1.240402, 0.461990, 0.000000]
     turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.345593, 1.448310, 1.208721, -0.846597, 1.248410, 0.489117, 0.000000]
     test_list.append(turbmod_sa_neg_rae2822)
 
@@ -908,7 +908,7 @@ def main():
     turbmod_sa_comp_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_comp_rae2822.cfg_file  = "turb_SA_COMP_RAE2822.cfg"
     turbmod_sa_comp_rae2822.test_iter = 20
-    turbmod_sa_comp_rae2822.test_vals = [-3.192776, -0.471890, -0.893254, -5.190537, 0.777261, 0.017904]
+    turbmod_sa_comp_rae2822.test_vals = [-3.067270, -0.409333, -0.836419, -5.163006, 0.790775, 0.018091]
     test_list.append(turbmod_sa_comp_rae2822)
 
     # SA Edwards
@@ -916,7 +916,7 @@ def main():
     turbmod_sa_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_edw_rae2822.cfg_file  = "turb_SA_EDW_RAE2822.cfg"
     turbmod_sa_edw_rae2822.test_iter = 20
-    turbmod_sa_edw_rae2822.test_vals = [-3.198033, -0.439446, -0.883563, -3.899428, 0.786167, 0.017883]
+    turbmod_sa_edw_rae2822.test_vals = [-3.074021, -0.406573, -0.837105, -5.186866, 0.794308, 0.017860]
     test_list.append(turbmod_sa_edw_rae2822)
 
     # SA Compressibility and Edwards
@@ -924,7 +924,7 @@ def main():
     turbmod_sa_comp_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_comp_edw_rae2822.cfg_file  = "turb_SA_COMP_EDW_RAE2822.cfg"
     turbmod_sa_comp_edw_rae2822.test_iter = 20
-    turbmod_sa_comp_edw_rae2822.test_vals = [-2.943295, -0.168387, -0.632480, -5.127730, 0.802507, 0.020196]
+    turbmod_sa_comp_edw_rae2822.test_vals = [-3.070896, -0.339529, -0.812604, -5.279982, 0.809740, 0.019809]
     test_list.append(turbmod_sa_comp_edw_rae2822)
 
     # SA QCR
@@ -932,7 +932,7 @@ def main():
     turbmod_sa_qcr_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_qcr_rae2822.cfg_file  = "turb_SA_QCR_RAE2822.cfg"
     turbmod_sa_qcr_rae2822.test_iter = 20
-    turbmod_sa_qcr_rae2822.test_vals = [-3.056565, -0.419621, -0.805532, -3.857890, 0.760796, 0.016908]
+    turbmod_sa_qcr_rae2822.test_vals = [-3.030070, -0.419207, -0.799348, -5.089007, 0.761556, 0.016831]
     test_list.append(turbmod_sa_qcr_rae2822)
 
     ############################

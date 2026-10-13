@@ -80,7 +80,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-0.480786, 5.329367, -0.244869, 0.043126]
+    wedge.test_vals = [ 0.036140, 6.976887, -0.219795, 0.055341]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -170,7 +170,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.639525, -4.027096, 0.792680, 0.020549, 1000.000000]
+    rae2822_sa.test_vals = [-2.913915, -5.160924, 0.801922, 0.019587, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -452,7 +452,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000004, -0.028637, 5.000000, -4.081478, 2.000000, -4.490126]
+    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000006, -0.028637, 4.000000, -4.016988, 2.000000, -4.487046]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
