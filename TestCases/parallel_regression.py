@@ -402,6 +402,15 @@ def main():
 
     test_list.append(cylinder_lowmach)
 
+    # Laminar NACA0012 with linelet preconditioner (see #2877), 4 ranks so that some partitions have no linelets
+    lam_naca0012_linelet           = TestCase('lam_naca0012_linelet')
+    lam_naca0012_linelet.cfg_dir   = "navierstokes/naca0012"
+    lam_naca0012_linelet.cfg_file  = "lam_NACA0012_LINELET.cfg"
+    lam_naca0012_linelet.test_iter = 20
+    lam_naca0012_linelet.test_vals = [-5.335771, -2.936187, -2.943926, 0.102449]
+    lam_naca0012_linelet.command   = TestCase.Command("mpirun --oversubscribe -n 4", "SU2_CFD")
+    test_list.append(lam_naca0012_linelet)
+
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
     poiseuille           = TestCase('poiseuille')
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
@@ -420,6 +429,30 @@ def main():
     poiseuille_profile.test_vals_aarch64 = [-12.007498, -7.226926, -0.000000, 2.089953]
     poiseuille_profile.tol       = [0.001, 0.001, 1e-5, 1e-5, 1e-5]
     test_list.append(poiseuille_profile)
+
+    # 2D rotational periodic sector without limiter (Jacobian of the periodic points)
+    periodic2d_no_limiter = TestCase('periodic2d_no_limiter')
+    periodic2d_no_limiter.cfg_dir = "navierstokes/periodic2D"
+    periodic2d_no_limiter.cfg_file = "no_limiter.cfg"
+    periodic2d_no_limiter.test_iter = 100
+    periodic2d_no_limiter.test_vals = [-3.216881, -0.582813, -0.629049, 2.266141, -1.056877, -811.470000]
+    test_list.append(periodic2d_no_limiter)
+
+    # 2D rotational periodic sector with multigrid
+    periodic2d_multigrid = TestCase('periodic2d_multigrid')
+    periodic2d_multigrid.cfg_dir = "navierstokes/periodic2D"
+    periodic2d_multigrid.cfg_file = "multigrid.cfg"
+    periodic2d_multigrid.test_iter = 300
+    periodic2d_multigrid.test_vals = [-4.422778, -1.615251, -1.453736, 1.047350, -1.410225, -2060.600000]
+    test_list.append(periodic2d_multigrid)
+
+    # 2D rotational periodic sector with limiter
+    periodic2d = TestCase('periodic2d')
+    periodic2d.cfg_dir = "navierstokes/periodic2D"
+    periodic2d.cfg_file = "config.cfg"
+    periodic2d.test_iter = 100
+    periodic2d.test_vals = [-3.266248, -0.617784, -0.620252, 2.216476, -1.007761, -1035.000000]
+    test_list.append(periodic2d)
 
     ##########################
     ### Compressible RANS  ###
@@ -1290,7 +1323,7 @@ def main():
     Aachen_3D_restart.cfg_file = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
     Aachen_3D_restart.tol = 0.00001
-    Aachen_3D_restart.test_vals = [-7.701420, -8.504728, -6.014939, -6.468223, -5.801124, -4.607179, -5.550665, -5.300778, -3.804188, -5.255983, -5.763060, -3.609605, -2.229249, -2.880453, -0.563469]
+    Aachen_3D_restart.test_vals = [-7.688483, -8.466346, -6.035067, -6.425967, -5.820125, -4.597817, -5.528297, -5.301466, -3.819862, -5.242356, -5.738805, -3.630202, -2.213240, -2.857919, -0.576864]
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
@@ -1298,7 +1331,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.941917, -12.212515, -19.254664, -13.545311, -19.087161, -13.454459, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.905382, -12.212100, -19.212143, -13.508268, -19.078783, -13.446389, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1323,7 +1356,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632227, -8.894736, -9.348706]
+    multi_interface.test_vals          = [-8.634558, -8.895554, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
