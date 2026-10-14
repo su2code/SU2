@@ -1,6 +1,7 @@
 /*!
  * \file scalar_muscl.cpp
  * \brief Tests for scalar reconstruction, boundary fluxes and gradient storage.
+ * \author rois1995
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
