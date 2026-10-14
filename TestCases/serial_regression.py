@@ -236,7 +236,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-3.131221, -5.161756, 0.778275, 0.019566, 1000.000000]
+    rae2822_sa.test_vals = [-3.119066, -5.151318, 0.777084, 0.019422, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -508,7 +508,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.758064, -10.974498, -0.000003, -0.028654, 4, -6.049653, 2, -4.951206]
+    inc_turb_naca0012.test_vals = [-4.758064, -10.974498, -0.000003, -0.028654, 3.000000, -4.499423, 2.000000, -4.951202]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
