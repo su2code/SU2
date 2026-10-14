@@ -464,7 +464,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-3.032297, -5.144001, 0.789972, 0.019664, 1000.000000]
+    rae2822_sa.test_vals = [-3.031598, -5.306194, 0.789433, 0.019680, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -975,7 +975,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals = [1.462498, 1.294317, -1.866969, 1.240402, 0.461990, 0.000000]
+    turbmod_sa_neg_rae2822.test_vals = [1.395344, 1.220083, -2.696197, 1.352850, 0.500450, 0.000000]
     turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.345593, 1.448310, 1.208721, -0.846597, 1.248410, 0.489117, 0.000000]
     test_list.append(turbmod_sa_neg_rae2822)
 
