@@ -4548,9 +4548,12 @@ bool UsesWallDistanceLimiter(const CConfig* config) {
   constexpr auto wall = LIMITER::WALL_DISTANCE;
   const bool turb = config->GetKind_Turb_Model() != TURB_MODEL::NONE;
   const bool species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
+  const bool heat = config->GetWeakly_Coupled_Heat() || config->GetKind_Solver() == MAIN_SOLVER::HEAT_EQUATION ||
+                    config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_HEAT;
   const bool adjoint = config->GetContinuous_Adjoint();
   return config->GetKind_SlopeLimit_Flow() == wall || (turb && config->GetKind_SlopeLimit_Turb() == wall) ||
          (species && config->GetKind_SlopeLimit_Species() == wall) ||
+         (heat && config->GetKind_SlopeLimit_Heat() == wall) ||
          (adjoint && config->GetKind_SlopeLimit_AdjFlow() == wall) ||
          (adjoint && turb && config->GetKind_SlopeLimit_AdjTurb() == wall);
 }
