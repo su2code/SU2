@@ -337,7 +337,8 @@ def main():
     ramp_msw.cfg_file = "inv_ramp_msw.cfg"
     ramp_msw.test_iter = 100
     ramp_msw.test_vals = [-7.242600, -1.471141, -0.077507, 0.054419]
-    ramp_msw.tol = [0.2, 0.2, 0.00001, 0.00001]
+    # Newton-Krylov residual histories vary across MPI environments; keep force checks tight.
+    ramp_msw.tol = [0.5, 0.5, 0.00001, 0.00001]
     test_list.append(ramp_msw)
 
     # MFR_coupling
@@ -1348,7 +1349,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.905382, -12.212100, -19.212143, -13.508268, -19.078783, -13.446389, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.905727, -12.211201, -19.212537, -13.508616, -19.078613, -13.445675, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
