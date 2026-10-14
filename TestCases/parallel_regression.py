@@ -587,12 +587,12 @@ def main():
     turb_naca0012_sst.timeout   = 3200
     test_list.append(turb_naca0012_sst)
 
-    # NACA0012 (SST, MUSCL_TURB with the VAN_ALBADA_EDGE limiter for flow and turbulence, frozen after LIMITER_ITER)
+    # NACA0012 (SST, MUSCL_TURB with edge limiting that remains active after LIMITER_ITER).
     turb_naca0012_sst_muscl_edge = TestCase('turb_naca0012_sst_muscl_edge')
     turb_naca0012_sst_muscl_edge.cfg_dir = "rans/naca0012"
     turb_naca0012_sst_muscl_edge.cfg_file = "turb_NACA0012_sst_muscl_edge.cfg"
     turb_naca0012_sst_muscl_edge.test_iter = 10
-    turb_naca0012_sst_muscl_edge.test_vals = [-7.382360, -9.014488, -2.832761, 1.074785, 0.014914, -2.799879, 0.000000]
+    turb_naca0012_sst_muscl_edge.test_vals = [-6.437377, -9.458944, -3.235607, 1.076770, 0.014867, -3.483369, 0.000000]
     turb_naca0012_sst_muscl_edge.timeout = 3200
     test_list.append(turb_naca0012_sst_muscl_edge)
 
@@ -1866,7 +1866,7 @@ def main():
     species2_primitiveVenturi_muscl_edge.cfg_dir = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_muscl_edge.cfg_file = "species2_primitiveVenturi_muscl_edge.cfg"
     species2_primitiveVenturi_muscl_edge.test_iter = 50
-    species2_primitiveVenturi_muscl_edge.test_vals = [-5.709582, -4.522636, -4.634049, -5.815896, -0.074230, -5.653760, 5.000000, -1.427268, 5.000000, -4.986223, 5.000000, -1.791106, 0.000384, 0.000384, 0.000000, 0.000000]
+    species2_primitiveVenturi_muscl_edge.test_vals = [-5.709619, -4.522629, -4.633999, -5.815865, -0.074216, -5.653580, 5.000000, -1.427224, 5.000000, -4.986199, 5.000000, -1.791168, 0.000384, 0.000384, 0.000000, 0.000000]
     test_list.append(species2_primitiveVenturi_muscl_edge)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity, thermal conductivity and inlet markers for SA turbulence model

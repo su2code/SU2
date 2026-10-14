@@ -347,8 +347,8 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
   /*!
    * \brief MUSCL reconstruction parameters, read from CConfig once per construction (i.e. once
    *        per nonlinear iteration, see CScalarSolver::EdgeFluxResidual) instead of per edge.
-   *        Both the scalar and the flow limiters are frozen after LIMITER_ITER by no longer
-   *        recomputing them: the last stored values keep being applied.
+   *        Point limiters keep applying their last stored values after LIMITER_ITER.
+   *        VAN_ALBADA_EDGE is computed on every edge and is never frozen.
    */
   const su2double kappa, umusclRamp, kappaFlow;
   const LIMITER limiterType, limiterTypeFlow;

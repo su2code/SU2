@@ -190,7 +190,8 @@ class CScalarSolver : public CSolver {
           if (conv_numerics->GetBoundedScalar()) {
             const su2double* velocity = &PrimVar_j[prim_idx.Velocity()];
             const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-            conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, true, density, velocity, Normal));
+            conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, true, density, velocity, Normal,
+                                                         &PrimVar_j[prim_idx.Density()], weight));
           }
 
           auto residual = conv_numerics->ComputeResidual(config);
@@ -251,8 +252,10 @@ class CScalarSolver : public CSolver {
   inline su2double BoundedScalarBCFlux(unsigned long iPoint, bool implicit, const su2double& density,
                                        const su2double* velocity, const su2double* normal,
                                        const su2double* densityGhost = nullptr, su2double weight = 1.0) {
-    const su2double edgeMassFlux = density * GeometryToolbox::DotProduct(nDim, velocity, normal);
-    const su2double q = weight * BoundedScalarDivergenceFlux(edgeMassFlux, density, densityGhost ? *densityGhost : density);
+    const su2double rhoGhost = densityGhost ? *densityGhost : density;
+    const su2double volumeFlux = GeometryToolbox::DotProduct(nDim, velocity, normal);
+    const su2double edgeMassFlux = volumeFlux * (volumeFlux > 0.0 ? density : rhoGhost);
+    const su2double q = weight * BoundedScalarDivergenceFlux(edgeMassFlux, density, rhoGhost);
     LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -q);
     if (implicit) Jacobian.AddVal2Diag(iPoint, -q / (Conservative ? density : 1.0));
     return edgeMassFlux;

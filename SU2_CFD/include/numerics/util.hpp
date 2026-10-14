@@ -34,6 +34,8 @@
 #include "../../../Common/include/containers/C2DContainer.hpp"
 #include "../../../Common/include/linear_algebra/CSysVector.hpp"
 #include "../../../Common/include/linear_algebra/CSysMatrix.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../limiters/CLimiterDetails.hpp"
 
 /*!
  * \enum UpdateType
@@ -524,9 +526,8 @@ FORCEINLINE void muscl(typename CLaneTraits<Double>::Int iPoint, typename CLaneT
 
     Double lim_i = 1.0, lim_j = 1.0;
     if constexpr (limiterKind == MusclLimiter::EDGE) {
-      const Double delta_ij_2 = pow(delta_ij, 2) + 1e-6;
-      lim_i = (delta_ij_2 + proj_i * delta_ij) / (pow(proj_i, 2) + delta_ij_2);
-      lim_j = (delta_ij_2 + proj_j * delta_ij) / (pow(proj_j, 2) + delta_ij_2);
+      lim_i = LimiterHelpers<Double>::vanAlbadaFunction(proj_i, delta_ij, Double(EPS));
+      lim_j = LimiterHelpers<Double>::vanAlbadaFunction(proj_j, delta_ij, Double(EPS));
     } else if constexpr (limiterKind == MusclLimiter::POINT) {
       lim_i = gatherVariables(iPoint, limiter, iRow + iVar);
       lim_j = gatherVariables(jPoint, limiter, iRow + iVar);
