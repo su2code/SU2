@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <array>
 #include <cmath>
 #include <memory>
 
@@ -424,4 +425,29 @@ class CFluidModel {
    * \return Newton solver iteration count at termination.
    */
   virtual unsigned long GetnIter_Newton() { return 0; }
+
+ private:
+  using PressureOutletState = std::array<su2double, 3>;  // Density, thermal energy, relative normal velocity.
+
+  /*! \brief Reconstruct the ideal-gas isentropic state, limited by sonic outflow. */
+  PressureOutletStatus ComputeIdealGasPressureOutletState(su2double targetPressure, su2double idealGamma,
+                                                        PressureOutletState& state);
+
+  /*! \brief Integrate the general EOS isentrope up to the requested pressure or the sonic point. */
+  PressureOutletStatus IntegratePressureOutletIsentrope(su2double targetPressure, PressureOutletState& state);
+
+  /*! \brief Locate the sonic crossing and retain its sensitivity to the interior state. */
+  bool FindPressureOutletSonicState(su2double& logPressure, PressureOutletState& state, su2double step,
+                                   su2double referenceSound2);
+
+  /*! \brief Take one RK4 step, leaving the EOS at the resulting state. */
+  bool StepPressureOutletIsentrope(su2double logPressure, const PressureOutletState& state, su2double step,
+                                  PressureOutletState& result, su2double referenceSound2);
+
+  /*! \brief Evaluate isentropic derivatives with respect to log pressure at an admissible EOS state. */
+  bool EvaluatePressureOutletIsentrope(su2double logPressure, const PressureOutletState& state,
+                                      PressureOutletState& derivative, su2double referenceSound2);
+
+  /*! \brief Check the current EOS pressure, temperature and sound speed before using them. */
+  bool IsPressureOutletStateValid() const;
 };
