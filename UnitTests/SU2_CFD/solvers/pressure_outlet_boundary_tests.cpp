@@ -29,17 +29,16 @@
 #include "../../../SU2_CFD/include/fluid/CIdealGas.hpp"
 
 namespace {
-// Return U_boundary as the residual, with dF/dU_i=0 and dF/dU_b=I, so the assembled block must
-// equal dU_boundary/dU_i. This avoids testing against an approximate numerical-flux Jacobian.
+// Expose the reconstructed state and use unit matrices for both flux arguments. The assembled
+// implicit block must keep only the interior matrix, without adding boundary-state coupling.
 class OutletStateProbe final : public CNumerics {
-  su2double state[5] = {}, zero[5][5] = {}, identity[5][5] = {};
-  const su2double *left[5], *right[5];
+  su2double state[5] = {}, identity[5][5] = {};
+  const su2double* rows[5];
 
  public:
   OutletStateProbe(unsigned short dim, const CConfig* config) : CNumerics(dim, dim + 2, config) {
     for (auto k = 0u; k < nVar; ++k) {
-      left[k] = zero[k];
-      right[k] = identity[k];
+      rows[k] = identity[k];
       identity[k][k] = 1;
     }
   }
@@ -48,7 +47,7 @@ class OutletStateProbe final : public CNumerics {
     state[0] = rho;
     for (auto d = 0u; d < nDim; ++d) state[d + 1] = rho * V_j[d + 1];
     state[nDim + 1] = rho * V_j[nDim + 3] - p;
-    return {state, left, right};
+    return {state, rows, rows};
   }
 };
 
@@ -120,17 +119,8 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
               Approx(SU2_TYPE::GetValue(expected[row])).epsilon(1e-8).margin(1e-8));
       }
       for (auto column = 0u; column < dim + 2; ++column) {
-        // Compare the assembled derivative against the analytic state map, not the production helper.
-        su2double plus[5], minus[5], fp[5], fm[5];
-        const double delta = 2e-5 * fmax(fabs(SU2_TYPE::GetValue(state[column])), column == 0 ? rho : rho * a);
-        for (auto k = 0u; k < dim + 2; ++k) plus[k] = minus[k] = state[k];
-        plus[column] += delta;
-        minus[column] -= delta;
-        reference(plus, fp);
-        reference(minus, fm);
         for (auto row = 0u; row < dim + 2; ++row) {
-          CHECK(solver->Jacobian.GetBlock(point, point)[row * (dim + 2) + column] ==
-                Approx(SU2_TYPE::GetValue((fp[row] - fm[row]) / (2 * delta))).epsilon(2e-4).margin(2e-5));
+          CHECK(solver->Jacobian.GetBlock(point, point)[row * (dim + 2) + column] == Approx(row == column ? 1. : 0.));
         }
       }
     }
@@ -138,7 +128,7 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
 }
 }  // namespace
 
-TEST_CASE("Ordinary pressure outlet uses relative normal characteristics and the state chain rule",
+TEST_CASE("Ordinary pressure outlet uses relative normal characteristics and a frozen boundary matrix",
           "[Pressure-outlet]") {
   for (auto dim : {2u, 3u})
     for (const auto moving : {false, true})

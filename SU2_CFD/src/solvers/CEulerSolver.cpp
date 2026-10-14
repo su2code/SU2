@@ -7556,51 +7556,28 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       } END_SU2_OMP_CRITICAL
     }
 
-    su2double derivative[MAXNVAR][MAXNVAR] = {}, *DubDu[MAXNVAR];
-    if (implicit) {
-      for (auto row = 0u; row < nVar; ++row) DubDu[row] = derivative[row];
-      if (PressureOutlet::Jacobian(*GetFluidModel(), nDim, interior, UnitNormal, gridNormal, pressure, boundary,
-                                   DubDu, tke, Gamma) != PressureOutlet::Status::Valid) {
-        SU2_OMP_CRITICAL
-        {
-          SU2_MPI::Error("Unable to differentiate the static-pressure outflow state on marker " + Marker_Tag, CURRENT_FUNCTION);
-        } END_SU2_OMP_CRITICAL
-      }
-    }
-
     const su2double density = boundary[0], energy = boundary[nVar - 1] / density;
     const auto* V_domain = nodes->GetPrimitive(iPoint);
     auto* V_outlet = GetCharacPrimVar(val_marker, iVertex);
     // Preserve primitive fields outside the reconstructed thermodynamic and velocity entries.
     for (auto variable = 0u; variable < nPrimVar; ++variable) V_outlet[variable] = V_domain[variable];
     for (auto d = 0u; d < nDim; ++d) V_outlet[prim_idx.Velocity() + d] = boundary[d + 1] / density;
-    // Restore the boundary EOS after finite-difference Jacobian perturbations.
+    // Recover the primitive thermodynamic fields from the reconstructed conservative state.
     GetFluidModel()->SetTDState_rhoe(density, energy - .5 * GeometryToolbox::SquaredNorm(nDim, V_outlet + prim_idx.Velocity()) - tke);
     V_outlet[prim_idx.Temperature()] = GetFluidModel()->GetTemperature();
     V_outlet[prim_idx.Pressure()] = GetFluidModel()->GetPressure();
     V_outlet[prim_idx.Density()] = density;
     V_outlet[prim_idx.Enthalpy()] = energy + V_outlet[prim_idx.Pressure()] / density;
     V_outlet[prim_idx.SoundSpeed()] = GetFluidModel()->GetSoundSpeed();
-    // Both flux inputs depend on the interior solution; the implicit block below includes both derivatives.
     conv_numerics->SetPrimitive(V_domain, V_outlet);
     if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
     auto residual = conv_numerics->ComputeResidual(config);
     LinSysRes.AddBlock(iPoint, residual);
-    if (implicit) {
-      su2double jacobian[MAXNVAR][MAXNVAR] = {}, *rows[MAXNVAR];
-      for (auto row = 0u; row < nVar; ++row) {
-        rows[row] = jacobian[row];
-        for (auto column = 0u; column < nVar; ++column) {
-          jacobian[row][column] = residual.jacobian_i[row][column];
-          // Chain rule: dF/dU = dF/dU_i + (dF/dU_b)(dU_b/dU_i).
-          for (auto k = 0u; k < nVar; ++k)
-            jacobian[row][column] += residual.jacobian_j[row][k] * DubDu[k][column];
-        }
-      }
-      Jacobian.AddBlock2Diag(iPoint, rows);
-    }
+    // Keep the boundary state fixed in the approximate implicit matrix, as for other inlet/outlet BCs.
+    // Adding its derivative to approximate flux Jacobians can destabilize high-CFL iterations.
+    if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
   }
   END_SU2_OMP_FOR
 }

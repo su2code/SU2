@@ -365,7 +365,7 @@ def main():
     flatplate_supersonic.cfg_dir   = "navierstokes/flatplate"
     flatplate_supersonic.cfg_file  = "flatplate_supersonic.cfg"
     flatplate_supersonic.test_iter = 100
-    flatplate_supersonic.test_vals = [100.000000, -2.940836, -0.677210, -0.570631, 2.495392, 0.001469]
+    flatplate_supersonic.test_vals = [100.000000, -9.034577, -8.611322, -9.029955, -3.700944, 0.002511]
     test_list.append(flatplate_supersonic)
 
     # Custom objective function
