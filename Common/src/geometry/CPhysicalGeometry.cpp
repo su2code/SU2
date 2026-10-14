@@ -7514,15 +7514,27 @@ unsigned long CPhysicalGeometry::KeepLinesTogether(const vector<unsigned long>& 
   return movedGlobal;
 }
 
+/*!
+ * \brief Compute graph edge weights that encode mesh anisotropy for partitioning.
+ *
+ * The routine builds edge weights from geometric information of neighboring points.
+ * Since element connectivity can reference points owned by other MPI ranks, it first
+ * exchanges the remote coordinates that are required locally. The resulting weights are
+ * scaled/clamped to the user-provided \p maxWeight and returned in graph-edge order.
+ *
+ * \param[in] maxWeight Upper bound used when converting anisotropy metrics to integer
+ *                      partitioning weights.
+ * \return Edge weights suitable for graph partitioning (one value per graph edge entry).
+ */
 vector<idx_t> CPhysicalGeometry::ComputeAnisotropyEdgeWeights(long maxWeight) const {
+  /*--- Build local/global point-index helpers used throughout communication. ---*/
   CLinearPartitioner pointPartitioner(Global_nPointDomain, 0);
   const unsigned long firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
   const auto isLocal = [&](unsigned long iGlobal) {
     return (iGlobal >= firstIndex) && (iGlobal - firstIndex < nPoint);
   };
 
-  /*--- Request the coordinates of element nodes that other ranks hold. ---*/
-
+  /*--- Identify remote element nodes whose coordinates must be requested. ---*/
   vector<vector<unsigned long>> request(size);
   for (auto iElem = 0ul; iElem < nElem; iElem++) {
     for (auto iNode = 0u; iNode < elem[iElem]->GetnNodes(); iNode++) {
@@ -7531,6 +7543,7 @@ vector<idx_t> CPhysicalGeometry::ComputeAnisotropyEdgeWeights(long maxWeight) co
     }
   }
 
+  /*--- Exchange request sizes (after deduplication) to prepare all-to-all transfers. ---*/
   vector<int> nSend(size), nRecv(size), sendDisp(size + 1, 0), recvDisp(size + 1, 0);
   for (int iRank = 0; iRank < size; iRank++) {
     auto& list = request[iRank];
