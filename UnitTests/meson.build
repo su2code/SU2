@@ -55,6 +55,9 @@ if get_option('enable-tests')
     test('NEMO convergence field migration', python,
          args: files('SU2_CFD/output/check_nemo_convergence_migration.py') + [test_driver.full_path()],
          timeout: 300)
+    test('CConfig option errors', python,
+         args: files('Common/check_config_errors.py') + [test_driver.full_path()],
+         timeout: 300)
   endif
 
   if get_option('enable-autodiff')

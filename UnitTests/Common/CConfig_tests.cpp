@@ -72,7 +72,55 @@ const std::string mixture_options =
     "PRANDTL_TURB= 0.9, 0.9\n"
     "DIFFUSIVITY_CONSTANT= 1.0e-05\n";
 
+/*--- Solid heat conduction on a rectangle mesh, used by the HEAT_SOURCE checks. ---*/
+const std::string heat_equation_options =
+    "SOLVER= HEAT_EQUATION\n"
+    "INC_NONDIM= DIMENSIONAL\n"
+    "MESH_FORMAT= RECTANGLE\n"
+    "MESH_BOX_SIZE= 5,5,0\n"
+    "MESH_BOX_LENGTH= 1,1,0\n"
+    "MARKER_ISOTHERMAL= (x_minus, 300.0, x_plus, 300.0)\n"
+    "MARKER_HEATFLUX= (y_minus, 0.0, y_plus, 0.0)\n";
+
+const std::string heat_source_options =
+    "HEAT_SOURCE= YES\n"
+    "HEAT_SOURCE_VAL= 1e6\n";
+
+/*--- Builds a config quietly, so that the test output only shows the result. ---*/
+bool GetHeatSource(const std::string& options) {
+  std::stringstream ss(options);
+  auto* orig_buf = std::cout.rdbuf(nullptr);
+  CConfig config(ss, SU2_COMPONENT::SU2_CFD, false);
+  std::cout.rdbuf(orig_buf);
+  return config.GetHeatSource();
+}
+
+/*--- Builds a config with the output left on, so that the message of SU2_MPI::Error reaches the runner. ---*/
+void BuildConfig(const std::string& options) {
+  std::stringstream ss(options);
+  CConfig config(ss, SU2_COMPONENT::SU2_CFD, false);
+}
+
 }  // namespace
+
+TEST_CASE("HEAT_SOURCE is accepted with a radiation model", "[Config]") {
+  CHECK(GetHeatSource(base_options + ideal_gas_options + heat_source_options + "RADIATION_MODEL= P1\n"));
+  CHECK_FALSE(GetHeatSource(heat_equation_options));
+}
+
+/*--- Hidden tests, SU2_MPI::Error aborts the process. check_config_errors.py runs each one on its own and checks
+ * that it fails with the expected message. ---*/
+
+TEST_CASE("HEAT_SOURCE is rejected for the heat equation", "[.HeatSourceHeatEquation]") {
+  BuildConfig(heat_equation_options + heat_source_options);
+  /*--- Returning is a successful exit, which check_config_errors.py treats as a failure. ---*/
+  SUCCEED("HEAT_SOURCE without a radiation model was not rejected");
+}
+
+TEST_CASE("HEAT_SOURCE is rejected for the incompressible solver without radiation", "[.HeatSourceIncompressible]") {
+  BuildConfig(base_options + ideal_gas_options + heat_source_options);
+  SUCCEED("HEAT_SOURCE without a radiation model was not rejected");
+}
 
 TEST_CASE("INIT_OPTION_INC defaults", "[Config]") {
   /*--- Without the option each fluid model keeps the density it used before INIT_OPTION_INC existed. ---*/
