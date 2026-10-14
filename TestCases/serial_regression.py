@@ -145,7 +145,7 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals         = [-1.311796, 4.165508, 0.000092, 0.113306]
+    polar_naca0012.test_vals = [-1.311796, 4.165508, 0.000092, 0.113306]
     polar_naca0012.test_vals_aarch64 = [-1.063447, 4.401847, 0.000291, 0.031696]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-n 1 -i 11")
     # flaky test on arm64
@@ -196,9 +196,9 @@ def main():
     test_list.append(cylinder_lowmach)
 
     # Laminar NACA0012 with linelet preconditioner (see #2877)
-    lam_naca0012_linelet           = TestCase('lam_naca0012_linelet')
-    lam_naca0012_linelet.cfg_dir   = "navierstokes/naca0012"
-    lam_naca0012_linelet.cfg_file  = "lam_NACA0012_LINELET.cfg"
+    lam_naca0012_linelet = TestCase('lam_naca0012_linelet')
+    lam_naca0012_linelet.cfg_dir = "navierstokes/naca0012"
+    lam_naca0012_linelet.cfg_file = "lam_NACA0012_LINELET.cfg"
     lam_naca0012_linelet.test_iter = 20
     lam_naca0012_linelet.test_vals = [-5.345015, -2.936895, -2.943468, 0.096348]
     test_list.append(lam_naca0012_linelet)
@@ -991,7 +991,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.634558, -8.895554, -9.348754]
+    multi_interface.test_vals = [-8.634558, -8.895554, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
