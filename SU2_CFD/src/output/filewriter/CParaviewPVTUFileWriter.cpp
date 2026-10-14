@@ -1,7 +1,7 @@
 /*!
  * \file CParaviewPVTUFileWriter.cpp
  * \brief Filewriter class for the Paraview parallel XML format (.pvtu and one .vtu piece per rank).
- * \author T. Albring
+ * \author A. Rausa
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -31,7 +31,7 @@
 #include <limits>
 #include <numeric>
 
-#ifdef _MSC_VER
+#if defined(_WIN32)
 #include <direct.h>
 #else
 #include <sys/stat.h>
@@ -46,18 +46,30 @@ constexpr unsigned short NCOORDS = 3;
 const std::array<GEO_TYPE, 7> ElemTypes = {LINE,       TRIANGLE, QUADRILATERAL, TETRAHEDRON,
                                            HEXAHEDRON, PRISM,    PYRAMID};
 
-/*--- Append the bytes of a value to a buffer. ---*/
-template <class T>
-void AppendBytes(string& buffer, const T& value) {
-  buffer.append(reinterpret_cast<const char*>(&value), sizeof(value));
+/*--- Write a data array in the "appended raw" format: the size in bytes of the array followed by its
+ values, converted to the type the file declares. Returns the number of bytes written. ---*/
+template <class T, class U>
+size_t WriteDataArray(FILE* file, const vector<U>& values) {
+  const auto nBytes = static_cast<uint64_t>(values.size() * sizeof(T));
+  fwrite(&nBytes, sizeof(nBytes), 1, file);
+
+  vector<T> converted(values.begin(), values.end());
+  fwrite(converted.data(), sizeof(T), converted.size(), file);
+
+  return sizeof(nBytes) + nBytes;
 }
 
-/*--- Append a data array to a buffer in the "appended raw" format: the size in bytes of the array
- followed by its values, converted to the type the file declares. ---*/
-template <class T, class U>
-void AppendDataArray(string& buffer, const vector<U>& values) {
-  AppendBytes(buffer, static_cast<uint64_t>(values.size() * sizeof(T)));
-  for (const auto& value : values) AppendBytes(buffer, static_cast<T>(value));
+/*--- Create a folder, if it does not exist yet. ---*/
+void MakeFolder(const string& name) {
+#if defined(_WIN32)
+#ifdef __MINGW32__
+  mkdir(name.c_str());
+#else
+  _mkdir(name.c_str());
+#endif
+#else
+  mkdir(name.c_str(), 0777);
+#endif
 }
 
 /*--- Size in bytes of a data array in the file, including the size written in front of it. ---*/
@@ -100,13 +112,7 @@ void CParaviewPVTUFileWriter::WriteData(string val_filename) {
 
   const string folderName = val_filename;
 
-  if (rank == MASTER_NODE) {
-#ifdef _MSC_VER
-    _mkdir(folderName.c_str());
-#else
-    mkdir(folderName.c_str(), 0777);
-#endif
-  }
+  if (rank == MASTER_NODE) MakeFolder(folderName);
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   const auto lastSlash = val_filename.find_last_of("/\\");
@@ -119,11 +125,17 @@ void CParaviewPVTUFileWriter::WriteData(string val_filename) {
 
   const auto nPointsPiece = CollectExternalPoints();
 
-  WritePiece(folderName + "/" + baseName + "_" + to_string(rank) + ".vtu", nPointsPiece);
+  /*--- All pieces must declare the same types, so the connectivity type is that of the largest piece. ---*/
+
+  unsigned long localConn = dataSorter->GetnConn(), maxConn = 0;
+  SU2_MPI::Allreduce(&localConn, &maxConn, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  const bool connInt64 = maxConn > static_cast<unsigned long>(std::numeric_limits<int32_t>::max());
+
+  WritePiece(folderName + "/" + baseName + "_" + to_string(rank) + ".vtu", nPointsPiece, connInt64);
 
   /*--- The master node writes the file that lists the pieces. ---*/
 
-  WriteIndexFile(val_filename + fileExt, pieceNames);
+  WriteIndexFile(val_filename + fileExt, pieceNames, connInt64);
 
   stopTime = SU2_MPI::Wtime();
   usedTime = stopTime - startTime;
@@ -141,6 +153,7 @@ unsigned long CParaviewPVTUFileWriter::CollectExternalPoints() {
   /*--- The piece holds exactly the points used by the elements of this rank, wherever they live. ---*/
 
   usedPoints.clear();
+  usedPoints.reserve(dataSorter->GetnConn());
 
   for (auto type : ElemTypes) {
     const auto nNodes = nPointsOfElementType(type);
@@ -151,6 +164,10 @@ unsigned long CParaviewPVTUFileWriter::CollectExternalPoints() {
 
   sort(usedPoints.begin(), usedPoints.end());
   usedPoints.erase(unique(usedPoints.begin(), usedPoints.end()), usedPoints.end());
+  usedPoints.shrink_to_fit();
+
+  if (usedPoints.size() > static_cast<size_t>(std::numeric_limits<int>::max()))
+    SU2_MPI::Error("Too many points in one piece of the Paraview parallel output.", CURRENT_FUNCTION);
 
   /*--- Ask the rank that owns each point for its data. The points are sorted by their global index, and
    the ranks own ranges of increasing global indices, so they are already grouped by rank. ---*/
@@ -172,35 +189,27 @@ unsigned long CParaviewPVTUFileWriter::CollectExternalPoints() {
                      answeredPoints.data(), nAnswer.data(), answerOffset.data(), MPI_UNSIGNED_LONG,
                      SU2_MPI::GetComm());
 
-  /*--- Answer with the data of the points this rank owns. ---*/
+  /*--- Answer with the data of the points this rank owns, one field at a time so that the MPI counts are numbers
+   of points. The data is passive, so the passive MPI wrapper is used also in AD builds. ---*/
 
-  vector<passivedouble> answerData(answeredPoints.size() * nFields);
+  const auto nPointsPiece = usedPoints.size();
+  pieceData.resize(nPointsPiece * nFields);
 
-  for (size_t i = 0; i < answeredPoints.size(); i++) {
-    const auto iPoint = answeredPoints[i] - firstPoint;
-    for (size_t iField = 0; iField < nFields; iField++)
-      answerData[i * nFields + iField] = dataSorter->GetData(iField, iPoint);
+  vector<passivedouble> answerData(answeredPoints.size());
+
+  for (size_t iField = 0; iField < nFields; iField++) {
+    for (size_t i = 0; i < answeredPoints.size(); i++)
+      answerData[i] = dataSorter->GetData(iField, answeredPoints[i] - firstPoint);
+
+    SelectMPIWrapper<passivedouble>::W::Alltoallv(answerData.data(), nAnswer.data(), answerOffset.data(), MPI_DOUBLE,
+                                                  &pieceData[iField * nPointsPiece], nRequest.data(),
+                                                  requestOffset.data(), MPI_DOUBLE, SU2_MPI::GetComm());
   }
-
-  vector<int> nRequestData(size), nAnswerData(size), requestDataOffset(size + 1), answerDataOffset(size + 1);
-  for (int i = 0; i <= size; i++) {
-    if (i < size) {
-      nRequestData[i] = nRequest[i] * nFields;
-      nAnswerData[i] = nAnswer[i] * nFields;
-    }
-    requestDataOffset[i] = requestOffset[i] * nFields;
-    answerDataOffset[i] = answerOffset[i] * nFields;
-  }
-
-  pieceData.resize(usedPoints.size() * nFields);
-
-  SU2_MPI::Alltoallv(answerData.data(), nAnswerData.data(), answerDataOffset.data(), MPI_DOUBLE, pieceData.data(),
-                     nRequestData.data(), requestDataOffset.data(), MPI_DOUBLE, SU2_MPI::GetComm());
 
   return usedPoints.size();
 }
 
-void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned long nPointsPiece) {
+void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned long nPointsPiece, bool connInt64) {
   const auto& fieldNames = dataSorter->GetFieldNames();
   const auto nFields = fieldNames.size();
   const auto nDim = dataSorter->GetnDim();
@@ -237,7 +246,6 @@ void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned lo
   const size_t realSize = doublePrecision ? sizeof(double) : sizeof(float);
   const string realType = doublePrecision ? "Float64" : "Float32";
 
-  const bool connInt64 = connectivity.size() > static_cast<size_t>(std::numeric_limits<int32_t>::max());
   const size_t connSize = connInt64 ? sizeof(int64_t) : sizeof(int32_t);
   const string connType = connInt64 ? "Int64" : "Int32";
 
@@ -289,81 +297,61 @@ void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned lo
   }
   header << "</PointData>\n</Piece>\n</UnstructuredGrid>\n<AppendedData encoding=\"raw\">\n_";
 
-  /*--- Data of the piece. ---*/
+  /*--- Each rank writes its own file, no rank waits for another one. The arrays are written one at a time. ---*/
 
-  string data;
-  data.reserve(offset);
+  FILE* file = fopen(val_filename.c_str(), "wb");
+  if (!file) SU2_MPI::Error(string("Unable to open file ") + val_filename, CURRENT_FUNCTION);
 
-  vector<passivedouble> buffer(nPointsPiece * NCOORDS);
+  const auto headerString = header.str();
+  fwrite(headerString.data(), sizeof(char), headerString.size(), file);
+  fileSize = headerString.size();
 
-  auto loadField = [&](unsigned short iField, unsigned short nComponents) {
-    buffer.resize(nPointsPiece * nComponents);
-    for (unsigned long iPoint = 0; iPoint < nPointsPiece; iPoint++) {
-      for (unsigned short iComp = 0; iComp < nComponents; iComp++) {
-        const bool empty = (nDim == 2) && (nComponents == NCOORDS) && (iComp == 2);
-        buffer[iPoint * nComponents + iComp] = empty ? 0.0 : pieceData[iPoint * nFields + iField + iComp];
-      }
+  vector<passivedouble> buffer;
+
+  auto writeField = [&](unsigned short iField, unsigned short nComponents) {
+    buffer.assign(nPointsPiece * nComponents, 0.0);
+    for (unsigned short iComp = 0; iComp < nComponents; iComp++) {
+      if ((nDim == 2) && (nComponents == NCOORDS) && (iComp == 2)) continue;
+      const auto* field = &pieceData[(iField + iComp) * nPointsPiece];
+      for (unsigned long iPoint = 0; iPoint < nPointsPiece; iPoint++)
+        buffer[iPoint * nComponents + iComp] = field[iPoint];
     }
+    fileSize += doublePrecision ? WriteDataArray<double>(file, buffer) : WriteDataArray<float>(file, buffer);
   };
 
-  auto appendReal = [&](const vector<passivedouble>& values) {
-    if (doublePrecision)
-      AppendDataArray<double>(data, values);
-    else
-      AppendDataArray<float>(data, values);
+  auto writeConn = [&](const vector<unsigned long>& values) {
+    fileSize += connInt64 ? WriteDataArray<int64_t>(file, values) : WriteDataArray<int32_t>(file, values);
   };
 
-  auto appendConn = [&](const vector<unsigned long>& values) {
-    if (connInt64)
-      AppendDataArray<int64_t>(data, values);
-    else
-      AppendDataArray<int32_t>(data, values);
-  };
+  writeField(0, NCOORDS);
 
-  loadField(0, NCOORDS);
-  appendReal(buffer);
-
-  appendConn(connectivity);
-  appendConn(offsets);
-  AppendDataArray<uint8_t>(data, types);
+  writeConn(connectivity);
+  writeConn(offsets);
+  fileSize += WriteDataArray<uint8_t>(file, types);
 
   for (unsigned short iField = varStart; iField < nFields; iField++) {
     if (fieldNames[iField].find("_y") != string::npos || fieldNames[iField].find("_z") != string::npos) continue;
 
     const bool isVector = fieldNames[iField].find("_x") != string::npos;
-    loadField(iField, isVector ? NCOORDS : 1);
-    appendReal(buffer);
+    writeField(iField, isVector ? NCOORDS : 1);
   }
 
-  /*--- Each rank writes its own file, no rank waits for another one. ---*/
-
-  FILE* file = fopen(val_filename.c_str(), "wb");
-  if (!file) SU2_MPI::Error(string("Unable to open file ") + val_filename, CURRENT_FUNCTION);
-
   const string tail = "\n</AppendedData>\n</VTKFile>\n";
-  const auto headerString = header.str();
-
-  fwrite(headerString.data(), sizeof(char), headerString.size(), file);
-  fwrite(data.data(), sizeof(char), data.size(), file);
   fwrite(tail.data(), sizeof(char), tail.size(), file);
   fclose(file);
 
-  fileSize = headerString.size() + data.size() + tail.size();
+  fileSize += tail.size();
 }
 
-void CParaviewPVTUFileWriter::WriteIndexFile(const string& val_filename, const vector<string>& pieceNames) {
-  /*--- All pieces must declare the same types, so the connectivity type is that of the largest piece. ---*/
-
-  unsigned long localConn = dataSorter->GetnConn(), maxConn = 0;
-  SU2_MPI::Allreduce(&localConn, &maxConn, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
-
+void CParaviewPVTUFileWriter::WriteIndexFile(const string& val_filename, const vector<string>& pieceNames,
+                                             bool connInt64) {
   if (rank != MASTER_NODE) return;
 
   const auto& fieldNames = dataSorter->GetFieldNames();
   const auto nDim = dataSorter->GetnDim();
 
   const string realType = doublePrecision ? "Float64" : "Float32";
-  const string connType = maxConn > static_cast<unsigned long>(std::numeric_limits<int32_t>::max()) ? "Int64" : "Int32";
+  const string connType = connInt64 ? "Int64" : "Int32";
 
   ostringstream file;
 
