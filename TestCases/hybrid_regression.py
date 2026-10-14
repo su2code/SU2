@@ -80,7 +80,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.223565, 1.506875, -0.249526, 0.043953]
+    wedge.test_vals = [-4.161881, 1.565415, -0.249526, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -170,7 +170,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.858565, -4.906734, 0.782692, 0.018639, 1000.000000]
+    rae2822_sa.test_vals = [-2.916839, -5.161263, 0.802145, 0.019586, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST

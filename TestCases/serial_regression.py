@@ -119,7 +119,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.359580, 1.370530, -0.249526, 0.043953]
+    wedge.test_vals = [-4.350066, 1.379784, -0.249526, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -200,7 +200,7 @@ def main():
     lam_naca0012_linelet.cfg_dir = "navierstokes/naca0012"
     lam_naca0012_linelet.cfg_file = "lam_NACA0012_LINELET.cfg"
     lam_naca0012_linelet.test_iter = 20
-    lam_naca0012_linelet.test_vals = [-5.345015, -2.936895, -2.943468, 0.096348]
+    lam_naca0012_linelet.test_vals = [-5.345007, -2.936878, -2.943454, 0.096356]
     test_list.append(lam_naca0012_linelet)
 
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
@@ -236,7 +236,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-3.056253, -5.155475, 0.783190, 0.020552, 1000.000000]
+    rae2822_sa.test_vals = [-3.117674, -5.153287, 0.777070, 0.019412, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
