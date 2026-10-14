@@ -1263,6 +1263,11 @@ void CConfig::SetConfig_Options() {
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief WRT_RESTART_COMPACT \n DESCRIPTION: Minimize the size of restart files \n Options: NO, YES \ingroup Config */
   addBoolOption("WRT_RESTART_COMPACT", Wrt_Restart_Compact, true);
+  /*!\brief VOLUME_OUTPUT_PRECISION \n DESCRIPTION: Floating-point type of the fields of the volume and surface files
+   (CGNS and Paraview XML), the coordinates are always written in double precision by the CGNS writer.
+   \n Options: SINGLE, DOUBLE \ingroup Config */
+  addEnumOption("VOLUME_OUTPUT_PRECISION", Volume_Output_Precision, VolumeOutputPrecision_Map,
+                VOLUME_OUTPUT_PRECISION::SINGLE);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief WRT_RESTART_OVERWRITE \n DESCRIPTION: overwrite restart files or append iteration number. \n Options: YES, NO \ingroup Config */
@@ -1425,6 +1430,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /*!\brief INIT_OPTION \n DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS \ingroup Config*/
   addEnumOption("INIT_OPTION", Kind_InitOption, InitOption_Map, REYNOLDS);
+  /*!\brief INIT_OPTION_INC \n DESCRIPTION: Init option for the incompressible solver to choose between the initial
+   * density and the operating pressure for initializing the solution \n OPTIONS: see \link InitOptionInc_Map \endlink
+   * \n DEFAULT: fluid model dependent \ingroup Config*/
+  addEnumOption("INIT_OPTION_INC", Kind_InitOption_Inc, InitOptionInc_Map, INIT_OPTION_INC::DENSITY_INIT);
   /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
   addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, FREESTREAM_OPTION::TEMPERATURE_FS);
   /*!\brief FREESTREAM_PRESSURE\n DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) \ingroup Config*/
@@ -2089,16 +2098,17 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MGOptions.MG_Smooth_Res_Threshold, 0.9);
   /*!\brief MG_SMOOTH_OUTPUT\n DESCRIPTION: Print compact per-cycle smoothing iteration summary. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_SMOOTH_OUTPUT", MGOptions.MG_Smooth_Output, false);
-  /*!\brief MG_SMOOTH_STAGNATION_TOL\n DESCRIPTION: Stop smoothing if current_rms >= previous_rms * this value. Values < 1.0 enable early exit on stagnation, 1.0 only exits on defect growth. DEFAULT: 0.99 \ingroup Config*/
+  /*!\brief MG_SMOOTH_STAGNATION_TOL\n DESCRIPTION: Stop smoothing if current_rms >= previous_rms * this value.
+   * Values < 1.0 enable early exit on stagnation, 1.0 only exits on defect growth. DEFAULT: 0.99 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_STAGNATION_TOL", MGOptions.MG_Smooth_StagnationTol, 0.99);
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_COEFF", MGOptions.MG_Smooth_Coeff, 1.25);
-  /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level. Levels that would produce fewer CVs are not created. DEFAULT: 50 \ingroup Config*/
+  /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level, counted over the
+   * whole level rather than per rank, so the hierarchy does not change with the number of ranks. DEFAULT: 500 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
-  /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
+  /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Pave the coarse grid with advancing fronts raised from boundaries
+   * that carry a stretched layer normal to themselves. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
-  /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
-  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
    * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
@@ -2113,7 +2123,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief MG_STARTUP_STAGNATION_ITER\n DESCRIPTION: Consecutive stalled iterations required before Full-MG promotes
    * on stagnation. 0 disables it, as MG_STARTUP_STAGNATION= 0 does. DEFAULT: 5 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_STAGNATION_ITER", MGOptions.MG_Startup_Stagnation_Iter, 5);
-  /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i). If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
+  /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i).
+   * If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
@@ -2331,7 +2342,9 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_OUTPUT::TAB_CSV);
-  /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Set <ofstream>.precision(value) to specified value for SU2_DOT and HISTORY output. Useful for exact gradient validation. \n DEFAULT: 6 \ingroup Config */
+  /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Number of digits of the text outputs (SU2_DOT, HISTORY and screen).
+   Useful for exact gradient validation. It does not change the volume and surface files, see VOLUME_OUTPUT_PRECISION.
+   \n DEFAULT: 10 \ingroup Config */
   addUnsignedShortOption("OUTPUT_PRECISION", output_precision, 10);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
@@ -4236,11 +4249,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support MGLEVEL > 0,\n"
                      "       the Poisson solver is single-grid only.", CURRENT_FUNCTION);
     }
-    if (Time_Domain) {
-      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES,\n"
-                     "       it converges to a physically wrong solution instead of failing.",
-                     CURRENT_FUNCTION);
-    }
     if (DiscreteAdjoint || ContinuousAdjoint) {
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED has no adjoint formulation.", CURRENT_FUNCTION);
     }
@@ -4251,16 +4259,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support streamwise periodicity.",
                      CURRENT_FUNCTION);
     }
+    /*--- The solution of the previous time step is only stored with dual time stepping. ---*/
+    if (TimeMarching == TIME_MARCHING::TIME_STEPPING) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_MARCHING= TIME_STEPPING,\n"
+                     "       use DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER.", CURRENT_FUNCTION);
+    }
 
-    /*--- A_p already carries Vol/dt when SIMPLEC's A_p-Sum_A_nb correction runs, so at the 0.0
-     * default that correction collapses to roughly Vol/dt and the pressure correction becomes
-     * vanishingly weak at low CFL. ---*/
-    if (Kind_PBIter == PBITER::SIMPLEC && !OptionIsSet("TRANSIENT_TERM_REMOVAL_FACTOR")) {
-      SIMPLE_Options.Transient_Term_Removal_Factor = 1.0;
-      if (rank == MASTER_NODE) {
-        cout << "WARNING: KIND_PB_ITER= SIMPLEC without TRANSIENT_TERM_REMOVAL_FACTOR set - "
-             << "defaulting it to 1.0, its intended companion value for SIMPLEC." << endl;
-      }
+    /*--- With SIMPLEC the momentum coefficient a_P - sum(a_nb) is the pseudo-time term alone, removing
+     * it leaves nothing. ---*/
+    if (Kind_PBIter == PBITER::SIMPLEC && SIMPLE_Options.Transient_Term_Removal_Factor != 0.0) {
+      SU2_MPI::Error("KIND_PB_ITER= SIMPLEC requires TRANSIENT_TERM_REMOVAL_FACTOR= 0.", CURRENT_FUNCTION);
     }
   }
 
@@ -5396,6 +5404,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
+  }
+
+  /*--- Without an explicit INIT_OPTION_INC each fluid model keeps the density it used before the option existed. ---*/
+
+  if (!OptionIsSet("INIT_OPTION_INC")) {
+    if (Kind_FluidModel == FLUID_MIXTURE || Kind_FluidModel == FLUID_FLAMELET) {
+      Kind_InitOption_Inc = INIT_OPTION_INC::OPERATING_PRESSURE;
+    } else {
+      Kind_InitOption_Inc = INIT_OPTION_INC::DENSITY_INIT;
+    }
+  } else if (Kind_FluidModel == CONSTANT_DENSITY && Kind_InitOption_Inc == INIT_OPTION_INC::OPERATING_PRESSURE) {
+    SU2_MPI::Error("CONSTANT_DENSITY fluid model can only be used with INIT_OPTION_INC= DENSITY_INIT.", CURRENT_FUNCTION);
   }
 
   if (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS) {

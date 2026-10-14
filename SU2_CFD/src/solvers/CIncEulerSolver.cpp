@@ -286,6 +286,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST)));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
+  bool density_init  = (config->GetKind_InitOption_Inc() == INIT_OPTION_INC::DENSITY_INIT);
 
   /*--- Compute dimensional free-stream values. ---*/
 
@@ -309,6 +310,17 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   }
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 
+  const su2double* scalar_init = nullptr;
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) scalar_init = config->GetSpecies_Init();
+
+  /*--- Build the fluid model at the operating pressure, it is rescaled below for density initialization. ---*/
+
+  const bool constant_density = (config->GetKind_FluidModel() == CONSTANT_DENSITY);
+  if (!constant_density) {
+    config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
+    Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
+  }
+
   CFluidModel* auxFluidModel = nullptr;
 
   switch (config->GetKind_FluidModel()) {
@@ -316,23 +328,15 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     case CONSTANT_DENSITY:
 
       auxFluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp(), Temperature_FreeStream);
-      auxFluidModel->SetTDState_T(Temperature_FreeStream);
       break;
 
     case INC_IDEAL_GAS:
 
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
       auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
-      auxFluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = auxFluidModel->GetPressure();
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
     case INC_IDEAL_GAS_POLY:
 
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
       auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
@@ -340,32 +344,41 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
           config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar), iVar);
         auxFluidModel->SetCpModel(config, Temperature_FreeStream);
       }
-      auxFluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = auxFluidModel->GetPressure();
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
     case FLUID_MIXTURE:
 
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
-      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidScalar(Pressure_Thermodynamic, config);
-      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
 
     case FLUID_FLAMELET:
 
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
-      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
-      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
 
     default:
 
       SU2_MPI::Error("Fluid model not implemented for incompressible solver.", CURRENT_FUNCTION);
       break;
+  }
+
+  auxFluidModel->SetTDState_T(Temperature_FreeStream, scalar_init);
+
+  /*--- Density is proportional to the thermodynamic pressure, match one of the two to the initial value.
+        The flamelet manifold tabulates the density, there the pressure cannot change it. ---*/
+
+  const bool tabulated_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::FLAMELET);
+
+  if (!constant_density) {
+    if (density_init && !tabulated_density) {
+      Pressure_Thermodynamic *= Density_FreeStream/auxFluidModel->GetDensity();
+      auxFluidModel->SetPressure(Pressure_Thermodynamic);
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, scalar_init);
+    } else {
+      Density_FreeStream = auxFluidModel->GetDensity();
+      config->SetDensity_FreeStream(Density_FreeStream);
+    }
+    config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
   }
 
   if (viscous) {
@@ -634,6 +647,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case INC_DENSITYMODEL::FLAMELET:
         cout << "Energy equation is disabled and density is obtained through flamelet manifold." << endl;
+        if (config->OptionIsSet("INIT_OPTION_INC"))
+          cout << "INIT_OPTION_INC is not used, the density is looked up in the flamelet manifold." << endl;
         break;
     }
 
@@ -1038,8 +1053,9 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
     SU2_OMP_SAFE_GLOBAL_ACCESS(GetOutlet_Properties(geometry, config, iMesh, Output);)
   }
 
-  /*--- Reset flag for strong BCs. ---*/
-  if (pressure_based) {
+  /*--- Reset flag for strong BCs. Not on the Output call at the end of the momentum iteration: the
+   *    flags set by the BCs are used afterwards by the momentum coefficients and the corrections. ---*/
+  if (pressure_based && !Output) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
       nodes->ResetStrongBC(iPoint);
@@ -2124,15 +2140,24 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
 
   struct IncPrec {
     const CIncEulerSolver* solver;
-    const bool active;
+    const bool active = true;
     su2activematrix matrix;
 
-    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s), active(!s->pressure_based) {
+    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s) {
       matrix.resize(nVar,nVar);
     }
 
     FORCEINLINE const su2activematrix& operator() (const CConfig* config, unsigned long iPoint, su2double delta) {
-      solver->SetPreconditioner(config, iPoint, delta, matrix);
+      if (solver->pressure_based) {
+        /*--- The Jacobian of the pressure-based solver is per unit velocity and enthalpy, the
+         *    pseudo-time term is rho*V/dt (the continuity row is deleted below). ---*/
+        matrix = su2double(0.0);
+        matrix(0,0) = delta;
+        for (auto iVar = 1ul; iVar < matrix.rows(); iVar++)
+          matrix(iVar,iVar) = solver->nodes->GetDensity(iPoint) * delta;
+      } else {
+        solver->SetPreconditioner(config, iPoint, delta, matrix);
+      }
       return matrix;
     }
 
@@ -2442,7 +2467,11 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       if (inflow) {
 
-        /*--- Set this face as an inlet via a strong BC. ---*/
+        /*--- Set this face as an inlet via a strong BC, the free-stream velocity and enthalpy are imposed. ---*/
+
+        nodes->SetVelocity_Old(iPoint, V_infty+prim_idx.Velocity());
+        if (config->GetEnergy_Equation())
+          nodes->SetSolution_Old(iPoint, nDim+1, V_infty[prim_idx.Enthalpy()]);
 
         LinSysRes.SetBlock_Zero(iPoint);
 
@@ -2450,9 +2479,12 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
         nodes->SetStrongBC(iPoint);
 
-        if (implicit)
+        if (implicit) {
           for (iDim = 0; iDim < nDim; iDim++)
             Jacobian.DeleteValsRowi(iPoint, iDim+1);
+          if (config->GetEnergy_Equation())
+            Jacobian.DeleteValsRowi(iPoint, nDim+1);
+        }
 
       } else {
 
@@ -2723,13 +2755,29 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       nodes->SetVelocity_Old(iPoint,V_inlet+prim_idx.Velocity());
 
+      /*--- Same for the enthalpy, from the inlet temperature. ---*/
+
+      const bool inlet_enthalpy = config->GetEnergy_Equation() &&
+          !(config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET &&
+            config->GetFlamelet_Enthalpy_BC() == FLAMELET_ENTHALPY_BC::FLOW_MARKERS);
+      if (inlet_enthalpy) {
+        const su2double* scalar_inlet = nullptr;
+        if (species_model) scalar_inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+        CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+        auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], scalar_inlet);
+        nodes->SetSolution_Old(iPoint, nDim+1, auxFluidModel->GetEnthalpy());
+      }
+
       LinSysRes.SetBlock_Zero(iPoint);
 
       if (pressure_based) nodes->SetStrongBC(iPoint);
 
-      if (implicit)
+      if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.DeleteValsRowi(iPoint, iDim+1);
+        if (inlet_enthalpy)
+          Jacobian.DeleteValsRowi(iPoint, nDim+1);
+      }
 
     } else {
 
@@ -3701,11 +3749,9 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
 
     CorrectPressureGradient(GradPressure_f, GradPressure_avg, nodes->GetPressure(iPoint), nodes->GetPressure(jPoint), Edge_Vector, dist_ij_2);
 
-    /*--- Linearly interpolated coefficient. A point under a strong velocity BC has no momentum
-    coefficient, so the edge uses that of its other node. ---*/
+    /*--- Linearly interpolated coefficient. ---*/
 
-    Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(nodes->GetStrongBC(iPoint) ? jPoint : iPoint) +
-                     poisson_nodes->GetMomCoeff(nodes->GetStrongBC(jPoint) ? iPoint : jPoint));
+    Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(iPoint) + poisson_nodes->GetMomCoeff(jPoint));
 
     /*--- Initialize mass flux ---*/
 
@@ -3853,8 +3899,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     for (iDim = 0; iDim < nDim; iDim++) {
 
       su2double MassFluxCorrection =
-          -0.5 * (poisson_nodes->GetMomCoeff(nodes->GetStrongBC(iPoint) ? jPoint : iPoint) +
-                  poisson_nodes->GetMomCoeff(nodes->GetStrongBC(jPoint) ? iPoint : jPoint)) * GradPressure_f[iDim];
+          -0.5 * (poisson_nodes->GetMomCoeff(iPoint) + poisson_nodes->GetMomCoeff(jPoint)) * GradPressure_f[iDim];
 
       /*--- 2nd piso correction term (HbyA') --- (TODO: this is zero for the first correction and can thus also be skipped) ---*/
 

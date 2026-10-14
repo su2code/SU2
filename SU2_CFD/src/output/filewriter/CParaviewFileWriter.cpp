@@ -37,211 +37,73 @@ CParaviewFileWriter::~CParaviewFileWriter()= default;
 
 void CParaviewFileWriter::WriteData(string val_filename){
 
-  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  val_filename.append(fileExt);
-
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
 
-  unsigned short iDim = 0, nDim = dataSorter->GetnDim();
-
-  unsigned long iPoint, iElem;
-
-  unsigned long nGlobal_Elem_Storage;
-
-  ofstream Paraview_File;
-
-  int iProcessor;
-
+  const unsigned short nDim = dataSorter->GetnDim();
   const vector<string> fieldNames = dataSorter->GetFieldNames();
 
-  /*--- Set a timer for the file writing. ---*/
+  /*--- Each rank formats the data of its own points and elements into a string, and all ranks then write
+   their strings to the file at the same time, one after the other in rank order. ---*/
 
-  startTime = SU2_MPI::Wtime();
+  ostringstream data;
+  data << scientific;
 
-  /*--- Open Paraview ASCII file and write the header. ---*/
+  auto resetData = [&]() {
+    data.str("");
+    data.clear();
+    data << scientific;
+  };
 
-  if (rank == MASTER_NODE) {
+  OpenMPIFile(val_filename);
 
-    Paraview_File.open(val_filename.c_str(), ios::out);
-    Paraview_File.precision(6);
-    Paraview_File << "# vtk DataFile Version 3.0\n";
-    Paraview_File << "vtk output\n";
-    Paraview_File << "ASCII\n";
-    Paraview_File << "DATASET UNSTRUCTURED_GRID\n";
+  /*--- Write the header. ---*/
 
-    /*--- Write the header ---*/
-    Paraview_File << "POINTS "<< dataSorter->GetnPointsGlobal() <<" double\n";
-
-  }
-
-  Paraview_File.close();
-
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
-
-  /*--- Each processor opens the file. ---*/
-
-  Paraview_File.open(val_filename.c_str(), ios::out | ios::app);
+  WriteMPIString("# vtk DataFile Version 3.0\nvtk output\nASCII\nDATASET UNSTRUCTURED_GRID\n", MASTER_NODE);
+  WriteMPIString("POINTS " + to_string(dataSorter->GetnPointsGlobal()) + " double\n", MASTER_NODE);
 
   /*--- Write surface and volumetric point coordinates. ---*/
 
-  for (iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
+  for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) data << dataSorter->GetData(iDim, iPoint) << "\t";
+    if (nDim == 2) data << "0.0" << "\t";
+  }
+  WriteMPIStringAll(data.str());
 
-      /*--- Write the node data from this proc ---*/
+  /*--- Write the connectivity, the number of nodes of each element is written before its nodes. ---*/
 
+  const unsigned long nGlobal_Elem_Storage = dataSorter->GetnElemGlobal() + dataSorter->GetnConnGlobal();
 
-      for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          Paraview_File << scientific << dataSorter->GetData(iDim, iPoint) << "\t";
-        if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
-      }
+  WriteMPIString("\nCELLS " + to_string(dataSorter->GetnElemGlobal()) + "\t" + to_string(nGlobal_Elem_Storage) + "\n",
+                 MASTER_NODE);
+
+  resetData();
+
+  for (auto type : {LINE, TRIANGLE, QUADRILATERAL, TETRAHEDRON, HEXAHEDRON, PRISM, PYRAMID}) {
+    const auto nPoints = nPointsOfElementType(type);
+    for (unsigned long iElem = 0; iElem < dataSorter->GetnElem(type); iElem++) {
+      data << nPoints << "\t";
+      for (unsigned short iNode = 0; iNode < nPoints; iNode++)
+        data << dataSorter->GetElemConnectivity(type, iElem, iNode) - 1 << "\t";
     }
-
-    Paraview_File.flush();
-#ifdef HAVE_MPI
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
   }
+  WriteMPIStringAll(data.str());
 
-  /*--- Reduce the total number of each element. ---*/
+  /*--- Write the type of each element. ---*/
 
-  unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
-                nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
-                nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
-                nParallel_Tetr = dataSorter->GetnElem(TETRAHEDRON),
-                nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
-                nParallel_Pris = dataSorter->GetnElem(PRISM),
-                nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
+  WriteMPIString("\nCELL_TYPES " + to_string(dataSorter->GetnElemGlobal()) + "\n", MASTER_NODE);
 
-  if (rank == MASTER_NODE) {
+  resetData();
 
-    /*--- Write the header ---*/
-    nGlobal_Elem_Storage = dataSorter->GetnElemGlobal() + dataSorter->GetnConnGlobal();
-
-    Paraview_File << "\nCELLS " << dataSorter->GetnElemGlobal() << "\t" << nGlobal_Elem_Storage << "\n";
-
+  for (auto type : {LINE, TRIANGLE, QUADRILATERAL, TETRAHEDRON, HEXAHEDRON, PRISM, PYRAMID}) {
+    for (unsigned long iElem = 0; iElem < dataSorter->GetnElem(type); iElem++) data << type << "\t";
   }
+  WriteMPIStringAll(data.str());
 
-  Paraview_File.flush();
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
+  /*--- Write the fields. ---*/
 
-  /*--- Write connectivity data. ---*/
-
-  for (iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-
-
-      for (iElem = 0; iElem < nParallel_Line; iElem++) {
-        Paraview_File << N_POINTS_LINE << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(LINE, iElem, 0)-1 << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(LINE, iElem, 1)-1 << "\t";
-      }
-
-      for (iElem = 0; iElem < nParallel_Tria; iElem++) {
-        Paraview_File << N_POINTS_TRIANGLE << "\t";
-        Paraview_File <<  dataSorter->GetElemConnectivity(TRIANGLE, iElem, 0)-1 << "\t";
-        Paraview_File <<  dataSorter->GetElemConnectivity(TRIANGLE, iElem, 1)-1 << "\t";
-        Paraview_File <<  dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2)-1 << "\t";
-      }
-
-      for (iElem = 0; iElem < nParallel_Quad; iElem++) {
-        Paraview_File << N_POINTS_QUADRILATERAL << "\t";
-        Paraview_File <<  dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 0)-1 << "\t";
-        Paraview_File <<  dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 1)-1 << "\t";
-        Paraview_File <<  dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 2)-1 << "\t";
-        Paraview_File <<  dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 3)-1 << "\t";
-      }
-
-
-      for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
-        Paraview_File << N_POINTS_TETRAHEDRON << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 0)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 1)-1 << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3)-1 << "\t";
-      }
-
-      for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
-        Paraview_File << N_POINTS_HEXAHEDRON << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 0)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 1)-1 << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 2)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 3)-1 << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 4)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 5)-1 << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 6)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 7)-1 << "\t";
-      }
-
-      for (iElem = 0; iElem < nParallel_Pris; iElem++) {
-        Paraview_File << N_POINTS_PRISM << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(PRISM, iElem, 0)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(PRISM, iElem, 1)-1 << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(PRISM, iElem, 2)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(PRISM, iElem, 3)-1 << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(PRISM, iElem, 4)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(PRISM, iElem, 5)-1 << "\t";
-      }
-
-      for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
-        Paraview_File << N_POINTS_PYRAMID << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 0)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(PYRAMID, iElem, 1)-1 << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 2)-1 << "\t"
-                      << dataSorter->GetElemConnectivity(PYRAMID, iElem, 3)-1 << "\t";
-        Paraview_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4)-1 << "\t";
-      }
-
-    }    Paraview_File.flush();
-#ifdef HAVE_MPI
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
-  }
-
-  if (rank == MASTER_NODE) {
-
-    /*--- Write the header ---*/
-    Paraview_File << "\nCELL_TYPES " << dataSorter->GetnElemGlobal() << "\n";
-
-  }
-
-  Paraview_File.flush();
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
-
-  for (iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-      for (iElem = 0; iElem < nParallel_Line; iElem++) Paraview_File << "3\t";
-      for (iElem = 0; iElem < nParallel_Tria; iElem++) Paraview_File << "5\t";
-      for (iElem = 0; iElem < nParallel_Quad; iElem++) Paraview_File << "9\t";
-      for (iElem = 0; iElem < nParallel_Tetr; iElem++) Paraview_File << "10\t";
-      for (iElem = 0; iElem < nParallel_Hexa; iElem++) Paraview_File << "12\t";
-      for (iElem = 0; iElem < nParallel_Pris; iElem++) Paraview_File << "13\t";
-      for (iElem = 0; iElem < nParallel_Pyra; iElem++) Paraview_File << "14\t";
-    }
-    Paraview_File.flush();
-#ifdef HAVE_MPI
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
-  }
-
-  if (rank == MASTER_NODE) {
-    /*--- Write the header ---*/
-    Paraview_File << "\nPOINT_DATA "<< dataSorter->GetnPointsGlobal() <<"\n";
-
-  }
-
-  Paraview_File.flush();
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
+  WriteMPIString("\nPOINT_DATA " + to_string(dataSorter->GetnPointsGlobal()) + "\n", MASTER_NODE);
 
   unsigned short varStart = 2;
   if (nDim == 3) varStart++;
@@ -263,109 +125,45 @@ void CParaviewFileWriter::WriteData(string val_filename){
     }
     found = fieldNames[iField].find("_y");
     if (found!=string::npos) {
+      /*--- We have found a vector, so skip the Y component. ---*/
       output_variable = false;
-      //skip
-      Paraview_File.flush();
-#ifdef HAVE_MPI
-      SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
       VarCounter++;
     }
     found = fieldNames[iField].find("_z");
     if (found!=string::npos) {
+      /*--- We have found a vector, so skip the Z component. ---*/
       output_variable = false;
-      //skip
-      Paraview_File.flush();
-#ifdef HAVE_MPI
-      SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
       VarCounter++;
     }
 
-    if (output_variable && isVector) {
+    if (!output_variable) continue;
+
+    resetData();
+
+    if (isVector) {
 
       fieldname.erase(fieldname.end()-2,fieldname.end());
 
-      if (rank == MASTER_NODE) {
-        Paraview_File << "\nVECTORS " << fieldname << " double\n";
+      WriteMPIString("\nVECTORS " + fieldname + " double\n", MASTER_NODE);
+
+      for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
+        data << dataSorter->GetData(VarCounter+0, iPoint) << "\t" << dataSorter->GetData(VarCounter+1, iPoint) << "\t";
+        if (nDim == 3) data << dataSorter->GetData(VarCounter+2, iPoint) << "\t";
+        if (nDim == 2) data << "0.0" << "\t";
       }
 
-      Paraview_File.flush();
-#ifdef HAVE_MPI
-      SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
+    } else {
 
-      /*--- Write surface and volumetric point coordinates. ---*/
+      WriteMPIString("\nSCALARS " + fieldname + " double 1\nLOOKUP_TABLE default\n", MASTER_NODE);
 
-      for (iProcessor = 0; iProcessor < size; iProcessor++) {
-        if (rank == iProcessor) {
-
-          /*--- Write the node data from this proc ---*/
-
-          for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-            Paraview_File << scientific << dataSorter->GetData(VarCounter+0, iPoint) << "\t" << dataSorter->GetData(VarCounter+1, iPoint) << "\t";
-            if (nDim == 3) Paraview_File << scientific << dataSorter->GetData(VarCounter+2, iPoint) << "\t";
-            if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
-          }
-        }
-
-        Paraview_File.flush();
-#ifdef HAVE_MPI
-        SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
+      for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
+        data << dataSorter->GetData(VarCounter, iPoint) << "\t";
       }
-
-      VarCounter++;
-
-    } else if (output_variable) {
-
-      if (rank == MASTER_NODE) {
-
-        Paraview_File << "\nSCALARS " << fieldname << " double 1\n";
-        Paraview_File << "LOOKUP_TABLE default\n";
-      }
-
-      Paraview_File.flush();
-#ifdef HAVE_MPI
-      SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
-
-      /*--- Write surface and volumetric point coordinates. ---*/
-
-      for (iProcessor = 0; iProcessor < size; iProcessor++) {
-        if (rank == iProcessor) {
-
-          /*--- Write the node data from this proc ---*/
-
-          for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-            Paraview_File << scientific << dataSorter->GetData(VarCounter, iPoint) << "\t";
-          }
-
-        }
-        Paraview_File.flush();
-#ifdef HAVE_MPI
-        SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
-      }
-
-      VarCounter++;
     }
 
+    WriteMPIStringAll(data.str());
+    VarCounter++;
   }
 
-  Paraview_File.close();
-
-
-  /*--- Compute and store the write time. ---*/
-
-  stopTime = SU2_MPI::Wtime();
-
-  usedTime = stopTime-startTime;
-
-  fileSize = DetermineFilesize(val_filename);
-
-  /*--- Compute and store the bandwidth ---*/
-
-  bandwidth = fileSize/(1.0e6)/usedTime;
+  CloseMPIFile();
 }
-

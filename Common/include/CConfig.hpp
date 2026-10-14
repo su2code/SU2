@@ -508,6 +508,7 @@ private:
   CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
   FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
+  INIT_OPTION_INC Kind_InitOption_Inc; /*!< \brief Kind of initialization of the incompressible solver. */
   MAIN_SOLVER Kind_Solver;         /*!< \brief Kind of solver: Euler, NS, Continuous adjoint, etc.  */
   LIMITER Kind_SlopeLimit,      /*!< \brief Slope limiter (for the runtime eq. system). */
   Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
@@ -834,6 +835,7 @@ private:
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
   unsigned short Mesh_Out_FileFormat; /*!< \brief Mesh output format. */
   TAB_OUTPUT Tab_FileFormat;          /*!< \brief Format of the output files. */
+  VOLUME_OUTPUT_PRECISION Volume_Output_Precision; /*!< \brief Floating-point type of the volume and surface fields. */
   unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
@@ -4114,6 +4116,13 @@ public:
    * \return free stream option
    */
   unsigned short GetKind_InitOption(void) const { return Kind_InitOption; }
+
+  /*!
+   * \brief Get the initialization option of the incompressible solver.
+   * \return Initialization option of the incompressible solver.
+   */
+  INIT_OPTION_INC GetKind_InitOption_Inc() const { return Kind_InitOption_Inc; }
+
   /*!
    * \brief Get the value of the critical pressure.
    * \return Critical pressure.
@@ -5673,6 +5682,15 @@ public:
    * \return Flag <code>TRUE</code> then the code will write compact restart files.
    */
   bool GetWrt_Restart_Compact(void) const { return Wrt_Restart_Compact; }
+
+  /*!
+   * \brief Flag for whether the fields of the volume and surface files (CGNS and Paraview XML) are written in
+   *        double precision.
+   * \return <code>TRUE</code> means that double precision is used.
+   */
+  bool GetVolume_Output_Double_Precision(void) const {
+    return Volume_Output_Precision == VOLUME_OUTPUT_PRECISION::DOUBLE;
+  }
 
   /*!
    * \brief Flag for whether restart solution files are overwritten.
