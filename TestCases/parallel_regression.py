@@ -2004,6 +2004,14 @@ def main():
     cgns_mesh_readback_bend.test_vals = [-3.256728, -2.769844, -3.007840, -3.567315, 4.318459]
     test_list.append(cgns_mesh_readback_bend)
 
+    # CGNS mesh whose boundaries are split in several sections, grouped into markers by the ZoneBC.
+    cgns_reader_sections = TestCase('cgns_reader_sections')
+    cgns_reader_sections.cfg_dir = "cgns_reader"
+    cgns_reader_sections.cfg_file = "channel_sections.cfg"
+    cgns_reader_sections.test_iter = 9
+    cgns_reader_sections.test_vals = [-4.344863, -1.284117, -3.081432, 0.924734]
+    test_list.append(cgns_reader_sections)
+
     ######################################
     ### RUN CHT TEST WITH FILEDIFF     ###
     ######################################
