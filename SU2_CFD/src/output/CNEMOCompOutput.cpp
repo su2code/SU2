@@ -45,7 +45,7 @@ CNEMOCompOutput::CNEMOCompOutput(const CConfig *config, unsigned short nDim) : C
     if (config->GetTime_Domain()) requestedScreenFields.emplace_back("TIME_ITER");
     if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
     requestedScreenFields.emplace_back("INNER_ITER");
-    for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
       requestedScreenFields.emplace_back("RMS_DENSITY_" + std::to_string(iSpecies));
     requestedScreenFields.emplace_back("RMS_MOMENTUM-X");
     requestedScreenFields.emplace_back("RMS_MOMENTUM-Y");
@@ -106,48 +106,40 @@ CNEMOCompOutput::CNEMOCompOutput(const CConfig *config, unsigned short nDim) : C
 
 void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
+  const auto addResidualFields = [&](const string& prefix, const string& namePrefix, const string& description,
+                                     const string& energyVEDescription) {
+    const auto group = prefix + "_RES";
+    for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
+      AddHistoryOutput(prefix + "_DENSITY_" + std::to_string(iSpecies),
+                       namePrefix + "[Rho_" + std::to_string(iSpecies) + "]", ScreenOutputFormat::FIXED, group,
+                       description + " residual of the species density " + std::to_string(iSpecies) + ".",
+                       HistoryFieldType::RESIDUAL);
+
+    AddHistoryOutput(prefix + "_MOMENTUM-X", namePrefix + "[RhoU]", ScreenOutputFormat::FIXED, group,
+                     description + " residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput(prefix + "_MOMENTUM-Y", namePrefix + "[RhoV]", ScreenOutputFormat::FIXED, group,
+                     description + " residual of the momentum y-component.", HistoryFieldType::RESIDUAL);
+    if (nDim == 3)
+      AddHistoryOutput(prefix + "_MOMENTUM-Z", namePrefix + "[RhoW]", ScreenOutputFormat::FIXED, group,
+                       description + " residual of the momentum z-component.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput(prefix + "_ENERGY", namePrefix + "[RhoE]", ScreenOutputFormat::FIXED, group,
+                     description + " residual of the energy.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput(prefix + "_ENERGY_VE", namePrefix + "[RhoEve]", ScreenOutputFormat::FIXED, group,
+                     description + " residual of the " + energyVEDescription + ".", HistoryFieldType::RESIDUAL);
+  };
+
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
-  /// DESCRIPTION: Root-mean square residual of the species densities.
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    AddHistoryOutput("RMS_DENSITY_" + std::to_string(iSpecies), "rms[Rho_" + std::to_string(iSpecies) + "]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the species density " + std::to_string(iSpecies) + ".", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Root-mean square residual of the momentum x-component.
-  AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Root-mean square residual of the momentum y-component.
-  AddHistoryOutput("RMS_MOMENTUM-Y", "rms[RhoV]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum y-component.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Root-mean square residual of the momentum z-component.
-  if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum z-component.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Root-mean square residual of the energy.
-  AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Root-mean square residual of the energy.
-  AddHistoryOutput("RMS_ENERGY_VE",  "rms[RhoEve]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
+  addResidualFields("RMS", "rms", "Root-mean square", "energy");
   AddHistoryOutputFields_ScalarRMS_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
-  /// DESCRIPTION: Maximum residual of the density.
-  AddHistoryOutput("MAX_DENSITY",    "max[Rho]",  ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum square residual of the density.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the momentum x-component.
-  AddHistoryOutput("MAX_MOMENTUM-X", "max[RhoU]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum square residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the momentum y-component.
-  AddHistoryOutput("MAX_MOMENTUM-Y", "max[RhoV]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum square residual of the momentum y-component.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the momentum z-component.
-  if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", ScreenOutputFormat::FIXED,"MAX_RES", "Maximum residual of the z-component.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the energy.
-  AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
+  addResidualFields("MAX", "max", "Maximum", "vibrational-electronic energy");
   AddHistoryOutputFields_ScalarMAX_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables.
-  /// DESCRIPTION: Maximum residual of the density.
-  AddHistoryOutput("BGS_DENSITY",    "bgs[Rho]",  ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the density.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the momentum x-component.
-  AddHistoryOutput("BGS_MOMENTUM-X", "bgs[RhoU]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the momentum y-component.
-  AddHistoryOutput("BGS_MOMENTUM-Y", "bgs[RhoV]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the momentum y-component.",  HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the momentum z-component.
-  if (nDim == 3) AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the z-component.",  HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the energy.
-  AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the energy.",  HistoryFieldType::RESIDUAL);
+  addResidualFields("BGS", "bgs", "BGS", "vibrational-electronic energy");
   AddHistoryOutputFields_ScalarBGS_RES(config);
   /// END_GROUP
 
@@ -213,7 +205,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddCoordinates();
 
   // Solution variables
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("DENSITY_" + std::to_string(iSpecies),  "Density_" + std::to_string(iSpecies),  "SOLUTION", "Density_"  + std::to_string(iSpecies));
 
   AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
@@ -226,7 +218,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   SetVolumeOutputFieldsScalarSolution(config);
 
   //Auxiliary variables for post-processment
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("MASSFRAC_" + std::to_string(iSpecies),  "MassFrac_" + std::to_string(iSpecies),  "AUXILIARY", "MassFrac_" + std::to_string(iSpecies));
 
   // Grid velocity
@@ -267,7 +259,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   SetVolumeOutputFieldsScalarPrimitive(config);
 
   //Residuals
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("RES_DENSITY_" + std::to_string(iSpecies), "Residual_Density_" + std::to_string(iSpecies), "RESIDUAL", "Residual of species density " + std::to_string(iSpecies));
   AddVolumeOutput("RES_MOMENTUM-X", "Residual_Momentum_x", "RESIDUAL", "Residual of the x-momentum component");
   AddVolumeOutput("RES_MOMENTUM-Y", "Residual_Momentum_y", "RESIDUAL", "Residual of the y-momentum component");
@@ -313,7 +305,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     SetVolumeOutputValue("DENSITY_" + std::to_string(iSpecies),   iPoint, Node_Flow->GetSolution(iPoint, iSpecies));
 
   SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(iPoint, nSpecies));
@@ -327,7 +319,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("ENERGY_VE",  iPoint, Node_Flow->GetSolution(iPoint, nSpecies+3));
   }
 
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     SetVolumeOutputValue("MASSFRAC_" + std::to_string(iSpecies),   iPoint, Node_Flow->GetSolution(iPoint, iSpecies)/Node_Flow->GetDensity(iPoint));
 
   if (gridMovement){
@@ -356,7 +348,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("THERMAL_CONDUCTIVITY_VE", iPoint, Node_Flow->GetThermalConductivity_ve(iPoint));
   }
 
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     SetVolumeOutputValue("RES_DENSITY_" + std::to_string(iSpecies), iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, iSpecies));
 
   SetVolumeOutputValue("RES_MOMENTUM-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies));
@@ -395,41 +387,24 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   CSolver* NEMO_solver = solver[FLOW_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
-  unsigned short nSpecies = config->GetnSpecies();
+  const unsigned short nSpecies = config->GetnSpecies();
 
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    SetHistoryOutputValue("RMS_DENSITY_" + std::to_string(iSpecies), log10(NEMO_solver->GetRes_RMS(iSpecies)));
+  const auto loadResiduals = [&](const string& prefix, auto getResidual) {
+    for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
+      SetHistoryOutputValue(prefix + "_DENSITY_" + std::to_string(iSpecies),
+                            log10((NEMO_solver->*getResidual)(iSpecies)));
 
-  SetHistoryOutputValue("RMS_MOMENTUM-X", log10(NEMO_solver->GetRes_RMS(nSpecies)));
-  SetHistoryOutputValue("RMS_MOMENTUM-Y", log10(NEMO_solver->GetRes_RMS(nSpecies+1)));
-  if (nDim == 2){
-    SetHistoryOutputValue("RMS_ENERGY",    log10(NEMO_solver->GetRes_RMS(nSpecies+2)));
-    SetHistoryOutputValue("RMS_ENERGY_VE", log10(NEMO_solver->GetRes_RMS(nSpecies+3)));
-  } else {
-    SetHistoryOutputValue("RMS_MOMENTUM-Z", log10(NEMO_solver->GetRes_RMS(nSpecies+2)));
-    SetHistoryOutputValue("RMS_ENERGY",     log10(NEMO_solver->GetRes_RMS(nSpecies+3)));
-    SetHistoryOutputValue("RMS_ENERGY_VE",  log10(NEMO_solver->GetRes_RMS(nSpecies+4)));
-  }
-  SetHistoryOutputValue("MAX_DENSITY", log10(NEMO_solver->GetRes_Max(0)));
-  SetHistoryOutputValue("MAX_MOMENTUM-X", log10(NEMO_solver->GetRes_Max(1)));
-  SetHistoryOutputValue("MAX_MOMENTUM-Y", log10(NEMO_solver->GetRes_Max(2)));
-  if (nDim == 2)
-    SetHistoryOutputValue("MAX_ENERGY", log10(NEMO_solver->GetRes_Max(3)));
-  else {
-    SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(NEMO_solver->GetRes_Max(3)));
-    SetHistoryOutputValue("MAX_ENERGY", log10(NEMO_solver->GetRes_Max(4)));
-  }
-  if (multiZone){
-    SetHistoryOutputValue("BGS_DENSITY", log10(NEMO_solver->GetRes_BGS(0)));
-    SetHistoryOutputValue("BGS_MOMENTUM-X", log10(NEMO_solver->GetRes_BGS(1)));
-    SetHistoryOutputValue("BGS_MOMENTUM-Y", log10(NEMO_solver->GetRes_BGS(2)));
-    if (nDim == 2)
-      SetHistoryOutputValue("BGS_ENERGY", log10(NEMO_solver->GetRes_BGS(3)));
-    else {
-      SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(NEMO_solver->GetRes_BGS(3)));
-      SetHistoryOutputValue("BGS_ENERGY", log10(NEMO_solver->GetRes_BGS(4)));
-    }
-  }
+    SetHistoryOutputValue(prefix + "_MOMENTUM-X", log10((NEMO_solver->*getResidual)(nSpecies)));
+    SetHistoryOutputValue(prefix + "_MOMENTUM-Y", log10((NEMO_solver->*getResidual)(nSpecies + 1)));
+    if (nDim == 3)
+      SetHistoryOutputValue(prefix + "_MOMENTUM-Z", log10((NEMO_solver->*getResidual)(nSpecies + 2)));
+    SetHistoryOutputValue(prefix + "_ENERGY", log10((NEMO_solver->*getResidual)(nSpecies + nDim)));
+    SetHistoryOutputValue(prefix + "_ENERGY_VE", log10((NEMO_solver->*getResidual)(nSpecies + nDim + 1)));
+  };
+
+  loadResiduals("RMS", &CSolver::GetRes_RMS);
+  loadResiduals("MAX", &CSolver::GetRes_Max);
+  if (multiZone) loadResiduals("BGS", &CSolver::GetRes_BGS);
 
   SetHistoryOutputValue("MIN_CFL", NEMO_solver->GetMin_CFL_Local());
   SetHistoryOutputValue("MAX_CFL", NEMO_solver->GetMax_CFL_Local());
