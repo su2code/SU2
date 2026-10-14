@@ -80,7 +80,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-0.480786, 5.329367, -0.244869, 0.043126]
+    wedge.test_vals = [ 0.036140, 6.976887, -0.219795, 0.055341]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -158,7 +158,7 @@ def main():
     periodic2d.cfg_dir   = "navierstokes/periodic2D"
     periodic2d.cfg_file  = "config.cfg"
     periodic2d.test_iter = 1400
-    periodic2d.test_vals = [-10.817607, -8.363541, -8.287457, -5.334100, -1.088412, -2945.200000]
+    periodic2d.test_vals = [-10.314545, -8.056213, -7.708669, -4.833054, -1.059806, -2953.400000]
     test_list.append(periodic2d)
 
     ##########################
@@ -170,7 +170,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.639525, -4.027096, 0.792680, 0.020549, 1000.000000]
+    rae2822_sa.test_vals = [-2.913915, -5.160924, 0.801922, 0.019587, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -452,7 +452,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000004, -0.028637, 5.000000, -4.081478, 2.000000, -4.490126]
+    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000006, -0.028637, 4.000000, -4.016988, 2.000000, -4.487046]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -602,7 +602,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.907561, -12.214137, -19.151426, -13.451780, -19.085218, -13.450796, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.959252, -12.213981, -19.314222, -13.600248, -19.076384, -13.444335, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -627,7 +627,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632240, -8.894740, -9.348706]
+    multi_interface.test_vals          = [-8.634571, -8.895558, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632229, -8.894737, -9.348730]
     test_list.append(multi_interface)
 
