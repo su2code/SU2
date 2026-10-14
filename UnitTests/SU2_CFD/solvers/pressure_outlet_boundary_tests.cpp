@@ -29,7 +29,8 @@
 #include "../../../SU2_CFD/include/fluid/CIdealGas.hpp"
 
 namespace {
-// A boundary-state probe isolates the chain rule from approximate numerical-flux Jacobians.
+// Return U_boundary as the residual, with dF/dU_i=0 and dF/dU_b=I, so the assembled block must
+// equal dU_boundary/dU_i. This avoids testing against an approximate numerical-flux Jacobian.
 class OutletStateProbe final : public CNumerics {
   su2double state[5] = {}, zero[5][5] = {}, identity[5][5] = {};
   const su2double *left[5], *right[5];
@@ -71,6 +72,8 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
   CIdealGas gas(1.4, 287);
   const double rho = 1.2, p = 100000, a = sqrt(1.4 * p / rho);
   const su2double grid[3] = {moving ? 500. : 0., moving ? 240. : 0., 0.};
+  // Tangential Mach 1.5 makes total speed supersonic even when normalMach is subsonic;
+  // the grid boost also distinguishes lab-frame speed from the relative normal wave speed.
   su2double state[5] = {rho}, velocity[3] = {normalMach * a + grid[0], 1.5 * a + grid[1], 0};
   for (auto d = 0u; d < dim; ++d) state[d + 1] = rho * velocity[d];
   state[dim + 1] = p / .4 + .5 * rho * GeometryToolbox::SquaredNorm(dim, velocity);
@@ -88,7 +91,7 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
       OutletStateProbe probe(dim, test.config.get());
       solver->BC_Outlet(test.geometry.get(), test.solver, &probe, nullptr, test.config.get(), marker);
     }
-    // Closed-form ideal-gas invariant; tangential speed does not determine characteristic direction.
+    // Independent ideal-gas reference: gamma=1.4 gives q+5*a=constant and rho proportional to a^5.
     auto reference = [&](const su2double* u, su2double* out) {
       const su2double density = u[0], q = u[1] / density - grid[0];
       su2double v[3] = {};
@@ -117,6 +120,7 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
               Approx(SU2_TYPE::GetValue(expected[row])).epsilon(1e-8).margin(1e-8));
       }
       for (auto column = 0u; column < dim + 2; ++column) {
+        // Compare the assembled derivative against the analytic state map, not the production helper.
         su2double plus[5], minus[5], fp[5], fm[5];
         const double delta = 2e-5 * fmax(fabs(SU2_TYPE::GetValue(state[column])), column == 0 ? rho : rho * a);
         for (auto k = 0u; k < dim + 2; ++k) plus[k] = minus[k] = state[k];

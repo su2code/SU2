@@ -31,6 +31,7 @@
 #include "../../../SU2_CFD/include/fluid/CVanDerWaalsGas.hpp"
 
 TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressure-outlet-AD]") {
+  // Check the analytic ideal-gas path and integrated Peng-Robinson/van der Waals paths with the same inputs.
   for (auto kind : {0u, 1u, 2u}) {
     std::unique_ptr<CFluidModel> gas;
     if (kind == 0) gas.reset(new CIdealGas(1.4, 35.152));
@@ -40,10 +41,13 @@ TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressu
     gas->SetTDState_Prho(p, rho);
     const double e = SU2_TYPE::GetValue(gas->GetStaticEnergy()), a = SU2_TYPE::GetValue(gas->GetSoundSpeed());
     const su2double normal[2] = {1, 0};
+    // Cover reverse subsonic flow, ordinary outflow, near-sonic flow and supersonic extrapolation;
+    // the lowest pressure ratio makes subsonic outward expansion stop at the moving sonic limit.
     for (const auto mach : {-.3, .3, .99, 1.4})
       for (const auto ratio : {1., .95, .001}) {
         const double values[6] = {
             rho, rho * (mach * a + 20), rho * 5, rho * (e + .5 * (pow(mach * a + 20, 2) + 25)), ratio * p, 20};
+        // The first four inputs are conservative variables; the last two are pressure and grid speed.
         auto evaluate = [&](su2double* input, su2double* output) {
           return PressureOutlet::State(*gas, 2, input, normal, input[5], input[4], output, 0, kind == 0 ? 1.4 : 0.);
         };
@@ -56,15 +60,18 @@ TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressu
           minus[column] -= delta;
           REQUIRE(evaluate(plus, fp) == PressureOutlet::Status::Valid);
           REQUIRE(evaluate(minus, fm) == PressureOutlet::Status::Valid);
+          // Finite differences rerun the complete map, so the reference includes movement of the sonic root.
           for (auto row = 0u; row < 4; ++row) {
             const double expected = SU2_TYPE::GetValue((fp[row] - fm[row]) / (2 * delta));
             su2double input[6], output[4];
             for (auto k = 0u; k < 6; ++k) input[k] = values[k];
 #ifdef CODI_REVERSE_TYPE
+            // Record one scalar input/output pair per tape to keep sensitivities independent.
             AD::Reset();
             AD::StartRecording();
             AD::RegisterInput(input[column]);
 #else
+            // Forward mode propagates a unit seed for the selected input column.
             SU2_TYPE::SetDerivative(input[column], 1);
 #endif
             REQUIRE(evaluate(input, output) == PressureOutlet::Status::Valid);

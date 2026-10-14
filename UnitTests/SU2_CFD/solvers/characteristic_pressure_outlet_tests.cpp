@@ -52,10 +52,12 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
   auto* solver = test.solver[FLOW_SOL];
   auto* nodes = static_cast<CEulerVariable*>(solver->GetNodes());
   CPengRobinson gas(1.0125, 35.152, 1415200, 564.1, 0.529);
+  // Captured conservative startup state: low back pressure previously produced an invalid EOS state.
   su2double state[4] = {139.72158881490299, 11271.637336535776, -2338.5053086132339, 221781581.74179047};
   if (backflow) {
     const auto oldVelocity = state[1] / state[0];
     state[1] = state[0] * -200;
+    // Change only normal velocity; adjust total energy to keep the original thermal state.
     state[3] += .5 * state[0] * (40000 - oldVelocity * oldVelocity);
   }
   const su2double grid[2] = {20, 0};
@@ -86,6 +88,7 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
       test.geometry->vertex[marker][v]->GetNormal(normal);
       const auto area = GeometryToolbox::Norm(2, normal);
       for (auto d = 0u; d < 2; ++d) unit[d] = (normal[d] = -normal[d]) / area;
+      // BC_Riemann uses the physical boundary flux, including transport by the moving grid.
       auto flux = [&](const su2double* input, su2double* output) {
         su2double boundary[4], velocity[2];
         REQUIRE(PressureOutlet::State(gas, 2, input, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure,
@@ -109,6 +112,7 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
         CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, k)) ==
               Approx(SU2_TYPE::GetValue(reference[k])).epsilon(1e-8));
       for (auto column = 0u; column < 4; ++column) {
+        // Perturb the whole state-to-flux map to check the assembled implicit block, not just DubDu.
         su2double plus[4], minus[4], fPlus[4], fMinus[4];
         for (auto k = 0u; k < 4; ++k) plus[k] = minus[k] = state[k];
         const auto delta = 2e-4 * fabs(state[column]);
@@ -141,8 +145,10 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
       const su2double p = 1500112, rho = 230, normal[3] = {1, 0, 0}, boost[3] = {20, -7, 3};
       gas->SetTDState_Prho(p, rho);
       const auto e = gas->GetStaticEnergy(), sound = gas->GetSoundSpeed(), entropy = gas->GetEntropy();
+      // The smallest ratio is 1000/1500112, reproducing the startup expansion past the sonic limit.
       for (const auto ratio : {1., .9, 1.05, .0006666168959384}) {
         su2double out[2][5] = {};
+        // Boost both flow and grid: the relative wave speeds and reconstructed thermodynamics must agree.
         for (auto frame = 0u; frame < 2; ++frame) {
           su2double velocity[3] = {.3 * sound, 5, -2}, state[5] = {rho};
           for (auto d = 0u; d < dim; ++d) {
@@ -169,6 +175,7 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
             CHECK(SU2_TYPE::GetValue(q) == Approx(SU2_TYPE::GetValue(gas->GetSoundSpeed())).epsilon(1e-7));
           }
           if (kind == 0) {
+            // Gamma=1.4 gives 2/(gamma-1)=5, so q+5*a provides an analytic integration check.
             const su2double aRatio = ratio > .1 ? pow(ratio, .4 / 2.8) : (.4 * .3 + 2) / 2.4;
             CHECK(SU2_TYPE::GetValue(density) == Approx(SU2_TYPE::GetValue(rho * pow(aRatio, 5))).epsilon(1e-7));
             CHECK(SU2_TYPE::GetValue(q + 5 * gas->GetSoundSpeed()) ==
@@ -176,6 +183,7 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
           }
         }
         CHECK(SU2_TYPE::GetValue(out[1][0]) == Approx(SU2_TYPE::GetValue(out[0][0])).epsilon(1e-9));
+        // In the boosted frame, rho*E gains boost dot momentum + rho*|boost|^2/2.
         su2double energyBoost = 0, boost2 = 0;
         for (auto d = 0u; d < dim; ++d) {
           CHECK(SU2_TYPE::GetValue(out[1][d + 1]) ==
@@ -200,6 +208,7 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
       REQUIRE(PressureOutlet::State(*gas, dim, state, normal, 0, .9 * p, withK, 17.5) == PressureOutlet::Status::Valid);
       for (auto v = 0u; v < dim + 1; ++v) CHECK(withK[v] == Approx(SU2_TYPE::GetValue(plain[v])).epsilon(1e-8));
       CHECK(withK[dim + 1] == Approx(SU2_TYPE::GetValue(plain[dim + 1] + 17.5 * plain[0])).epsilon(1e-8));
+      // Reversing subsonic flow retains the pressure-only closure; fully incoming flow needs inlet data.
       state[1] = -state[1];
       CHECK(PressureOutlet::State(*gas, dim, state, normal, 0, p, unchanged, 17.5) == PressureOutlet::Status::Valid);
       state[1] = -2 * sound * rho;
@@ -209,7 +218,7 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
   }
 }
 
-// Invalid data and fully incoming pressure-only flow must fail explicitly.
+// Hidden Catch cases terminate the process; the Python checker runs them separately to inspect the error.
 TEST_CASE("Characteristic pressure boundary rejects nonpositive pressure", "[.][Boundary-invalid-pressure]") {
   CharacteristicPressureFixture(0);
 }
@@ -219,6 +228,8 @@ TEST_CASE("Characteristic pressure boundary requires data for backflow", "[.][Bo
 
 #ifdef HAVE_MLPCPP
 TEST_CASE("Pressure outlet follows the learned EOS without pressure-density inversion", "[Pressure-outlet]") {
+  // MLP_nitrogen_outlet.mlp maps (density, thermal energy) to entropy; its derivatives define the EOS.
+  // This fixture checks that outlet integration can use that native input pair without a (p,rho) solve.
   std::stringstream options;
   options << "SOLVER= EULER\nCONV_NUM_METHOD_FLOW= ROE\nFLUID_MODEL= DATADRIVEN_FLUID\nINTERPOLATION_METHOD= "
              "MLP\nUSE_PINN= YES\n"

@@ -1,6 +1,8 @@
 import subprocess
 import sys
 
+# SU2_MPI::Error exits the test process, so run each hidden Catch case in isolation.
+# Check the boundary diagnostic as well as the exit code: a later flux NaN is a different failure.
 for tag, expected in [
     (
         "Turbo-invalid-pressure",

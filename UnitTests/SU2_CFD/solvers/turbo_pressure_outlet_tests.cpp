@@ -34,6 +34,8 @@
 #include "../../../SU2_CFD/include/solvers/characteristic_pressure_outlet.hpp"
 
 namespace {
+// Supply a known spanwise pressure profile to test how the boundary consumes it, independently
+// of the radial-equilibrium profile update elsewhere in the solver.
 class TurboOutletSolver final : public CEulerSolver {
  public:
   TurboOutletSolver(CGeometry* geometry, CConfig* config, double pressure, bool radial)
@@ -47,7 +49,7 @@ class TurboOutletSolver final : public CEulerSolver {
   }
 };
 
-// Isolate the convective state/Jacobian map while exercising the NS boundary path.
+// Exercise the viscous boundary path with zero diffusion so the checks measure only convective fluxes.
 class ZeroOutletDiffusion final : public CNumerics {
   su2double residual[5] = {}, matrix[5][5] = {};
   const su2double* rows[5];
@@ -59,6 +61,7 @@ class ZeroOutletDiffusion final : public CNumerics {
   ResidualType<> ComputeResidual(const CConfig*) override { return {residual, rows, rows}; }
 };
 
+// Supply fixed SST k to verify thermal-energy bookkeeping without advancing a turbulence model.
 class FrozenOutletTurbulence final : public CSolver {
   CVariable variables;
   CVariable* GetBaseClassPointerToNodes() override { return &variables; }
@@ -74,6 +77,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
                          bool implicit = true, bool totalConditions = false, bool threaded = false,
                          double turbulentK = 0) {
   CAPTURE(dim, kind, mach, ratio, moving, radial, implicit, totalConditions, threaded, turbulentK);
+  // Axial turbo normals point along x in the 2D fixture and z in the 3D fixture.
   const unsigned short normalDim = dim == 2 ? 0 : 2;
   const std::string inlet = dim == 2 ? "x_minus" : "z_minus", outlet = dim == 2 ? "x_plus" : "z_plus";
   const double p = 1500112, rho = 230;
@@ -188,6 +192,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
           gas->SetTDState_rhoe(boundary[0], energy - .5 * GeometryToolbox::SquaredNorm(dim, v) - turbulentK);
           const su2double pressure = gas->GetPressure(), h = energy + pressure / boundary[0];
           numerics.GetInviscidProjFlux(&boundary[0], v, &pressure, &h, normal, result);
+          // The moving-grid transport term occurs once, in both explicit and implicit boundary paths.
           const su2double speed = GeometryToolbox::DotProduct(dim, grid, normal);
           for (auto k = 0u; k < dim + 2; ++k) result[k] -= speed * boundary[k];
         };
@@ -206,6 +211,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
         if (mach == .3 && ratio > .1)
           CHECK(SU2_TYPE::GetValue(primitive[dim + 1]) == Approx(target(span)).epsilon(1e-8));
         if (!implicit) continue;
+        // Check d(flux(U_boundary(U_interior)))/dU_interior with the span pressure and SST k fixed.
         for (auto column = 0u; column < dim + 2; ++column) {
           su2double plus[5], minus[5], fp[5], fm[5];
           const double delta =
@@ -239,6 +245,7 @@ TEST_CASE("Explicit TurboRiemann pressure outlet uses one grid flux correction",
 }
 
 TEST_CASE("TurboRiemann real-gas startup pressure remains admissible", "[Pressure-outlet][Turbo-startup]") {
+  // This ratio prescribes 1000 Pa from an interior pressure of 1500112 Pa.
   TurboPressureOutlet(2, 1, .3, .0006666168959384, false, false);
 }
 
@@ -247,6 +254,7 @@ TEST_CASE("Implicit TurboRiemann pressure outlet uses one grid flux correction",
 }
 
 TEST_CASE("TurboRiemann pressure reconstruction is thread local", "[Pressure-outlet][Turbo-outlet]") {
+  // Use enough outlet vertices to enter the OpenMP work-sharing loop with separate EOS instances.
   TurboPressureOutlet(2, 1, .3, .95, true, false, true, false, true);
 }
 
