@@ -34,8 +34,10 @@
 #if defined(_WIN32)
 #include <direct.h>
 #else
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 #endif
 
 namespace {
@@ -57,6 +59,20 @@ size_t WriteDataArray(FILE* file, const vector<U>& values) {
   fwrite(converted.data(), sizeof(T), converted.size(), file);
 
   return sizeof(nBytes) + nBytes;
+}
+
+/*--- Open a new file for writing. On POSIX systems it is created with the permissions of the other output files
+ (owner read/write, group and others read), fopen would create it with 0666 before the umask. ---*/
+FILE* OpenFile(const string& name, const char* mode) {
+#if defined(_WIN32)
+  return fopen(name.c_str(), mode);
+#else
+  const int fd = open(name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if (fd < 0) return nullptr;
+  FILE* file = fdopen(fd, mode);
+  if (!file) close(fd);
+  return file;
+#endif
 }
 
 /*--- Create a folder, if it does not exist yet. ---*/
@@ -277,10 +293,10 @@ void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned lo
   /*--- The fields start after the coordinates, a field whose name ends in _x is written as a vector
    together with the fields that follow it. ---*/
 
-  unsigned short varStart = (nDim == 3) ? 3 : 2;
+  const size_t varStart = (nDim == 3) ? 3 : 2;
 
   header << "<PointData>\n";
-  for (unsigned short iField = varStart; iField < nFields; iField++) {
+  for (size_t iField = varStart; iField < nFields; iField++) {
     if (fieldNames[iField].find("_y") != string::npos || fieldNames[iField].find("_z") != string::npos) continue;
 
     const bool isVector = fieldNames[iField].find("_x") != string::npos;
@@ -299,7 +315,7 @@ void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned lo
 
   /*--- Each rank writes its own file, no rank waits for another one. The arrays are written one at a time. ---*/
 
-  FILE* file = fopen(val_filename.c_str(), "wb");
+  FILE* file = OpenFile(val_filename, "wb");
   if (!file) SU2_MPI::Error(string("Unable to open file ") + val_filename, CURRENT_FUNCTION);
 
   const auto headerString = header.str();
@@ -308,7 +324,7 @@ void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned lo
 
   vector<passivedouble> buffer;
 
-  auto writeField = [&](unsigned short iField, unsigned short nComponents) {
+  auto writeField = [&](size_t iField, unsigned short nComponents) {
     buffer.assign(nPointsPiece * nComponents, 0.0);
     for (unsigned short iComp = 0; iComp < nComponents; iComp++) {
       if ((nDim == 2) && (nComponents == NCOORDS) && (iComp == 2)) continue;
@@ -329,7 +345,7 @@ void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned lo
   writeConn(offsets);
   fileSize += WriteDataArray<uint8_t>(file, types);
 
-  for (unsigned short iField = varStart; iField < nFields; iField++) {
+  for (size_t iField = varStart; iField < nFields; iField++) {
     if (fieldNames[iField].find("_y") != string::npos || fieldNames[iField].find("_z") != string::npos) continue;
 
     const bool isVector = fieldNames[iField].find("_x") != string::npos;
@@ -364,10 +380,10 @@ void CParaviewPVTUFileWriter::WriteIndexFile(const string& val_filename, const v
   file << "<PDataArray type=\"UInt8\" Name=\"types\"/>\n";
   file << "</PCells>\n";
 
-  unsigned short varStart = (nDim == 3) ? 3 : 2;
+  const size_t varStart = (nDim == 3) ? 3 : 2;
 
   file << "<PPointData>\n";
-  for (unsigned short iField = varStart; iField < fieldNames.size(); iField++) {
+  for (size_t iField = varStart; iField < fieldNames.size(); iField++) {
     if (fieldNames[iField].find("_y") != string::npos || fieldNames[iField].find("_z") != string::npos) continue;
 
     const bool isVector = fieldNames[iField].find("_x") != string::npos;
@@ -389,7 +405,7 @@ void CParaviewPVTUFileWriter::WriteIndexFile(const string& val_filename, const v
 
   const auto fileString = file.str();
 
-  FILE* indexFile = fopen(val_filename.c_str(), "w");
+  FILE* indexFile = OpenFile(val_filename, "w");
   if (!indexFile) SU2_MPI::Error(string("Unable to open file ") + val_filename, CURRENT_FUNCTION);
   fwrite(fileString.data(), sizeof(char), fileString.size(), indexFile);
   fclose(indexFile);
