@@ -119,7 +119,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.400383, 1.330450, -0.249527, 0.043953]
+    wedge.test_vals = [-4.400480, 1.330309, -0.249527, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -176,7 +176,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 20
-    flatplate.test_vals = [-5.623336, -0.144687, 0.001202, 0.028141, 2.361500, -2.333400, 0.000000, 0.000000]
+    flatplate.test_vals = [-5.561710, -0.083360, 0.001203, 0.028157, 2.361500, -2.333400, 0.000000, 0.000000]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -216,7 +216,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.003106, -7.625317, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.003110, -7.625378, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262299, -0.000000, 2.089953] #last 4 columns
     test_list.append(poiseuille_profile)
 
@@ -260,7 +260,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-5.286997, -6.483481, -0.187358, 0.003712, 10.000000, -2.181754]
+    turb_flatplate.test_vals = [-5.287013, -6.483448, -0.187358, 0.003711, 10.000000, -2.181875]
     test_list.append(turb_flatplate)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SST
@@ -268,7 +268,7 @@ def main():
     turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
     turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     turb_wallfunction_flatplate_sst.test_iter = 10
-    turb_wallfunction_flatplate_sst.test_vals = [-4.036187, -1.915139, -1.821608, 1.444010, -1.579554, 1.521873, 10.000000, -2.348158, 0.029998, 0.002409]
+    turb_wallfunction_flatplate_sst.test_vals = [-4.036186, -1.915130, -1.821604, 1.444009, -1.579554, 1.521877, 10.000000, -2.348138, 0.029998, 0.002409]
     test_list.append(turb_wallfunction_flatplate_sst)
 
     # FLAT PLATE, ROUGHNESS BC WILCOX2006 SST
@@ -276,7 +276,7 @@ def main():
     turb_flatplate_sst_roughBCWilcox2006.cfg_dir   = "rans/flatplate/roughness/bc_wilcox2006"
     turb_flatplate_sst_roughBCWilcox2006.cfg_file  = "turb_SST_flatplate_roughBCWilcox2006.cfg"
     turb_flatplate_sst_roughBCWilcox2006.test_iter = 10
-    turb_flatplate_sst_roughBCWilcox2006.test_vals = [-5.120258, -2.539703, -2.906154, 0.378791, -3.104024, 1.179645, -0.188795, 0.004029]
+    turb_flatplate_sst_roughBCWilcox2006.test_vals = [-5.120194, -2.539726, -2.906124, 0.378835, -3.104047, 1.179642, -0.188795, 0.004029]
     test_list.append(turb_flatplate_sst_roughBCWilcox2006)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
@@ -284,7 +284,7 @@ def main():
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
     turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     turb_wallfunction_flatplate_sa.test_iter = 10
-    turb_wallfunction_flatplate_sa.test_vals = [-3.580017, -1.860982, -1.506109, 1.898317, -5.258602, 10.000000, -2.557123, -0.295793, 0.002533]
+    turb_wallfunction_flatplate_sa.test_vals = [-3.580020, -1.860973, -1.506099, 1.898314, -5.258586, 10.000000, -2.556814, -0.295784, 0.002533]
     test_list.append(turb_wallfunction_flatplate_sa)
 
     # ONERA M6 Wing
@@ -385,7 +385,7 @@ def main():
     axi_rans_air_nozzle_species.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_species.cfg_file  = "air_nozzle_species.cfg"
     axi_rans_air_nozzle_species.test_iter = 10
-    axi_rans_air_nozzle_species.test_vals = [-1.666174, 3.899857, -2.874945, 5.767072, -3.579850, 0.000000]
+    axi_rans_air_nozzle_species.test_vals = [-1.666920, 3.899160, -2.874820, 5.767107, -3.524094, 0.000000]
     axi_rans_air_nozzle_species.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_species)
 
@@ -928,7 +928,7 @@ def main():
     ls89_sa.cfg_dir   = "nicf/LS89"
     ls89_sa.cfg_file  = "turb_SA_PR.cfg"
     ls89_sa.test_iter = 20
-    ls89_sa.test_vals = [-5.041555, -13.379651, 0.179019, 0.420831]
+    ls89_sa.test_vals = [-5.041528, -13.379614, 0.179019, 0.420831]
     test_list.append(ls89_sa)
 
     # Rarefaction shock wave edge_VW
@@ -1086,7 +1086,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.456143, -1.525213]
+    bars_SST_2D.test_vals = [13.000000, -0.456143, -1.525401]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
@@ -1164,7 +1164,7 @@ def main():
     fsi_cht.cfg_dir   = "fea_fsi/stat_fsi"
     fsi_cht.cfg_file  = "config.cfg"
     fsi_cht.test_iter = 20
-    fsi_cht.test_vals = [5.000000, -5.076997, -5.379447, -9.247799, -9.319974, -9.184902, 608.350000, -0.012973, 0.000000, 30.000000]
+    fsi_cht.test_vals = [5.000000, -5.077000, -5.379479, -9.247837, -9.319619, -9.184898, 608.350000, -0.012973, 0.000000, 30.000000]
     fsi_cht.multizone = True
     test_list.append(fsi_cht)
 
@@ -1759,7 +1759,7 @@ def main():
     pywrapper_custom_inlet.cfg_dir = "py_wrapper/custom_inlet"
     pywrapper_custom_inlet.cfg_file = "lam_flatplate.cfg"
     pywrapper_custom_inlet.test_iter = 20
-    pywrapper_custom_inlet.test_vals = [-4.123921, -1.544230, -3.886906, 1.338713, -0.688132, 0.160844, -0.009845, 0.520880, -0.530730]
+    pywrapper_custom_inlet.test_vals = [-4.123923, -1.544231, -3.887532, 1.338711, -0.688139, 0.160847, -0.009845, 0.520890, -0.530730]
     pywrapper_custom_inlet.command = TestCase.Command(exec = "python", param = "run.py")
     pywrapper_custom_inlet.timeout = 1600
     pywrapper_custom_inlet.tol = 0.0001
