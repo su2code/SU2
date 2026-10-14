@@ -383,6 +383,12 @@ void CCGNSMeshReaderBase::ReadCGNSBoundaryMarkerNames() {
   sectionMarkerNames.resize(nSections);
   for (int s = 0; s < nSections; s++) sectionMarkerNames[s] = string(sectionNames[s].data());
 
+  /*--- Name given by the boundary conditions to each section, and number of its elements they cover. ---*/
+
+  vector<string> bocoNames(nSections);
+  vector<cgsize_t> nCovered(nSections, 0);
+  vector<bool> severalNames(nSections, false);
+
   int nBocos = 0;
   if (cg_nbocos(cgnsFileID, cgnsBase, cgnsZone, &nBocos)) cg_error_exit();
 
@@ -398,36 +404,71 @@ void CCGNSMeshReaderBase::ReadCGNSBoundaryMarkerNames() {
                      &normalListSize, &normalDataType, &nDataset))
       cg_error_exit();
 
-    /*--- Only a boundary condition given by elements can be matched to a section, one given by points cannot. ---*/
+    /*--- Only a boundary condition given by elements can be matched to a section, one given by points cannot.
+     Older files give the elements with ElementRange or ElementList, without a GridLocation. ---*/
 
     GridLocation_t location = Vertex;
     cg_boco_gridlocation_read(cgnsFileID, cgnsBase, cgnsZone, iBoco, &location);
-    if (location != FaceCenter && location != EdgeCenter && location != CellCenter) continue;
+    const bool byRange = (pointSetType == PointRange || pointSetType == ElementRange);
+    const bool byElements = (pointSetType == ElementRange || pointSetType == ElementList || location == FaceCenter ||
+                             location == EdgeCenter || location == CellCenter);
+    if (!byElements || (byRange && nPoints != 2)) continue;
 
-    /*--- The marker takes the name of the family of the boundary condition, if it has one. ---*/
+    /*--- The marker takes the name of the family of the boundary condition, if it has one. The family name can be
+     a path in the family tree of the file (CGNS 4), in which case only its last part is kept. ---*/
 
     string markerName = string(bocoName);
     if (cg_goto(cgnsFileID, cgnsBase, "Zone_t", cgnsZone, "ZoneBC_t", 1, "BC_t", iBoco, "end") == CG_OK) {
-      char familyName[CGNS_STRING_SIZE];
-      if (cg_famname_read(familyName) == CG_OK) markerName = string(familyName);
+      char familyName[CG_MAX_GOTO_DEPTH * (CGNS_STRING_SIZE + 1) + 1] = {};
+      if (cg_famname_read(familyName) == CG_OK) {
+        markerName = string(familyName);
+        const auto slash = markerName.find_last_of('/');
+        if (slash != string::npos) markerName = markerName.substr(slash + 1);
+      }
     }
 
-    /*--- Give that name to every boundary section holding elements of this boundary condition. ---*/
+    /*--- Count the elements of each boundary section that belong to this boundary condition. ---*/
 
     vector<cgsize_t> points(nPoints);
     if (cg_boco_read(cgnsFileID, cgnsBase, cgnsZone, iBoco, points.data(), nullptr)) cg_error_exit();
 
-    for (int s = 0; s < nSections; s++) {
-      if (isInterior[s]) continue;
-
-      bool covered = false;
-      if (pointSetType == PointRange || pointSetType == ElementRange) {
-        covered = (points[0] <= sectionEnd[s]) && (points[1] >= sectionStart[s]);
-      } else {
-        for (auto point : points) covered = covered || ((point >= sectionStart[s]) && (point <= sectionEnd[s]));
+    vector<cgsize_t> nInSection(nSections, 0);
+    if (byRange) {
+      for (int s = 0; s < nSections; s++)
+        if (!isInterior[s])
+          nInSection[s] = max<cgsize_t>(0, min(points[1], sectionEnd[s]) - max(points[0], sectionStart[s]) + 1);
+    } else {
+      for (const auto point : points) {
+        for (int s = 0; s < nSections; s++) {
+          if (!isInterior[s] && point >= sectionStart[s] && point <= sectionEnd[s]) {
+            nInSection[s]++;
+            break;
+          }
+        }
       }
-      if (covered) sectionMarkerNames[s] = markerName;
     }
+
+    for (int s = 0; s < nSections; s++) {
+      if (nInSection[s] == 0) continue;
+      if (!bocoNames[s].empty() && bocoNames[s] != markerName) severalNames[s] = true;
+      bocoNames[s] = markerName;
+      nCovered[s] += nInSection[s];
+    }
+  }
+
+  /*--- A section takes the name of its boundary condition only if all its elements belong to boundary conditions
+   with that name. Otherwise it is kept as one marker named after the section, since a section cannot be split. ---*/
+
+  for (int s = 0; s < nSections; s++) {
+    if (isInterior[s] || bocoNames[s].empty()) continue;
+
+    if (severalNames[s] || nCovered[s] < sectionEnd[s] - sectionStart[s] + 1) {
+      if (rank == MASTER_NODE)
+        cout << "WARNING: the boundary conditions of the file do not cover all elements of the section "
+             << sectionMarkerNames[s] << " with one name, the section is a marker named after the section." << endl;
+      continue;
+    }
+    sectionMarkerNames[s] = bocoNames[s];
   }
 }
 

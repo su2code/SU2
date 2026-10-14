@@ -640,7 +640,7 @@ void CCGNSMeshReaderFVM::ReformatCGNSSurfaceConnectivity() {
   /*--- Tell the user which sections were merged into one marker. ---*/
 
   if (rank == MASTER_NODE) {
-    for (unsigned short iMarker = 0; iMarker < numberOfMarkers; iMarker++) {
+    for (int iMarker = 0; iMarker < static_cast<int>(markerNames.size()); iMarker++) {
       vector<string> sections;
       for (int s = 0; s < nSections; s++)
         if (markerOfSection[s] == iMarker) sections.push_back(string(sectionNames[s].data()));
