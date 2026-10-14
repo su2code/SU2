@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <array>
 #include <cmath>
 #include <memory>
 
@@ -93,6 +94,27 @@ class CFluidModel {
 
  public:
   virtual ~CFluidModel() {}
+
+  // Fully incoming flow needs inlet data; subsonic reverse flow uses extrapolated entropy and tangential velocity.
+  enum class PressureOutletStatus { Valid, InvalidState, Backflow };
+
+  /*!
+   * \brief Reconstruct a characteristic pressure outlet along this fluid's isentrope.
+   * Overwrites the thermodynamic scratch state. See the implementation for wave relations and references.
+   * \param[in] nDim - Spatial dimension (2 or 3).
+   * \param[in] interior - Conservative state [rho, rho*u_1, ..., rho*u_nDim, rho*E].
+   * \param[in] normal - Outward unit normal.
+   * \param[in] gridNormal - Grid velocity dotted with normal.
+   * \param[in] targetPressure - Positive static pressure, in the interior state's units.
+   * \param[out] boundary - Conservative outlet state; use only when the result is Valid.
+   * \param[in] turbulentK - Frozen SST specific turbulent kinetic energy.
+   * \param[in] idealGamma - Constant ideal-gas gamma; zero selects general EOS integration.
+   * \return Valid, InvalidState (invalid input or EOS/integration failure), or Backflow.
+   */
+  PressureOutletStatus ComputePressureOutletState(unsigned short nDim, const su2double* interior,
+                                                const su2double* normal, su2double gridNormal,
+                                                su2double targetPressure, su2double* boundary,
+                                                su2double turbulentK = 0, su2double idealGamma = 0);
 
   /*!
    * \brief Get fluid pressure.
@@ -403,4 +425,29 @@ class CFluidModel {
    * \return Newton solver iteration count at termination.
    */
   virtual unsigned long GetnIter_Newton() { return 0; }
+
+ private:
+  using PressureOutletState = std::array<su2double, 3>;  // Density, thermal energy, relative normal velocity.
+
+  /*! \brief Reconstruct the ideal-gas isentropic state, limited by sonic outflow. */
+  PressureOutletStatus ComputeIdealGasPressureOutletState(su2double targetPressure, su2double idealGamma,
+                                                        PressureOutletState& state);
+
+  /*! \brief Integrate the general EOS isentrope up to the requested pressure or the sonic point. */
+  PressureOutletStatus IntegratePressureOutletIsentrope(su2double targetPressure, PressureOutletState& state);
+
+  /*! \brief Locate the sonic crossing and retain its sensitivity to the interior state. */
+  bool FindPressureOutletSonicState(su2double& logPressure, PressureOutletState& state, su2double step,
+                                   su2double referenceSound2);
+
+  /*! \brief Take one RK4 step, leaving the EOS at the resulting state. */
+  bool StepPressureOutletIsentrope(su2double logPressure, const PressureOutletState& state, su2double step,
+                                  PressureOutletState& result, su2double referenceSound2);
+
+  /*! \brief Evaluate isentropic derivatives with respect to log pressure at an admissible EOS state. */
+  bool EvaluatePressureOutletIsentrope(su2double logPressure, const PressureOutletState& state,
+                                      PressureOutletState& derivative, su2double referenceSound2);
+
+  /*! \brief Check the current EOS pressure, temperature and sound speed before using them. */
+  bool IsPressureOutletStateValid() const;
 };

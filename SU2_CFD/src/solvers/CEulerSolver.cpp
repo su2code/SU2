@@ -5308,7 +5308,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Density_i = nodes->GetDensity(iPoint);
 
       const auto Energy_i = nodes->GetEnergy(iPoint);
-      const su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+      const bool pressureOutflow = config->GetKind_Data_Riemann(Marker_Tag) == STATIC_PRESSURE;
+      const auto tke_i = pressureOutflow && tkeNeeded ? solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0) : su2double(0.0);
+      const su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i - tke_i;
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -5436,18 +5438,15 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       case STATIC_PRESSURE:
 
-        /*--- Retrieve the static pressure for this boundary. ---*/
+        /*--- Only pressure is prescribed; CFluidModel::ComputePressureOutletState derives density and energy on the isentrope. ---*/
         Pressure_e = config->GetRiemann_Var1(Marker_Tag);
         Pressure_e /= config->GetPressure_Ref();
         Density_e = Density_i;
 
         /* --- Compute the boundary state u_e --- */
-        GetFluidModel()->SetTDState_Prho(Pressure_e, Density_e);
         for (auto iDim = 0u; iDim < nDim; iDim++)
           Velocity_e[iDim] = Velocity_i[iDim];
-
-        Velocity2_e = GeometryToolbox::SquaredNorm(nDim, Velocity_e);
-        Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+        Energy_e = Energy_i;  // The nonlinear outflow construction below supplies the pressure state.
         break;
 
       default:
@@ -5455,11 +5454,16 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         break;
       }
 
-      /*--- Compute P (matrix of right eigenvectors) ---*/
-      conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
+      // A linear characteristic jump can leave the EOS validity range for a large pressure change;
+      // static-pressure outlets instead follow the nonlinear isentrope in CFluidModel::ComputePressureOutletState.
+      if (!pressureOutflow || implicit) {
+        /*--- Compute P (matrix of right eigenvectors) ---*/
+        conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
 
-      /*--- Compute inverse P (matrix of left eigenvectors)---*/
-      conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+        /*--- Compute inverse P (matrix of left eigenvectors)---*/
+        conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+
+      }
 
       /*--- eigenvalues contribution due to grid motion ---*/
       su2double ProjVelocity_i = GeometryToolbox::DotProduct(nDim, Velocity_i, UnitNormal);
@@ -5484,32 +5488,69 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       u_e[nVar-1] = Energy_e*Density_e;
       u_i[nVar-1] = Energy_i*Density_i;
 
-      /*--- Compute the characteristic jumps ---*/
-      for (auto iVar = 0u; iVar < nVar; iVar++){
-        dw[iVar] = 0;
-        for (auto jVar = 0u; jVar < nVar; jVar++)
-          dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
+      if (!pressureOutflow) {
+        /*--- Compute the characteristic jumps ---*/
+        for (auto iVar = 0u; iVar < nVar; iVar++){
+          dw[iVar] = 0;
+          for (auto jVar = 0u; jVar < nVar; jVar++)
+            dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
+        }
+
+        /*--- Compute the boundary state u_b using characteristics ---*/
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          u_b[iVar] = u_i[iVar];
+          for (auto jVar = 0u; jVar < nVar; jVar++) {
+            if (Lambda_i[jVar] < 0)
+              u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
+          }
+        }
+
       }
 
-      /*--- Compute the boundary state u_b using characteristics ---*/
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        u_b[iVar] = u_i[iVar];
-        for (auto jVar = 0u; jVar < nVar; jVar++) {
-          if (Lambda_i[jVar] < 0)
-            u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
+      const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
+      if (pressureOutflow) {
+        const auto status = GetFluidModel()->ComputePressureOutletState(nDim, u_i, UnitNormal, gridNormal, Pressure_e, u_b, tke_i, ideal_gas ? Gamma : su2double(0.0));
+        if (status != CFluidModel::PressureOutletStatus::Valid) {
+          // MPI error reporting uses shared state; only one OpenMP thread may enter it.
+          SU2_OMP_CRITICAL
+          {
+            if (status == CFluidModel::PressureOutletStatus::Backflow)
+              SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
+            else
+              SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
+                             ". Check the prescribed pressure and the EOS validity range.", CURRENT_FUNCTION);
+          } END_SU2_OMP_CRITICAL
         }
       }
 
       /*--- Compute the thermodynamic state in u_b ---*/
       su2double Velocity_b[MAXNDIM] = {0};
       const auto Density_b = u_b[0];
+      // Reject invalid density before dividing momentum or energy by it.
+      if (!(Density_b > 0.0) || !std::isfinite(SU2_TYPE::GetValue(Density_b))) {
+        SU2_MPI::Error("Nonphysical characteristic boundary density on marker " + Marker_Tag +
+                       ". Check the prescribed state and initialization; pressure continuation may be needed for a steady solve.",
+                       CURRENT_FUNCTION);
+      }
+
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Velocity_b[iDim] = u_b[iDim+1]/Density_b;
       const auto Velocity2_b = GeometryToolbox::SquaredNorm(nDim, Velocity_b);
 
       const su2double Energy_b = u_b[nVar-1]/Density_b;
-      const su2double StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
+      const su2double StaticEnergy_b = Energy_b - 0.5*Velocity2_b - tke_i;
       GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
+      const auto boundaryPressure = SU2_TYPE::GetValue(GetFluidModel()->GetPressure());
+      const auto boundaryTemperature = SU2_TYPE::GetValue(GetFluidModel()->GetTemperature());
+      const auto boundarySoundSpeed2 = SU2_TYPE::GetValue(GetFluidModel()->GetSoundSpeed2());
+      // Diagnose invalid EOS states here, before a flux or Jacobian turns them into a NaN residual.
+      if (!(boundaryPressure > 0.0 && boundaryTemperature > 0.0 && boundarySoundSpeed2 > 0.0) ||
+          !std::isfinite(boundaryPressure) || !std::isfinite(boundaryTemperature) || !std::isfinite(boundarySoundSpeed2)) {
+        SU2_MPI::Error("Nonphysical characteristic boundary thermodynamic state on marker " + Marker_Tag +
+                       ". Check the prescribed state and initialization; pressure continuation may be needed for a steady solve.",
+                       CURRENT_FUNCTION);
+      }
+
 
       /*--- Store number of Newton iterations at BC ---*/
       if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
@@ -5519,7 +5560,17 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Temperature_b = GetFluidModel()->GetTemperature();
       const su2double Enthalpy_b = Energy_b + Pressure_b/Density_b;
       const su2double Kappa_b = GetFluidModel()->GetdPde_rho() / Density_b;
-      const su2double Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
+      // With SST, E=e+|u|^2/2+k; differentiating pressure at fixed k requires e+k in chi.
+      const su2double Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * (StaticEnergy_b + tke_i);
+
+      /*--- Scalar boundary solvers also need the reconstructed primitive state in Euler runs. ---*/
+      auto* V_boundary = GetCharacPrimVar(val_marker, iVertex);
+      V_boundary[prim_idx.Temperature()] = Temperature_b;
+      for (auto d = 0u; d < nDim; ++d) V_boundary[prim_idx.Velocity() + d] = Velocity_b[d];
+      V_boundary[prim_idx.Pressure()] = Pressure_b;
+      V_boundary[prim_idx.Density()] = Density_b;
+      V_boundary[prim_idx.Enthalpy()] = Enthalpy_b;
+      V_boundary[prim_idx.SoundSpeed()] = GetFluidModel()->GetSoundSpeed();
 
       /*--- Compute the residuals ---*/
       su2double Residual[MAXNVAR] = {0};
@@ -5551,7 +5602,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           DubDu[iVar][iVar]=1;
         }
 
-        /*--- Compute DubDu -= RNL---*/
+        // Keep outgoing characteristic increments; freeze the wave basis in this approximate matrix.
         for (auto iVar=0u; iVar<nVar; iVar++){
           for (auto jVar=0u; jVar<nVar; jVar++){
             for (auto kVar=0u; kVar<nVar; kVar++){
@@ -5598,15 +5649,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       /*--- Viscous contribution ---*/
 
       if (viscous) {
-
-        /*--- Primitive variables, using the derived quantities ---*/
-        auto V_boundary= GetCharacPrimVar(val_marker, iVertex);
-        V_boundary[prim_idx.Temperature()] = Temperature_b;
-        for (auto iDim = 0u; iDim < nDim; iDim++)
-          V_boundary[prim_idx.Velocity() + iDim] = Velocity_b[iDim];
-        V_boundary[prim_idx.Pressure()] = Pressure_b;
-        V_boundary[prim_idx.Density()] = Density_b;
-        V_boundary[prim_idx.Enthalpy()] = Enthalpy_b;
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
 
@@ -5706,6 +5748,9 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   bool viscous = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  // TurboRiemann reads MARKER_RIEMANN; a matching MARKER_GILES entry is not required or consulted.
+  const auto dataKind = config->GetKind_Data_Riemann(Marker_Tag);
+  const bool pressureOutflow = dataKind == STATIC_PRESSURE || dataKind == RADIAL_EQUILIBRIUM;
   const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
                          config->GetKind_FluidModel() == IDEAL_GAS;
 
@@ -5780,7 +5825,10 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         Density_i = nodes->GetDensity(iPoint);
 
         Energy_i = nodes->GetEnergy(iPoint);
-        StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+        // Keep SST kinetic energy in the conserved state, but exclude it from the thermal EOS input.
+        const su2double tke_i = pressureOutflow && tkeNeeded
+                                   ? solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0) : su2double(0.0);
+        StaticEnergy_i = Energy_i - 0.5*Velocity2_i - tke_i;
 
         GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -5790,29 +5838,32 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         SoundSpeed_i = GetFluidModel()->GetSoundSpeed();
 
         Kappa_i = GetFluidModel()->GetdPde_rho() / Density_i;
-        Chi_i = GetFluidModel()->GetdPdrho_e() - Kappa_i * StaticEnergy_i;
+        Chi_i = GetFluidModel()->GetdPdrho_e() - Kappa_i * (StaticEnergy_i + tke_i);
 
         ProjVelocity_i = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
-        su2double donorAverages[5] = {0.0};
-        switch (config->GetKind_Data_Giles(Marker_Tag)){
-          case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:
-            for (auto mixVar = 0u; mixVar < 5; mixVar++) donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
-            break;
-          default:
-            break;
+        // Static and radial-equilibrium pressure outlets need no donor mixing state.
+        if (!pressureOutflow) {
+          su2double donorAverages[5] = {0.0};
+          switch (dataKind){
+            case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:
+              for (auto mixVar = 0u; mixVar < 5; mixVar++) donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
+              break;
+            default:
+              break;
+          }
+          ExtAverageDensity = donorAverages[0];
+          ExtAveragePressure = donorAverages[1];
+          ExtAverageTurboVelocity[0] = donorAverages[2];
+          ExtAverageTurboVelocity[1] = donorAverages[3];
+          if (nDim == 3) ExtAverageTurboVelocity[2] = donorAverages[4];
         }
-        ExtAverageDensity = donorAverages[0];
-        ExtAveragePressure = donorAverages[1];
-        ExtAverageTurboVelocity[0] = donorAverages[2];
-        ExtAverageTurboVelocity[1] = donorAverages[3];
-        if (nDim == 3) ExtAverageTurboVelocity[2] = donorAverages[4];
 
         /*--- Build the external state u_e from boundary data and internal node ---*/
 
-        switch(config->GetKind_Data_Riemann(Marker_Tag))
+        switch(dataKind)
         {
           //TODO(turbo), generalize for 3D case
           //TODO(turbo), generalize for Inlet and Outlet in for backflow treatment
@@ -5899,38 +5950,15 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
             break;
 
-          case STATIC_PRESSURE:
+          case STATIC_PRESSURE: case RADIAL_EQUILIBRIUM:
 
-            /*--- Retrieve the static pressure for this boundary. ---*/
-            Pressure_e = config->GetRiemann_Var1(Marker_Tag);
-            Pressure_e /= config->GetPressure_Ref();
+            // The radial profile is already nondimensional; a configured uniform pressure is dimensional.
+            Pressure_e = dataKind == RADIAL_EQUILIBRIUM
+                             ? RadialEquilibriumPressure[val_marker][iSpan]
+                             : config->GetRiemann_Var1(Marker_Tag) / config->GetPressure_Ref();
             Density_e = Density_i;
-
-            /* --- Compute the boundary state u_e --- */
-            GetFluidModel()->SetTDState_Prho(Pressure_e, Density_e);
-            Velocity2_e = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Velocity_e[iDim] = Velocity_i[iDim];
-              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-            }
-            Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
-            break;
-
-
-          case RADIAL_EQUILIBRIUM:
-
-            /*--- Retrieve the static pressure for this boundary. ---*/
-            Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
-            Density_e = Density_i;
-
-            /* --- Compute the boundary state u_e --- */
-            GetFluidModel()->SetTDState_Prho(Pressure_e, Density_e);
-            Velocity2_e = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Velocity_e[iDim] = Velocity_i[iDim];
-              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-            }
-            Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+            Energy_e = Energy_i;  // The shared pressure-outflow reconstruction supplies the boundary state.
+            for (iDim = 0; iDim < nDim; iDim++) Velocity_e[iDim] = Velocity_i[iDim];
             break;
 
           default:
@@ -5938,11 +5966,13 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             break;
         }
 
-        /*--- Compute P (matrix of right eigenvectors) ---*/
-        conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
+        if (!pressureOutflow || implicit) {
+          /*--- Compute P (matrix of right eigenvectors) ---*/
+          conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
 
-        /*--- Compute inverse P (matrix of left eigenvectors)---*/
-        conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+          /*--- Compute inverse P (matrix of left eigenvectors)---*/
+          conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+        }
 
         /*--- eigenvalues contribution due to grid motion ---*/
         if (dynamic_grid){
@@ -5972,30 +6002,38 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           u_i[iDim+1] = Velocity_i[iDim]*Density_i;
         u_i[nVar-1] = Energy_i*Density_i;
 
-        /*--- Compute the characteristic jumps ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-        {
-          dw[iVar] = 0;
-          for (jVar = 0; jVar < nVar; jVar++)
-            dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
-
-        }
-
-        /*--- Compute the boundary state u_b using characteristics ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-        {
-          u_b[iVar] = u_i[iVar];
-
-          for (jVar = 0; jVar < nVar; jVar++)
-          {
-            if (Lambda_i[jVar] < 0)
+        if (pressureOutflow) {
+          // Apply each span's pressure to the local state; using a span average here would discard local waves.
+          const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
+          const auto status = GetFluidModel()->ComputePressureOutletState(nDim, u_i, UnitNormal, gridNormal, Pressure_e,
+                                                   u_b, tke_i, ideal_gas ? Gamma : su2double(0.0));
+          if (status != CFluidModel::PressureOutletStatus::Valid) {
+            // MPI error reporting uses shared state; only one OpenMP thread may enter it.
+            SU2_OMP_CRITICAL
             {
-              u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
+              if (status == CFluidModel::PressureOutletStatus::Backflow)
+                SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
+              else
+                SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
+                               ". Check the prescribed pressure and the EOS validity range.", CURRENT_FUNCTION);
+            } END_SU2_OMP_CRITICAL
+          }
+        } else {
+          /*--- Compute the characteristic jumps ---*/
+          for (iVar = 0; iVar < nVar; iVar++) {
+            dw[iVar] = 0;
+            for (jVar = 0; jVar < nVar; jVar++)
+              dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
+          }
 
+          /*--- Compute the boundary state u_b using characteristics ---*/
+          for (iVar = 0; iVar < nVar; iVar++) {
+            u_b[iVar] = u_i[iVar];
+            for (jVar = 0; jVar < nVar; jVar++) {
+              if (Lambda_i[jVar] < 0) u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
             }
           }
         }
-
 
         /*--- Compute the thermodynamic state in u_b ---*/
         Density_b = u_b[0];
@@ -6006,13 +6044,21 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           Velocity2_b += Velocity_b[iDim]*Velocity_b[iDim];
         }
         Energy_b = u_b[nVar-1]/Density_b;
-        StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
+        StaticEnergy_b = Energy_b - 0.5*Velocity2_b - tke_i;
         GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
         Pressure_b = GetFluidModel()->GetPressure();
         Temperature_b = GetFluidModel()->GetTemperature();
         Enthalpy_b = Energy_b + Pressure_b/Density_b;
         Kappa_b = GetFluidModel()->GetdPde_rho() / Density_b;
-        Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
+        Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * (StaticEnergy_b + tke_i);
+
+        // Turbulence and other scalar boundary solvers read this state even when viscous fluxes are disabled.
+        V_boundary[prim_idx.Temperature()] = Temperature_b;
+        for (auto d = 0u; d < nDim; ++d) V_boundary[prim_idx.Velocity() + d] = Velocity_b[d];
+        V_boundary[prim_idx.Pressure()] = Pressure_b;
+        V_boundary[prim_idx.Density()] = Density_b;
+        V_boundary[prim_idx.Enthalpy()] = Enthalpy_b;
+        V_boundary[prim_idx.SoundSpeed()] = GetFluidModel()->GetSoundSpeed();
 
         /*--- Compute the residuals ---*/
         conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);
@@ -6048,7 +6094,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             DubDu[iVar][iVar]= 1;
           }
 
-          /*--- Compute DubDu -= RNL---*/
+          // Keep outgoing characteristic increments; freeze the wave basis in this approximate matrix.
           for (iVar=0; iVar<nVar; iVar++)
           {
             for (jVar=0; jVar<nVar; jVar++)
@@ -6072,7 +6118,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             for (iDim = 0; iDim < nDim; iDim++)
               projVelocity +=  gridVel[iDim]*Normal[iDim];
             for (iVar = 0; iVar < nVar; iVar++){
-              Residual[iVar] -= projVelocity *(u_b[iVar]);
+              // The moving-grid flux is F(U_b).N - (v_grid.N)*U_b; its derivative subtracts
+              // (v_grid.N)*I. The residual already contains this transport term once above.
               Jacobian_b[iVar][iVar] -= projVelocity;
             }
 
@@ -6110,15 +6157,6 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         /*--- Viscous contribution ---*/
 
         if (viscous) {
-
-          /*--- Primitive variables, using the derived quantities ---*/
-
-          V_boundary[0] = Temperature_b;
-          for (iDim = 0; iDim < nDim; iDim++)
-            V_boundary[iDim+1] = Velocity_b[iDim];
-          V_boundary[nDim+1] = Pressure_b;
-          V_boundary[nDim+2] = Density_b;
-          V_boundary[nDim+3] = Enthalpy_b;
 
           /*--- Set laminar and eddy viscosity at the infinity ---*/
 
@@ -7448,175 +7486,103 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics,
                              CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
-  unsigned short iVar, iDim;
-  unsigned long iVertex, iPoint;
-  su2double Pressure, P_Exit, Velocity[3],
-  Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit,
-  Area, UnitNormal[3];
-  su2double *V_outlet, *V_domain;
-
-  bool implicit           = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  su2double Gas_Constant     = config->GetGas_ConstantND();
-  string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
-  bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
-
-  auto *Normal = new su2double[nDim];
-
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+  const bool tkeNeeded = config->GetKind_Turb_Model() == TURB_MODEL::SST;
+  const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; ++iVertex) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    /*--- Allocate the value at the outlet ---*/
-    V_outlet = GetCharacPrimVar(val_marker, iVertex);
+    su2double Normal[MAXNDIM] = {}, UnitNormal[MAXNDIM] = {};
+    // Reconstruction uses an outward unit normal; the numerical flux uses the outward area normal.
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (auto d = 0u; d < nDim; ++d) Normal[d] = -Normal[d];
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    for (auto d = 0u; d < nDim; ++d) UnitNormal[d] = Normal[d] / Area;
+    conv_numerics->SetNormal(Normal);
 
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    su2double pressure = config->GetOutlet_Pressure(Marker_Tag);
+    if (config->GetGravityForce()) pressure -= geometry->nodes->GetCoord(iPoint, nDim - 1) * STANDARD_GRAVITY;
+    pressure /= config->GetPressure_Ref();
+    // The helper classifies flow in the grid's frame while keeping conservative energy in the lab frame.
+    const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
+    const su2double tke = tkeNeeded ? solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0) : su2double(0.0);
+    const auto* interior = nodes->GetSolution(iPoint);
+    su2double boundary[MAXNVAR] = {};
+    // Ordinary compressible outlets use the ideal-gas path; real-gas pressure outlets use BC_Riemann.
+    const auto status = GetFluidModel()->ComputePressureOutletState(nDim, interior, UnitNormal, gridNormal, pressure,
+                                             boundary, tke, Gamma);
+    if (status != CFluidModel::PressureOutletStatus::Valid) {
+      // MPI error reporting uses shared state; only one OpenMP thread may enter it.
+      SU2_OMP_CRITICAL
+      {
+        if (status == CFluidModel::PressureOutletStatus::Backflow)
+          SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
+        else
+          SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
+                         ". Check the prescribed pressure and the EOS validity range.", CURRENT_FUNCTION);
+      } END_SU2_OMP_CRITICAL
+    }
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    if (geometry->nodes->GetDomain(iPoint)) {
+    const su2double density = boundary[0], energy = boundary[nVar - 1] / density;
+    const auto* V_domain = nodes->GetPrimitive(iPoint);
+    auto* V_outlet = GetCharacPrimVar(val_marker, iVertex);
+    // Preserve primitive fields outside the reconstructed thermodynamic and velocity entries.
+    for (auto variable = 0u; variable < nPrimVar; ++variable) V_outlet[variable] = V_domain[variable];
+    for (auto d = 0u; d < nDim; ++d) V_outlet[prim_idx.Velocity() + d] = boundary[d + 1] / density;
+    // Recover the primitive thermodynamic fields from the reconstructed conservative state.
+    GetFluidModel()->SetTDState_rhoe(density, energy - .5 * GeometryToolbox::SquaredNorm(nDim, V_outlet + prim_idx.Velocity()) - tke);
+    V_outlet[prim_idx.Temperature()] = GetFluidModel()->GetTemperature();
+    V_outlet[prim_idx.Pressure()] = GetFluidModel()->GetPressure();
+    V_outlet[prim_idx.Density()] = density;
+    V_outlet[prim_idx.Enthalpy()] = energy + V_outlet[prim_idx.Pressure()] / density;
+    V_outlet[prim_idx.SoundSpeed()] = GetFluidModel()->GetSoundSpeed();
+    conv_numerics->SetPrimitive(V_domain, V_outlet);
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      conv_numerics->SetNormal(Normal);
-
-      Area = GeometryToolbox::Norm(nDim, Normal);
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
-
-      /*--- Current solution at this boundary node ---*/
-      V_domain = nodes->GetPrimitive(iPoint);
-
-      /*--- Build the fictitious inlet state based on characteristics ---*/
-
-      /*--- Retrieve the specified back pressure for this outlet. ---*/
-      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;
-      else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
-
-      /*--- Non-dim. the inputs if necessary. ---*/
-      P_Exit = P_Exit/config->GetPressure_Ref();
-
-      /*--- Check whether the flow is supersonic at the exit. The type
-         of boundary update depends on this. ---*/
-      Density = V_domain[nDim+2];
-      Velocity2 = 0.0; Vn = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity[iDim] = V_domain[iDim+1];
-        Velocity2 += Velocity[iDim]*Velocity[iDim];
-        Vn += Velocity[iDim]*UnitNormal[iDim];
+    auto residual = conv_numerics->ComputeResidual(config);
+    LinSysRes.AddBlock(iPoint, residual);
+    if (implicit) {
+      su2double Pdata[MAXNVAR][MAXNVAR] = {}, Idata[MAXNVAR][MAXNVAR] = {};
+      su2double projection[MAXNVAR][MAXNVAR] = {}, matrix[MAXNVAR][MAXNVAR] = {};
+      su2double *P[MAXNVAR], *Pinv[MAXNVAR], *rows[MAXNVAR];
+      for (auto row = 0u; row < nVar; ++row) {
+        P[row] = Pdata[row];
+        Pinv[row] = Idata[row];
+        rows[row] = matrix[row];
       }
-      Pressure   = V_domain[nDim+1];
-      SoundSpeed = sqrt(Gamma*Pressure/Density);
-      Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
-
-      if (Mach_Exit >= 1.0) {
-
-        /*--- Supersonic exit flow: there are no incoming characteristics,
-           so no boundary condition is necessary. Set outlet state to current
-           state so that upwinding handles the direction of propagation. ---*/
-        for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];
-
-      } else {
-
-        /*--- Subsonic exit flow: there is one incoming characteristic,
-           therefore one variable can be specified (back pressure) and is used
-           to update the conservative variables. Compute the entropy and the
-           acoustic Riemann variable. These invariants, as well as the
-           tangential velocity components, are extrapolated. Adapted from an
-           original implementation in the Stanford University multi-block
-           (SUmb) solver in the routine bcSubsonicOutflow.f90 by Edwin van
-           der Weide, last modified 09-10-2007. ---*/
-
-        Entropy = Pressure*pow(1.0/Density, Gamma);
-        Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
-
-        /*--- Compute the new fictious state at the outlet ---*/
-        Density    = pow(P_Exit/Entropy,1.0/Gamma);
-        Pressure   = P_Exit;
-        SoundSpeed = sqrt(Gamma*P_Exit/Density);
-        Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
-        Velocity2  = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
+      const auto* velocity = V_domain + prim_idx.Velocity();
+      const su2double sound = V_domain[prim_idx.SoundSpeed()];
+      // Freeze the wave basis in the implicit update; the residual keeps the nonlinear outlet state.
+      // The general eigenvectors include frozen SST energy through enthalpy and chi.
+      const su2double rho = interior[0], enthalpy = V_domain[prim_idx.Enthalpy()];
+      const su2double kappa = Gamma_Minus_One, chi = -kappa * tke;
+      conv_numerics->GetPMatrix(&rho, velocity, &sound, &enthalpy, &chi, &kappa, UnitNormal, P);
+      conv_numerics->GetPMatrix_inv(Pinv, &rho, velocity, &sound, &chi, &kappa, UnitNormal);
+      const su2double q = GeometryToolbox::DotProduct(nDim, velocity, UnitNormal) - gridNormal;
+      // Exclude incoming waves from this approximate state derivative.
+      for (auto row = 0u; row < nVar; ++row)
+        for (auto col = 0u; col < nVar; ++col) {
+          projection[row][col] = row == col ? 1.0 : 0.0;
+          for (auto mode = 0u; mode < nVar; ++mode) {
+            su2double speed = q;
+            if (mode == nVar - 2) speed += sound;
+            if (mode == nVar - 1) speed -= sound;
+            if (speed < 0) projection[row][col] -= P[row][mode] * Pinv[mode][col];
+          }
         }
-        Energy = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
-
-        /*--- Conservative variables, using the derived quantities ---*/
-        V_outlet[0] = Pressure / ( Gas_Constant * Density);
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_outlet[iDim+1] = Velocity[iDim];
-        V_outlet[nDim+1] = Pressure;
-        V_outlet[nDim+2] = Density;
-        V_outlet[nDim+3] = Energy + Pressure/Density;
-
-      }
-
-      /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetPrimitive(V_domain, V_outlet);
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute the residual using an upwind scheme ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Add Residuals and Jacobians ---*/
-
-      LinSysRes.AddBlock(iPoint, residual);
-      if (implicit)
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-//      /*--- Viscous contribution, commented out because serious convergence problems  ---*/
-//
-//      if (viscous) {
-//
-//        /*--- Set laminar and eddy viscosity at the infinity ---*/
-//
-//        V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-//        V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
-//
-//        /*--- Set the normal vector and the coordinates ---*/
-//
-//        visc_numerics->SetNormal(Normal);
-//        su2double Coord_Reflected[MAXNDIM];
-//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-//                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//
-//        /*--- Primitive variables, and gradient ---*/
-//
-//        visc_numerics->SetPrimitive(V_domain, V_outlet);
-//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
-//
-//        /*--- Turbulent kinetic energy ---*/
-//
-//        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
-//
-//        /*--- Compute and update residual ---*/
-//
-//        auto residual = visc_numerics->ComputeResidual(config);
-//        LinSysRes.SubtractBlock(iPoint, residual);
-//
-//        /*--- Jacobian contribution for implicit integration ---*/
-//
-//        if (implicit)
-//         Jacobian.SubtractBlock2Diag(iPoint, residual.acobian_i);
-//
-//      }
-
+      for (auto row = 0u; row < nVar; ++row)
+        for (auto col = 0u; col < nVar; ++col) {
+          matrix[row][col] = residual.jacobian_i[row][col];
+          for (auto k = 0u; k < nVar; ++k) matrix[row][col] += residual.jacobian_j[row][k] * projection[k][col];
+        }
+      Jacobian.AddBlock2Diag(iPoint, rows);
     }
   }
   END_SU2_OMP_FOR
-
-  /*--- Free locally allocated memory ---*/
-  delete [] Normal;
-
 }
 
 void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
