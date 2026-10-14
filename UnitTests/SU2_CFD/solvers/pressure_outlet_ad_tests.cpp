@@ -25,7 +25,8 @@
  */
 
 #include "catch.hpp"
-#include "../../../SU2_CFD/include/solvers/characteristic_pressure_outlet.hpp"
+#include "../../../SU2_CFD/include/fluid/CFluidModel.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../SU2_CFD/include/fluid/CIdealGas.hpp"
 #include "../../../SU2_CFD/include/fluid/CPengRobinson.hpp"
 #include "../../../SU2_CFD/include/fluid/CVanDerWaalsGas.hpp"
@@ -49,7 +50,7 @@ TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressu
             rho, rho * (mach * a + 20), rho * 5, rho * (e + .5 * (pow(mach * a + 20, 2) + 25)), ratio * p, 20};
         // The first four inputs are conservative variables; the last two are pressure and grid speed.
         auto evaluate = [&](su2double* input, su2double* output) {
-          return PressureOutlet::State(*gas, 2, input, normal, input[5], input[4], output, 0, kind == 0 ? 1.4 : 0.);
+          return gas->ComputePressureOutletState(2, input, normal, input[5], input[4], output, 0, kind == 0 ? 1.4 : 0.);
         };
         for (auto column = 0u; column < 6; ++column) {
           const double scale[6] = {rho, rho * a, rho * a, rho * a * a, p, a};
@@ -58,8 +59,8 @@ TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressu
           for (auto k = 0u; k < 6; ++k) plus[k] = minus[k] = values[k];
           plus[column] += delta;
           minus[column] -= delta;
-          REQUIRE(evaluate(plus, fp) == PressureOutlet::Status::Valid);
-          REQUIRE(evaluate(minus, fm) == PressureOutlet::Status::Valid);
+          REQUIRE(evaluate(plus, fp) == CFluidModel::PressureOutletStatus::Valid);
+          REQUIRE(evaluate(minus, fm) == CFluidModel::PressureOutletStatus::Valid);
           // Finite differences rerun the complete map, so the reference includes movement of the sonic root.
           for (auto row = 0u; row < 4; ++row) {
             const double expected = SU2_TYPE::GetValue((fp[row] - fm[row]) / (2 * delta));
@@ -74,7 +75,7 @@ TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressu
             // Forward mode propagates a unit seed for the selected input column.
             SU2_TYPE::SetDerivative(input[column], 1);
 #endif
-            REQUIRE(evaluate(input, output) == PressureOutlet::Status::Valid);
+            REQUIRE(evaluate(input, output) == CFluidModel::PressureOutletStatus::Valid);
 #ifdef CODI_REVERSE_TYPE
             AD::RegisterOutput(output[row]);
             AD::StopRecording();

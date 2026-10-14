@@ -94,6 +94,27 @@ class CFluidModel {
  public:
   virtual ~CFluidModel() {}
 
+  // Fully incoming flow needs inlet data; subsonic reverse flow uses extrapolated entropy and tangential velocity.
+  enum class PressureOutletStatus { Valid, InvalidState, Backflow };
+
+  /*!
+   * \brief Reconstruct a characteristic pressure outlet along this fluid's isentrope.
+   * Overwrites the thermodynamic scratch state. See the implementation for wave relations and references.
+   * \param[in] nDim - Spatial dimension (2 or 3).
+   * \param[in] interior - Conservative state [rho, rho*u_1, ..., rho*u_nDim, rho*E].
+   * \param[in] normal - Outward unit normal.
+   * \param[in] gridNormal - Grid velocity dotted with normal.
+   * \param[in] targetPressure - Positive static pressure, in the interior state's units.
+   * \param[out] boundary - Conservative outlet state; use only when the result is Valid.
+   * \param[in] turbulentK - Frozen SST specific turbulent kinetic energy.
+   * \param[in] idealGamma - Constant ideal-gas gamma; zero selects general EOS integration.
+   * \return Valid, InvalidState (invalid input or EOS/integration failure), or Backflow.
+   */
+  PressureOutletStatus ComputePressureOutletState(unsigned short nDim, const su2double* interior,
+                                                const su2double* normal, su2double gridNormal,
+                                                su2double targetPressure, su2double* boundary,
+                                                su2double turbulentK = 0, su2double idealGamma = 0);
+
   /*!
    * \brief Get fluid pressure.
    */

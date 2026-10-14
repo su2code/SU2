@@ -26,7 +26,6 @@
  */
 
 #include "../../include/solvers/CEulerSolver.hpp"
-#include "../../include/solvers/characteristic_pressure_outlet.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
@@ -5439,7 +5438,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       case STATIC_PRESSURE:
 
-        /*--- Only pressure is prescribed; PressureOutlet::State derives density and energy on the isentrope. ---*/
+        /*--- Only pressure is prescribed; CFluidModel::ComputePressureOutletState derives density and energy on the isentrope. ---*/
         Pressure_e = config->GetRiemann_Var1(Marker_Tag);
         Pressure_e /= config->GetPressure_Ref();
         Density_e = Density_i;
@@ -5456,7 +5455,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       }
 
       // A linear characteristic jump can leave the EOS validity range for a large pressure change;
-      // static-pressure outlets instead follow the nonlinear isentrope in PressureOutlet::State.
+      // static-pressure outlets instead follow the nonlinear isentrope in CFluidModel::ComputePressureOutletState.
       if (!pressureOutflow || implicit) {
         /*--- Compute P (matrix of right eigenvectors) ---*/
         conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
@@ -5510,12 +5509,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
       if (pressureOutflow) {
-        const auto status = PressureOutlet::State(*GetFluidModel(), nDim, u_i, UnitNormal, gridNormal, Pressure_e, u_b, tke_i, ideal_gas ? Gamma : su2double(0.0));
-        if (status != PressureOutlet::Status::Valid) {
+        const auto status = GetFluidModel()->ComputePressureOutletState(nDim, u_i, UnitNormal, gridNormal, Pressure_e, u_b, tke_i, ideal_gas ? Gamma : su2double(0.0));
+        if (status != CFluidModel::PressureOutletStatus::Valid) {
           // MPI error reporting uses shared state; only one OpenMP thread may enter it.
           SU2_OMP_CRITICAL
           {
-            if (status == PressureOutlet::Status::Backflow)
+            if (status == CFluidModel::PressureOutletStatus::Backflow)
               SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
             else
               SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
@@ -6006,13 +6005,13 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         if (pressureOutflow) {
           // Apply each span's pressure to the local state; using a span average here would discard local waves.
           const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
-          const auto status = PressureOutlet::State(*GetFluidModel(), nDim, u_i, UnitNormal, gridNormal, Pressure_e,
+          const auto status = GetFluidModel()->ComputePressureOutletState(nDim, u_i, UnitNormal, gridNormal, Pressure_e,
                                                    u_b, tke_i, ideal_gas ? Gamma : su2double(0.0));
-          if (status != PressureOutlet::Status::Valid) {
+          if (status != CFluidModel::PressureOutletStatus::Valid) {
             // MPI error reporting uses shared state; only one OpenMP thread may enter it.
             SU2_OMP_CRITICAL
             {
-              if (status == PressureOutlet::Status::Backflow)
+              if (status == CFluidModel::PressureOutletStatus::Backflow)
                 SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
               else
                 SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
@@ -7513,13 +7512,13 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     const auto* interior = nodes->GetSolution(iPoint);
     su2double boundary[MAXNVAR] = {};
     // Ordinary compressible outlets use the ideal-gas path; real-gas pressure outlets use BC_Riemann.
-    const auto status = PressureOutlet::State(*GetFluidModel(), nDim, interior, UnitNormal, gridNormal, pressure,
+    const auto status = GetFluidModel()->ComputePressureOutletState(nDim, interior, UnitNormal, gridNormal, pressure,
                                              boundary, tke, Gamma);
-    if (status != PressureOutlet::Status::Valid) {
+    if (status != CFluidModel::PressureOutletStatus::Valid) {
       // MPI error reporting uses shared state; only one OpenMP thread may enter it.
       SU2_OMP_CRITICAL
       {
-        if (status == PressureOutlet::Status::Backflow)
+        if (status == CFluidModel::PressureOutletStatus::Backflow)
           SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
         else
           SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +

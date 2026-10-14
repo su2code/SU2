@@ -32,7 +32,8 @@
 #include "../../../SU2_CFD/include/fluid/CPengRobinson.hpp"
 #include "../../../SU2_CFD/include/fluid/CVanDerWaalsGas.hpp"
 #include "../../../SU2_CFD/include/numerics/flow/convection/hllc.hpp"
-#include "../../../SU2_CFD/include/solvers/characteristic_pressure_outlet.hpp"
+#include "../../../SU2_CFD/include/fluid/CFluidModel.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 namespace {
 // Supply a known spanwise pressure profile to test how the boundary consumes it, independently
@@ -90,7 +91,10 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
       << "\nMESH_BOX_SIZE= " << (threaded ? "5,129,5" : "5,5,5")
       << "\nMESH_BOX_OFFSET= 1,0,0\nREF_DIMENSIONALIZATION= DIMENSIONAL\n"
       << "MACH_NUMBER= 0.3\nFREESTREAM_OPTION= DENSITY_FS\nFREESTREAM_DENSITY= 230\n"
-      << "FREESTREAM_PRESSURE= 1500112\nFLUID_MODEL= " << (kind == 0 ? "IDEAL_GAS" : kind == 1 ? "PR_GAS" : "VW_GAS")
+      << "FREESTREAM_PRESSURE= 1500112\nFLUID_MODEL= "
+      << (kind == 0   ? "IDEAL_GAS"
+          : kind == 1 ? "PR_GAS"
+                      : "VW_GAS")
       << "\nGAMMA_VALUE= " << (kind == 0 ? "1.4" : "1.0125")
       << "\nGAS_CONSTANT= 35.152\nCRITICAL_PRESSURE= 1415200\nCRITICAL_TEMPERATURE= 564.1\nACENTRIC_FACTOR= 0.529\n"
       << "CONV_NUM_METHOD_FLOW= HLLC\nTIME_DISCRE_FLOW= " << (implicit ? "EULER_IMPLICIT" : "RUNGE-KUTTA_EXPLICIT")
@@ -98,8 +102,10 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
       << ")\nMARKER_TURBOMACHINERY= (" << inlet << ',' << outlet << ")\n"
       << "TURBOMACHINERY_KIND= AXIAL\nTURBO_PERF_KIND= TURBINE\nSPANWISE_KIND= EQUISPACED\nNUM_SPANWISE_SECTIONS= 3\n"
       << "MARKER_RIEMANN= (" << inlet << ",TOTAL_CONDITIONS_PT,1600000,600,1,0,0," << outlet << ','
-      << (totalConditions ? "TOTAL_CONDITIONS_PT" : radial ? "RADIAL_EQUILIBRIUM" : "STATIC_PRESSURE") << ','
-      << ratio * p << (totalConditions ? ",600,1,0,0)\n" : ",0,0,0,0)\n");
+      << (totalConditions ? "TOTAL_CONDITIONS_PT"
+          : radial        ? "RADIAL_EQUILIBRIUM"
+                          : "STATIC_PRESSURE")
+      << ',' << ratio * p << (totalConditions ? ",600,1,0,0)\n" : ",0,0,0,0)\n");
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 20,-7,30\n";
   if (dim == 3) options << "MARKER_PERIODIC= (y_minus,y_plus,0,0,0,0,0,0,0,1,0)\n";
   if (turbulentK)
@@ -180,9 +186,9 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
         turbo->GetNormal(unit);
         for (auto d = 0u; d < dim; ++d) normal[d] = -normal[d];
         su2double boundary[5];
-        REQUIRE(PressureOutlet::State(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit),
-                                      target(span), boundary, turbulentK,
-                                      kind == 0 ? 1.4 : 0) == PressureOutlet::Status::Valid);
+        REQUIRE(gas->ComputePressureOutletState(dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit),
+                                                target(span), boundary, turbulentK,
+                                                kind == 0 ? 1.4 : 0) == CFluidModel::PressureOutletStatus::Valid);
         auto flux = [&](const su2double* boundary, su2double* result) {
           su2double v[3];
           for (auto d = 0u; d < dim; ++d) v[d] = boundary[d + 1] / boundary[0];

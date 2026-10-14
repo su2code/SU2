@@ -28,7 +28,8 @@
 #include "pressure_outlet_test_utils.hpp"
 #include "../../UnitQuadTestCase.hpp"
 #include "../../../SU2_CFD/include/numerics/flow/convection/hllc.hpp"
-#include "../../../SU2_CFD/include/solvers/characteristic_pressure_outlet.hpp"
+#include "../../../SU2_CFD/include/fluid/CFluidModel.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../SU2_CFD/include/fluid/CVanDerWaalsGas.hpp"
 #include "../../../SU2_CFD/include/fluid/CPengRobinson.hpp"
 #include "../../../SU2_CFD/include/fluid/CDataDrivenFluid.hpp"
@@ -91,8 +92,8 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
       for (auto d = 0u; d < 2; ++d) unit[d] = (normal[d] = -normal[d]) / area;
       // BC_Riemann uses the physical boundary flux, including transport by the moving grid.
       su2double boundary[4];
-      REQUIRE(PressureOutlet::State(gas, 2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure,
-                                    boundary) == PressureOutlet::Status::Valid);
+      REQUIRE(gas.ComputePressureOutletState(2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure,
+                                             boundary) == CFluidModel::PressureOutletStatus::Valid);
       auto flux = [&](const su2double* boundary, su2double* output) {
         su2double velocity[2];
         for (auto d = 0u; d < 2; ++d) velocity[d] = boundary[d + 1] / boundary[0];
@@ -160,8 +161,8 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
             state[d + 1] = rho * velocity[d];
           }
           state[dim + 1] = rho * (e + .5 * GeometryToolbox::SquaredNorm(dim, velocity));
-          REQUIRE(PressureOutlet::State(*gas, dim, state, normal, frame ? boost[0] : 0, ratio * p, out[frame]) ==
-                  PressureOutlet::Status::Valid);
+          REQUIRE(gas->ComputePressureOutletState(dim, state, normal, frame ? boost[0] : 0, ratio * p, out[frame]) ==
+                  CFluidModel::PressureOutletStatus::Valid);
           const auto density = out[frame][0];
           su2double v[3] = {};
           for (auto d = 0u; d < dim; ++d) v[d] = out[frame][d + 1] / density;
@@ -201,23 +202,28 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
       su2double state[5] = {rho}, unchanged[5] = {};
       state[1] = 2 * sound * rho;
       state[dim + 1] = rho * (e + 2 * sound * sound);
-      REQUIRE(PressureOutlet::State(*gas, dim, state, normal, 0, 1000, unchanged) == PressureOutlet::Status::Valid);
+      REQUIRE(gas->ComputePressureOutletState(dim, state, normal, 0, 1000, unchanged) ==
+              CFluidModel::PressureOutletStatus::Valid);
       for (auto v = 0u; v < dim + 2; ++v) CHECK(unchanged[v] == state[v]);
       // Frozen SST k must remain in total energy without entering the EOS.
       state[1] = .3 * sound * rho;
       state[dim + 1] = rho * (e + .5 * .3 * .3 * sound * sound);
       su2double plain[5], withK[5];
-      REQUIRE(PressureOutlet::State(*gas, dim, state, normal, 0, .9 * p, plain) == PressureOutlet::Status::Valid);
+      REQUIRE(gas->ComputePressureOutletState(dim, state, normal, 0, .9 * p, plain) ==
+              CFluidModel::PressureOutletStatus::Valid);
       state[dim + 1] += 17.5 * rho;
-      REQUIRE(PressureOutlet::State(*gas, dim, state, normal, 0, .9 * p, withK, 17.5) == PressureOutlet::Status::Valid);
+      REQUIRE(gas->ComputePressureOutletState(dim, state, normal, 0, .9 * p, withK, 17.5) ==
+              CFluidModel::PressureOutletStatus::Valid);
       for (auto v = 0u; v < dim + 1; ++v) CHECK(withK[v] == Approx(SU2_TYPE::GetValue(plain[v])).epsilon(1e-8));
       CHECK(withK[dim + 1] == Approx(SU2_TYPE::GetValue(plain[dim + 1] + 17.5 * plain[0])).epsilon(1e-8));
       // Reversing subsonic flow retains the pressure-only closure; fully incoming flow needs inlet data.
       state[1] = -state[1];
-      CHECK(PressureOutlet::State(*gas, dim, state, normal, 0, p, unchanged, 17.5) == PressureOutlet::Status::Valid);
+      CHECK(gas->ComputePressureOutletState(dim, state, normal, 0, p, unchanged, 17.5) ==
+            CFluidModel::PressureOutletStatus::Valid);
       state[1] = -2 * sound * rho;
       state[dim + 1] = rho * (e + 2 * sound * sound + 17.5);
-      CHECK(PressureOutlet::State(*gas, dim, state, normal, 0, p, unchanged, 17.5) == PressureOutlet::Status::Backflow);
+      CHECK(gas->ComputePressureOutletState(dim, state, normal, 0, p, unchanged, 17.5) ==
+            CFluidModel::PressureOutletStatus::Backflow);
     }
   }
 }
@@ -245,7 +251,8 @@ TEST_CASE("Pressure outlet follows the learned EOS without pressure-density inve
   const su2double normal[2] = {1, 0};
   for (const auto mach : {-.3, 0., .3}) {
     su2double state[4] = {16, 16 * mach * sound, 0, 16 * (130000 + .5 * mach * mach * sound * sound)}, boundary[4];
-    REQUIRE(PressureOutlet::State(gas, 2, state, normal, 0, .98 * pressure, boundary) == PressureOutlet::Status::Valid);
+    REQUIRE(gas.ComputePressureOutletState(2, state, normal, 0, .98 * pressure, boundary) ==
+            CFluidModel::PressureOutletStatus::Valid);
     const su2double velocity = boundary[1] / boundary[0];
     gas.SetTDState_rhoe(boundary[0], boundary[3] / boundary[0] - .5 * velocity * velocity);
     CHECK(SU2_TYPE::GetValue(gas.GetPressure()) == Approx(SU2_TYPE::GetValue(.98 * pressure)).epsilon(1e-7));
