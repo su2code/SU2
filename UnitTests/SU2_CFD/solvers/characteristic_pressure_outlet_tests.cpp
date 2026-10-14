@@ -25,6 +25,7 @@
  */
 
 #include "catch.hpp"
+#include "pressure_outlet_test_utils.hpp"
 #include "../../UnitQuadTestCase.hpp"
 #include "../../../SU2_CFD/include/numerics/flow/convection/hllc.hpp"
 #include "../../../SU2_CFD/include/solvers/characteristic_pressure_outlet.hpp"
@@ -89,10 +90,11 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
       const auto area = GeometryToolbox::Norm(2, normal);
       for (auto d = 0u; d < 2; ++d) unit[d] = (normal[d] = -normal[d]) / area;
       // BC_Riemann uses the physical boundary flux, including transport by the moving grid.
-      auto flux = [&](const su2double* input, su2double* output) {
-        su2double boundary[4], velocity[2];
-        REQUIRE(PressureOutlet::State(gas, 2, input, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure,
-                                      boundary) == PressureOutlet::Status::Valid);
+      su2double boundary[4];
+      REQUIRE(PressureOutlet::State(gas, 2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure,
+                                    boundary) == PressureOutlet::Status::Valid);
+      auto flux = [&](const su2double* boundary, su2double* output) {
+        su2double velocity[2];
         for (auto d = 0u; d < 2; ++d) velocity[d] = boundary[d + 1] / boundary[0];
         const auto energy = boundary[3] / boundary[0];
         gas.SetTDState_rhoe(boundary[0], energy - .5 * GeometryToolbox::SquaredNorm(2, velocity));
@@ -102,7 +104,7 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
         for (auto k = 0u; k < 4; ++k) output[k] -= speed * boundary[k];
       };
       su2double reference[4];
-      flux(state, reference);
+      flux(boundary, reference);
       const auto* primitive = solver->GetCharacPrimVar(marker, v);
       CHECK(SU2_TYPE::GetValue(primitive[0]) == Approx(SU2_TYPE::GetValue(gas.GetTemperature())).epsilon(1e-8));
       CHECK(SU2_TYPE::GetValue(primitive[3]) == Approx(SU2_TYPE::GetValue(gas.GetPressure())).epsilon(1e-8));
@@ -112,12 +114,14 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
         CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, k)) ==
               Approx(SU2_TYPE::GetValue(reference[k])).epsilon(1e-8));
       for (auto column = 0u; column < 4; ++column) {
-        // Perturb the whole state-to-flux map to check the assembled implicit block, not just DubDu.
-        su2double plus[4], minus[4], fPlus[4], fMinus[4];
-        for (auto k = 0u; k < 4; ++k) plus[k] = minus[k] = state[k];
-        const auto delta = 2e-4 * fabs(state[column]);
-        plus[column] += delta;
-        minus[column] -= delta;
+        // Freeze the wave basis and differentiate the physical boundary flux along outgoing increments.
+        su2double plus[4], minus[4], fPlus[4], fMinus[4], increment[4];
+        OutgoingOutletIncrement(gas, 2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), 0, column, increment);
+        const auto delta = 2e-5 * fabs(state[column]);
+        for (auto k = 0u; k < 4; ++k) {
+          plus[k] = boundary[k] + delta * increment[k];
+          minus[k] = boundary[k] - delta * increment[k];
+        }
         flux(plus, fPlus);
         flux(minus, fMinus);
         for (auto row = 0u; row < 4; ++row) {

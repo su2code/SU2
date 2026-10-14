@@ -435,8 +435,16 @@ def main():
     periodic2d_no_limiter.cfg_dir = "navierstokes/periodic2D"
     periodic2d_no_limiter.cfg_file = "no_limiter.cfg"
     periodic2d_no_limiter.test_iter = 100
-    periodic2d_no_limiter.test_vals = [-3.216881, -0.582813, -0.629049, 2.266141, -1.056877, -811.470000]
+    periodic2d_no_limiter.test_vals = [-3.217331, -0.583709, -0.629299, 2.265684, -1.057572, -810.150000]
     test_list.append(periodic2d_no_limiter)
+
+    # The fully coupled nonlinear boundary derivative used to diverge before iteration 100 at CFL 100.
+    periodic2d_no_limiter_riemann = TestCase('periodic2d_no_limiter_riemann')
+    periodic2d_no_limiter_riemann.cfg_dir = "navierstokes/periodic2D"
+    periodic2d_no_limiter_riemann.cfg_file = "no_limiter_riemann.cfg"
+    periodic2d_no_limiter_riemann.test_iter = 100
+    periodic2d_no_limiter_riemann.test_vals = [-3.216878, -0.582314, -0.628636, 2.266530, -1.057965, -811.500000]
+    test_list.append(periodic2d_no_limiter_riemann)
 
     # 2D rotational periodic sector with multigrid
     periodic2d_multigrid = TestCase('periodic2d_multigrid')

@@ -5457,7 +5457,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       // A linear characteristic jump can leave the EOS validity range for a large pressure change;
       // static-pressure outlets instead follow the nonlinear isentrope in PressureOutlet::State.
-      if (!pressureOutflow) {
+      if (!pressureOutflow || implicit) {
         /*--- Compute P (matrix of right eigenvectors) ---*/
         conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
 
@@ -5603,28 +5603,14 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           DubDu[iVar][iVar]=1;
         }
 
-        if (pressureOutflow) {
-          // DubDu includes changes in boundary density, velocity and energy at fixed prescribed pressure.
-          if (PressureOutlet::Jacobian(*GetFluidModel(), nDim, u_i, UnitNormal, gridNormal, Pressure_e, u_b,
-                                       DubDu, tke_i, ideal_gas ? Gamma : su2double(0.0)) != PressureOutlet::Status::Valid) {
-            SU2_OMP_CRITICAL
-            {
-              SU2_MPI::Error("Unable to differentiate the static-pressure outflow state on marker " + Marker_Tag, CURRENT_FUNCTION);
-            } END_SU2_OMP_CRITICAL
-          }
-          // Finite-difference evaluations leave the EOS at a perturbed state; restore it for viscous properties.
-          GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
-        } else {
-          /*--- Compute DubDu -= RNL---*/
-          for (auto iVar=0u; iVar<nVar; iVar++){
-            for (auto jVar=0u; jVar<nVar; jVar++){
-              for (auto kVar=0u; kVar<nVar; kVar++){
-                if (Lambda_i[kVar]<0)
-                  DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
-              }
+        // Keep outgoing characteristic increments; freeze the wave basis in this approximate matrix.
+        for (auto iVar=0u; iVar<nVar; iVar++){
+          for (auto jVar=0u; jVar<nVar; jVar++){
+            for (auto kVar=0u; kVar<nVar; kVar++){
+              if (Lambda_i[kVar]<0)
+                DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
             }
           }
-
         }
 
         /*--- Compute flux Jacobian in state b ---*/
@@ -5981,7 +5967,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             break;
         }
 
-        if (!pressureOutflow) {
+        if (!pressureOutflow || implicit) {
           /*--- Compute P (matrix of right eigenvectors) ---*/
           conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
 
@@ -6099,40 +6085,25 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             DubDu[iVar] = new su2double[nVar];
           }
 
-          if (pressureOutflow) {
-            const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
-            // Differentiate the local state at fixed span pressure; coupling through the radial-profile
-            // update is not included in this implicit boundary block.
-            if (PressureOutlet::Jacobian(*GetFluidModel(), nDim, u_i, UnitNormal, gridNormal, Pressure_e, u_b,
-                                         DubDu, tke_i, ideal_gas ? Gamma : su2double(0.0)) != PressureOutlet::Status::Valid) {
-              SU2_OMP_CRITICAL
-              {
-                SU2_MPI::Error("Unable to differentiate the static-pressure outflow state on marker " + Marker_Tag, CURRENT_FUNCTION);
-              } END_SU2_OMP_CRITICAL
-            }
-            // Restore the EOS after finite-difference perturbations before evaluating viscous properties.
-            GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
-          } else {
-            /*--- Initialize DubDu to unit matrix---*/
+          /*--- Initialize DubDu to unit matrix---*/
 
-            for (iVar = 0; iVar < nVar; iVar++)
+          for (iVar = 0; iVar < nVar; iVar++)
+          {
+            for (jVar = 0; jVar < nVar; jVar++)
+              DubDu[iVar][jVar]= 0;
+
+            DubDu[iVar][iVar]= 1;
+          }
+
+          // Keep outgoing characteristic increments; freeze the wave basis in this approximate matrix.
+          for (iVar=0; iVar<nVar; iVar++)
+          {
+            for (jVar=0; jVar<nVar; jVar++)
             {
-              for (jVar = 0; jVar < nVar; jVar++)
-                DubDu[iVar][jVar]= 0;
-
-              DubDu[iVar][iVar]= 1;
-            }
-
-            /*--- Compute DubDu -= RNL---*/
-            for (iVar=0; iVar<nVar; iVar++)
-            {
-              for (jVar=0; jVar<nVar; jVar++)
+              for (kVar=0; kVar<nVar; kVar++)
               {
-                for (kVar=0; kVar<nVar; kVar++)
-                {
-                  if (Lambda_i[kVar]<0)
-                    DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
-                }
+                if (Lambda_i[kVar]<0)
+                  DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
               }
             }
           }
@@ -7575,9 +7546,42 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     auto residual = conv_numerics->ComputeResidual(config);
     LinSysRes.AddBlock(iPoint, residual);
-    // Keep the boundary state fixed in the approximate implicit matrix, as for other inlet/outlet BCs.
-    // Adding its derivative to approximate flux Jacobians can destabilize high-CFL iterations.
-    if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    if (implicit) {
+      su2double Pdata[MAXNVAR][MAXNVAR] = {}, Idata[MAXNVAR][MAXNVAR] = {};
+      su2double projection[MAXNVAR][MAXNVAR] = {}, matrix[MAXNVAR][MAXNVAR] = {};
+      su2double *P[MAXNVAR], *Pinv[MAXNVAR], *rows[MAXNVAR];
+      for (auto row = 0u; row < nVar; ++row) {
+        P[row] = Pdata[row];
+        Pinv[row] = Idata[row];
+        rows[row] = matrix[row];
+      }
+      const auto* velocity = V_domain + prim_idx.Velocity();
+      const su2double sound = V_domain[prim_idx.SoundSpeed()];
+      // Freeze the wave basis in the implicit update; the residual keeps the nonlinear outlet state.
+      // The general eigenvectors include frozen SST energy through enthalpy and chi.
+      const su2double rho = interior[0], enthalpy = V_domain[prim_idx.Enthalpy()];
+      const su2double kappa = Gamma_Minus_One, chi = -kappa * tke;
+      conv_numerics->GetPMatrix(&rho, velocity, &sound, &enthalpy, &chi, &kappa, UnitNormal, P);
+      conv_numerics->GetPMatrix_inv(Pinv, &rho, velocity, &sound, &chi, &kappa, UnitNormal);
+      const su2double q = GeometryToolbox::DotProduct(nDim, velocity, UnitNormal) - gridNormal;
+      // Exclude incoming waves from this approximate state derivative.
+      for (auto row = 0u; row < nVar; ++row)
+        for (auto col = 0u; col < nVar; ++col) {
+          projection[row][col] = row == col ? 1.0 : 0.0;
+          for (auto mode = 0u; mode < nVar; ++mode) {
+            su2double speed = q;
+            if (mode == nVar - 2) speed += sound;
+            if (mode == nVar - 1) speed -= sound;
+            if (speed < 0) projection[row][col] -= P[row][mode] * Pinv[mode][col];
+          }
+        }
+      for (auto row = 0u; row < nVar; ++row)
+        for (auto col = 0u; col < nVar; ++col) {
+          matrix[row][col] = residual.jacobian_i[row][col];
+          for (auto k = 0u; k < nVar; ++k) matrix[row][col] += residual.jacobian_j[row][k] * projection[k][col];
+        }
+      Jacobian.AddBlock2Diag(iPoint, rows);
+    }
   }
   END_SU2_OMP_FOR
 }

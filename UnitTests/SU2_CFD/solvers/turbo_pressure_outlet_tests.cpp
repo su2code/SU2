@@ -26,6 +26,7 @@
 
 #include <iomanip>
 #include "catch.hpp"
+#include "pressure_outlet_test_utils.hpp"
 #include "../../UnitQuadTestCase.hpp"
 #include "../../../SU2_CFD/include/variables/CNSVariable.hpp"
 #include "../../../SU2_CFD/include/fluid/CPengRobinson.hpp"
@@ -89,10 +90,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
       << "\nMESH_BOX_SIZE= " << (threaded ? "5,129,5" : "5,5,5")
       << "\nMESH_BOX_OFFSET= 1,0,0\nREF_DIMENSIONALIZATION= DIMENSIONAL\n"
       << "MACH_NUMBER= 0.3\nFREESTREAM_OPTION= DENSITY_FS\nFREESTREAM_DENSITY= 230\n"
-      << "FREESTREAM_PRESSURE= 1500112\nFLUID_MODEL= "
-      << (kind == 0   ? "IDEAL_GAS"
-          : kind == 1 ? "PR_GAS"
-                      : "VW_GAS")
+      << "FREESTREAM_PRESSURE= 1500112\nFLUID_MODEL= " << (kind == 0 ? "IDEAL_GAS" : kind == 1 ? "PR_GAS" : "VW_GAS")
       << "\nGAMMA_VALUE= " << (kind == 0 ? "1.4" : "1.0125")
       << "\nGAS_CONSTANT= 35.152\nCRITICAL_PRESSURE= 1415200\nCRITICAL_TEMPERATURE= 564.1\nACENTRIC_FACTOR= 0.529\n"
       << "CONV_NUM_METHOD_FLOW= HLLC\nTIME_DISCRE_FLOW= " << (implicit ? "EULER_IMPLICIT" : "RUNGE-KUTTA_EXPLICIT")
@@ -100,10 +98,8 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
       << ")\nMARKER_TURBOMACHINERY= (" << inlet << ',' << outlet << ")\n"
       << "TURBOMACHINERY_KIND= AXIAL\nTURBO_PERF_KIND= TURBINE\nSPANWISE_KIND= EQUISPACED\nNUM_SPANWISE_SECTIONS= 3\n"
       << "MARKER_RIEMANN= (" << inlet << ",TOTAL_CONDITIONS_PT,1600000,600,1,0,0," << outlet << ','
-      << (totalConditions ? "TOTAL_CONDITIONS_PT"
-          : radial        ? "RADIAL_EQUILIBRIUM"
-                          : "STATIC_PRESSURE")
-      << ',' << ratio * p << (totalConditions ? ",600,1,0,0)\n" : ",0,0,0,0)\n");
+      << (totalConditions ? "TOTAL_CONDITIONS_PT" : radial ? "RADIAL_EQUILIBRIUM" : "STATIC_PRESSURE") << ','
+      << ratio * p << (totalConditions ? ",600,1,0,0)\n" : ",0,0,0,0)\n");
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 20,-7,30\n";
   if (dim == 3) options << "MARKER_PERIODIC= (y_minus,y_plus,0,0,0,0,0,0,0,1,0)\n";
   if (turbulentK)
@@ -183,10 +179,12 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
         test.geometry->vertex[marker][oldVertex]->GetNormal(normal);
         turbo->GetNormal(unit);
         for (auto d = 0u; d < dim; ++d) normal[d] = -normal[d];
-        auto flux = [&](const su2double* u, su2double* result) {
-          su2double boundary[5], v[3];
-          REQUIRE(PressureOutlet::State(*gas, dim, u, unit, GeometryToolbox::DotProduct(dim, grid, unit), target(span),
-                                        boundary, turbulentK, kind == 0 ? 1.4 : 0) == PressureOutlet::Status::Valid);
+        su2double boundary[5];
+        REQUIRE(PressureOutlet::State(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit),
+                                      target(span), boundary, turbulentK,
+                                      kind == 0 ? 1.4 : 0) == PressureOutlet::Status::Valid);
+        auto flux = [&](const su2double* boundary, su2double* result) {
+          su2double v[3];
           for (auto d = 0u; d < dim; ++d) v[d] = boundary[d + 1] / boundary[0];
           const su2double energy = boundary[dim + 1] / boundary[0];
           gas->SetTDState_rhoe(boundary[0], energy - .5 * GeometryToolbox::SquaredNorm(dim, v) - turbulentK);
@@ -197,7 +195,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
           for (auto k = 0u; k < dim + 2; ++k) result[k] -= speed * boundary[k];
         };
         su2double expected[5];
-        flux(state, expected);
+        flux(boundary, expected);
         for (auto row = 0u; row < dim + 2; ++row) {
           CHECK(std::isfinite(SU2_TYPE::GetValue(solver->LinSysRes(point, row))));
           CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, row)) ==
@@ -211,14 +209,17 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
         if (mach == .3 && ratio > .1)
           CHECK(SU2_TYPE::GetValue(primitive[dim + 1]) == Approx(target(span)).epsilon(1e-8));
         if (!implicit) continue;
-        // Check d(flux(U_boundary(U_interior)))/dU_interior with the span pressure and SST k fixed.
+        // The implicit matrix uses a frozen characteristic projection, with local span pressure and SST k.
         for (auto column = 0u; column < dim + 2; ++column) {
-          su2double plus[5], minus[5], fp[5], fm[5];
+          su2double plus[5], minus[5], fp[5], fm[5], increment[5];
+          OutgoingOutletIncrement(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), turbulentK,
+                                  column, increment);
           const double delta =
               2e-5 * fmax(fabs(SU2_TYPE::GetValue(state[column])), column == 0 ? rho : rho * SU2_TYPE::GetValue(sound));
-          for (auto k = 0u; k < dim + 2; ++k) plus[k] = minus[k] = state[k];
-          plus[column] += delta;
-          minus[column] -= delta;
+          for (auto k = 0u; k < dim + 2; ++k) {
+            plus[k] = boundary[k] + delta * increment[k];
+            minus[k] = boundary[k] - delta * increment[k];
+          }
           flux(plus, fp);
           flux(minus, fm);
           for (auto row = 0u; row < dim + 2; ++row)
