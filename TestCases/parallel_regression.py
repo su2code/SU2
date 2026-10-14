@@ -403,12 +403,12 @@ def main():
     test_list.append(cylinder_lowmach)
 
     # Laminar NACA0012 with linelet preconditioner (see #2877), 4 ranks so that some partitions have no linelets
-    lam_naca0012_linelet           = TestCase('lam_naca0012_linelet')
-    lam_naca0012_linelet.cfg_dir   = "navierstokes/naca0012"
-    lam_naca0012_linelet.cfg_file  = "lam_NACA0012_LINELET.cfg"
+    lam_naca0012_linelet = TestCase('lam_naca0012_linelet')
+    lam_naca0012_linelet.cfg_dir = "navierstokes/naca0012"
+    lam_naca0012_linelet.cfg_file = "lam_NACA0012_LINELET.cfg"
     lam_naca0012_linelet.test_iter = 20
     lam_naca0012_linelet.test_vals = [-5.335771, -2.936187, -2.943926, 0.102449]
-    lam_naca0012_linelet.command   = TestCase.Command("mpirun --oversubscribe -n 4", "SU2_CFD")
+    lam_naca0012_linelet.command = TestCase.Command("mpirun --oversubscribe -n 4", "SU2_CFD")
     test_list.append(lam_naca0012_linelet)
 
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
@@ -1352,12 +1352,12 @@ def main():
     test_list.append(transonic_stator_restart)
 
     # Multiple turbomachinery interface restart
-    multi_interface                    = TestCase('multi_interface')
-    multi_interface.cfg_dir            = "turbomachinery/multi_interface"
-    multi_interface.cfg_file           = "multi_interface_rst.cfg"
-    multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.634558, -8.895554, -9.348754]
-    multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
+    multi_interface = TestCase('multi_interface')
+    multi_interface.cfg_dir = "turbomachinery/multi_interface"
+    multi_interface.cfg_file = "multi_interface_rst.cfg"
+    multi_interface.test_iter = 5
+    multi_interface.test_vals = [-8.634558, -8.895554, -9.348754]
+    multi_interface.test_vals_aarch64 = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
     ######################################
