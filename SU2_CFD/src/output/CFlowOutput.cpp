@@ -755,7 +755,8 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
   for (const auto& items : nameToIndex) {
     knownVariables << items.first + '\n';
   }
-  knownVariables << "TURB[0,1,...]\nRAD[0,1,...]\nSPECIES[0,1,...]\nSCALAR[0,1,...]\n";
+  knownVariables << "TURB[0,1,...]\nRAD[0,1,...]\nSPECIES[0,1,...]\nSCALAR[0,1,...]\n"
+                    "SPECIES_SOURCE[0,1,...]\nSPECIES_SOURCE_PD[0,1,...]\nSPECIES_BETA[0,1,...]\n";
 
   auto IndexOfVariable = [](const map<std::string, unsigned long>& nameToIndex, const std::string& var) {
     /*--- Primitives of the flow solver. ---*/
@@ -769,6 +770,18 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
       return std::stoi(std::string(s.begin() + nameLen + 1, s.end() - 1));
     };
 
+    /*--- Within the species solver's MAX_VARS_PER_SOLVER (=32) slot, 8-wide sub-ranges select which
+     per-point array is read (see MakeFunctor below): [0,8) solution, [8,16) scalar sources,
+     [16,24) preferential-diffusion closure sources (SOURCE_TERM method only, zero otherwise),
+     [24,32) auxiliary variables: beta scalars in the BETA_CORRECTION method, major species
+     mass fractions (Y-H2, Y-H2O, Y-H) in the SOURCE_TERM method.
+     Longer/more specific prefixes must be checked before the plain "SPECIES" prefix. ---*/
+    if (var.rfind("SPECIES_SOURCE_PD", 0) == 0)
+      return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + 16 + GetIndex(var, 17);
+    if (var.rfind("SPECIES_SOURCE", 0) == 0)
+      return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + 8 + GetIndex(var, 14);
+    if (var.rfind("SPECIES_BETA", 0) == 0)
+      return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + 24 + GetIndex(var, 12);
     if (var.rfind("SPECIES", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
     if (var.rfind("SCALAR", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 6);
     if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
@@ -829,6 +842,21 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
         if (solIdx == FLOW_SOL) {
           return flowNodes->GetPrimitive(iPoint, varIdx);
+        }
+        if (solIdx == SPECIES_SOL && varIdx >= 8) {
+          /*--- Sub-ranges within the species solver's slot select scalar sources / PD closure
+           sources / PD beta scalars instead of the solution (see ConvertVariableSymbolsToIndices).
+           All of these are already computed earlier this iteration in the species solver's
+           Preprocessing, so this is just an array read, no extra solver work. ---*/
+          if (varIdx >= 24) {
+            return solver[SPECIES_SOL]->GetNodes()->GetAuxVar(iPoint, varIdx - 24);
+          }
+          if (varIdx >= 16) {
+            const auto* src_pd = solver[SPECIES_SOL]->GetNodes()->GetScalarSourcesPD(iPoint);
+            return src_pd ? src_pd[varIdx - 16] : su2double(0.0);
+          }
+          const auto* src = solver[SPECIES_SOL]->GetNodes()->GetScalarSources(iPoint);
+          return src ? src[varIdx - 8] : su2double(0.0);
         }
         return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
       }
@@ -1567,6 +1595,14 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
         if (cv_source_name.compare("NULL") != 0)
           AddVolumeOutput("SOURCE_"+cv_name, "Source_" + cv_name, "SOURCE", "Source " + cv_name);
       }
+      /*--- PD closure source terms S_{phi_k} from Eq. 16 (Schepers & van Oijen 2025), for debugging. ---*/
+      if (flamelet_config_options.preferential_diffusion &&
+          flamelet_config_options.pd_method == FLAMELET_PD_METHOD::SOURCE_TERM) {
+        for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+          const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
+          AddVolumeOutput("PD_SOURCE_" + cv_name, "PD_Source_" + cv_name, "SOURCE", "PD closure source S_{" + cv_name + "} (Eq. 16)");
+        }
+      }
       /*--- no source term for enthalpy ---*/
       /*--- auxiliary species source terms ---*/
       for (auto iReactant=0u; iReactant<flamelet_config_options.n_user_scalars; iReactant++) {
@@ -1590,7 +1626,10 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLookup(const CConfig* config) {
       string strname1 = "lookup_" + flamelet_config_options.lookup_names[i_lookup];
       AddVolumeOutput(flamelet_config_options.lookup_names[i_lookup], strname1,"LOOKUP", flamelet_config_options.lookup_names[i_lookup]);
     }
-    AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "LOOKUP", "Lookup table misses");
+    AddVolumeOutput("TABLE_MISSES"       , "Table_misses"     , "LOOKUP", "Lookup table misses");
+    AddVolumeOutput("HULL_MISS_DELTA_CV1", "Hull_miss_dCV1"   , "LOOKUP", "Signed CV1 deviation: query minus nearest hull node (physical units); 0 = inside hull");
+    AddVolumeOutput("HULL_MISS_DELTA_CV2", "Hull_miss_dCV2"   , "LOOKUP", "Signed CV2 deviation: query minus nearest hull node (physical units); 0 = inside hull");
+    AddVolumeOutput("Z_LEVEL_DIST"       , "Z_level_dist"     , "LOOKUP", "Distance to nearest table Z level in physical Z units; 0 for 2D tables");
   }
 }
 
@@ -1633,6 +1672,43 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("TURB_DELTA_TIME", "Turb_Delta_Time", "TIMESTEP", "Value of the local timestep for the turbulence variables");
     AddVolumeOutput("TURB_CFL", "Turb_CFL", "TIMESTEP", "Value of the local CFL for the turbulence variables");
   }
+
+  SetVolumeOutputFieldsFlameMeshQuality(config);
+}
+
+void CFlowOutput::PrepareVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver) {
+  /*--- Global progress variable range, used to normalise the C+ flame resolution index. The two
+   reductions below are collectives: they used to sit inside LoadVolumeDataScalar behind an
+   "iPoint == 0" test, which fires once per rank only while every rank owns at least one point. A
+   rank with an empty partition never reached them and left the others blocked. Computing the range
+   here runs it once per write on every rank unconditionally. A rank owning no points contributes
+   the identity elements of MIN/MAX, which is correct. ---*/
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::FLAMELET) return;
+
+  const auto* Node_Species = solver[SPECIES_SOL]->GetNodes();
+  su2double pv_loc_min = std::numeric_limits<su2double>::max();
+  su2double pv_loc_max = std::numeric_limits<su2double>::lowest();
+  for (auto iPt = 0ul; iPt < geometry->GetnPointDomain(); ++iPt) {
+    const su2double pv = Node_Species->GetSolution(iPt, 0);
+    pv_loc_min = std::min(pv_loc_min, pv);
+    pv_loc_max = std::max(pv_loc_max, pv);
+  }
+  su2double pv_global_min, pv_global_max;
+  SU2_MPI::Allreduce(&pv_loc_min, &pv_global_min, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&pv_loc_max, &pv_global_max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  flamelet_pv_range = max(pv_global_max - pv_global_min, 1e-10);
+}
+
+void CFlowOutput::SetVolumeOutputFieldsFlameMeshQuality(const CConfig* config) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::FLAMELET) return;
+  const auto& fco = config->GetFlameletParsedOptions();
+
+  AddVolumeOutput("FLAME_GRAD_C",   "grad_C_mag",      "FLAME_QUALITY", "|grad(C)| progress variable gradient magnitude [1/m]");
+  AddVolumeOutput("FLAME_C_PLUS",   "C_Plus",          "FLAME_QUALITY", "Flame resolution index C+ = |grad(C)|*h_cell/dC_range; target < 0.067 (>=15 cells), flag > 0.2");
+  AddVolumeOutput("FLAME_CHI_C",    "chi_C",           "FLAME_QUALITY", "Scalar dissipation rate chi_C = 2*D_C*|grad(C)|^2 [1/s]");
+  AddVolumeOutput("FLAME_DA_LOCAL", "Da_local",        "FLAME_QUALITY", "Local Damkohler number Da = h_cell*omega_C / (|u|*C)");
+  if (fco.preferential_diffusion && fco.pd_method != FLAMELET_PD_METHOD::SOURCE_TERM)
+    AddVolumeOutput("FLAME_GRAD_BETA", "grad_beta_C_mag", "FLAME_QUALITY", "|grad(beta_C)| Schwab-Zeldovich correction scalar gradient [1/m]");
 }
 
 void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
@@ -1757,6 +1833,15 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         if (source_name.compare("NULL") != 0)
           SetVolumeOutputValue("SOURCE_" + cv_name, iPoint, Node_Species->GetScalarSources(iPoint)[iCV]);
       }
+      /*--- PD closure source terms S_{phi_k} (Eq. 16) for debugging. ---*/
+      if (flamelet_config_options.preferential_diffusion &&
+          flamelet_config_options.pd_method == FLAMELET_PD_METHOD::SOURCE_TERM) {
+        const auto* pd_src = Node_Species->GetScalarSourcesPD(iPoint);
+        for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+          const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
+          SetVolumeOutputValue("PD_SOURCE_" + cv_name, iPoint, pd_src[iCV]);
+        }
+      }
       /*--- auxiliary species transport equations ---*/
       for (unsigned short i_scalar=0; i_scalar<flamelet_config_options.n_user_scalars; i_scalar++) {
         const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
@@ -1784,7 +1869,51 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
           SetVolumeOutputValue(flamelet_config_options.lookup_names[i_lookup], iPoint, Node_Species->GetScalarLookups(iPoint)[i_lookup]);
       }
 
-      SetVolumeOutputValue("TABLE_MISSES", iPoint, Node_Species->GetTableMisses(iPoint));
+      SetVolumeOutputValue("TABLE_MISSES",        iPoint, Node_Species->GetTableMisses(iPoint));
+      SetVolumeOutputValue("HULL_MISS_DELTA_CV1", iPoint, Node_Species->GetHullMissDevCV1(iPoint));
+      SetVolumeOutputValue("HULL_MISS_DELTA_CV2", iPoint, Node_Species->GetHullMissDevCV2(iPoint));
+      SetVolumeOutputValue("Z_LEVEL_DIST",        iPoint, Node_Species->GetZLevelDist(iPoint));
+
+      /*--- Flame mesh quality diagnostics (FLAME_QUALITY group). The global progress variable
+       range they normalise against is computed once per write in PrepareVolumeData. ---*/
+      {
+        /*--- Cell characteristic length h_cell = V^(1/nDim). ---*/
+        const su2double vol    = geometry->nodes->GetVolume(iPoint);
+        const su2double h_cell = pow(vol, 1.0 / nDim);
+
+        /*--- |grad(C)| ---*/
+        su2double grad_C_sq = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+          const su2double gc = Node_Species->GetGradient(iPoint, 0, iDim);
+          grad_C_sq += gc * gc;
+        }
+        const su2double grad_C_mag = sqrt(grad_C_sq);
+
+        SetVolumeOutputValue("FLAME_GRAD_C",  iPoint, grad_C_mag);
+        SetVolumeOutputValue("FLAME_C_PLUS",  iPoint, grad_C_mag * h_cell / flamelet_pv_range);
+        SetVolumeOutputValue("FLAME_CHI_C",   iPoint, 2.0 * Node_Species->GetDiffusivity(iPoint, 0) * grad_C_sq);
+
+        /*--- Local Damköhler: Da = h_cell * omega_C / (|u| * C) ---*/
+        const su2double C_pv    = Node_Species->GetSolution(iPoint, 0);
+        const su2double omega_C = Node_Species->GetScalarSources(iPoint)[0];
+        su2double vel_sq = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+          const su2double ui = Node_Flow->GetVelocity(iPoint, iDim);
+          vel_sq += ui * ui;
+        }
+        SetVolumeOutputValue("FLAME_DA_LOCAL", iPoint, (h_cell * omega_C) / max(sqrt(vel_sq) * C_pv, 1e-10));
+
+        /*--- |grad(beta_C)| for PD-BETA_CORRECTION only ---*/
+        if (flamelet_config_options.preferential_diffusion &&
+            flamelet_config_options.pd_method != FLAMELET_PD_METHOD::SOURCE_TERM) {
+          su2double grad_beta_sq = 0.0;
+          for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+            const su2double gb = Node_Species->GetAuxVarGradient(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR, iDim);
+            grad_beta_sq += gb * gb;
+          }
+          SetVolumeOutputValue("FLAME_GRAD_BETA", iPoint, sqrt(grad_beta_sq));
+        }
+      }
 
     }
     break;

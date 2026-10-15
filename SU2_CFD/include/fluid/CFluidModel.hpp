@@ -399,6 +399,24 @@ class CFluidModel {
   virtual bool GetPreferentialDiffusion() const { return false; }
 
   /*!
+   * \brief Reset the hull-miss accumulators before the lookups for a new point.
+   *        No-op for fluid models without a convex-hull-based table.
+   */
+  virtual void ResetHullMissDistance() {}
+
+  /*!
+   * \brief Signed physical deviation in CV1 (query minus nearest hull node) at the worst-miss Z level.
+   *        Returns 0 for in-hull queries or fluid models without hull-based tables.
+   */
+  virtual su2double GetHullMissCV1Dev() const { return 0.0; }
+
+  /*!
+   * \brief Signed physical deviation in CV2 (query minus nearest hull node) at the worst-miss Z level.
+   *        Returns 0 for in-hull queries or fluid models without hull-based tables.
+   */
+  virtual su2double GetHullMissCV2Dev() const { return 0.0; }
+
+  /*!
    * \brief Get number of Newton solver iterations.
    * \return Newton solver iteration count at termination.
    */
