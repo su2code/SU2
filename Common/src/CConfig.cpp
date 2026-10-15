@@ -1294,7 +1294,7 @@ void CConfig::SetConfig_Options() {
   addStringOption("CANTERA_PHASE_NAME", cantera_ParsedOptions.phase_name, string(""));
   /*!\brief CANTERA_TRANSPORT_MODEL \n DESCRIPTION: Transport model \n OPTIONS: see Cantera homepage \n DEFAULT: mixture-averaged \ingroup Config*/
   addStringOption("CANTERA_TRANSPORT_MODEL", cantera_ParsedOptions.transport_model, string("mixture-averaged"));
-  /*!\brief CANTERA_SPECIES_NAMES \n DESCRIPTION: Names of the species in the mechanism, the last one is the remainder \n DEFAULT: none, required \ingroup Config*/
+  /*!\brief CANTERA_SPECIES_NAMES \n DESCRIPTION: Names of the transported species, the last one is the remainder \n DEFAULT: all species of the mechanism \ingroup Config*/
   addStringListOption("CANTERA_SPECIES_NAMES", cantera_ParsedOptions.n_species_names, cantera_ParsedOptions.species_names);
   /*!\brief CANTERA_COMBUSTION \n DESCRIPTION: Add the chemical source terms of the detailed chemistry to the species equations \n DEFAULT: false \ingroup Config*/
   addBoolOption("CANTERA_COMBUSTION", cantera_ParsedOptions.combustion, false);
@@ -4469,12 +4469,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
             "there are no default values.",
             CURRENT_FUNCTION);
       }
-      /*--- Check whether the number of entries of the CANTERA_SPECIES_NAMES equals the number of transported scalar
-       equations solved + 1.--- */
-      if (cantera_ParsedOptions.n_species_names != nSpecies_Init + 1) {
+      /*--- Without CANTERA_SPECIES_NAMES all species of the mechanism are used, otherwise the number of names must
+       equal the number of transported scalar equations solved + 1.--- */
+      if (cantera_ParsedOptions.n_species_names != 0 && cantera_ParsedOptions.n_species_names != nSpecies_Init + 1) {
         SU2_MPI::Error(
             "The use of FLUID_CANTERA requires the number of entries for CANTERA_SPECIES_NAMES,\n"
-            "to be equal to the number of entries of SPECIES_INIT + 1",
+            "to be equal to the number of entries of SPECIES_INIT + 1 (or CANTERA_SPECIES_NAMES to be omitted).",
             CURRENT_FUNCTION);
       }
       /*--- Check whether the density model used is correct, in the case of FLUID_CANTERA the density model must be

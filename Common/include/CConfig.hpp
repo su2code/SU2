@@ -4117,6 +4117,11 @@ public:
   const string& GetPhase_Name() const { return cantera_ParsedOptions.phase_name; }
 
   /*!
+   * \brief Returns the number of entries of CANTERA_SPECIES_NAMES, zero if all mechanism species are used.
+   */
+  unsigned short GetnCantera_SpeciesNames() const { return cantera_ParsedOptions.n_species_names; }
+
+  /*!
    * \brief Returns the name of a species of the Cantera mixture, checked against the number of names.
    */
   const string& GetChemical_GasComposition(unsigned short val_index = 0) const {
@@ -4127,10 +4132,11 @@ public:
   }
 
   /*!
-   * \brief Returns the label of a transported species in output fields: its name for Cantera, otherwise its index.
+   * \brief Returns the label of a transported species in output fields: its name for Cantera if given, otherwise its index.
    */
   string GetSpecies_Label(unsigned short val_index) const {
-    return (Kind_FluidModel == FLUID_CANTERA) ? GetChemical_GasComposition(val_index) : to_string(val_index);
+    const bool named = (Kind_FluidModel == FLUID_CANTERA) && (cantera_ParsedOptions.n_species_names != 0);
+    return named ? GetChemical_GasComposition(val_index) : to_string(val_index);
   }
 
   /*!

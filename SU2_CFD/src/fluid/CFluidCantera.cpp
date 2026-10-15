@@ -28,6 +28,7 @@
 #include "../../include/fluid/CFluidCantera.hpp"
 
 #include <algorithm>
+#include <numeric>
 #include <cmath>
 
 #ifdef HAVE_CANTERA
@@ -82,7 +83,16 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
     maxTemperature = 2.0 * thermo.maxTemp();
 
     speciesIndices.resize(n_species_mixture);
-    for (size_t iVar = 0; iVar < n_species_mixture; iVar++) {
+    if (config->GetnCantera_SpeciesNames() == 0) {
+      if (n_species_mixture != nSpeciesMechanism) {
+        SU2_MPI::Error("Without CANTERA_SPECIES_NAMES all " + to_string(nSpeciesMechanism) + " species of phase '" +
+                           Phase_Name + "' in " + Chemical_MechanismFile + " are transported, which requires " +
+                           to_string(nSpeciesMechanism - 1) + " entries in SPECIES_INIT.",
+                       CURRENT_FUNCTION);
+      }
+      std::iota(speciesIndices.begin(), speciesIndices.end(), size_t(0));
+    }
+    for (size_t iVar = 0; iVar < config->GetnCantera_SpeciesNames(); iVar++) {
       const string name = config->GetChemical_GasComposition(iVar);
       const size_t index = thermo.speciesIndex(name);
       if (index == npos) {
@@ -94,6 +104,18 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
         SU2_MPI::Error("Species '" + name + "' appears more than once in CANTERA_SPECIES_NAMES.", CURRENT_FUNCTION);
       }
       speciesIndices[iVar] = index;
+    }
+
+    if (SU2_MPI::GetRank() == MASTER_NODE && n_species_mixture < nSpeciesMechanism) {
+      std::vector<bool> transported(nSpeciesMechanism, false);
+      for (const auto k : speciesIndices) transported[k] = true;
+      string excluded;
+      for (size_t k = 0; k < nSpeciesMechanism; k++) {
+        if (!transported[k]) excluded += (excluded.empty() ? "" : ", ") + thermo.speciesName(k);
+      }
+      cout << "WARNING: " << nSpeciesMechanism - n_species_mixture << " species of phase '" << Phase_Name
+           << "' are not in CANTERA_SPECIES_NAMES and are not transported (zero mass fraction, no source terms): "
+           << excluded << "." << endl;
     }
 
     chemicalSourceTerm.assign(n_species_mixture, 0.0);
