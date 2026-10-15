@@ -61,6 +61,9 @@ TEST_CASE("Edge reconstruction of scalars and of the flow", "[ScalarMuscl]") {
     const su2double delta2 = pow(delta, 2) + 1e-6;
     return (delta2 + proj * delta) / (pow(proj, 2) + delta2);
   };
+  /*--- Some faces cancel to (nearly) zero, where only rounding is left (it depends on the compiler, e.g. on
+   *    FMA contraction). The margin is far above that rounding and far below the other face values (>= 1e-9). ---*/
+  const auto approx = [](const auto& value) { return Approx(value).epsilon(1e-12).margin(1e-15); };
   for (const su2double delta : {0.0, 1e-8, -1e-8, 1e-3, -1e-3}) {
     for (const su2double projection : {0.0, 2e-8, -2e-8, 2e-3}) {
       const auto checkFace = [&](auto edgeLimiter, auto limiter) {
@@ -68,11 +71,11 @@ TEST_CASE("Edge reconstruction of scalars and of the flow", "[ScalarMuscl]") {
         const auto vector = edgeFace(simd::Array<su2double, 4>(0.0), edgeLimiter, delta, projection);
         const auto left = 0.5 * projection * limiter(projection, delta);
         const auto right = delta + 0.5 * projection * limiter(-projection, delta);
-        CHECK(scalar.i.all(0) == Approx(left).margin(1e-20));
-        CHECK(scalar.j.all(0) == Approx(right).margin(1e-20));
+        CHECK(scalar.i.all(0) == approx(left));
+        CHECK(scalar.j.all(0) == approx(right));
         for (size_t lane = 0; lane < 4; ++lane) {
-          CHECK(vector.i.all(0)[lane] == Approx(left).margin(1e-20));
-          CHECK(vector.j.all(0)[lane] == Approx(right).margin(1e-20));
+          CHECK(vector.i.all(0)[lane] == approx(left));
+          CHECK(vector.j.all(0)[lane] == approx(right));
         }
       };
       checkFace(scalarEdge, scalarLimiter);
