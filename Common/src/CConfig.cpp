@@ -4233,6 +4233,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Check for unsupported features. ---*/
 
+  if (Kind_SU2 == SU2_COMPONENT::SU2_CFD && nMarker_PerBound > 0) {
+    if (ContinuousAdjoint)
+      SU2_MPI::Error("MARKER_PERIODIC is not currently supported in the continuous adjoint solver. "
+                     "Use MATH_PROBLEM= DISCRETE_ADJOINT.",
+                     CURRENT_FUNCTION);
+    if (Radiation)
+      SU2_MPI::Error("MARKER_PERIODIC is not currently supported with RADIATION_MODEL.", CURRENT_FUNCTION);
+    if (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY)
+      SU2_MPI::Error("MARKER_PERIODIC is not currently supported with SOLVER= ELASTICITY.", CURRENT_FUNCTION);
+  }
+
   if ((Kind_Solver != MAIN_SOLVER::EULER && Kind_Solver != MAIN_SOLVER::NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::RANS) && (TimeMarching == TIME_MARCHING::HARMONIC_BALANCE)){
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
