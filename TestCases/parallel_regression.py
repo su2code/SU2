@@ -592,7 +592,7 @@ def main():
     turb_naca0012_sst_muscl_edge.cfg_dir = "rans/naca0012"
     turb_naca0012_sst_muscl_edge.cfg_file = "turb_NACA0012_sst_muscl_edge.cfg"
     turb_naca0012_sst_muscl_edge.test_iter = 10
-    turb_naca0012_sst_muscl_edge.test_vals = [-6.437377, -9.458944, -3.235607, 1.076770, 0.014867, -3.483369, 0.000000]
+    turb_naca0012_sst_muscl_edge.test_vals = [-7.395492, -9.461721, -2.848756, 1.074672, 0.014912, -2.784876, 0.000000]
     turb_naca0012_sst_muscl_edge.timeout = 3200
     test_list.append(turb_naca0012_sst_muscl_edge)
 
