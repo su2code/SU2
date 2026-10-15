@@ -33,6 +33,7 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "correctGradientsSymmetry.hpp"
+#include "correctGradientsWall.hpp"
 
 namespace detail {
 
@@ -56,11 +57,13 @@ namespace detail {
  * \param[in] varEnd - Index of last variable for which to compute the gradient.
  * \param[in] idxVel - Index of velocity, or -1 if no velocity present.
  * \param[out] gradient - Generic object implementing operator (iPoint, iVar, iDim).
+ * \param[in] wallVars - Variables with known derivatives at no-slip walls.
  */
 template <size_t nDim, class FieldType, class GradientType>
 void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field,
-                                const size_t varBegin, const size_t varEnd, const int idxVel, GradientType& gradient) {
+                                const size_t varBegin, const size_t varEnd, const int idxVel, GradientType& gradient,
+                                const WallGradientVars& wallVars) {
   const size_t nPointDomain = geometry.GetnPointDomain();
 
 #ifdef HAVE_OMP
@@ -162,6 +165,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   /*--- Compute the corrections for symmetry planes and Euler walls. ---*/
 
   correctGradientsSymmetry<nDim>(geometry, config, varBegin, varEnd, idxVel, gradient);
+  correctGradientsWall<nDim>(geometry, config, varBegin, varEnd, wallVars, gradient);
 
   /*--- If no solver was provided we do not communicate ---*/
 
@@ -190,15 +194,16 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 template <class FieldType, class GradientType>
 void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field,
-                                const size_t varBegin, const size_t varEnd, const int idxVel, GradientType& gradient) {
+                                const size_t varBegin, const size_t varEnd, const int idxVel, GradientType& gradient,
+                                const WallGradientVars& wallVars = {}) {
   switch (geometry.GetnDim()) {
     case 2:
       detail::computeGradientsGreenGauss<2>(solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin,
-                                            varEnd, idxVel, gradient);
+                                            varEnd, idxVel, gradient, wallVars);
       break;
     case 3:
       detail::computeGradientsGreenGauss<3>(solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin,
-                                            varEnd, idxVel, gradient);
+                                            varEnd, idxVel, gradient, wallVars);
       break;
     default:
       SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);

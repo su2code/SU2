@@ -2590,7 +2590,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? MPI_QUANTITIES::SOLUTION_GRAD_REC : MPI_QUANTITIES::SOLUTION_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_SOL_GG_R : PERIODIC_SOL_GG;
-  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, idxVel, gradient);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, idxVel, gradient, wallGradVars);
 }
 
 void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
@@ -2614,7 +2614,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? MPI_QUANTITIES::SOLUTION_GRAD_REC : MPI_QUANTITIES::SOLUTION_GRADIENT;
 
-  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel, gradient, rmatrix);
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel, gradient, rmatrix, wallGradVars);
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {

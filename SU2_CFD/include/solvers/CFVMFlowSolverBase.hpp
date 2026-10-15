@@ -1069,6 +1069,18 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
+  /*!
+   * \brief Primitive variables with known derivatives at no-slip walls.
+   * \note The velocity divergence vanishes at the wall for incompressible and steady flow.
+   */
+  WallGradientVars GetWallGradientVars(const CConfig& config) const {
+    WallGradientVars vars;
+    vars.idxVel = prim_idx.Velocity();
+    vars.idxTemp = prim_idx.Temperature();
+    vars.divFreeVel = (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) || (config.GetTime_Marching() == TIME_MARCHING::STEADY);
+    return vars;
+  }
+
   void SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config, bool reconstruction = false) override;
 
   /*!

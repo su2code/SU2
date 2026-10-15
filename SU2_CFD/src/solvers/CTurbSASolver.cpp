@@ -48,6 +48,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver
 
   nVar = 1;
   nPrimVar = 1;
+  wallGradVars.zeroEnd = 1;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 

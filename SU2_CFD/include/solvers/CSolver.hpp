@@ -58,6 +58,7 @@
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../limiters/CLimiterDetails.hpp"
+#include "../gradients/WallGradientVars.hpp"
 #include "../variables/CVariable.hpp"
 
 #include "../output/CTurboOutput.hpp"
@@ -177,6 +178,8 @@ protected:
   std::unordered_map<unsigned long, size_t> PeriodicProjIndex;  /*!< \brief Local point to compact projection row. */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
+
+  WallGradientVars wallGradVars;  /*!< \brief Solution variables with known derivatives at no-slip walls. */
 
   vector<su2activematrix> VertexTraction;          /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
   vector<su2activematrix> VertexTractionAdjoint;   /*- Also temporary -*/
