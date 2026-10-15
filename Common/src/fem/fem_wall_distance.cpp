@@ -113,6 +113,7 @@ std::unique_ptr<CADTElemClass> CMeshFEM_DG::ComputeViscousWallADT(const CConfig*
   std::unique_ptr<CADTElemClass> WallADT(
       new CADTElemClass(nDim, surfaceCoor, surfaceConn, VTK_TypeElem, markerIDs, elemIDs, true));
 
+  WallADT->SetPeriodicWallSearch(config);
   return WallADT;
 }
 
