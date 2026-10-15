@@ -580,7 +580,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
+  AD::SetPreaccIn(V_i, nDim+10);   AD::SetPreaccIn(V_j, nDim+10);
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(PrimVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nVar, nDim);
@@ -912,6 +912,9 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
+  if (energy_multicomponent) {
+    AD::SetPreaccIn(HeatFluxDiffusion);
+  }
 
   unsigned short iVar, jVar, iDim;
 
@@ -1006,6 +1009,10 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
+
+  if (energy_multicomponent) {
+    Proj_Flux_Tensor[nVar - 1] += HeatFluxDiffusion;
+  }
 
   /*--- Compute the implicit part ---*/
 

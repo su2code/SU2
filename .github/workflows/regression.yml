@@ -46,7 +46,7 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, ReverseTagNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-cantera=true -Denable-tests=true --warnlevel=2'
           - config_set: ReverseMPI
             flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ForwardMPI
@@ -233,7 +233,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:261011-1107
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
+          args: -b ${{github.ref}} -t develop -c feature_cantera -s ${{matrix.testscript}}
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:261011-1107
         with:
@@ -282,7 +282,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:261011-1107
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tapetests"
+          args: -b ${{github.ref}} -t develop -c feature_cantera -s ${{matrix.testscript}} -a "--tapetests"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:261011-1107
         with:
@@ -330,7 +330,7 @@ jobs:
           PMIX_MCA_gds: hash
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tsan"
+          args: -b ${{github.ref}} -t develop -c feature_cantera -s ${{matrix.testscript}} -a "--tsan"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2-tsan:261011-1107
         with:
@@ -375,7 +375,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2-asan:261011-1107
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--asan"
+          args: -b ${{github.ref}} -t develop -c feature_cantera -s ${{matrix.testscript}} -a "--asan"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2-asan:261011-1107
         with:

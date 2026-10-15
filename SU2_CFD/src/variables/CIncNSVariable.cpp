@@ -59,8 +59,10 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   SetPressure(iPoint);
 
   su2double Enthalpy = Solution(iPoint, nDim + 1);
+  FluidModel->SetTemperatureGuess(GetTemperature(iPoint));
   FluidModel->SetTDState_h(Enthalpy, scalar);
   su2double Temperature = FluidModel->GetTemperature();
+  const bool temperature_failed = FluidModel->GetTemperatureIterationFailed();
 
   auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
@@ -70,11 +72,11 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Set the value of the density ---*/
 
-  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+  const auto check_dens = check_temp ? true: SetDensity(iPoint, FluidModel->GetDensity());
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
-  if (check_dens || check_temp) {
+  if (check_dens || check_temp || temperature_failed) {
 
     /*--- Copy the old solution ---*/
 
