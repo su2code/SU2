@@ -3095,6 +3095,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: ParMETIS load balancing weight for edges (equiv. to neighbors) */
   addLongOption("PARMETIS_EDGE_WEIGHT", ParMETIS_edgeWgt, 1);
 
+  /* DESCRIPTION: Weight ParMETIS graph edges by cell anisotropy and keep anisotropic lines on one rank */
+  addBoolOption("PARMETIS_ANISOTROPY_WEIGHT", ParMETIS_anisotropyWgt, true);
+
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
 
@@ -4785,6 +4788,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   } else {
     rampMUSCLValue = 1.0;
   }
+
+#if !(defined(HAVE_MPI) && defined(HAVE_PARMETIS))
+  if (OptionIsSet("PARMETIS_ANISOTROPY_WEIGHT") && ParMETIS_anisotropyWgt && (rank == MASTER_NODE)) {
+    cout << "WARNING: PARMETIS_ANISOTROPY_WEIGHT has no effect, SU2 was built without MPI and ParMETIS." << endl;
+  }
+#endif
 
   /*--- Check on extra Relaxation factor for Giles---*/
   if(extrarelfac[1] > 0.5){
