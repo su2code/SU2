@@ -59,37 +59,42 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   SetPressure(iPoint);
 
-  su2double Enthalpy = Solution(iPoint, nDim + 1);
-  FluidModel->SetTemperatureGuess(GetTemperature(iPoint));
-  FluidModel->SetTDState_h(Enthalpy, scalar);
-  su2double Temperature = FluidModel->GetTemperature();
-  const bool temperature_failed = FluidModel->GetTemperatureIterationFailed();
+    /*--- The temperature of the last valid state is the guess for both solves below. ---*/
+  const su2double Temperature_Old = GetTemperature(iPoint);
 
-  auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
+  su2double Enthalpy = Solution(iPoint, nDim + 1);
+  const bool converged = FluidModel->SolveTDState_h(Enthalpy, scalar, Temperature_Old);
+
+  auto check_temp = SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
   from the dynamic pressure being iterated. ---*/
 
-  /*--- Set the value of the density ---*/
-
-  const auto check_dens = check_temp ? true: SetDensity(iPoint, FluidModel->GetDensity());
+  const auto check_dens = check_temp ? true : SetDensity(iPoint, FluidModel->GetDensity());
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
-  if (check_dens || check_temp || temperature_failed) {
+  if (check_dens || check_temp || !converged) {
 
     /*--- Copy the old solution ---*/
 
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
-    /*--- Recompute the primitive variables ---*/
+    /*--- Recompute the primitive variables. The old solution was valid at Temperature_Old,
+     so the solve normally converges in a step or two. If it still fails, keep the last
+     valid temperature rather than storing an unconverged state. ---*/
 
     Enthalpy = Solution(iPoint, nDim + 1);
-    FluidModel->SetTDState_h(Enthalpy, scalar);
-    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
-    SetDensity(iPoint, FluidModel->GetDensity());
+    if (FluidModel->SolveTDState_h(Enthalpy, scalar, Temperature_Old)) {
+      SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
+      SetDensity(iPoint, FluidModel->GetDensity());
+    } else {
+      FluidModel->SetTDState_T(Temperature_Old, scalar);
+      SetTemperature(iPoint, Temperature_Old, TemperatureLimits);
+      SetDensity(iPoint, FluidModel->GetDensity());
+    }
 
     /*--- Flag this point as non-physical. ---*/
 

@@ -1204,20 +1204,21 @@ void CIncEulerSolver::RecomputeDensity_time_n(CSolver **solver_container, const 
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    /*--- Per-thread fluid model, mirroring the recipe in SetPrimitive_Variables. ---*/
+    /*--- Per-thread fluid model, mirroring the recipe in SetPrimitive_Variables. The current temperature
+     is the guess for both time levels; if a solve fails, the current density is used instead. ---*/
     CFluidModel* fluidModel = GetFluidModel();
+    const su2double temperatureGuess = nodes->GetTemperature(iPoint);
 
     const su2double* scalar_n = speciesNodes ? speciesNodes->GetSolution_time_n(iPoint) : nullptr;
     const su2double Enthalpy_n = nodes->GetSolution_time_n(iPoint, nDim + 1);
-    fluidModel->SetTDState_h(Enthalpy_n, scalar_n);
-    nodes->SetDensity_time_n(iPoint, fluidModel->GetDensity());
+    const bool converged_n = fluidModel->SolveTDState_h(Enthalpy_n, scalar_n, temperatureGuess);
+    nodes->SetDensity_time_n(iPoint, converged_n ? fluidModel->GetDensity() : nodes->GetDensity(iPoint));
 
     if (second_order) {
       const su2double* scalar_n1 = speciesNodes ? speciesNodes->GetSolution_time_n1(iPoint) : nullptr;
       const su2double Enthalpy_n1 = nodes->GetSolution_time_n1(iPoint, nDim + 1);
-      fluidModel->SetTDState_h(Enthalpy_n1, scalar_n1);
-      nodes->SetDensity_time_n1(iPoint, fluidModel->GetDensity());
+      const bool converged_n1 = fluidModel->SolveTDState_h(Enthalpy_n1, scalar_n1, temperatureGuess);
+      nodes->SetDensity_time_n1(iPoint, converged_n1 ? fluidModel->GetDensity() : nodes->GetDensity(iPoint));
     }
   }
   END_SU2_OMP_FOR
@@ -1581,14 +1582,11 @@ bool CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, un
                                                      const su2double* scalar, su2double* primitive) {
   SU2_ZONE_SCOPED
   const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
-  const su2double enthalpy = primitive[prim_idx.Enthalpy()];
-  fluidModel->SetTemperatureGuess(primitive[prim_idx.Temperature()]);
-  fluidModel->SetTDState_h(enthalpy, scalar);
-
+  const bool converged = fluidModel->SolveTDState_h(primitive[prim_idx.Enthalpy()], scalar,
+                                                    primitive[prim_idx.Temperature()]);
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
   primitive[prim_idx.Density()] = fluidModel->GetDensity();
-
-  return fluidModel->GetTemperatureIterationFailed();
+  return !converged;
 }
 
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,

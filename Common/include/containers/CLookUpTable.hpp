@@ -82,9 +82,12 @@ class CLookUpTable {
 
   double memory_footprint_data = 0; /*!< \brief Memory footprint of the loaded table data. */
 
-  su2double hull_miss_dist_ = 0.0;  /*!< \brief Worst-case normalised distance to hull boundary (used to select the reporting level). */
-  su2double cv1_hull_dev_  = 0.0;  /*!< \brief Signed physical deviation in CV1 (query minus nearest hull node) at the worst-miss level. */
-  su2double cv2_hull_dev_  = 0.0;  /*!< \brief Signed physical deviation in CV2 (query minus nearest hull node) at the worst-miss level. */
+  su2double hull_miss_dist_ =
+      0.0; /*!< \brief Worst-case normalised distance to hull boundary (used to select the reporting level). */
+  su2double cv1_hull_dev_ =
+      0.0; /*!< \brief Signed physical deviation in CV1 (query minus nearest hull node) at the worst-miss level. */
+  su2double cv2_hull_dev_ =
+      0.0; /*!< \brief Signed physical deviation in CV2 (query minus nearest hull node) at the worst-miss level. */
 
   /*! \brief
    * Holds all connectivity data stored in the table for each level. First index
@@ -381,7 +384,7 @@ class CLookUpTable {
   inline su2double GetDistanceToNearestZLevel(su2double val_CV3) const {
     if (table_dim < 3 || n_table_levels < 2) return 0.0;
     auto it = std::lower_bound(z_values_levels.begin(), z_values_levels.end(), val_CV3);
-    su2double d_hi = (it != z_values_levels.end())   ? abs(*it - val_CV3) : su2double(1e30);
+    su2double d_hi = (it != z_values_levels.end()) ? abs(*it - val_CV3) : su2double(1e30);
     su2double d_lo = (it != z_values_levels.begin()) ? abs(*std::prev(it) - val_CV3) : su2double(1e30);
     return (d_lo < d_hi) ? d_lo : d_hi;
   }
@@ -419,7 +422,11 @@ class CLookUpTable {
   /*!
    * \brief Reset the hull-miss accumulators (call once per point before all lookups).
    */
-  void ResetHullMissDistance() { hull_miss_dist_ = 0.0; cv1_hull_dev_ = 0.0; cv2_hull_dev_ = 0.0; }
+  void ResetHullMissDistance() {
+    hull_miss_dist_ = 0.0;
+    cv1_hull_dev_ = 0.0;
+    cv2_hull_dev_ = 0.0;
+  }
 
   /*!
    * \brief Signed physical deviation in CV1 (query minus nearest hull node) at the worst-miss Z level.

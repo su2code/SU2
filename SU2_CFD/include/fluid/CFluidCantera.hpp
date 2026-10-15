@@ -60,10 +60,8 @@ class CFluidCantera final : public CFluidModel {
   const bool Correction_Velocity;            /*!< \brief The diffusive species fluxes are corrected to sum to zero. */
 
   su2double Heat_Release{0.0};                 /*!< \brief heat release due to combustion */
-  bool temperatureIterationFailed{false};                     /*!< \brief The last temperature-from-enthalpy iteration did not converge. */
   double minTemperature{0.0};                  /*!< \brief Lower temperature bound of the Newton iteration. */
   double maxTemperature{0.0};                  /*!< \brief Upper temperature bound of the Newton iteration. */
-  double temperatureGuess{0.0};                /*!< \brief Start of the next temperature iteration, 0 if unset. */
   const std::shared_ptr<Cantera::Solution> sol;      /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::vector<size_t> speciesIndices;          /*!< \brief Mechanism index of each transported species. */
   std::vector<su2double> chemicalSourceTerm;   /*!< \brief Chemical source term of the transported species. */
@@ -163,10 +161,6 @@ class CFluidCantera final : public CFluidModel {
    */
   inline su2double GetHeatRelease() override { return Heat_Release; }
 
-  /*!
-   * \brief Whether the last state evaluation failed to converge or needed a temperature far outside the data range.
-   */
-  inline bool GetTemperatureIterationFailed() const override { return temperatureIterationFailed; }
 
   /*!
    * \brief Get enthalpy diffusivity terms.
@@ -185,19 +179,23 @@ class CFluidCantera final : public CFluidModel {
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
 
-  /*!
-   * \brief Set the state from enthalpy by Newton iteration on temperature.
+    /*!
+   * \brief Set the state from enthalpy, starting the temperature iteration from the reference temperature.
+   * \note A failed iteration is not reported, use SolveTDState_h where that matters.
    * \param[in] val_enthalpy - Enthalpy value at the point.
    * \param[in] val_scalars - Scalar mass fractions.
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars) override;
 
   /*!
-   * \brief Set the start of the next temperature iteration of SetTDState_h, used once.
-   * \param[in] val_temperature - Temperature guess.
+   * \brief Set the state from enthalpy by Newton iteration on temperature.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_scalars - Scalar mass fractions.
+   * \param[in] val_temperature_guess - Start of the iteration, <= 0 to start from the reference temperature.
+   * \return True if the iteration converged inside the range of the thermodynamic data.
    */
-  inline void SetTemperatureGuess(su2double val_temperature) override {
-    temperatureGuess = SU2_TYPE::GetValue(val_temperature);
-  }
+  bool SolveTDState_h(su2double val_enthalpy, const su2double* val_scalars,
+                      su2double val_temperature_guess) override;
+
 #endif
 };
