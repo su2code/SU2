@@ -13,12 +13,14 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
                        'Common/vectorization.cpp',
                        'Common/toolboxes/ndflattener_tests.cpp',
                        'Common/containers/CLookupTable_tests.cpp',
+                       'SU2_CFD/fluid/CFluidCantera_tests.cpp',
                        'Common/toolboxes/multilayer_perceptron/CLookUp_ANN_tests.cpp',
                        'SU2_CFD/numerics/CNumerics_tests.cpp',
                        'SU2_CFD/fluid/CFluidModel_tests.cpp',
                        'SU2_CFD/output/CNEMOCompOutput_tests.cpp',
                        'SU2_CFD/output/COutput_convergence_tests.cpp',
                        'SU2_CFD/gradients.cpp',
+                       'SU2_CFD/periodic_limiters.cpp',
                        'SU2_CFD/solvers/CNEMOEulerSolver_tests.cpp',
                        'SU2_CFD/nemo_viscous_assembly.cpp',
                        'SU2_CFD/windowing.cpp',
@@ -38,15 +40,17 @@ su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp'])
 # End of unit test listings
 # -------------------------------------------------------------------------
 
+
 if get_option('enable-tests')
   if get_option('enable-normal')
     unit_test_files = su2_cfd_tests + files(['test_driver.cpp'])
+    dependencies_default = [su2_cfd_dep, common_dep, su2_deps, catch2_dep]
     test_driver = executable(
         'test_driver',
         unit_test_files,
         install : true,
         install_rpath : '$ORIGIN/../lib',
-        dependencies : [su2_cfd_dep, common_dep, su2_deps, catch2_dep],
+        dependencies : dependencies_default,
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)
