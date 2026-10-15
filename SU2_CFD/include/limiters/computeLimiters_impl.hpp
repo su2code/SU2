@@ -55,6 +55,10 @@
  * \param[out] fieldMin - Minimum field values over direct neighbors of each point.
  * \param[out] fieldMax - As above but maximum values.
  * \param[out] limiter - Reconstruction limiter for the field.
+ * \param[in] refValue - Optional reference value of each variable. When given, the limiters whose epsilon is an
+ *            absolute number (e.g. Venkatakrishnan) see the differences divided by max(|field|, |refValue|) of the
+ *            point, so that they act in the same way whatever the scale of the variable (dimensionally consistent
+ *            epsilon, see Nishikawa, White and O'Connell, AIAA 2023, following Luke, AIAA 2007-3956).
  *
  * Template parameters:
  * \param nDim - Number of dimensions.
@@ -76,7 +80,8 @@ void computeLimiters_impl(CSolver* solver,
                           const GradientType& gradient,
                           FieldType& fieldMin,
                           FieldType& fieldMax,
-                          FieldType& limiter)
+                          FieldType& limiter,
+                          const su2double* refValue = nullptr)
 {
   constexpr size_t MAXNVAR = 32;
 
@@ -233,16 +238,26 @@ void computeLimiters_impl(CSolver* solver,
 
     su2double geoFactor = limiterDetails.geometricFactor(iPoint, geometry);
 
+    /*--- Wang's epsilon is already relative to the range of the field. ---*/
+    constexpr bool absoluteEpsilon = LimiterKind != LIMITER::VENKATAKRISHNAN_WANG;
+
     /*--- Final limiter computation for each variable, get the min limiter
      *    out of the positive/negative projections and deltas. ---*/
 
     for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
     {
-      su2double limMax = limiterDetails.limiterFunction(iVar, projMax[iVar],
-                         fieldMax(iPoint,iVar) - field(iPoint,iVar));
+      su2double scale = 1.0;
+      if (absoluteEpsilon && refValue != nullptr) {
+        AD::SetPreaccIn(refValue[iVar]);
+        scale = max(fabs(field(iPoint,iVar)), fabs(refValue[iVar]));
+        if (scale <= 0.0) scale = 1.0;
+      }
 
-      su2double limMin = limiterDetails.limiterFunction(iVar, projMin[iVar],
-                         fieldMin(iPoint,iVar) - field(iPoint,iVar));
+      su2double limMax = limiterDetails.limiterFunction(iVar, projMax[iVar] / scale,
+                         (fieldMax(iPoint,iVar) - field(iPoint,iVar)) / scale);
+
+      su2double limMin = limiterDetails.limiterFunction(iVar, projMin[iVar] / scale,
+                         (fieldMin(iPoint,iVar) - field(iPoint,iVar)) / scale);
 
       limiter(iPoint,iVar) = geoFactor * min(limMax, limMin);
 
