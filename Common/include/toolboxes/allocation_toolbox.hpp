@@ -5,7 +5,7 @@
  * \note  These are "kernel" functions, only to be used with good reason,
  *        always try to use higher level container classes.
  * \author P. Gomes, D. Kavolis
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -143,5 +143,40 @@ inline T* gpu_alloc_cpy(const T* src_ptr, size_t size) noexcept {
 #endif
 
   return static_cast<T*>(ptr);
+}
+
+/*!
+ * \brief Page-locked ("pinned") host memory allocation.
+ * \note Unlike regular (pageable) host memory, cudaMemcpyAsync from/to a pinned buffer is
+ *       actually asynchronous with respect to the host thread; from pageable memory the driver
+ *       silently falls back to a synchronous staged copy. Only worth it for host buffers that
+ *       are the source/destination of an async transfer meant to overlap with other host work.
+ * \param[in] size in bytes.
+ * \tparam ZeroInit, initialize memory to 0.
+ * \return Pointer to memory, always use pinned_free to deallocate.
+ */
+template <class T, bool ZeroInit = false>
+inline T* pinned_alloc(size_t size) noexcept {
+  void* ptr = nullptr;
+
+#if defined(HAVE_CUDA)
+  gpuErrChk(cudaMallocHost((void**)(&ptr), size));
+  if (ZeroInit) memset(ptr, 0, size);
+#else
+  return 0;
+#endif
+
+  return static_cast<T*>(ptr);
+}
+
+/*!
+ * \brief Free memory allocated with pinned_alloc.
+ * \param[in] ptr, pointer to memory we want to release.
+ */
+template <class T>
+inline void pinned_free(T* ptr) noexcept {
+#ifdef HAVE_CUDA
+  gpuErrChk(cudaFreeHost((void*)ptr));
+#endif
 }
 }  // namespace GPUMemoryAllocation

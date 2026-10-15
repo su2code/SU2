@@ -2,7 +2,7 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -391,6 +391,8 @@ class C2DContainer
   static constexpr bool IsRowMajor = (Store == StorageType::RowMajor);
   static constexpr bool IsColumnMajor = (Store == StorageType::ColumnMajor);
   static constexpr size_t StaticSize = StaticRows * StaticCols;
+  static constexpr size_t StaticNRows = StaticRows;
+  static constexpr size_t StaticNCols = StaticCols;
 
   /*!
    * \brief Scalar iterator to the inner dimension of the container, read-only.

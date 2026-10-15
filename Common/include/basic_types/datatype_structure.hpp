@@ -2,7 +2,7 @@
  * \file datatype_structure.hpp
  * \brief Headers for generalized datatypes, defines an interface for AD types.
  * \author T. Albring
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -135,6 +135,10 @@ template <>
 struct Passive<su2double> {
   FORCEINLINE static passivedouble Value(const su2double& val) { return GetValue(val); }
 };
+template <class T>
+FORCEINLINE auto PassiveValue(const T& val) {
+  return Passive<T>::Value(val);
+}
 
 /*!
  * \brief Casts the primitive value to int (uses GetValue, already implemented for each type).

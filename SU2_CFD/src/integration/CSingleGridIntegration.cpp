@@ -2,7 +2,7 @@
  * \file CSingleGridIntegration.cpp
  * \brief Single (fine) grid integration class implementation.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,6 +48,20 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
 
   CGeometry* geometry_fine = geometry[iZone][iInst][FinestMesh];
   CSolver** solvers_fine = solver_container[iZone][iInst][FinestMesh];
+
+  /*--- CFL scaling of turbulence during the warmpup phase if FMG. ---*/
+  if ((RunTime_EqSystem == RUNTIME_TURB_SYS) && (FinestMesh != MESH_0)) {
+    const su2double turbReduction = SU2_TYPE::GetValue(config[iZone]->GetCFLRedCoeff_Turb());
+    const su2double turbCFL = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh)) * turbReduction;
+    auto* turbSolver = solvers_fine[Solver_Position];
+
+    SU2_OMP_SAFE_GLOBAL_ACCESS(turbSolver->SetCFL_Local_Stats(turbCFL);)
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry_fine->GetnPoint(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geometry_fine->GetnPoint(); ++iPoint) {
+      turbSolver->GetNodes()->SetLocalCFL(iPoint, turbCFL);
+    }
+    END_SU2_OMP_FOR
+  }
 
   /*--- Preprocessing ---*/
 

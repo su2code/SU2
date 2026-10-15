@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -117,7 +117,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Limiter(geometry, config);
   }
 
-  ComputeVorticityAndStrainMag(*config, geometry, iMesh);
+  if (Output || config->GetVorticityConfinement()) {
+    ComputeVorticityAndStrainMag(*config, geometry, iMesh);
+  }
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -153,6 +155,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
         su2double DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
         nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
+        su2double LES_Mode = solver_container[TURB_SOL]->GetNodes()->GetLES_Mode(iPoint);
+        nodes->SetLES_Mode(iPoint, LES_Mode);
       }
     }
 
@@ -174,11 +178,10 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
   return nonPhysicalPoints;
 }
 
-void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config) {
-  SU2_ZONE_SCOPED
-
-  Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
+CNumerics::ResidualType<> CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry,
+                                                      CSolver **solver_container, CNumerics *numerics,
+                                                      CConfig *config) {
+  return Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }
 
 void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) {
@@ -1033,11 +1036,8 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
     ompMasterAssignBarrier(globalCounter1,0, globalCounter2,0);
 
-    SU2_OMP_ATOMIC
-    globalCounter1 += notConvergedCounter;
-
-    SU2_OMP_ATOMIC
-    globalCounter2 += smallYPlusCounter;
+    atomicAdd(notConvergedCounter, globalCounter1);
+    atomicAdd(smallYPlusCounter, globalCounter2);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());

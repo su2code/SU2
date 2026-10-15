@@ -2,7 +2,7 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -244,6 +244,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
 
   AD::SetPreaccOut(Flux, nVar);
+  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
   AD::EndPreacc();
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);

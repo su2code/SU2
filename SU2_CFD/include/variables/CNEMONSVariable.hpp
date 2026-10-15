@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Navier-Stokes solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,6 +52,7 @@ private:
 
   VectorType Tau_Wall;          /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;   /*!< \brief DES Length Scale. */
+  VectorType lesMode;          /*!< \brief Sensor for local simulation mode (0=RANS, 1=LES). */
   VectorType Roe_Dissipation;   /*!< \brief Roe low dissipation coefficient. */
   VectorType Vortex_Tilting;    /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
 

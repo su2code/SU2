@@ -2,7 +2,7 @@
  * \file CSpeciesVariable.hpp
  * \brief Base class for defining the variables of the species transport model.
  * \author T. Kattmann
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -74,4 +74,9 @@ class CSpeciesVariable : public CScalarVariable {
    * \return Pointer to the mass diffusivities
    */
   inline const su2double* GetDiffusivity(unsigned long iPoint) const { return Diffusivity[iPoint]; }
+
+  /*!
+   * \brief Get the mass diffusivity container, for a per-species gather by point and equation.
+   */
+  inline const MatrixType& GetDiffusivity() const { return Diffusivity; }
 };

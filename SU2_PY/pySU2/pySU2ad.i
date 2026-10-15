@@ -4,7 +4,7 @@
 # \file pySU2ad.i
 # \brief Configuration file for the Swig compilation of the Python wrapper.
 # \author D. Thomas, R. Sanchez
-# \version 8.4.0 "Harrier"
+# \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -39,6 +39,7 @@ threads="1"
 %{
 #include "../../Common/include/containers/CPyWrapperMatrixView.hpp"
 #include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
+#include "../../SU2_CFD/include/drivers/CDiscAdjMultizoneDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CDriverBase.hpp"
 #include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
@@ -98,4 +99,5 @@ const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. 
 %include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
+%include "../../SU2_CFD/include/drivers/CDiscAdjMultizoneDriver.hpp"
 %include "../../SU2_DEF/include/drivers/CDiscAdjDeformationDriver.hpp"

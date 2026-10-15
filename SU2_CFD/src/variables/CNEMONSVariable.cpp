@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -70,6 +70,7 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
   StrainMag.resize(nPoint)       = su2double(0.0);
   Tau_Wall.resize(nPoint)        = su2double(-1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
+  lesMode.resize(nPoint)        = su2double(0.0);
   Roe_Dissipation.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint)  = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);

@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -117,6 +117,10 @@ protected:
   unsigned long nAuxVar = 0; /*!< \brief Number of auxiliary variables. */
   unsigned long nSymMat = 0;        /*!< \brief Number of symmetric matrix componenents for Hessian and metric tensor. */
 
+
+  /*!< \brief Handed out by the base implementations of the container accessors of fields only
+   * some models have, e.g. GetF1blending; a solver that has no such field never reads it. */
+  inline static const VectorType EmptyVector{};
 
   /*--- Only allow default construction by derived classes. ---*/
   CVariable() = default;
@@ -406,6 +410,46 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    */
+  inline virtual su2double GetLES_Mode(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_les_mode - Value of the LES sensor.
+   */
+  inline virtual void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   */
+  inline virtual su2double GetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource - Source term in Langevin equations.
+   */
+  inline virtual void SetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim, su2double val_stochSource) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_integral - Value of the integral.
+   */
+  inline virtual void SetBesselIntegral(unsigned long iPoint, su2double val_integral) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double GetBesselIntegral(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
   virtual void SetSolution_New() {}
 
   /*!
@@ -646,6 +690,7 @@ public:
    * \return Reference to gradient.
    */
   inline CVectorOfMatrix& GetAuxVarGradient(void) { return Grad_AuxVar; }
+  inline const CVectorOfMatrix& GetAuxVarGradient(void) const { return Grad_AuxVar; }
 
   /*!
    * \brief Get the value of the auxilliary gradient.
@@ -756,6 +801,7 @@ public:
    * \return Reference to gradient.
    */
   inline CVectorOfMatrix& GetGradient(void) { return Gradient; }
+  inline const CVectorOfMatrix& GetGradient(void) const { return Gradient; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -802,6 +848,7 @@ public:
    * \return Reference to the limiters vector.
    */
   inline MatrixType& GetLimiter(void) { return Limiter; }
+  inline const MatrixType& GetLimiter(void) const { return Limiter; }
 
   /*!
    * \brief Get the value of the slope limiter.
@@ -1174,6 +1221,13 @@ public:
    */
   inline virtual su2double *GetVorticity(unsigned long iPoint) { return nullptr; }
   inline virtual const su2double *GetVorticity(unsigned long iPoint) const { return nullptr; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Value of strain rate magnitude.
+   */
+  inline virtual su2double GetStrainMag(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -2493,4 +2547,21 @@ public:
    * \param[in] nSensors - Number of metric sensors
    */
   void AllocateMetricSensorArrays(unsigned short nSensors);
+  inline virtual su2double GetMomCoeff(unsigned long iPoint) { return 0.0; }
+
+  inline virtual void SetMomCoeff(unsigned long iPoint, su2double val_Mom_Coeff) { }
+
+  /*!
+   * \brief Get whether a strong boundary condition was applied to the point, which for the
+   *        pressure-based solver means its momentum row was deleted and carries no A_p.
+   */
+  inline virtual bool GetStrongBC(unsigned long iPoint) const { return false; }
+
+  inline virtual su2double GetMomentumCorrection(unsigned long iPoint, unsigned short iDim) { return 0.0; }
+
+  inline virtual void SetMomentumCorrection(unsigned long iPoint, unsigned short iDim, su2double val_mom) { }
+
+  inline virtual su2double GetHbyACorrection(unsigned long iPoint, unsigned short iDim) { return 0.0; }
+
+  inline virtual void SetHbyACorrection(unsigned long iPoint, unsigned short iDim, su2double val_HbyAcorrection) { }
 };

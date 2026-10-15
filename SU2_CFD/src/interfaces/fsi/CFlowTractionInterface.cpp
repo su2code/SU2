@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,6 +38,7 @@ CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned
                                                const CConfig *config, bool conservative_) :
   CInterface(val_nVar, val_nConst),
   conservative(conservative_) {
+  InterfaceType = ENUM_TRANSFER::FLOW_TRACTION;
 }
 
 void CFlowTractionInterface::Preprocess(const CConfig *flow_config, const CConfig *struct_config,
@@ -158,9 +159,9 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
   Physical_Constants[1] = ModAmpl;
 
   /*--- For static FSI, we cannot apply the ramp like this ---*/
-  if ((!flow_config->GetTime_Domain())){
+  if (!flow_config->GetTime_Domain()) {
     Physical_Constants[1] = 1.0;
-    if (Ramp_Load){
+    if (Ramp_Load) {
       CurrentTime = static_cast<su2double>(struct_config->GetOuterIter());
       Ramp_Time = static_cast<su2double>(struct_config->GetnIterFSI_Ramp() - 1);
 

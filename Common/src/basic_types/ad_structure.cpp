@@ -2,7 +2,7 @@
  * \file ad_structure.cpp
  * \brief Main subroutines for the algorithmic differentiation (AD) structure.
  * \author T. Albring
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,6 +47,10 @@ SU2_OMP(threadprivate(PreaccHelper))
 #endif
 
 ExtFuncHelper FuncHelper;
+
+#ifdef CODI_TAG_TAPE
+DebugControl* current_control = NULL;
+#endif  // CODI_TAG_TAPE
 
 #endif
 

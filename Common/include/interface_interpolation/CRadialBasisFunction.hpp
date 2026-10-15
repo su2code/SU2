@@ -2,7 +2,7 @@
  * \file CRadialBasisFunction.hpp
  * \brief Radial basis function interpolation.
  * \author Joel Ho, P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -56,7 +56,7 @@ class CRadialBasisFunction final : public CInterpolator {
    * \brief Set up transfer matrix defining relation between two meshes
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTransferCoeff(const CConfig* const* config) override;
+  void SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) override;
 
   /*!
    * \brief Print information about the interpolation.

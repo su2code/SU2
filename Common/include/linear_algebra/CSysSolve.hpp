@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -109,13 +109,15 @@ class CSysSolve {
   mutable VectorType p;   /*!< \brief Direction in CG and BCGSTAB. */
   mutable VectorType z;   /*!< \brief Preconditioned residual/direction in CG/BCGSTAB. */
 
-  mutable VectorType r_0; /*!< \brief The "arbitrary" vector in BCGSTAB. */
-  mutable VectorType v;   /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
+  mutable VectorType r_0;    /*!< \brief The "arbitrary" vector in BCGSTAB. */
+  mutable VectorType v;      /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
+  mutable VectorType x_best; /*!< \brief BCGSTAB iterate with the smallest residual. */
 
-  mutable unsigned long k = 0;
+  mutable bool ritz_failed = false;
+  mutable unsigned long k = 0, k_new = 0;
   mutable std::vector<VectorType> Z, V; /*!< \brief Large matrices used by FGMRES, v^i+1 = A * z^i. */
   mutable std::vector<VectorType> W, T; /*!< \brief Large matrices used by FGCRODR for deflation vectors. */
-  mutable Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> VkWk;
+  mutable Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> VkWk, Q, PinvR;
 
   /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
   VectorType LinSysSol_tmp;
@@ -240,12 +242,49 @@ class CSysSolve {
   void WriteWarning(ScalarType res_calc, ScalarType res_true, ScalarType tol) const;
 
   /*!
+   * \brief Moves the linear system to the device, if the GPU path is in use.
+   * \note This and DownloadSolution are the only places where b and x cross the bus. The
+   * work vectors of the solvers never do, they are allocated on the device and read back
+   * only through the reductions.
+   */
+  void UploadSystem(bool useCuda) const {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      if (!useCuda) return;
+      BEGIN_SU2_DEVICE_REGION {
+        LinSysRes_ptr->HtDTransfer();
+        LinSysSol_ptr->HtDTransfer();
+        VecExpr::SetUseDeviceExpressions(true);
+      }
+      END_SU2_DEVICE_REGION
+    }
+#endif
+  }
+
+  /*!
+   * \brief Brings the solution back from the device and returns to host evaluation.
+   */
+  void DownloadSolution(bool useCuda) const {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      if (!useCuda) return;
+      BEGIN_SU2_DEVICE_REGION {
+        LinSysSol_ptr->DtHTransfer();
+        VecExpr::SetUseDeviceExpressions(false);
+      }
+      END_SU2_DEVICE_REGION
+    }
+#endif
+  }
+
+  /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector.
    * \param[in] LinSysRes - Linear system residual
    * \param[in,out] LinSysSol - Linear system solution
+   * \param[in] useCuda - Whether to move the system to the device for the solve.
    */
   template <class OtherType>
-  void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
+  void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol, bool useCuda) {
     SU2_ZONE_SCOPED
     if constexpr (std::is_same_v<ScalarType, OtherType>) {
       /*--- Same type specialization, temporary variables are not required. ---*/
@@ -254,6 +293,7 @@ class CSysSolve {
         LinSysSol_ptr = &LinSysSol;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      UploadSystem(useCuda);
     } else {
       /*--- Copy data, the solution is also copied as it serves as initial condition. ---*/
       LinSysRes_tmp.PassiveCopy(LinSysRes);
@@ -265,16 +305,19 @@ class CSysSolve {
         LinSysSol_ptr = &LinSysSol_tmp;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      UploadSystem(useCuda);
     }
   }
 
   /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector.
    * \param[out] LinSysSol - Linear system solution
+   * \param[in] useCuda - Whether the system was solved on the device.
    */
   template <class OtherType>
-  void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
+  void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol, bool useCuda) {
     SU2_ZONE_SCOPED
+    DownloadSolution(useCuda);
     if constexpr (std::is_same_v<ScalarType, OtherType>) {
       /*--- Same type specialization, temporary variables are not required. ---*/
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -425,20 +468,29 @@ class CSysSolve {
    * \param[in] config - Definition of the particular problem.
    * \param[in] directCall - If this method is called directly, or in AD context.
    */
-  unsigned long Solve_b(MatrixType& Jacobian, const CSysVector<su2double>& LinSysRes, CSysVector<su2double>& LinSysSol,
-                        CGeometry* geometry, const CConfig* config, bool directCall = true);
+  unsigned long Solve_b(MatrixType& Jacobian, const VectorType& LinSysRes, VectorType& LinSysSol, CGeometry* geometry,
+                        const CConfig* config, bool directCall = true);
+
+  template <class OtherType, su2enable_if<!std::is_same_v<ScalarType, OtherType>> = 0>
+  unsigned long Solve_b(MatrixType& Jacobian, const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol,
+                        CGeometry* geometry, const CConfig* config, bool directCall = true) {
+    HandleTemporariesIn(LinSysRes, LinSysSol, false);
+    auto iter = Solve_b(Jacobian, *LinSysRes_ptr, *LinSysSol_ptr, geometry, config, directCall);
+    HandleTemporariesOut(LinSysSol, false);
+    return iter;
+  }
 
   /*!
    * \brief Get the number of iterations.
    * \return The number of iterations done by Solve or Solve_b
    */
-  inline unsigned long GetIterations(void) const { return Iterations; }
+  inline unsigned long GetIterations() const { return Iterations; }
 
   /*!
    * \brief Get the final residual.
    * \return The residual at the end of Solve or Solve_b
    */
-  inline ScalarType GetResidual(void) const { return Residual; }
+  inline ScalarType GetResidual() const { return Residual; }
 
   /*!
    * \brief Set the type of the tolerance for stoping the linear solvers (RELATIVE or ABSOLUTE).

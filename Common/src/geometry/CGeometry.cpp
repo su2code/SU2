@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -96,12 +96,22 @@ CGeometry::~CGeometry() {
 
   delete[] bufD_P2PRecv;
   delete[] bufD_P2PSend;
-
+#ifdef CODI_REVERSE_TYPE
+  delete[] bufPD_P2PRecv;
+  delete[] bufPD_P2PSend;
+#endif
+#ifdef USE_MIXED_PRECISION
+  delete[] bufF_P2PRecv;
+  delete[] bufF_P2PSend;
+#endif
   delete[] bufS_P2PRecv;
   delete[] bufS_P2PSend;
 
   delete[] req_P2PSend;
   delete[] req_P2PRecv;
+
+  delete[] reqP_P2PSend;
+  delete[] reqP_P2PRecv;
 
   delete[] nPoint_P2PRecv;
   delete[] nPoint_P2PSend;
@@ -279,12 +289,11 @@ void CGeometry::PreprocessP2PComms(CGeometry* geometry, CConfig* config) {
 
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
-  if (nP2PSend > 0) {
-    req_P2PSend = new SU2_MPI::Request[nP2PSend];
-  }
-  if (nP2PRecv > 0) {
-    req_P2PRecv = new SU2_MPI::Request[nP2PRecv];
-  }
+  if (nP2PSend > 0) req_P2PSend = new SU2_MPI::Request[nP2PSend];
+  if (nP2PRecv > 0) req_P2PRecv = new SU2_MPI::Request[nP2PRecv];
+
+  if (nP2PSend > 0) reqP_P2PSend = new PassiveRequest[nP2PSend];
+  if (nP2PRecv > 0) reqP_P2PRecv = new PassiveRequest[nP2PRecv];
 
   /*--- Build lists of local index values for send. ---*/
 
@@ -345,25 +354,30 @@ void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
     /*--- Store the larger packet size to the class data. ---*/
 
     maxCountPerPoint = countPerPoint;
+    const auto send_size = maxCountPerPoint * nPoint_P2PSend[nP2PSend];
+    const auto recv_size = maxCountPerPoint * nPoint_P2PRecv[nP2PSend];
 
     /*-- Deallocate and reallocate our su2double cummunication memory. ---*/
+#define SU2_ALLOC_COMM_BUFFERS(SEND, RECV, TYPE) \
+  delete[] SEND;                                 \
+  SEND = new TYPE[send_size]();                  \
+  delete[] RECV;                                 \
+  RECV = new TYPE[recv_size]();
 
-    delete[] bufD_P2PSend;
-    bufD_P2PSend = new su2double[maxCountPerPoint * nPoint_P2PSend[nP2PSend]]();
-
-    delete[] bufD_P2PRecv;
-    bufD_P2PRecv = new su2double[maxCountPerPoint * nPoint_P2PRecv[nP2PRecv]]();
-
-    delete[] bufS_P2PSend;
-    bufS_P2PSend = new unsigned short[maxCountPerPoint * nPoint_P2PSend[nP2PSend]]();
-
-    delete[] bufS_P2PRecv;
-    bufS_P2PRecv = new unsigned short[maxCountPerPoint * nPoint_P2PRecv[nP2PRecv]]();
+    SU2_ALLOC_COMM_BUFFERS(bufD_P2PSend, bufD_P2PRecv, su2double)
+    SU2_ALLOC_COMM_BUFFERS(bufS_P2PSend, bufS_P2PRecv, unsigned short)
+#ifdef CODI_REVERSE_TYPE
+    SU2_ALLOC_COMM_BUFFERS(bufPD_P2PSend, bufPD_P2PRecv, passivedouble)
+#endif
+#ifdef USE_MIXED_PRECISION
+    SU2_ALLOC_COMM_BUFFERS(bufF_P2PSend, bufF_P2PRecv, su2mixedfloat)
+#endif
+#undef SU2_ALLOC_COMM_BUFFERS
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType,
+void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                              unsigned short countPerPoint, bool val_reverse) const {
   /*--- Launch the non-blocking recv's first. Note that we have stored
    the counts and sources, so we can launch these before we even load
@@ -404,11 +418,23 @@ void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigne
        are the correct size. ---*/
 
       switch (commType) {
-        case COMM_TYPE_DOUBLE:
+        case COMM_TYPE::DOUBLE:
           SU2_MPI::Irecv(&(bufD_P2PSend[offset]), count, MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iRecv]));
           break;
-        case COMM_TYPE_UNSIGNED_SHORT:
+#ifdef CODI_REVERSE_TYPE
+        case COMM_TYPE::PASSIVE_DOUBLE:
+          SelectMPIWrapper<passivedouble>::W::Irecv(&(bufPD_P2PSend[offset]), count, MPI_DOUBLE, source, tag,
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<passivedouble>()[iRecv]);
+          break;
+#endif
+#ifdef USE_MIXED_PRECISION
+        case COMM_TYPE::FLOAT:
+          SelectMPIWrapper<su2mixedfloat>::W::Irecv(&(bufF_P2PSend[offset]), count, MPI_FLOAT, source, tag,
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<su2mixedfloat>()[iRecv]);
+          break;
+#endif
+        case COMM_TYPE::UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iRecv]));
           break;
@@ -439,11 +465,23 @@ void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigne
       /*--- Post non-blocking recv for this proc. ---*/
 
       switch (commType) {
-        case COMM_TYPE_DOUBLE:
+        case COMM_TYPE::DOUBLE:
           SU2_MPI::Irecv(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iMessage]));
           break;
-        case COMM_TYPE_UNSIGNED_SHORT:
+#ifdef CODI_REVERSE_TYPE
+        case COMM_TYPE::PASSIVE_DOUBLE:
+          SelectMPIWrapper<passivedouble>::W::Irecv(&(bufPD_P2PRecv[offset]), count, MPI_DOUBLE, source, tag,
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<passivedouble>()[iMessage]);
+          break;
+#endif
+#ifdef USE_MIXED_PRECISION
+        case COMM_TYPE::FLOAT:
+          SelectMPIWrapper<su2mixedfloat>::W::Irecv(&(bufF_P2PRecv[offset]), count, MPI_FLOAT, source, tag,
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<su2mixedfloat>()[iMessage]);
+          break;
+#endif
+        case COMM_TYPE::UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iMessage]));
           break;
@@ -456,7 +494,7 @@ void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigne
   END_SU2_OMP_MASTER
 }
 
-void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigned short commType,
+void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                              unsigned short countPerPoint, int val_iSend, bool val_reverse) const {
   /*--- Post the non-blocking send as soon as the buffer is loaded. ---*/
 
@@ -492,11 +530,23 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigne
      are the correct size. ---*/
 
     switch (commType) {
-      case COMM_TYPE_DOUBLE:
+      case COMM_TYPE::DOUBLE:
         SU2_MPI::Isend(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
         break;
-      case COMM_TYPE_UNSIGNED_SHORT:
+#ifdef CODI_REVERSE_TYPE
+      case COMM_TYPE::PASSIVE_DOUBLE:
+        SelectMPIWrapper<passivedouble>::W::Isend(&(bufPD_P2PRecv[offset]), count, MPI_DOUBLE, dest, tag,
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<passivedouble>()[val_iSend]);
+        break;
+#endif
+#ifdef USE_MIXED_PRECISION
+      case COMM_TYPE::FLOAT:
+        SelectMPIWrapper<su2mixedfloat>::W::Isend(&(bufF_P2PRecv[offset]), count, MPI_FLOAT, dest, tag,
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<su2mixedfloat>()[val_iSend]);
+        break;
+#endif
+      case COMM_TYPE::UNSIGNED_SHORT:
         SU2_MPI::Isend(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
         break;
@@ -527,11 +577,23 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigne
     /*--- Post non-blocking send for this proc. ---*/
 
     switch (commType) {
-      case COMM_TYPE_DOUBLE:
+      case COMM_TYPE::DOUBLE:
         SU2_MPI::Isend(&(bufD_P2PSend[offset]), count, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
         break;
-      case COMM_TYPE_UNSIGNED_SHORT:
+#ifdef CODI_REVERSE_TYPE
+      case COMM_TYPE::PASSIVE_DOUBLE:
+        SelectMPIWrapper<passivedouble>::W::Isend(&(bufPD_P2PSend[offset]), count, MPI_DOUBLE, dest, tag,
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<passivedouble>()[val_iSend]);
+        break;
+#endif
+#ifdef USE_MIXED_PRECISION
+      case COMM_TYPE::FLOAT:
+        SelectMPIWrapper<su2mixedfloat>::W::Isend(&(bufF_P2PSend[offset]), count, MPI_FLOAT, dest, tag,
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<su2mixedfloat>()[val_iSend]);
+        break;
+#endif
+      case COMM_TYPE::UNSIGNED_SHORT:
         SU2_MPI::Isend(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
         break;
@@ -544,30 +606,30 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigne
 }
 
 void CGeometry::GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
-                                    unsigned short& MPI_TYPE) const {
+                                    COMM_TYPE& MPI_TYPE) const {
   switch (commType) {
     case MPI_QUANTITIES::COORDINATES:
       COUNT_PER_POINT = nDim;
-      MPI_TYPE = COMM_TYPE_DOUBLE;
+      MPI_TYPE = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::GRID_VELOCITY:
       COUNT_PER_POINT = nDim;
-      MPI_TYPE = COMM_TYPE_DOUBLE;
+      MPI_TYPE = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::COORDINATES_OLD:
       if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         COUNT_PER_POINT = nDim * 2;
       else
         COUNT_PER_POINT = nDim;
-      MPI_TYPE = COMM_TYPE_DOUBLE;
+      MPI_TYPE = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::MAX_LENGTH:
       COUNT_PER_POINT = 1;
-      MPI_TYPE = COMM_TYPE_DOUBLE;
+      MPI_TYPE = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::NEIGHBORS:
       COUNT_PER_POINT = 1;
-      MPI_TYPE = COMM_TYPE_UNSIGNED_SHORT;
+      MPI_TYPE = COMM_TYPE::UNSIGNED_SHORT;
       break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.", CURRENT_FUNCTION);
@@ -582,7 +644,7 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, MPI_QU
 
   unsigned short iDim;
   unsigned short COUNT_PER_POINT = 0;
-  unsigned short MPI_TYPE = 0;
+  COMM_TYPE MPI_TYPE{};
 
   unsigned long iPoint, msg_offset, buf_offset;
 
@@ -677,7 +739,8 @@ void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, MPI_QU
 
   /*--- Local variables ---*/
 
-  unsigned short iDim, COUNT_PER_POINT = 0, MPI_TYPE = 0;
+  unsigned short iDim, COUNT_PER_POINT = 0;
+  COMM_TYPE MPI_TYPE{};
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int ind, source, iMessage, jRecv;
@@ -1465,7 +1528,7 @@ void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType,
+void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                                   unsigned short countPerPeriodicPoint) {
   /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
 
@@ -1498,11 +1561,11 @@ void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, un
     /*--- Post non-blocking recv for this proc. ---*/
 
     switch (commType) {
-      case COMM_TYPE_DOUBLE:
+      case COMM_TYPE::DOUBLE:
         SU2_MPI::Irecv(&(static_cast<su2double*>(bufD_PeriodicRecv)[offset]), count, MPI_DOUBLE, source, tag,
                        SU2_MPI::GetComm(), &(req_PeriodicRecv[iRecv]));
         break;
-      case COMM_TYPE_UNSIGNED_SHORT:
+      case COMM_TYPE::UNSIGNED_SHORT:
         SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufS_PeriodicRecv)[offset]), count, MPI_UNSIGNED_SHORT, source,
                        tag, SU2_MPI::GetComm(), &(req_PeriodicRecv[iRecv]));
         break;
@@ -1516,7 +1579,7 @@ void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, un
 #endif
 }
 
-void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, unsigned short commType,
+void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                                   unsigned short countPerPeriodicPoint, int val_iSend) const {
   /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
 
@@ -1545,11 +1608,11 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, un
     /*--- Post non-blocking send for this proc. ---*/
 
     switch (commType) {
-      case COMM_TYPE_DOUBLE:
+      case COMM_TYPE::DOUBLE:
         SU2_MPI::Isend(&(static_cast<su2double*>(bufD_PeriodicSend)[offset]), count, MPI_DOUBLE, dest, tag,
                        SU2_MPI::GetComm(), &(req_PeriodicSend[val_iSend]));
         break;
-      case COMM_TYPE_UNSIGNED_SHORT:
+      case COMM_TYPE::UNSIGNED_SHORT:
         SU2_MPI::Isend(&(static_cast<unsigned short*>(bufS_PeriodicSend)[offset]), count, MPI_UNSIGNED_SHORT, dest, tag,
                        SU2_MPI::GetComm(), &(req_PeriodicSend[val_iSend]));
         break;
@@ -1570,10 +1633,10 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, un
   myFinal = nPoint_PeriodicSend[val_iSend + 1] * countPerPeriodicPoint;
 
   switch (commType) {
-    case COMM_TYPE_DOUBLE:
+    case COMM_TYPE::DOUBLE:
       parallelCopy(myFinal - myStart, &bufD_PeriodicSend[myStart], &bufD_PeriodicRecv[iRecv]);
       break;
-    case COMM_TYPE_UNSIGNED_SHORT:
+    case COMM_TYPE::UNSIGNED_SHORT:
       parallelCopy(myFinal - myStart, &bufS_PeriodicSend[myStart], &bufS_PeriodicRecv[iRecv]);
       break;
     default:
@@ -4060,39 +4123,39 @@ void CGeometry::SetGridVelocity(const CConfig* config) {
   }
 }
 
-const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType type, unsigned long fillLvl) {
+const CGeometry::LDUSparsePattern& CGeometry::GetSparsePattern(ConnectivityType type, unsigned long fillLvl) {
   bool fvm = (type == ConnectivityType::FiniteVolume);
-
-  CCompressedSparsePatternUL* pattern = nullptr;
-
-  if (fillLvl == 0)
-    pattern = fvm ? &finiteVolumeCSRFill0 : &finiteElementCSRFill0;
-  else
-    pattern = fvm ? &finiteVolumeCSRFillN : &finiteElementCSRFillN;
-
-  if (pattern->empty()) {
-    *pattern = buildCSRPattern(*this, type, fillLvl);
-    pattern->buildDiagPtr();
+  auto& grp = fillLvl == 0 ? (fvm ? finiteVolumePatternFill0 : finiteElementPatternFill0)
+                           : (fvm ? finiteVolumePatternFillN : finiteElementPatternFillN);
+  if (grp.empty()) {
+    grp.csr = buildCSRPattern(*this, type, static_cast<su2uint>(fillLvl));
+    grp.csr.buildDiagPtr();
+    grp.l = buildLowerPattern(grp.csr);
+    grp.u = buildUpperPattern(grp.csr);
   }
-
-  return *pattern;
+  return grp;
 }
 
-const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap() {
-  if (edgeToCSRMap.empty()) {
-    if (finiteVolumeCSRFill0.empty()) {
-      finiteVolumeCSRFill0 = buildCSRPattern(*this, ConnectivityType::FiniteVolume, 0ul);
-    }
-    edgeToCSRMap = mapEdgesToSparsePattern(*this, finiteVolumeCSRFill0);
+const su2vector<su2uint>& CGeometry::GetLToUTransposeSparsePatternMap(ConnectivityType type) {
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+  auto& l_to_u = fvm ? finiteVolumeLToUTranspMap : finiteElementLToUTranspMap;
+  if (l_to_u.empty()) {
+    auto& u_to_l = fvm ? finiteVolumeUToLTranspMap : finiteElementUToLTranspMap;
+    const auto& pat = GetSparsePattern(type);
+    buildLUTransposeMaps(pat.l, pat.u, l_to_u, u_to_l);
   }
-  return edgeToCSRMap;
+  return l_to_u;
 }
 
-const su2vector<unsigned long>& CGeometry::GetTransposeSparsePatternMap(ConnectivityType type) {
-  /*--- Yes the const cast is weird but it is still better than repeating code. ---*/
-  auto& pattern = const_cast<CCompressedSparsePatternUL&>(GetSparsePattern(type));
-  pattern.buildTransposePtr();
-  return pattern.transposePtr();
+const su2vector<su2uint>& CGeometry::GetUToLTransposeSparsePatternMap(ConnectivityType type) {
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+  auto& u_to_l = fvm ? finiteVolumeUToLTranspMap : finiteElementUToLTranspMap;
+  if (u_to_l.empty()) {
+    auto& l_to_u = fvm ? finiteVolumeLToUTranspMap : finiteElementLToUTranspMap;
+    const auto& pat = GetSparsePattern(type);
+    buildLUTransposeMaps(pat.l, pat.u, l_to_u, u_to_l);
+  }
+  return u_to_l;
 }
 
 const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficiency, bool maximizeEdgeColorGroupSize) {
@@ -4276,7 +4339,10 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
 
 const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) const {
   auto& li = lineletInfo;
-  if (!li.linelets.empty() || nPoint == 0) return li;
+  /*--- Do not use "linelets.empty()" as the check, some ranks may have no linelets, and this
+   * function contains collective communication that all ranks must call the same number of times. ---*/
+  if (li.computed) return li;
+  li.computed = true;
 
   li.lineletIdx.resize(nPoint, CLineletInfo::NO_LINELET);
 
@@ -4381,7 +4447,7 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
   SU2_MPI::Allreduce(&sumNPoints, &globalNPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLinelet, &globalNLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && globalNLineLets > 0) {
     std::cout << "Computed linelet structure, "
               << static_cast<unsigned long>(passivedouble(globalNPoints) / globalNLineLets)
               << " points in each line (average)." << std::endl;
@@ -4407,7 +4473,8 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
 
   const auto coloring = colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(
       CCompressedSparsePatternUL(adjacency), 1, false, true);
-  const auto nColors = coloring.getOuterSize();
+  /*--- unsigned long because it is communicated as MPI_UNSIGNED_LONG below. ---*/
+  const unsigned long nColors = coloring.getOuterSize();
 
   /*--- Sort linelets by color. ---*/
   std::vector<std::vector<unsigned long>> sortedLinelets;
@@ -4473,11 +4540,12 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
     }
   }
   const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
-  return 2 * Vol / GeometryToolbox::Norm(nDim, Normal);
+  return 2 * Vol / GeometryToolbox::Norm(3, Normal);
 }
 }  // namespace
 
-void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container) {
+void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container,
+                                    const int record_zone) {
   int nZone = config_container[ZONE_0]->GetnZone();
   bool allEmpty = true;
   vector<bool> wallDistanceNeeded(nZone, false);
@@ -4545,6 +4613,11 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     }
 
     for (int iZone = 0; iZone < nZone; iZone++) {
+      /*--- When recording for a specific zone, only compute nearest-neighbor distances (which read vertex
+       *    normals) for that zone. Reading normals from other zones at this tape position would create
+       *    cross-zone AD dependencies before those zones have had their geometry updated. ---*/
+      if (record_zone >= 0 && iZone != record_zone) continue;
+
       /*--- For the FEM solver, we use a different mesh structure ---*/
       MAIN_SOLVER kindSolver = config_container[iZone]->GetKind_Solver();
       if (!wallDistanceNeeded[iZone] || kindSolver == MAIN_SOLVER::FEM_LES || kindSolver == MAIN_SOLVER::FEM_RANS) {

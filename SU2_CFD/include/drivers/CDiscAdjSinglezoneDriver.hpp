@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \ingroup DiscAdj
  * \brief Class for driving single-zone adjoint solvers.
  * \author R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:
@@ -54,6 +54,14 @@ protected:
   CSolver **solver;                             /*!< \brief Container vector with all the solutions. */
   COutput *direct_output;
   CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
+
+  /*!
+   * \brief Returns true if the objective function does not depend on the main variables. In which case,
+   * the adjoint variables are 0 and the sensitivities can be computed just with the secondary recording.
+   */
+  bool TrivialFunction() const {
+    return config_container[ZONE_0]->GetnObj() == 1 && config_container[ZONE_0]->GetKind_ObjFunc() == VOLUME_FRACTION;
+  }
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.

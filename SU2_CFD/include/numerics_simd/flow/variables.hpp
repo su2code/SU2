@@ -2,7 +2,7 @@
  * \file variables.hpp
  * \brief Collection of types to store physical variables.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -113,7 +113,7 @@ struct CRoeVariables {
  * \brief Compute Roe-averaged variables from pair of primitive variables.
  */
 template<size_t nDim, class PrimVarType>
-FORCEINLINE CRoeVariables<nDim> roeAveragedVariables(Double gamma,
+FORCEINLINE CRoeVariables<nDim> roeAveragedVariables(const Double& gamma,
                                                      const CPair<PrimVarType>& V,
                                                      const VectorDbl<nDim>& normal) {
   CRoeVariables<nDim> roeAvg;

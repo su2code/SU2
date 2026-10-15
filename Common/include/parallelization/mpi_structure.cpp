@@ -2,7 +2,7 @@
  * \file mpi_structure.cpp
  * \brief Main subroutines for the mpi structures.
  * \author T. Albring
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -190,7 +190,7 @@ template class CBaseMPIWrapper<su2double>;
 #if defined CODI_REVERSE_TYPE
 template class CBaseMPIWrapper<passivedouble>;
 #endif
-#if defined USE_MIXED_PRECISION
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template class CBaseMPIWrapper<su2mixedfloat>;
 #endif
 

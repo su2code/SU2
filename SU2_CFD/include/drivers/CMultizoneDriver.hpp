@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \ingroup Drivers
  * \brief Class for driving zone-specific iterations.
  * \author R. Sanchez, O. Burghardt
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  */
 class CMultizoneDriver : public CDriver {
 protected:
@@ -82,15 +82,6 @@ protected:
    * \return Boolean that determines whether the mesh needs to be updated for this particular transfer
    */
   bool TransferData(unsigned short donorZone, unsigned short targetZone);
-
-
-  /*!
-   * \brief Transfer the local turboperfomance quantities (for each blade row) from all the donorZones to the
-   * targetZone (ZONE_0).
-   * \note IMPORTANT: This approach of multi-zone performances rely upon the fact that turbomachinery markers follow
-   * the natural (stator-rotor) development of the real machine.
-   */
-  void SetTurboPerformance();
 
   /*!
    * \brief Check the convergence at the outer level.

@@ -1,7 +1,7 @@
 ﻿/*!
  * \file CInterpolatorFactory.hpp
  * \brief Factory to generate interpolator objects.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,5 +43,5 @@ namespace CInterpolatorFactory {
  */
 CInterpolator* CreateInterpolator(CGeometry**** geometry_container, const CConfig* const* config,
                                   const CInterpolator* transpInterpolator, unsigned iZone, unsigned jZone,
-                                  bool verbose = true);
+                                  bool mixing_plane, bool verbose = true);
 }  // namespace CInterpolatorFactory
