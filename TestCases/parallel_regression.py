@@ -2091,6 +2091,19 @@ def main():
     pass_list.append(ascii_mesh_writer.run_filediff())
     test_list.append(ascii_mesh_writer)
 
+    # Paraview parallel writer: each rank writes its .vtu piece, compare the .pvtu files that list them.
+    for tag, test_file in [("pvtu_writer", "flow.pvtu"), ("pvtu_surface_writer", "surface_flow.pvtu")]:
+        pvtu_writer = TestCase(tag)
+        pvtu_writer.cfg_dir = "output_writers"
+        pvtu_writer.cfg_file = "pvtu_output.cfg"
+        pvtu_writer.test_iter = -1
+        pvtu_writer.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
+        pvtu_writer.timeout = 1600
+        pvtu_writer.reference_file = test_file + ".ref"
+        pvtu_writer.test_file = test_file
+        pass_list.append(pvtu_writer.run_filediff())
+        test_list.append(pvtu_writer)
+
     ######################################
     ### RUN SU2_DEF TESTS              ###
     ######################################
