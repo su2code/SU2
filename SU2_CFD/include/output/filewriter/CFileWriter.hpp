@@ -33,6 +33,7 @@
 #include <string>
 #include <cstring>
 #include <fstream>
+#include <utility>
 
 #include "../../output/filewriter/CParallelDataSorter.hpp"
 
@@ -169,11 +170,26 @@ protected:
   bool WriteMPIString(const std::string& str, unsigned short processor);
 
   /*!
+   * \brief Get the position of the data of this rank in an array that holds the data of all ranks in rank order.
+   * \note Collective call, all ranks must call it.
+   * \param[in] localCount - The size of the data of this rank.
+   * \return The offset of this rank (the size of the data of the ranks before it) and the total size over all ranks.
+   */
+  std::pair<unsigned long, unsigned long> GetRankOffset(unsigned long localCount) const;
+
+  /*!
+   * \brief Write a string of each rank to the file, one after the other in rank order.
+   * \param[in] str - The string of this rank.
+   * \return <code>TRUE</code> if the writing was successful.
+   */
+  bool WriteMPIStringAll(const std::string& str);
+
+  /*!
    * \brief Open a file to write using MPI I/O. Already existing file is deleted.
    * \param[in] val_filename - The name of the file
    * \return Boolean indicating whether the opening was successful.
    */
-  bool OpenMPIFile(string val_filename);
+  bool OpenMPIFile(string val_filename, bool append = false);
 
   /*!
    * \brief Close a file using MPI I/O.

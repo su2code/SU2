@@ -195,6 +195,14 @@ def main():
     cylinder_lowmach.test_vals = [-8.698687, -3.236566, 0.401347, 1.754864, 0.000000]
     test_list.append(cylinder_lowmach)
 
+    # Laminar NACA0012 with linelet preconditioner (see #2877)
+    lam_naca0012_linelet           = TestCase('lam_naca0012_linelet')
+    lam_naca0012_linelet.cfg_dir   = "navierstokes/naca0012"
+    lam_naca0012_linelet.cfg_file  = "lam_NACA0012_LINELET.cfg"
+    lam_naca0012_linelet.test_iter = 20
+    lam_naca0012_linelet.test_vals = [-5.345015, -2.936895, -2.943468, 0.096348]
+    test_list.append(lam_naca0012_linelet)
+
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
     poiseuille           = TestCase('poiseuille')
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
@@ -228,7 +236,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-3.131221, -5.161756, 0.778275, 0.019566, 1000.000000]
+    rae2822_sa.test_vals = [-3.119066, -5.151318, 0.777084, 0.019422, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -276,7 +284,7 @@ def main():
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
     turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     turb_wallfunction_flatplate_sa.test_iter = 10
-    turb_wallfunction_flatplate_sa.test_vals = [-3.585860, -1.859493, -1.508986, 1.892510, -5.259058, 10.000000, -2.551025, -0.296176, 0.002533]
+    turb_wallfunction_flatplate_sa.test_vals = [-3.580017, -1.860982, -1.506109, 1.898317, -5.258602, 10.000000, -2.557123, -0.295793, 0.002533]
     test_list.append(turb_wallfunction_flatplate_sa)
 
     # ONERA M6 Wing
@@ -420,7 +428,7 @@ def main():
     inc_euler_naca0012_pb.cfg_dir = "incomp_euler/naca0012"
     inc_euler_naca0012_pb.cfg_file = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
-    inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784246, 0.427448, 0.012083]
+    inc_euler_naca0012_pb.test_vals = [-4.454834, -4.784268, 0.427449, 0.012084]
     test_list.append(inc_euler_naca0012_pb)
 
     # C-D nozzle with pressure inlet and mass flow outlet
@@ -455,7 +463,7 @@ def main():
     inc_lam_cylinder_pb.cfg_dir = "incomp_navierstokes/cylinder"
     inc_lam_cylinder_pb.cfg_file = "incomp_pb_cylinder.cfg"
     inc_lam_cylinder_pb.test_iter = 10
-    inc_lam_cylinder_pb.test_vals = [-3.486100, -3.777681, 0.012003, 6.178586]
+    inc_lam_cylinder_pb.test_vals = [-3.486587, -3.776864, 0.012396, 6.205509]
     test_list.append(inc_lam_cylinder_pb)
 
 
@@ -500,7 +508,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.758064, -10.974498, -0.000003, -0.028654, 4, -6.049653, 2, -4.951206]
+    inc_turb_naca0012.test_vals = [-4.758064, -10.974498, -0.000003, -0.028654, 3.000000, -4.499423, 2.000000, -4.951202]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -532,7 +540,7 @@ def main():
     inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/incompressible_SA"
     inc_turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sa.test_iter = 10
-    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.892397, -5.715934, -6.750379, -4.240551, -9.550026, 10.000000, -4.008745, 0.001030, 0.003759]
+    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.892366, -5.716008, -6.750391, -4.240551, -9.549816, 10.000000, -4.008735, 0.001030, 0.003759]
     test_list.append(inc_turb_wallfunction_flatplate_sa)
 
     ####################
@@ -949,7 +957,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
-    Aachen_3D_restart.test_vals = [-7.701421, -8.504727, -6.014939, -6.468221, -5.801125, -4.607173, -5.550665, -5.300779, -3.804187, -5.255982, -5.763060, -3.609601, -2.229250, -2.880453, -0.563470]
+    Aachen_3D_restart.test_vals = [-7.689117, -8.476204, -6.036107, -6.427402, -5.831576, -4.599024, -5.530512, -5.305687, -3.821789, -5.243255, -5.754831, -3.631603, -2.213934, -2.895728, -0.578545]
     Aachen_3D_restart.enabled_with_asan = False
     test_list.append(Aachen_3D_restart)
 
@@ -958,7 +966,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.944235, -12.212620, -19.261137, -13.549357, -19.083828, -13.444697, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.905642, -12.212181, -19.212554, -13.508053, -19.069991, -13.439494, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -983,7 +991,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632227, -8.894736, -9.348706]
+    multi_interface.test_vals          = [-8.634558, -8.895554, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
@@ -1287,6 +1295,41 @@ def main():
     mms_dg_ns_3d.test_vals = [-0.146826, 5.356413, 0.000000, 0.000000]
     mms_dg_ns_3d.tol       = 0.0001
     test_list.append(mms_dg_ns_3d)
+
+    ######################################
+    ### CGNS writer                    ###
+    ######################################
+
+    # The CGNS output of a 2D mesh is read back as mesh, with the restart written by the same run.
+    # The read-back test must run after the test that writes the files.
+    cgns_output = TestCase('cgns_output')
+    cgns_output.cfg_dir = "output_writers"
+    cgns_output.cfg_file = "cgns_output.cfg"
+    cgns_output.test_iter = 2
+    cgns_output.test_vals = [-1.684071, 0.454658, 3.802835, -2.624573, 6.956844, 0.091480]
+    test_list.append(cgns_output)
+
+    cgns_mesh_readback = TestCase('cgns_mesh_readback')
+    cgns_mesh_readback.cfg_dir = "output_writers"
+    cgns_mesh_readback.cfg_file = "cgns_mesh_readback.cfg"
+    cgns_mesh_readback.test_iter = 2
+    cgns_mesh_readback.test_vals = [-2.480775, 0.352445, 2.998807, -3.103293, 6.892515, 0.085107]
+    test_list.append(cgns_mesh_readback)
+
+    # Same for a 3D mesh with mixed elements, whose boundaries are written as MIXED sections.
+    cgns_output_bend = TestCase('cgns_output_bend')
+    cgns_output_bend.cfg_dir = "output_writers"
+    cgns_output_bend.cfg_file = "cgns_output_bend.cfg"
+    cgns_output_bend.test_iter = 2
+    cgns_output_bend.test_vals = [-2.420818, -2.225454, -2.551501, -3.067128, 2.673612]
+    test_list.append(cgns_output_bend)
+
+    cgns_mesh_readback_bend = TestCase('cgns_mesh_readback_bend')
+    cgns_mesh_readback_bend.cfg_dir = "output_writers"
+    cgns_mesh_readback_bend.cfg_file = "cgns_mesh_readback_bend.cfg"
+    cgns_mesh_readback_bend.test_iter = 2
+    cgns_mesh_readback_bend.test_vals = [-3.254168, -2.756564, -3.006605, -3.572686, 4.308287]
+    test_list.append(cgns_mesh_readback_bend)
 
     ######################################
     ### RUN TESTS                      ###

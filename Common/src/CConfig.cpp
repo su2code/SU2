@@ -1263,6 +1263,11 @@ void CConfig::SetConfig_Options() {
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief WRT_RESTART_COMPACT \n DESCRIPTION: Minimize the size of restart files \n Options: NO, YES \ingroup Config */
   addBoolOption("WRT_RESTART_COMPACT", Wrt_Restart_Compact, true);
+  /*!\brief VOLUME_OUTPUT_PRECISION \n DESCRIPTION: Floating-point type of the fields of the volume and surface files
+   (CGNS and Paraview XML), the coordinates are always written in double precision by the CGNS writer.
+   \n Options: SINGLE, DOUBLE \ingroup Config */
+  addEnumOption("VOLUME_OUTPUT_PRECISION", Volume_Output_Precision, VolumeOutputPrecision_Map,
+                VOLUME_OUTPUT_PRECISION::SINGLE);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief WRT_RESTART_OVERWRITE \n DESCRIPTION: overwrite restart files or append iteration number. \n Options: YES, NO \ingroup Config */
@@ -2347,7 +2352,9 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_OUTPUT::TAB_CSV);
-  /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Set <ofstream>.precision(value) to specified value for SU2_DOT and HISTORY output. Useful for exact gradient validation. \n DEFAULT: 6 \ingroup Config */
+  /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Number of digits of the text outputs (SU2_DOT, HISTORY and screen).
+   Useful for exact gradient validation. It does not change the volume and surface files, see VOLUME_OUTPUT_PRECISION.
+   \n DEFAULT: 10 \ingroup Config */
   addUnsignedShortOption("OUTPUT_PRECISION", output_precision, 10);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
@@ -4255,11 +4262,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support MGLEVEL > 0,\n"
                      "       the Poisson solver is single-grid only.", CURRENT_FUNCTION);
     }
-    if (Time_Domain) {
-      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES,\n"
-                     "       it converges to a physically wrong solution instead of failing.",
-                     CURRENT_FUNCTION);
-    }
     if (DiscreteAdjoint || ContinuousAdjoint) {
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED has no adjoint formulation.", CURRENT_FUNCTION);
     }
@@ -4270,16 +4272,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support streamwise periodicity.",
                      CURRENT_FUNCTION);
     }
+    /*--- The solution of the previous time step is only stored with dual time stepping. ---*/
+    if (TimeMarching == TIME_MARCHING::TIME_STEPPING) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_MARCHING= TIME_STEPPING,\n"
+                     "       use DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER.", CURRENT_FUNCTION);
+    }
 
-    /*--- A_p already carries Vol/dt when SIMPLEC's A_p-Sum_A_nb correction runs, so at the 0.0
-     * default that correction collapses to roughly Vol/dt and the pressure correction becomes
-     * vanishingly weak at low CFL. ---*/
-    if (Kind_PBIter == PBITER::SIMPLEC && !OptionIsSet("TRANSIENT_TERM_REMOVAL_FACTOR")) {
-      SIMPLE_Options.Transient_Term_Removal_Factor = 1.0;
-      if (rank == MASTER_NODE) {
-        cout << "WARNING: KIND_PB_ITER= SIMPLEC without TRANSIENT_TERM_REMOVAL_FACTOR set - "
-             << "defaulting it to 1.0, its intended companion value for SIMPLEC." << endl;
-      }
+    /*--- With SIMPLEC the momentum coefficient a_P - sum(a_nb) is the pseudo-time term alone, removing
+     * it leaves nothing. ---*/
+    if (Kind_PBIter == PBITER::SIMPLEC && SIMPLE_Options.Transient_Term_Removal_Factor != 0.0) {
+      SU2_MPI::Error("KIND_PB_ITER= SIMPLEC requires TRANSIENT_TERM_REMOVAL_FACTOR= 0.", CURRENT_FUNCTION);
     }
   }
 

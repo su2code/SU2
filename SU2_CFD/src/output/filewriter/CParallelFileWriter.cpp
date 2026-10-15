@@ -25,7 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <numeric>
 #include <utility>
+#include <vector>
 
 #include "../../../include/output/filewriter/CFileWriter.hpp"
 
@@ -61,25 +63,33 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
 
   startTime = SU2_MPI::Wtime();
 
-  MPI_Datatype filetype;
+  /*--- Prepare to write the actual data. MPI counts are int, so the local data
+   (which can exceed INT_MAX bytes) is described as a number of fixed-size blocks
+   plus a remainder, combined in a single datatype that is written with count 1. ---*/
 
-  /*--- Prepare to write the actual data ---*/
+  constexpr unsigned long blockBytes = 1ul << 20;
+  int blockLengths[2] = {static_cast<int>(sizeInBytes / blockBytes), static_cast<int>(sizeInBytes % blockBytes)};
+  MPI_Aint displacements[2] = {0, static_cast<MPI_Aint>(sizeInBytes - sizeInBytes % blockBytes)};
 
-  MPI_Type_contiguous(int(sizeInBytes), MPI_BYTE, &filetype);
-  MPI_Type_commit(&filetype);
+  MPI_Datatype blocktype, datatype;
+  MPI_Type_contiguous(static_cast<int>(blockBytes), MPI_BYTE, &blocktype);
+  MPI_Datatype types[2] = {blocktype, MPI_BYTE};
+  MPI_Type_create_struct(2, blockLengths, displacements, types, &datatype);
+  MPI_Type_commit(&datatype);
 
   /*--- Set the view for the MPI file write, i.e., describe the
  location in the file that this rank "sees" for writing its
- piece of the file. ---*/
+ piece of the file. The data is contiguous so a byte view is enough. ---*/
 
-  MPI_File_set_view(fhw, disp + offsetInBytes, MPI_BYTE, filetype,
+  MPI_File_set_view(fhw, disp + offsetInBytes, MPI_BYTE, MPI_BYTE,
                     (char*)"native", MPI_INFO_NULL);
 
   /*--- Collective call for all ranks to write simultaneously. ---*/
 
-  int ierr = MPI_File_write_all(fhw, data, int(sizeInBytes), MPI_BYTE, MPI_STATUS_IGNORE);
+  int ierr = MPI_File_write_all(fhw, data, 1, datatype, MPI_STATUS_IGNORE);
 
-  MPI_Type_free(&filetype);
+  MPI_Type_free(&datatype);
+  MPI_Type_free(&blocktype);
 
   disp      += totalSizeInBytes;
   fileSize  += sizeInBytes;
@@ -198,7 +208,7 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
 
 }
 
-bool CFileWriter::OpenMPIFile(string val_filename){
+bool CFileWriter::OpenMPIFile(string val_filename, bool append){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
@@ -206,6 +216,26 @@ bool CFileWriter::OpenMPIFile(string val_filename){
 #ifdef HAVE_MPI
   int ierr;
   disp     = 0.0;
+
+  /*--- Continue writing at the end of a file that exists, e.g. to add a zone to a multizone mesh file. ---*/
+
+  if (append) {
+    /*--- The file is created if it does not exist yet, for example for the first zone written to a file of its
+     own, and the writing starts at its end. ---*/
+    ierr = MPI_File_open(SU2_MPI::GetComm(), val_filename.c_str(), MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL,
+                         &fhw);
+    if (ierr != MPI_SUCCESS) {
+      SU2_MPI::Error(string("Unable to open file ") + val_filename, CURRENT_FUNCTION);
+    }
+    MPI_Offset fileEnd;
+    MPI_File_get_size(fhw, &fileEnd);
+    disp = fileEnd;
+
+    fileSize = 0.0;
+    usedTime = 0;
+
+    return true;
+  }
 
   /*--- All ranks open the file using MPI. Here, we try to open the file with
    exclusive so that an error is generated if the file exists. We always want
@@ -216,7 +246,7 @@ bool CFileWriter::OpenMPIFile(string val_filename){
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
-    MPI_File_close(&fhw);
+    /*--- The file exists: the failed open gives no valid handle to close, the file is deleted and created again. ---*/
     if (rank == 0)
       MPI_File_delete(val_filename.c_str(), MPI_INFO_NULL);
     ierr = MPI_File_open(SU2_MPI::GetComm(), val_filename.c_str(),
@@ -231,7 +261,7 @@ bool CFileWriter::OpenMPIFile(string val_filename){
                    val_filename, CURRENT_FUNCTION);
   }
 #else
-  fhw = fopen(val_filename.c_str(), "wb");
+  fhw = fopen(val_filename.c_str(), append ? "ab" : "wb");
   /*--- Error check for opening the file. ---*/
 
   if (!fhw) {
@@ -244,6 +274,25 @@ bool CFileWriter::OpenMPIFile(string val_filename){
   usedTime = 0;
 
   return true;
+}
+
+std::pair<unsigned long, unsigned long> CFileWriter::GetRankOffset(unsigned long localCount) const {
+  vector<unsigned long> counts(size, localCount);
+
+  SU2_MPI::Allgather(&localCount, 1, MPI_UNSIGNED_LONG, counts.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+  return std::make_pair(std::accumulate(counts.begin(), counts.begin() + rank, 0ul),
+                        std::accumulate(counts.begin(), counts.end(), 0ul));
+}
+
+bool CFileWriter::WriteMPIStringAll(const string &str){
+
+  /*--- Each rank writes its own text at the position that follows the text of the ranks before it. ---*/
+
+  const unsigned long sizeInBytes = str.size();
+  const auto offsetAndTotal = GetRankOffset(sizeInBytes);
+
+  return WriteMPIBinaryDataAll(str.data(), sizeInBytes, offsetAndTotal.second, offsetAndTotal.first);
 }
 
 bool CFileWriter::CloseMPIFile(){
