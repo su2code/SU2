@@ -319,7 +319,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
                                    unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem,
                                    bool Output) {
   SU2_ZONE_SCOPED
-  const bool combustion = config->GetCombustion();
+  const bool combustion = config->GetCanteraCombustion();
   const bool ignition = SparkActive(config);
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
@@ -651,7 +651,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool axisymmetric = config->GetAxisymmetric();
-  const bool combustion = config->GetCombustion();
+  const bool combustion = config->GetCanteraCombustion();
 
   if (axisymmetric) {
     CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];

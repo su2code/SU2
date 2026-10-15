@@ -97,7 +97,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
   const bool energy = config->GetEnergy_Equation();
-  const bool combustion = config->GetCombustion();
+  const bool combustion = config->GetCanteraCombustion();
 
   if (energy && combustion) {
     SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)

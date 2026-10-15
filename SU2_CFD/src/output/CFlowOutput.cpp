@@ -1527,13 +1527,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
         AddVolumeOutput("DIFFUSIVITY_" + config->GetSpecies_Label(iVar), "Diffusivity_" + config->GetSpecies_Label(iVar), "PRIMITIVE",
                         "Diffusivity of the transported species " + config->GetSpecies_Label(iVar));
-        if (config->GetCombustion()) {
+        if (config->GetCanteraCombustion()) {
           AddVolumeOutput("CHEMICAL_SOURCE_TERM_" + config->GetSpecies_Label(iVar),
                           "Chemical_Source_Term_" + config->GetSpecies_Label(iVar), "PRIMITIVE",
                           "Chemical source term of the transported species " + config->GetSpecies_Label(iVar));
         }
       }
-      if (config->GetCombustion())
+      if (config->GetCanteraCombustion())
         AddVolumeOutput("HEAT_RELEASE", "Heat_Release", "PRIMITIVE", "Heat release due to combustion");
       break;
     default:
@@ -1746,14 +1746,14 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("SPECIES_" + label, iPoint, Node_Species->GetSolution(iPoint, iVar));
         SetVolumeOutputValue("RES_SPECIES_" + label, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
         SetVolumeOutputValue("DIFFUSIVITY_" + label, iPoint, Node_Species->GetDiffusivity(iPoint, iVar));
-        if (config->GetCombustion())
+        if (config->GetCanteraCombustion())
           SetVolumeOutputValue("CHEMICAL_SOURCE_TERM_" + label, iPoint, Node_Species->GetChemicalSourceTerm(iPoint, iVar));
         if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
           SetVolumeOutputValue("LIMITER_SPECIES_" + label, iPoint, Node_Species->GetLimiter(iPoint, iVar));
         if (config->GetPyCustomSource())
           SetVolumeOutputValue("SPECIES_UDS_" + label, iPoint, Node_Species->GetUserDefinedSource()(iPoint, iVar));
       }
-      if (config->GetCombustion())
+      if (config->GetCanteraCombustion())
         SetVolumeOutputValue("HEAT_RELEASE", iPoint, Node_Species->GetHeatRelease(iPoint));
       break;
     }

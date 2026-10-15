@@ -4143,7 +4143,7 @@ public:
    * \brief Get information about the Combustion-Detailed chemistry using Cantera.
    * \return <code>TRUE</code> if combustion-detailed chemistry using Cantera is used; otherwise <code>FALSE</code>.
    */
-  bool GetCombustion() const { return cantera_ParsedOptions.combustion; }
+  bool GetCanteraCombustion() const { return cantera_ParsedOptions.combustion; }
 
   /*!
    * \brief Get whether the diagonal chemical sink Jacobian is added to the implicit species equations.

@@ -63,7 +63,7 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
       Transport_Model(config->GetTransport_Model()),
       Chemical_MechanismFile(config->GetChemical_MechanismFile()),
       Phase_Name(config->GetPhase_Name()),
-      Combustion(config->GetCombustion()),
+      Combustion(config->GetCanteraCombustion()),
       Chemistry_Min_Temperature(config->GetCantera_DC_Min_Temp()),
       Correction_Velocity(config->GetCantera_Correction_Velocity()),
       sol(LoadSolution(config)),
@@ -121,15 +121,13 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
     chemicalSourceTerm.assign(n_species_mixture, 0.0);
     chemicalSourceJacobian.assign(n_species_mixture, 0.0);
     enthalpyFormation.assign(n_species_mixture, 0.0);
-    if (Combustion) SetEnthalpyFormation(config);
+    if (Combustion) SetEnthalpyFormation();
   } catch (const CanteraError& error) {
     SU2_MPI::Error(string("Cantera error during initialization: ") + error.what(), CURRENT_FUNCTION);
   }
 }
 
-void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
-  SetMassFractions(config->GetSpecies_Init());
-  sol->thermo()->setMassFractions(massFractions.data());
+void CFluidCantera::SetEnthalpyFormation() {
   sol->thermo()->setState_TP(STD_REF_TEMP, SU2_TYPE::GetValue(Pressure_Thermodynamic));
   sol->thermo()->getEnthalpy_RT_ref(enthalpiesSpecies.data());
   for (size_t iVar = 0; iVar < n_species_mixture; iVar++) {
