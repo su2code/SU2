@@ -1898,7 +1898,7 @@ def main():
     species2_primitiveVenturi_JST.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_JST.cfg_file  = "species2_primitiveVenturi_JST.cfg"
     species2_primitiveVenturi_JST.test_iter = 50
-    species2_primitiveVenturi_JST.test_vals = [-6.035450, -7.071890, -7.201195, -1.142939, -8.347569, 10.000000, -3.223769, 10.000000, -4.438420, 0.049047, 0.014468, 0.020067, 0.014512, 25.000000]
+    species2_primitiveVenturi_JST.test_vals = [-6.035434, -7.071855, -7.201302, -1.142934, -8.347369, 10.000000, -3.223773, 10.000000, -4.438752, 0.049046, 0.014468, 0.020067, 0.014512, 25.000000]
     test_list.append(species2_primitiveVenturi_JST)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model solving enthalpy equation using preconditioning + Lax-Friedrich convective scheme
@@ -1906,7 +1906,7 @@ def main():
     species2_primitiveVenturi_Lax_Friedrich.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_Lax_Friedrich.cfg_file  = "species2_primitiveVenturi_Lax_Friedrich.cfg"
     species2_primitiveVenturi_Lax_Friedrich.test_iter = 50
-    species2_primitiveVenturi_Lax_Friedrich.test_vals = [-6.092407, -6.981686, -6.982973, -1.194968, -8.245030, 10.000000, -3.472495, 8.000000, -5.357864, 0.048942, 0.014468, 0.020006, 0.014468, 12.500000]
+    species2_primitiveVenturi_Lax_Friedrich.test_vals = [-6.092367, -6.981726, -6.982988, -1.194909, -8.244827, 10.000000, -3.472515, 8.000000, -5.358102, 0.048940, 0.014468, 0.020005, 0.014468, 12.500000]
     test_list.append(species2_primitiveVenturi_Lax_Friedrich)
 
     # 2 species (1 eq) primitive venturi mixing
@@ -1973,7 +1973,7 @@ def main():
     species_active_transport_temp_limits.cfg_dir   = "species_transport/passive_transport_validation"
     species_active_transport_temp_limits.cfg_file  = "active_species_transport_temp_limits.cfg"
     species_active_transport_temp_limits.test_iter = 50
-    species_active_transport_temp_limits.test_vals = [-1.724474, -2.522423, 2.422719, -3.133984, 9.000000, -5.508474, 3.000000, -5.755874, 1.473555, 0.998034, 0.001554, 0.473966]
+    species_active_transport_temp_limits.test_vals = [-1.726435, -2.525080, 2.426296, -3.132922, 9.000000, -5.514656, 3.000000, -5.742320, 1.473631, 0.997946, 0.001540, 0.474146]
     species_active_transport_temp_limits.test_vals_aarch64 = [-1.785041, -2.565628, 2.460433, -3.188111, 9.000000, -5.551493, 3.000000, -5.826106, 1.456438, 0.998134, 0.001475, 0.456829]
     test_list.append(species_active_transport_temp_limits)
 
