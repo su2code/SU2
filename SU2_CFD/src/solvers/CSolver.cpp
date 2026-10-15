@@ -1539,15 +1539,15 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       break;
     case MPI_QUANTITIES::SENSOR_ADAPT:
       COUNT_PER_POINT  = GetnMetricSensor();
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::GRADIENT_ADAPT:
       COUNT_PER_POINT  = GetnMetricSensor()*nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::HESSIAN:
       COUNT_PER_POINT  = GetnMetricSensor()*nSymMat;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
