@@ -1422,34 +1422,31 @@ void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
       for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
         auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
-        /*--- If the node belong to the domain ---*/
-        if (nodes->GetDomain(iPoint)) {
-          /*--- Compute closest normal neighbor ---*/
-          unsigned long Point_Normal = 0;
-          su2double* Normal = vertex[iMarker][iVertex]->GetNormal();
-          su2double cos_max = -1.0;
-          for (auto jPoint : nodes->GetPoints(iPoint)) {
-            su2double scalar_prod = 0.0;
-            su2double norm_vect = 0.0;
-            su2double norm_Normal = 0.0;
-            for (auto iDim = 0u; iDim < nDim; iDim++) {
-              su2double diff_coord = nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim);
-              scalar_prod += diff_coord * Normal[iDim];
-              norm_vect += diff_coord * diff_coord;
-              norm_Normal += Normal[iDim] * Normal[iDim];
-            }
-            norm_vect = sqrt(norm_vect);
-            norm_Normal = sqrt(norm_Normal);
-            su2double cos_alpha = scalar_prod / (norm_vect * norm_Normal);
-
-            /*--- Get maximum cosine (not minimum because normals are oriented inwards) ---*/
-            if (cos_alpha >= cos_max) {
-              Point_Normal = jPoint;
-              cos_max = cos_alpha;
-            }
+        /*--- Compute closest normal neighbor, also for halo points, which Friction_Forces visits. ---*/
+        unsigned long Point_Normal = 0;
+        su2double* Normal = vertex[iMarker][iVertex]->GetNormal();
+        su2double cos_max = -1.0;
+        for (auto jPoint : nodes->GetPoints(iPoint)) {
+          su2double scalar_prod = 0.0;
+          su2double norm_vect = 0.0;
+          su2double norm_Normal = 0.0;
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
+            su2double diff_coord = nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim);
+            scalar_prod += diff_coord * Normal[iDim];
+            norm_vect += diff_coord * diff_coord;
+            norm_Normal += Normal[iDim] * Normal[iDim];
           }
-          vertex[iMarker][iVertex]->SetNormal_Neighbor(Point_Normal);
+          norm_vect = sqrt(norm_vect);
+          norm_Normal = sqrt(norm_Normal);
+          su2double cos_alpha = scalar_prod / (norm_vect * norm_Normal);
+
+          /*--- Get maximum cosine (not minimum because normals are oriented inwards) ---*/
+          if (cos_alpha >= cos_max) {
+            Point_Normal = jPoint;
+            cos_max = cos_alpha;
+          }
         }
+        vertex[iMarker][iVertex]->SetNormal_Neighbor(Point_Normal);
       }
     }
   }
