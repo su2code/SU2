@@ -4790,6 +4790,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  if (RampMUSCL && !(MUSCL_Flow || MUSCL_Turb || MUSCL_Species || MUSCL_Heat)) {
+    if (rank == MASTER_NODE) cout << "WARNING: RAMP_MUSCL is ignored because no MUSCL reconstruction is active." << endl;
+    RampMUSCL = false;
+  }
+
   if(RampMUSCL && !DiscreteAdjoint){
     if (RampMUSCLParam.RampMUSCLPower <= 0.0) SU2_MPI::Error("RAMP_MUSCL_POWER cannot be less than or equal to zero!", CURRENT_FUNCTION);
     rampMUSCLValue = 0.0;
