@@ -87,8 +87,11 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   SetPressure(iPoint);
 
+  /*--- The temperature of the last valid state is the guess for both solves below. ---*/
+  const su2double Temperature_Old = GetTemperature(iPoint);
+
   su2double Enthalpy = Solution(iPoint, nDim +1);
-  FluidModel->SetTDState_h(Enthalpy);
+  const bool temperature_failed = !FluidModel->SolveTDState_h(Enthalpy, nullptr, Temperature_Old);
   su2double Temperature = FluidModel->GetTemperature();
 
   const auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
@@ -103,17 +106,20 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
-  if (check_dens || check_temp) {
+  if (check_dens || check_temp || temperature_failed) {
 
     /*--- Copy the old solution ---*/
 
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       Solution(iPoint, iVar) = Solution_Old(iPoint, iVar);
 
-    /*--- Recompute the primitive variables ---*/
+    /*--- Recompute the primitive variables. The old solution was valid at Temperature_Old, if the
+     solve still fails keep that temperature rather than an unconverged state. ---*/
 
     Enthalpy = Solution(iPoint, nDim+1);
-    FluidModel->SetTDState_h(Enthalpy);
+    if (!FluidModel->SolveTDState_h(Enthalpy, nullptr, Temperature_Old) && Temperature_Old > 0.0) {
+      FluidModel->SetTDState_T(Temperature_Old);
+    }
     SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
     SetDensity(iPoint, FluidModel->GetDensity());
 

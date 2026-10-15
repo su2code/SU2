@@ -59,11 +59,12 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   SetPressure(iPoint);
 
+  /*--- The temperature of the last valid state is the guess for both solves below. ---*/
+  const su2double Temperature_Old = GetTemperature(iPoint);
+
   su2double Enthalpy = Solution(iPoint, nDim + 1);
-  FluidModel->SetTemperatureGuess(GetTemperature(iPoint));
-  FluidModel->SetTDState_h(Enthalpy, scalar);
+  const bool temperature_failed = !FluidModel->SolveTDState_h(Enthalpy, scalar, Temperature_Old);
   su2double Temperature = FluidModel->GetTemperature();
-  const bool temperature_failed = FluidModel->GetTemperatureIterationFailed();
 
   auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
@@ -84,10 +85,13 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
-    /*--- Recompute the primitive variables ---*/
+    /*--- Recompute the primitive variables. The old solution was valid at Temperature_Old, if the
+     solve still fails keep that temperature rather than an unconverged state. ---*/
 
     Enthalpy = Solution(iPoint, nDim + 1);
-    FluidModel->SetTDState_h(Enthalpy, scalar);
+    if (!FluidModel->SolveTDState_h(Enthalpy, scalar, Temperature_Old) && Temperature_Old > 0.0) {
+      FluidModel->SetTDState_T(Temperature_Old, scalar);
+    }
     SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
     SetDensity(iPoint, FluidModel->GetDensity());
 

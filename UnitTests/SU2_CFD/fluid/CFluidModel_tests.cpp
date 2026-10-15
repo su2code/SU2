@@ -30,6 +30,7 @@
 #include "../../../SU2_CFD/include/fluid/CFluidModel.hpp"
 #include "../../../SU2_CFD/include/fluid/CIdealGas.hpp"
 #include "../../../SU2_CFD/include/fluid/CDataDrivenFluid.hpp"
+#include "../../../SU2_CFD/include/fluid/CIncIdealGasPolynomial.hpp"
 
 void FluidModelChecks(CFluidModel* fluid_model, const su2double val_p, const su2double val_T) {
   /*--- Check consistency of reverse look-up ---*/
@@ -119,4 +120,33 @@ TEST_CASE("Test case for data-driven fluid model") {
 
   delete config;
   delete fluid_model;
+}
+
+TEST_CASE("Temperature from enthalpy for the polynomial incompressible ideal gas") {
+  std::stringstream config_options;
+  config_options << "SOLVER= INC_NAVIER_STOKES" << std::endl;
+  config_options << "INC_ENERGY_EQUATION= YES" << std::endl;
+  config_options << "FLUID_MODEL= INC_IDEAL_GAS_POLY" << std::endl;
+  config_options << "CP_POLYCOEFFS= (1000.0, 0.2, 0.0, 0.0, 0.0)" << std::endl;
+
+  CConfig config(config_options, SU2_COMPONENT::SU2_CFD, false);
+
+  /*--- Dimensional case, the non-dimensional coefficients are the dimensional ones. ---*/
+  for (unsigned short iCoeff = 0; iCoeff < N_POLY_COEFFS; iCoeff++)
+    config.SetCp_PolyCoeffND(config.GetCp_PolyCoeff(iCoeff), iCoeff);
+
+  CIncIdealGasPolynomial<N_POLY_COEFFS> fluid(287.058, 101325.0, STD_REF_TEMP);
+  fluid.SetCpModel(&config, STD_REF_TEMP);
+
+  fluid.SetTDState_T(1200.0);
+  const su2double enthalpy = fluid.GetEnthalpy();
+
+  /*--- The temperature is recovered without a guess and from guesses on either side. ---*/
+  for (const su2double guess : {0.0, 1100.0, 1500.0}) {
+    CHECK(fluid.SolveTDState_h(enthalpy, nullptr, guess));
+    CHECK(fluid.GetTemperature() == Approx(1200.0).margin(1e-4));
+  }
+
+  /*--- An enthalpy that requires a temperature below the minimum is reported. ---*/
+  CHECK_FALSE(fluid.SolveTDState_h(-1e9, nullptr, 0.0));
 }
