@@ -4551,11 +4551,13 @@ bool UsesWallDistanceLimiter(const CConfig* config) {
   const bool heat = config->GetWeakly_Coupled_Heat() || config->GetKind_Solver() == MAIN_SOLVER::HEAT_EQUATION ||
                     config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_HEAT;
   const bool adjoint = config->GetContinuous_Adjoint();
-  return config->GetKind_SlopeLimit_Flow() == wall || (turb && config->GetKind_SlopeLimit_Turb() == wall) ||
-         (species && config->GetKind_SlopeLimit_Species() == wall) ||
-         (heat && config->GetKind_SlopeLimit_Heat() == wall) ||
-         (adjoint && config->GetKind_SlopeLimit_AdjFlow() == wall) ||
-         (adjoint && turb && config->GetKind_SlopeLimit_AdjTurb() == wall);
+  const bool flowLimiter = config->GetKind_SlopeLimit_Flow() == wall;
+  const bool turbLimiter = turb && config->GetKind_SlopeLimit_Turb() == wall;
+  const bool speciesLimiter = species && config->GetKind_SlopeLimit_Species() == wall;
+  const bool heatLimiter = heat && config->GetKind_SlopeLimit_Heat() == wall;
+  const bool adjFlowLimiter = adjoint && config->GetKind_SlopeLimit_AdjFlow() == wall;
+  const bool adjTurbLimiter = adjoint && turb && config->GetKind_SlopeLimit_AdjTurb() == wall;
+  return flowLimiter || turbLimiter || speciesLimiter || heatLimiter || adjFlowLimiter || adjTurbLimiter;
 }
 }  // namespace
 
