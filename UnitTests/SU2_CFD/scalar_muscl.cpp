@@ -33,8 +33,8 @@
 #include "../../SU2_CFD/include/variables/CHeatVariable.hpp"
 #include "../../SU2_CFD/include/variables/CPoissonVariable.hpp"
 
-TEST_CASE("Scalar edge reconstruction matches the flow van Albada limiter", "[ScalarMuscl]") {
-  auto reconstruct = [](auto value, su2double delta, su2double projection) {
+TEST_CASE("Edge reconstruction of scalars and of the flow", "[ScalarMuscl]") {
+  auto edgeFace = [](auto value, auto edgeLimiter, su2double delta, su2double projection) {
     using Double = decltype(value);
     using Int = typename CLaneTraits<Double>::Int;
     C3DDoubleMatrix gradient(2, 1, 2);
@@ -47,22 +47,36 @@ TEST_CASE("Scalar edge reconstruction matches the flow van Albada limiter", "[Sc
     face.i.all(0) = Double(0.0);
     face.j.all(0) = Double(delta);
     su2activematrix unusedLimiter(2, 1);
-    muscl<MusclLimiter::EDGE, 1>(Int(0UL), Int(1UL), edge, gradient, unusedLimiter, 0, face, Double(0.0), Double(1.0),
-                                 0);
+    reconstruct<1, decltype(edgeLimiter)::value>(Int(0UL), Int(1UL), edge, gradient, unusedLimiter,
+                                                 LIMITER::VAN_ALBADA_EDGE, 0, face, Double(0.0), Double(1.0));
     return face;
+  };
+  /*--- Scalars use the van Albada function of the point limiters, the flow keeps its own form. ---*/
+  const std::integral_constant<MusclLimiter, MusclLimiter::EDGE_SCALAR> scalarEdge{};
+  const std::integral_constant<MusclLimiter, MusclLimiter::EDGE> flowEdge{};
+  auto scalarLimiter = [](su2double proj, su2double delta) {
+    return LimiterHelpers<>::vanAlbadaFunction(proj, delta, EPS);
+  };
+  auto flowLimiter = [](su2double proj, su2double delta) {
+    const su2double delta2 = pow(delta, 2) + 1e-6;
+    return (delta2 + proj * delta) / (pow(proj, 2) + delta2);
   };
   for (const su2double delta : {0.0, 1e-8, -1e-8, 1e-3, -1e-3}) {
     for (const su2double projection : {0.0, 2e-8, -2e-8, 2e-3}) {
-      const auto scalar = reconstruct(su2double(0.0), delta, projection);
-      const auto vector = reconstruct(simd::Array<su2double, 4>(0.0), delta, projection);
-      const auto left = 0.5 * projection * LimiterHelpers<>::vanAlbadaFunction(projection, delta, EPS);
-      const auto right = delta + 0.5 * projection * LimiterHelpers<>::vanAlbadaFunction(-projection, delta, EPS);
-      CHECK(scalar.i.all(0) == Approx(left).margin(1e-20));
-      CHECK(scalar.j.all(0) == Approx(right).margin(1e-20));
-      for (size_t lane = 0; lane < 4; ++lane) {
-        CHECK(vector.i.all(0)[lane] == Approx(left).margin(1e-20));
-        CHECK(vector.j.all(0)[lane] == Approx(right).margin(1e-20));
-      }
+      const auto checkFace = [&](auto edgeLimiter, auto limiter) {
+        const auto scalar = edgeFace(su2double(0.0), edgeLimiter, delta, projection);
+        const auto vector = edgeFace(simd::Array<su2double, 4>(0.0), edgeLimiter, delta, projection);
+        const auto left = 0.5 * projection * limiter(projection, delta);
+        const auto right = delta + 0.5 * projection * limiter(-projection, delta);
+        CHECK(scalar.i.all(0) == Approx(left).margin(1e-20));
+        CHECK(scalar.j.all(0) == Approx(right).margin(1e-20));
+        for (size_t lane = 0; lane < 4; ++lane) {
+          CHECK(vector.i.all(0)[lane] == Approx(left).margin(1e-20));
+          CHECK(vector.j.all(0)[lane] == Approx(right).margin(1e-20));
+        }
+      };
+      checkFace(scalarEdge, scalarLimiter);
+      checkFace(flowEdge, flowLimiter);
     }
   }
 }

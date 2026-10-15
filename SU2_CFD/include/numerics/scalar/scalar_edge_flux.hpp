@@ -470,13 +470,15 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
       if (opt.muscl) {
         const auto phi1st = phi;
         if constexpr (nVar != Dynamic) {
-          reconstruct<nVar>(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
-                            side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp);
+          reconstruct<nVar, MusclLimiter::EDGE_SCALAR>(
+              iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
+              side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp);
         } else {
           /*--- A dynamic model's equation count is only known at runtime, so the reconstructed
            * width is passed as an argument instead of a template parameter. ---*/
-          reconstruct(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
-                      side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp, res.nVar);
+          reconstruct<0, MusclLimiter::EDGE_SCALAR>(
+              iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
+              side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp, res.nVar);
         }
 
         /*--- A face value outside the bounds of the variable (e.g. a negative k or omega next to a wall,
