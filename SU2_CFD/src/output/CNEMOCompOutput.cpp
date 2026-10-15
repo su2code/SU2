@@ -271,13 +271,16 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   SetVolumeOutputFieldsScalarResidual(config);
 
   if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
-    // Limiter values
-    AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
-    AddVolumeOutput("LIMITER_MOMENTUM-X", "Limiter_Momentum_x", "LIMITER", "Limiter value of the x-momentum");
-    AddVolumeOutput("LIMITER_MOMENTUM-Y", "Limiter_Momentum_y", "LIMITER", "Limiter value of the y-momentum");
+    // Limiter values (of the primitive variables, which are reconstructed)
+    for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
+      AddVolumeOutput("LIMITER_DENSITY_" + std::to_string(iSpecies), "Limiter_Density_" + std::to_string(iSpecies), "LIMITER", "Limiter value of the density of species " + std::to_string(iSpecies));
+    AddVolumeOutput("LIMITER_TEMPERATURE_TR", "Limiter_Temperature_tr", "LIMITER", "Limiter value of the temperature_tr");
+    AddVolumeOutput("LIMITER_TEMPERATURE_VE", "Limiter_Temperature_ve", "LIMITER", "Limiter value of the temperature_ve");
+    AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
+    AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
     if (nDim == 3)
-      AddVolumeOutput("LIMITER_MOMENTUM-Z", "Limiter_Momentum_z", "LIMITER", "Limiter value of the z-momentum");
-    AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
+      AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
+    AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
   }
 
   SetVolumeOutputFieldsScalarLimiter(config);
@@ -363,15 +366,16 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
-    SetVolumeOutputValue("LIMITER_DENSITY",    iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
-    SetVolumeOutputValue("LIMITER_MOMENTUM-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
-    SetVolumeOutputValue("LIMITER_MOMENTUM-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
-    if (nDim == 3){
-      SetVolumeOutputValue("LIMITER_MOMENTUM-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
-      SetVolumeOutputValue("LIMITER_ENERGY",     iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 4));
-    } else {
-      SetVolumeOutputValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
-    }
+    /*--- Primitive variables: species densities, T, Tve, velocity, pressure. ---*/
+    for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
+      SetVolumeOutputValue("LIMITER_DENSITY_" + std::to_string(iSpecies), iPoint, Node_Flow->GetLimiter_Primitive(iPoint, iSpecies));
+    SetVolumeOutputValue("LIMITER_TEMPERATURE_TR", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies));
+    SetVolumeOutputValue("LIMITER_TEMPERATURE_VE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies+1));
+    SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies+2));
+    SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies+3));
+    if (nDim == 3)
+      SetVolumeOutputValue("LIMITER_VELOCITY-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies+4));
+    SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies+nDim+2));
   }
 
   LoadVolumeDataScalar(config, solver, geometry, iPoint);
