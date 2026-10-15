@@ -96,6 +96,8 @@ class CustomSensorRegistry:
             if len(values) not in (num_domain_node, num_node):
                 raise ValueError(
                     "Custom sensor '{}' returned {} values; expected {} (domain nodes) "
-                    "or {} (all nodes).".format(name, len(values), num_domain_node, num_node)
+                    "or {} (all nodes).".format(
+                        name, len(values), num_domain_node, num_node
+                    )
                 )
             driver.SetAdaptSensor(self._indices[name], values)
