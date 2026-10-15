@@ -365,6 +365,22 @@ protected:
   void SetFixedCLScreenOutput(const CConfig *config);
 
   /*!
+   * \brief Add mesh adaptation outputs.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AddMeshAdaptationOutputs(const CConfig* config);
+
+  /*!
+   * \brief Load mesh adaptation outputs.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - Index of the point.
+   */
+  void LoadMeshAdaptationOutputs(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
+                                 unsigned long iPoint);
+
+  /*!
    * \brief Compute the ratio of the stochastic energy backscatter to the turbulent energy dissipation.
    * \param iPoint - Index of the point.
    * \param config - Definition of the particular problem.

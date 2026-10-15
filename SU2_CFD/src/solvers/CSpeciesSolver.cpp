@@ -117,6 +117,10 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   nVarGrad = nVar;
 
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nSymMat = 3 * (nDim - 1);
+
   AllocVectorOfMatrices( nVertex, nVar,CustomBoundaryScalar);
 
   if (iMesh == MESH_0 || config->GetMGCycle() == MG_CYCLE::FULL) {
