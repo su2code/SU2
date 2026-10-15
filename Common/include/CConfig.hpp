@@ -1349,6 +1349,8 @@ private:
   unsigned short Kind_Hessian_Method;      /*!< \brief Numerical method for computation of Hessians. */
   unsigned short nMetric_Sensor;           /*!< \brief Number of sensors to use for adaptation. */
   string* Metric_Sensor;                   /*!< \brief Sensors to use for adaptation (first entry is normalized, rest are Hessian-only). */
+  unsigned short nMetric_Custom_Sensor;    /*!< \brief Number of custom adaptation sensors. */
+  string* Metric_Custom_Sensor;            /*!< \brief Adaptation sensors filled through the Python wrapper. */
 
   unsigned short Metric_Norm;              /*!< \brief Lp-norm for mesh adaptation */
   unsigned long Metric_Complexity;         /*!< \brief Constraint mesh complexity */
@@ -10456,6 +10458,14 @@ public:
    */
   vector<string> GetMetric_SensorList() const {
     return vector<string>(Metric_Sensor, Metric_Sensor + nMetric_Sensor);
+  }
+
+  /*!
+   * \brief Get the list of custom metric sensor names (filled through the Python wrapper)
+   * \return Vector of custom sensor name strings
+   */
+  vector<string> GetMetric_CustomSensorList() const {
+    return vector<string>(Metric_Custom_Sensor, Metric_Custom_Sensor + nMetric_Custom_Sensor);
   }
 
   /*!

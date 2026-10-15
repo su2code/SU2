@@ -3071,6 +3071,7 @@ enum class SensorType {
   PRIMITIVE, /*!< \brief Value read directly from the primitive variable array. */
   COMPUTED,  /*!< \brief Officially-supported computed quantity (e.g. Mach number). */
   CUSTOM,    /*!< \brief User-defined sensor populated externally via the Python wrapper. */
+  SOLVER_FIELD, /*!< \brief Solution variable of another solver (e.g. turbulence), copied into the flow solver. */
 };
 
 

@@ -30,6 +30,7 @@
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/variables/CPrimitiveIndices.hpp"
+#include "../../include/metrics/metricUtils.hpp"
 
 using namespace std;
 
@@ -443,7 +444,33 @@ short CDriverBase::GetMetricSensorIndex(const string& sensor_name) const {
   if (flow_solver == nullptr) return -1;
   const auto& sensors = flow_solver->GetMetricSensors();
   for (short i = 0; i < static_cast<short>(sensors.size()); ++i) {
-    if (sensors[i].name == sensor_name) return i;
+    if (MetricUtils::SensorKey(sensors[i].name) == MetricUtils::SensorKey(sensor_name)) return i;
   }
   return -1;
+}
+
+void CDriverBase::SetAdaptSensor(unsigned short iSensor, const vector<passivedouble>& values) {
+  auto* nodes = GetSolverAndCheckMarker(FLOW_SOL)->GetNodes();
+  const auto& sensors = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->GetMetricSensors();
+
+  if (iSensor >= sensors.size()) {
+    SU2_MPI::Error("Metric sensor index exceeds the number of sensors.", CURRENT_FUNCTION);
+  }
+  if (sensors[iSensor].type != SensorType::CUSTOM) {
+    SU2_MPI::Error("Metric sensor " + sensors[iSensor].name + " is not listed in METRIC_CUSTOM_SENSOR.",
+                   CURRENT_FUNCTION);
+  }
+
+  /*--- Halo values are filled by the SENSOR_ADAPT comms in ComputeMetricField ---*/
+  const auto nPoint = main_geometry->GetnPoint();
+  const auto nPointDomain = main_geometry->GetnPointDomain();
+  if (values.size() != nPointDomain && values.size() != nPoint) {
+    SU2_MPI::Error("Metric sensor " + sensors[iSensor].name + " received " + std::to_string(values.size()) +
+                   " values; expected " + std::to_string(nPointDomain) + " (domain nodes) or " +
+                   std::to_string(nPoint) + " (all nodes).", CURRENT_FUNCTION);
+  }
+
+  for (unsigned long iPoint = 0; iPoint < values.size(); iPoint++) {
+    nodes->SetSensor_Adapt(iPoint, iSensor, values[iPoint]);
+  }
 }

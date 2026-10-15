@@ -3275,6 +3275,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief METRIC_SENSOR \n DESCRIPTION: Sensors for mesh adaptation metric field */
   addStringListOption("METRIC_SENSOR", nMetric_Sensor, Metric_Sensor);
+  /*!\brief METRIC_CUSTOM_SENSOR \n DESCRIPTION: Sensors of METRIC_SENSOR filled through the Python wrapper */
+  addStringListOption("METRIC_CUSTOM_SENSOR", nMetric_Custom_Sensor, Metric_Custom_Sensor);
   /*!\brief METRIC_NORM \n DESCRIPTION: Lp-norm for mesh adaptation */
   addUnsignedShortOption("METRIC_NORM", Metric_Norm, 2);
   /*!\brief METRIC_COMPLEXITY \n DESCRIPTION: Constraint mesh complexity */
@@ -6079,6 +6081,22 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       /*--- TODO: goal-oriented adaptation ---*/
       if (sensor_name == "GOAL") {
         SU2_MPI::Error("Adaptation sensor GOAL not yet supported.", CURRENT_FUNCTION);
+      }
+    }
+
+    /*--- Every custom sensor must also be listed in METRIC_SENSOR (names are case-insensitive) ---*/
+    auto upper = [](string name) {
+      PrintingToolbox::StringToUpperCase(name);
+      return name;
+    };
+    for (unsigned short iCustom = 0; iCustom < nMetric_Custom_Sensor; iCustom++) {
+      bool listed = false;
+      for (unsigned short iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
+        listed = listed || (upper(Metric_Custom_Sensor[iCustom]) == upper(Metric_Sensor[iSensor]));
+      }
+      if (!listed) {
+        SU2_MPI::Error("METRIC_CUSTOM_SENSOR entry " + Metric_Custom_Sensor[iCustom] +
+                       " is not listed in METRIC_SENSOR.", CURRENT_FUNCTION);
       }
     }
 

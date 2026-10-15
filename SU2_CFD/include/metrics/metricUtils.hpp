@@ -32,9 +32,11 @@
 #include <limits>
 #include <map>
 #include <iostream>
+#include <set>
 #include <string>
 #include <vector>
 #include "../../../Common/include/CConfig.hpp"
+#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../solvers/CSolver.hpp"
 #include "../variables/CPrimitiveIndices.hpp"
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
@@ -89,17 +91,75 @@ ComputedNameToFunctionMap(const std::map<std::string, unsigned short>& primitive
 }
 
 /*!
- * \brief Resolve sensor names to solver and variable indices, storing them directly in each solver.
+ * \brief Uppercase copy of a sensor name; sensor names match case-insensitively.
+ */
+inline std::string SensorKey(std::string name) {
+  PrintingToolbox::StringToUpperCase(name);
+  return name;
+}
+
+/*!
+ * \brief Build a map of solution variables of the non-flow solvers that can be used as sensors.
  *
- * Maps sensor names from config (e.g., "DENSITY", "TEMPERATURE") to their corresponding
- * solver index and variable index within that solver. Works for both flow solvers
- * (using primitive variables) and non-flow solvers (using solution fields).
- * Directly stores the resolved sensors in each solver via SetMetricSensors().
+ * The names are the volume-output keys of those variables (e.g. NU_TILDE, TKE). The table must
+ * follow the solution layout of each solver:
+ *   - TURB_SOL:    SA family: NU_TILDE; k-w family: TKE, DISSIPATION
+ *   - TRANS_SOL:   LM: INTERMITTENCY, RE_THETA_T
+ *   - SPECIES_SOL: species transport: SPECIES_<i>
+ *
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] solver_container - Array of solvers [iSol]; absent solvers contribute no entries.
+ * \return Map of variable names to (solver slot, solution index).
+ */
+inline std::map<std::string, std::pair<unsigned short, unsigned short>>
+SolverFieldNameToIndexMap(const CConfig* config, CSolver** solver_container) {
+  std::map<std::string, std::pair<unsigned short, unsigned short>> field_map;
+
+  if (solver_container[TURB_SOL] != nullptr) {
+    switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+      case TURB_FAMILY::SA:
+        field_map["NU_TILDE"] = {TURB_SOL, 0};
+        break;
+      case TURB_FAMILY::KW:
+        field_map["TKE"] = {TURB_SOL, 0};
+        field_map["DISSIPATION"] = {TURB_SOL, 1};
+        break;
+      case TURB_FAMILY::NONE:
+        break;
+    }
+  }
+
+  if (solver_container[TRANS_SOL] != nullptr && config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+    field_map["INTERMITTENCY"] = {TRANS_SOL, 0};
+    field_map["RE_THETA_T"] = {TRANS_SOL, 1};
+  }
+
+  if (solver_container[SPECIES_SOL] != nullptr &&
+      config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
+    for (unsigned short iVar = 0; iVar < solver_container[SPECIES_SOL]->GetnVar(); iVar++) {
+      field_map["SPECIES_" + std::to_string(iVar)] = {SPECIES_SOL, iVar};
+    }
+  }
+
+  return field_map;
+}
+
+/*!
+ * \brief Resolve the METRIC_SENSOR names and store them, in config order, in the flow solver.
+ *
+ * Each name is matched case-insensitively, in this order:
+ *   - CUSTOM:       listed in METRIC_CUSTOM_SENSOR; filled through the Python wrapper (CDriverBase::SetAdaptSensor).
+ *   - PRIMITIVE:    a primitive variable of the flow solver.
+ *   - COMPUTED:     a supported computed quantity (see ComputedNameToFunctionMap).
+ *   - SOLVER_FIELD: a solution variable of a non-flow solver (see SolverFieldNameToIndexMap),
+ *                   copied into the flow solver before the Hessians are computed.
+ * Any other name is an error. All sensors live in the flow solver, so iSensor = 0 is the first
+ * listed sensor, whose Hessian drives the metric.
  *
  * \param[in] config - Configuration containing sensor names
  * \param[in] geometry - Geometry for dimension info
- * \param[in,out] solver_container - Array of solvers [iSol] - indices will be set
- * \return True if all sensors were successfully resolved
+ * \param[in,out] solver_container - Array of solvers [iSol]; the flow solver receives the sensors
+ * \return True if at least one sensor was resolved
  */
 inline bool ResolveSensorIndices(
     const CConfig* config,
@@ -107,152 +167,98 @@ inline bool ResolveSensorIndices(
     CSolver** solver_container) {
 
   const int rank = SU2_MPI::GetRank();
+  constexpr auto no_index = std::numeric_limits<unsigned short>::max();
 
-  /*--- Get sensor names from config ---*/
-  std::vector<std::string> sensor_names = config->GetMetric_SensorList();
-
-  /*--- Group sensors by solver (in config order) ---*/
-  std::map<unsigned short, std::vector<CSolver::MetricSensorInfo>> sensors_by_solver;
-
-  /*--- Build maps of available variables across all solvers.
-   *    var_map:     name -> (iSol, prim_idx)  for PRIMITIVE sensors
-   *    computed_map: name -> evaluator lambda   for COMPUTED sensors ---*/
-  std::map<std::string, std::pair<unsigned short, unsigned short>> var_map;
-  std::map<std::string, std::function<su2double(const su2double*)>> computed_map;
-
-  for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
-    if (solver_container[iSol] == nullptr) continue;
-
-    std::string solver_name = solver_container[iSol]->GetSolverName();
-
-    /*--- For flow solvers, get primitive variable names ---*/
-    if (solver_name.find("FLOW") != std::string::npos ||
-        solver_name.find("EULER") != std::string::npos ||
-        solver_name.find("NAVIER_STOKES") != std::string::npos ||
-        solver_name.find("RANS") != std::string::npos ||
-        solver_name.find("INC") != std::string::npos ||
-        solver_name.find("NEMO") != std::string::npos) {
-
-      const auto nDim = geometry->GetnDim();
-      const auto nSpecies = config->GetnSpecies();
-      const bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
-      const bool nemo = config->GetKind_FluidModel() == ENUM_FLUIDMODEL::MUTATIONPP ||
-                        config->GetKind_FluidModel() == ENUM_FLUIDMODEL::SU2_NONEQ;
-
-      CPrimitiveIndices<unsigned short> indices(incompressible, nemo, nDim, nSpecies);
-      std::map<std::string, unsigned short> primitive_map = PrimitiveNameToIndexMap(indices);
-
-      for (const auto& [varname, varidx] : primitive_map) {
-        var_map[varname] = std::make_pair(iSol, varidx);
-      }
-
-      /*--- Build computed sensor map. VELOCITY is supported by all flow solvers;
-       *    MACH is excluded for incompressible (see ComputedNameToFunctionMap). ---*/
-      computed_map = ComputedNameToFunctionMap(primitive_map, nDim, incompressible);
-    } else {
-      /*--- For non-flow solvers, use solution fields ---*/
-      std::vector<std::string> solution_fields = solver_container[iSol]->GetSolutionFields();
-
-      /*--- Remove PointID if present (first entry) ---*/
-      if (!solution_fields.empty() && solution_fields[0].find("PointID") != std::string::npos) {
-        solution_fields.erase(solution_fields.begin());
-      }
-
-      /*--- Remove quotation marks and build map ---*/
-      unsigned short idx = 0;
-      for (auto& field_name : solution_fields) {
-        if (field_name.size() >= 2 && field_name.front() == '\"' && field_name.back() == '\"') {
-          field_name = field_name.substr(1, field_name.size() - 2);
-        }
-        var_map[field_name] = std::make_pair(iSol, idx++);
-      }
-    }
+  if (solver_container[FLOW_SOL] == nullptr || !config->GetFluidProblem()) {
+    SU2_MPI::Error("COMPUTE_METRIC requires a flow solver.", CURRENT_FUNCTION);
   }
 
-  /*--- Resolve each sensor in config order, grouping by solver.
-   *    Three categories are distinguished:
-   *      PRIMITIVE: index into primitive variable array (prim_idx is valid).
-   *      COMPUTED:  supported computed quantity (e.g. Mach); evaluator lambda stored in fn.
-   *      CUSTOM:    filled externally via Python wrapper (CDriverBase::AdaptSensors).
-   *    Config order is preserved so iSensor=0 is always the first listed sensor
-   *    (whose Hessian drives the metric and is normalised). ---*/
+  /*--- Flow primitives and computed quantities ---*/
+  const auto nDim = geometry->GetnDim();
+  const bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
+  CPrimitiveIndices<unsigned short> indices(incompressible, config->GetNEMOProblem(), nDim, config->GetnSpecies());
+  const auto primitive_map = PrimitiveNameToIndexMap(indices);
+
+  std::map<std::string, unsigned short> primitives;
+  for (const auto& [name, idx] : primitive_map) primitives[SensorKey(name)] = idx;
+
+  std::map<std::string, std::function<su2double(const su2double*)>> computed;
+  for (const auto& [name, fn] : ComputedNameToFunctionMap(primitive_map, nDim, incompressible))
+    computed[SensorKey(name)] = fn;
+
+  const auto solver_fields = SolverFieldNameToIndexMap(config, solver_container);
+
+  const std::vector<std::string> custom_names = config->GetMetric_CustomSensorList();
+  std::set<std::string> custom;
+  for (const auto& name : custom_names) custom.insert(SensorKey(name));
+
+  /*--- Resolve each sensor in config order ---*/
+  const std::vector<std::string> sensor_names = config->GetMetric_SensorList();
+  std::vector<CSolver::MetricSensorInfo> sensors;
   for (const auto& sensor_name : sensor_names) {
-    auto it = var_map.find(sensor_name);
-    if (it != var_map.end()) {
-      /*--- PRIMITIVE sensor ---*/
-      const unsigned short iSol = it->second.first;
-      const unsigned short var_index = it->second.second;
-      sensors_by_solver[iSol].push_back(
-          {var_index, sensor_name, SensorType::PRIMITIVE, {}});
-      if (rank == MASTER_NODE) {
-        std::cout << "  Primitive sensor '" << sensor_name << "' resolved to solver "
-                  << iSol << ", variable index " << var_index << std::endl;
-      }
+    const std::string key = SensorKey(sensor_name);
+    CSolver::MetricSensorInfo info;
+    info.name = sensor_name;
+    info.var_idx = no_index;
+    std::string description;
+
+    if (custom.count(key)) {
+      info.type = SensorType::CUSTOM;
+      description = "custom (Python wrapper)";
+    } else if (primitives.count(key)) {
+      info.type = SensorType::PRIMITIVE;
+      info.var_idx = primitives.at(key);
+      description = "primitive variable " + std::to_string(info.var_idx);
+    } else if (computed.count(key)) {
+      info.type = SensorType::COMPUTED;
+      info.fn = computed.at(key);
+      description = "computed";
+    } else if (solver_fields.count(key)) {
+      info.type = SensorType::SOLVER_FIELD;
+      info.iSol = solver_fields.at(key).first;
+      info.var_idx = solver_fields.at(key).second;
+      description = "solver " + std::to_string(info.iSol) + ", solution variable " + std::to_string(info.var_idx);
     } else {
-      auto dit = computed_map.find(sensor_name);
-      if (dit != computed_map.end()) {
-        /*--- COMPUTED sensor ---*/
-        sensors_by_solver[FLOW_SOL].push_back(
-            {std::numeric_limits<unsigned short>::max(), sensor_name,
-             SensorType::COMPUTED, dit->second});
-        if (rank == MASTER_NODE) {
-          std::cout << "  Computed sensor '" << sensor_name << "' registered." << std::endl;
-        }
-      } else {
-        /*--- CUSTOM sensor (must be populated via Python wrapper) ---*/
-        if (rank == MASTER_NODE) {
-          std::cout << "  Custom sensor '" << sensor_name << "' detected." << std::endl;
-        }
-        sensors_by_solver[FLOW_SOL].push_back(
-            {std::numeric_limits<unsigned short>::max(), sensor_name,
-             SensorType::CUSTOM, {}});
-      }
+      std::string available;
+      for (const auto& entry : primitives) available += " " + entry.first;
+      for (const auto& entry : computed) available += " " + entry.first;
+      for (const auto& entry : solver_fields) available += " " + entry.first;
+      SU2_MPI::Error("Unknown METRIC_SENSOR " + sensor_name + ". Available sensors:" + available +
+                     ". List sensors filled through the Python wrapper in METRIC_CUSTOM_SENSOR.",
+                     CURRENT_FUNCTION);
     }
+
+    if (rank == MASTER_NODE) {
+      std::cout << "  Sensor '" << sensor_name << "': " << description << "." << std::endl;
+    }
+    sensors.push_back(info);
   }
 
-  /*--- Set sensor list directly in each solver ---*/
-  for (const auto& [iSol, sensors] : sensors_by_solver) {
-    solver_container[iSol]->SetMetricSensors(sensors);
-  }
-
-  /*--- Return true if at least one sensor was resolved or reserved ---*/
-  return !sensors_by_solver.empty();
+  solver_container[FLOW_SOL]->SetMetricSensors(sensors);
+  return !sensors.empty();
 }
 
 /*!
- * \brief Allocate metric sensor arrays in all solvers.
+ * \brief Allocate the metric sensor arrays of the flow solver.
  *
- * Allocates the necessary arrays for metric computation in each solver that has
- * metric sensors. Should be called after ResolveSensorIndices() has set the indices.
+ * Should be called after ResolveSensorIndices() has set the sensors.
  *
  * \param[in,out] solver_container - Array of solvers [iSol]
  */
 inline void InitializeMetrics(CSolver** solver_container) {
-
-  /*--- Allocate arrays in each solver that has metric sensors ---*/
-  for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
-    if (solver_container[iSol] == nullptr) continue;
-
-    const auto nSensors = solver_container[iSol]->GetnMetricSensor();
-    if (nSensors > 0) {
-      solver_container[iSol]->AllocateMetricSensorArrays(nSensors);
-    }
+  const auto nSensors = solver_container[FLOW_SOL]->GetnMetricSensor();
+  if (nSensors > 0) {
+    solver_container[FLOW_SOL]->AllocateMetricSensorArrays(nSensors);
   }
 }
 
 /*!
- * \brief Get total number of sensors in all solvers.
+ * \brief Get the number of metric sensors (all held by the flow solver).
  * \param[in] solver_container - Array of solvers [iSol]
- * \return Number of sensors in all solvers.
+ * \return Number of sensors.
  */
 inline unsigned short TotalNumSensors(CSolver** solver_container) {
-  unsigned short num_sensor = 0;
-  for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
-    if (solver_container[iSol] != nullptr) {
-      num_sensor += solver_container[iSol]->GetnMetricSensor();
-    }
-  }
-  return num_sensor;
+  return solver_container[FLOW_SOL]->GetnMetricSensor();
 }
 
 } // namespace MetricUtils

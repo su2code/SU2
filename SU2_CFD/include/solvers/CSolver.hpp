@@ -212,10 +212,11 @@ public:
 
   /*--- Metric sensors for mesh adaptation ---*/
   struct MetricSensorInfo {
-    unsigned short prim_idx;                       /*!< \brief Primitive variable index (PRIMITIVE type only). */
+    unsigned short var_idx;                        /*!< \brief Variable index in the source solver (PRIMITIVE: primitive, SOLVER_FIELD: solution). */
     std::string name;                              /*!< \brief Sensor name as specified in config. */
     SensorType type = SensorType::PRIMITIVE;       /*!< \brief Category of sensor. */
     std::function<su2double(const su2double*)> fn; /*!< \brief Point-wise evaluator for COMPUTED sensors. */
+    unsigned short iSol = FLOW_SOL;                /*!< \brief Solver slot the values are read from (SOLVER_FIELD type). */
   };
   vector<MetricSensorInfo> MetricSensors;  /*!< \brief Sensor list in config order, one entry per sensor. */
 
@@ -615,6 +616,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetComputed_SensorAdapt(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Copy SOLVER_FIELD sensor values (e.g. turbulence variables) from their source solver into Sensor_Adapt.
+   * \param[in] solver - Solver container holding the source solvers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSolverField_SensorAdapt(CSolver **solver, CGeometry *geometry, const CConfig *config);
 
     /*!
    * \brief Allocate Gradient_Adapt and Hessian arrays for the sensors assigned to this solver.

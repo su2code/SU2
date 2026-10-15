@@ -377,11 +377,12 @@ void CSinglezoneDriver::ComputeMetricField(bool restartMetric) {
     cout << "Storing primitive variables needed for gradients in metric." << endl;
   }
 
-  /*--- Populate primitive and computed sensor slots in Sensor_Adapt.
+  /*--- Populate primitive, computed and solver-field sensor slots in Sensor_Adapt.
    *    Custom sensors (CUSTOM type) must have been set already via the Python wrapper
    *    (CustomSensorRegistry.populate) before ComputeMetricField is called. ---*/
   solver_flow->SetPrimitive_SensorAdapt(geometry, config);
   solver_flow->SetComputed_SensorAdapt(geometry, config);
+  solver_flow->SetSolverField_SensorAdapt(solver, geometry, config);
   solver_flow->InitiateComms(geometry, config, MPI_QUANTITIES::SENSOR_ADAPT);
   solver_flow->CompleteComms(geometry, config, MPI_QUANTITIES::SENSOR_ADAPT);
 

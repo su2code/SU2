@@ -83,12 +83,19 @@ class CustomSensorRegistry:
 
         Args:
             driver: Active SU2 driver instance (e.g. ``CSinglezoneDriver``).
+
+        Raises:
+            ValueError: If a sensor returns neither one value per domain node nor one per node
+                including halos.
         """
-        sensors = driver.AdaptSensors()
+        num_node = driver.GetNumberNodes()
+        num_domain_node = num_node - driver.GetNumberHaloNodes()
 
         for name, fn in self._sensors.items():
-            iSensor = self._indices[name]
             values = fn(driver)
-
-            for iNode, value in enumerate(values):
-                sensors.Set(iNode, iSensor, value)
+            if len(values) not in (num_domain_node, num_node):
+                raise ValueError(
+                    "Custom sensor '{}' returned {} values; expected {} (domain nodes) "
+                    "or {} (all nodes).".format(name, len(values), num_domain_node, num_node)
+                )
+            driver.SetAdaptSensor(self._indices[name], values)

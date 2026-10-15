@@ -2425,14 +2425,30 @@ void CSolver::AllocateMetricSensorArrays(unsigned short nSensors) {
 
 void CSolver::SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *config) {
   /*--- Copy PRIMITIVE sensor values from primitive variable array into Sensor_Adapt.
-   *    COMPUTED and CUSTOM slots are skipped here. ---*/
+   *    Other sensor types are skipped here. ---*/
   for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
     if (MetricSensors[iSensor].type != SensorType::PRIMITIVE) continue;
 
-    const auto prim_idx = MetricSensors[iSensor].prim_idx;
+    const auto var_idx = MetricSensors[iSensor].var_idx;
     SU2_OMP_FOR_DYN(256)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      base_nodes->SetSensor_Adapt(iPoint, iSensor, base_nodes->GetPrimitive(iPoint, prim_idx));
+      base_nodes->SetSensor_Adapt(iPoint, iSensor, base_nodes->GetPrimitive(iPoint, var_idx));
+    }
+    END_SU2_OMP_FOR
+  }
+}
+
+void CSolver::SetSolverField_SensorAdapt(CSolver **solver, CGeometry *geometry, const CConfig *config) {
+  /*--- Copy SOLVER_FIELD sensor values from the solution of their source solver into Sensor_Adapt.
+   *    All solvers share the mesh, so point indices coincide. ---*/
+  for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
+    if (MetricSensors[iSensor].type != SensorType::SOLVER_FIELD) continue;
+
+    const auto var_idx = MetricSensors[iSensor].var_idx;
+    const auto* source_nodes = solver[MetricSensors[iSensor].iSol]->GetNodes();
+    SU2_OMP_FOR_DYN(256)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      base_nodes->SetSensor_Adapt(iPoint, iSensor, source_nodes->GetSolution(iPoint, var_idx));
     }
     END_SU2_OMP_FOR
   }
