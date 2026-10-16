@@ -268,7 +268,7 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
     geometry->CompleteComms(geometry, config, MPI_QUANTITIES::NEIGHBORS);
   }
   SetImplicitPeriodic(euler_implicit);
-  if (MGLevel == MESH_0) SetRotatePeriodic(true);
+  SetRotatePeriodic(true);
 
   /*--- Perform the MPI communication of the solution ---*/
 
