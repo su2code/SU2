@@ -798,11 +798,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     Residual[0] -= yinv * Volume * cdk_axi;
     Residual[1] -= yinv * Volume * cdw_axi;
 
-    Jacobian_i[0][0] -= yinv * Volume * rhov;
-    Jacobian_i[0][1] -= 0.0;
-    Jacobian_i[1][0] -= 0.0;
-    Jacobian_i[1][1] -= yinv * Volume * rhov;
-
+    /*--- These terms are not added to the Jacobian. Their derivative w.r.t. (rho k, rho w) is
+     * yinv * Volume * v, which reduces diagonal dominance for flow towards the axis (v < 0). Including
+     * the full term stalls the convergence of axisymmetric cases, keeping only v > 0 brings no benefit. ---*/
   }
 
  public:
