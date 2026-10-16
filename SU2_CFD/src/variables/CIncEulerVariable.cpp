@@ -79,9 +79,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   }
 }
 
-bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
-
-  bool physical = true;
+bool CIncEulerVariable::SetThermodynamicState(unsigned long iPoint, CFluidModel* FluidModel, const su2double* scalar) {
 
   /*--- Set the value of the pressure ---*/
 
@@ -90,11 +88,10 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
   /*--- The temperature of the last valid state is the guess for both solves below. ---*/
   const su2double Temperature_Old = GetTemperature(iPoint);
 
-  su2double Enthalpy = Solution(iPoint, nDim +1);
-  const bool temperature_failed = !FluidModel->SolveTDState_h(Enthalpy, nullptr, Temperature_Old);
-  su2double Temperature = FluidModel->GetTemperature();
+  su2double Enthalpy = Solution(iPoint, nDim + 1);
+  const bool temperature_failed = !FluidModel->SolveTDState_h(Enthalpy, Temperature_Old, scalar);
 
-  const auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
+  const auto check_temp = SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -102,32 +99,33 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   /*--- Set the value of the density ---*/
 
-  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+  const auto check_dens = check_temp ? true : SetDensity(iPoint, FluidModel->GetDensity());
+
+  if (!(check_dens || check_temp || temperature_failed)) return true;
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
-  if (check_dens || check_temp || temperature_failed) {
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    Solution(iPoint, iVar) = Solution_Old(iPoint, iVar);
 
-    /*--- Copy the old solution ---*/
+  /*--- Recompute the primitive variables. The old solution was valid at Temperature_Old, if the
+   solve still fails keep that temperature rather than an unconverged state. ---*/
 
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      Solution(iPoint, iVar) = Solution_Old(iPoint, iVar);
-
-    /*--- Recompute the primitive variables. The old solution was valid at Temperature_Old, if the
-     solve still fails keep that temperature rather than an unconverged state. ---*/
-
-    Enthalpy = Solution(iPoint, nDim+1);
-    if (!FluidModel->SolveTDState_h(Enthalpy, nullptr, Temperature_Old) && Temperature_Old > 0.0) {
-      FluidModel->SetTDState_T(Temperature_Old);
-    }
-    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
-    SetDensity(iPoint, FluidModel->GetDensity());
-
-    /*--- Flag this point as non-physical. ---*/
-
-    physical = false;
-
+  Enthalpy = Solution(iPoint, nDim + 1);
+  if (!FluidModel->SolveTDState_h(Enthalpy, Temperature_Old, scalar) && Temperature_Old > 0.0) {
+    FluidModel->SetTDState_T(Temperature_Old, scalar);
   }
+  SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
+  SetDensity(iPoint, FluidModel->GetDensity());
+
+  return false;
+}
+
+bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
+
+  /*--- Pressure, temperature and density, the solution is reverted if the state is not physical. ---*/
+
+  const bool physical = SetThermodynamicState(iPoint, FluidModel, nullptr);
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 

@@ -95,24 +95,26 @@ class CIncIdealGasPolynomial final : public CFluidModel {
    * \param[in] val_enthalpy - Enthalpy value at the point.
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
-    SolveTDState_h(val_enthalpy, val_scalars, 0.0);
+    SolveTDState_h(val_enthalpy, 0.0, val_scalars);
   }
 
   /*!
    * \brief Set the Dimensionless State using enthalpy, by Newton-Raphson iteration on temperature.
    * \param[in] val_enthalpy - Enthalpy value at the point.
-   * \param[in] val_scalars - Scalar mass fractions (not used).
    * \param[in] val_temperature_guess - Start of the iteration, <= 0 to start from the reference temperature.
+   * \param[in] val_scalars - Scalar mass fractions (not used).
    * \return True if the iteration converged above the minimum temperature.
    */
-  bool SolveTDState_h(su2double val_enthalpy, const su2double* val_scalars,
-                      su2double val_temperature_guess) override {
+  bool SolveTDState_h(su2double val_enthalpy, su2double val_temperature_guess,
+                      const su2double* val_scalars = nullptr) override {
     /*--- Convergence criterion for temperature, high accuracy needed for restarts. ---*/
     constexpr su2double tolerance = 1e-5;
     constexpr int maxIterations = 20;
 
     Enthalpy = val_enthalpy;
-    su2double temperature = (val_temperature_guess > 0.0) ? val_temperature_guess : Std_Ref_Temp_ND;
+    /*--- The guess is passive, the converged temperature does not depend on it. ---*/
+    su2double temperature = (val_temperature_guess > 0.0) ? SU2_TYPE::GetValue(val_temperature_guess)
+                                                          : Std_Ref_Temp_ND;
     su2double Cp_iter = coeffs_[0];
     bool converged = false;
 
@@ -131,13 +133,16 @@ class CIncIdealGasPolynomial final : public CFluidModel {
       }
 
       const su2double delta = (Enthalpy - Enthalpy_iter) / Cp_iter;
-      temperature += delta;
 
-      /*--- Below the minimum temperature the state is not valid, stop and report failure. ---*/
-      if (temperature < Temperature_Min) {
+      /*--- An overshoot below the minimum temperature is clamped and the iteration continues. With a positive Cp
+       the enthalpy increases with temperature, so a step below the minimum taken from the minimum itself means
+       the solution is below it, stop and report failure. ---*/
+      if (temperature + delta < Temperature_Min) {
+        if (temperature == Temperature_Min) break;
         temperature = Temperature_Min;
-        break;
+        continue;
       }
+      temperature += delta;
       if (fabs(delta) <= tolerance) {
         converged = true;
         break;

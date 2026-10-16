@@ -1208,22 +1208,20 @@ unsigned long CIncEulerSolver::RecomputeDensity_time_n(CSolver **solver_containe
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    /*--- Per-thread fluid model, mirroring the recipe in SetPrimitive_Variables. The current temperature
-     is the guess for both time levels; if a solve fails, the current density is used instead and the
-     point is counted as non-physical, as in SetPrimitive_Variables. ---*/
+    /*--- Per-thread fluid model. ---*/
     CFluidModel* fluidModel = GetFluidModel();
     const su2double temperatureGuess = nodes->GetTemperature(iPoint);
 
     const su2double* scalar_n = speciesNodes ? speciesNodes->GetSolution_time_n(iPoint) : nullptr;
     const su2double Enthalpy_n = nodes->GetSolution_time_n(iPoint, nDim + 1);
-    const bool converged_n = fluidModel->SolveTDState_h(Enthalpy_n, scalar_n, temperatureGuess);
+    const bool converged_n = fluidModel->SolveTDState_h(Enthalpy_n, temperatureGuess, scalar_n);
     nodes->SetDensity_time_n(iPoint, converged_n ? fluidModel->GetDensity() : nodes->GetDensity(iPoint));
     bool converged = converged_n;
 
     if (second_order) {
       const su2double* scalar_n1 = speciesNodes ? speciesNodes->GetSolution_time_n1(iPoint) : nullptr;
       const su2double Enthalpy_n1 = nodes->GetSolution_time_n1(iPoint, nDim + 1);
-      const bool converged_n1 = fluidModel->SolveTDState_h(Enthalpy_n1, scalar_n1, temperatureGuess);
+      const bool converged_n1 = fluidModel->SolveTDState_h(Enthalpy_n1, temperatureGuess, scalar_n1);
       nodes->SetDensity_time_n1(iPoint, converged_n1 ? fluidModel->GetDensity() : nodes->GetDensity(iPoint));
       converged = converged && converged_n1;
     }
@@ -1593,8 +1591,8 @@ bool CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, un
                                                      const su2double* scalar, su2double* primitive) {
   SU2_ZONE_SCOPED
   const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
-  const bool converged = fluidModel->SolveTDState_h(primitive[prim_idx.Enthalpy()], scalar,
-                                                    primitive[prim_idx.Temperature()]);
+  const bool converged = fluidModel->SolveTDState_h(primitive[prim_idx.Enthalpy()],
+                                                    primitive[prim_idx.Temperature()], scalar);
 
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
   primitive[prim_idx.Density()] = fluidModel->GetDensity();

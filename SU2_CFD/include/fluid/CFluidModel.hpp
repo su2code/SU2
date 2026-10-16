@@ -402,13 +402,13 @@ class CFluidModel {
    * \brief Set the state from the enthalpy, solving for the temperature iteratively if the model needs to.
    * \note Models that compute the temperature directly ignore the guess and always succeed.
    * \param[in] val_enthalpy - Enthalpy value at the point.
-   * \param[in] val_scalars - Scalar mass fractions.
    * \param[in] val_temperature_guess - Start of the temperature iteration, e.g. the previous temperature at the
    *            point. A value <= 0 means no guess is available.
+   * \param[in] val_scalars - Scalar mass fractions.
    * \return True if a valid state was found. If false, the state of the model must not be used.
    */
-  virtual bool SolveTDState_h(su2double val_enthalpy, const su2double* val_scalars,
-                              su2double val_temperature_guess) {
+  virtual bool SolveTDState_h(su2double val_enthalpy, su2double val_temperature_guess,
+                              const su2double* val_scalars = nullptr) {
     SetTDState_h(val_enthalpy, val_scalars);
     return true;
   }

@@ -99,19 +99,19 @@ TEST_CASE("Fluid_Cantera_LargeMechanism", "[Multicomponent_flow]") {
 
   fluid.SetTDState_T(1500.0, scalar);
   const su2double enthalpy = fluid.GetEnthalpy();
-  CHECK(fluid.SolveTDState_h(enthalpy, scalar, 0.0));
+  CHECK(fluid.SolveTDState_h(enthalpy, 0.0, scalar));
   CHECK(fluid.GetTemperature() == Approx(1500.0).margin(1e-4));
 
   /*--- The result does not depend on the temperature guess. ---*/
 
-  CHECK(fluid.SolveTDState_h(enthalpy, scalar, 1490.0));
+  CHECK(fluid.SolveTDState_h(enthalpy, 1490.0, scalar));
   CHECK(fluid.GetTemperature() == Approx(1500.0).margin(1e-4));
-  CHECK(fluid.SolveTDState_h(enthalpy, scalar, 5.0));
+  CHECK(fluid.SolveTDState_h(enthalpy, 5.0, scalar));
   CHECK(fluid.GetTemperature() == Approx(1500.0).margin(1e-4));
 
   /*--- An enthalpy outside the range of the thermodynamic data is reported. ---*/
 
-  CHECK_FALSE(fluid.SolveTDState_h(1e12, scalar, 0.0));
+  CHECK_FALSE(fluid.SolveTDState_h(1e12, 0.0, scalar));
 }
 TEST_CASE("Fluid_Cantera_SourceJacobian", "[Reacting_flow]") {
   /*--- Diagonal chemical source Jacobian of the one-step methane mechanism. ---*/

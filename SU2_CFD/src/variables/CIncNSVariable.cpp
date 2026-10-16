@@ -53,53 +53,9 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
 
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
 
-  bool physical = true;
+  /*--- Pressure, temperature and density, the solution is reverted if the state is not physical. ---*/
 
-  /*--- Set the value of the pressure ---*/
-
-  SetPressure(iPoint);
-
-  /*--- The temperature of the last valid state is the guess for both solves below. ---*/
-  const su2double Temperature_Old = GetTemperature(iPoint);
-
-  su2double Enthalpy = Solution(iPoint, nDim + 1);
-  const bool temperature_failed = !FluidModel->SolveTDState_h(Enthalpy, scalar, Temperature_Old);
-  su2double Temperature = FluidModel->GetTemperature();
-
-  auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
-
-  /*--- Use the fluid model to compute the new value of density.
-  Note that the thermodynamic pressure is constant and decoupled
-  from the dynamic pressure being iterated. ---*/
-
-  /*--- Set the value of the density ---*/
-
-  const auto check_dens = check_temp ? true: SetDensity(iPoint, FluidModel->GetDensity());
-
-  /*--- Non-physical solution found. Revert to old values. ---*/
-
-  if (check_dens || check_temp || temperature_failed) {
-
-    /*--- Copy the old solution ---*/
-
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
-
-    /*--- Recompute the primitive variables. The old solution was valid at Temperature_Old, if the
-     solve still fails keep that temperature rather than an unconverged state. ---*/
-
-    Enthalpy = Solution(iPoint, nDim + 1);
-    if (!FluidModel->SolveTDState_h(Enthalpy, scalar, Temperature_Old) && Temperature_Old > 0.0) {
-      FluidModel->SetTDState_T(Temperature_Old, scalar);
-    }
-    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
-    SetDensity(iPoint, FluidModel->GetDensity());
-
-    /*--- Flag this point as non-physical. ---*/
-
-    physical = false;
-
-  }
+  const bool physical = SetThermodynamicState(iPoint, FluidModel, scalar);
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 

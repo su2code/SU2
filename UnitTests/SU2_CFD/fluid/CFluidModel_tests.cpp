@@ -126,6 +126,7 @@ TEST_CASE("Temperature from enthalpy for the polynomial incompressible ideal gas
   std::stringstream config_options;
   config_options << "SOLVER= INC_NAVIER_STOKES" << std::endl;
   config_options << "INC_ENERGY_EQUATION= YES" << std::endl;
+  config_options << "INC_DENSITY_MODEL= VARIABLE" << std::endl;
   config_options << "FLUID_MODEL= INC_IDEAL_GAS_POLY" << std::endl;
   config_options << "CP_POLYCOEFFS= (1000.0, 0.2, 0.0, 0.0, 0.0)" << std::endl;
 
@@ -143,10 +144,34 @@ TEST_CASE("Temperature from enthalpy for the polynomial incompressible ideal gas
 
   /*--- The temperature is recovered without a guess and from guesses on either side. ---*/
   for (const su2double guess : {0.0, 1100.0, 1500.0}) {
-    CHECK(fluid.SolveTDState_h(enthalpy, nullptr, guess));
+    CHECK(fluid.SolveTDState_h(enthalpy, guess));
     CHECK(fluid.GetTemperature() == Approx(1200.0).margin(1e-4));
   }
 
   /*--- An enthalpy that requires a temperature below the minimum is reported. ---*/
-  CHECK_FALSE(fluid.SolveTDState_h(-1e9, nullptr, 0.0));
+  CHECK_FALSE(fluid.SolveTDState_h(-1e9, 0.0));
+}
+
+TEST_CASE("Temperature from enthalpy recovers from an overshoot below the minimum temperature") {
+  std::stringstream config_options;
+  config_options << "SOLVER= INC_NAVIER_STOKES" << std::endl;
+  config_options << "INC_ENERGY_EQUATION= YES" << std::endl;
+  config_options << "INC_DENSITY_MODEL= VARIABLE" << std::endl;
+  config_options << "FLUID_MODEL= INC_IDEAL_GAS_POLY" << std::endl;
+  config_options << "CP_POLYCOEFFS= (1000.0, -0.5, 0.0, 0.0, 0.0)" << std::endl;
+
+  CConfig config(config_options, SU2_COMPONENT::SU2_CFD, false);
+
+  for (unsigned short iCoeff = 0; iCoeff < N_POLY_COEFFS; iCoeff++)
+    config.SetCp_PolyCoeffND(config.GetCp_PolyCoeff(iCoeff), iCoeff);
+
+  CIncIdealGasPolynomial<N_POLY_COEFFS> fluid(287.058, 101325.0, STD_REF_TEMP);
+  fluid.SetCpModel(&config, STD_REF_TEMP);
+
+  fluid.SetTDState_T(300.0);
+  const su2double enthalpy = fluid.GetEnthalpy();
+
+  /*--- Cp decreases with temperature, so the first step from a high guess goes below the minimum temperature. ---*/
+  CHECK(fluid.SolveTDState_h(enthalpy, 1800.0));
+  CHECK(fluid.GetTemperature() == Approx(300.0).margin(1e-4));
 }

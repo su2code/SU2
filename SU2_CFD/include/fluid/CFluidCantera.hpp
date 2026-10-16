@@ -189,11 +189,11 @@ class CFluidCantera final : public CFluidModel {
   /*!
    * \brief Set the state from enthalpy by Newton iteration on temperature.
    * \param[in] val_enthalpy - Enthalpy value at the point.
-   * \param[in] val_scalars - Scalar mass fractions.
    * \param[in] val_temperature_guess - Start of the iteration, <= 0 to start from the reference temperature.
+   * \param[in] val_scalars - Scalar mass fractions.
    * \return True if the iteration converged inside the range of the thermodynamic data.
    */
-  bool SolveTDState_h(su2double val_enthalpy, const su2double* val_scalars,
-                      su2double val_temperature_guess) override;
+  bool SolveTDState_h(su2double val_enthalpy, su2double val_temperature_guess,
+                      const su2double* val_scalars) override;
 #endif
 };

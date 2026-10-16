@@ -245,11 +245,11 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
 }
 
 void CFluidCantera::SetTDState_h(const su2double val_enthalpy, const su2double* val_scalars) {
-  SolveTDState_h(val_enthalpy, val_scalars, 0.0);
+  SolveTDState_h(val_enthalpy, 0.0, val_scalars);
 }
 
-bool CFluidCantera::SolveTDState_h(const su2double val_enthalpy, const su2double* val_scalars,
-                                   const su2double val_temperature_guess) {
+bool CFluidCantera::SolveTDState_h(const su2double val_enthalpy, const su2double val_temperature_guess,
+                                   const su2double* val_scalars) {
   /*--- Temperature tolerance in [K], high accuracy needed for restarts. ---*/
   constexpr double tolerance = 1e-5;
   constexpr int maxIterations = 20;
