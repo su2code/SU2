@@ -600,7 +600,8 @@ private:
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  MUSCL_Species;           /*!< \brief MUSCL scheme for the species equations.*/
+  MUSCL_Species,           /*!< \brief MUSCL scheme for the species equations.*/
+  MUSCL_FirstOrderWallEnds; /*!< \brief First-order reconstruction at no-slip wall ends and sharp wall edges.*/
   su2double MUSCL_Kappa,   /*!< \brief Blending coefficient for U-MUSCL scheme (for the runtime eq. system). */
   MUSCL_Kappa_Flow,        /*!< \brief Blending coefficient for U-MUSCL scheme for the flow equations.*/
   MUSCL_Kappa_Turb,        /*!< \brief Blending coefficient for U-MUSCL scheme for the turbulence equations.*/
@@ -1116,6 +1117,7 @@ private:
   su2double ParMETIS_tolerance;     /*!< \brief Load balancing tolerance for ParMETIS. */
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
+  bool ParMETIS_anisotropyWgt;      /*!< \brief Weight graph edges by cell anisotropy and keep anisotropic lines on one rank. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
   DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
@@ -1750,6 +1752,10 @@ public:
    * \return <code>TRUE</code> if CFL adaption is active; otherwise <code>FALSE</code>.
    */
   bool GetCFL_Adapt(void) const { return CFL_Adapt; }
+
+  /*!
+   * \brief Whether the adaptive CFL follows the nonlinear residual trend instead of the linear solve.
+   */
 
   /*!
    * \brief Get the outlier mitigation parameters.
@@ -4772,6 +4778,11 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_Flow(void) const { return MUSCL_Flow; }
+
+  /*!
+   * \brief Get if edges at no-slip wall ends and sharp wall edges are reconstructed to first order.
+   */
+  bool GetMUSCL_FirstOrderWallEnds(void) const { return MUSCL_FirstOrderWallEnds; }
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
@@ -10247,6 +10258,11 @@ public:
    * \brief Get the ParMETIS load balancing weight for edges
    */
   long GetParMETIS_EdgeWeight() const { return ParMETIS_edgeWgt; }
+
+  /*!
+   * \brief Whether ParMETIS weights graph edges by cell anisotropy and partitions with coordinates.
+   */
+  bool GetParMETIS_AnisotropyWeight() const { return ParMETIS_anisotropyWgt; }
 
   /*!
    * \brief Find the marker index (if any) that is part of a given interface pair.

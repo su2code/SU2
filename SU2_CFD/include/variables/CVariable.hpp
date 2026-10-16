@@ -1608,6 +1608,12 @@ public:
   inline virtual void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) {}
 
   /*!
+   * \brief Index of the first velocity or momentum component in the solution vector.
+   * \return The index, or -1 when the solution carries no velocity.
+   */
+  inline virtual short GetVelocityIndex() const { return -1; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] laminarViscosity
    */

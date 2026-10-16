@@ -126,7 +126,8 @@ class C3DContainerDecorator {
 
  private:
   Storage m_storage;
-  Index m_innerSz;
+  /*--- One, not zero, so rows() on a container that was never resized does not divide by it. ---*/
+  Index m_innerSz = 1;
 
  public:
   C3DContainerDecorator() = default;
