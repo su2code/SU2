@@ -105,6 +105,7 @@ protected:
   unsigned long CFL_LastStall = 0;                    /*!< \brief Iteration of the last stall cap. */
   passivedouble CFL_StallCap = -1.0;                  /*!< \brief Cap set at the last stall, which cap increases stay below. */
   passivedouble CFL_OscLevel = -1.0;                  /*!< \brief Lowest CFL at which the residuals flip-flopped. */
+  unsigned long CFL_LastOscRelease = 0;               /*!< \brief Iteration of the last flip-flop limit increase. */
   passivedouble Res_AtOsc = 0.0;                      /*!< \brief Mean log flow residual at that flip-flop. */
   unsigned short Stall_Count = 0;                     /*!< \brief Stalls since the residual last fell well below one. */
   passivedouble Res_AtStall = 0.0;                    /*!< \brief Mean log flow residual at the last stall. */

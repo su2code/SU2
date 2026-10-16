@@ -420,6 +420,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   vector<char> inCV(fine_grid->GetnPoint(), 0);
   vector<char> isCandidate(fine_grid->GetnPoint(), 0);
   vector<unsigned long> members, candidates;
+  vector<vector<unsigned long>> wholeCells;
   members.reserve(maxAgglomSize);
 
   /*--- A local frame at the seed: up to nDim of its incident edges, as mutually orthogonal as
@@ -469,38 +470,53 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
       /*--- A seed standing in a free quadrilateral or hexahedron takes that element whole, the one
        *    pressing hardest against what is already agglomerated, so leftover structured mesh is
-       *    tiled by whole cells. ---*/
+       *    tiled by whole cells. A grid without elements, a coarse one, offers the 4-cycles of its
+       *    connectivity as quadrilaterals. ---*/
+      wholeCells.clear();
       if (HasElements(fine_grid)) {
-        auto bestElem = NO_CV;
-        unsigned long bestContact = 0, bestKey = NO_CV;
         for (auto iElem = 0u; iElem < fine_grid->nodes->GetnElem(iPoint); ++iElem) {
-          const auto jElem = fine_grid->nodes->GetElem(iPoint, iElem);
-          const auto* elem = fine_grid->elem[jElem];
+          const auto* elem = fine_grid->elem[fine_grid->nodes->GetElem(iPoint, iElem)];
           if ((elem->GetVTK_Type() != QUADRILATERAL) && (elem->GetVTK_Type() != HEXAHEDRON)) continue;
-
-          bool free = true;
-          unsigned long contact = 0, key = NO_CV;
-          for (auto iNode = 0u; (iNode < elem->GetnNodes()) && free; ++iNode) {
-            const auto kPoint = elem->GetNode(iNode);
-            key = std::min(key, fine_grid->nodes->GetGlobalIndex(kPoint));
-            if (kPoint == iPoint) continue;
-            free = !fine_grid->nodes->GetAgglomerate(kPoint) && fine_grid->nodes->GetDomain(kPoint) &&
-                   GeometricalCheck(kPoint, fine_grid, config);
-            for (auto mPoint : fine_grid->nodes->GetPoints(kPoint)) contact += fine_grid->nodes->GetAgglomerate(mPoint);
-          }
-          if (!free) continue;
-          if ((bestElem == NO_CV) || (contact > bestContact) || ((contact == bestContact) && (key < bestKey))) {
-            bestElem = jElem;
-            bestContact = contact;
-            bestKey = key;
-          }
-        }
-        if (bestElem != NO_CV) {
-          const auto* elem = fine_grid->elem[bestElem];
+          wholeCells.emplace_back();
           for (auto iNode = 0u; iNode < elem->GetnNodes(); ++iNode)
-            if (elem->GetNode(iNode) != iPoint) addMember(elem->GetNode(iNode));
+            if (elem->GetNode(iNode) != static_cast<unsigned long>(iPoint))
+              wholeCells.back().push_back(elem->GetNode(iNode));
+        }
+      } else if (nDim == 2) {
+        const auto neighbours = fine_grid->nodes->GetPoints(iPoint);
+        auto touching = [&](unsigned long a, unsigned long b) {
+          const auto around = fine_grid->nodes->GetPoints(a);
+          return std::find(around.begin(), around.end(), b) != around.end();
+        };
+        for (auto a : neighbours)
+          for (auto b : neighbours) {
+            if ((a >= b) || touching(a, b)) continue;
+            for (auto m : fine_grid->nodes->GetPoints(a))
+              if ((m != iPoint) && touching(m, b) && !touching(m, iPoint)) wholeCells.push_back({a, m, b});
+          }
+      }
+
+      auto bestCell = NO_CV;
+      unsigned long bestContact = 0, bestKey = NO_CV;
+      for (auto iCell = 0ul; iCell < wholeCells.size(); ++iCell) {
+        bool free = true;
+        unsigned long contact = 0, key = fine_grid->nodes->GetGlobalIndex(iPoint);
+        for (auto kPoint : wholeCells[iCell]) {
+          key = std::min(key, fine_grid->nodes->GetGlobalIndex(kPoint));
+          free = free && !fine_grid->nodes->GetAgglomerate(kPoint) && fine_grid->nodes->GetDomain(kPoint) &&
+                 GeometricalCheck(kPoint, fine_grid, config);
+          if (!free) break;
+          for (auto mPoint : fine_grid->nodes->GetPoints(kPoint)) contact += fine_grid->nodes->GetAgglomerate(mPoint);
+        }
+        if (!free) continue;
+        if ((bestCell == NO_CV) || (contact > bestContact) || ((contact == bestContact) && (key < bestKey))) {
+          bestCell = iCell;
+          bestContact = contact;
+          bestKey = key;
         }
       }
+      if (bestCell != NO_CV)
+        for (auto kPoint : wholeCells[bestCell]) addMember(kPoint);
 
       edgeDir.clear();
       edgeLen.clear();
@@ -562,7 +578,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         }
 
         unsigned long best = NO_CV;
-        unsigned short best_shared = 0;
+        unsigned short best_shared = 0, best_flush = 0;
         su2double best_dist = std::numeric_limits<su2double>::max();
 
         for (auto CVPoint : candidates) {
@@ -573,6 +589,24 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           /*--- In 2D a CV of three or more nodes only takes nodes touching two members, so it cannot
            *    grow into a chain. ---*/
           if ((nDim == 2) && (nChildren >= 3) && (shared < 2)) continue;
+
+          /*--- A pair does not grow into a line of three, the third node then seeds a pair of its own,
+           *    so the cells of a row keep the phase of the cells beside them. ---*/
+          if ((nDim == 2) && (nChildren == 2) && (shared == 1)) {
+            const auto around = fine_grid->nodes->GetPoints(CVPoint);
+            const bool firstTouches = std::find(around.begin(), around.end(), members[0]) != around.end();
+            const auto tip = firstTouches ? members[0] : members[1], tail = firstTouches ? members[1] : members[0];
+            su2double along[MAXNDIM] = {0.0}, across[MAXNDIM] = {0.0};
+            for (unsigned short d = 0; d < nDim; ++d) {
+              along[d] = fine_grid->nodes->GetCoord(CVPoint, d) - fine_grid->nodes->GetCoord(tip, d);
+              across[d] = fine_grid->nodes->GetCoord(tip, d) - fine_grid->nodes->GetCoord(tail, d);
+            }
+            const su2double lenAlong = GeometryToolbox::Norm(nDim, along);
+            const su2double lenAcross = GeometryToolbox::Norm(nDim, across);
+            if ((lenAlong > 0.0) && (lenAcross > 0.0) &&
+                (GeometryToolbox::DotProduct(nDim, along, across) > 0.5 * lenAlong * lenAcross))
+              continue;
+          }
 
           /*--- Distance to the centroid in cells: the offset is scaled by the seed edge pointing
            *    most nearly along it. ---*/
@@ -593,9 +627,24 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
             dist = r * r;
           }
 
-          if ((shared > best_shared) || ((shared == best_shared) && (dist < best_dist))) {
+          /*--- Between equals, the node lying flush against the same neighbouring CVs as the members
+           *    keeps the cells of a structured mesh in line with those already made. ---*/
+          unsigned short flush = 0;
+          for (auto jPoint : fine_grid->nodes->GetPoints(CVPoint)) {
+            if (!fine_grid->nodes->GetAgglomerate(jPoint) || inCV[jPoint]) continue;
+            bool lies = false;
+            for (auto kPoint : members)
+              for (auto lPoint : fine_grid->nodes->GetPoints(kPoint))
+                lies = lies || ((lPoint != jPoint) && fine_grid->nodes->GetAgglomerate(lPoint) && !inCV[lPoint] &&
+                                (fine_grid->nodes->GetParent_CV(lPoint) == fine_grid->nodes->GetParent_CV(jPoint)));
+            flush += lies;
+          }
+
+          if ((shared > best_shared) || ((shared == best_shared) && (flush > best_flush)) ||
+              ((shared == best_shared) && (flush == best_flush) && (dist < best_dist))) {
             best = CVPoint;
             best_shared = shared;
+            best_flush = flush;
             best_dist = dist;
           }
         }
@@ -809,6 +858,70 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
     const auto iTarget = bestPartner(iCoarsePoint, SMALL_STACK_CV, true, true);
     if (iTarget != NO_CV) mergeInto(iCoarsePoint, iTarget);
+  }
+
+  /*--- In 2D, a CV of three nodes bent round a corner takes the fourth node of its quadrilateral from
+   *    a neighbouring three-node CV that can spare it, which turns staggered seams into rectangles. ---*/
+  if (nDim == 2) {
+    auto adjacent = [&](unsigned long iFinePoint, unsigned long jFinePoint) {
+      const auto neighbours = fine_grid->nodes->GetPoints(iFinePoint);
+      return std::find(neighbours.begin(), neighbours.end(), jFinePoint) != neighbours.end();
+    };
+
+    for (auto iPass = 0u; iPass < 4; iPass++) {
+      bool changed = false;
+
+      for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
+        if (nodes->GetnChildren_CV(iCoarsePoint) != 3) continue;
+        if (mustStayAlone[iCoarsePoint] || isStackBase(iCoarsePoint) || touchesPartition[iCoarsePoint]) continue;
+        if ((iCoarsePoint >= firstLineCV) && (iCoarsePoint < endLineCV)) continue;
+
+        /*--- The middle node of the bend touches the other two, which do not touch each other. ---*/
+        unsigned long child[3];
+        for (auto k = 0u; k < 3; k++) child[k] = nodes->GetChildren_CV(iCoarsePoint, k);
+        long corner = -1;
+        for (auto k = 0u; k < 3; k++) {
+          const auto a = child[(k + 1) % 3], b = child[(k + 2) % 3];
+          if (adjacent(child[k], a) && adjacent(child[k], b) && !adjacent(a, b)) corner = k;
+        }
+        if (corner < 0) continue;
+        const auto a = child[(corner + 1) % 3], b = child[(corner + 2) % 3];
+
+        /*--- The node closing the quadrilateral touches both ends of the bend, not its middle. ---*/
+        auto donor = NO_CV;
+        unsigned long fourth = NO_CV;
+        for (auto m : fine_grid->nodes->GetPoints(a)) {
+          const auto jCoarsePoint = fine_grid->nodes->GetParent_CV(m);
+          if ((jCoarsePoint == NO_CV) || (jCoarsePoint >= nPointDomain) || (jCoarsePoint == iCoarsePoint)) continue;
+          if (!adjacent(m, b) || adjacent(m, child[corner])) continue;
+          if (nodes->GetnChildren_CV(jCoarsePoint) != 3) continue;
+          if (mustStayAlone[jCoarsePoint] || isStackBase(jCoarsePoint) || touchesPartition[jCoarsePoint]) continue;
+          if ((jCoarsePoint >= firstLineCV) && (jCoarsePoint < endLineCV)) continue;
+          if (cvMarkerClass[jCoarsePoint] != cvMarkerClass[iCoarsePoint]) continue;
+
+          /*--- What the donor keeps must stay connected. ---*/
+          vector<unsigned long> kept;
+          for (auto k = 0u; k < 3; k++)
+            if (nodes->GetChildren_CV(jCoarsePoint, k) != m) kept.push_back(nodes->GetChildren_CV(jCoarsePoint, k));
+          if (!adjacent(kept[0], kept[1])) continue;
+
+          donor = jCoarsePoint;
+          fourth = m;
+          break;
+        }
+        if (donor == NO_CV) continue;
+
+        const auto nDonor = nodes->GetnChildren_CV(donor);
+        for (auto k = 0u; k < nDonor; k++)
+          if (nodes->GetChildren_CV(donor, k) == fourth)
+            nodes->SetChildren_CV(donor, k, nodes->GetChildren_CV(donor, nDonor - 1));
+        nodes->SetnChildren_CV(donor, nDonor - 1);
+        giveChild(fourth, iCoarsePoint);
+        changed = true;
+      }
+
+      if (!changed) break;
+    }
   }
 
   /*--- Compact the coarse numbering, squeezing out the indices the repair passes emptied. The

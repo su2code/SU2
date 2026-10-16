@@ -2054,7 +2054,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       constexpr unsigned long stallPersist = 20;
       constexpr unsigned short stallMaxCount = 3;
       constexpr passivedouble stallProgress = 0.1, stallGrowth = 1.1, stallCut = 0.5, stallReset = 1.0;
-      constexpr passivedouble oscCap = 0.5, oscReset = 3.0;
+      constexpr passivedouble oscCap = 0.5, oscReset = 3.0, oscRelease = 1.2;
+      constexpr unsigned long oscQuiet = 100;
 
       if (iMesh == MESH_0) {
         const passivedouble avgCFL = SU2_TYPE::GetValue(Avg_CFL_Local);
@@ -2244,8 +2245,14 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
         /*--- A cap that has held the CFL through a quiet, converging stretch is raised, so that it does not
          *    outlive the transient that caused it. A new event at the higher CFL brings it back down. It
-         *    stays below the cap set at the last stall and below the flip-flop limit. ---*/
+         *    stays below the cap set at the last stall and below the flip-flop limit, which itself rises
+         *    in small steps over quiet, converging stretches. ---*/
         if ((CFL_OscLevel > 0.0) && (flowMean < Res_AtOsc - oscReset)) CFL_OscLevel = -1.0;
+        if ((CFL_OscLevel > 0.0) && (iter > max(CFL_LastEvent, CFL_LastOscRelease) + oscQuiet) && ResTrend_Increase &&
+            (ResRise < growBelowBest)) {
+          CFL_OscLevel *= oscRelease;
+          CFL_LastOscRelease = iter;
+        }
         passivedouble probeLimit = (CFL_StallCap > 0.0) ? CFL_StallCap : 1e30;
         if (CFL_OscLevel > 0.0) probeLimit = min(probeLimit, max(oscCap * CFL_OscLevel, cflMin));
         if ((CFL_Cap > 0.0) && (avgCFL > 0.95 * CFL_Cap) && (iter > max(CFL_LastEvent, CFL_LastStall) + capProbeQuiet) &&

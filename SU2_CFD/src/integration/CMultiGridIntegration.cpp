@@ -1025,6 +1025,11 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 /*--- Largest condition number of the stencil directions for which the prolongation gradient is fitted. ---*/
 static constexpr passivedouble PROLONG_MAX_CONDITION = 1e3;
 
+/*--- Stencil aspect ratio up to which the fitted gradient is used in full, and from which the cell
+ *    keeps the constant operator. In between the gradient fades out with the logarithm of the ratio. ---*/
+static constexpr passivedouble PROLONG_FULL_ASPECT = 10.0;
+static constexpr passivedouble PROLONG_MAX_ASPECT = 100.0;
+
 namespace {
 /*--- Condition number of a symmetric 2x2 or 3x3 matrix, infinite if it is not positive definite. ---*/
 passivedouble FitConditionNumber(unsigned short nDim, const su2double A[3][3]) {
@@ -1114,7 +1119,7 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
         if ((global[0] > 0) && (SU2_MPI::GetRank() == MASTER_NODE))
           cout << "MG level " << iMesh << ": linear prolongation keeps the constant operator in " << global[0]
                << " of " << global[1] << " coarse cells (stencil direction condition number above "
-               << PROLONG_MAX_CONDITION << ")." << endl;
+               << PROLONG_MAX_CONDITION << " or aspect ratio above " << PROLONG_MAX_ASPECT << ")." << endl;
       }
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -1175,10 +1180,17 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
       }
     }
 
-    /*--- Stretching alone leaves the fit well posed. Only neighbours that do not span every direction
-     *    leave a slope undefined, and then the cell keeps the constant operator. ---*/
+    /*--- Neighbours that do not span every direction leave a slope undefined. A stencil much longer in
+     *    one direction than another, from cell stretching, weakens the gradient or removes it. In both
+     *    cases the cell falls back to the constant operator. ---*/
     su2double Ainv[MAXNDIM][MAXNDIM] = {{0.0}};
-    if ((FitConditionNumber(nDim, Bmat) > PROLONG_MAX_CONDITION) || !CholeskyInverse(nDim, Amat, Ainv)) {
+    const passivedouble aspect = sqrt(FitConditionNumber(nDim, Amat));
+    const passivedouble weight =
+        (aspect <= PROLONG_FULL_ASPECT)
+            ? 1.0
+            : max(0.0, log(PROLONG_MAX_ASPECT / aspect) / log(PROLONG_MAX_ASPECT / PROLONG_FULL_ASPECT));
+    if ((FitConditionNumber(nDim, Bmat) > PROLONG_MAX_CONDITION) || (weight <= 0.0) ||
+        !CholeskyInverse(nDim, Amat, Ainv)) {
       SU2_OMP_ATOMIC
       prolongIllConditioned[iMesh]++;
       continue;
@@ -1188,7 +1200,7 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         su2double value = 0.0;
         for (auto jDim = 0u; jDim < nDim; jDim++) value += Ainv[iDim][jDim]*rhs[iVar][jDim];
-        gradient(iPoint, iVar, iDim) = value;
+        gradient(iPoint, iVar, iDim) = weight * value;
       }
   }
   END_SU2_OMP_FOR
