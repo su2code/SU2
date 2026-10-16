@@ -2865,6 +2865,8 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_AUXVAR_LS  ,  /*!< \brief Auxiliary scalar gradient communication for weighted least-squares. */
+  PERIODIC_AUXVAR_GG  ,  /*!< \brief Auxiliary scalar gradient communication for Green-Gauss. */
 };
 
 /*!
@@ -3001,12 +3003,12 @@ static const MapType<std::string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_
  * \brief Container to hold Variables for streamwise Periodic flow as they are often used together in places.
  */
 struct StreamwisePeriodicValues {
-  su2double Streamwise_Periodic_PressureDrop;       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
-  su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
-  su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
-  su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
-  su2double Streamwise_Periodic_BoundaryArea;       /*!< \brief Global Surface area of the streamwise periodic interface. */
-  su2double Streamwise_Periodic_AvgDensity;         /*!< \brief Area avg density on the periodic interface. */
+  su2double Streamwise_Periodic_PressureDrop = 0.0; /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
+  su2double Streamwise_Periodic_MassFlow = 0.0; /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
+  su2double Streamwise_Periodic_IntegratedHeatFlow = 0.0; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+  su2double Streamwise_Periodic_InletTemperature = 0.0; /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+  su2double Streamwise_Periodic_BoundaryArea = 0.0; /*!< \brief Global Surface area of the streamwise periodic interface. */
+  su2double Streamwise_Periodic_AvgDensity = 0.0; /*!< \brief Area avg density on the periodic interface. */
 };
 
 /*!
