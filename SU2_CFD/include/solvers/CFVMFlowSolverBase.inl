@@ -260,6 +260,13 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
   }
+
+  /*--- The periodic communication updates the number of neighbors of the owned points only, update the halos. ---*/
+
+  if (config->GetnMarker_Periodic() > 0) {
+    geometry->InitiateComms(geometry, config, MPI_QUANTITIES::NEIGHBORS);
+    geometry->CompleteComms(geometry, config, MPI_QUANTITIES::NEIGHBORS);
+  }
   SetImplicitPeriodic(euler_implicit);
   SetRotatePeriodic(true);
 
