@@ -1619,7 +1619,8 @@ void CMultiGridIntegration::SetProlongated_ScalarSolution(CSolver *sol_fine, CSo
     END_SU2_OMP_FOR
   }
 
-  /*--- The eddy viscosity is zero on a no-slip wall, the injected value is not. ---*/
+  /*--- On a no-slip wall the eddy viscosity is zero, and the turbulence variables take the value
+   *    of their wall parent, which holds the wall condition instead of an extrapolation. ---*/
 
   if (eddy_viscosity) {
     for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1628,6 +1629,8 @@ void CMultiGridIntegration::SetProlongated_ScalarSolution(CSolver *sol_fine, CSo
       SU2_OMP_FOR_STAT(32)
       for (auto iVertex = 0ul; iVertex < geo_fine->nVertex[iMarker]; iVertex++) {
         const auto Point_Fine = geo_fine->vertex[iMarker][iVertex]->GetNode();
+        const auto Point_Coarse = geo_fine->nodes->GetParent_CV(Point_Fine);
+        sol_fine->GetNodes()->SetSolution(Point_Fine, sol_coarse->GetNodes()->GetSolution(Point_Coarse));
         sol_fine->GetNodes()->SetmuT(Point_Fine, 0.0);
       }
       END_SU2_OMP_FOR
