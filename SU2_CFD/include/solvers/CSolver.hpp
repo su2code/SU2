@@ -98,17 +98,23 @@ protected:
   vector<passivedouble> CFL_EventValues;              /*!< \brief CFL at each cut. */
   unsigned long CFL_LastEvent = 0;                    /*!< \brief Iteration of the last cut. */
   unsigned long CFL_LastCapProbe = 0;                 /*!< \brief Iteration of the last cap increase. */
-  unsigned long CFL_LastFrozen = 0;                   /*!< \brief Iteration of the last frozen-residual cap. */
   vector<vector<passivedouble>> ResStall_History;     /*!< \brief Log flow residuals over two stall windows. */
   vector<passivedouble> CFLStall_History;             /*!< \brief Mean CFL over two stall windows. */
   unsigned long Stall_Streak = 0;                     /*!< \brief Consecutive iterations without envelope progress. */
-  unsigned long CFL_LastStall = 0;                    /*!< \brief Iteration of the last stall cap. */
+  unsigned long CFL_LastStall = 0;                    /*!< \brief Iteration of the last plateau. */
   passivedouble CFL_StallCap = -1.0;                  /*!< \brief Cap set at the last stall, which cap increases stay below. */
   passivedouble CFL_OscLevel = -1.0;                  /*!< \brief Lowest CFL at which the residuals flip-flopped. */
   unsigned long CFL_LastOscRelease = 0;               /*!< \brief Iteration of the last flip-flop limit increase. */
   passivedouble Res_AtOsc = 0.0;                      /*!< \brief Mean log flow residual at that flip-flop. */
-  unsigned short Stall_Count = 0;                     /*!< \brief Stalls since the residual last fell well below one. */
-  passivedouble Res_AtStall = 0.0;                    /*!< \brief Mean log flow residual at the last stall. */
+  bool Trial_Active = false;                          /*!< \brief CFL cuts at a residual plateau are being evaluated. */
+  unsigned long Trial_Start = 0;                      /*!< \brief Iteration of the first cut of the trial. */
+  unsigned long Trial_Hold = 0;                       /*!< \brief No trial starts before this iteration. */
+  unsigned long Trial_Settle = 0;                     /*!< \brief Iteration after which the lowest CFL of the trial is judged. */
+  passivedouble Trial_Res = 0.0;                      /*!< \brief Mean log flow residual when the trial started. */
+  passivedouble Trial_CFL = 0.0;                      /*!< \brief Mean CFL when the trial started. */
+  passivedouble Trial_Ceiling = -1.0;                 /*!< \brief CFL ceiling before the trial. */
+  passivedouble Trial_Cap = -1.0;                     /*!< \brief CFL cap before the trial. */
+  passivedouble Trial_StallCap = -1.0;                /*!< \brief Plateau cap before the trial. */
   unsigned short nVar,           /*!< \brief Number of variables of the problem. */
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
