@@ -478,9 +478,9 @@ class Interface:
             )
             del sendBuffPhysical
         else:
-            self.fluidPhysicalInterfaceNodesDistribution[
-                0
-            ] = self.nFluidInterfacePhysicalNodes
+            self.fluidPhysicalInterfaceNodesDistribution[0] = (
+                self.nFluidInterfacePhysicalNodes
+            )
 
         # Same thing for the solid part
         self.solidPhysicalInterfaceNodesDistribution = np.zeros(MPIsize, dtype=int)
@@ -491,9 +491,9 @@ class Interface:
             )
             del sendBuffPhysical
         else:
-            self.solidPhysicalInterfaceNodesDistribution[
-                0
-            ] = self.nSolidInterfacePhysicalNodes
+            self.solidPhysicalInterfaceNodesDistribution[0] = (
+                self.nSolidInterfacePhysicalNodes
+            )
 
         # --- Calculate and store the global indexing of interface physical nodes on each processor and allgather the information ---
         if self.have_MPI:
