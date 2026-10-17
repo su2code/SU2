@@ -1231,6 +1231,7 @@ struct CMGOptions {
   std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
   std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
   std::vector<su2double> MG_CflScaling;        /*!< \brief Per-level CFL scaling factors relative to the previous (finer) level. Entry [i] scales level i+1 from level i. Size = nMGLevels. */
+  std::vector<unsigned long> MG_LinSolIter;    /*!< \brief Linear solver iteration cap per MG level (entry 0 = finest). */
   bool MG_Smooth_EarlyExit{false};        /*!< \brief Enable early exit for MG smoothing iterations. */
   bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
   su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */

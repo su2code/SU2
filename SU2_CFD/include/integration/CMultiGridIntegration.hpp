@@ -372,6 +372,14 @@ private:
   unsigned short lastPreSmoothWorstStep[MAX_MG_LEVELS+1] = {};
   unsigned short lastPostSmoothWorstStep[MAX_MG_LEVELS+1] = {};
 
+  /*--- Linear solver iterations and final relative residual of each smoothing step, per level. ---*/
+  struct LinSolInfo {
+    unsigned long iters;
+    passivedouble res;
+  };
+  std::vector<LinSolInfo> lastPreLinSol[MAX_MG_LEVELS+1];
+  std::vector<LinSolInfo> lastPostLinSol[MAX_MG_LEVELS+1];
+
   /*! \brief FinestMesh observed on the previous call; 0 also serves as the sentinel forcing a
    *  reset on the first call, since a FULL cycle starts at FinestMesh == nMGLevels > 0. */
   unsigned short mg_ramp_last_FinestMesh = 0;

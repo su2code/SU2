@@ -2132,6 +2132,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i).
    * If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
+  /*!\brief MG_LINEAR_SOLVER_ITER\n DESCRIPTION: Maximum linear solver iterations on coarse MG levels. Entry i applies to level i+1;
+   * the last value is repeated, and the cap never exceeds LINEAR_SOLVER_ITER. DEFAULT: LINEAR_SOLVER_ITER \ingroup Config*/
+  addUShortListOption("MG_LINEAR_SOLVER_ITER", nMG_LinSolIter_p, MG_LinSolIter_p);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
   /*--- Options related to the spatial discretization ---*/
@@ -5035,6 +5038,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     } else {
       for (unsigned short i = 0; i < nMGLevels; ++i)
         MGOptions.MG_CflScaling[i] = 0.25;
+    }
+
+    /*--- Linear solver iteration cap per level; level 0 always uses LINEAR_SOLVER_ITER. ---*/
+    MGOptions.MG_LinSolIter.assign(nMGLevels + 1, Linear_Solver_Iter);
+    for (unsigned short i = 1; i <= nMGLevels && nMG_LinSolIter_p != 0; ++i) {
+      const auto cap = MG_LinSolIter_p[min<unsigned short>(i - 1, nMG_LinSolIter_p - 1)];
+      MGOptions.MG_LinSolIter[i] = min<unsigned long>(cap, Linear_Solver_Iter);
     }
   }
 

@@ -552,6 +552,26 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       table << "-";
 
       /*--- Corr.-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
+      /*--- Linear solver iterations and final relative residual of each smoothing step. ---*/
+      auto linRows = [&](const char* name, const std::vector<LinSolInfo>* info, unsigned short nLev) {
+        std::vector<std::string> its(nMGLevels + 1, "-"), res(nMGLevels + 1, "-");
+        for (unsigned short i = 0; i < nLev; ++i) {
+          std::ostringstream si, sr;
+          sr << std::scientific << std::setprecision(1);
+          for (std::size_t k = 0; k < info[i].size(); ++k) {
+            si << (k ? "," : "") << info[i][k].iters;
+            sr << (k ? "," : "") << info[i][k].res;
+          }
+          if (!info[i].empty()) { its[i] = si.str(); res[i] = sr.str(); }
+        }
+        table << std::string(name) + " its";
+        for (const auto& str : its) table << str;
+        table << std::string(name) + " res";
+        for (const auto& str : res) table << str;
+      };
+      linRows("Pre-lin", lastPreLinSol, nMGLevels + 1);
+      linRows("Post-lin", lastPostLinSol, nMGLevels);
+
       table << "Corr-smooth";
       for (unsigned short i = 0; i < nMGLevels; ++i)
         table << cellStr(lastCorrecSmoothIters[i], mgOptsZone.MG_CorrecSmooth[i],
@@ -767,7 +787,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                                  ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
 
   /*--- Reset the shared early-exit flag (master only). ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false; lastPreLinSol[iMesh].clear();)
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
 
     /*--- Time and space integration ---*/
@@ -791,6 +811,14 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
 
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
+      if (mgOpts.MG_Smooth_Output) {
+        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+          lastPreLinSol[iMesh].push_back({solver_fine->GetIterLinSolver(),
+                                        SU2_TYPE::GetValue(solver_fine->GetResLinSolver())});
+        }
+        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      }
 
       /*--- At iRKStep==0 LinSysRes = R(u_k). ---*/
       if (iRKStep == 0 && need_initial_rms) {
@@ -843,7 +871,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
                                  ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
 
   /*--- Reset the shared early-exit flag (master only). ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false; lastPostLinSol[iMesh].clear();)
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
@@ -864,6 +892,14 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
+      if (mgOpts.MG_Smooth_Output) {
+        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+          lastPostLinSol[iMesh].push_back({solver_fine->GetIterLinSolver(),
+                                        SU2_TYPE::GetValue(solver_fine->GetResLinSolver())});
+        }
+        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      }
 
       /*--- At iRKStep==0 LinSysRes = R(u_k) ---*/
       if (iRKStep == 0 && need_per_step_rms) {
