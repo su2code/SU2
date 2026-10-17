@@ -79,7 +79,7 @@ def main():
         metavar="CHORD",
     )
 
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
     options.chord_length = float(options.chord_length)
 
     # run filter
