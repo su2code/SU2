@@ -108,7 +108,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
   bool SolveTDState_h(su2double val_enthalpy, su2double val_temperature_guess,
                       const su2double* val_scalars = nullptr) override {
     /*--- Convergence criterion for temperature, high accuracy needed for restarts. ---*/
-    constexpr su2double tolerance = 1e-5;
+    constexpr passivedouble tolerance = 1e-5;
     constexpr int maxIterations = 20;
 
     Enthalpy = val_enthalpy;
@@ -117,6 +117,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
                                                           : Std_Ref_Temp_ND;
     su2double Cp_iter = coeffs_[0];
     bool converged = false;
+    bool atMinimum = false;
 
     /*--- Compute temperature given enthalpy using Newton-Raphson. ---*/
     for (int iter = 0; iter < maxIterations; ++iter) {
@@ -138,11 +139,13 @@ class CIncIdealGasPolynomial final : public CFluidModel {
        the enthalpy increases with temperature, so a step below the minimum taken from the minimum itself means
        the solution is below it, stop and report failure. ---*/
       if (temperature + delta < Temperature_Min) {
-        if (temperature == Temperature_Min) break;
+        if (atMinimum) break;
         temperature = Temperature_Min;
+        atMinimum = true;
         continue;
       }
       temperature += delta;
+      atMinimum = false;
       if (fabs(delta) <= tolerance) {
         converged = true;
         break;
