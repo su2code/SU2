@@ -146,9 +146,22 @@ private:
    * \param[in] geo_fine - Geometrical definition of the fine grid.
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the coarse mesh.
    */
   void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                               CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+                               CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Set the solution of every fine child from its coarse parent, constant or linearly reconstructed.
+   * \param[in,out] sol_fine - Solver on the fine grid.
+   * \param[in] sol_coarse - Solver on the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the coarse mesh.
+   */
+  void InterpolateSolutionToChildren(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
+                                     CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
 
 
   /*!
@@ -201,14 +214,15 @@ private:
   /*!
    * \brief Least-squares gradient of the coarse-grid correction, limited so no child value
    * leaves the range of the coarse stencil.
-   * \param[in] sol_coarse - Solver holding the correction in Solution_Old.
+   * \param[in] sol_coarse - Solver holding the correction in Solution_Old, or the solution itself.
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] geo_fine - Geometrical definition of the fine grid.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the coarse mesh.
+   * \param[in] useSolution - Differentiate Solution instead of Solution_Old.
    */
   void ComputeProlongationGradient(CSolver *sol_coarse, CGeometry *geo_coarse, CGeometry *geo_fine,
-                                   const CConfig *config, unsigned short iMesh);
+                                   const CConfig *config, unsigned short iMesh, bool useSolution);
 
   /*!
    * \brief Do an implicit smoothing of the prolongated correction.
@@ -314,9 +328,11 @@ private:
    * \param[in]     geo_coarse     - Geometry of the level handing over.
    * \param[in]     config         - Definition of the particular problem.
    * \param[in]     eddy_viscosity - Carry the eddy viscosity across as well.
+   * \param[in]     iMesh          - Index of the coarse mesh.
    */
   void SetProlongated_ScalarSolution(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                                     CGeometry *geo_coarse, CConfig *config, bool eddy_viscosity);
+                                     CGeometry *geo_coarse, CConfig *config, bool eddy_viscosity,
+                                     unsigned short iMesh);
 
   /*!
    * \brief Helper function for early-exit logic during pre/post-smoothing.

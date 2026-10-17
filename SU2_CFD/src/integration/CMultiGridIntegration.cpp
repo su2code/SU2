@@ -349,7 +349,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             solver_container[iZone][iInst][FinestMesh][Solver_Position],
                             geometry[iZone][iInst][FinestMesh-1],
                             geometry[iZone][iInst][FinestMesh],
-                            config[iZone]);
+                            config[iZone], FinestMesh);
 
     /*--- The scalar equations only restrict downward, so hand the new level their solution too,
      *    otherwise they restart from their initial condition at every promotion. ---*/
@@ -363,7 +363,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       SetProlongated_ScalarSolution(scalar_fine, scalar_coarse,
                                     geometry[iZone][iInst][FinestMesh-1],
                                     geometry[iZone][iInst][FinestMesh],
-                                    config[iZone], Scalar_Position == TURB_SOL);
+                                    config[iZone], Scalar_Position == TURB_SOL, FinestMesh);
     }
 
     /*--- Report the promotion before the startup state is reset below. ---*/
@@ -1021,7 +1021,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   /*--- The coarse coordinate is the volume-weighted centroid of the children, so the
    *    reconstruction below averages back to the coarse correction exactly. ---*/
 
-  ComputeProlongationGradient(sol_coarse, geo_coarse, geo_fine, config, iMesh);
+  ComputeProlongationGradient(sol_coarse, geo_coarse, geo_fine, config, iMesh, false);
 
   const unsigned short nDim = geo_coarse->GetnDim();
   const auto& gradient = prolongGradient[iMesh];
@@ -1134,13 +1134,16 @@ bool CholeskyInverse(unsigned short n, const su2double A[3][3], su2double inv[3]
 
 void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGeometry *geo_coarse,
                                                         CGeometry *geo_fine, const CConfig *config,
-                                                        unsigned short iMesh) {
+                                                        unsigned short iMesh, bool useSolution) {
   SU2_ZONE_SCOPED
 
   const unsigned short nVar = sol_coarse->GetnVar();
   const unsigned short nDim = geo_coarse->GetnDim();
   const auto nPointDomain = geo_coarse->GetnPointDomain();
   auto* nodes = sol_coarse->GetNodes();
+  auto Field = [&](unsigned long iPoint) {
+    return useSolution ? nodes->GetSolution(iPoint) : nodes->GetSolution_Old(iPoint);
+  };
 
   /*--- Every thread of this rank takes this branch together, and the loops below would all be
    *    empty anyway. It also keeps the sizing test off a container that was never resized. ---*/
@@ -1190,7 +1193,7 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
       for (auto iDim = 0u; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) = 0.0;
 
     const auto* Coord_i = geo_coarse->nodes->GetCoord(iPoint);
-    const auto* Correction_i = nodes->GetSolution_Old(iPoint);
+    const auto* Correction_i = Field(iPoint);
 
     su2double Amat[MAXNDIM][MAXNDIM] = {{0.0}}, Bmat[MAXNDIM][MAXNDIM] = {{0.0}};
     su2double rhs[MAXNVAR][MAXNDIM] = {{0.0}};
@@ -1208,7 +1211,7 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
           Bmat[iDim][jDim] += Distance[iDim]*Distance[jDim]/dist2;
         }
 
-      const auto* Correction_j = nodes->GetSolution_Old(jPoint);
+      const auto* Correction_j = Field(jPoint);
 
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         const su2double delta = Correction_j[iVar] - Correction_i[iVar];
@@ -1271,7 +1274,7 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
     const auto* Coord_i = geo_coarse->nodes->GetCoord(iPoint);
-    const auto* Correction_i = nodes->GetSolution_Old(iPoint);
+    const auto* Correction_i = Field(iPoint);
 
     su2double Correction_Min[MAXNVAR], Correction_Max[MAXNVAR];
     for (auto iVar = 0u; iVar < nVar; iVar++) {
@@ -1280,7 +1283,7 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
     }
 
     for (auto jPoint : geo_coarse->nodes->GetPoints(iPoint)) {
-      const auto* Correction_j = nodes->GetSolution_Old(jPoint);
+      const auto* Correction_j = Field(jPoint);
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         Correction_Min[iVar] = min(Correction_Min[iVar], Correction_j[iVar]);
         Correction_Max[iVar] = max(Correction_Max[iVar], Correction_j[iVar]);
@@ -1498,24 +1501,55 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CSolver
 
 }
 
+void CMultiGridIntegration::InterpolateSolutionToChildren(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
+                                                          CGeometry *geo_coarse, CConfig *config,
+                                                          unsigned short iMesh) {
+  SU2_ZONE_SCOPED
+
+  const unsigned short nVar = sol_coarse->GetnVar();
+  const unsigned short nDim = geo_coarse->GetnDim();
+  const bool linear = config->GetMGOptions().MG_Linear_Prolongation;
+
+  if (linear) ComputeProlongationGradient(sol_coarse, geo_coarse, geo_fine, config, iMesh, true);
+
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+    const auto* Solution_Coarse = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+    const auto* Coord_Coarse = geo_coarse->nodes->GetCoord(Point_Coarse);
+
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+
+      if (!linear) {
+        sol_fine->GetNodes()->SetSolution(Point_Fine, Solution_Coarse);
+        continue;
+      }
+
+      su2double Distance[MAXNDIM] = {0.0};
+      GeometryToolbox::Distance(nDim, geo_fine->nodes->GetCoord(Point_Fine), Coord_Coarse, Distance);
+
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        su2double value = Solution_Coarse[iVar];
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          value += prolongGradient[iMesh](Point_Coarse, iVar, iDim) * Distance[iDim];
+        sol_fine->GetNodes()->SetSolution(Point_Fine, iVar, value);
+      }
+    }
+  }
+  END_SU2_OMP_FOR
+}
+
 void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config,
+                                                    unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool grid_movement = config->GetGrid_Movement();
 
-  /*--- Constant injection: every fine child of a coarse CV takes its parent's value. ---*/
+  /*--- Constant injection, or the limited linear reconstruction when MG_Linear_Prolongation is set. ---*/
 
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-    const auto* Solution_Coarse = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
-    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      sol_fine->GetNodes()->SetSolution(Point_Fine, Solution_Coarse);
-    }
-  }
-  END_SU2_OMP_FOR
+  InterpolateSolutionToChildren(sol_fine, sol_coarse, geo_fine, geo_coarse, config, iMesh);
 
   /*--- The injected values do not satisfy the fine-grid wall conditions on their own. ---*/
 
@@ -1565,24 +1599,25 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
 
 void CMultiGridIntegration::SetProlongated_ScalarSolution(CSolver *sol_fine, CSolver *sol_coarse,
                                                           CGeometry *geo_fine, CGeometry *geo_coarse,
-                                                          CConfig *config, bool eddy_viscosity) {
+                                                          CConfig *config, bool eddy_viscosity,
+                                                          unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
-  /*--- Constant injection: every fine child of a coarse CV takes its parent's value. ---*/
+  /*--- Constant injection, or the limited linear reconstruction when MG_Linear_Prolongation is set. ---*/
 
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+  InterpolateSolutionToChildren(sol_fine, sol_coarse, geo_fine, geo_coarse, config, iMesh);
 
-    const auto* Solution_Coarse = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
-    const su2double muT_Coarse = eddy_viscosity ? sol_coarse->GetNodes()->GetmuT(Point_Coarse) : su2double(0.0);
+  /*--- The eddy viscosity is injected as a constant. ---*/
 
-    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      sol_fine->GetNodes()->SetSolution(Point_Fine, Solution_Coarse);
-      if (eddy_viscosity) sol_fine->GetNodes()->SetmuT(Point_Fine, muT_Coarse);
+  if (eddy_viscosity) {
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+    for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+      const su2double muT_Coarse = sol_coarse->GetNodes()->GetmuT(Point_Coarse);
+      for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++)
+        sol_fine->GetNodes()->SetmuT(geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren), muT_Coarse);
     }
+    END_SU2_OMP_FOR
   }
-  END_SU2_OMP_FOR
 
   /*--- The eddy viscosity is zero on a no-slip wall, the injected value is not. ---*/
 
