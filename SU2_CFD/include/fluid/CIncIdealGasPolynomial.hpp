@@ -90,54 +90,73 @@ class CIncIdealGasPolynomial final : public CFluidModel {
   }
 
   /*!
-   * \brief Set the Dimensionless State using enthalpy.
+   * \brief Set the Dimensionless State using enthalpy, starting from the reference temperature.
+   * \note A failed iteration is not reported, use SolveTDState_h where that matters.
    * \param[in] val_enthalpy - Enthalpy value at the point.
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
-    Enthalpy = val_enthalpy;
-    /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
-    const su2double toll = 1e-5;
-    su2double temp_iter = 300.0;
-    su2double Cp_iter = 0.0;
-    su2double delta_temp_iter = 1e10;
-    su2double delta_enthalpy_iter;
-    const int counter_limit = 20;
+    SolveTDState_h(val_enthalpy, 0.0, val_scalars);
+  }
 
-    int counter = 0;
+  /*!
+   * \brief Set the Dimensionless State using enthalpy, by Newton-Raphson iteration on temperature.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_temperature_guess - Start of the iteration, <= 0 to start from the reference temperature.
+   * \param[in] val_scalars - Scalar mass fractions (not used).
+   * \return True if the iteration converged above the minimum temperature.
+   */
+  bool SolveTDState_h(su2double val_enthalpy, su2double val_temperature_guess,
+                      const su2double* val_scalars = nullptr) override {
+    /*--- Convergence criterion for temperature, high accuracy needed for restarts. ---*/
+    constexpr passivedouble tolerance = 1e-5;
+    constexpr int maxIterations = 20;
+
+    Enthalpy = val_enthalpy;
+    /*--- The guess is passive, the converged temperature does not depend on it. ---*/
+    su2double temperature = (val_temperature_guess > 0.0) ? SU2_TYPE::GetValue(val_temperature_guess)
+                                                          : Std_Ref_Temp_ND;
+    su2double Cp_iter = coeffs_[0];
+    bool converged = false;
+    bool atMinimum = false;
 
     /*--- Compute temperature given enthalpy using Newton-Raphson. ---*/
-    while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
-      /* Evaluate the new Cp and enthalpy from the coefficients and temperature. */
+    for (int iter = 0; iter < maxIterations; ++iter) {
+      /*--- Evaluate Cp and the enthalpy from the coefficients at the current temperature. ---*/
       Cp_iter = coeffs_[0];
-      su2double Enthalpy_iter = coeffs_[0] * (temp_iter - Std_Ref_Temp_ND);
+      su2double Enthalpy_iter = coeffs_[0] * (temperature - Std_Ref_Temp_ND);
       su2double t_i = 1.0;
       su2double tref_i = 1.0;
       for (int i = 1; i < N; ++i) {
-        t_i *= temp_iter;
+        t_i *= temperature;
         tref_i *= Std_Ref_Temp_ND;
         Cp_iter += coeffs_[i] * t_i;
-        Enthalpy_iter += coeffs_[i] * (t_i * temp_iter - tref_i * Std_Ref_Temp_ND) / (i + 1);
+        Enthalpy_iter += coeffs_[i] * (t_i * temperature - tref_i * Std_Ref_Temp_ND) / (i + 1);
       }
 
-      delta_enthalpy_iter = Enthalpy - Enthalpy_iter;
+      const su2double delta = (Enthalpy - Enthalpy_iter) / Cp_iter;
 
-      delta_temp_iter = delta_enthalpy_iter / Cp_iter;
-
-      temp_iter += delta_temp_iter;
-      if (temp_iter < Temperature_Min) {
-        cout << "Warning: Negative temperature has been found during Newton-Raphson." << endl;
-        temp_iter = Temperature_Min;
+      /*--- An overshoot below the minimum temperature is clamped and the iteration continues. With a positive Cp
+       the enthalpy increases with temperature, so a step below the minimum taken from the minimum itself means
+       the solution is below it, stop and report failure. ---*/
+      if (temperature + delta < Temperature_Min) {
+        if (atMinimum) break;
+        temperature = Temperature_Min;
+        atMinimum = true;
+        continue;
+      }
+      temperature += delta;
+      atMinimum = false;
+      if (fabs(delta) <= tolerance) {
+        converged = true;
         break;
       }
     }
 
-    Temperature = temp_iter;
+    Temperature = temperature;
     Cp = Cp_iter;
-    if (counter == counter_limit) {
-      cout << "Warning: Newton-Raphson exceeds max. iterations in temperature computation." << endl;
-    }
     Density = Pressure / (Temperature * Gas_Constant);
     Cv = Cp / Gamma;
+    return converged;
   }
 
  private:

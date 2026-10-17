@@ -53,49 +53,9 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
 
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
 
-  bool physical = true;
+  /*--- Pressure, temperature and density, the solution is reverted if the state is not physical. ---*/
 
-  /*--- Set the value of the pressure ---*/
-
-  SetPressure(iPoint);
-
-  su2double Enthalpy = Solution(iPoint, nDim + 1);
-  FluidModel->SetTemperatureGuess(GetTemperature(iPoint));
-  FluidModel->SetTDState_h(Enthalpy, scalar);
-  su2double Temperature = FluidModel->GetTemperature();
-  const bool temperature_failed = FluidModel->GetTemperatureIterationFailed();
-
-  auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
-
-  /*--- Use the fluid model to compute the new value of density.
-  Note that the thermodynamic pressure is constant and decoupled
-  from the dynamic pressure being iterated. ---*/
-
-  /*--- Set the value of the density ---*/
-
-  const auto check_dens = check_temp ? true: SetDensity(iPoint, FluidModel->GetDensity());
-
-  /*--- Non-physical solution found. Revert to old values. ---*/
-
-  if (check_dens || check_temp || temperature_failed) {
-
-    /*--- Copy the old solution ---*/
-
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
-
-    /*--- Recompute the primitive variables ---*/
-
-    Enthalpy = Solution(iPoint, nDim + 1);
-    FluidModel->SetTDState_h(Enthalpy, scalar);
-    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
-    SetDensity(iPoint, FluidModel->GetDensity());
-
-    /*--- Flag this point as non-physical. ---*/
-
-    physical = false;
-
-  }
+  const bool physical = SetThermodynamicState(iPoint, FluidModel, scalar);
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 

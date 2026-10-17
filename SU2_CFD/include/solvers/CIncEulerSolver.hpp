@@ -101,8 +101,9 @@ protected:
    *          state at time n (also after restart).
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
+   * \return Number of points (of this thread) where the state at a past time level could not be evaluated.
    */
-  void RecomputeDensity_time_n(CSolver **solver_container, const CConfig *config);
+  unsigned long RecomputeDensity_time_n(CSolver **solver_container, const CConfig *config);
 
   /*!
    * \brief Update the Beta parameter for the incompressible preconditioner.
