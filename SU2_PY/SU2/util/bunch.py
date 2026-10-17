@@ -1,29 +1,29 @@
 #!/usr/bin/env python
 
-""" Bunch is a subclass of dict with attribute-style access.
+"""Bunch is a subclass of dict with attribute-style access.
 
-    >>> b = Bunch()
-    >>> b.hello = 'world'
-    >>> b.hello
-    'world'
-    >>> b['hello'] += "!"
-    >>> b.hello
-    'world!'
-    >>> b.foo = Bunch(lol=True)
-    >>> b.foo.lol
-    True
-    >>> b.foo is b['foo']
-    True
+>>> b = Bunch()
+>>> b.hello = 'world'
+>>> b.hello
+'world'
+>>> b['hello'] += "!"
+>>> b.hello
+'world!'
+>>> b.foo = Bunch(lol=True)
+>>> b.foo.lol
+True
+>>> b.foo is b['foo']
+True
 
-    It is safe to import * from this module:
+It is safe to import * from this module:
 
-        __all__ = ('Bunch', 'bunchify','unbunchify')
+    __all__ = ('Bunch', 'bunchify','unbunchify')
 
-    un/bunchify provide dictionary conversion; Bunches can also be
-    converted via Bunch.to/fromDict().
+un/bunchify provide dictionary conversion; Bunches can also be
+converted via Bunch.to/fromDict().
 
-    original source:
-    https://pypi.python.org/pypi/bunch
+original source:
+https://pypi.python.org/pypi/bunch
 """
 
 
