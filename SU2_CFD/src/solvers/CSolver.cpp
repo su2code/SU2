@@ -401,7 +401,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   bool boundary_i, boundary_j;
   bool weighted = true;
-  const bool auxiliary = commType == PERIODIC_AUXVAR_LS;
+  const bool auxiliary = commType == PERIODIC_AUXVAR_GG || commType == PERIODIC_AUXVAR_LS;
   const auto nRotVars = max<unsigned long>(max(nVar, nPrimVar), base_nodes->GetnAuxVar());
 
   unsigned short iVar, jVar, iDim;
