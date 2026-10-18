@@ -1716,8 +1716,7 @@ void CSysMatrix<ScalarType>::CopyHaloRowsFromOwners(const CGeometry* geometry) {
   const auto* nodes = geometry->nodes;
   const auto blkSize = nVar * nEqn;
 
-  /*--- Each point sent to a rank is followed by its blocks in the columns the sender does not own,
-   *    as the block count, then the global column index and the block for each. ---*/
+  /*--- Per sent point: block count, then global column and block for each column not owned by the sender. ---*/
   vector<vector<passivedouble>> sendTo(size);
   for (int iMsg = 0; iMsg < geometry->nP2PSend; iMsg++) {
     auto& buf = sendTo[geometry->Neighbors_P2PSend[iMsg]];
@@ -1749,8 +1748,7 @@ void CSysMatrix<ScalarType>::CopyHaloRowsFromOwners(const CGeometry* geometry) {
   MPIWrapper::Alltoallv(sendBuf.data(), nSend.data(), sendDisp.data(), MPI_DOUBLE, recvBuf.data(), nRecv.data(),
                         recvDisp.data(), MPI_DOUBLE, SU2_MPI::GetComm());
 
-  /*--- The points of a message arrive in the order of the receive list from that rank. Only the
-   *    blocks in owned columns are copied, these become owned rows when the matrix is transposed. ---*/
+  /*--- Points arrive in receive-list order, only blocks in columns owned here are kept. ---*/
   for (int iMsg = 0; iMsg < geometry->nP2PRecv; iMsg++) {
     const auto* data = recvBuf.data() + recvDisp[geometry->Neighbors_P2PRecv[iMsg]];
     for (auto k = geometry->nPoint_P2PRecv[iMsg]; k < geometry->nPoint_P2PRecv[iMsg + 1]; k++) {
@@ -1761,7 +1759,8 @@ void CSysMatrix<ScalarType>::CopyHaloRowsFromOwners(const CGeometry* geometry) {
         for (const auto jPoint : nodes->GetPoints(iPoint)) {
           if (!nodes->GetDomain(jPoint) || nodes->GetGlobalIndex(jPoint) != jGlobal) continue;
           auto* blk = GetBlock(iPoint, jPoint);
-          if (blk) for (auto i = 0ul; i < blkSize; i++) blk[i] = data[i];
+          if (blk)
+            for (auto i = 0ul; i < blkSize; i++) blk[i] = data[i];
           break;
         }
       }
@@ -1770,8 +1769,10 @@ void CSysMatrix<ScalarType>::CopyHaloRowsFromOwners(const CGeometry* geometry) {
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::TransposeInPlace() {
+void CSysMatrix<ScalarType>::TransposeInPlace(const CGeometry* geometry) {
   SU2_ZONE_SCOPED
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS { CopyHaloRowsFromOwners(geometry); }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
   assert(nVar == nEqn && "Cannot transpose with nVar != nEqn.");
 
   auto swapAndTransp = [](unsigned long n, ScalarType* a, ScalarType* b) {

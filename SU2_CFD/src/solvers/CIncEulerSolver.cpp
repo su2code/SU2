@@ -3665,7 +3665,7 @@ unsigned long CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* 
 void CIncEulerSolver::SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {
   SU2_ZONE_SCOPED
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
-    /*--- Every rank holds a copy of the pressure drop, the reverse Allreduce of the massflow sums their seeds. ---*/
+    /*--- The reverse Allreduce of the massflow sums the seeds of the copies on all ranks. ---*/
     SU2_TYPE::SetDerivative(SPvalsUpdated.Streamwise_Periodic_PressureDrop, SU2_TYPE::GetValue(adj_sol[0]) / size);
   }
 }
@@ -3675,11 +3675,10 @@ void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, con
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     /*--- Sum the adjoints of the copies of the pressure drop on all ranks. ---*/
     SU2_OMP_SAFE_GLOBAL_ACCESS(
-      const passivedouble local = SU2_TYPE::GetDerivative(SPvals.Streamwise_Periodic_PressureDrop);
-      passivedouble global = 0.0;
-      SelectMPIWrapper<passivedouble>::W::Allreduce(&local, &global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      adj_sol[0] = global;
-    )
+        const passivedouble local = SU2_TYPE::GetDerivative(SPvals.Streamwise_Periodic_PressureDrop);
+        passivedouble global = 0.0;
+        SelectMPIWrapper<passivedouble>::W::Allreduce(&local, &global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        adj_sol[0] = global;)
   }
 }
 

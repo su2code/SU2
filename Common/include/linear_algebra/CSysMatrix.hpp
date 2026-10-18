@@ -466,6 +466,12 @@ class CSysMatrix {
   }
 
   /*!
+   * \brief Overwrites the halo rows with the rows of the owning ranks, which hold the boundary condition modifications.
+   * \param[in] geometry - Geometry with the point-to-point communication pattern.
+   */
+  void CopyHaloRowsFromOwners(const CGeometry* geometry);
+
+  /*!
    * \brief Calculates the matrix-vector product: product = matrix*vector
    * \param[in] matrix
    * \param[in] vector
@@ -1294,15 +1300,10 @@ class CSysMatrix {
   void SetDiagonalAsColumnSum();
 
   /*!
-   * \brief Overwrites the halo rows with the rows of the owning ranks, which hold the boundary condition modifications.
-   * \param[in] geometry - Geometry with the point-to-point communication pattern.
-   */
-  void CopyHaloRowsFromOwners(const CGeometry* geometry);
-
-  /*!
    * \brief Transposes the matrix, any preconditioner that was computed may be invalid.
+   * \param[in] geometry - Needed to give the halo rows the boundary condition modifications of their owners.
    */
-  void TransposeInPlace();
+  void TransposeInPlace(const CGeometry* geometry);
 
   /*!
    * \brief Add a scaled sparse matrix to "this" (axpy-type operation, A = A+alpha*B).

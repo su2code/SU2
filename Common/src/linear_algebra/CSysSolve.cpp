@@ -1590,11 +1590,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
       /*--- Build preconditioner for the transposed Jacobian ---*/
 
-      if (RequiresTranspose) {
-        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS { Jacobian.CopyHaloRowsFromOwners(geometry); }
-        END_SU2_OMP_SAFE_GLOBAL_ACCESS
-        Jacobian.TransposeInPlace();
-      }
+      if (RequiresTranspose) Jacobian.TransposeInPlace(geometry);
 
       switch (KindPrecond) {
         case ILU:
@@ -1704,9 +1700,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
 
   /*--- If there was no call to solve first the preconditioner needs to be built here. ---*/
   if (directCall) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS { Jacobian.CopyHaloRowsFromOwners(geometry); }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-    Jacobian.TransposeInPlace();
+    Jacobian.TransposeInPlace(geometry);
     normal_prec->Build();
   }
 
