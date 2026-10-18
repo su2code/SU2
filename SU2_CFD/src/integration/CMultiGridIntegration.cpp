@@ -1335,6 +1335,11 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   const unsigned short nVar = solver->GetnVar();
 
+  if (config->GetMGOptions().MG_Smooth_Output) {
+    const su2double res = sqrt(solver->LinSysRes.squaredNorm() / (nVar * geometry->GetGlobal_nPointDomain()));
+    SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][0] = SU2_TYPE::GetValue(res);)
+  }
+
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
     const auto* Residual_Old = solver->LinSysRes.GetBlock(iPoint);
