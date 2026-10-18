@@ -271,6 +271,19 @@ TEST_CASE("Intersecting periodic stencils", "[Periodic][Gradients]") {
   }
 }
 
+TEST_CASE("Principal periodic rotation angle", "[Periodic][Geometry]") {
+  const su2double zero[3] = {};
+  CHECK(GeometryToolbox::RotationAngle(3, zero) == 0.0);
+  const su2double quarterTurn[3] = {0, 0, -PI_NUMBER / 2};
+  CHECK(GeometryToolbox::RotationAngle(2, quarterTurn) == Approx(PI_NUMBER / 2));
+  CHECK(GeometryToolbox::RotationAngle(3, quarterTurn) == Approx(PI_NUMBER / 2));
+  const su2double composed[3] = {PI_NUMBER / 2, PI_NUMBER / 2, 0};
+  CHECK(GeometryToolbox::RotationAngle(2, composed) == 0.0);
+  CHECK(GeometryToolbox::RotationAngle(3, composed) == Approx(2 * PI_NUMBER / 3));
+  const su2double halfTurn[3] = {PI_NUMBER, 0, 0};
+  CHECK(GeometryToolbox::RotationAngle(3, halfTurn) == Approx(PI_NUMBER));
+}
+
 TEST_CASE("Periodic edge weight cache rebuild", "[Periodic][Geometry]") {
   UnitQuadTestCase field;
   const auto start = field.config_options.find("MARKER_HEATFLUX=");

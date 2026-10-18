@@ -1172,10 +1172,14 @@ void CGeometry::SetPeriodicEdgeWeights(const CConfig& config) {
          * rather than by two copies of each of the two periodic faces. ---*/
         if (config.GetMarker_All_PerBound(iMarker) > config.GetnMarker_Periodic() / 2) continue;
         const auto* angles = config.GetPeriodicRotAngles(tag);
-        su2double rotation[3][3];
-        GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotation);
-        const auto cosAngle = SU2_TYPE::GetValue(0.5 * (rotation[0][0] + rotation[1][1] + rotation[2][2] - 1));
-        weight *= acos(std::max(-1.0, std::min(1.0, cosAngle))) / (2 * PI_NUMBER);
+        const auto angle = SU2_TYPE::GetValue(GeometryToolbox::RotationAngle(nDim, angles));
+        constexpr passivedouble angleTol = 1e-4;
+        const auto nCopy = angle > angleTol ? static_cast<int>(2 * PI_NUMBER / angle + 0.5) : 0;
+        if (fabs(nCopy * angle - 2 * PI_NUMBER) > angleTol)
+          SU2_MPI::Error(
+              "Periodic points on the rotation axis require an angle that divides 360 degrees (marker " + tag + ").",
+              CURRENT_FUNCTION);
+        weight *= 1.0 / nCopy;
       } else {
         weight *= 0.5;
       }
