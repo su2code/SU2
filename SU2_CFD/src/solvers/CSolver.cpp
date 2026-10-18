@@ -843,7 +843,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Auxiliary fields are scalars: rotate their spatial gradients only. ---*/
 
-            if (rotate_periodic && commType != PERIODIC_AUXVAR_GG) {
+            if (rotate_periodic && !auxiliary) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 su2double d_diDim[3] = {0.0};
                 for (iVar = 1; iVar < 1+nDim; ++iVar) {
