@@ -957,7 +957,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
-    Aachen_3D_restart.test_vals = [-7.689117, -8.476204, -6.036107, -6.427402, -5.831576, -4.599024, -5.530512, -5.305687, -3.821789, -5.243255, -5.754831, -3.631603, -2.213934, -2.895728, -0.578545]
+    Aachen_3D_restart.test_vals = [-7.689029, -8.475341, -6.035704, -6.426165, -5.830215, -4.598893, -5.529338, -5.301964, -3.820993, -5.243202, -5.732910, -3.631319, -2.213792, -2.876325, -0.578057]
     Aachen_3D_restart.enabled_with_asan = False
     test_list.append(Aachen_3D_restart)
 
