@@ -7565,10 +7565,11 @@ vector<idx_t> CPhysicalGeometry::ComputeAnisotropyEdgeWeights(long maxWeight) co
   SU2_MPI::Alltoallv(sendIndex.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvIndex.data(), nRecv.data(),
                      recvDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
-  vector<passivedouble> replyCoord(recvIndex.size() * nDim), remoteCoord(sendIndex.size() * nDim);
+  /*--- MPI_DOUBLE is an active type in AD builds, so the buffers hold su2double. ---*/
+  vector<su2double> replyCoord(recvIndex.size() * nDim), remoteCoord(sendIndex.size() * nDim);
   for (auto i = 0ul; i < recvIndex.size(); i++)
     for (auto iDim = 0u; iDim < nDim; iDim++)
-      replyCoord[i * nDim + iDim] = SU2_TYPE::GetValue(nodes->GetCoord(recvIndex[i] - firstIndex, iDim));
+      replyCoord[i * nDim + iDim] = nodes->GetCoord(recvIndex[i] - firstIndex, iDim);
 
   for (int iRank = 0; iRank < size; iRank++) {
     nSend[iRank] *= nDim;
@@ -7584,7 +7585,7 @@ vector<idx_t> CPhysicalGeometry::ComputeAnisotropyEdgeWeights(long maxWeight) co
 
   auto getCoord = [&](unsigned long iGlobal, unsigned short iDim) -> passivedouble {
     if (isLocal(iGlobal)) return SU2_TYPE::GetValue(nodes->GetCoord(iGlobal - firstIndex, iDim));
-    return remoteCoord[remoteSlot.at(iGlobal) * nDim + iDim];
+    return SU2_TYPE::GetValue(remoteCoord[remoteSlot.at(iGlobal) * nDim + iDim]);
   };
 
   /*--- Weight is the longest node distance of the element over the edge length, maximized over elements. ---*/
