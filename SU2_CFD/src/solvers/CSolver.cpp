@@ -379,7 +379,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     SU2_MPI::Error("The NEMO solvers do not support rotational periodicity yet.", CURRENT_FUNCTION);
   }
 
-  const bool intersectingPairs = config->GetnMarker_Periodic() > 2;
+  const bool intersectingPairs = geometry->HasPeriodicPairIntersections();
   if (commType == PERIODIC_NEIGHBORS && intersectingPairs && val_periodic_index == 1) {
     SU2_OMP_SAFE_GLOBAL_ACCESS(periodicNeighborCount.resize(geometry->GetnPoint());)
     SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -1305,7 +1305,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               break;
 
             case PERIODIC_NEIGHBORS:
-              if (config->GetnMarker_Periodic() > 2) {
+              if (geometry->HasPeriodicPairIntersections()) {
                 periodicNeighborCount(iPoint) += bufDRecv[buf_offset];
                 geometry->nodes->SetnNeighbor(iPoint, SU2_TYPE::Int(periodicNeighborCount(iPoint) + 0.5));
               } else {
@@ -2482,7 +2482,7 @@ void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config)
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         su2double delta = base_nodes->GetSolution(jPoint,iVar)-base_nodes->GetSolution(iPoint,iVar);
-        if (config->GetnMarker_Periodic() > 2) delta *= geometry->GetPeriodicEdgeWeight(iEdge);
+        if (geometry->HasPeriodicPairIntersections()) delta *= geometry->GetPeriodicEdgeWeight(iEdge);
         base_nodes->AddUnd_Lapl(iPoint, iVar, delta);
       }
     }

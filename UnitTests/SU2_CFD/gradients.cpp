@@ -200,6 +200,7 @@ TEST_CASE("Intersecting periodic stencils", "[Periodic][Gradients]") {
   }
   for (auto pair = 1u; pair <= nPairs; ++pair) field.geometry->MatchPeriodic(field.config.get(), pair);
   field.geometry->PreprocessPeriodicComms(field.geometry.get(), field.config.get());
+  CHECK(field.geometry->HasPeriodicPairIntersections() == (field.config->GetnMarker_Periodic() > 2));
   field.InitSolver();
   auto* solver = field.solver[FLOW_SOL];
   auto* nodes = solver->GetNodes();
@@ -271,6 +272,48 @@ TEST_CASE("Intersecting periodic stencils", "[Periodic][Gradients]") {
   }
 }
 
+TEST_CASE("Zone-local periodic pair intersections", "[Periodic][Geometry]") {
+  const bool absentPair = GENERATE(false, true);
+  UnitQuadTestCase field;
+  const auto start = field.config_options.find("MARKER_HEATFLUX=");
+  const auto end = field.config_options.find("VISCOSITY_MODEL=");
+  field.config_options.replace(
+      start, end - start,
+      absentPair ? "MARKER_CUSTOM= (y_minus,y_plus,z_plus,z_minus)\n" : "MARKER_CUSTOM= (z_plus,z_minus)\n");
+  field.AddOption(absentPair ? "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0, "
+                               "other_minus,other_plus, 0,0,0, 0,0,0, 0,1,0)"
+                             : "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0, "
+                               "y_minus,y_plus, 0,0,0, 0,0,0, 0,1,0)");
+  field.InitConfig();
+  field.InitGeometry();
+  REQUIRE(field.config->GetnMarker_Periodic() == 4);
+  if (!absentPair && SU2_MPI::GetRank() != 0) {
+    /*--- Only rank zero has a local intersection; every rank must select the same communication path. ---*/
+    for (auto marker = 0u; marker < field.geometry->GetnMarker(); ++marker) {
+      if (field.config->GetMarker_All_PerBound(marker) != 2 && field.config->GetMarker_All_PerBound(marker) != 4)
+        continue;
+      for (auto v = 0ul; v < field.geometry->GetnVertex(marker); ++v)
+        field.geometry->nodes->SetVertex(field.geometry->vertex[marker][v]->GetNode(), -1, marker);
+    }
+  }
+  field.geometry->PreprocessPeriodicGeometry(*field.config);
+  CHECK(field.geometry->HasPeriodicPairIntersections() == !absentPair);
+}
+
+TEST_CASE("Invalid rotational intersection", "[.PeriodicInvalid]") {
+  UnitQuadTestCase field;
+  const auto start = field.config_options.find("MARKER_HEATFLUX=");
+  const auto end = field.config_options.find("VISCOSITY_MODEL=");
+  field.config_options.replace(start, end - start, "MARKER_CUSTOM= (z_plus,z_minus)\n");
+  field.AddOption(
+      "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,90, 1,0,0, "
+      "y_minus,y_plus, 0,0,0, 0,0,0, 0,1,0)");
+  field.InitConfig();
+  field.InitGeometry();
+  field.geometry->PreprocessPeriodicGeometry(*field.config);
+  FAIL("Rotational intersection was accepted");
+}
+
 TEST_CASE("Principal periodic rotation angle", "[Periodic][Geometry]") {
   const su2double zero[3] = {};
   CHECK(GeometryToolbox::RotationAngle(3, zero) == 0.0);
@@ -293,7 +336,7 @@ TEST_CASE("Periodic edge weight cache rebuild", "[Periodic][Geometry]") {
   field.InitConfig();
   field.InitGeometry();
   auto& geometry = *field.geometry;
-  geometry.SetPeriodicEdgeWeights(*field.config);
+  geometry.PreprocessPeriodicGeometry(*field.config);
   bool checked = false;
   for (auto iEdge = 0ul; iEdge < geometry.GetnEdge(); ++iEdge) {
     if (geometry.GetPeriodicEdgeWeight(iEdge) == 1.0) continue;
@@ -304,10 +347,10 @@ TEST_CASE("Periodic edge weight cache rebuild", "[Periodic][Geometry]") {
       if (iVertex < 0) continue;
       CHECK(geometry.GetPeriodicEdgeWeight(iEdge) == 0.5);
       geometry.nodes->SetVertex(iPoint, -1, iMarker);
-      geometry.SetPeriodicEdgeWeights(*field.config);
+      geometry.PreprocessPeriodicGeometry(*field.config);
       CHECK(geometry.GetPeriodicEdgeWeight(iEdge) == 1.0);
       geometry.nodes->SetVertex(iPoint, iVertex, iMarker);
-      geometry.SetPeriodicEdgeWeights(*field.config);
+      geometry.PreprocessPeriodicGeometry(*field.config);
       CHECK(geometry.GetPeriodicEdgeWeight(iEdge) == 0.5);
       checked = true;
       break;
@@ -364,6 +407,7 @@ TEST_CASE("One-cell periodic stencil", "[Periodic][Gradients]") {
   field.InitGeometry(true);
   field.geometry->MatchPeriodic(field.config.get(), 1);
   field.geometry->PreprocessPeriodicComms(field.geometry.get(), field.config.get());
+  CHECK(field.geometry->HasPeriodicPairIntersections() == (field.config->GetnMarker_Periodic() > 2));
   field.InitSolver();
   auto* solver = field.solver[FLOW_SOL];
   auto* nodes = solver->GetNodes();

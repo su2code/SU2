@@ -1155,7 +1155,38 @@ void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic
   delete[] Buffer_Recv_Marker;
 }
 
-void CGeometry::SetPeriodicEdgeWeights(const CConfig& config) {
+void CGeometry::PreprocessPeriodicGeometry(const CConfig& config) {
+  const auto nPairs = config.GetnMarker_Periodic() / 2;
+  if (nPairs == 0) {
+    periodicPairIntersections = false;
+    periodicEdgeWeight.clear();
+    return;
+  }
+
+  vector<unsigned short> firstPair(nPoint, 0);
+  vector<bool> rotating(nPoint, false);
+  unsigned short local[2] = {}, global[2] = {};
+  for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
+    if (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
+    const auto pair = (config.GetMarker_All_PerBound(iMarker) - 1) % nPairs + 1;
+    const auto rotation =
+        GeometryToolbox::HasRotation(config.GetPeriodicRotAngles(config.GetMarker_All_TagBound(iMarker)));
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; ++iVertex) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+      if (nodes->GetVertex(iPoint, iMarker) < 0) continue;
+      if (firstPair[iPoint] != 0 && firstPair[iPoint] != pair) {
+        local[0] = 1;
+        if (rotation || rotating[iPoint]) local[1] = 1;
+      }
+      if (firstPair[iPoint] == 0) firstPair[iPoint] = pair;
+      rotating[iPoint] = rotating[iPoint] || rotation;
+    }
+  }
+  SU2_MPI::Allreduce(local, global, 2, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
+  periodicPairIntersections = global[0] != 0;
+  if (global[1])
+    SU2_MPI::Error("Intersecting periodic pairs involving rotation are not supported yet.", CURRENT_FUNCTION);
+
   periodicEdgeWeight.assign(nEdge, 1.0);
   for (auto iEdge = 0ul; iEdge < nEdge; ++iEdge) {
     const auto iPoint = edges->GetNode(iEdge, 0), jPoint = edges->GetNode(iEdge, 1);
@@ -1189,7 +1220,7 @@ void CGeometry::SetPeriodicEdgeWeights(const CConfig& config) {
 }
 
 void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
-  geometry->SetPeriodicEdgeWeights(*config);
+  geometry->PreprocessPeriodicGeometry(*config);
 
   /*--- We start with the send and receive lists already available in
    the form of stored periodic point-donor pairs. We will loop through

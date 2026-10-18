@@ -254,7 +254,7 @@ void computeGradientsLeastSquares(CSolver* solver,
       if (weight > 0.0)
       {
         weight = 1.0 / weight;
-        if (config.GetnMarker_Periodic() > 2)
+        if (geometry.HasPeriodicPairIntersections())
           weight *= geometry.GetPeriodicEdgeWeight(iEdge);
 
         for (size_t iDim = 0; iDim < nDim; ++iDim)

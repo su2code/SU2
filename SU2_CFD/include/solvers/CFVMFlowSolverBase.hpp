@@ -808,7 +808,7 @@ class CFVMFlowSolverBase : public CSolver {
           iPoint_UndLapl[iPoint] = fmax(iPoint_UndLapl[iPoint], fabs(sensVar_j - sensVar_i) / fmin(sensVar_j, sensVar_i));
         } else {
           /*--- Jameson dissipation sensor, add variable difference and variable sum. ---*/
-          const auto weight = config->GetnMarker_Periodic() > 2 ?
+          const auto weight = geometry->HasPeriodicPairIntersections() ?
                                   geometry->GetPeriodicEdgeWeight(iEdge) : 1.0;
           iPoint_UndLapl[iPoint] += weight * (sensVar_j - sensVar_i);
           jPoint_UndLapl[iPoint] += weight * (sensVar_j + sensVar_i);

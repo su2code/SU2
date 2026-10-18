@@ -2406,7 +2406,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
       /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
       if (boundary_i && !boundary_j) continue;
 
-      const auto weight = config->GetnMarker_Periodic() > 2 ?
+      const auto weight = geometry->HasPeriodicPairIntersections() ?
                               geometry->GetPeriodicEdgeWeight(iEdge) : 1.0;
 
       /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
