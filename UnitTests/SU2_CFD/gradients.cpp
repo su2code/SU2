@@ -272,6 +272,68 @@ TEST_CASE("Intersecting periodic stencils", "[Periodic][Gradients]") {
   }
 }
 
+template <size_t nDim>
+void checkRotatedLeastSquaresNormalMatrix() {
+  C3DDoubleMatrix matrix(1, nDim, nDim, 0.0);
+  const su2double vectors[][3] = {{1, 2, 3}, {2, -1, 1}, {-1, 1, 2}};
+  su2double rotation[nDim][nDim] = {};
+  if constexpr (nDim == 2)
+    GeometryToolbox::RotationMatrix(su2double(PI_NUMBER / 2), rotation);
+  else
+    GeometryToolbox::RotationMatrix(su2double(0), su2double(0), su2double(PI_NUMBER / 2), rotation);
+  su2double expected[nDim][nDim] = {};
+  for (const auto& vector : vectors) {
+    detail::forEachLeastSquaresNormalEntry<nDim>(
+        [&](size_t i, size_t j, size_t row, size_t col) { matrix(0, i, j) += vector[row] * vector[col]; });
+    su2double rotated[nDim] = {}, zeros[nDim] = {};
+    GeometryToolbox::Rotate(rotation, zeros, vector, rotated);
+    for (auto i = 0u; i < nDim; ++i)
+      for (auto j = 0u; j < nDim; ++j) expected[i][j] += rotated[i] * rotated[j];
+  }
+  su2double packed[nDim * nDim];
+  detail::rotateLeastSquaresNormalMatrix(0, matrix, rotation, packed);
+  for (auto i = 0u; i < nDim; ++i)
+    for (auto j = 0u; j < nDim; ++j) {
+      const auto ref = i <= j ? expected[i][j] : (nDim == 3 && i == 2 && j == 1 ? expected[0][nDim - 1] : 0.0);
+      CHECK(packed[i * nDim + j] == Approx(ref).margin(1e-12));
+    }
+}
+
+TEST_CASE("Rotated least-squares normal matrix", "[Periodic][Gradients]") {
+  checkRotatedLeastSquaresNormalMatrix<2>();
+  checkRotatedLeastSquaresNormalMatrix<3>();
+}
+
+TEST_CASE("2D periodic linear gradient", "[Periodic][Gradients]") {
+  const bool weighted = GENERATE(false, true);
+  UnitQuadTestCase field;
+  field.SetOption("MESH_FORMAT= RECTANGLE");
+  field.SetOption("MARKER_CUSTOM= (z_plus,z_minus)");
+  field.AddOption("MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)");
+  field.InitConfig();
+  field.InitGeometry(true);
+  field.geometry->MatchPeriodic(field.config.get(), 1);
+  field.geometry->PreprocessPeriodicComms(field.geometry.get(), field.config.get());
+  field.InitSolver();
+  auto* solver = field.solver[FLOW_SOL];
+  auto* nodes = solver->GetNodes();
+  for (auto i = 0ul; i < field.geometry->GetnPoint(); ++i)
+    for (auto v = 0u; v < solver->GetnPrimVarGrad(); ++v)
+      nodes->SetPrimitive(i, v, 3 + field.geometry->nodes->GetCoord(i, 1));
+  solver->SetRotatePeriodic(false);
+  SU2_OMP_PARALLEL {
+    computeGradientsLeastSquares(solver, MPI_QUANTITIES::PRIMITIVE_GRADIENT,
+                                 weighted ? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS, *field.geometry, *field.config,
+                                 weighted, nodes->GetPrimitive(), 0, solver->GetnPrimVarGrad(), -1,
+                                 nodes->GetGradient_Primitive(), nodes->GetRmatrix());
+  }
+  END_SU2_OMP_PARALLEL
+  for (auto i = 0ul; i < field.geometry->GetnPointDomain(); ++i) {
+    CHECK(nodes->GetGradient_Primitive(i, 0, 0) == Approx(0).margin(1e-12));
+    CHECK(nodes->GetGradient_Primitive(i, 0, 1) == Approx(1).margin(1e-12));
+  }
+}
+
 TEST_CASE("Zone-local periodic pair intersections", "[Periodic][Geometry]") {
   const bool absentPair = GENERATE(false, true);
   UnitQuadTestCase field;

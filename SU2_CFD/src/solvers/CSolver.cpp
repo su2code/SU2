@@ -898,25 +898,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Set a flag for unweighted or weighted least-squares. ---*/
 
             if (intersectingPairs) {
-              /*--- Rmatrix stores the upper triangle of the normal equations;
-               * entry (2,1) is a duplicate of (0,2) used by the LS factorization. ---*/
-              su2double matrix[3][3] = {}, rotated[3][3] = {};
-              for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate)
-                for (auto jDim = 0u; jDim < nDim; ++jDim)
-                  matrix[iCoordinate][jDim] =
-                      base_nodes->GetRmatrix(iPoint, min(iCoordinate,jDim), max(iCoordinate,jDim));
-              for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate)
-                for (auto jDim = 0u; jDim < nDim; ++jDim)
-                  for (auto kDim = 0u; kDim < nDim; ++kDim)
-                    for (auto lDim = 0u; lDim < nDim; ++lDim) {
-                      const auto qik = nDim == 2 ? rotMatrix2D[iCoordinate][kDim] : rotMatrix3D[iCoordinate][kDim];
-                      const auto qjl = nDim == 2 ? rotMatrix2D[jDim][lDim] : rotMatrix3D[jDim][lDim];
-                      rotated[iCoordinate][jDim] += qik * matrix[kDim][lDim] * qjl;
-                    }
-              for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate)
-                for (auto jDim = 0u; jDim < nDim; ++jDim)
-                  bufDSend[buf_offset++] = iCoordinate <= jDim ? rotated[iCoordinate][jDim] :
-                      (nDim == 3 && iCoordinate == 2 && jDim == 1 ? rotated[0][2] : su2double(0));
+              if (nDim == 2)
+                detail::rotateLeastSquaresNormalMatrix(iPoint, base_nodes->GetRmatrix(), rotMatrix2D, &bufDSend[buf_offset]);
+              else
+                detail::rotateLeastSquaresNormalMatrix(iPoint, base_nodes->GetRmatrix(), rotMatrix3D, &bufDSend[buf_offset]);
+              buf_offset += nDim * nDim;
               for (auto iField = 0u; iField < ICOUNT; ++iField)
                 Rotate(zeros, gradient[iPoint][iField], rotBlock[iField]);
               if (rotate_periodic) {
