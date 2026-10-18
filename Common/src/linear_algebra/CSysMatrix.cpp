@@ -1707,6 +1707,69 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 }
 
 template <class ScalarType>
+void CSysMatrix<ScalarType>::CopyHaloRowsFromOwners(const CGeometry* geometry) {
+  SU2_ZONE_SCOPED
+  const int size = SU2_MPI::GetSize();
+  if (size == 1) return;
+
+  using MPIWrapper = SelectMPIWrapper<passivedouble>::W;
+  const auto* nodes = geometry->nodes;
+  const auto blkSize = nVar * nEqn;
+
+  /*--- Each point sent to a rank is followed by its blocks in the columns the sender does not own,
+   *    as the block count, then the global column index and the block for each. ---*/
+  vector<vector<passivedouble>> sendTo(size);
+  for (int iMsg = 0; iMsg < geometry->nP2PSend; iMsg++) {
+    auto& buf = sendTo[geometry->Neighbors_P2PSend[iMsg]];
+    for (auto k = geometry->nPoint_P2PSend[iMsg]; k < geometry->nPoint_P2PSend[iMsg + 1]; k++) {
+      const auto iPoint = geometry->Local_Point_P2PSend[k];
+      const auto countPos = buf.size();
+      buf.push_back(0);
+      for (const auto jPoint : nodes->GetPoints(iPoint)) {
+        if (nodes->GetDomain(jPoint)) continue;
+        const auto* blk = GetBlock(iPoint, jPoint);
+        if (!blk) continue;
+        buf.push_back(nodes->GetGlobalIndex(jPoint));
+        for (auto i = 0ul; i < blkSize; i++) buf.push_back(SU2_TYPE::GetValue(blk[i]));
+        buf[countPos] += 1;
+      }
+    }
+  }
+
+  vector<int> nSend(size), nRecv(size), sendDisp(size + 1, 0), recvDisp(size + 1, 0);
+  for (int iRank = 0; iRank < size; iRank++) nSend[iRank] = sendTo[iRank].size();
+  MPIWrapper::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, SU2_MPI::GetComm());
+  for (int iRank = 0; iRank < size; iRank++) {
+    sendDisp[iRank + 1] = sendDisp[iRank] + nSend[iRank];
+    recvDisp[iRank + 1] = recvDisp[iRank] + nRecv[iRank];
+  }
+  vector<passivedouble> sendBuf(sendDisp[size]), recvBuf(recvDisp[size]);
+  for (int iRank = 0; iRank < size; iRank++)
+    copy(sendTo[iRank].begin(), sendTo[iRank].end(), sendBuf.begin() + sendDisp[iRank]);
+  MPIWrapper::Alltoallv(sendBuf.data(), nSend.data(), sendDisp.data(), MPI_DOUBLE, recvBuf.data(), nRecv.data(),
+                        recvDisp.data(), MPI_DOUBLE, SU2_MPI::GetComm());
+
+  /*--- The points of a message arrive in the order of the receive list from that rank. Only the
+   *    blocks in owned columns are copied, these become owned rows when the matrix is transposed. ---*/
+  for (int iMsg = 0; iMsg < geometry->nP2PRecv; iMsg++) {
+    const auto* data = recvBuf.data() + recvDisp[geometry->Neighbors_P2PRecv[iMsg]];
+    for (auto k = geometry->nPoint_P2PRecv[iMsg]; k < geometry->nPoint_P2PRecv[iMsg + 1]; k++) {
+      const auto iPoint = geometry->Local_Point_P2PRecv[k];
+      const auto nBlk = static_cast<unsigned long>(*data++);
+      for (auto iBlk = 0ul; iBlk < nBlk; iBlk++, data += blkSize) {
+        const auto jGlobal = static_cast<unsigned long>(*data++);
+        for (const auto jPoint : nodes->GetPoints(iPoint)) {
+          if (!nodes->GetDomain(jPoint) || nodes->GetGlobalIndex(jPoint) != jGlobal) continue;
+          auto* blk = GetBlock(iPoint, jPoint);
+          if (blk) for (auto i = 0ul; i < blkSize; i++) blk[i] = data[i];
+          break;
+        }
+      }
+    }
+  }
+}
+
+template <class ScalarType>
 void CSysMatrix<ScalarType>::TransposeInPlace() {
   SU2_ZONE_SCOPED
   assert(nVar == nEqn && "Cannot transpose with nVar != nEqn.");

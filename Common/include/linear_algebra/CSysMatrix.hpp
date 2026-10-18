@@ -1294,6 +1294,12 @@ class CSysMatrix {
   void SetDiagonalAsColumnSum();
 
   /*!
+   * \brief Overwrites the halo rows with the rows of the owning ranks, which hold the boundary condition modifications.
+   * \param[in] geometry - Geometry with the point-to-point communication pattern.
+   */
+  void CopyHaloRowsFromOwners(const CGeometry* geometry);
+
+  /*!
    * \brief Transposes the matrix, any preconditioner that was computed may be invalid.
    */
   void TransposeInPlace();
