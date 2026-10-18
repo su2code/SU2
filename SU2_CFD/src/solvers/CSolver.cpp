@@ -703,12 +703,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
           case PERIODIC_LAPLACIAN:
 
             if (intersectingPairs) {
+              const auto* undLapl = base_nodes->GetUndivided_Laplacian(iPoint);
               for (auto iField = 0u; iField < nVar; ++iField)
-                bufDSend[buf_offset + iField] = base_nodes->GetUndivided_Laplacian(iPoint, iField);
-              if (rotate_periodic) Rotate(zeros, &bufDSend[buf_offset + 1], &Und_Lapl[1]);
-              if (rotate_periodic)
-                for (auto iCoordinate = 0u; iCoordinate < nDim; ++iCoordinate)
-                  bufDSend[buf_offset + 1 + iCoordinate] = Und_Lapl[1 + iCoordinate];
+                bufDSend[buf_offset + iField] = undLapl[iField];
+              if (rotate_periodic) Rotate(zeros, &undLapl[1], &bufDSend[buf_offset + 1]);
               break;
             }
 
