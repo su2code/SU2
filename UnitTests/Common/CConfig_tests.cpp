@@ -99,6 +99,17 @@ TEST_CASE("Streamwise periodic Rotation support", "[.StreamwisePeriodicSupportRo
   CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
 }
 
+TEST_CASE("Streamwise periodic TinyRotation support", "[.StreamwisePeriodicSupportTinyRotation]") {
+  auto base = base_options;
+  const std::string custom = "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)";
+  base.replace(base.find(custom), custom.size(), "MARKER_CUSTOM= (z_minus)\nMARKER_SYM= (z_plus)");
+  std::stringstream options(base +
+                            "INC_NONDIM= DIMENSIONAL\nKIND_STREAMWISE_PERIODIC= PRESSURE_DROP\n"
+                            "INC_ENERGY_EQUATION= YES\nSTREAMWISE_PERIODIC_TEMPERATURE= YES\n"
+                            "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 1e-12,0,0, 1,0,0)\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+}
+
 TEST_CASE("Streamwise periodic Zero support", "[.StreamwisePeriodicSupportZero]") {
   auto base = base_options;
   const std::string custom = "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)";

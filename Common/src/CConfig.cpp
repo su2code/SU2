@@ -5559,12 +5559,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (GeometryToolbox::SquaredNorm(3, translation) == 0)
       SU2_MPI::Error("The first streamwise periodic pair must have a nonzero translation.", CURRENT_FUNCTION);
     const auto* angles = GetPeriodicRotAngles(Marker_PerBound[0]);
-    su2double rotation[3][3];
-    GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotation);
-    for (auto i = 0u; i < 3; ++i)
-      for (auto j = 0u; j < 3; ++j)
-        if (fabs(rotation[i][j] - (i == j)) > 1e-12)
-          SU2_MPI::Error("The first streamwise periodic pair must be purely translational.", CURRENT_FUNCTION);
+    if (GeometryToolbox::HasRotation(angles))
+      SU2_MPI::Error("The first streamwise periodic pair must be purely translational.", CURRENT_FUNCTION);
     if (Energy_Equation && Streamwise_Periodic_Temperature && (nMarker_HeatTransfer || nMarker_CHTInterface))
       SU2_MPI::Error("STREAMWISE_PERIODIC_TEMPERATURE requires prescribed MARKER_HEATFLUX walls; "
                      "MARKER_HEATTRANSFER and MARKER_CHT_INTERFACE are unsupported.", CURRENT_FUNCTION);

@@ -13,6 +13,7 @@ def main():
     cases = (
         (
             ("Rotation", "must be purely translational"),
+            ("TinyRotation", "must be purely translational"),
             ("Zero", "must have a nonzero translation"),
             (
                 "Convection",
