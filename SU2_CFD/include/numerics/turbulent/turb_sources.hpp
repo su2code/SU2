@@ -1010,7 +1010,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       
       /*--- Include Pressure-Dilatation term if present ---*/
       pk += PDTerm;
-      pw += (- PDTerm / Eddy_Viscosity_i);
+      pw -= Density_i * PDTerm / Eddy_Viscosity_i;
 
       /*--- Add the production terms to the residuals. ---*/
 

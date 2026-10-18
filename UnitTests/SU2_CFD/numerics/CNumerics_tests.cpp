@@ -26,8 +26,11 @@
  */
 
 #include "catch.hpp"
+#include <array>
 #include <sstream>
 #include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
+#include "../../../SU2_CFD/include/numerics/turbulent/turb_sources.hpp"
+#include "../../../SU2_CFD/include/variables/CEulerVariable.hpp"
 
 TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
   std::stringstream config_options;
@@ -57,4 +60,59 @@ TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
   /*--- Teardown ---*/
 
   delete config;
+}
+
+TEST_CASE("SST pressure dilatation uses kinematic eddy viscosity", "[SST][Compressibility]") {
+  constexpr unsigned short nDim = 2;
+  using Indices = CEulerVariable::CIndices<unsigned short>;
+  const Indices idx(nDim, 0);
+  const std::array<su2double, 11> constants = {0.85, 1.0, 0.5, 0.856, 0.075, 0.0828, 0.09, 0.31, 5.0 / 9.0, 0.44, 10.0};
+  const std::array<su2double, 2> turbulence = {2.0, 5.0};
+  su2activematrix primitive_gradient(nDim + 1, nDim), turbulence_gradient(2, nDim);
+  turbulence_gradient = su2double(0.0);
+
+  for (const bool pressure_dilatation : {false, true}) {
+    std::stringstream options;
+    options << "SOLVER= RANS\nKIND_TURB_MODEL= SST\nREYNOLDS_NUMBER= 5e6\n"
+            << "SST_OPTIONS= V2003m, COMPRESSIBILITY-SARKAR";
+    if (pressure_dilatation) options << ", COMPRESSIBILITY-PRESS-DIL";
+    options << '\n';
+    CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+    CSourcePieceWise_TurbSST<Indices> numerics(nDim, 2, constants.data(), 0.0, 0.0, &config);
+
+    for (const su2double density : {0.5, 1.0, 2.0}) {
+      std::array<su2double, nDim + 9> primitive{};
+      primitive[idx.Density()] = density;
+      primitive[idx.SoundSpeed()] = 10.0;
+      primitive[idx.LaminarViscosity()] = 1e-5;
+      primitive[idx.EddyViscosity()] = 0.4 * density;
+      numerics.SetPrimitive(primitive.data(), nullptr);
+      numerics.SetScalarVar(turbulence.data(), nullptr);
+      numerics.SetScalarVarGradient(CMatrixView<const su2double>(turbulence_gradient), nullptr);
+      numerics.SetVolume(1.0);
+      numerics.SetDistance(1.0, 1.0);
+      numerics.SetF1blending(0.0, 0.0);
+      numerics.SetF2blending(0.0);
+      numerics.SetCrossDiff(0.0);
+
+      for (const su2double strain : {0.0, 3.0}) {
+        CAPTURE(pressure_dilatation, density, strain);
+        primitive_gradient = su2double(0.0);
+        primitive_gradient(idx.Velocity(), 1) = strain;
+        const std::array<su2double, 3> vorticity = {0.0, 0.0, -strain};
+        numerics.SetPrimVarGradient(CMatrixView<const su2double>(primitive_gradient), nullptr);
+        numerics.SetVorticity(vorticity.data(), nullptr);
+        numerics.SetStrainMag(strain, 0.0);
+        const auto residual = numerics.ComputeResidual(&config);
+
+        // Unit-density sources use -Pi/nu_t from Tang and Gao (2015), Eq. (11), for both signs of Pi.
+        const su2double expected_k =
+            strain == 0.0 ? (pressure_dilatation ? -0.9288 : -0.936) : (pressure_dilatation ? 2.6136 : 2.664);
+        const su2double expected_omega =
+            strain == 0.0 ? (pressure_dilatation ? -1.998 : -1.98) : (pressure_dilatation ? 2.106 : 1.98);
+        CHECK(residual.residual[0] == Approx(density * expected_k).epsilon(1e-12));
+        CHECK(residual.residual[1] == Approx(density * expected_omega).epsilon(1e-12));
+      }
+    }
+  }
 }
