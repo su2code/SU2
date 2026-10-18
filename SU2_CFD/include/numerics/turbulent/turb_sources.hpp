@@ -798,9 +798,12 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     Residual[0] -= yinv * Volume * cdk_axi;
     Residual[1] -= yinv * Volume * cdw_axi;
 
-    /*--- These terms are not added to the Jacobian. Their derivative w.r.t. (rho k, rho w) is
-     * yinv * Volume * v, which reduces diagonal dominance for flow towards the axis (v < 0). Including
-     * the full term stalls the convergence of axisymmetric cases, keeping only v > 0 brings no benefit. ---*/
+    /*--- Derivative w.r.t. the conservative variables (rho k, rho w), only the part that increases
+     * diagonal dominance (v > 0) is kept, as the term is destabilizing for flow towards the axis. ---*/
+    const su2double jac_axi = yinv * Volume * max(V_i[idx.Velocity() + 1], 0.0);
+    Jacobian_i[0][0] -= jac_axi;
+    Jacobian_i[1][1] -= jac_axi;
+
   }
 
  public:
@@ -1014,16 +1017,17 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Cross diffusion is included in the viscous fluxes, not this source term. ---*/
 
-      /*--- Contribution due to 2D axisymmetric formulation ---*/
-
-      if (axisymmetric) ResidualAxisymmetricConvectionDiffusion(alfa_blended, zeta);
-
       /*--- Implicit part ---*/
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
+
+      /*--- Contribution due to 2D axisymmetric formulation, after the implicit part since it
+       * adds to the Jacobian (which the assignments above would otherwise overwrite). ---*/
+
+      if (axisymmetric) ResidualAxisymmetricConvectionDiffusion(alfa_blended, zeta);
     }
 
     AD::SetPreaccOut(Residual, nVar);
