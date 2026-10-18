@@ -396,10 +396,12 @@ TEST_CASE("Periodic edge weight cache rebuild", "[Periodic][Geometry]") {
   field.config_options.replace(start, end - start, "MARKER_CUSTOM= (y_minus,y_plus,z_plus,z_minus)\n");
   field.AddOption("MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)");
   field.InitConfig();
-  field.InitGeometry();
+  field.InitGeometry(true);
   auto& geometry = *field.geometry;
   geometry.PreprocessPeriodicGeometry(*field.config);
-  bool checked = false;
+  unsigned long edge = geometry.GetnEdge(), point = 0;
+  unsigned short marker = 0;
+  long vertex = -1;
   for (auto iEdge = 0ul; iEdge < geometry.GetnEdge(); ++iEdge) {
     if (geometry.GetPeriodicEdgeWeight(iEdge) == 1.0) continue;
     const auto iPoint = geometry.edges->GetNode(iEdge, 0);
@@ -407,19 +409,30 @@ TEST_CASE("Periodic edge weight cache rebuild", "[Periodic][Geometry]") {
       if (field.config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
       const auto iVertex = geometry.nodes->GetVertex(iPoint, iMarker);
       if (iVertex < 0) continue;
-      CHECK(geometry.GetPeriodicEdgeWeight(iEdge) == 0.5);
-      geometry.nodes->SetVertex(iPoint, -1, iMarker);
-      geometry.PreprocessPeriodicGeometry(*field.config);
-      CHECK(geometry.GetPeriodicEdgeWeight(iEdge) == 1.0);
-      geometry.nodes->SetVertex(iPoint, iVertex, iMarker);
-      geometry.PreprocessPeriodicGeometry(*field.config);
-      CHECK(geometry.GetPeriodicEdgeWeight(iEdge) == 0.5);
-      checked = true;
+      edge = iEdge;
+      point = iPoint;
+      marker = iMarker;
+      vertex = iVertex;
       break;
     }
     break;
   }
-  REQUIRE(checked);
+  const bool checked = edge < geometry.GetnEdge();
+  if (checked) {
+    CHECK(geometry.GetPeriodicEdgeWeight(edge) == 0.5);
+    geometry.nodes->SetVertex(point, -1, marker);
+  }
+  /*--- All ranks rebuild together, including those without a local candidate edge. ---*/
+  geometry.PreprocessPeriodicGeometry(*field.config);
+  if (checked) {
+    CHECK(geometry.GetPeriodicEdgeWeight(edge) == 1.0);
+    geometry.nodes->SetVertex(point, vertex, marker);
+  }
+  geometry.PreprocessPeriodicGeometry(*field.config);
+  if (checked) CHECK(geometry.GetPeriodicEdgeWeight(edge) == 0.5);
+  unsigned long local = checked, global = 0;
+  SU2_MPI::Allreduce(&local, &global, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  REQUIRE(global > 0);
 }
 
 TEST_CASE("Coarse periodic boundary flags", "[Periodic]") {
