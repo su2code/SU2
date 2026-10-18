@@ -2397,7 +2397,9 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
       nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+    for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+      const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+      const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
 
       bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
@@ -2405,7 +2407,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
       if (boundary_i && !boundary_j) continue;
 
       const auto weight = config->GetnMarker_Periodic() > 2 ?
-                              geometry->GetPeriodicEdgeWeight(iPoint, jPoint, *config) : 1.0;
+                              geometry->GetPeriodicEdgeWeight(iEdge) : 1.0;
 
       /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
 

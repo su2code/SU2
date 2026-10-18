@@ -231,8 +231,9 @@ void computeGradientsLeastSquares(CSolver* solver,
         Rmatrix(iPoint, iDim, jDim) = 0.0;
 
 
-    for (auto jPoint : nodes->GetPoints(iPoint))
-    {
+    for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
+      const auto jPoint = nodes->GetPoint(iPoint, iNeigh);
+      const auto iEdge = nodes->GetEdge(iPoint, iNeigh);
       const auto coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
@@ -254,7 +255,7 @@ void computeGradientsLeastSquares(CSolver* solver,
       {
         weight = 1.0 / weight;
         if (config.GetnMarker_Periodic() > 2)
-          weight *= geometry.GetPeriodicEdgeWeight(iPoint, jPoint, config);
+          weight *= geometry.GetPeriodicEdgeWeight(iEdge);
 
         for (size_t iDim = 0; iDim < nDim; ++iDim)
           for (size_t jDim = iDim; jDim < nDim; ++jDim)

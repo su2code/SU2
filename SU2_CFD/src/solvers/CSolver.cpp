@@ -385,8 +385,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
     for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
       periodicNeighborCount(iPoint) = 0;
-      for (auto jPoint : geometry->nodes->GetPoints(iPoint))
-        periodicNeighborCount(iPoint) += geometry->GetPeriodicEdgeWeight(iPoint, jPoint, *config);
+      for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+        const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+        periodicNeighborCount(iPoint) += geometry->GetPeriodicEdgeWeight(iEdge);
+      }
     }
     END_SU2_OMP_FOR
   }
@@ -587,13 +589,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             nNeighbor = 0;
-            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+            for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+              const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
 
               /*--- Check if this neighbor lies on the periodic face so
                that we avoid double counting neighbors on both sides. If
                not, increment the count of neighbors for the donor. ---*/
 
-              if (geometry->GetPeriodicEdgeWeight(iPoint, jPoint, *config) == 1.0)
+              if (geometry->GetPeriodicEdgeWeight(iEdge) == 1.0)
                 nNeighbor++;
             }
 
@@ -716,12 +719,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               Und_Lapl[iVar] = 0.0;
 
-            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+            for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+              const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+              const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (geometry->GetPeriodicEdgeWeight(iPoint, jPoint, *config) == 1.0) {
+              if (geometry->GetPeriodicEdgeWeight(iEdge) == 1.0) {
 
                 /*--- Solution differences ---*/
 
@@ -787,12 +792,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              on both sides of the periodic face. ---*/
 
             Sensor_i = 0; Sensor_j = 0;
-            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+            for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+              const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+              const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
 
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (geometry->GetPeriodicEdgeWeight(iPoint, jPoint, *config) < 1.0) continue;
+              if (geometry->GetPeriodicEdgeWeight(iEdge) < 1.0) continue;
 
               /*--- Use density instead of pressure for incomp. flows. ---*/
 
@@ -966,12 +973,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
 
-            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+            for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+              const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+              const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (geometry->GetPeriodicEdgeWeight(iPoint, jPoint, *config) == 1.0) {
+              if (geometry->GetPeriodicEdgeWeight(iEdge) == 1.0) {
 
                 /*--- Get coordinates for the neighbor point. ---*/
 
@@ -2460,7 +2469,9 @@ void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config)
       base_nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+    for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+      const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+      const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
 
       bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
@@ -2471,7 +2482,7 @@ void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config)
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         su2double delta = base_nodes->GetSolution(jPoint,iVar)-base_nodes->GetSolution(iPoint,iVar);
-        if (config->GetnMarker_Periodic() > 2) delta *= geometry->GetPeriodicEdgeWeight(iPoint, jPoint, *config);
+        if (config->GetnMarker_Periodic() > 2) delta *= geometry->GetPeriodicEdgeWeight(iEdge);
         base_nodes->AddUnd_Lapl(iPoint, iVar, delta);
       }
     }

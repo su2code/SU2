@@ -1155,7 +1155,38 @@ void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic
   delete[] Buffer_Recv_Marker;
 }
 
+void CGeometry::SetPeriodicEdgeWeights(const CConfig& config) {
+  periodicEdgeWeight.assign(nEdge, 1.0);
+  for (auto iEdge = 0ul; iEdge < nEdge; ++iEdge) {
+    const auto iPoint = edges->GetNode(iEdge, 0), jPoint = edges->GetNode(iEdge, 1);
+    if (!nodes->GetPeriodicBoundary(iPoint) || !nodes->GetPeriodicBoundary(jPoint)) continue;
+    passivedouble weight = 1.0;
+    for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
+      if (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY || nodes->GetVertex(iPoint, iMarker) < 0 ||
+          nodes->GetVertex(jPoint, iMarker) < 0)
+        continue;
+      const auto tag = config.GetMarker_All_TagBound(iMarker);
+      const auto donor = config.GetMarker_Periodic_Donor(tag);
+      if (donor < nMarker && nodes->GetVertex(iPoint, donor) >= 0 && nodes->GetVertex(jPoint, donor) >= 0) {
+        /*--- An edge along the rotation axis is shared by all N sectors,
+         * rather than by two copies of each of the two periodic faces. ---*/
+        if (config.GetMarker_All_PerBound(iMarker) > config.GetnMarker_Periodic() / 2) continue;
+        const auto* angles = config.GetPeriodicRotAngles(tag);
+        su2double rotation[3][3];
+        GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotation);
+        const auto cosAngle = SU2_TYPE::GetValue(0.5 * (rotation[0][0] + rotation[1][1] + rotation[2][2] - 1));
+        weight *= acos(std::max(-1.0, std::min(1.0, cosAngle))) / (2 * PI_NUMBER);
+      } else {
+        weight *= 0.5;
+      }
+    }
+    periodicEdgeWeight[iEdge] = weight;
+  }
+}
+
 void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
+  geometry->SetPeriodicEdgeWeights(*config);
+
   /*--- We start with the send and receive lists already available in
    the form of stored periodic point-donor pairs. We will loop through
    these markers and establish the neighboring ranks and number of
@@ -1648,6 +1679,7 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, CO
 }
 
 void CGeometry::SetEdges() {
+  periodicEdgeWeight.clear();
   nEdge = 0;
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {

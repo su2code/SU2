@@ -271,6 +271,39 @@ TEST_CASE("Intersecting periodic stencils", "[Periodic][Gradients]") {
   }
 }
 
+TEST_CASE("Periodic edge weight cache rebuild", "[Periodic][Geometry]") {
+  UnitQuadTestCase field;
+  const auto start = field.config_options.find("MARKER_HEATFLUX=");
+  const auto end = field.config_options.find("VISCOSITY_MODEL=");
+  field.config_options.replace(start, end - start, "MARKER_CUSTOM= (y_minus,y_plus,z_plus,z_minus)\n");
+  field.AddOption("MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)");
+  field.InitConfig();
+  field.InitGeometry();
+  auto& geometry = *field.geometry;
+  geometry.SetPeriodicEdgeWeights(*field.config);
+  bool checked = false;
+  for (auto iEdge = 0ul; iEdge < geometry.GetnEdge(); ++iEdge) {
+    if (geometry.GetPeriodicEdgeWeight(iEdge) == 1.0) continue;
+    const auto iPoint = geometry.edges->GetNode(iEdge, 0);
+    for (auto iMarker = 0u; iMarker < geometry.GetnMarker(); ++iMarker) {
+      if (field.config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
+      const auto iVertex = geometry.nodes->GetVertex(iPoint, iMarker);
+      if (iVertex < 0) continue;
+      CHECK(geometry.GetPeriodicEdgeWeight(iEdge) == 0.5);
+      geometry.nodes->SetVertex(iPoint, -1, iMarker);
+      geometry.SetPeriodicEdgeWeights(*field.config);
+      CHECK(geometry.GetPeriodicEdgeWeight(iEdge) == 1.0);
+      geometry.nodes->SetVertex(iPoint, iVertex, iMarker);
+      geometry.SetPeriodicEdgeWeights(*field.config);
+      CHECK(geometry.GetPeriodicEdgeWeight(iEdge) == 0.5);
+      checked = true;
+      break;
+    }
+    break;
+  }
+  REQUIRE(checked);
+}
+
 TEST_CASE("Coarse periodic boundary flags", "[Periodic]") {
   UnitQuadTestCase field;
   const auto start = field.config_options.find("MARKER_HEATFLUX=");
