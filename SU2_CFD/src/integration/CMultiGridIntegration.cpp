@@ -1183,8 +1183,8 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
 
   auto& gradient = prolongGradient[iMesh];
 
-  /*--- Unweighted fit: inverse-distance weights would let the short wall-normal edges of a
-   *    stretched agglomerate dominate it. ---*/
+  /*--- Inverse-distance-squared weights give every neighbour's directional difference the same
+   *    weight, so the fit does not depend on how far apart the neighbours are. ---*/
 
   SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain, omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
@@ -1195,7 +1195,8 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
     const auto* Coord_i = geo_coarse->nodes->GetCoord(iPoint);
     const auto* Correction_i = Field(iPoint);
 
-    su2double Amat[MAXNDIM][MAXNDIM] = {{0.0}}, Bmat[MAXNDIM][MAXNDIM] = {{0.0}};
+    /*--- The extent matrix measures the stencil's stretching, the fit matrix is the weighted normal matrix. ---*/
+    su2double extentMat[MAXNDIM][MAXNDIM] = {{0.0}}, fitMat[MAXNDIM][MAXNDIM] = {{0.0}};
     su2double rhs[MAXNVAR][MAXNDIM] = {{0.0}};
 
     for (auto jPoint : geo_coarse->nodes->GetPoints(iPoint)) {
@@ -1207,29 +1208,29 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
 
       for (auto iDim = 0u; iDim < nDim; iDim++)
         for (auto jDim = 0u; jDim < nDim; jDim++) {
-          Amat[iDim][jDim] += Distance[iDim]*Distance[jDim];
-          Bmat[iDim][jDim] += Distance[iDim]*Distance[jDim]/dist2;
+          extentMat[iDim][jDim] += Distance[iDim]*Distance[jDim];
+          fitMat[iDim][jDim] += Distance[iDim]*Distance[jDim]/dist2;
         }
 
       const auto* Correction_j = Field(jPoint);
 
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         const su2double delta = Correction_j[iVar] - Correction_i[iVar];
-        for (auto iDim = 0u; iDim < nDim; iDim++) rhs[iVar][iDim] += Distance[iDim]*delta;
+        for (auto iDim = 0u; iDim < nDim; iDim++) rhs[iVar][iDim] += Distance[iDim]*delta/dist2;
       }
     }
 
     /*--- Neighbours that do not span every direction leave a slope undefined. A stencil much longer in
      *    one direction than another, from cell stretching, weakens the gradient or removes it. In both
      *    cases the cell falls back to the constant operator. ---*/
-    su2double Ainv[MAXNDIM][MAXNDIM] = {{0.0}};
-    const passivedouble aspect = sqrt(FitConditionNumber(nDim, Amat));
+    su2double fitInv[MAXNDIM][MAXNDIM] = {{0.0}};
+    const passivedouble aspect = sqrt(FitConditionNumber(nDim, extentMat));
     const passivedouble weight =
         (aspect <= PROLONG_FULL_ASPECT)
             ? 1.0
             : max(0.0, log(PROLONG_MAX_ASPECT / aspect) / log(PROLONG_MAX_ASPECT / PROLONG_FULL_ASPECT));
-    if ((FitConditionNumber(nDim, Bmat) > PROLONG_MAX_CONDITION) || (weight <= 0.0) ||
-        !CholeskyInverse(nDim, Amat, Ainv)) {
+    if ((FitConditionNumber(nDim, fitMat) > PROLONG_MAX_CONDITION) || (weight <= 0.0) ||
+        !CholeskyInverse(nDim, fitMat, fitInv)) {
       SU2_OMP_ATOMIC
       prolongIllConditioned[iMesh]++;
       continue;
@@ -1238,7 +1239,7 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
     for (auto iVar = 0u; iVar < nVar; iVar++)
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         su2double value = 0.0;
-        for (auto jDim = 0u; jDim < nDim; jDim++) value += Ainv[iDim][jDim]*rhs[iVar][jDim];
+        for (auto jDim = 0u; jDim < nDim; jDim++) value += fitInv[iDim][jDim]*rhs[iVar][jDim];
         gradient(iPoint, iVar, iDim) = weight * value;
       }
   }
