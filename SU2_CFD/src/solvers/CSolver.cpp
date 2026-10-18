@@ -900,7 +900,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 detail::rotateLeastSquaresNormalMatrix(iPoint, base_nodes->GetRmatrix(), rotMatrix2D, &bufDSend[buf_offset]);
               else
                 detail::rotateLeastSquaresNormalMatrix(iPoint, base_nodes->GetRmatrix(), rotMatrix3D, &bufDSend[buf_offset]);
-              buf_offset += nDim * nDim;
+              buf_offset += static_cast<unsigned long>(nDim) * nDim;
               for (auto iField = 0u; iField < ICOUNT; ++iField)
                 Rotate(zeros, gradient[iPoint][iField], rotBlock[iField]);
               if (rotate_periodic) {
