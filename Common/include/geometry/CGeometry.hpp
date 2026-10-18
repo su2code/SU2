@@ -349,8 +349,6 @@ class CGeometry {
                                               a particular vertex to be received in periodic comms. */
   su2double* bufD_PeriodicRecv{nullptr};   /*!< \brief Data structure for su2double periodic receive. */
   su2double* bufD_PeriodicSend{nullptr};   /*!< \brief Data structure for su2double periodic send. */
-  unsigned short* bufS_PeriodicRecv{nullptr};  /*!< \brief Data structure for unsigned long periodic receive. */
-  unsigned short* bufS_PeriodicSend{nullptr};  /*!< \brief Data structure for unsigned long periodic send. */
   SU2_MPI::Request* req_PeriodicSend{nullptr}; /*!< \brief Data structure for periodic send requests. */
   SU2_MPI::Request* req_PeriodicRecv{nullptr}; /*!< \brief Data structure for periodic recv requests. */
 

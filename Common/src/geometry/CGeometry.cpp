@@ -127,9 +127,6 @@ CGeometry::~CGeometry() {
   delete[] bufD_PeriodicRecv;
   delete[] bufD_PeriodicSend;
 
-  delete[] bufS_PeriodicRecv;
-  delete[] bufS_PeriodicSend;
-
   delete[] req_PeriodicSend;
   delete[] req_PeriodicRecv;
 
@@ -1379,9 +1376,6 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
   bufD_PeriodicSend = nullptr;
   bufD_PeriodicRecv = nullptr;
 
-  bufS_PeriodicSend = nullptr;
-  bufS_PeriodicRecv = nullptr;
-
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
   if (nPeriodicSend > 0) {
@@ -1584,12 +1578,6 @@ void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
 
     delete[] bufD_PeriodicRecv;
     bufD_PeriodicRecv = new su2double[nRecv]();
-
-    delete[] bufS_PeriodicSend;
-    bufS_PeriodicSend = new unsigned short[nSend]();
-
-    delete[] bufS_PeriodicRecv;
-    bufS_PeriodicRecv = new unsigned short[nRecv]();
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -1630,10 +1618,6 @@ void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, CO
       case COMM_TYPE::DOUBLE:
         SU2_MPI::Irecv(&(static_cast<su2double*>(bufD_PeriodicRecv)[offset]), count, MPI_DOUBLE, source, tag,
                        SU2_MPI::GetComm(), &(req_PeriodicRecv[iRecv]));
-        break;
-      case COMM_TYPE::UNSIGNED_SHORT:
-        SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufS_PeriodicRecv)[offset]), count, MPI_UNSIGNED_SHORT, source,
-                       tag, SU2_MPI::GetComm(), &(req_PeriodicRecv[iRecv]));
         break;
       default:
         SU2_MPI::Error("Unrecognized data type for periodic MPI comms.", CURRENT_FUNCTION);
@@ -1678,10 +1662,6 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, CO
         SU2_MPI::Isend(&(static_cast<su2double*>(bufD_PeriodicSend)[offset]), count, MPI_DOUBLE, dest, tag,
                        SU2_MPI::GetComm(), &(req_PeriodicSend[val_iSend]));
         break;
-      case COMM_TYPE::UNSIGNED_SHORT:
-        SU2_MPI::Isend(&(static_cast<unsigned short*>(bufS_PeriodicSend)[offset]), count, MPI_UNSIGNED_SHORT, dest, tag,
-                       SU2_MPI::GetComm(), &(req_PeriodicSend[val_iSend]));
-        break;
       default:
         SU2_MPI::Error("Unrecognized data type for periodic MPI comms.", CURRENT_FUNCTION);
         break;
@@ -1701,9 +1681,6 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, CO
   switch (commType) {
     case COMM_TYPE::DOUBLE:
       parallelCopy(myFinal - myStart, &bufD_PeriodicSend[myStart], &bufD_PeriodicRecv[iRecv]);
-      break;
-    case COMM_TYPE::UNSIGNED_SHORT:
-      parallelCopy(myFinal - myStart, &bufS_PeriodicSend[myStart], &bufS_PeriodicRecv[iRecv]);
       break;
     default:
       SU2_MPI::Error("Unrecognized data type for periodic MPI comms.", CURRENT_FUNCTION);
