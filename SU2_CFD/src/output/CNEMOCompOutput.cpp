@@ -29,6 +29,7 @@
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
+#include "../../include/variables/CNEMOEulerVariable.hpp"
 
 CNEMOCompOutput::CNEMOCompOutput(const CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
@@ -367,15 +368,21 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
     /*--- Primitive variables: species densities, T, Tve, velocity, pressure. ---*/
+    const CNEMOEulerVariable::CIndices<unsigned long> prim_idx(nDim, nSpecies);
     for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
-      SetVolumeOutputValue("LIMITER_DENSITY_" + std::to_string(iSpecies), iPoint, Node_Flow->GetLimiter_Primitive(iPoint, iSpecies));
-    SetVolumeOutputValue("LIMITER_TEMPERATURE_TR", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies));
-    SetVolumeOutputValue("LIMITER_TEMPERATURE_VE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies+1));
-    SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies+2));
-    SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies+3));
+      SetVolumeOutputValue("LIMITER_DENSITY_" + std::to_string(iSpecies), iPoint,
+                           Node_Flow->GetLimiter_Primitive(iPoint, prim_idx.SpeciesDensities() + iSpecies));
+    SetVolumeOutputValue("LIMITER_TEMPERATURE_TR", iPoint,
+                         Node_Flow->GetLimiter_Primitive(iPoint, prim_idx.Temperature()));
+    SetVolumeOutputValue("LIMITER_TEMPERATURE_VE", iPoint,
+                         Node_Flow->GetLimiter_Primitive(iPoint, prim_idx.Temperature_ve()));
+    SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, prim_idx.Velocity()));
+    SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint,
+                         Node_Flow->GetLimiter_Primitive(iPoint, prim_idx.Velocity() + 1));
     if (nDim == 3)
-      SetVolumeOutputValue("LIMITER_VELOCITY-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies+4));
-    SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nSpecies+nDim+2));
+      SetVolumeOutputValue("LIMITER_VELOCITY-Z", iPoint,
+                           Node_Flow->GetLimiter_Primitive(iPoint, prim_idx.Velocity() + 2));
+    SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, prim_idx.Pressure()));
   }
 
   LoadVolumeDataScalar(config, solver, geometry, iPoint);
