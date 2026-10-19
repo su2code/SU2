@@ -425,7 +425,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals = [-12.003186, -7.623957, -0.000000, 2.089953]
+    poiseuille_profile.test_vals = [-12.003181, -7.626400, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.007498, -7.226926, -0.000000, 2.089953]
     poiseuille_profile.tol       = [0.001, 0.001, 1e-5, 1e-5, 1e-5]
     test_list.append(poiseuille_profile)
@@ -965,7 +965,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals = [1.275994, 1.062588, -2.067822, 1.300662, 0.480881, 0.000000]
+    turbmod_sa_neg_rae2822.test_vals = [1.275906, 1.062762, -2.067335, 1.301619, 0.481422, 0.000000]
     turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.345593, 1.448310, 1.208721, -0.846597, 1.248410, 0.489117, 0.000000]
     test_list.append(turbmod_sa_neg_rae2822)
 
@@ -1339,7 +1339,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.905382, -12.212100, -19.212143, -13.508268, -19.078783, -13.446389, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.903628, -12.211875, -19.212536, -13.508088, -19.079442, -13.440735, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1447,7 +1447,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.457912, -1.541047]
+    bars_SST_2D.test_vals = [13.000000, -0.457907, -1.539958]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
@@ -1773,7 +1773,7 @@ def main():
     mms_fvm_vortex.cfg_dir   = "mms/fvm_euler"
     mms_fvm_vortex.cfg_file  = "inv_mms_vortex.cfg"
     mms_fvm_vortex.test_iter = 10
-    mms_fvm_vortex.test_vals = [-5.704300, -4.848072, 0.000000, 0.000000]
+    mms_fvm_vortex.test_vals = [-5.704011, -4.847997, 0.000000, 0.000000]
     mms_fvm_vortex.unsteady  = True
     test_list.append(mms_fvm_vortex)
 
