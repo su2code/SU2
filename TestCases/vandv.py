@@ -81,7 +81,7 @@ def main():
     swbli_sa.cfg_dir   = "vandv/rans/swbli"
     swbli_sa.cfg_file  = "config_sa.cfg"
     swbli_sa.test_iter = 5
-    swbli_sa.test_vals         = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
+    swbli_sa.test_vals = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
     swbli_sa.test_vals_aarch64 = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
     test_list.append(swbli_sa)
 

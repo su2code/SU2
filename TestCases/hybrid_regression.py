@@ -80,7 +80,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.223565, 1.506875, -0.249526, 0.043953]
+    wedge.test_vals = [-4.220803, 1.509389, -0.249526, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -158,7 +158,7 @@ def main():
     periodic2d.cfg_dir   = "navierstokes/periodic2D"
     periodic2d.cfg_file  = "config.cfg"
     periodic2d.test_iter = 1400
-    periodic2d.test_vals = [-10.817607, -8.363541, -8.287457, -5.334100, -1.088412, -2945.200000]
+    periodic2d.test_vals = [-10.314545, -8.056213, -7.708669, -4.833054, -1.059806, -2953.400000]
     test_list.append(periodic2d)
 
     ##########################
@@ -170,7 +170,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.858565, -4.906734, 0.782692, 0.018639, 1000.000000]
+    rae2822_sa.test_vals = [-2.916839, -5.161263, 0.802145, 0.019586, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -369,7 +369,7 @@ def main():
     inc_euler_naca0012_pb.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012_pb.cfg_file  = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
-    inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784246, 0.427448, 0.012083]
+    inc_euler_naca0012_pb.test_vals = [-4.454835, -4.784268, 0.427448, 0.012084]
     test_list.append(inc_euler_naca0012_pb)
 
     # Laminar cylinder, pressure-based. Viscous counterpart of the hydrofoil above, so the
@@ -378,7 +378,7 @@ def main():
     inc_lam_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder_pb.cfg_file  = "incomp_pb_cylinder.cfg"
     inc_lam_cylinder_pb.test_iter = 10
-    inc_lam_cylinder_pb.test_vals = [-3.486075, -3.777632, 0.012229, 6.178719]
+    inc_lam_cylinder_pb.test_vals = [-3.486562, -3.776813, 0.012619, 6.205610]
     test_list.append(inc_lam_cylinder_pb)
 
     # Laminar sphere, pressure-based. The only 3D pressure-based case, and the one where the
@@ -387,7 +387,7 @@ def main():
     inc_lam_sphere_pb.cfg_dir   = "incomp_navierstokes/sphere"
     inc_lam_sphere_pb.cfg_file  = "pb_sphere.cfg"
     inc_lam_sphere_pb.test_iter = 9
-    inc_lam_sphere_pb.test_vals = [-6.092084, -2.305039, -2.479072, -2.548968, 0.191798, 170.793204, -6.134920]
+    inc_lam_sphere_pb.test_vals = [-6.104969, -2.307895, -2.481829, -2.570423, 0.189098, 170.764342, -6.128569]
     test_list.append(inc_lam_sphere_pb)
 
     # Heated cylinder, pressure-based, coupled energy equation and variable density.
@@ -395,7 +395,7 @@ def main():
     inc_poly_cylinder_pb.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder_pb.cfg_file  = "pb_poly_cylinder.cfg"
     inc_poly_cylinder_pb.test_iter = 20
-    inc_poly_cylinder_pb.test_vals = [-13.483266, 0.541350, 0.005972, 17.020220, -8927.600000]
+    inc_poly_cylinder_pb.test_vals = [-9.564374, -3.013394, 0.000161, 1.778555, -172.280000]
     test_list.append(inc_poly_cylinder_pb)
 
     # C-D nozzle with pressure inlet and mass flow outlet
@@ -452,7 +452,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000004, -0.028637, 5.000000, -4.081478, 2.000000, -4.490126]
+    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000006, -0.028637, 4.000000, -4.016988, 2.000000, -4.487046]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -589,7 +589,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 20
-    edge_PPR.test_vals         = [-10.993286, -4.827527, -0.000034, 0.000000]
+    edge_PPR.test_vals = [-10.993286, -4.827527, -0.000034, 0.000000]
     edge_PPR.test_vals_aarch64 = [ -7.139211, -0.980821, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
@@ -602,7 +602,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.907561, -12.214137, -19.151426, -13.451780, -19.085218, -13.450796, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.959252, -12.213981, -19.314222, -13.600248, -19.076384, -13.444335, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -627,7 +627,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632240, -8.894740, -9.348706]
+    multi_interface.test_vals = [-8.634571, -8.895558, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632229, -8.894737, -9.348730]
     test_list.append(multi_interface)
 

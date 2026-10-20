@@ -119,7 +119,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.359580, 1.370530, -0.249526, 0.043953]
+    wedge.test_vals = [-4.359544, 1.370567, -0.249526, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -145,7 +145,7 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals         = [-1.311796, 4.165508, 0.000092, 0.113306]
+    polar_naca0012.test_vals = [-1.311796, 4.165508, 0.000092, 0.113306]
     polar_naca0012.test_vals_aarch64 = [-1.063447, 4.401847, 0.000291, 0.031696]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-n 1 -i 11")
     # flaky test on arm64
@@ -195,6 +195,14 @@ def main():
     cylinder_lowmach.test_vals = [-8.698687, -3.236566, 0.401347, 1.754864, 0.000000]
     test_list.append(cylinder_lowmach)
 
+    # Laminar NACA0012 with linelet preconditioner (see #2877)
+    lam_naca0012_linelet = TestCase('lam_naca0012_linelet')
+    lam_naca0012_linelet.cfg_dir = "navierstokes/naca0012"
+    lam_naca0012_linelet.cfg_file = "lam_NACA0012_LINELET.cfg"
+    lam_naca0012_linelet.test_iter = 20
+    lam_naca0012_linelet.test_vals = [-5.345007, -2.936878, -2.943454, 0.096356]
+    test_list.append(lam_naca0012_linelet)
+
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
     poiseuille           = TestCase('poiseuille')
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
@@ -228,7 +236,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-3.056253, -5.155475, 0.783190, 0.020552, 1000.000000]
+    rae2822_sa.test_vals = [-3.117674, -5.153287, 0.777070, 0.019412, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -420,7 +428,7 @@ def main():
     inc_euler_naca0012_pb.cfg_dir = "incomp_euler/naca0012"
     inc_euler_naca0012_pb.cfg_file = "incomp_pb_NACA0012.cfg"
     inc_euler_naca0012_pb.test_iter = 20
-    inc_euler_naca0012_pb.test_vals = [-4.454818, -4.784246, 0.427448, 0.012083]
+    inc_euler_naca0012_pb.test_vals = [-4.454834, -4.784268, 0.427449, 0.012084]
     test_list.append(inc_euler_naca0012_pb)
 
     # C-D nozzle with pressure inlet and mass flow outlet
@@ -455,7 +463,7 @@ def main():
     inc_lam_cylinder_pb.cfg_dir = "incomp_navierstokes/cylinder"
     inc_lam_cylinder_pb.cfg_file = "incomp_pb_cylinder.cfg"
     inc_lam_cylinder_pb.test_iter = 10
-    inc_lam_cylinder_pb.test_vals = [-3.486100, -3.777681, 0.012003, 6.178586]
+    inc_lam_cylinder_pb.test_vals = [-3.486587, -3.776864, 0.012396, 6.205509]
     test_list.append(inc_lam_cylinder_pb)
 
 
@@ -500,7 +508,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.758064, -10.974498, -0.000003, -0.028654, 4, -6.049653, 2, -4.951206]
+    inc_turb_naca0012.test_vals = [-4.758064, -10.974498, -0.000003, -0.028654, 3.000000, -4.499423, 2.000000, -4.951202]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -949,7 +957,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
-    Aachen_3D_restart.test_vals = [-7.701421, -8.504727, -6.014939, -6.468221, -5.801125, -4.607173, -5.550665, -5.300779, -3.804187, -5.255982, -5.763060, -3.609601, -2.229250, -2.880453, -0.563470]
+    Aachen_3D_restart.test_vals = [-7.689117, -8.476204, -6.036107, -6.427402, -5.831576, -4.599024, -5.530512, -5.305687, -3.821789, -5.243255, -5.754831, -3.631603, -2.213934, -2.895728, -0.578545]
     Aachen_3D_restart.enabled_with_asan = False
     test_list.append(Aachen_3D_restart)
 
@@ -958,7 +966,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.944235, -12.212620, -19.261137, -13.549357, -19.083828, -13.444697, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.905642, -12.212181, -19.212554, -13.508053, -19.069991, -13.439494, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -983,7 +991,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632227, -8.894736, -9.348706]
+    multi_interface.test_vals = [-8.634558, -8.895554, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
