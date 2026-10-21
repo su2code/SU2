@@ -1053,8 +1053,9 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
     SU2_OMP_SAFE_GLOBAL_ACCESS(GetOutlet_Properties(geometry, config, iMesh, Output);)
   }
 
-  /*--- Reset flag for strong BCs. ---*/
-  if (pressure_based) {
+  /*--- Reset flag for strong BCs. Not on the Output call at the end of the momentum iteration: the
+   *    flags set by the BCs are used afterwards by the momentum coefficients and the corrections. ---*/
+  if (pressure_based && !Output) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
       nodes->ResetStrongBC(iPoint);
@@ -2139,15 +2140,24 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
 
   struct IncPrec {
     const CIncEulerSolver* solver;
-    const bool active;
+    const bool active = true;
     su2activematrix matrix;
 
-    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s), active(!s->pressure_based) {
+    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s) {
       matrix.resize(nVar,nVar);
     }
 
     FORCEINLINE const su2activematrix& operator() (const CConfig* config, unsigned long iPoint, su2double delta) {
-      solver->SetPreconditioner(config, iPoint, delta, matrix);
+      if (solver->pressure_based) {
+        /*--- The Jacobian of the pressure-based solver is per unit velocity and enthalpy, the
+         *    pseudo-time term is rho*V/dt (the continuity row is deleted below). ---*/
+        matrix = su2double(0.0);
+        matrix(0,0) = delta;
+        for (auto iVar = 1ul; iVar < matrix.rows(); iVar++)
+          matrix(iVar,iVar) = solver->nodes->GetDensity(iPoint) * delta;
+      } else {
+        solver->SetPreconditioner(config, iPoint, delta, matrix);
+      }
       return matrix;
     }
 
@@ -2457,7 +2467,11 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       if (inflow) {
 
-        /*--- Set this face as an inlet via a strong BC. ---*/
+        /*--- Set this face as an inlet via a strong BC, the free-stream velocity and enthalpy are imposed. ---*/
+
+        nodes->SetVelocity_Old(iPoint, V_infty+prim_idx.Velocity());
+        if (config->GetEnergy_Equation())
+          nodes->SetSolution_Old(iPoint, nDim+1, V_infty[prim_idx.Enthalpy()]);
 
         LinSysRes.SetBlock_Zero(iPoint);
 
@@ -2465,9 +2479,12 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
         nodes->SetStrongBC(iPoint);
 
-        if (implicit)
+        if (implicit) {
           for (iDim = 0; iDim < nDim; iDim++)
             Jacobian.DeleteValsRowi(iPoint, iDim+1);
+          if (config->GetEnergy_Equation())
+            Jacobian.DeleteValsRowi(iPoint, nDim+1);
+        }
 
       } else {
 
@@ -2738,13 +2755,29 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       nodes->SetVelocity_Old(iPoint,V_inlet+prim_idx.Velocity());
 
+      /*--- Same for the enthalpy, from the inlet temperature. ---*/
+
+      const bool inlet_enthalpy = config->GetEnergy_Equation() &&
+          !(config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET &&
+            config->GetFlamelet_Enthalpy_BC() == FLAMELET_ENTHALPY_BC::FLOW_MARKERS);
+      if (inlet_enthalpy) {
+        const su2double* scalar_inlet = nullptr;
+        if (species_model) scalar_inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+        CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+        auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], scalar_inlet);
+        nodes->SetSolution_Old(iPoint, nDim+1, auxFluidModel->GetEnthalpy());
+      }
+
       LinSysRes.SetBlock_Zero(iPoint);
 
       if (pressure_based) nodes->SetStrongBC(iPoint);
 
-      if (implicit)
+      if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.DeleteValsRowi(iPoint, iDim+1);
+        if (inlet_enthalpy)
+          Jacobian.DeleteValsRowi(iPoint, nDim+1);
+      }
 
     } else {
 
@@ -3716,11 +3749,9 @@ void CIncEulerSolver::ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver
 
     CorrectPressureGradient(GradPressure_f, GradPressure_avg, nodes->GetPressure(iPoint), nodes->GetPressure(jPoint), Edge_Vector, dist_ij_2);
 
-    /*--- Linearly interpolated coefficient. A point under a strong velocity BC has no momentum
-    coefficient, so the edge uses that of its other node. ---*/
+    /*--- Linearly interpolated coefficient. ---*/
 
-    Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(nodes->GetStrongBC(iPoint) ? jPoint : iPoint) +
-                     poisson_nodes->GetMomCoeff(nodes->GetStrongBC(jPoint) ? iPoint : jPoint));
+    Coeff_Mom = 0.5*(poisson_nodes->GetMomCoeff(iPoint) + poisson_nodes->GetMomCoeff(jPoint));
 
     /*--- Initialize mass flux ---*/
 
@@ -3868,8 +3899,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     for (iDim = 0; iDim < nDim; iDim++) {
 
       su2double MassFluxCorrection =
-          -0.5 * (poisson_nodes->GetMomCoeff(nodes->GetStrongBC(iPoint) ? jPoint : iPoint) +
-                  poisson_nodes->GetMomCoeff(nodes->GetStrongBC(jPoint) ? iPoint : jPoint)) * GradPressure_f[iDim];
+          -0.5 * (poisson_nodes->GetMomCoeff(iPoint) + poisson_nodes->GetMomCoeff(jPoint)) * GradPressure_f[iDim];
 
       /*--- 2nd piso correction term (HbyA') --- (TODO: this is zero for the first correction and can thus also be skipped) ---*/
 
