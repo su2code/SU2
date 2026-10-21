@@ -722,11 +722,20 @@ DEBUG_JS = """// Debug only: marks in red the pages and menu sections changed on
   function changed(path) {
     return pages.some(function (p) { return path.replace(/index\\.html$/, "").endsWith(p); });
   }
+  function red(el) {
+    el.style.color = "#c00";
+    el.querySelectorAll("a").forEach(function (a) { a.style.color = "#c00"; });
+  }
+  // Menu items of changed pages.
   document.querySelectorAll("a.list-group-item").forEach(function (a) {
-    if (changed(new URL(a.href, location.href).pathname)) { a.style.color = "#c00"; a.style.fontWeight = "bold"; }
+    if (changed(new URL(a.href, location.href).pathname)) { red(a); a.style.fontWeight = "bold"; a.dataset.changed = "1"; }
   });
-  document.querySelectorAll(".panel-title").forEach(function (t) {
-    if (sections.indexOf(t.textContent.trim()) >= 0) { t.style.color = "#c00"; }
+  // Menu sections that are new or contain a changed page.
+  document.querySelectorAll(".panel").forEach(function (panel) {
+    var title = panel.querySelector(".panel-title");
+    if (title && (sections.indexOf(title.textContent.trim()) >= 0 || panel.querySelector("a[data-changed]"))) {
+      red(title);
+    }
   });
   if (changed(location.pathname)) {
     document.querySelectorAll("h1").forEach(function (h) { h.style.color = "#c00"; });
