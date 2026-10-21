@@ -48,7 +48,9 @@ HEAVY_FOLDERS = ["documents", "download", "emails"]
 NOT_OPTIONS = {"NDIME", "NELEM", "NPOIN", "NMARK", "NZONE", "IZONE", "MARKER_TAG", "MARKER_ELEMS", "FFD_NBOX",
                "FFD_NLEVEL", "FFD_TAG", "FFD_LEVEL", "FFD_DEGREE_I", "FFD_DEGREE_J", "FFD_DEGREE_K",
                "FFD_PARENTS", "FFD_CHILDREN", "FFD_CORNER_POINTS", "FFD_CONTROL_POINTS", "FFD_SURFACE_POINTS",
-               "NMARK_FFD", "NPERIODIC", "PERIODIC_INDEX", "NELEM_BOUND", "VALUE", "OPTION"}
+               "NMARK_FFD", "NPERIODIC", "PERIODIC_INDEX", "NELEM_BOUND", "VALUE", "OPTION",
+               # keys of the Python FSI configuration file (Unsteady_FSI_Python tutorial)
+               "IMPOSED_MODES", "IMPOSED_PARAMETERS"}
 
 TYPE_NAMES = {
   "Double": "real number", "Bool": "YES / NO", "String": "string", "UnsignedLong": "integer",

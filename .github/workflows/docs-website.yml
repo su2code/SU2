@@ -9,6 +9,17 @@ on:
     branches:
       - 'docs_site'
   workflow_dispatch:
+    inputs:
+      site_repo:
+        description: 'Website repository'
+        default: 'rois1995/su2code.github.io'
+      site_ref:
+        description: 'Website branch'
+        default: 'docs_site'
+
+env:
+  SITE_REPO: ${{ inputs.site_repo || 'rois1995/su2code.github.io' }}
+  SITE_REF: ${{ inputs.site_ref || 'docs_site' }}
 
 permissions:
   contents: read
@@ -31,7 +42,8 @@ jobs:
       - name: Checkout website
         uses: actions/checkout@v4
         with:
-          repository: su2code/su2code.github.io
+          repository: ${{ env.SITE_REPO }}
+          ref: ${{ env.SITE_REF }}
           path: site
           fetch-depth: 1
       - name: Configure Pages
@@ -64,6 +76,7 @@ jobs:
             echo "DIRECTORY_GRAPH = NO"
             echo "DOT_IMAGE_FORMAT = svg"
             echo "WARN_LOGFILE = ../doxygen_warnings.txt"
+            echo "EXCLUDE = ./Docs/website"
           ) | doxygen -
       - name: Assemble
         run: |
