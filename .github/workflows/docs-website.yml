@@ -1,0 +1,87 @@
+name: Docs Website
+
+# Builds the SU2 website with the pages of this repository, the generated
+# option reference and the Doxygen code reference, then publishes it on the
+# GitHub Pages of this repository.
+
+on:
+  push:
+    branches:
+      - 'docs_site'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: docs-website
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout SU2
+        uses: actions/checkout@v4
+        with:
+          path: su2
+          fetch-depth: 1
+      - name: Checkout website
+        uses: actions/checkout@v4
+        with:
+          repository: su2code/su2code.github.io
+          path: site
+          fetch-depth: 1
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Prepare website
+        run: python3 su2/Docs/website/tools/build_site.py --su2 su2 --site site --light
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - name: Build website
+        working-directory: site
+        run: |
+          bundle install --jobs 4
+          bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}" -d ../_site
+      - name: Build code reference
+        working-directory: su2
+        run: |
+          sudo apt-get update && sudo apt-get install -y doxygen graphviz
+          ( cat doxyfile
+            echo "OUTPUT_DIRECTORY = ../doxygen"
+            echo "PROJECT_NUMBER = $(git rev-parse --short=10 HEAD)"
+            echo "SOURCE_BROWSER = NO"
+            echo "CALL_GRAPH = NO"
+            echo "CALLER_GRAPH = NO"
+            echo "COLLABORATION_GRAPH = NO"
+            echo "INCLUDE_GRAPH = NO"
+            echo "INCLUDED_BY_GRAPH = NO"
+            echo "DIRECTORY_GRAPH = NO"
+            echo "DOT_IMAGE_FORMAT = svg"
+            echo "WARN_LOGFILE = ../doxygen_warnings.txt"
+          ) | doxygen -
+      - name: Assemble
+        run: |
+          python3 su2/Docs/website/tools/rebase_links.py _site "${{ steps.pages.outputs.base_path }}"
+          cp -r doxygen/html _site/doxygen
+          du -sh _site
+      - name: Upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
