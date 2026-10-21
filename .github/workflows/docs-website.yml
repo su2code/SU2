@@ -41,6 +41,9 @@ jobs:
           # The history (without file contents) finds the developer pages that may be out of date.
           fetch-depth: 0
           filter: blob:none
+      - name: Get the release tags
+        # The fork may miss some tags; the renamed options page needs all of them.
+        run: git -C su2 fetch --quiet --filter=blob:none https://github.com/su2code/SU2.git 'refs/tags/v7.*:refs/tags/v7.*' 'refs/tags/v8.*:refs/tags/v8.*'
       - name: Checkout website
         uses: actions/checkout@v4
         with:
