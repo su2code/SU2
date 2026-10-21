@@ -21,3 +21,5 @@ To build it on your computer, run this command in the SU2 folder. Then open `Doc
 ```
 doxygen doxyfile
 ```
+
+Last checked against SU2 develop `11c177b904`.

@@ -38,7 +38,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: su2
-          fetch-depth: 1
+          # The history (without file contents) finds the developer pages that may be out of date.
+          fetch-depth: 0
+          filter: blob:none
       - name: Checkout website
         uses: actions/checkout@v4
         with:
@@ -49,17 +51,6 @@ jobs:
       - name: Configure Pages
         id: pages
         uses: actions/configure-pages@v5
-      - name: Prepare website
-        run: python3 su2/Docs/website/tools/build_site.py --su2 su2 --site site --light
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-      - name: Build website
-        working-directory: site
-        run: |
-          bundle install --jobs 4
-          bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}" -d ../_site
       - name: Build code reference
         working-directory: su2
         run: |
@@ -78,6 +69,17 @@ jobs:
             echo "WARN_LOGFILE = ../doxygen_warnings.txt"
             echo "EXCLUDE = ./Docs/website"
           ) | doxygen -
+      - name: Prepare website
+        run: python3 su2/Docs/website/tools/build_site.py --su2 su2 --site site --light --doxygen-log doxygen_warnings.txt
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - name: Build website
+        working-directory: site
+        run: |
+          bundle install --jobs 4
+          bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}" -d ../_site
       - name: Assemble
         run: |
           python3 su2/Docs/website/tools/rebase_links.py _site "${{ steps.pages.outputs.base_path }}"

@@ -17,7 +17,11 @@ The workflow `.github/workflows/docs-website.yml` builds the website and publish
 5. It makes the **Docs Check** page. This page lists:
    - options that the docs, tutorials and V&V pages name, but that do not exist in the code;
    - options with no description, a very short one, or no example.
-6. It builds the website with Jekyll, and the **Code Reference** with Doxygen.
+6. It makes the **Output Fields Reference**: all screen, history and volume fields of each output class, from the
+   `AddHistoryOutput` and `AddVolumeOutput` calls.
+7. The **Docs Check** page also lists the developer pages that may be out of date (the code files they name changed
+   since the commit in their "Last checked against" line), the Doxygen coverage of the classes, and the Doxygen warnings.
+8. It builds the website with Jekyll, and the **Code Reference** with Doxygen (Doxygen runs first, for its warnings).
 
 ## How to change the docs
 
@@ -31,6 +35,8 @@ User guide pages and tutorials live in the website repository.
   between two `---` lines that holds the page settings. It needs `title` and `permalink: /docs_v7/<File-Name>/`.
   Pages named `Adding-...` appear under "How to Add..." in the menu. Other new pages appear at the end of
   "Developer Docs".
+- **After you check a developer page against the code:** update the commit in its last line,
+  "Last checked against SU2 develop `<commit>`". The Docs Check page then stops listing it.
 - **Images:** put them in `pages/img/`. Link to them as `../../docs_files/website/<name>.png`.
 
 ## Run it on your computer

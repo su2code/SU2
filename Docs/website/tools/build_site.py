@@ -407,7 +407,213 @@ def check_docs(site, known, code_names=frozenset()):
   return found
 
 
-def write_check_page(site, found, commit, options):
+# Output classes, in the order of the page, with the solvers that use them.
+OUTPUT_CLASSES = [
+  ("COutput", "All solvers"), ("CFVMOutput", "All finite volume solvers"),
+  ("CFlowOutput", "All flow solvers (compressible, incompressible, NEMO), incl. turbulence and species"),
+  ("CFlowCompOutput", "Compressible flow"), ("CFlowIncOutput", "Incompressible flow"),
+  ("CNEMOCompOutput", "Non-equilibrium flow (NEMO)"), ("CFlowCompFEMOutput", "Finite element flow (DG-FEM)"),
+  ("CTurboOutput", "Turbomachinery"), ("CHeatOutput", "Heat equation"), ("CElasticityOutput", "Structural analysis"),
+  ("CAdjFlowOutput", "All adjoint flow solvers"), ("CAdjFlowCompOutput", "Compressible adjoint"),
+  ("CAdjFlowIncOutput", "Incompressible adjoint"), ("CAdjHeatOutput", "Heat adjoint"),
+  ("CAdjElasticityOutput", "Structural adjoint"), ("CMultizoneOutput", "Multizone problems"),
+  ("CMeshOutput", "Mesh conversion (SU2_DEF, SU2_SOL)"), ("CBaselineOutput", "Solution conversion (SU2_SOL)"),
+]
+
+
+def literal(arg):
+  """The text of a C++ string literal, or None if the argument is an expression."""
+  m = re.fullmatch(r'"((?:[^"\\]|\\.)*)"', arg.strip())
+  return m.group(1) if m else None
+
+
+def read_outputs(su2):
+  """Output class -> list of (kind, name, group, description, line) of the fields it registers."""
+  calls = {"AddHistoryOutput": ("history", 3, 4), "AddHistoryOutputPerSurface": ("history, per surface", 3, None),
+           "AddVolumeOutput": ("volume", 2, 3)}
+  token = re.compile(r"\b(" + "|".join(calls) + r")\s*\(")
+  fields = {}
+  for path in sorted(glob.glob(os.path.join(su2, "SU2_CFD", "src", "output", "*.cpp"))):
+    cls = os.path.splitext(os.path.basename(path))[0]
+    with open(path, encoding="utf-8", errors="replace") as f:
+      text = f.read()
+    seen = set()
+    for m in token.finditer(text):
+      body, _ = call_body(text, m.end() - 1)
+      args = split_args(body)
+      kind, igroup, idesc = calls[m.group(1)]
+      name = literal(args[0])
+      shown = name if name is not None else " ".join(args[0].split())
+      if (kind, shown) in seen:
+        continue
+      seen.add((kind, shown))
+      group = literal(args[igroup]) if len(args) > igroup else None
+      desc = literal(args[idesc]) if idesc is not None and len(args) > idesc else None
+      fields.setdefault(cls, []).append({"kind": kind, "name": shown, "literal": name is not None,
+                                         "group": group if group is not None else "",
+                                         "desc": desc or "", "line": text.count("\n", 0, m.start()) + 1})
+  return fields
+
+
+def cell(text):
+  return text.replace("|", "\\|").replace("\n", " ")
+
+
+def write_output_page(site, fields, commit, blob):
+  name = "Output-Fields-Reference"
+  out = ["---", "title: Output Fields Reference", "permalink: /{}/{}/".format(URL, name), "---", "", "{% raw %}", "",
+         "This page lists the screen, history and volume output fields that each output class of SU2 can write. "
+         "It is made from the `AddHistoryOutput` and `AddVolumeOutput` calls in `SU2_CFD/src/output/`. "
+         "Generated from SU2 commit `{}`.".format(commit), "",
+         "- A field is written only when the case needs it (for example turbulence fields only with a turbulence "
+         "model). For the exact list of your case, run a dry run: `SU2_CFD -d your_config.cfg`. It prints "
+         "\"Available screen/history output fields\" and \"Available volume output fields\".",
+         "- How to select fields: [Custom Output](../Custom-Output/). How to add one: "
+         "[Adding Output Fields](../Adding-Output-Fields/).",
+         "- Names in *italics* are built at run time (for example one field per species or per marker).", ""]
+  order = [c for c, _ in OUTPUT_CLASSES if c in fields] + sorted(c for c in fields if c not in dict(OUTPUT_CLASSES))
+  used = dict(OUTPUT_CLASSES)
+  for cls in order:
+    path = "SU2_CFD/src/output/{}.cpp".format(cls)
+    out += ["## {} {{#{}}}".format(cls, cls), "", "Used by: {}. Source: [`{}`]({}{}).".format(
+      used.get(cls, "see the code"), path, blob, path), ""]
+    for kind in ("history", "history, per surface", "volume"):
+      rows = [f for f in fields[cls] if f["kind"] == kind]
+      if not rows:
+        continue
+      out += ["**{} fields ({})**".format(kind.capitalize(), len(rows)), "", "| Field | Group | Description |",
+              "|---|---|---|"]
+      for f in rows:
+        shown = "`{}`".format(f["name"]) if f["literal"] else "*{}*".format(cell(f["name"]))
+        out.append("| [{}]({}{}#L{}) | {} | {} |".format(shown, blob, path, f["line"], cell(f["group"]),
+                                                         cell(f["desc"]) or "*no description*"))
+      out.append("")
+  out += ["{% endraw %}", ""]
+  with open(os.path.join(site, DOCS, name + ".md"), "w", encoding="utf-8") as f:
+    f.write("\n".join(out))
+  return name
+
+
+def find_stale_pages(su2, pages_dir):
+  """Developer pages whose named code files changed since the commit in their "Last checked" line."""
+  checked = re.compile(r"Last checked against SU2 \w+ `([0-9a-f]{7,40})`")
+  named = re.compile(r"`((?:Common|SU2_CFD|SU2_DEF|SU2_DOT|SU2_GEO|SU2_SOL|SU2_PY|UnitTests|TestCases|externals|"
+                     r"meson_scripts|Docs|\.github)/[^`\s:]+|config_template\.cfg|meson\.build|meson_options\.txt|"
+                     r"doxyfile)")
+  report = []
+  for path in sorted(glob.glob(os.path.join(pages_dir, "*.md"))):
+    with open(path, encoding="utf-8") as f:
+      text = f.read()
+    page = os.path.splitext(os.path.basename(path))[0]
+    m = checked.search(text)
+    if not m:
+      report.append((page, None, "no \"Last checked against\" line", []))
+      continue
+    files = sorted({p for p in named.findall(text) if os.path.exists(os.path.join(su2, p))})
+    try:
+      out = subprocess.check_output(["git", "-C", su2, "log", "--format=%h", "--name-only", m.group(1) + "..HEAD",
+                                     "--"] + files, text=True, stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.CalledProcessError):
+      report.append((page, m.group(1), "commit not found in the history", []))
+      continue
+    counts = {}
+    for line in out.splitlines():
+      if line in files:
+        counts[line] = counts.get(line, 0) + 1
+    report.append((page, m.group(1), "", sorted(counts.items(), key=lambda c: (-c[1], c[0]))))
+  return report
+
+
+def doc_coverage(su2):
+  """Classes in the headers of Common and SU2_CFD: total, with a Doxygen comment, and in a Doxygen group.
+  Approximate: found with a regular expression, not with a C++ parser."""
+  cls = re.compile(r"^\s*(?:template\s*<[^;{]*>\s*)?class\s+(?:\w+\s+)?([A-Z]\w*)\b[^;]*?(?:\{|:[^:])", re.M)
+  stats = {}
+  for folder in ("Common/include", "SU2_CFD/include"):
+    for path in sorted(glob.glob(os.path.join(su2, folder, "**", "*.hpp"), recursive=True)):
+      with open(path, encoding="utf-8", errors="replace") as f:
+        text = f.read()
+      rel = os.path.relpath(path, su2)
+      seen = set()
+      for m in cls.finditer(text):
+        # Skip repeated declarations (specializations) and all-capital helper types of template code.
+        if m.group(1) in seen or m.group(1).isupper():
+          continue
+        seen.add(m.group(1))
+        before = text[:m.start()].rstrip()
+        # The comment must end just before the class (template lines are part of the match).
+        comment = before[before.rfind("/*"):] if before.endswith("*/") else ""
+        key = os.path.dirname(rel)
+        total, documented, grouped, missing = stats.get(key, (0, 0, 0, []))
+        stats[key] = (total + 1, documented + bool(comment), grouped + ("\\ingroup" in comment),
+                      missing + ([m.group(1)] if not comment else []))
+  return stats
+
+
+def read_doxygen_log(path):
+  """Doxygen warnings: total, by kind and by folder."""
+  kinds, folders, total = {}, {}, 0
+  if not path or not os.path.isfile(path):
+    return None
+  with open(path, encoding="utf-8", errors="replace") as f:
+    for line in f:
+      m = re.match(r"(.*?):\d+: warning: (.*)", line)
+      if not m:
+        continue
+      total += 1
+      kind = re.sub(r"'[^']*'|\"[^\"]*\"|\b\w+::\w+(::\w+)*\b", "X", m.group(2))
+      kind = re.sub(r"\(.*", "", kind).strip()[:80]
+      kinds[kind] = kinds.get(kind, 0) + 1
+      parts = re.split(r"[\\/]", m.group(1))
+      top = next((i for i, p in enumerate(parts) if p in ("Common", "SU2_CFD", "SU2_DEF", "SU2_DOT", "SU2_GEO",
+                                                          "SU2_SOL", "Docs")), None)
+      folder = "/".join(parts[top:top + 2]) if top is not None else "other"
+      folders[folder] = folders.get(folder, 0) + 1
+  return total, kinds, folders
+
+
+def quality_sections(stale, coverage, doxy):
+  """Extra sections of the Docs Check page: stale pages and code documentation coverage."""
+  out = ["", "## Developer pages that may be out of date", "",
+         "Each developer page ends with \"Last checked against SU2 develop `<commit>`\". These pages name code "
+         "files that changed since that commit. Read the changes, update the page if needed, then update the "
+         "commit in its last line.", ""]
+  flagged = [r for r in stale if r[2] or r[3]]
+  out.append("Pages to review: {} of {}.".format(len(flagged), len(stale)))
+  out.append("")
+  for page, commit, problem, changed in flagged:
+    out.append("- [{}](../{}/){}".format(page.replace("-", " "), page, ": " + problem if problem else ""))
+    for path, n in changed:
+      out.append("  - `{}`: {} commit{}".format(path, n, "s" if n > 1 else ""))
+  total = sum(v[0] for v in coverage.values())
+  documented = sum(v[1] for v in coverage.values())
+  grouped = sum(v[2] for v in coverage.values())
+  out += ["", "## Code documentation coverage", "",
+          "Classes declared in the headers of `Common/include` and `SU2_CFD/include` (counted with a simple "
+          "text search, so the numbers are approximate). `Docs/docmain.hpp` asks that every class has a Doxygen "
+          "comment with `\\brief` and `\\ingroup`.", "",
+          "- Classes: {}".format(total),
+          "- With a Doxygen comment: {} ({:.0f}%)".format(documented, 100.0 * documented / max(total, 1)),
+          "- In a Doxygen group (`\\ingroup`): {} ({:.0f}%)".format(grouped, 100.0 * grouped / max(total, 1)), "",
+          "| Folder | Classes | With comment | In a group |", "|---|---|---|---|"]
+  for folder, (t, d, g, _) in sorted(coverage.items()):
+    out.append("| `{}` | {} | {} | {} |".format(folder, t, d, g))
+  out += ["", '<details markdown="1"><summary>Classes without a Doxygen comment</summary>', ""]
+  for folder, (_, _, _, missing) in sorted(coverage.items()):
+    if missing:
+      out.append("- `{}`: {}".format(folder, ", ".join("`{}`".format(c) for c in missing)))
+  out += ["", "</details>", ""]
+  if doxy:
+    total, kinds, folders = doxy
+    out += ["", "## Doxygen warnings", "", "Doxygen found {} problems in the code comments.".format(total), "",
+            "| Kind | Count |", "|---|---|"]
+    out += ["| {} | {} |".format(cell(k), n) for k, n in sorted(kinds.items(), key=lambda k: -k[1])[:12]]
+    out += ["", "| Folder | Count |", "|---|---|"]
+    out += ["| `{}` | {} |".format(k, n) for k, n in sorted(folders.items(), key=lambda k: -k[1])]
+  return out
+
+
+def write_check_page(site, found, commit, options, extra=()):
   out = ["---", "title: Docs Check", "permalink: /{}/Docs-Check/".format(URL), "---", "", "{% raw %}", "",
          "This page is made at each build. It lists what needs work in the documentation of SU2 commit `{}`."
          .format(commit), "",
@@ -446,6 +652,7 @@ def write_check_page(site, found, commit, options):
       groups.setdefault(opt["category"], []).append(link(opt))
     for cat, links in groups.items():
       out.append("- **{}:** {}".format(cat, ", ".join(links)))
+  out += list(extra)
   out += ["", "{% endraw %}", ""]
   with open(os.path.join(site, DOCS, "Docs-Check.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(out))
@@ -509,6 +716,7 @@ def main():
   parser.add_argument("--su2", required=True, help="root of the SU2 source tree")
   parser.add_argument("--site", required=True, help="checkout of su2code.github.io, changed in place")
   parser.add_argument("--light", action="store_true", help="remove the download folders (test site)")
+  parser.add_argument("--doxygen-log", help="file with the Doxygen warnings (WARN_LOGFILE)")
   args = parser.parse_args()
 
   try:
@@ -535,8 +743,12 @@ def main():
   options = read_options(args.su2)
   ref_pages = write_reference(args.su2, args.site, options, maps, commit, repo, set(dev_pages))
   found = check_docs(args.site, {o["name"] for o in options}, read_code_names(args.su2))
-  write_check_page(args.site, found, commit, options)
-  patch_nav(args.site, ref_pages, dev_pages + ["Docs-Check"], user_pages)
+  output_page = write_output_page(args.site, read_outputs(args.su2), commit,
+                                  "https://github.com/{}/blob/{}/".format(repo, commit))
+  extra = quality_sections(find_stale_pages(args.su2, pages_dir), doc_coverage(args.su2),
+                           read_doxygen_log(args.doxygen_log))
+  write_check_page(args.site, found, commit, options, extra)
+  patch_nav(args.site, ref_pages, dev_pages + ["Docs-Check"], user_pages + [output_page])
 
   if args.light:
     for folder in HEAVY_FOLDERS:
