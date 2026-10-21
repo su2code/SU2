@@ -261,7 +261,7 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
   }
   SetImplicitPeriodic(euler_implicit);
-  if (MGLevel == MESH_0) SetRotatePeriodic(true);
+  SetRotatePeriodic(true);
 
   /*--- Perform the MPI communication of the solution ---*/
 
@@ -1155,6 +1155,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                          (config->GetKind_FluidModel() == IDEAL_GAS);
   const auto iVel = prim_idx.Velocity();
+  const bool compressibleProjection = FlowRegime == ENUM_REGIME::COMPRESSIBLE && iVel == 1 && nVar == nDim + 2;
 
   /*--- Blazek chapter 8.:
    * The components of the momentum residual normal to the symmetry plane are zeroed out.
@@ -1184,8 +1185,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
     }
 
-    /*--- Energy terms due to grid movement (aka work of pressure forces). ---*/
-    if (dynamic_grid) {
+    /*--- The classical compressible projection below already supplies wall pressure work. ---*/
+    if (dynamic_grid && !compressibleProjection) {
       su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -1217,8 +1218,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       /*--- Compute the residual using an upwind scheme. ---*/
       auto residual = conv_numerics->ComputeResidual(config);
 
-      /*--- Use just the energy fluxes to update the residual, adding the others would
-       * increase numerical diffusion which we wish to avoid if possible. ---*/
+      /*--- Energy fluxes for the other conservative layouts. ---*/
       for (auto iVar = iVel + nDim; iVar < nVar; iVar++) {
         LinSysRes(iPoint, iVar) += residual.residual[iVar];
       }
@@ -1243,14 +1243,16 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     su2double* solutionOld = nodes->GetSolution_Old(iPoint);
 
     su2double gridVel[MAXNDIM] = {};
+    su2double gridNormalVel = 0.0;
     if (dynamic_grid) {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
       }
+      gridNormalVel = GeometryToolbox::DotProduct(nDim, gridVel, UnitNormal);
       if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
         for(auto iDim = 0u; iDim < nDim; iDim++) {
           /*--- Multiply by density since we are correcting conservative variables. ---*/
-          gridVel[iDim] *= nodes->GetDensity(iPoint);
+          gridVel[iDim] *= compressibleProjection ? solutionOld[0] : nodes->GetDensity(iPoint);
         }
       }
     }
@@ -1261,11 +1263,19 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       solutionOld[iVel + iDim] -= vp * UnitNormal[iDim];
     }
+    if (compressibleProjection) {
+      solutionOld[iVel + nDim] -= gridNormalVel * vp;
+    }
 
     /*--- Keep only the tangential part of the momentum residuals. ---*/
     su2double normalRes = 0.0;
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       normalRes += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
+    }
+    if (compressibleProjection) {
+      /*--- Project in the wall frame: normal momentum follows density, with consistent pressure work. ---*/
+      normalRes -= gridNormalVel * LinSysRes(iPoint, 0);
+      LinSysRes(iPoint, iVel + nDim) -= gridNormalVel * normalRes;
     }
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       LinSysRes(iPoint, iVel + iDim) -= normalRes * UnitNormal[iDim];
@@ -1273,8 +1283,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
     /*--- Jacobian contribution for implicit integration. ---*/
     if (implicit) {
-      /*--- Modify the Jacobians according to the modification of the residual
-       * J_new = (I - n * n^T) * J where n = {0, nx, ny, nz, 0, ...} ---*/
+      /*--- Apply the same wall-frame projection to the Jacobians. ---*/
       su2double mat[MAXNVAR * MAXNVAR] = {};
 
       for (auto iVar = 0u; iVar < nVar; iVar++)
@@ -1282,6 +1291,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       for (auto iDim = 0u; iDim < nDim; iDim++)
         for (auto jDim = 0u; jDim < nDim; jDim++)
           mat[(iDim + iVel) * nVar + jDim + iVel] -= UnitNormal[iDim] * UnitNormal[jDim];
+      if (compressibleProjection) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          mat[(iDim + iVel) * nVar] += gridNormalVel * UnitNormal[iDim];
+          mat[(iVel + nDim) * nVar + iVel + iDim] -= gridNormalVel * UnitNormal[iDim];
+        }
+        mat[(iVel + nDim) * nVar] += gridNormalVel * gridNormalVel;
+      }
 
       auto ModifyJacobian = [&](const unsigned long jPoint) {
         su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
@@ -1305,6 +1321,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       normalRes += Res_TruncError[iVel + iDim] * UnitNormal[iDim];
+    }
+    if (compressibleProjection) {
+      normalRes -= gridNormalVel * Res_TruncError[0];
+      Res_TruncError[iVel + nDim] -= gridNormalVel * normalRes;
     }
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       Res_TruncError[iVel + iDim] -= normalRes * UnitNormal[iDim];
@@ -2974,6 +2994,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::MultigridProjectEulerWall(CGeometry* geo
                                                                    bool use_solution_old) {
   const auto iVel = prim_idx.Velocity();
   const auto nDim = geometry->GetnDim();
+  const bool compressibleProjection = FlowRegime == ENUM_REGIME::COMPRESSIBLE && iVel == 1 && nVar == nDim + 2;
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != EULER_WALL) continue;
@@ -3004,12 +3025,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::MultigridProjectEulerWall(CGeometry* geo
        *    For dynamic grids subtract the grid velocity to enforce (v - v_grid).n = 0,
        *    multiplying by density for compressible flow (conservative variables). ---*/
       su2double gridVel[MAXNDIM] = {};
-      if (dynamic_grid && !use_solution_old) {
+      su2double gridNormalVel = 0.0;
+      if (dynamic_grid && (compressibleProjection || !use_solution_old)) {
         for (auto iDim = 0u; iDim < nDim; iDim++)
           gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
+        gridNormalVel = GeometryToolbox::DotProduct(nDim, gridVel, UnitNormal);
         if constexpr (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            gridVel[iDim] *= nodes->GetDensity(iPoint);
+          /*--- Corrections carry their own density increment, rather than the current solution density. ---*/
+          const auto density = compressibleProjection ? sol[0] : nodes->GetDensity(iPoint);
+          for (auto iDim = 0u; iDim < nDim; iDim++) gridVel[iDim] *= density;
         }
       }
 
@@ -3019,6 +3043,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::MultigridProjectEulerWall(CGeometry* geo
 
       /*--- Project to tangent plane. ---*/
       for (auto iDim = 0u; iDim < nDim; iDim++) sol[iVel + iDim] -= momentum_n * UnitNormal[iDim];
+      if (compressibleProjection) sol[iVel + nDim] -= gridNormalVel * momentum_n;
     }
     END_SU2_OMP_FOR
   }

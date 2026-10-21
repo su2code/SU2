@@ -2183,8 +2183,10 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("JST_SENSOR_COEFF", 2, false, jst_coeff);
   /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax-Friedrichs method. \ingroup Config*/
   addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
-  /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2), exact Jacobians (for fixed wave speeds) for HLLC \ingroup Config*/
+  /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
+  /*!\brief USE_EXACT_HLLC_JACOBIANS \n DESCRIPTION: Exact HLLC Jacobians with wave speeds held fixed \ingroup Config*/
+  addBoolOption("USE_EXACT_HLLC_JACOBIANS", Use_Exact_HLLC_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
   addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Control numerical properties of the global Jacobian matrix using a multiplication factor for incompressible central schemes \ingroup Config*/
@@ -4256,11 +4258,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support MGLEVEL > 0,\n"
                      "       the Poisson solver is single-grid only.", CURRENT_FUNCTION);
     }
-    if (Time_Domain) {
-      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_DOMAIN= YES,\n"
-                     "       it converges to a physically wrong solution instead of failing.",
-                     CURRENT_FUNCTION);
-    }
     if (DiscreteAdjoint || ContinuousAdjoint) {
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED has no adjoint formulation.", CURRENT_FUNCTION);
     }
@@ -4271,16 +4268,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support streamwise periodicity.",
                      CURRENT_FUNCTION);
     }
+    /*--- The solution of the previous time step is only stored with dual time stepping. ---*/
+    if (TimeMarching == TIME_MARCHING::TIME_STEPPING) {
+      SU2_MPI::Error("KIND_INCOMP_SYSTEM= PRESSURE_BASED does not support TIME_MARCHING= TIME_STEPPING,\n"
+                     "       use DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER.", CURRENT_FUNCTION);
+    }
 
-    /*--- A_p already carries Vol/dt when SIMPLEC's A_p-Sum_A_nb correction runs, so at the 0.0
-     * default that correction collapses to roughly Vol/dt and the pressure correction becomes
-     * vanishingly weak at low CFL. ---*/
-    if (Kind_PBIter == PBITER::SIMPLEC && !OptionIsSet("TRANSIENT_TERM_REMOVAL_FACTOR")) {
-      SIMPLE_Options.Transient_Term_Removal_Factor = 1.0;
-      if (rank == MASTER_NODE) {
-        cout << "WARNING: KIND_PB_ITER= SIMPLEC without TRANSIENT_TERM_REMOVAL_FACTOR set - "
-             << "defaulting it to 1.0, its intended companion value for SIMPLEC." << endl;
-      }
+    /*--- With SIMPLEC the momentum coefficient a_P - sum(a_nb) is the pseudo-time term alone, removing
+     * it leaves nothing. ---*/
+    if (Kind_PBIter == PBITER::SIMPLEC && SIMPLE_Options.Transient_Term_Removal_Factor != 0.0) {
+      SU2_MPI::Error("KIND_PB_ITER= SIMPLEC requires TRANSIENT_TERM_REMOVAL_FACTOR= 0.", CURRENT_FUNCTION);
     }
   }
 
@@ -5001,11 +4998,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Restart || ((Kind_MGCycle == MG_CYCLE::FULL) && ContinuousAdjoint)) Kind_MGCycle = MG_CYCLE::V;
 
-  /*--- The multigrid arrays hold at most 10 coarse levels (CMultiGridIntegration::MAX_MG_LEVELS). Clamp instead of
-   stopping, MG_MIN_MESHSIZE can still reduce the number of levels during the agglomeration. ---*/
+  /*--- The multigrid arrays hold at most 10 coarse levels (CMultiGridIntegration::MAX_MG_LEVELS). ---*/
   if (nMGLevels > 10) {
-    if (rank == MASTER_NODE) cout << "WARNING: MGLEVEL > 10 is not supported, using MGLEVEL= 10." << endl;
-    nMGLevels = 10;
+    SU2_MPI::Error("MGLEVEL must be between 0 and 10; larger multigrid hierarchies are not supported.", CURRENT_FUNCTION);
   }
 
   FinestMesh = MESH_0;
