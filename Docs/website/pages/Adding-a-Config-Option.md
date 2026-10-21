@@ -6,7 +6,7 @@ permalink: /docs_v7/Adding-a-Config-Option/
 This page shows how to add an option to the SU2 configuration file, how to document it, and how to rename or remove
 one. The examples are taken from the code.
 
-The class `CConfig` reads the configuration file. An option touches these files:
+The class `CConfig` reads the configuration file. A new option touches these files:
 
 | File | What goes there |
 |---|---|
@@ -15,12 +15,12 @@ The class `CConfig` reads the configuration file. An option touches these files:
 | `Common/include/option_structure.hpp` | The enum and its map, for options that take a keyword |
 | `config_template.cfg` | An example line with a short explanation |
 
-The [Option Reference](../Option-Reference/) of this website is generated from `Common/src/CConfig.cpp`,
-`Common/include/option_structure.hpp` and `config_template.cfg` by `Docs/website/tools/build_site.py`. What you
-write in the code is what users read on the website.
+`Docs/website/tools/build_site.py` generates the [Option Reference](../Option-Reference/) of this website from
+`Common/src/CConfig.cpp`, `Common/include/option_structure.hpp` and `config_template.cfg`. So what you write in the
+code is what users read on the website.
 
 `CConfig.hpp`, `option_structure.hpp` and `CConfig.cpp` are excluded from clang-format (see
-`.pre-commit-config.yaml`), so follow the layout of the code around your change.
+`.pre-commit-config.yaml`). Follow the layout of the code around your change.
 
 ## 1. Add the member and the getter
 
@@ -45,17 +45,20 @@ See the [Code Reference](../Code-Reference/) for the existing members of `CConfi
 
 ## 2. Register the option
 
-Add one `add...Option` call in `CConfig::SetConfig_Options` in `Common/src/CConfig.cpp`, in the group where the
-option belongs. The first argument is the name used in the configuration file, in capital letters. The second is
-the member. Most calls take a default value as the last argument:
+Add one `add...Option` call in `CConfig::SetConfig_Options` in `Common/src/CConfig.cpp`. Put it in the group where
+the option belongs. The arguments are:
+
+- first, the name used in the configuration file, in capital letters;
+- second, the member;
+- last, for most calls, the default value.
 
 ```cpp
   /*!\brief HROUGHNESS \n DESCRIPTION: Value of RMS roughness for transition model \n DEFAULT: 1E-6 \ingroup Config*/
   addDoubleOption("HROUGHNESS", hRoughness, 1e-6);
 ```
 
-The name must be unique. Each `add...Option` function checks this with an `assert`, which is active only in a debug
-build (`--buildtype=debug`).
+The name must be unique. Each `add...Option` function checks this with an `assert`. The `assert` is active only in a
+debug build (`--buildtype=debug`).
 
 ### Kinds of options
 
@@ -73,18 +76,21 @@ The functions are declared in `Common/include/CConfig.hpp`. The common ones are:
 | `addDoubleArrayOption`, `addUShortArrayOption`, `addULongArrayOption` | fixed size, `allow_fewer`, array | `addDoubleArrayOption("BODY_FORCE_VECTOR", 3, false, body_force);` |
 | `addPythonOption` | none | `addPythonOption("OPT_OBJECTIVE");` |
 
-In the configuration file, the values of lists and arrays are separated by spaces or commas and may be put in
+In the configuration file, the values of lists and arrays are separated by spaces or commas. They may be put in
 parentheses, e.g. `SST_OPTIONS= (V2003m, VORTICITY)`.
 
 Notes on the kinds:
 
 - **Bool** options accept `YES` and `NO`.
 - **Enum** options accept one keyword of the map. The member can be the enum type. See [Add an enum](#4-add-an-enum).
-- **Lists** have any length. The function sets the size member to the number of values and allocates the array; the
-  option object frees it. `NONE` gives an empty list. **Lists have no default**: if the option is not in the file,
-  the size is 0. Set a default in `SetPostprocessing` if you need one (see below).
-- **Arrays** have a fixed size. With `allow_fewer = true`, fewer values are accepted. **Arrays have no default
-  argument**: fill the array before the call, as the code does for `BODY_FORCE_VECTOR`:
+- **Lists** have any length. The function sets the size member to the number of values and allocates the array.
+  The option object frees it. `NONE` gives an empty list.
+
+  **Lists have no default**: if the option is not in the file, the size is 0. If you need a default, set it in
+  `SetPostprocessing` (see below).
+- **Arrays** have a fixed size. With `allow_fewer = true`, fewer values are accepted.
+
+  **Arrays have no default argument**: fill the array before the call, as the code does for `BODY_FORCE_VECTOR`:
 
   ```cpp
   body_force[0] = 0.0; body_force[1] = 0.0; body_force[2] = 0.0;
@@ -95,16 +101,16 @@ Notes on the kinds:
 - **Python** options are read only by the Python scripts in `SU2_PY`. The C++ code accepts them without checking
   them, and has no member for them.
 
-Options with a special format (boundary conditions, design variables, FFD boxes, ...) have their own functions,
-such as `addInletOption`, `addRiemannOption`, `addPeriodicOption` and `addDVParamOption`. Their parsers are the
-`COption...` classes in `Common/include/option_structure.inl`. Look at an existing option of the same kind before
-you write a new parser.
+Some options have a special format: boundary conditions, design variables, FFD boxes, ... They have their own
+functions, such as `addInletOption`, `addRiemannOption`, `addPeriodicOption` and `addDVParamOption`. Their parsers
+are the `COption...` classes in `Common/include/option_structure.inl`. Before you write a new parser, look at an
+existing option of the same kind.
 
 ### Multizone problems
 
-In a multizone problem each zone has its own configuration file. An option that is not set in the file of a zone
-takes the value of the main configuration file (`CConfig::SetDefaultFromConfig`), except `SCREEN_OUTPUT` and
-`HISTORY_OUTPUT`. Options that are not set anywhere take their default value.
+In a multizone problem, each zone has its own configuration file. If an option is not set in the file of a zone, the
+zone takes the value from the main configuration file (`CConfig::SetDefaultFromConfig`). `SCREEN_OUTPUT` and
+`HISTORY_OUTPUT` are the exceptions. Options that are not set anywhere take their default value.
 
 ## 3. Write the comment
 
@@ -124,22 +130,24 @@ Real examples:
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
 ```
 
-`build_site.py` reads the comment as follows. Follow these rules, or the Option Reference will be incomplete:
+`build_site.py` reads the comment with the rules below. If you do not follow them, the Option Reference will be
+incomplete.
 
-- The comment can start with `/*!` or `/*`, and must contain `DESCRIPTION:` or `\brief`. Other comments, such as
+- The comment can start with `/*!` or `/*`. It must contain `DESCRIPTION:` or `\brief`. Other comments, such as
   `/*--- ... ---*/`, are ignored.
 - The comment must be the last such comment before the call.
-- The parts are separated by `\n`. The keys are `DESCRIPTION:`, `Options:` (or `OPTIONS:`) and `DEFAULT:`, each with
+- `\n` separates the parts. The keys are `DESCRIPTION:`, `Options:` (or `OPTIONS:`) and `DEFAULT:`, each with
   a colon. `\link Name \endlink` is shown as `Name`.
 - The description should say what the option does, the unit if there is one, and which solvers use it.
 
-The website also adds, without any comment:
+The website also adds these, without any comment:
 
 - the type, from the `add...Option` function;
 - for enum options, all the keywords of the map;
 - the default, from the last argument of the call (for an enum, the keyword of the map that has this value);
-- the line of the option in `config_template.cfg`, or "Not in config_template.cfg", and the comment above that line
-  when it says more than the comment in the code (or in its place, when the code has no description);
+- the line of the option in `config_template.cfg`, or "Not in config_template.cfg";
+- the comment above that line in `config_template.cfg`, when it says more than the comment in the code (or in its
+  place, when the code has no description);
 - the pages of the website and the tutorials that name the option;
 - up to three test case files in `TestCases/` that use the option, with their values;
 - a link to the line of the call in `CConfig.cpp`.
@@ -148,7 +156,7 @@ The [Docs Check](../Docs-Check/) page lists the options with no description, a v
 
 ### Categories
 
-The options are grouped into pages by the category comments in `SetConfig_Options`, for example:
+The category comments in `SetConfig_Options` group the options into pages. For example:
 
 ```cpp
   /*!\par CONFIG_CATEGORY: Freestream Conditions \ingroup Config*/
@@ -198,22 +206,29 @@ Many getters of enum options return the enum itself, e.g. `GetKind_Turb_Model()`
 Things to know about the maps:
 
 - `MakePair` is a macro that adds the comma itself. Do not put commas between the `MakePair` lines.
-- The maps are real `std::map` objects only where `ENABLE_MAPS` is defined before `CConfig.hpp` is included
-  (`Common/src/CConfig.cpp` and `SU2_DEF/src/drivers/CDiscAdjDeformationDriver.cpp`). Everywhere else
-  `MapType` is the empty class `CEmptyMap`, to make compiling faster. Use the enum in the rest of the code, not the map.
-- `build_site.py` finds the keywords with the pattern `static const MapType<std::string, TYPE> Name = { MakePair(...) ... };`
-  in `Common/include`. Keep this form. Write the default of `addEnumOption` exactly as in the map
-  (`VOLUME_OUTPUT_PRECISION::SINGLE`), so the website can show it as a keyword.
+- The maps are real `std::map` objects only where `ENABLE_MAPS` is defined before `CConfig.hpp` is included. These
+  places are `Common/src/CConfig.cpp` and `SU2_DEF/src/drivers/CDiscAdjDeformationDriver.cpp`. Everywhere else,
+  `MapType` is the empty class `CEmptyMap`, to make compiling faster. In the rest of the code, use the enum, not the
+  map.
+- `build_site.py` finds the keywords in `Common/include` with the pattern
+  `static const MapType<std::string, TYPE> Name = { MakePair(...) ... };`. Keep this form.
+- Write the default of `addEnumOption` exactly as in the map (`VOLUME_OUTPUT_PRECISION::SINGLE`). Then the website
+  can show it as a keyword.
 
 ## 5. Check the value and set derived values
 
-The constructors of `CConfig` call, among other steps and in this order: `SetConfig_Parsing` (reads the values),
-`SetDefault` (sets the default of the options that were not in the file), `SetPostprocessing` (checks and derived
-values) and `SetMarkers` (boundary markers). Most constructors then call `SetOutput`, which prints the summary of
-the settings at start-up.
+Put the checks of the new option in `CConfig::SetPostprocessing`.
 
-Put the checks of the new option in `CConfig::SetPostprocessing`. Stop with a clear message that names the options
-and the allowed values:
+The constructors of `CConfig` call these steps, among others, in this order:
+
+1. `SetConfig_Parsing` reads the values.
+2. `SetDefault` sets the default of the options that were not in the file.
+3. `SetPostprocessing` makes the checks and computes the derived values.
+4. `SetMarkers` processes the boundary markers.
+
+Most constructors then call `SetOutput`, which prints the summary of the settings at start-up.
+
+When a check fails, stop with a clear message that names the options and the allowed values:
 
 ```cpp
   if (Kind_Turb_Model == TURB_MODEL::NONE && Kind_Trans_Model != TURB_TRANS_MODEL::NONE) {
@@ -221,8 +236,10 @@ and the allowed values:
   }
 ```
 
-`OptionIsSet("NAME")` tells if the option was in the configuration file. Use it when the default depends on other
-options, or to change a value silently only when the user did not ask for it:
+`OptionIsSet("NAME")` tells if the option was in the configuration file. Use it in two cases:
+
+- when the default depends on other options;
+- to change a value silently, only when the user did not ask for it.
 
 ```cpp
   if (MUSCL_Flow && (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) {
@@ -255,8 +272,8 @@ such as `MARKER_PLOTTING`.
 
 ## 6. Add the option to config_template.cfg
 
-Add the option to `config_template.cfg` in the section where it belongs. Write one or more comment lines with what
-it does and the allowed values, then the option with its default value:
+Add the option to `config_template.cfg`, in the section where it belongs. Write one or more comment lines that say
+what it does and the allowed values. Then write the option with its default value:
 
 ```
 % Value of RMS roughness for transition model
@@ -268,7 +285,7 @@ the pull request template also asks for it.
 
 ## Rename or remove an option
 
-SU2 stops when the configuration file has an option that does not exist. The message names the line and the option
+SU2 stops when the configuration file has an option that does not exist. The message names the line and the option,
 and suggests the closest existing name:
 
 ```
@@ -287,7 +304,7 @@ blocks with the old names. Add the old name there, with the new name if there is
 ```
 
 For a removed keyword of an enum option, there is a second chain after the call to `SetValue`. It runs only when the
-value is not valid, e.g. for `KIND_TURB_MODEL`:
+value is not valid. For example, for `KIND_TURB_MODEL`:
 
 ```cpp
         if (!option_name.compare("KIND_TURB_MODEL")) {
@@ -295,7 +312,7 @@ value is not valid, e.g. for `KIND_TURB_MODEL`:
             errorString.append("Option KIND_TURB_MODEL=SST_SUST is deprecated. Use KIND_TURB_MODEL=SST, SST_OPTIONS=SUSTAINING instead.\n");
 ```
 
-These are the only mechanisms. There is no automatic translation of old names: the run stops with the message.
+These are the only mechanisms. SU2 does not translate old names to new ones: the run stops with the message.
 
 When you rename or remove an option, also:
 
@@ -307,9 +324,9 @@ When you rename or remove an option, also:
 
 ## Python scripts
 
-The C++ option needs no change in Python. `read_config` in `SU2_PY/SU2/io/config.py` stores every option it does not
-know as a string. Add a case there only if a Python script must read the value as a number, a list or a dictionary.
-The Python wrapper (`SU2_PY/pySU2/pySU2.i`) wraps the drivers, not `CConfig`.
+A new C++ option needs no change in Python. `read_config` in `SU2_PY/SU2/io/config.py` stores every option it does
+not know as a string. Add a case there only if a Python script must read the value as a number, a list or a
+dictionary. The Python wrapper (`SU2_PY/pySU2/pySU2.i`) wraps the drivers, not `CConfig`.
 
 ## Test the option
 

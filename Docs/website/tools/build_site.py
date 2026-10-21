@@ -40,6 +40,11 @@ URL = "docs_v7"
 NAV = os.path.join("_data", "docs_v7.yml")
 REF_PREFIX = "Option-Reference"
 
+# Order of the "How to Add..." pages in the menu, from small to large changes; other "Adding-" pages go last.
+HOWTO_ORDER = ["Adding-a-Config-Option", "Adding-Output-Fields", "Adding-a-Boundary-Condition",
+               "Adding-a-Numerical-Scheme", "Adding-a-Fluid-Model", "Adding-a-Turbulence-Model",
+               "Adding-a-Transition-Model", "Adding-a-Solver"]
+
 # Folders of the website that are only downloads; the test site links to the real site instead.
 HEAVY_FOLDERS = ["documents", "download", "emails"]
 
@@ -299,7 +304,7 @@ def write_reference(su2, site, options, maps, commit, repo, skip):
         out.append("*No description in the code yet.*")
       out.append("")
       if desc and notes and not same_text(desc, notes):
-        out.append("> config_template.cfg: " + notes)
+        out.append("> **More in config_template.cfg:** " + notes)
         out.append("")
       out.append("- **Type:** {}".format(type_text))
       if values:
@@ -313,7 +318,7 @@ def write_reference(su2, site, options, maps, commit, repo, skip):
       else:
         out.append("- **Not in config_template.cfg.**")
       if pages_of:
-        out.append("- **Explained in:** " + ", ".join(
+        out.append("- **Mentioned in:** " + ", ".join(
           "[{}]({})".format(title, url) for title, url, _ in pages_of[:6]) +
           (" and {} more".format(len(pages_of) - 6) if len(pages_of) > 6 else ""))
       if uses:
@@ -336,7 +341,7 @@ def write_reference(su2, site, options, maps, commit, repo, skip):
          "This reference lists every option of the SU2 configuration file. It is made from the source code, "
          "so it always matches the code. {}".format(stamp), "",
          "Each option shows the description in the code, the text of `config_template.cfg` when it adds "
-         "something, the pages of this website that explain it, and real test case files that use it.", "",
+         "something, the pages of this website that mention it, and real test case files that use it.", "",
          "- Options: {}".format(len(options)),
          "- Options without a description in the code: {} ({} without any text at all)".format(
            missing_desc, missing_both),
@@ -353,7 +358,17 @@ def write_reference(su2, site, options, maps, commit, repo, skip):
   return [REF_PREFIX] + [p[0] for p in pages]
 
 
-def check_docs(site, known):
+def read_code_names(su2):
+  """Upper case identifiers of the C++ code (enums, constants), to tell them apart from options."""
+  names = set()
+  for folder in ("Common", "SU2_CFD"):
+    for path in glob.glob(os.path.join(su2, folder, "**", "*.[ch]pp"), recursive=True):
+      with open(path, encoding="utf-8", errors="replace") as f:
+        names.update(re.findall(r"\b[A-Z][A-Z0-9_]{2,}\b", f.read()))
+  return names
+
+
+def check_docs(site, known, code_names=frozenset()):
   """Find options in the docs, tutorials and V&V pages that the code does not know.
   Only code blocks that look like an SU2 configuration file (at least half known options)
   and inline code such as `OPTION= VALUE` are checked."""
@@ -367,21 +382,25 @@ def check_docs(site, known):
       continue
     with open(path, encoding="utf-8", errors="replace") as f:
       lines = f.read().splitlines()
-    hits, block = set(), None
+    hits, block, code = set(), None, False
     for num, line in enumerate(lines, 1):
       if line.lstrip().startswith("```"):
         if block is None:
           block = []
+          # Blocks of source code (C++, Python, shell) are not configuration files.
+          code = line.strip("` \t").lower() in ("cpp", "c++", "c", "hpp", "python", "py", "bash", "sh", "shell")
         else:
           names = [(n, m.group(1)) for n, m in block if m]
-          if names and 2 * sum(name in known for _, name in names) >= len(names):
+          if not code and names and 2 * sum(name in known for _, name in names) >= len(names):
             hits.update((n, name) for n, name in names)
           block = None
         continue
       if block is not None:
         block.append((num, setting.match(line)))
       else:
-        hits.update((num, name) for name in re.findall(r"`\s*([A-Z][A-Z0-9_]{2,})\s*=", line))
+        # Inline code such as `MAXNVAR = 4` can be C++; only names unknown to the code are reported.
+        hits.update((num, name) for name in re.findall(r"`\s*([A-Z][A-Z0-9_]{2,})\s*=", line)
+                    if name not in code_names)
     for num, name in sorted(hits):
       if name not in known and name not in NOT_OPTIONS:
         found.append((os.path.relpath(path, site), num, name, lines[num - 1].strip()))
@@ -472,7 +491,14 @@ def patch_nav(site, ref_pages, extra_dev_pages, user_pages):
     nav = f.read()
   section = "- title: Option Reference\n  docs_v7:\n" + "".join("  - {}\n".format(p) for p in ref_pages) + "\n"
   nav = nav.replace("- title: Developer Docs", section + "- title: Developer Docs", 1)
-  nav = add_to_section(nav, "Developer Docs", extra_dev_pages)
+  # The "Adding-..." pages get their own section, after the developer docs.
+  howto = sorted((p for p in extra_dev_pages if p.startswith("Adding-")),
+                 key=lambda p: (HOWTO_ORDER.index(p) if p in HOWTO_ORDER else len(HOWTO_ORDER), p))
+  if howto:
+    dev = re.search(r"- title: Developer Docs\n  docs_v7:\n(?:  - .*\n)+", nav)
+    block = "- title: How to Add...\n  docs_v7:\n" + "".join("  - {}\n".format(p) for p in howto)
+    nav = nav[:dev.end()] + block + nav[dev.end():] if dev else nav
+  nav = add_to_section(nav, "Developer Docs", [p for p in extra_dev_pages if p not in howto])
   nav = add_to_section(nav, "Users Guide", user_pages)
   with open(path, "w", encoding="utf-8") as f:
     f.write(nav)
@@ -508,7 +534,7 @@ def main():
   maps = read_maps(args.su2)
   options = read_options(args.su2)
   ref_pages = write_reference(args.su2, args.site, options, maps, commit, repo, set(dev_pages))
-  found = check_docs(args.site, {o["name"] for o in options})
+  found = check_docs(args.site, {o["name"] for o in options}, read_code_names(args.su2))
   write_check_page(args.site, found, commit, options)
   patch_nav(args.site, ref_pages, dev_pages + ["Docs-Check"], user_pages)
 
