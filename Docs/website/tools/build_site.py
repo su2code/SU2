@@ -661,7 +661,8 @@ def write_renamed_page(su2, site, known, commit):
   name = "Renamed-Options"
   renames = read_parser_renames(su2)
   last_seen, tags = option_history(su2)
-  removed = sorted(n for n in set(last_seen) | set(renames) if n not in known)
+  # Parser messages for names that no release ever had are left out (they would only confuse readers).
+  removed = sorted(n for n in last_seen if n not in known) if tags else sorted(n for n in renames if n not in known)
   out = ["---", "title: Renamed and Removed Options", "permalink: /{}/{}/".format(URL, name), "---", "",
          "{% raw %}", "",
          "This page lists the options that SU2 had in a release since v7.0.0 but no longer has in commit `{}`. "
