@@ -628,6 +628,111 @@ def check_template(su2, known):
   return found
 
 
+def read_parser_renames(su2):
+  """Old option name -> message of CConfig::SetConfig_Parsing for options that were renamed or removed."""
+  with open(os.path.join(su2, "Common", "src", "CConfig.cpp"), encoding="utf-8") as f:
+    text = f.read()
+  found = {}
+  pattern = re.compile(r'if\s*\(((?:\s*(?:\|\|)?\s*!option_name\.compare\("\w+"\))+)\s*\)\s*'
+                       r'newString\.append\("((?:[^"\\]|\\.)*)"\)')
+  for m in pattern.finditer(text):
+    message = m.group(2).replace("\\n", " ").strip()
+    for name in re.findall(r'compare\("(\w+)"\)', m.group(1)):
+      found[name] = message
+  return found
+
+
+def option_history(su2):
+  """Option name -> last release tag that had it, for options that are no longer in the code."""
+  tags = subprocess.run(["git", "-C", su2, "tag", "-l", "v7.*", "v8.*"], capture_output=True, text=True).stdout.split()
+  tags.sort(key=lambda t: [int(x) if x.isdigit() else x for x in re.split(r"[.v-]", t) if x])
+  last_seen = {}
+  for tag in tags:
+    for path in ("Common/src/CConfig.cpp", "Common/src/config_structure.cpp"):
+      show = subprocess.run(["git", "-C", su2, "show", "{}:{}".format(tag, path)], capture_output=True, text=True)
+      if show.returncode == 0:
+        for name in re.findall(r'add\w*Option\s*\(\s*"([A-Z0-9_]+)"', show.stdout):
+          last_seen[name] = tag
+        break
+  return last_seen, tags
+
+
+def write_renamed_page(su2, site, known, commit):
+  name = "Renamed-Options"
+  renames = read_parser_renames(su2)
+  last_seen, tags = option_history(su2)
+  removed = sorted(n for n in set(last_seen) | set(renames) if n not in known)
+  out = ["---", "title: Renamed and Removed Options", "permalink: /{}/{}/".format(URL, name), "---", "",
+         "{% raw %}", "",
+         "This page lists the options that SU2 had in a release since v7.0.0 but no longer has in commit `{}`. "
+         "It is made from the release history and from the messages SU2 prints when it reads an old option. "
+         "If your config file stops with \"invalid option name\", look for the option here.".format(commit), ""]
+  if not tags:
+    out.append("*The release history was not available for this build.*")
+  out += ["", "| Option | Last release with it | What SU2 says |", "|---|---|---|"]
+  for opt in removed:
+    out.append("| `{}` | {} | {} |".format(opt, last_seen.get(opt, "-"), cell(renames.get(opt, ""))))
+  out += ["", "{% endraw %}", ""]
+  with open(os.path.join(site, DOCS, name + ".md"), "w", encoding="utf-8") as f:
+    f.write("\n".join(out))
+  return name
+
+
+def read_error_messages(su2):
+  """List of (file, line, message) for every SU2_MPI::Error call; message pieces built at run time become '...'."""
+  token = re.compile(r"\bSU2_MPI::Error\s*\(")
+  found = []
+  for folder in ("Common", "SU2_CFD", "SU2_DEF", "SU2_DOT", "SU2_GEO", "SU2_SOL"):
+    for path in sorted(glob.glob(os.path.join(su2, folder, "**", "*.*"), recursive=True)):
+      if not path.endswith((".cpp", ".hpp", ".inl")):
+        continue
+      with open(path, encoding="utf-8", errors="replace") as f:
+        text = f.read()
+      for m in token.finditer(text):
+        body, _ = call_body(text, m.end() - 1)
+        first = split_args(body)[0]
+        pieces = re.findall(r'"((?:[^"\\]|\\.)*)"', first)
+        if not pieces:
+          continue
+        message = re.sub(r"\\n|\\t", " ", " ... ".join(p for p in pieces if p.strip()))
+        message = re.sub(r"\s+", " ", message.replace('\\"', '"')).strip()
+        found.append((os.path.relpath(path, su2), text.count("\n", 0, m.start()) + 1, message))
+  return found
+
+
+def write_errors_page(site, errors, options, commit, blob):
+  name = "Error-Messages"
+  pages = {o["name"]: o["page"] for o in options}
+  groups = {}
+  for path, line, message in errors:
+    if path == "Common/src/CConfig.cpp":
+      group = "Configuration checks"
+    else:
+      group = "/".join(path.split("/")[:-1])
+    groups.setdefault(group, []).append((path, line, message))
+  out = ["---", "title: Error Messages", "permalink: /{}/{}/".format(URL, name), "---", "", "{% raw %}", "",
+         "This page lists every error message that can stop SU2 (`SU2_MPI::Error` in the code), "
+         "{} in commit `{}`. Use the search of your browser (Ctrl+F) with a few words of the message you see. "
+         "Parts of a message that SU2 fills in at run time are shown as \"...\".".format(len(errors), commit), "",
+         "Each message links to the code that prints it, and to the options it names.", "",
+         "See also: [Renamed and Removed Options](../Renamed-Options/).", ""]
+  order = ["Configuration checks"] + sorted(g for g in groups if g != "Configuration checks")
+  for group in order:
+    if group not in groups:
+      continue
+    out += ["## {} ({})".format(group, len(groups[group])), "", "| Message | Options | Code |", "|---|---|---|"]
+    for path, line, message in groups[group]:
+      named = sorted({w for w in re.findall(r"\b[A-Z][A-Z0-9_]{2,}\b", message) if w in pages})
+      links = ", ".join("[`{0}`](../{1}/#{0})".format(n, pages[n]) for n in named)
+      out.append("| {} | {} | [{}:{}]({}{}#L{}) |".format(cell(message), links, os.path.basename(path), line,
+                                                         blob, path, line))
+    out.append("")
+  out += ["{% endraw %}", ""]
+  with open(os.path.join(site, DOCS, name + ".md"), "w", encoding="utf-8") as f:
+    f.write("\n".join(out))
+  return name
+
+
 def write_check_page(site, found, commit, options, extra=()):
   out = ["---", "title: Docs Check", "permalink: /{}/Docs-Check/".format(URL), "---", "", "{% raw %}", "",
          "This page is made at each build. It lists what needs work in the documentation of SU2 commit `{}`."
@@ -741,7 +846,9 @@ DEBUG_JS = """// Debug only: marks in red the pages and menu sections changed on
   }
   // Menu items of changed pages.
   document.querySelectorAll("a.list-group-item").forEach(function (a) {
-    if (changed(new URL(a.href, location.href).pathname)) { red(a); a.style.fontWeight = "bold"; a.dataset.changed = "1"; }
+    if (changed(new URL(a.href, location.href).pathname)) {
+      red(a); a.style.fontWeight = "bold"; a.dataset.changed = "1";
+    }
   });
   // Menu sections that are new or contain a changed page.
   document.querySelectorAll(".panel").forEach(function (panel) {
@@ -830,8 +937,10 @@ def main():
   options = read_options(args.su2)
   ref_pages = write_reference(args.su2, args.site, options, maps, commit, repo, set(dev_pages))
   found = check_docs(args.site, {o["name"] for o in options}, read_code_names(args.su2))
-  output_page = write_output_page(args.site, read_outputs(args.su2), commit,
-                                  "https://github.com/{}/blob/{}/".format(repo, commit))
+  blob = "https://github.com/{}/blob/{}/".format(repo, commit)
+  output_page = write_output_page(args.site, read_outputs(args.su2), commit, blob)
+  renamed_page = write_renamed_page(args.su2, args.site, {o["name"] for o in options}, commit)
+  errors_page = write_errors_page(args.site, read_error_messages(args.su2), options, commit, blob)
   template_found = check_template(args.su2, {o["name"] for o in options})
   extra = ["", "## Options in config_template.cfg that do not exist", "",
            "Users copy this file, so a wrong name there stops their run with an \"unknown option\" error.", "",
@@ -840,10 +949,11 @@ def main():
   extra += quality_sections(find_stale_pages(args.su2, pages_dir), doc_coverage(args.su2),
                             read_doxygen_log(args.doxygen_log))
   write_check_page(args.site, found, commit, options, extra)
-  patch_nav(args.site, ref_pages, dev_pages + ["Docs-Check"], user_pages + [output_page])
+  patch_nav(args.site, ref_pages + [renamed_page], dev_pages + ["Docs-Check"],
+            user_pages + [output_page, errors_page])
 
   if args.mark_changes:
-    generated = ref_pages + dev_pages + user_pages + [output_page, "Docs-Check"]
+    generated = ref_pages + dev_pages + user_pages + [output_page, renamed_page, errors_page, "Docs-Check"]
     urls = ["/{}/{}/".format(URL, p) for p in generated] + changed_site_pages(args.site)
     mark_changes(args.site, urls, ["Option Reference", "How to Add..."])
 
