@@ -39,6 +39,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   lesMode.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
+  if (config->GetKind_FluidModel() == FLUID_CANTERA) MassDiffusivity.resize(nPoint, config->GetnSpecies() + 1) = su2double(0.0);
   /*--- Allocate memory for the AuxVar and its gradient. See e.g. CIncEulerSolver::Source_Residual:
    * Axisymmetric: total-viscosity * y-vel / y-coord
    * Streamwise Periodic: eddy viscosity (mu_t) ---*/
@@ -59,8 +60,10 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   SetPressure(iPoint);
 
   su2double Enthalpy = Solution(iPoint, nDim + 1);
+  FluidModel->SetTemperatureGuess(GetTemperature(iPoint));
   FluidModel->SetTDState_h(Enthalpy, scalar);
   su2double Temperature = FluidModel->GetTemperature();
+  const bool temperature_failed = FluidModel->GetTemperatureIterationFailed();
 
   auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
@@ -70,11 +73,11 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Set the value of the density ---*/
 
-  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+  const auto check_dens = check_temp ? true: SetDensity(iPoint, FluidModel->GetDensity());
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
-  if (check_dens || check_temp) {
+  if (check_dens || check_temp || temperature_failed) {
 
     /*--- Copy the old solution ---*/
 
