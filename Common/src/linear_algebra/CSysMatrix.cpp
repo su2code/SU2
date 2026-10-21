@@ -1460,13 +1460,13 @@ void CSysMatrix<ScalarType>::BuildLineletPreconditioner(const CGeometry* geometr
 
   const auto nThreads = omp_get_max_threads();
 
+  /*--- The linelet info must be computed on all ranks (it is collective), and the working vectors
+   * must be allocated even if this rank has no linelets (e.g. partitions away from walls). ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    const auto& li = geometry->GetLineletInfo(config);
-    if (!li.linelets.empty()) {
-      LineletUpper.resize(nThreads);
-      LineletVector.resize(nThreads);
-      LineletInvDiag.resize(nThreads);
-    }
+    geometry->GetLineletInfo(config);
+    LineletUpper.resize(nThreads);
+    LineletVector.resize(nThreads);
+    LineletInvDiag.resize(nThreads);
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 

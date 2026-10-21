@@ -23,7 +23,9 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
                        'SU2_CFD/output/CNEMOCompOutput_tests.cpp',
                        'SU2_CFD/output/COutput_convergence_tests.cpp',
                        'SU2_CFD/gradients.cpp',
+                       'SU2_CFD/periodic_limiters.cpp',
                        'SU2_CFD/solvers/CNEMOEulerSolver_tests.cpp',
+                       'SU2_CFD/solvers/moving_wall_tests.cpp',
                        'SU2_CFD/nemo_viscous_assembly.cpp',
                        'SU2_CFD/windowing.cpp',
                        'Common/toolboxes/random_toolbox_tests.cpp',
@@ -32,11 +34,13 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
 
 # Reverse-mode (algorithmic differentiation) tests:
 su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp',
+                          'SU2_CFD/solvers/under_relaxation_ad_tests.cpp',
                           'SU2_CFD/fluid/CFluidModel_tests_AD.cpp',
                           'Common/toolboxes/multilayer_perceptron/MLP_Jacobian_tests.cpp'])
 
 # Forward-mode (direct differentiation) tests:
-su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp'])
+su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp',
+                          'SU2_CFD/solvers/under_relaxation_ad_tests.cpp'])
 
 # -------------------------------------------------------------------------
 # End of unit test listings
@@ -54,6 +58,8 @@ if get_option('enable-tests')
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)
+    test('Multigrid configuration limits', python,
+         args: files('Common/check_multigrid_limits.py') + [test_driver.full_path()])
     test('NEMO convergence field migration', python,
          args: files('SU2_CFD/output/check_nemo_convergence_migration.py') + [test_driver.full_path()],
          timeout: 300)

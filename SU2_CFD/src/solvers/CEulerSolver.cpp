@@ -2586,9 +2586,10 @@ void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
     su2double e_old = nodes->GetSolution(iPoint, nVar - 1);
     su2double e_new = e_old + LinSysSol(iPoint, nVar - 1);
     /*--- rho*e = rho*E - |rho*u|^2 / (2*rho), with the old and the proposed new density. ---*/
+    /*--- Materialize CoDi expressions: GetSolution returns temporary active scalars. ---*/
     const su2double rho_old = max(nodes->GetSolution(iPoint, 0), EPS);
     const su2double rho_new = max(rho_old + LinSysSol(iPoint, 0), EPS);
-    for (unsigned short jVar = 1; jVar <= nDim; jVar++) {
+    for (auto jVar = 1u; jVar <= nDim; jVar++) {
       e_old -= 0.5 * pow(nodes->GetSolution(iPoint, jVar), 2) / rho_old;
       e_new -= 0.5 * pow(nodes->GetSolution(iPoint, jVar) + LinSysSol(iPoint, jVar), 2) / rho_new;
     }
