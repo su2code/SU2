@@ -132,7 +132,9 @@ def read_options(su2):
   with open(os.path.join(su2, "Common", "src", "CConfig.cpp"), encoding="utf-8") as f:
     text = f.read()
 
-  token = re.compile(r"/\*!(.*?)\*/|\badd(\w*)Option\s*\(", re.S)
+  # Option comments start with "/*!" or "/*"; only the ones with a description or a \brief are kept,
+  # so that plain code comments such as "/*--- ... ---*/" do not become descriptions.
+  token = re.compile(r"/\*!?(.*?)\*/|\badd(\w*)Option\s*\(", re.S)
   options, category, comment = [], "General", None
   pos = 0
   while True:
@@ -144,7 +146,7 @@ def read_options(su2):
       cat = re.search(r"\\par\s+CONFIG_CATEGORY\s*:\s*(.*?)\s*\\ingroup", body, re.S)
       if cat:
         category, comment = " ".join(cat.group(1).split()), None
-      else:
+      elif "DESCRIPTION" in body or "\\brief" in body:
         comment = body
       pos = m.end()
       continue
@@ -179,6 +181,56 @@ def read_template(su2):
   return examples
 
 
+def read_testcases(su2):
+  """Option name -> list of (cfg path relative to the SU2 root, value) from TestCases/**/*.cfg."""
+  usage = {}
+  setting = re.compile(r"^\s*([A-Z][A-Z0-9_]+)\s*=\s*([^%]*)")
+  for path in sorted(glob.glob(os.path.join(su2, "TestCases", "**", "*.cfg"), recursive=True)):
+    rel = os.path.relpath(path, su2)
+    with open(path, encoding="utf-8", errors="replace") as f:
+      for line in f:
+        m = setting.match(line)
+        if m:
+          usage.setdefault(m.group(1), []).append((rel, " ".join(m.group(2).split())))
+  return usage
+
+
+def pick_examples(uses, count=3):
+  """Up to count uses with different values, so that the examples show the range of settings."""
+  picked, values = [], set()
+  for rel, value in uses:
+    if value and value not in values:
+      picked.append((rel, value))
+      values.add(value)
+    if len(picked) == count:
+      break
+  return picked
+
+
+def read_page_mentions(site, known, skip):
+  """Option name -> list of (title, url) of the user guide pages and tutorials that name the option."""
+  mentions = {}
+  files = sorted(glob.glob(os.path.join(site, DOCS, "*.md"))) + \
+          sorted(glob.glob(os.path.join(site, "_tutorials", "**", "*.md"), recursive=True))
+  for path in files:
+    base = os.path.splitext(os.path.basename(path))[0]
+    if base.startswith(REF_PREFIX) or base in skip or "unfinished" in path:
+      continue
+    with open(path, encoding="utf-8", errors="replace") as f:
+      text = f.read()
+    title = re.search(r"^title:\s*(.+)$", text, re.M)
+    link = re.search(r"^permalink:\s*(\S+)$", text, re.M)
+    if not (title and link):
+      continue
+    title = title.group(1).strip().strip("\"'")
+    for name in set(re.findall(r"\b[A-Z][A-Z0-9_]{2,}\b", text)) & known:
+      mentions.setdefault(name, []).append((title, link.group(1), path.startswith(os.path.join(site, DOCS))))
+  for name in mentions:
+    # User guide pages first, then tutorials.
+    mentions[name].sort(key=lambda m: (not m[2], m[0]))
+  return mentions
+
+
 def describe_type(opt, maps):
   """Return (type text, list of allowed values, default text)."""
   kind, args = opt["kind"], opt["args"]
@@ -198,10 +250,22 @@ def describe_type(opt, maps):
   return TYPE_NAMES.get(kind, "special format, see config_template.cfg"), values, default
 
 
-def write_reference(su2, site, options, maps, commit):
+def normalize(text):
+  return re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+
+
+def same_text(a, b):
+  """True if b says nothing more than a (same words, or contained in a)."""
+  return normalize(a) == normalize(b) or normalize(b) in normalize(a)
+
+
+def write_reference(su2, site, options, maps, commit, repo, skip):
   examples = read_template(su2)
+  usage = read_testcases(su2)
+  mentions = read_page_mentions(site, {o["name"] for o in options}, skip)
   stamp = "Generated from SU2 commit `{}` on {}.".format(commit, datetime.date.today().isoformat())
-  source = "https://github.com/su2code/SU2/blob/{}/Common/src/CConfig.cpp".format(commit)
+  blob = "https://github.com/{}/blob/{}/".format(repo, commit)
+  source = blob + "Common/src/CConfig.cpp"
 
   categories = {}
   for opt in options:
@@ -217,11 +281,26 @@ def write_reference(su2, site, options, maps, commit):
            "[`Common/src/CConfig.cpp`]({}) instead.".format(stamp, source), ""]
     for opt in opts:
       desc, opt_text, def_text = clean_comment(opt["comment"]) if opt["comment"] else ("", "", "")
+      notes, tmpl_line = examples.get(opt["name"], ([], ""))
+      notes = " ".join(notes)
       type_text, values, default = describe_type(opt, maps)
+      uses = usage.get(opt["name"], [])
+      pages_of = mentions.get(opt["name"], [])
+      opt.update({"desc_words": len(desc.split()), "has_notes": bool(notes), "uses": len(uses),
+                  "mentions": len(pages_of)})
+
       out.append("### {} {{#{}}}".format(opt["name"], opt["name"]))
       out.append("")
-      out.append(desc if desc else "*No description in the code yet.*")
+      if desc:
+        out.append(desc)
+      elif notes:
+        out.append(notes + " *(from config_template.cfg)*")
+      else:
+        out.append("*No description in the code yet.*")
       out.append("")
+      if desc and notes and not same_text(desc, notes):
+        out.append("> config_template.cfg: " + notes)
+        out.append("")
       out.append("- **Type:** {}".format(type_text))
       if values:
         out.append("- **Values:** " + ", ".join("`{}`".format(v) for v in values))
@@ -229,11 +308,19 @@ def write_reference(su2, site, options, maps, commit):
         out.append("- **Values:** {}".format(opt_text))
       if default or def_text:
         out.append("- **Default:** `{}`".format(default if default else def_text))
-      if opt["name"] in examples:
-        notes, line = examples[opt["name"]]
-        out.append("- **In config_template.cfg:** `{}`".format(line))
+      if tmpl_line:
+        out.append("- **In config_template.cfg:** `{}`".format(tmpl_line))
       else:
         out.append("- **Not in config_template.cfg.**")
+      if pages_of:
+        out.append("- **Explained in:** " + ", ".join(
+          "[{}]({})".format(title, url) for title, url, _ in pages_of[:6]) +
+          (" and {} more".format(len(pages_of) - 6) if len(pages_of) > 6 else ""))
+      if uses:
+        files = len({rel for rel, _ in uses})
+        out.append("- **Used in {} test case file{}**, for example: ".format(files, "s" if files > 1 else "") +
+                   ", ".join("[`{}`]({}{}) (`{}`)".format(os.path.basename(rel), blob, rel, value or "empty")
+                             for rel, value in pick_examples(uses)))
       out.append("- **Code:** [`CConfig.cpp` line {}]({}#L{})".format(opt["line"], source, opt["line"]))
       out.append("")
     out += ["{% endraw %}", ""]
@@ -241,15 +328,20 @@ def write_reference(su2, site, options, maps, commit):
       f.write("\n".join(out))
     pages.append((slug, cat, len(opts)))
 
-  missing_desc = sum(1 for o in options if not o["comment"])
+  missing_desc = sum(1 for o in options if not o["desc_words"])
+  missing_both = sum(1 for o in options if not o["desc_words"] and not o["has_notes"])
   missing_tmpl = sum(1 for o in options if o["name"] not in examples)
   out = ["---", "title: Option Reference", "permalink: /{}/{}/".format(URL, REF_PREFIX), "---", "",
          "{% raw %}", "",
          "This reference lists every option of the SU2 configuration file. It is made from the source code, "
          "so it always matches the code. {}".format(stamp), "",
+         "Each option shows the description in the code, the text of `config_template.cfg` when it adds "
+         "something, the pages of this website that explain it, and real test case files that use it.", "",
          "- Options: {}".format(len(options)),
-         "- Options without a description in the code: {}".format(missing_desc),
-         "- Options not in `config_template.cfg`: {}".format(missing_tmpl), "",
+         "- Options without a description in the code: {} ({} without any text at all)".format(
+           missing_desc, missing_both),
+         "- Options not in `config_template.cfg`: {}".format(missing_tmpl),
+         "- The [Docs Check](../Docs-Check/) page lists the options that need better documentation.", "",
          "## Groups", ""]
   out += ["- [{}](../{}/) ({} options)".format(cat, slug, n) for slug, cat, n in pages]
   out += ["", "## All options A-Z", ""]
@@ -296,10 +388,12 @@ def check_docs(site, known):
   return found
 
 
-def write_check_page(site, found, commit):
+def write_check_page(site, found, commit, options):
   out = ["---", "title: Docs Check", "permalink: /{}/Docs-Check/".format(URL), "---", "", "{% raw %}", "",
-         "These pages name options that do not exist in SU2 commit `{}`. "
-         "The option was renamed or removed, or it has a typo.".format(commit), "",
+         "This page is made at each build. It lists what needs work in the documentation of SU2 commit `{}`."
+         .format(commit), "",
+         "## Options named in the docs that do not exist", "",
+         "The option was renamed or removed, or it has a typo. Fix the page in the website repository.", "",
          "Found: {}".format(len(found)), ""]
   last = None
   for path, num, name, line in found:
@@ -307,22 +401,79 @@ def write_check_page(site, found, commit):
       out += ["", "### `{}`".format(path), ""]
       last = path
     out.append("- line {}: `{}`".format(num, name))
+
+  def link(opt):
+    return "[`{0}`](../{1}/#{0})".format(opt["name"], opt["page"])
+
+  checks = [
+    ("Options without any description",
+     "No description in `Common/src/CConfig.cpp` and no comment in `config_template.cfg`.",
+     lambda o: not o["desc_words"] and not o["has_notes"]),
+    ("Options with a description only in config_template.cfg",
+     "Move or copy the text into the comment above the option in `Common/src/CConfig.cpp`.",
+     lambda o: not o["desc_words"] and o["has_notes"]),
+    ("Options with a very short description",
+     "The comment in `Common/src/CConfig.cpp` has 6 words or fewer.",
+     lambda o: 0 < o["desc_words"] <= 6),
+    ("Options with no example and no explanation",
+     "No test case uses the option and no page of this website names it.",
+     lambda o: not o["uses"] and not o["mentions"]),
+  ]
+  for title, text, test in checks:
+    selected = [o for o in options if test(o)]
+    out += ["", "## {} ({})".format(title, len(selected)), "", text, ""]
+    groups = {}
+    for opt in selected:
+      groups.setdefault(opt["category"], []).append(link(opt))
+    for cat, links in groups.items():
+      out.append("- **{}:** {}".format(cat, ", ".join(links)))
   out += ["", "{% endraw %}", ""]
   with open(os.path.join(site, DOCS, "Docs-Check.md"), "w", encoding="utf-8") as f:
     f.write("\n".join(out))
 
 
-def patch_nav(site, ref_pages, extra_dev_pages):
+def copy_code_notes(su2, site):
+  """Copy the Markdown pages kept in the code folders (e.g. Docs/Aeroacoustics.md) into the user guide."""
+  folders = ["Docs", "Common", "SU2_CFD", "SU2_DEF", "SU2_DOT", "SU2_GEO", "SU2_SOL", "SU2_PY"]
+  names = []
+  for folder in folders:
+    for path in sorted(glob.glob(os.path.join(su2, folder, "**", "*.md"), recursive=True)):
+      if os.path.join("Docs", "website") in path:
+        continue
+      with open(path, encoding="utf-8", errors="replace") as f:
+        text = f.read()
+      heading = re.search(r"^#\s+(.+)$", text, re.M)
+      title = heading.group(1).strip() if heading else os.path.basename(path)
+      if heading:
+        text = text[:heading.start()] + text[heading.end():]
+      name = "Code-Notes-" + slugify(os.path.splitext(os.path.basename(path))[0])
+      rel = os.path.relpath(path, su2)
+      page = ["---", 'title: "{}"'.format(title.replace('"', "'")), "permalink: /{}/{}/".format(URL, name), "---",
+              "", "> This page is kept in the SU2 code repository: `{}`.".format(rel), "",
+              "{% raw %}", text.strip(), "{% endraw %}", ""]
+      with open(os.path.join(site, DOCS, name + ".md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(page))
+      names.append(name)
+  return names
+
+
+def add_to_section(nav, title, pages):
+  """Append pages to a section of the menu, unless they are listed already."""
+  sec = re.search(r"- title: {}\n  docs_v7:\n((?:  - .*\n)+)".format(re.escape(title)), nav)
+  if not sec:
+    return nav
+  added = "".join("  - {}\n".format(p) for p in pages if "  - {}\n".format(p) not in sec.group(1))
+  return nav[:sec.end(1)] + added + nav[sec.end(1):]
+
+
+def patch_nav(site, ref_pages, extra_dev_pages, user_pages):
   path = os.path.join(site, NAV)
   with open(path, encoding="utf-8") as f:
     nav = f.read()
   section = "- title: Option Reference\n  docs_v7:\n" + "".join("  - {}\n".format(p) for p in ref_pages) + "\n"
   nav = nav.replace("- title: Developer Docs", section + "- title: Developer Docs", 1)
-  dev = re.search(r"- title: Developer Docs\n  docs_v7:\n((?:  - .*\n)+)", nav)
-  if dev:
-    listed = dev.group(1)
-    added = "".join("  - {}\n".format(p) for p in extra_dev_pages if "  - {}\n".format(p) not in listed)
-    nav = nav[:dev.end(1)] + added + nav[dev.end(1):]
+  nav = add_to_section(nav, "Developer Docs", extra_dev_pages)
+  nav = add_to_section(nav, "Users Guide", user_pages)
   with open(path, "w", encoding="utf-8") as f:
     f.write(nav)
 
@@ -350,12 +501,16 @@ def main():
     if os.path.isdir(src):
       shutil.copytree(src, os.path.join(args.site, "docs_files", "website"), dirs_exist_ok=True)
 
+  # Links to the code point to the repository that is built (a fork during tests).
+  repo = os.environ.get("GITHUB_REPOSITORY", "su2code/SU2")
+
+  user_pages = copy_code_notes(args.su2, args.site)
   maps = read_maps(args.su2)
   options = read_options(args.su2)
-  ref_pages = write_reference(args.su2, args.site, options, maps, commit)
+  ref_pages = write_reference(args.su2, args.site, options, maps, commit, repo, set(dev_pages))
   found = check_docs(args.site, {o["name"] for o in options})
-  write_check_page(args.site, found, commit)
-  patch_nav(args.site, ref_pages, dev_pages + ["Docs-Check"])
+  write_check_page(args.site, found, commit, options)
+  patch_nav(args.site, ref_pages, dev_pages + ["Docs-Check"], user_pages)
 
   if args.light:
     for folder in HEAVY_FOLDERS:

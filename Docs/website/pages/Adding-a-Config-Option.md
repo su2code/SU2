@@ -126,9 +126,9 @@ Real examples:
 
 `build_site.py` reads the comment as follows. Follow these rules, or the Option Reference will be incomplete:
 
-- The comment must start with `/*!`. A comment that starts with `/*` (such as `/* DESCRIPTION: ... */`) is not read,
-  and the option gets "No description in the code yet".
-- The comment must be the last `/*!` comment before the call.
+- The comment can start with `/*!` or `/*`, and must contain `DESCRIPTION:` or `\brief`. Other comments, such as
+  `/*--- ... ---*/`, are ignored.
+- The comment must be the last such comment before the call.
 - The parts are separated by `\n`. The keys are `DESCRIPTION:`, `Options:` (or `OPTIONS:`) and `DEFAULT:`, each with
   a colon. `\link Name \endlink` is shown as `Name`.
 - The description should say what the option does, the unit if there is one, and which solvers use it.
@@ -138,8 +138,13 @@ The website also adds, without any comment:
 - the type, from the `add...Option` function;
 - for enum options, all the keywords of the map;
 - the default, from the last argument of the call (for an enum, the keyword of the map that has this value);
-- the line of the option in `config_template.cfg`, or "Not in config_template.cfg";
+- the line of the option in `config_template.cfg`, or "Not in config_template.cfg", and the comment above that line
+  when it says more than the comment in the code (or in its place, when the code has no description);
+- the pages of the website and the tutorials that name the option;
+- up to three test case files in `TestCases/` that use the option, with their values;
 - a link to the line of the call in `CConfig.cpp`.
+
+The [Docs Check](../Docs-Check/) page lists the options with no description, a very short one, or no example.
 
 ### Categories
 
