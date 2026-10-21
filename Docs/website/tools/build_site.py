@@ -29,6 +29,7 @@
 import argparse
 import datetime
 import glob
+import json
 import os
 import re
 import shutil
@@ -229,7 +230,8 @@ def read_page_mentions(site, known, skip):
       continue
     title = title.group(1).strip().strip("\"'")
     for name in set(re.findall(r"\b[A-Z][A-Z0-9_]{2,}\b", text)) & known:
-      mentions.setdefault(name, []).append((title, link.group(1), path.startswith(os.path.join(site, DOCS))))
+      in_guide = path.startswith(os.path.join(site, DOCS))
+      mentions.setdefault(name, []).append((title, link.group(1).strip("\"'"), in_guide))
   for name in mentions:
     # User guide pages first, then tutorials.
     mentions[name].sort(key=lambda m: (not m[2], m[0]))
@@ -711,12 +713,75 @@ def patch_nav(site, ref_pages, extra_dev_pages, user_pages):
     f.write(nav)
 
 
+UPSTREAM_SITE = "https://github.com/su2code/su2code.github.io.git"
+
+DEBUG_JS = """// Debug only: marks in red the pages and menu sections changed on this test site.
+(function () {
+  var pages = %s;
+  var sections = %s;
+  function changed(path) {
+    return pages.some(function (p) { return path.replace(/index\\.html$/, "").endsWith(p); });
+  }
+  document.querySelectorAll("a.list-group-item").forEach(function (a) {
+    if (changed(new URL(a.href, location.href).pathname)) { a.style.color = "#c00"; a.style.fontWeight = "bold"; }
+  });
+  document.querySelectorAll(".panel-title").forEach(function (t) {
+    if (sections.indexOf(t.textContent.trim()) >= 0) { t.style.color = "#c00"; }
+  });
+  if (changed(location.pathname)) {
+    document.querySelectorAll("h1").forEach(function (h) { h.style.color = "#c00"; });
+  }
+})();
+"""
+
+
+def changed_site_pages(site):
+  """Permalinks of the website pages that differ from the official website (su2code/su2code.github.io)."""
+  try:
+    subprocess.check_call(["git", "-C", site, "fetch", "-q", "--depth=50", UPSTREAM_SITE, "master"],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+      base = subprocess.check_output(["git", "-C", site, "merge-base", "FETCH_HEAD", "HEAD"], text=True).strip()
+    except subprocess.CalledProcessError:
+      base = "FETCH_HEAD"
+    files = subprocess.check_output(["git", "-C", site, "diff", "--name-only", base, "HEAD"], text=True).split()
+  except (OSError, subprocess.CalledProcessError):
+    print("Could not compare the website with the official one; only the generated pages are marked.")
+    return []
+  urls = []
+  for rel in files:
+    path = os.path.join(site, rel)
+    if not rel.endswith(".md") or not os.path.isfile(path):
+      continue
+    with open(path, encoding="utf-8", errors="replace") as f:
+      link = re.search(r"^permalink:\s*(\S+)$", f.read(), re.M)
+    if link:
+      urls.append(link.group(1).strip("\"'"))
+  return urls
+
+
+def mark_changes(site, urls, sections):
+  """Debug: add a script to every page that colours the changed pages and menu sections in red."""
+  os.makedirs(os.path.join(site, "js"), exist_ok=True)
+  with open(os.path.join(site, "js", "debug-changes.js"), "w", encoding="utf-8") as f:
+    f.write(DEBUG_JS % (json.dumps(sorted(set(urls))), json.dumps(sections)))
+  layout = os.path.join(site, "_layouts", "default.html")
+  with open(layout, encoding="utf-8") as f:
+    text = f.read()
+  tag = '<script src="{{ "/js/debug-changes.js" | relative_url }}"></script>\n'
+  if tag not in text:
+    with open(layout, "w", encoding="utf-8") as f:
+      f.write(text.replace("</body>", tag + "</body>", 1))
+
+
 def main():
   parser = argparse.ArgumentParser(description=__doc__)
   parser.add_argument("--su2", required=True, help="root of the SU2 source tree")
   parser.add_argument("--site", required=True, help="checkout of su2code.github.io, changed in place")
   parser.add_argument("--light", action="store_true", help="remove the download folders (test site)")
   parser.add_argument("--doxygen-log", help="file with the Doxygen warnings (WARN_LOGFILE)")
+  parser.add_argument("--mark-changes", action="store_true",
+                      help="debug: show in red the pages that differ from the official website")
   args = parser.parse_args()
 
   try:
@@ -749,6 +814,11 @@ def main():
                            read_doxygen_log(args.doxygen_log))
   write_check_page(args.site, found, commit, options, extra)
   patch_nav(args.site, ref_pages, dev_pages + ["Docs-Check"], user_pages + [output_page])
+
+  if args.mark_changes:
+    generated = ref_pages + dev_pages + user_pages + [output_page, "Docs-Check"]
+    urls = ["/{}/{}/".format(URL, p) for p in generated] + changed_site_pages(args.site)
+    mark_changes(args.site, urls, ["Option Reference", "How to Add..."])
 
   if args.light:
     for folder in HEAVY_FOLDERS:

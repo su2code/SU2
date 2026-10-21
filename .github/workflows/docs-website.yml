@@ -47,7 +47,9 @@ jobs:
           repository: ${{ env.SITE_REPO }}
           ref: ${{ env.SITE_REF }}
           path: site
-          fetch-depth: 1
+          # Some history to compare with the official website (--mark-changes).
+          fetch-depth: 50
+          filter: blob:none
       - name: Configure Pages
         id: pages
         uses: actions/configure-pages@v5
@@ -70,7 +72,7 @@ jobs:
             echo "EXCLUDE = ./Docs/website"
           ) | doxygen -
       - name: Prepare website
-        run: python3 su2/Docs/website/tools/build_site.py --su2 su2 --site site --light --doxygen-log doxygen_warnings.txt
+        run: python3 su2/Docs/website/tools/build_site.py --su2 su2 --site site --light --doxygen-log doxygen_warnings.txt --mark-changes
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:

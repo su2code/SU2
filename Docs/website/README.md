@@ -23,6 +23,10 @@ The workflow `.github/workflows/docs-website.yml` builds the website and publish
    since the commit in their "Last checked against" line), the Doxygen coverage of the classes, and the Doxygen warnings.
 8. It builds the website with Jekyll, and the **Code Reference** with Doxygen (Doxygen runs first, for its warnings).
 
+**Debug option.** The test site runs `build_site.py` with `--mark-changes`. It shows in red the menu items and
+titles of the pages that differ from the official website, and the new menu sections. Remove the option from the
+workflow for a normal build.
+
 ## How to change the docs
 
 Pages that explain the code (developer pages) live here, so they change in the same PR as the code.
