@@ -56,7 +56,9 @@ NOT_OPTIONS = {"NDIME", "NELEM", "NPOIN", "NMARK", "NZONE", "IZONE", "MARKER_TAG
                "FFD_PARENTS", "FFD_CHILDREN", "FFD_CORNER_POINTS", "FFD_CONTROL_POINTS", "FFD_SURFACE_POINTS",
                "NMARK_FFD", "NPERIODIC", "PERIODIC_INDEX", "NELEM_BOUND", "VALUE", "OPTION",
                # keys of the Python FSI configuration file (Unsteady_FSI_Python tutorial)
-               "IMPOSED_MODES", "IMPOSED_PARAMETERS"}
+               "IMPOSED_MODES", "IMPOSED_PARAMETERS",
+               # formulas in the comment of RAMP_MUSCL in config_template.cfg
+               "ITERATION", "SMOOTH_FUNCTION"}
 
 TYPE_NAMES = {
   "Double": "real number", "Bool": "YES / NO", "String": "string", "UnsignedLong": "integer",
@@ -615,6 +617,17 @@ def quality_sections(stale, coverage, doxy):
   return out
 
 
+def check_template(su2, known):
+  """Options written in config_template.cfg (active or commented out) that the code does not know."""
+  found = []
+  with open(os.path.join(su2, "config_template.cfg"), encoding="utf-8", errors="replace") as f:
+    for num, line in enumerate(f, 1):
+      m = re.match(r"^\s*%?\s*([A-Z][A-Z0-9_]{2,})\s*=", line)
+      if m and m.group(1) not in known and m.group(1) not in NOT_OPTIONS:
+        found.append((num, m.group(1)))
+  return found
+
+
 def write_check_page(site, found, commit, options, extra=()):
   out = ["---", "title: Docs Check", "permalink: /{}/Docs-Check/".format(URL), "---", "", "{% raw %}", "",
          "This page is made at each build. It lists what needs work in the documentation of SU2 commit `{}`."
@@ -819,8 +832,13 @@ def main():
   found = check_docs(args.site, {o["name"] for o in options}, read_code_names(args.su2))
   output_page = write_output_page(args.site, read_outputs(args.su2), commit,
                                   "https://github.com/{}/blob/{}/".format(repo, commit))
-  extra = quality_sections(find_stale_pages(args.su2, pages_dir), doc_coverage(args.su2),
-                           read_doxygen_log(args.doxygen_log))
+  template_found = check_template(args.su2, {o["name"] for o in options})
+  extra = ["", "## Options in config_template.cfg that do not exist", "",
+           "Users copy this file, so a wrong name there stops their run with an \"unknown option\" error.", "",
+           "Found: {}".format(len(template_found)), ""]
+  extra += ["- line {}: `{}`".format(num, name) for num, name in template_found]
+  extra += quality_sections(find_stale_pages(args.su2, pages_dir), doc_coverage(args.su2),
+                            read_doxygen_log(args.doxygen_log))
   write_check_page(args.site, found, commit, options, extra)
   patch_nav(args.site, ref_pages, dev_pages + ["Docs-Check"], user_pages + [output_page])
 
@@ -833,8 +851,8 @@ def main():
     for folder in HEAVY_FOLDERS:
       shutil.rmtree(os.path.join(args.site, folder), ignore_errors=True)
 
-  print("Options: {}, groups: {}, unknown options named in the docs: {}".format(
-    len(options), len(ref_pages) - 1, len(found)))
+  print("Options: {}, groups: {}, unknown options named in the docs: {}, in config_template.cfg: {}".format(
+    len(options), len(ref_pages) - 1, len(found), len(template_found)))
   for path, num, name, _ in found:
     print("  {}:{}: {}".format(path, num, name))
   return 0
