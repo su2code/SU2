@@ -27,7 +27,7 @@
  */
 
 #include "../../../include/interfaces/cfd/CMixingPlaneInterface.hpp"
-#include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
+#include "../../../../Common/include/interface_interpolation/CInterpolator.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
