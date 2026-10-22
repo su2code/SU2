@@ -65,6 +65,19 @@ class DocsChecksTests(unittest.TestCase):
             self.assertEqual(len(problems), 1)
             self.assertIn("unknown keyword V2003", next(iter(problems)))
 
+    def test_config_enum_checks_hyphenated_keywords(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "_docs_v7").mkdir()
+            (root / "_docs_v7/example.md").write_text(
+                "```\nSST_OPTIONS= V2003m, KATO-LAUNDER\n```\n"
+                "```\nSST_OPTIONS= KATO-LAUNDR\n```\n")
+            options = [{"name": "SST_OPTIONS", "kind": "EnumList", "args": ["", "", "", "SST_Map"]}]
+            maps = {"SST_Map": [("V2003m", "value"), ("KATO-LAUNDER", "value")]}
+            problems = check_site.check_enum_values(root, options, maps)
+            self.assertEqual(len(problems), 1)
+            self.assertIn("unknown keyword KATO-LAUNDR", next(iter(problems)))
+
     def test_rebase_links_handles_root_and_subpath_without_double_prefix(self):
         with tempfile.TemporaryDirectory() as directory:
             page = Path(directory) / "index.html"

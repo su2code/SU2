@@ -12,6 +12,7 @@ For the current build, see [Docs Check](../Docs-Check/), the [source and tool ma
 - [What has improved](#what-has-improved)
 - [Corrections from the content and code review](#corrections-from-the-content-and-code-review)
 - [Evidence and current limits](#evidence-and-current-limits)
+- [Guide and model review](#guide-and-model-review)
 - [What is still missing](#what-is-still-missing)
 - [How to go further](#how-to-go-further)
 - [Change history](#change-history)
@@ -29,8 +30,8 @@ For the current build, see [Docs Check](../Docs-Check/), the [source and tool ma
 | Errors and migration | Implemented | [Error Messages](../Error-Messages/), [Renamed and Removed Options](../Renamed-Options/) and [Changes in v8](../Guide-to-v8/) help interpret diagnostics and update old configurations. |
 | Developer explanations | Implemented; ongoing maintenance | [Code Structure](../Code-Structure/), [regression testing](../Running-Regression-Tests/), [Automatic Differentiation](../Automatic-Differentiation/), [Debugging](../Debugging/), [Glossary](../Glossary/) and eight **How to Add...** guides connect explanations to the implementation. |
 | Code reference | Implemented | [Doxygen](../Code-Reference/) is built with the site. [Docs Check](../Docs-Check/) reports approximate source-documentation coverage and Doxygen warnings. Publishing it does not mean every class is adequately documented. |
-| Physical model explanations | Implemented; review needed | Dedicated pages cover [turbulence](../Turbulence-Models/), [transition](../Transition-Models/), [hybrid RANS/LES](../Hybrid-RANS-LES/) and [wall treatment](../Wall-Treatment/), including variants, implementation differences and known limits. Scientific completeness still needs expert review. |
-| Case setup guidance | Nine drafts; review needed | Guides cover external RANS, incompressible flow, unsteady/DES, transition, turbomachinery, CHT, species/combustion, shape optimization and NICFD. Shared introductions explain evidence tags and review status. |
+| Physical model explanations | Source/theory follow-up completed; expert validation pending | Dedicated pages cover [turbulence](../Turbulence-Models/), [transition](../Transition-Models/), [hybrid RANS/LES](../Hybrid-RANS-LES/) and [wall treatment](../Wall-Treatment/), including variants, implementation differences and known limits. Scientific completeness still needs expert review. |
+| Case setup guidance | Nine drafts; source review completed | Guides cover external RANS, incompressible flow, unsteady/DES, transition, turbomachinery, CHT, species/combustion, shape optimization and NICFD. Shared introductions explain evidence tags and review status. |
 | Worked cases and numerical comparisons | Existing collections retained | [Tutorials]({{ '/tutorials/home/' | relative_url }}) remain the home for complete worked examples; [V&V]({{ '/vandv/home/' | relative_url }}) remains the home for numerical comparisons. Setup guides link to those collections rather than creating a second case collection. |
 | Search and navigation | Implemented | [Search]({{ '/search/' | relative_url }}) indexes the current documentation, Tutorials and V&V without the former per-page text truncation. Old v6 pages remain available for existing links but are excluded from this search. |
 | Website maintenance | Implemented | Feed and sitemap generation were restored by consolidating the plugin configuration. Added/modified menu sections, entries and page titles remain red in the fork preview. |
@@ -64,16 +65,40 @@ These numbers describe that milestone, not a permanent total. Use the current ge
 
 The checks cover internal references, source extraction and selected configuration facts. They do not check external URL availability, prove convergence, validate physics or guarantee that every solver-specific option combination is supported. Source extraction uses text parsing and can miss facts established later at runtime. Draft recommendations and model explanations still need review against their stated assumptions, implementation and references.
 
+## Guide and model review
+
+**Review record, 22 October 2026:** Codex performed a documentation/source comparison of all nine setup guides and four physical-model pages against [SU2 `41ea6a219a`](https://github.com/rois1995/SU2/tree/41ea6a219ac038574f3d4a5b130c0c1d8af66457). Option spellings and enum values were checked automatically; support, units, equations and selected examples were followed into the implementation. This is an assisted source and reference review, not an independent CFD expert sign-off. No new CFD cases, gradient comparisons or mesh/time-refinement campaigns were run.
+
+| Page | Reviewed and corrected where needed | Evidence and remaining work |
+| --- | --- | --- |
+| [External RANS](../Setup-Guide-RANS-External-Aero/) | SST ambient terms, inlet defaults, model sensitivity, log10 linear residuals, wall and far-field advice. | `CConfig`, `ParseSSTOptions`, `turb_sources.hpp`, `CFlowCompOutput`; compare the selected SA/SST variant with TMR and test mesh/domain sensitivity. |
+| [Incompressible](../Setup-Guide-Incompressible/) | Density/pressure coupling, thermal feedback through viscosity, enthalpy versus temperature outputs, scaling, inlet direction, 2D mass flow and FDS reconstruction. | `CIncEulerSolver`, `CConfig`; independently run the chosen density-based or pressure-based case and check conservation. |
+| [Unsteady/DES](../Setup-Guide-Unsteady-DES/) | Original versus delayed DES length scales, grid measures, shielding and statistical convergence. | `CTurbSASolver::SetDES_LengthScale` and the DDES paper; a 2D regression does not validate 3D DES. Time-step, span and sampling studies remain. |
+| [Transition setup](../Setup-Guide-Transition/) | Base-model coupling, turbulence decay, supported correlations and interpretation of wall shear. | `CTransLMSolver`, transition source terms and TMR; calibration ranges, roughness scaling and moving-frame use still need specialist review. |
+| [Turbomachinery](../Setup-Guide-Turbomachinery/) | Axis conventions for axial/radial and 2D examples, boundary kinds, averaging and ramps. | Turbomachinery geometry, `CEulerSolver` boundaries and linked stage configurations; validate radial/3D performance and interface conservation. |
+| [Heat transfer/CHT](../Setup-Guide-Heat-Transfer-CHT/) | Heat-flux sign, steady versus transient material roles, coupling and heat balance. | `CHeatSolver`, `CIncNSSolver` and CHT transfer routines; quantify non-matching-interface heat conservation and transient convergence. |
+| [Species/combustion](../Setup-Guide-Species-Combustion/) | Mixture properties, Lewis-model limits, raw wall-flux scaling, clipping and source-inclusive species balances. | `CSpeciesSolver::BC_Wall_Generic`, fluid/diffusion models, `CSpeciesFlameletSolver`; the modified fresh-start flame example and manifold accuracy still require runs. |
+| [Shape optimization](../Setup-Guide-Shape-Optimization/) | Adjoint cost/derivative scope, legacy versus new mesh deformation, physical boundary preservation and disabled validation flag. | `CDeformationDriver`, `CLinearElasticity`, `CMeshSolver`, `discrete_adjoint.py`; perform converged finite-difference comparisons and mesh-validity checks. |
+| [NICFD](../Setup-Guide-NICFD/) | Phase stability, critical/acentric definitions, EOS accuracy limits and modified-example status. | SU2 fluid models and CoolProp primary documentation; validate the actual fluid/state range, transport closure and surrogate derivatives. |
+| [Turbulence models](../Turbulence-Models/) | SA/SST variants and restrictions, Kato–Launder production, ambient terms and inlet definitions. | `option_structure.hpp`, turbulence source/solver files and TMR; implementation correspondence is not a complete numerical verification. |
+| [Transition models](../Transition-Models/) | LM/SA coupling, BCM coefficient convention and documented output/adjoint limitations. | Transition source/solver files and TMR; solver limitations remain open, and specialist assessment is pending. |
+| [Hybrid RANS/LES](../Hybrid-RANS-LES/) | Shielded length scale, grid measures, backscatter caveats and averaging limits. | SA length-scale and backscatter implementations plus original papers; full 3D validation and the noted backscatter unit discrepancy remain. |
+| [Wall treatment](../Wall-Treatment/) | Wall-function restrictions, roughness/heat-transfer scope and conditional y+ guidance. | Flow/turbulence wall routines, TMR SA roughness and cited papers; low-y+ fallback and mixed-wall limitations remain solver work. |
+
+Primary equation references checked include the TMR pages for [SA](https://tmbwg.github.io/turbmodels/spalart.html), [SST](https://tmbwg.github.io/turbmodels/sst.html), [LM-SST](https://tmbwg.github.io/turbmodels/langtrymenter_4eqn.html), [LM-SA](https://tmbwg.github.io/turbmodels/sa_gamma_retheta_3eqn.html) and [SA-BCM](https://tmbwg.github.io/turbmodels/sa-bc_1eqn.html), the [Spalart et al. DDES paper](https://doi.org/10.1007/s00162-006-0015-0), and [CoolProp EOS documentation](https://coolprop.org/fluid_properties/PurePseudoPure.html). All 18 TMR links/anchors on the reviewed pages resolved at this review. These checks do not endorse every empirical range in the guides; **Draft** and **to be reviewed** labels remain.
+
+The Python configuration helper still writes the unsupported buffet-monitoring key in `SU2_PY/SU2/io/config.py`; that caller needs a separate fix and regression check before using its buffet path. Removing the template assignment does not repair that helper.
+
+The same follow-up repaired all 180 recorded link findings: image/media paths, two image enlargement links, old page names and anchors, version paths, two tutorial file links, and 59 archived downloads. The latter now point to their official archive; all 59 downloads and both replacement case files returned HTTP 200. It also fixed four template spellings (`DNETTHRUST_DBCTHRUST`, `FLAME_INIT_IGNITION`, `HOLD_GRID_FIXED_COORD`, `DEFORM_POISSONS_RATIO`), removed four unsupported assignments, explained solid diffusivity through material properties, and changed the structural example to `PARAVIEW_LEGACY` to retain its stated `.vtk` output. The enum checker now handles hyphenated keywords, with a reproducing test.
+
 ## What is still missing
 
-The quantities below are a snapshot from the same milestone. The source list of accepted historical findings is [check-baseline.json](https://github.com/rois1995/SU2/blob/a14b4df35d3863fc79b48c781fc83b8cb222d912/Docs/website/tools/check-baseline.json); current link findings also appear in the generated check results.
+The current [accepted-findings list](https://github.com/rois1995/SU2/blob/docs_site/Docs/website/tools/check-baseline.json) retains 24 missing source descriptions. The link, template-name and enum baselines are empty after the follow-up above. Historical build counts earlier on this page remain dated evidence; use the generated reports for current counts.
 
 | Priority | Remaining work | What completion requires |
 | --- | --- | --- |
-| Next | Repair the 180 historical link findings, including missing assets, old anchors and paths escaping the preview base URL. | Correct destinations or restore the intended assets, pass the checks, and remove each resolved baseline entry. Do not hide a new failure by regenerating the baseline. |
-| Next | Investigate eight template names unknown to the C++ option registrations and the historical enum keyword `PARAVIEW_BINARY`. | Establish which parser owns each setting, correct obsolete examples where appropriate, and check the resulting configuration against the applicable SU2 version. |
 | Next | Improve option descriptions: 24 registrations lacked source descriptions; approximately 296 descriptions were very short. Enum choices also need explanations. | Describe effect, units, applicability, restrictions, interactions and conditional defaults in the source, prioritizing options used by the setup guides. Check the generated reference afterwards. |
-| Next | Review the nine draft setup guides and physical model explanations. | Record the reviewer, checked version, scope and evidence. Retain draft/review labels until that review is complete; do not generalize a short regression configuration into an engineering recommendation. |
+| Next | Obtain independent expert review and numerical evidence for the source-reviewed guides and model pages. | Use the review table above to select representative cases, check convergence/conservation and compare with appropriate theory/data. Retain draft labels until the stated review is complete. |
 | Then | Refresh older tutorials, version claims and contribution instructions as they are checked. | Confirm linked case files, accepted settings, run instructions and stated results for the declared version. Keep worked examples in Tutorials and numerical comparisons in V&V. |
 | Then | Fill missing model explanations and keep known support limitations current. | Link exact variants and equation references to the SU2 implementation, define symbols/units, and distinguish verified behavior from proposed or unsupported capabilities. Extend the existing model pages where appropriate. |
 | Then | Strengthen extraction and build checks when a new mismatch is demonstrated. | Add a focused reproducing test and fix its cause. Solver-specific configuration compatibility still needs appropriate SU2 checks; a general parser or framework rewrite is not an agreed requirement. |
@@ -83,7 +108,7 @@ The quantities below are a snapshot from the same milestone. The source list of 
 
 ## How to go further
 
-1. **Keep the new checks passing.** Repair historical links and configuration examples in small groups; remove only the entries actually resolved. This gives a measurable reduction in existing debt.
+1. **Keep the new checks passing.** Keep the resolved link/template/enum baselines empty. Correct new findings at their source; do not add them to an accepted-debt list.
 2. **Improve the source descriptions used by the guides.** Work through one option family at a time. This improves the reference and explanations together without maintaining a competing option catalog.
 3. **Review the existing guidance and evidence.** Use the linked Tutorials and V&V cases. Distinguish source checking, a successful run, numerical verification and physical validation; record which has actually been performed.
 4. **Resolve implementation issues separately.** Update known-limit sections only when the relevant code change and its checks support doing so.
@@ -99,6 +124,7 @@ These are proposed next priorities. The page records completed work; it does not
 | 22 October 2026 | Corrected 16 documentation/generation findings from comparison with source and model references. | SU2 `7862504f9d` and website `be90edc`, linked above. Solver limitations were documented, not silently changed. |
 | 22 October 2026 | Clarified page roles, introduced permanent checks and made local/CI builds use a shared entry point and locked Ruby/gem dependencies. | SU2 `a14b4df35d`, website `602189b` and the successful milestone workflows linked above. |
 | 22 October 2026 | Added this maintained status page under Developer Docs and contributor guidance for keeping the record current. Fixed report self-link ordering with a reproducing regression check. | This page's source history. The current build manifest identifies the revisions that include it. |
+| 22 October 2026 | Repaired all 180 historical link findings, eight template names and the obsolete structural output keyword; reviewed nine setup guides and four model pages; added a hyphenated-enum regression check. | Review scope and primary references above; current build manifest and check results identify this batch. Eleven tooling tests; CFD validation remains pending. |
 
 ## Keeping this page current
 
@@ -113,4 +139,4 @@ For each completed batch:
 
 See [Contribute](../contribute/) for page ownership and editing steps. Build commands and contributor details are in [Docs/website/README.md](https://github.com/rois1995/SU2/blob/docs_site/Docs/website/README.md).
 
-Last checked against SU2 develop `a14b4df35d`.
+Maintained against the two `docs_site` branches. Current source revisions and check totals are recorded in this build’s manifest and check report.

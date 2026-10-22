@@ -62,7 +62,7 @@ python3 -m unittest discover -s Docs/website/tools
 
 The full build checks local links and anchors in current documentation, Tutorials and V&V; configuration option names and enum keywords in configuration blocks; descriptions for newly added options; search entries and searchable output-field names. It does not request external URLs or establish that numerical examples are converged. Solver-specific option combinations still require appropriate SU2 tests.
 
-`tools/check-baseline.json` records pre-existing broken links, eight template names unknown to the C++ registration, and 24 options missing source descriptions, and historical enum-keyword findings. Existing link findings remain visible in the machine-readable `docs-check.json`; new findings fail the build. Remove an entry when its problem is fixed. Do not regenerate the baseline to approve new regressions. The generated Docs Check page also lists source-description and stale-page work.
+`tools/check-baseline.json` retains 24 options missing source descriptions. The 22 October follow-up resolved the 180 historical links, eight unknown template names and one obsolete enum keyword; those baseline arrays are empty. Existing link findings remain visible in the machine-readable `docs-check.json`; new findings fail the build. Remove an entry when its problem is fixed. Do not regenerate the baseline to approve new regressions. The generated Docs Check page also lists source-description and stale-page work.
 
 Each assembled site includes:
 

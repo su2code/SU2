@@ -88,9 +88,9 @@ def check_enum_values(source, options, maps):
                     continue
                 for name, value in settings:
                     value = value.strip()
-                    if not choices.get(name) or not re.fullmatch(r"[A-Za-z0-9_, ()]+", value):
+                    if not choices.get(name) or not re.fullmatch(r"[A-Za-z0-9_, ()-]+", value):
                         continue
-                    keywords = re.findall(r"[A-Za-z0-9_]+", value)
+                    keywords = re.findall(r"[A-Za-z0-9_-]+", value)
                     for keyword in set(keywords) - choices[name]:
                         if keyword.startswith("__") and keyword.endswith("__"):
                             continue
