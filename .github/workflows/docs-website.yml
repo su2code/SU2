@@ -1,107 +1,84 @@
 name: Docs Website
 
-# Builds the SU2 website with the pages of this repository, the generated
-# option reference and the Doxygen code reference, then publishes it on the
-# GitHub Pages of this repository.
-
 on:
   push:
-    branches:
-      - 'docs_site'
+    branches: ['docs_site']
+  pull_request:
+    branches: ['docs_site']
   workflow_dispatch:
     inputs:
       site_repo:
-        description: 'Website repository'
-        default: 'rois1995/su2code.github.io'
+        description: Website repository
+        default: rois1995/su2code.github.io
       site_ref:
-        description: 'Website branch'
-        default: 'docs_site'
-
-env:
-  SITE_REPO: ${{ inputs.site_repo || 'rois1995/su2code.github.io' }}
-  SITE_REF: ${{ inputs.site_ref || 'docs_site' }}
+        description: Website commit SHA or branch (use a SHA to reproduce a build)
+        default: docs_site
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: docs-website
+  group: docs-website-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout SU2
         uses: actions/checkout@v4
         with:
           path: su2
-          # The history (without file contents) finds the developer pages that may be out of date.
           fetch-depth: 0
           filter: blob:none
-      - name: Get the release tags
-        # The fork may miss some tags; the renamed options page needs all of them.
+          persist-credentials: false
+      - name: Get release tags for migration reference
         run: git -C su2 fetch --quiet --filter=blob:none https://github.com/su2code/SU2.git 'refs/tags/v7.*:refs/tags/v7.*' 'refs/tags/v8.*:refs/tags/v8.*'
       - name: Checkout website
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.SITE_REPO }}
-          ref: ${{ env.SITE_REF }}
+          repository: ${{ inputs.site_repo || 'rois1995/su2code.github.io' }}
+          ref: ${{ inputs.site_ref || 'docs_site' }}
           path: site
-          # Some history to compare with the official website (--mark-changes).
-          fetch-depth: 50
+          fetch-depth: 0
           filter: blob:none
-      - name: Configure Pages
-        id: pages
-        uses: actions/configure-pages@v5
-      - name: Build code reference
-        working-directory: su2
-        run: |
-          sudo apt-get update && sudo apt-get install -y doxygen graphviz
-          ( cat doxyfile
-            echo "OUTPUT_DIRECTORY = ../doxygen"
-            echo "PROJECT_NUMBER = $(git rev-parse --short=10 HEAD)"
-            echo "SOURCE_BROWSER = NO"
-            echo "CALL_GRAPH = NO"
-            echo "CALLER_GRAPH = NO"
-            echo "COLLABORATION_GRAPH = NO"
-            echo "INCLUDE_GRAPH = NO"
-            echo "INCLUDED_BY_GRAPH = NO"
-            echo "DIRECTORY_GRAPH = NO"
-            echo "DOT_IMAGE_FORMAT = svg"
-            echo "WARN_LOGFILE = ../doxygen_warnings.txt"
-            echo "EXCLUDE = ./Docs/website"
-          ) | doxygen -
-      - name: Prepare website
-        run: python3 su2/Docs/website/tools/build_site.py --su2 su2 --site site --light --doxygen-log doxygen_warnings.txt --mark-changes
-      - name: Setup Ruby
+          persist-credentials: false
+      - name: Setup Ruby and locked gems
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
-      - name: Build website
-        working-directory: site
-        run: |
-          bundle install --jobs 4
-          bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}" -d ../_site
-      - name: Assemble
-        run: |
-          python3 su2/Docs/website/tools/rebase_links.py _site "${{ steps.pages.outputs.base_path }}"
-          cp -r doxygen/html _site/doxygen
-          du -sh _site
-      - name: Upload
+          working-directory: site
+          ruby-version: .ruby-version
+          bundler: '2.4.22'
+          bundler-cache: true
+      - name: Install code reference tools
+        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
+      - name: Build and check website
+        env:
+          BUNDLE_PATH: ${{ github.workspace }}/site/vendor/bundle
+        run: python3 su2/Docs/website/tools/build_docs.py --su2 su2 --site site --build-dir "$RUNNER_TEMP/docs-site" --baseurl '/${{ github.event.repository.name }}' --mark-changes
+      - name: Upload checked preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview
+          path: ${{ runner.temp }}/docs-site/site
+          retention-days: 7
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: ${{ runner.temp }}/docs-site/site
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy
+      - name: Deploy checked website
         id: deployment
         uses: actions/deploy-pages@v4

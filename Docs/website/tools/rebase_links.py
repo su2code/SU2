@@ -38,12 +38,13 @@ def main():
   if len(sys.argv) != 3:
     print("usage: rebase_links.py <built site folder> <base path, e.g. /SU2>")
     return 1
-  root, base = sys.argv[1], "/" + sys.argv[2].strip("/")
+  root = sys.argv[1]
+  base = "/" + sys.argv[2].strip("/") if sys.argv[2].strip("/") else ""
   link = re.compile(r'((?:href|src|action)\s*=\s*["\'])/(?!/)')
 
   def fix(m, text):
     rest = text[m.end():]
-    if rest.startswith(base.lstrip("/") + "/"):
+    if base and rest.startswith(base.lstrip("/") + "/"):
       return m.group(0)
     if rest.startswith(REMOTE_FOLDERS):
       return m.group(1) + REAL_SITE + "/"

@@ -273,7 +273,9 @@ def write_reference(su2, site, options, maps, commit, repo, skip):
   examples = read_template(su2)
   usage = read_testcases(su2)
   mentions = read_page_mentions(site, {o["name"] for o in options}, skip)
-  stamp = "Generated from SU2 commit `{}` on {}.".format(commit, datetime.date.today().isoformat())
+  epoch = os.environ.get("SOURCE_DATE_EPOCH")
+  date = datetime.datetime.fromtimestamp(int(epoch), datetime.timezone.utc).date() if epoch else datetime.date.today()
+  stamp = "Generated from SU2 commit `{}` on {}.".format(commit, date.isoformat())
   blob = "https://github.com/{}/blob/{}/".format(repo, commit)
   source = blob + "Common/src/CConfig.cpp"
 
@@ -917,6 +919,7 @@ def main():
   parser.add_argument("--site", required=True, help="checkout of su2code.github.io, changed in place")
   parser.add_argument("--light", action="store_true", help="remove the download folders (test site)")
   parser.add_argument("--doxygen-log", help="file with the Doxygen warnings (WARN_LOGFILE)")
+  parser.add_argument("--compare-site", help="original website checkout used for red highlighting")
   parser.add_argument("--mark-changes", action="store_true",
                       help="debug: show in red the pages that differ from the official website")
   args = parser.parse_args()
@@ -962,7 +965,7 @@ def main():
 
   if args.mark_changes:
     generated = ref_pages + dev_pages + user_pages + [output_page, renamed_page, errors_page, "Docs-Check"]
-    urls = ["/{}/{}/".format(URL, p) for p in generated] + changed_site_pages(args.site)
+    urls = ["/{}/{}/".format(URL, p) for p in generated] + changed_site_pages(args.compare_site or args.site)
     mark_changes(args.site, urls, ["Option Reference", "How to Add..."])
 
   if args.light:
