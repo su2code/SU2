@@ -154,13 +154,16 @@ def main():
     args = parser.parse_args()
     baseline = json.loads(Path(__file__).with_name("check-baseline.json").read_text())
     problems = check_source(args.su2, args.source, baseline)
+    report_path = args.site / "docs-check.json"
+    # Pages can link to this report before its final results have been written.
+    report_path.touch()
     links, count = check_links(args.site, args.baseurl)
     problems += sorted(links - set(baseline["links"]))
     search, entries = check_search(args.site.resolve(), args.source, args.su2, args.baseurl)
     problems += search
     report = {"new_problems": problems, "references_checked": count, "search_entries": entries,
               "existing_link_problems": sorted(links & set(baseline["links"]))}
-    (args.site / "docs-check.json").write_text(json.dumps(report, indent=2) + "\n")
+    report_path.write_text(json.dumps(report, indent=2) + "\n")
     for problem in problems:
         print(problem)
     print("Checked {} local references and {} search entries; {} new problems, {} existing link problems.".format(

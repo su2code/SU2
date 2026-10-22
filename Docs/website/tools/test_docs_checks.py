@@ -79,6 +79,21 @@ class DocsChecksTests(unittest.TestCase):
                     rebase_links.main()
                     self.assertEqual(page.read_text(), expected)
 
+    def test_link_to_check_report_exists_during_its_own_validation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            page = root / "docs_v7/example/index.html"
+            page.parent.mkdir(parents=True)
+            page.write_text('<a href="/SU2/docs-check.json">Check results</a>')
+            with patch.object(sys, "argv", ["check_site.py", "--su2", directory,
+                                          "--source", directory, "--site", directory]), \
+                 patch.object(check_site, "check_source", return_value=[]), \
+                 patch.object(check_site, "check_search", return_value=([], 0)):
+                self.assertEqual(check_site.main(), 0)
+            report = json.loads((root / "docs-check.json").read_text())
+            self.assertEqual(report["new_problems"], [])
+            self.assertEqual(report["references_checked"], 1)
+
     def test_build_refuses_sources_and_unmarked_nonempty_directory(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

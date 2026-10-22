@@ -15,6 +15,8 @@ The website's **Using the Documentation** page explains this structure to reader
 
 ## Editing
 
+Keep completed improvements, remaining gaps and their evidence in `pages/Documentation-Status.md`, linked from **Develop** and **Developer Docs**. Update its status and dated history when a batch is completed; use the generated reports for current build counts.
+
 Developer pages live in `pages/`, with `title` and `permalink: /docs_v7/<File-Name>/` front matter. `Adding-...` pages appear under **How to Add...**; other new pages appear under **Developer Docs**. Images in `pages/img/` are copied to `docs_files/website/`.
 
 After checking a developer page against the implementation, update its `Last checked against SU2 develop <commit>` line. The Docs Check page flags named files changed since that commit; this is a review prompt, not a proof that the page is wrong or complete.
