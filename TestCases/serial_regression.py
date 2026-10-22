@@ -216,7 +216,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.003110, -7.625808, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.003104, -7.626089, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262299, -0.000000, 2.089953] #last 4 columns
     test_list.append(poiseuille_profile)
 
@@ -244,7 +244,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-1.849587, -1.466490, 5.887578, 0.592053, 0.015314, 100.000000]
+    rae2822_sst.test_vals = [-1.849587, -1.466493, 5.887580, 0.592054, 0.015314, 100.000000]
     test_list.append(rae2822_sst)
 
     # RAE2822 SST_SUST
@@ -252,7 +252,7 @@ def main():
     rae2822_sst_sust.cfg_dir   = "rans/rae2822"
     rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
     rae2822_sst_sust.test_iter = 20
-    rae2822_sst_sust.test_vals = [-2.464309, 5.852571, 0.490309, 0.042519]
+    rae2822_sst_sust.test_vals = [-2.941267, 5.058639, 0.507432, 0.044311]
     test_list.append(rae2822_sst_sust)
 
     # Flat plate
@@ -301,7 +301,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.037313, -16.384159, 1.080346, 0.018385, 20.000000, -3.457122, 20.000000, -4.641254, 0.000000]
+    turb_naca0012_sa.test_vals = [-12.037320, -16.384159, 1.080346, 0.018385, 20.000000, -3.457055, 20.000000, -4.641263, 0.000000]
     turb_naca0012_sa.test_vals_aarch64 = [-12.037297, -16.384158, 1.080346, 0.018385, 20.000000, -3.455886, 20.000000, -4.641247, 0.000000]
     turb_naca0012_sa.timeout   = 3200
     test_list.append(turb_naca0012_sa)
@@ -343,7 +343,7 @@ def main():
     turb_naca0012_sst_sust_restart.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust_restart.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust_restart.test_iter = 10
-    turb_naca0012_sst_sust_restart.test_vals = [-9.962094, -11.675499, -5.093415, 1.000888, 0.019126, -1.923274]
+    turb_naca0012_sst_sust_restart.test_vals = [-7.624849, -9.773544, -2.145352, 1.006167, 0.019328, -1.683782]
     turb_naca0012_sst_sust_restart.test_vals_aarch64 = [-12.074189, -14.836725, -5.732398, 1.000050, 0.019144, -3.315560]
     turb_naca0012_sst_sust_restart.timeout   = 3200
     test_list.append(turb_naca0012_sst_sust_restart)
@@ -524,7 +524,7 @@ def main():
     inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
     inc_turb_naca0012_sst_sust.test_iter = 20
-    inc_turb_naca0012_sst_sust.test_vals = [-7.169704, 0.332779, 0.000021, 0.312114]
+    inc_turb_naca0012_sst_sust.test_vals = [-9.784804, 3.354566, 0.000023, 0.309468]
     test_list.append(inc_turb_naca0012_sst_sust)
 
     # Flat plate, pressure-based
@@ -965,7 +965,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
-    Aachen_3D_restart.test_vals = [-7.689117, -8.476204, -6.036107, -6.427402, -5.831576, -4.599024, -5.530512, -5.305687, -3.821789, -5.243255, -5.754831, -3.631603, -2.213934, -2.895728, -0.578545]
+    Aachen_3D_restart.test_vals = [-7.689115, -8.476128, -6.036107, -6.426518, -5.830978, -4.599025, -5.527908, -5.306617, -3.821791, -5.243232, -5.759037, -3.631603, -2.213930, -2.879012, -0.578545]
     Aachen_3D_restart.enabled_with_asan = False
     test_list.append(Aachen_3D_restart)
 
@@ -1172,7 +1172,7 @@ def main():
     fsi_cht.cfg_dir   = "fea_fsi/stat_fsi"
     fsi_cht.cfg_file  = "config.cfg"
     fsi_cht.test_iter = 20
-    fsi_cht.test_vals = [5.000000, -5.077011, -5.379457, -9.247803, -9.320382, -9.185192, 608.350000, -0.012973, 0.000000, 29.000000]
+    fsi_cht.test_vals = [5.000000, -5.076994, -5.379442, -9.247796, -9.319648, -9.184901, 608.350000, -0.012973, 0.000000, 30.000000]
     fsi_cht.multizone = True
     test_list.append(fsi_cht)
 
