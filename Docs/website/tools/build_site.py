@@ -414,7 +414,8 @@ def check_docs(site, known, code_names=frozenset()):
 # Output classes, in the order of the page, with the solvers that use them.
 OUTPUT_CLASSES = [
   ("COutput", "All solvers"), ("CFVMOutput", "All finite volume solvers"),
-  ("CFlowOutput", "All flow solvers (compressible, incompressible, NEMO), incl. turbulence and species"),
+  ("CFlowOutput",
+   "All flow solvers (compressible, incompressible, NEMO), also for their turbulence and species fields"),
   ("CFlowCompOutput", "Compressible flow"), ("CFlowIncOutput", "Incompressible flow"),
   ("CNEMOCompOutput", "Non-equilibrium flow (NEMO)"), ("CFlowCompFEMOutput", "Finite element flow (DG-FEM)"),
   ("CTurboOutput", "Turbomachinery"), ("CHeatOutput", "Heat equation"), ("CElasticityOutput", "Structural analysis"),
@@ -593,9 +594,9 @@ def quality_sections(stale, coverage, doxy):
   documented = sum(v[1] for v in coverage.values())
   grouped = sum(v[2] for v in coverage.values())
   out += ["", "## Code documentation coverage", "",
-          "Classes declared in the headers of `Common/include` and `SU2_CFD/include` (counted with a simple "
-          "text search, so the numbers are approximate). `Docs/docmain.hpp` asks that every class has a Doxygen "
-          "comment with `\\brief` and `\\ingroup`.", "",
+          "This section counts the classes declared in the headers of `Common/include` and `SU2_CFD/include`. "
+          "The count uses a simple text search, so the numbers are approximate. `Docs/docmain.hpp` asks that "
+          "every class has a Doxygen comment with `\\brief` and `\\ingroup`.", "",
           "- Classes: {}".format(total),
           "- With a Doxygen comment: {} ({:.0f}%)".format(documented, 100.0 * documented / max(total, 1)),
           "- In a Doxygen group (`\\ingroup`): {} ({:.0f}%)".format(grouped, 100.0 * grouped / max(total, 1)), "",
@@ -712,8 +713,8 @@ def write_errors_page(site, errors, options, commit, blob):
       group = "/".join(path.split("/")[:-1])
     groups.setdefault(group, []).append((path, line, message))
   out = ["---", "title: Error Messages", "permalink: /{}/{}/".format(URL, name), "---", "", "{% raw %}", "",
-         "This page lists every error message that can stop SU2 (`SU2_MPI::Error` in the code), "
-         "{} in commit `{}`. Use the search of your browser (Ctrl+F) with a few words of the message you see. "
+         "This page lists the {} error messages that can stop SU2 in commit `{}` (the `SU2_MPI::Error` calls "
+         "in the code). Use the search of your browser (Ctrl+F) with a few words of the message you see. "
          "Parts of a message that SU2 fills in at run time are shown as \"...\".".format(len(errors), commit), "",
          "Each message links to the code that prints it, and to the options it names.", "",
          "See also: [Renamed and Removed Options](../Renamed-Options/).", ""]
@@ -739,7 +740,8 @@ def write_check_page(site, found, commit, options, extra=()):
          "This page is made at each build. It lists what needs work in the documentation of SU2 commit `{}`."
          .format(commit), "",
          "## Options named in the docs that do not exist", "",
-         "The option was renamed or removed, or it has a typo. Fix the page in the website repository.", "",
+         "These names are not options of the code: the option was renamed or removed, or the name has a typo. "
+         "Fix the page in the website repository.", "",
          "Found: {}".format(len(found)), ""]
   last = None
   for path, num, name, line in found:
@@ -944,7 +946,7 @@ def main():
   errors_page = write_errors_page(args.site, read_error_messages(args.su2), options, commit, blob)
   template_found = check_template(args.su2, {o["name"] for o in options})
   extra = ["", "## Options in config_template.cfg that do not exist", "",
-           "Users copy this file, so a wrong name there stops their run with an \"unknown option\" error.", "",
+           "Users copy this file, so a wrong name there stops their run with an \"invalid option name\" error.", "",
            "Found: {}".format(len(template_found)), ""]
   extra += ["- line {}: `{}`".format(num, name) for num, name in template_found]
   extra += quality_sections(find_stale_pages(args.su2, pages_dir), doc_coverage(args.su2),

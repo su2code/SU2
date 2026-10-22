@@ -20,7 +20,8 @@ The class `CConfig` reads the configuration file. A new option touches these fil
 code is what users read on the website.
 
 `CConfig.hpp`, `option_structure.hpp` and `CConfig.cpp` are excluded from clang-format (see
-`.pre-commit-config.yaml`). Follow the layout of the code around your change.
+`.pre-commit-config.yaml`), so nothing fixes their layout for you. Follow the layout of the code around your
+change.
 
 ## 1. Add the member and the getter
 
@@ -101,16 +102,16 @@ Notes on the kinds:
 - **Python** options are read only by the Python scripts in `SU2_PY`. The C++ code accepts them without checking
   them, and has no member for them.
 
-Some options have a special format: boundary conditions, design variables, FFD boxes, ... They have their own
-functions, such as `addInletOption`, `addRiemannOption`, `addPeriodicOption` and `addDVParamOption`. Their parsers
-are the `COption...` classes in `Common/include/option_structure.inl`. Before you write a new parser, look at an
-existing option of the same kind.
+Some options have a special format: boundary conditions, design variables, FFD (free-form deformation) boxes, ...
+They have their own functions, such as `addInletOption`, `addRiemannOption`, `addPeriodicOption` and
+`addDVParamOption`. Their parsers are the `COption...` classes in `Common/include/option_structure.inl`. Before you
+write a new parser, look at an existing option of the same kind.
 
 ### Multizone problems
 
 In a multizone problem, each zone has its own configuration file. If an option is not set in the file of a zone, the
 zone takes the value from the main configuration file (`CConfig::SetDefaultFromConfig`). `SCREEN_OUTPUT` and
-`HISTORY_OUTPUT` are the exceptions. Options that are not set anywhere take their default value.
+`HISTORY_OUTPUT` are never taken from the main file. Options that are not set anywhere take their default value.
 
 ## 3. Write the comment
 
@@ -135,12 +136,13 @@ incomplete.
 
 - The comment can start with `/*!` or `/*`. It must contain `DESCRIPTION:` or `\brief`. Other comments, such as
   `/*--- ... ---*/`, are ignored.
-- The comment must be the last such comment before the call.
+- If there are several such comments between the previous `add...Option` call and this one, only the last one is
+  used.
 - `\n` separates the parts. The keys are `DESCRIPTION:`, `Options:` (or `OPTIONS:`) and `DEFAULT:`, each with
   a colon. `\link Name \endlink` is shown as `Name`.
 - The description should say what the option does, the unit if there is one, and which solvers use it.
 
-The website also adds these, without any comment:
+The website adds these by itself. You do not write them in the comment:
 
 - the type, from the `add...Option` function;
 - for enum options, all the keywords of the map;
@@ -239,7 +241,7 @@ When a check fails, stop with a clear message that names the options and the all
 `OptionIsSet("NAME")` tells if the option was in the configuration file. Use it in two cases:
 
 - when the default depends on other options;
-- to change a value silently, only when the user did not ask for it.
+- to change a value without an error, but only when the user did not set the option.
 
 ```cpp
   if (MUSCL_Flow && (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) {
@@ -312,7 +314,7 @@ value is not valid. For example, for `KIND_TURB_MODEL`:
             errorString.append("Option KIND_TURB_MODEL=SST_SUST is deprecated. Use KIND_TURB_MODEL=SST, SST_OPTIONS=SUSTAINING instead.\n");
 ```
 
-These are the only mechanisms. SU2 does not translate old names to new ones: the run stops with the message.
+SU2 has no other mechanism. It does not translate old names to new ones: the run stops with the message.
 
 When you rename or remove an option, also:
 

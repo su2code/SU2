@@ -14,13 +14,17 @@ The workflow `.github/workflows/docs-website.yml` builds the website and publish
    - the website pages and tutorials that mention it;
    - up to three test case files that use it, with their values;
    - a link to the code.
-5. It makes the **Docs Check** page. This page lists:
-   - options that the docs, tutorials and V&V pages name, but that do not exist in the code;
-   - options with no description, a very short one, or no example.
-6. It makes the **Output Fields Reference**: all screen, history and volume fields of each output class, from the
+5. It makes the **Output Fields Reference**: all screen, history and volume fields of each output class, from the
    `AddHistoryOutput` and `AddVolumeOutput` calls.
-7. The **Docs Check** page also lists the developer pages that may be out of date (the code files they name changed
-   since the commit in their "Last checked against" line), the Doxygen coverage of the classes, and the Doxygen warnings.
+6. It makes the **Error Messages** page, from the `SU2_MPI::Error` calls, and the **Renamed and Removed Options**
+   page, from the option names of past releases (git tags).
+7. It makes the **Docs Check** page. This page lists:
+   - options that the docs, tutorials and V&V (verification and validation) pages name, but that do not exist in
+     the code;
+   - options with no description, a very short one, or no example;
+   - developer pages that may be out of date: the code files they name changed since the commit in their
+     "Last checked against" line;
+   - the Doxygen coverage of the classes, and the Doxygen warnings.
 8. It builds the website with Jekyll, and the **Code Reference** with Doxygen (Doxygen runs first, for its warnings).
 
 **Debug option.** The test site runs `build_site.py` with `--mark-changes`. It shows in red the menu items and
@@ -29,7 +33,7 @@ workflow for a normal build.
 
 ## How to change the docs
 
-Pages that explain the code (developer pages) live here, so they change in the same PR as the code.
+Pages that explain the code (developer pages) live here, so they change in the same pull request as the code.
 User guide pages and tutorials live in the website repository.
 
 - **New option:** write the comment above the `add...Option` call in `CConfig.cpp`, in the usual form:

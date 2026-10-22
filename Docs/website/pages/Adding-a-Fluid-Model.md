@@ -48,8 +48,6 @@ For the overall layout of the code, see [Code Structure](../Code-Structure/). Fo
 
 ## The FLUID_MODEL option
 
-This section shows how to register the keyword of your model and its parameters.
-
 The option is registered in `CConfig::SetConfig_Options`:
 
 ```cpp
@@ -134,7 +132,7 @@ A call that is not overridden does nothing and gives no error. So check the [tab
 
 ## What the solvers call
 
-This section lists which functions each solver calls, and so which ones your model must implement.
+Your model must implement the functions that its solver calls.
 
 **Compressible solver** (`CEulerSolver`, `CNSSolver`). The main call is in the variable classes. `CEulerVariable::SetPrimVar` (`SU2_CFD/src/variables/CEulerVariable.cpp`) runs for every point at every iteration:
 
@@ -194,7 +192,7 @@ Some boundary conditions do not use the fluid model. For example, `CEulerSolver:
 
 - `CIncEulerVariable::SetPrimVar` and `CIncNSVariable::SetPrimVar` call `SetTDState_h(Enthalpy, scalar)`. They then read `GetTemperature()`, `GetDensity()`, `GetCp()`, `GetCv()` and `GetEnthalpy()`. For viscous flows they also read `GetLaminarViscosity()` and `GetThermalConductivity()`, after `SetEddyViscosity`.
 - Initialization and boundary conditions call `SetTDState_T`.
-- The thermodynamic pressure is constant. It is set in the constructor of the model, and `SetPressure` can change it.
+- The thermodynamic pressure is constant during the run. It is set in the constructor of the model. Only the setup changes it, with `SetPressure` (see [below](#non-dimensionalization-and-free-stream-values)).
 
 ## Existing models
 
@@ -263,7 +261,7 @@ Follow these steps to add a model for `CEulerSolver` and `CNSSolver`.
 When the model is not `STANDARD_AIR` or `IDEAL_GAS`, the solver changes in three ways:
 
 - `CDriver::InitializeNumerics` creates the general numerics: `CUpwGeneralRoe_Flow`, `CUpwGeneralHLLC_Flow`, `CGeneralAvgGrad_Flow`, `CSourceGeneralAxisymmetric_Flow`. They read the secondary variables: `S_i[0]` = dP/drho at constant e, `S_i[1]` = dP/de at constant rho.
-- `CEulerSolver::Upwind_Residual` uses the classic path, not the vectorized one. It makes the MUSCL states consistent with `ComputeConsistentExtrapolation`, which calls `SetTDState_Prho`.
+- `CEulerSolver::Upwind_Residual` uses the classic path, not the vectorized one. After the MUSCL reconstruction (the second-order left and right states of each edge), `ComputeConsistentExtrapolation` recomputes these states in a thermodynamically consistent way. It calls `SetTDState_Prho`.
 - `CConfig::SetPostprocessing` allows only `ROE`, `HLLC` and `JST` (search for "Non-Ideal Compressible Fluids").
 
 ## Add an incompressible model
@@ -285,7 +283,7 @@ Follow these steps to add a model for `CIncEulerSolver` and `CIncNSSolver`.
 
 ## Non-dimensionalization and free-stream values
 
-This section shows how the solver sets the free-stream state and the reference values, and which scales your model must follow. `SetNondimensionalization` creates each fluid model twice:
+`SetNondimensionalization` sets the free-stream state and the reference values. It creates each fluid model twice:
 
 - a dimensional copy, for the setup;
 - non-dimensional copies, one per thread, used during the run.
@@ -294,8 +292,8 @@ This section shows how the solver sets the free-stream state and the reference v
 
 1. `Temperature_Ref`, `Viscosity_Ref` and `Conductivity_Ref` are set to 1. So the `...ND()` getters of `CConfig` return dimensional values for the auxiliary model. For example, `GetMu_ConstantND()` returns `Mu_Constant / Viscosity_Ref`.
 2. `auxFluidModel` is created.
-   - With `FREESTREAM_OPTION= TEMPERATURE_FS`, it gets `SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream)` and gives the density.
-   - With `DENSITY_FS`, it gets `SetTDState_Prho` and gives the temperature.
+   - With `FREESTREAM_OPTION= TEMPERATURE_FS`, `SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream)` gives the density.
+   - With `DENSITY_FS`, `SetTDState_Prho` gives the temperature.
 3. `GetSoundSpeed()` turns the Mach number into the free-stream velocity.
 4. For viscous flows, `SetLaminarViscosityModel` and `SetThermalConductivityModel` are called on the auxiliary model. With `INIT_OPTION= REYNOLDS`, the density comes from the Reynolds number, and `SetTDState_rhoT` gives the pressure. `GetStaticEnergy()` gives the free-stream energy.
 5. The reference values are set from `REF_DIMENSIONALIZATION`: `Pressure_Ref`, `Density_Ref`, `Temperature_Ref`, then `Velocity_Ref = sqrt(Pressure_Ref/Density_Ref)`, `Gas_Constant_Ref = Velocity_Ref^2/Temperature_Ref`, `Viscosity_Ref`, `Conductivity_Ref`, ...
@@ -326,11 +324,11 @@ Some models cannot be scaled, for example tables or external libraries in physic
 
 - `auxFluidModel->SetTDState_T(Temperature_FreeStream, scalar_init)` gives the free-stream density.
 - `INIT_OPTION_INC` decides what happens next. Either the thermodynamic pressure is scaled (`SetPressure`) to match the given density, or the density is taken from the model.
-- The per-thread models get non-dimensional parameters: `Density_FreeStreamND`, `Specific_Heat_CpND`, `Gas_ConstantND`, `Pressure_ThermodynamicND`. Most of them call `SetTDState_T(Temperature_FreeStreamND)` right away.
+- The per-thread models get non-dimensional parameters: `Density_FreeStreamND`, `Specific_Heat_CpND`, `Gas_ConstantND`, `Pressure_ThermodynamicND`. Right after creation, most of these models get `SetTDState_T(Temperature_FreeStreamND)`.
 
 ## Transport property models
 
-This section shows how to add a model for viscosity, thermal conductivity or mass diffusivity. These are separate objects owned by the fluid model:
+Viscosity, thermal conductivity and mass diffusivity come from separate objects owned by the fluid model:
 
 ```cpp
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
@@ -350,7 +348,7 @@ Existing children:
 - conductivity: `CConstantConductivity`, `CConstantConductivityRANS`, `CConstantPrandtl`, `CConstantPrandtlRANS`, `CPolynomialConductivity`, `CPolynomialConductivityRANS`, `CCoolPropConductivity`;
 - diffusivity: `CConstantDiffusivity`, `CConstantSchmidt`, `CConstantLewisDiffusivity`.
 
-The `FLAMELET` values return `nullptr`, because `CFluidFlamelet` overrides the getters and reads the table.
+For the `FLAMELET` value of each option, the factory returns `nullptr`, because `CFluidFlamelet` overrides the getters and reads the table.
 
 A model sets its value and its derivatives in protected members. `CSutherland`:
 

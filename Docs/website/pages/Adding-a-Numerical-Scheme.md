@@ -43,8 +43,6 @@ For the overall layout of the code, see [Code Structure](../Code-Structure/). Tu
 
 ## How the configuration picks the scheme
 
-This section shows where to register the keyword of your scheme, and how the solver finds it.
-
 The option `CONV_NUM_METHOD_FLOW` is registered in `CConfig::SetConfig_Options` (`Common/src/CConfig.cpp`) with `addConvectOption`:
 
 ```cpp
@@ -87,7 +85,7 @@ At run time, the solver picks the residual function as follows:
 
 ## Two code paths: classic and vectorized
 
-The compressible solver `CEulerSolver` and its child `CNSSolver` can compute the convective fluxes on the edges in two ways. This section tells you which one your scheme needs.
+The compressible solver `CEulerSolver` and its child `CNSSolver` can compute the convective fluxes on the edges in two ways:
 
 1. **Classic numerics.** A [`CNumerics`](../../doxygen/classCNumerics.html) object computes the flux of one edge. The solver does the MUSCL reconstruction and calls `ComputeResidual`. It then adds the result to the residual and the Jacobian. Files: `SU2_CFD/include/numerics/flow/convection/`.
 2. **Vectorized numerics.** A [`CNumericsSIMD`](../../doxygen/classCNumericsSIMD.html) object computes the fluxes of several edges at once. It uses SIMD: one CPU instruction acts on several values together. The object also does the reconstruction and the viscous flux, and updates the residual and the Jacobian itself. Files: `SU2_CFD/include/numerics_simd/`.
@@ -300,7 +298,7 @@ Nothing else is needed. The solver gets the object from `numerics_container[CONV
 
 ## MUSCL reconstruction and limiters
 
-Your scheme does not reconstruct. The solver reconstructs the left and right states and passes them through `SetPrimitive` (and `SetSecondary`). This section shows where that happens.
+Your scheme does not reconstruct. The solver reconstructs the left and right states and passes them through `SetPrimitive` (and `SetSecondary`). Where this happens:
 
 - **Gradients and limiters.** `CEulerSolver::Preprocessing` computes them when `MUSCL_FLOW= YES`, on the finest grid. It calls `SetPrimitive_Gradient_GG` or `SetPrimitive_Gradient_LS` (option `NUM_METHOD_GRAD_RECON`), then `SetPrimitive_Limiter` (option `SLOPE_LIMITER_FLOW`). The limiter functions are in `SU2_CFD/include/limiters/` (`computeLimiters.hpp`, `CLimiterDetails.hpp`).
 - **Reconstruction.** The edge loop of `CEulerSolver::Upwind_Residual` calls `CSolver::MUSCL_Reconstruction` (`SU2_CFD/include/solvers/CSolver.hpp`). It supports `MUSCL_KAPPA_FLOW` and the MUSCL ramp (`RAMP_MUSCL`). With `VAN_ALBADA_EDGE`, the limiter is computed per edge (`LimiterHelpers<>::vanAlbadaFunction`).
@@ -313,7 +311,7 @@ The incompressible solver (`CIncEulerSolver::Upwind_Residual`) and the NEMO solv
 
 ## Add a vectorized scheme
 
-This section shows how to add the vectorized (SIMD) version of a scheme. The framework is in `SU2_CFD/include/numerics_simd/`:
+The framework for vectorized (SIMD) schemes is in `SU2_CFD/include/numerics_simd/`:
 
 | File | Content |
 |---|---|
@@ -371,7 +369,7 @@ public:
 
 To add a vectorized upwind scheme for an ideal gas:
 
-1. In `upwind.hpp`, write `template<class Decorator> class CMyScheme : public CUpwindBase<CMyScheme<Decorator>, Decorator>`. Give it a constructor that forwards its arguments to the base, and a `finalizeFlux` with the signature above. Write all arithmetic with `Double`. Do not use `if` on values. Use `fmax`, `fmin`, `abs`, `sign` and masks instead, as `CMSWScheme` does.
+1. In `upwind.hpp`, write `template<class Decorator> class CMyScheme : public CUpwindBase<CMyScheme<Decorator>, Decorator>`. Give it a constructor that forwards its arguments to the base, and a `finalizeFlux` with the signature above. Write all arithmetic with `Double`. Do not use `if` on `Double` values, because each one holds the values of several edges. Use `fmax`, `fmin`, `abs`, `sign` and masks instead, as `CMSWScheme` does.
 2. Add a `case` in `createUpwindIdealNumerics` (`CNumericsSIMD.cpp`):
 
    ```cpp
@@ -424,7 +422,7 @@ With `TIME_DISCRE_FLOW= EULER_IMPLICIT`, the solver needs the Jacobians of the f
   - the AUSM+ and SLAU family uses the Roe Jacobian (`ApproximateJacobian`). With `USE_ACCURATE_FLUX_JACOBIANS= YES` it uses `AccurateJacobian` instead, which mixes finite differences and manual differentiation.
 
   A more accurate Jacobian usually lets you use a higher CFL number.
-- The matrix stores passive values (`PassiveAssign` in `CSysMatrix::UpdateBlocks`). Passive values are plain numbers that AD does not track. So AD does not differentiate the Jacobians.
+- The matrix stores passive values (`PassiveAssign` in `CSysMatrix::UpdateBlocks`). Passive values are plain numbers that automatic differentiation (AD) does not track. So AD does not differentiate the Jacobians.
 - Fill the Jacobians only when `implicit` is true. This saves time in explicit runs.
 - With `NEWTON_KRYLOV= YES`, `CNewtonIntegration` uses matrix-free products with the true Jacobian, computed by finite differences of the residual. It uses this matrix only to build the preconditioner. Expect less accurate finite differences if your flux is not smooth.
 
@@ -473,8 +471,6 @@ The other finite volume solvers have their own scheme classes.
 
 ## Viscous fluxes and source terms
 
-This section shows where to change the viscous flux and how to add a source term.
-
 **Viscous flux.**
 
 - The classic classes are in `SU2_CFD/include/numerics/flow/flow_diffusion.hpp`: `CAvgGrad_Base`, `CAvgGrad_Flow` (ideal gas), `CGeneralAvgGrad_Flow` (other fluid models), `CAvgGradInc_Flow`.
@@ -494,7 +490,7 @@ This section shows where to change the viscous flux and how to add a source term
 
 ## Discrete adjoint
 
-A new scheme does not need adjoint code, but you must write it so that automatic differentiation (AD) works. The discrete adjoint drivers record one primal iteration, with all its flux evaluations, on the AD tape. The tape is the record of every operation. Evaluating the tape gives the adjoint. `CDiscAdjSolver` holds the adjoint variables.
+A new scheme does not need adjoint code, but you must write it so that AD works. The discrete adjoint drivers record one primal iteration, with all its flux evaluations, on the AD tape. The tape is the record of every operation. Evaluating the tape gives the adjoint. `CDiscAdjSolver` holds the adjoint variables.
 
 Rules for the scheme:
 
@@ -506,7 +502,6 @@ Rules for the scheme:
 
   A missing input gives wrong gradients without any error. In the vectorized framework, `gatherVariables` registers the inputs and `stopPreacc` ends the section.
 - Branches on solution values (`max`, `fabs`, `if`) are recorded as taken at the converged state. The derivative is the one of the active branch. Avoid branches whose outcome changes between iterations at convergence.
-- The Jacobians are not differentiated, because the matrix is passive.
 - A tape debug build helps to find preaccumulation errors. Build with `-Dcodi-tape=Tag` and use the options `CHECK_TAPE_TYPE` and `CHECK_TAPE_VARIABLES`. See [Advanced AD Techniques](../Advanced-AD-Techniques/).
 
 ## Tests

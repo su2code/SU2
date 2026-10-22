@@ -4,7 +4,7 @@ permalink: /docs_v7/Glossary/
 ---
 
 This page explains the words that SU2 users and developers meet in the code, the configuration file and the
-discussions on GitHub. Each entry is short. Where it helps, it names the class or option, and links to more.
+discussions on GitHub. Where it helps, an entry names the class or option, and links to more.
 
 For a map of the source code, see [Code Structure](../Code-Structure/). For all options, see the
 [Option Reference](../Option-Reference/). Class names link to the [Code Reference](../Code-Reference/) (Doxygen).
@@ -80,7 +80,7 @@ See [Multizone](../Multizone/).
 ## Solvers and numerics
 
 **CFL adaptation.**
-The CFL number sets the size of the local pseudo time step. With `CFL_ADAPT= YES`, SU2 raises the CFL number when
+The CFL (Courant-Friedrichs-Lewy) number sets the size of the local pseudo time step. With `CFL_ADAPT= YES`, SU2 raises the CFL number when
 the iterations go well, and lowers it when they do not (`CSolver::AdaptCFLNumber`). `CFL_ADAPT_PARAM` sets the
 factors and the limits. The history fields `MIN_CFL`, `MAX_CFL` and `AVG_CFL` show the result.
 
@@ -115,7 +115,7 @@ extrema and oscillations. Set it with `SLOPE_LIMITER_FLOW`, `SLOPE_LIMITER_TURB`
 `LIMITER` writes the values. See [Slope Limiters](../Slope-Limiters-and-Shock-Resolution/).
 
 **MUSCL.**
-A way to reach second order accuracy with an upwind scheme. Before the flux is computed, the states at the two
+Monotonic Upstream-centered Scheme for Conservation Laws: a way to reach second order accuracy with an upwind scheme. Before the flux is computed, the states at the two
 ends of an edge are extrapolated to the middle of the edge with the gradients. Set it with `MUSCL_FLOW`,
 `MUSCL_TURB`, ... The gradient method is `NUM_METHOD_GRAD_RECON` (or `NUM_METHOD_GRAD` if that is not set). See
 [Convective Schemes](../Convective-Schemes/).
@@ -157,7 +157,7 @@ time loop. [`CSinglezoneDriver`](../../doxygen/classCSinglezoneDriver.html) and
 [`CDriver`](../../doxygen/classCDriver.html). See [Code Structure](../Code-Structure/#drivers).
 
 **Instance.**
-A copy of the solvers of one zone. Only harmonic balance uses more than one: one instance per time instance.
+A copy of the solvers of one zone. Only harmonic balance uses more than one: one instance per time instance (a sampled time of the period).
 `iInst` indexes them. In all other cases there is one instance.
 
 **Interface (object).**
@@ -231,7 +231,7 @@ build option `cpu-arch` sets which instructions the compiler may use.
 
 ## Algorithmic differentiation
 
-These entries are short. See [Automatic Differentiation](../Automatic-Differentiation/) for the full guide.
+See [Automatic Differentiation](../Automatic-Differentiation/) for the full guide.
 
 **Preaccumulation.**
 A way to make the tape smaller. For a code section with few inputs and outputs, SU2 stores only the Jacobian of

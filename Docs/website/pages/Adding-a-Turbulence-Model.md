@@ -3,7 +3,7 @@ title: Adding a Turbulence Model
 permalink: /docs_v7/Adding-a-Turbulence-Model/
 ---
 
-This page is for developers. It shows how the RANS turbulence models of SU2 are built. It then explains what to change in two cases: a variant of an existing model, and a new model with its own equations. The code examples are copied from the SU2 source.
+This page is for developers. It shows how the RANS (Reynolds-averaged Navier-Stokes) turbulence models of SU2 are built. It then explains what to change in two cases: a variant of an existing model, and a new model with its own equations. The code examples are copied from the SU2 source.
 
 Read [Code Structure](../Code-Structure/) first. The parts that are not specific to turbulence have their own pages: [Adding a Config Option](../Adding-a-Config-Option/), [Adding Output Fields](../Adding-Output-Fields/), [Adding a Solver](../Adding-a-Solver/), [Adding a Boundary Condition](../Adding-a-Boundary-Condition/) and [Running Regression Tests](../Running-Regression-Tests/). Transition models are covered in [Adding a Transition Model](../Adding-a-Transition-Model/).
 
@@ -43,8 +43,6 @@ Read [Code Structure](../Code-Structure/) first. The parts that are not specific
 
 ## How the turbulence equations are solved
 
-This section shows when the turbulence model runs in an iteration, and what its solver does in each step.
-
 The turbulence model has its own solver object. It sits at position `TURB_SOL` of the solver container, on every multigrid level. The coupling with the flow is segregated: the flow and the turbulence model are solved one after the other, not as one system. In each inner iteration, `CFluidIteration::Iterate` (`SU2_CFD/src/iteration/CFluidIteration.cpp`) first runs the flow (`MultiGrid_Iteration`). Then `CFluidIteration::CommonAuxiliarySolvers` runs the transition model and the turbulence model:
 
 ```cpp
@@ -69,7 +67,7 @@ The turbulence model has its own solver object. It sits at position `TURB_SOL` o
 `SetGlobalParam(..., RUNTIME_TURB_SYS)` selects the turbulence settings: `CONV_NUM_METHOD_TURB`, `MUSCL_TURB`, `SLOPE_LIMITER_TURB` and `TIME_DISCRE_TURB`. Then `CSingleGridIntegration::SingleGrid_Iteration` (`SU2_CFD/src/integration/CSingleGridIntegration.cpp`) runs these steps on the finest grid:
 
 1. `Preprocessing`: gradients and limiters of the turbulence variables (`CScalarSolver::CommonPreprocessing`).
-2. `SetTime_Step`.
+2. `SetTime_Step`: the local time step. It is the flow time step, scaled by the ratio of the turbulence and flow CFL numbers.
 3. `CIntegration::Space_Integration`: `Upwind_Residual` (convection **and** diffusion, see below), `Viscous_Residual` (empty for the turbulence solvers), `Source_Residual`, then the boundary conditions.
 4. `CIntegration::Time_Integration`: implicit or explicit update.
 5. `Postprocessing`: gradients and the eddy viscosity.
@@ -159,7 +157,7 @@ Then it sets `version` (`NONE`, `NEG` or `EDW`) and the booleans. Some combinati
 - `production`: one production modifier, `V`, `KL`, `UQ`, `COMP_Wilcox` or `COMP_Sarkar`.
 - the booleans `sust`, `uq`, `modified`, `compWilcox`, `compSarkar` and `dll`.
 
-With no version keyword, the parser selects `V2003` with `modified = true`. The keywords `V1994` and `V2003` (the unmodified versions) are commented out in `SST_Options_Map`.
+With no version keyword, the parser selects `V2003` with `modified = true`. The keywords `V1994` and `V2003` (the unmodified versions) are commented out in `SST_Options_Map`, so users cannot select them.
 
 `CConfig::SetConfig_Options` registers the options:
 
@@ -421,7 +419,7 @@ Derive from `CTurbSolver`. Its constructor is:
 The constructor of the new solver does what `CTurbSSTSolver::CTurbSSTSolver` does:
 
 1. Set `nVar`, `nPrimVar`, `nVarGrad`, `nPoint`, `nPointDomain`.
-2. On `MESH_0`, or with a full multigrid cycle, allocate the residual vectors and the linear system: `Jacobian.Initialize(...)`, `LinSysSol.Initialize(...)`, `LinSysRes.Initialize(...)`. Also allocate `EdgeFluxes` and `EdgeFluxesDiff` when `ReducerStrategy` is set.
+2. On `MESH_0`, or with a full multigrid cycle, allocate the residual vectors and the linear system: `Jacobian.Initialize(...)`, `LinSysSol.Initialize(...)`, `LinSysRes.Initialize(...)`. Also allocate `EdgeFluxes` and `EdgeFluxesDiff` when `ReducerStrategy` is set. With this strategy, used when edge coloring is not efficient, the fluxes are stored per edge and summed per point afterwards.
 3. Set the model constants, `Solution_Inf`, `lowerlimit` and `upperlimit`.
 4. Create `nodes` and call `SetBaseClassPointerToNodes()`. Create `ghostNodes`, sized to the largest marker. The boundary conditions use `ghostNodes` as the outside state.
 5. Exchange the halo values with `InitiateComms` / `CompleteComms` and `MPI_QUANTITIES::SOLUTION_EDDY`. Halo points are local copies of points owned by other MPI ranks.
@@ -474,8 +472,8 @@ It can also provide:
 
 - `coefficientJacobians(...)`: extra Jacobian terms when the coefficients depend on the solution, used with `USE_ACCURATE_TURB_JACOBIANS`;
 - `finalizeFlux(...)`: a convective flux different from the default upwind one, as SA does;
-- `extraDiffusionTerms(...)`;
-- `DiffusionReadsDensity`.
+- `extraDiffusionTerms(...)`: diffusion terms beyond the standard one, as the flamelet kernel does;
+- `DiffusionReadsDensity`: set it to true when the diffusion coefficients need the density, as SA does. The base class then reads the density.
 
 The SST kernel declares:
 
@@ -493,7 +491,7 @@ Its `coefficients` returns a 2x2 matrix per side. The matrix holds the blended d
 - the flow primitives (`GetPrimitive`);
 - the turbulence containers (`GetSolution`, `GetF1blending`).
 
-So any variable container that a kernel reads must exist for the whole field, like `CTurbVariable::GetF1blending()`. `CTransLMSolver` has the smallest kernel, `CScalarFlux_TransLM`. See [Adding a Transition Model](../Adding-a-Transition-Model/).
+So any variable container that a kernel reads must be stored at every point, like `CTurbVariable::GetF1blending()`. `CTransLMSolver` has the smallest kernel, `CScalarFlux_TransLM`. See [Adding a Transition Model](../Adding-a-Transition-Model/).
 
 ### 6. Source term
 
@@ -592,11 +590,9 @@ In the other direction, the turbulence solver reads the flow through `solver_con
 
 ## Walls, wall functions and wall distance
 
-This section covers the wall distance, the values imposed at walls, and wall functions.
-
 **Wall distance.** `CGeometry::ComputeWallDistance` (`Common/src/geometry/CGeometry.cpp`) computes the distance to the nearest viscous wall. It does this for the `RANS` and `INC_RANS` solvers and their adjoints, and for `FEM_RANS` and `FEM_LES`. The drivers call it at start-up. `CSinglezoneDriver` calls it again when the mesh moves or deforms. Read it with `geometry->nodes->GetWall_Distance(iPoint)`. SA adds `0.03` times the roughness height (`GetRoughnessHeight`) to it.
 
-**Wall values.** The wall conditions are strong (Dirichlet) conditions in `BC_HeatFlux_Wall`. `BC_Isothermal_Wall` calls it. The pattern has three steps:
+**Wall values.** `BC_HeatFlux_Wall` imposes the wall values directly, as Dirichlet conditions. `BC_Isothermal_Wall` calls it. The pattern has three steps:
 
 1. Set the value in the solution.
 2. Zero the residual row.
@@ -692,12 +688,12 @@ A new model needs no adjoint equations. The discrete adjoint differentiates the 
     }
   ```
 
-- Loops over points use `AD::StartNoSharedReading()` / `AD::EndNoSharedReading()`.
+- Loops over points use `AD::StartNoSharedReading()` / `AD::EndNoSharedReading()`. These mark a section where no two OpenMP threads read the same value, which makes the reverse sweep faster.
 - Add a test to `serial_regression_AD.py`. See `discadj_rans_naca0012_sa` and `discadj_rans_naca0012_sst`.
 
 ## Hybrid RANS/LES
 
-DES is implemented for SA only. `HYBRID_RANSLES` takes `SA_DES`, `SA_DDES`, `SA_ZDES` or `SA_EDDES` (`HybridRANSLES_Map`). `DES_CONST` sets the constant. The hooks are in `CTurbSASolver`:
+Detached eddy simulation (DES) is implemented for SA only. `HYBRID_RANSLES` takes `SA_DES`, `SA_DDES`, `SA_ZDES` or `SA_EDDES` (`HybridRANSLES_Map`). `DES_CONST` sets the constant. The hooks are in `CTurbSASolver`:
 
 1. `CTurbSASolver::Preprocessing` calls `SetDES_LengthScale`. This stores the length scale and the LES sensor in the variable (`SetDES_LengthScale`, `SetLES_Mode`).
 2. `CTurbSASolver::Source_Residual` passes the DES length scale to the source term instead of the wall distance:
@@ -735,7 +731,7 @@ These regression tests cover the turbulence models. The scripts are in `TestCase
 - `dsma661_sa` and `dsma661_sst`;
 - the 30P30N airfoil.
 
-They are short runs of the configuration files. For a new model, run the flat plate and the bump on several grid levels. Compare the skin friction and the eddy viscosity profiles with published results before you open the pull request.
+The script runs each case for a few iterations only, like a regression test. For a new model, run the flat plate and the bump on several grid levels. Compare the skin friction and the eddy viscosity profiles with published results before you open the pull request.
 
 To add tests, follow [Running Regression Tests](../Running-Regression-Tests/#add-a-new-test). For a new model or option, add at least one entry to `parallel_regression.py`, for example a copy of a `turbulence_models/sa/rae2822` case with the new option. If the adjoint must work, also add one entry to `serial_regression_AD.py`. Use one configuration file per test.
 

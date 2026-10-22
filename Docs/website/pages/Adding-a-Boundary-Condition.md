@@ -3,12 +3,7 @@ title: Adding a Boundary Condition
 permalink: /docs_v7/Adding-a-Boundary-Condition/
 ---
 
-This page shows how to add a boundary condition (BC) to the finite volume solvers of `SU2_CFD`. It covers:
-
-- the marker option;
-- how the marker reaches the solvers;
-- how the BC is called in each iteration;
-- how to write the BC for the flow solver, and for the turbulence, species and heat solvers.
+This page shows how to add a boundary condition (BC) to the finite volume solvers of `SU2_CFD`: the marker option, how the BC is called in each iteration, and how to write it for the flow solver and for the turbulence, species and heat solvers.
 
 The examples are copied from the code. See [Code Structure](../Code-Structure/) for the classes, and [Adding a Config Option](../Adding-a-Config-Option/) for options in general.
 
@@ -125,13 +120,13 @@ Add the `MARKER_...` option that users write in the configuration file. The rest
    }
    ```
 
-   The solvers call them with `config->GetMarker_All_TagBound(val_marker)`. The search is a loop over strings. So call the getter once per marker, outside the vertex loop.
+   The solvers pass the marker name, `config->GetMarker_All_TagBound(val_marker)`. The search is a loop over strings. So call the getter once per marker, outside the vertex loop.
 
 5. **Screen table.** At start-up, `CConfig::SetOutput` prints one line per BC kind (`BoundaryTable << "Supersonic outlet boundary";`). Add one for the new kind.
 
 ## 3. How the marker reaches the solvers
 
-You need no new code in this step for a new kind. This section explains how the marker data reaches the solvers, and which functions the solvers use to read it.
+This step needs no new code. It explains how the marker data reaches the solvers, and which functions the solvers use to read it.
 
 `CConfig` keeps two marker lists:
 
@@ -424,7 +419,7 @@ The pressure-based incompressible solver also needs `nodes->SetStrongBC(iPoint)`
 
 Decide what each scalar solver does at the new boundary, and implement it.
 
-These solvers derive from `CScalarSolver`. They get the same `switch` in `Space_Integration`, with `MainSolver` = `TURB_SOL`, `TRANS_SOL`, `SPECIES_SOL`, `HEAT_SOL`, ... For them, `conv_numerics` and `visc_numerics` are `nullptr`: `CDriver::InitializeNumerics` does not create `CONV_BOUND_TERM` or `VISC_BOUND_TERM` for scalar solvers. Their edge kernel computes their boundary fluxes. The edge kernel is the class that computes the flux of one edge (see [Adding a Solver](../Adding-a-Solver/#6-numerics)).
+These solvers derive from `CScalarSolver`. They get the same `switch` in `Space_Integration`, with `MainSolver` = `TURB_SOL`, `TRANS_SOL`, `SPECIES_SOL`, `HEAT_SOL`, ... For them, `conv_numerics` and `visc_numerics` are `nullptr`: `CDriver::InitializeNumerics` does not create `CONV_BOUND_TERM` or `VISC_BOUND_TERM` for scalar solvers. Their boundary fluxes are computed by their edge kernel, the class that computes the flux of one edge (see [Adding a Solver](../Adding-a-Solver/#6-numerics)).
 
 What each one does today if it does not override a BC:
 
@@ -489,16 +484,16 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
 - `ghostNodes` holds the scalar ghost state.
 - `SetGhostPrimitives` copies the flow ghost state that the flow BC wrote to `GetCharacPrimVar` (density, velocity, viscosities).
-- `SetGhostGeometry` stores the outward normal and marks the vertex as active (`ghostSkip`).
+- `SetGhostGeometry` stores the outward normal and clears the flag `ghostSkip` of the vertex, so the vertex gets a boundary flux.
 - `SetGhostDiffusionState` adds the reflected coordinate and gradient when the diffusive term is included.
-- `BoundaryFlux` calls `CScalarSolver::BoundaryFluxResidual` with the model's kernel. It skips halo points and skipped vertices. It adds the flux to the row of the boundary point, and adds the diagonal Jacobian block.
+- `BoundaryFlux` calls `CScalarSolver::BoundaryFluxResidual` with the model's kernel. It skips halo points and the vertices whose `ghostSkip` is set. It adds the flux to the row of the boundary point, and adds the diagonal Jacobian block.
 - `ScalarFluxOptions::BoundaryConvective`, `BoundaryFull` and `BoundaryDiffusive` choose the terms.
 
 Walls of the turbulence models are strong BCs. For example, `CTurbSSTSolver::BC_HeatFlux_Wall` sets `k` and `omega`, zeroes the residual and calls `Jacobian.DeleteValsRowi` for both rows. The heat solver writes its own wall fluxes (`CHeatSolver::BC_Isothermal_Wall`, `BC_HeatFlux_Wall`).
 
 ## 9. Other places that test the BC kind
 
-Find and update every other place that tests the BC kind. The kind is tested in many places besides the dispatch. Before you finish, search the code for an existing kind that behaves like yours, for example `grep -rn "SUPERSONIC_INLET" Common SU2_CFD`. The main places:
+The BC kind is tested in many places besides the `switch` of `Space_Integration`. Search the code for an existing kind that behaves like yours, for example `grep -rn "SUPERSONIC_INLET" Common SU2_CFD`, and update each place you find. The main places:
 
 | Where | What |
 |---|---|

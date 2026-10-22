@@ -59,7 +59,7 @@ Shared parents and other output classes:
 
   It also sets the wall fields (skin friction, heat flux, y+) in `LoadSurfaceData`.
 - [`CAdjFlowOutput`](../../doxygen/classCAdjFlowOutput.html): parent of the adjoint flow outputs, with the adjoint turbulence and species fields.
-- [`CMultizoneOutput`](../../doxygen/classCMultizoneOutput.html): the history of a multizone run. It copies the history fields of every zone and adds the suffix `[<zone index>]` to their names. So you do not need to change it for a new zone field.
+- [`CMultizoneOutput`](../../doxygen/classCMultizoneOutput.html): the history of a multizone run. It copies the history fields of every zone and adds the suffix `[<zone index>]` to their names. So a new history field of a single-zone output also appears there, with no change to `CMultizoneOutput`.
 - `CBaselineOutput` (used by `SU2_SOL` and `SU2_DOT`) and `CMeshOutput` (used by `SU2_DEF`).
 
 ## How the output works
@@ -78,7 +78,7 @@ Other hooks:
 
 - The DG output uses `LoadVolumeDataFEM` instead of `LoadVolumeData`.
 - Multizone output uses `SetMultizoneHistoryOutputFields` and `LoadMultizoneHistoryData`.
-- `SetAdditionalScreenOutput` and `WriteAdditionalFiles`.
+- `SetAdditionalScreenOutput` prints extra screen output, and `WriteAdditionalFiles` writes extra files, for the current solver.
 
 The functions to declare and set fields are members of `COutput` (`SU2_CFD/include/output/COutput.hpp`):
 
@@ -116,7 +116,7 @@ These steps are in `COutput::PostprocessHistoryFields`, `COutput::PostprocessHis
 1. Compute the value in the solver. Store it in a member and add a getter. If the output class accesses the solver through a `CSolver*`, add a virtual getter with a default value to `CSolver` (`SU2_CFD/include/solvers/CSolver.hpp`). Override it in your solver.
 2. In `SetHistoryOutputFields` of the output class, call `AddHistoryOutput`. Pick a name, a short header, a format, a group, a description and a `HistoryFieldType`.
 3. In `LoadHistoryData`, call `SetHistoryOutputValue` with the same name.
-4. Use the same condition in both functions. If the field was not added, `SetHistoryOutputValue` stops SU2 with the error "Cannot find output field with name ...".
+4. Put the same `if` condition around both calls. If the field was not added, `SetHistoryOutputValue` stops SU2 with the error "Cannot find output field with name ...".
 
 ### Example: the buffet sensor
 
@@ -183,7 +183,7 @@ Users can select per-surface fields in `SCREEN_OUTPUT` and `HISTORY_OUTPUT`, but
 1. Make the value available per point, usually through a getter of the `CVariable` child (`solver->GetNodes()`). If the output class uses a `CVariable*`, add a virtual getter with a default value to `CVariable`. Override it in your variable class.
 2. In `SetVolumeOutputFields`, call `AddVolumeOutput` with a name, a header, a group and a description.
 3. In `LoadVolumeData`, call `SetVolumeOutputValue(name, iPoint, value)`.
-4. Use the same condition in both functions.
+4. Put the same `if` condition around both calls.
 
 **Important:** `LoadVolumeData` must make the same calls, in the same order, for every point. The reason is that `SetVolumeOutputValue` caches the position of each field. It builds the cache at the first point, and reuses it for all other points in the order of the calls. So conditions may depend on the configuration, but not on `iPoint`. The same holds for `LoadSurfaceData`: for each vertex, make either no calls or the full sequence.
 
@@ -247,7 +247,7 @@ For the adjoint outputs, the same pattern is in `CAdjFlowOutput` (`AddHistoryOut
 
 ## How users select the new field
 
-Users request fields or whole groups in the configuration file. SU2 ignores names that do not exist for the current setup, and prints a message at start-up.
+Users request single fields or whole groups in the configuration file. SU2 ignores names that do not exist for the current setup, and prints a message at start-up.
 
 ```
 SCREEN_OUTPUT= INNER_ITER, RMS_DENSITY, LIFT, DRAG, BUFFET
@@ -256,10 +256,8 @@ VOLUME_OUTPUT= COORDINATES, SOLUTION, PRIMITIVE, ROE_DISSIPATION
 CONV_FIELD= RMS_DENSITY
 ```
 
-- `SCREEN_OUTPUT` takes field names or groups.
-- `HISTORY_OUTPUT` takes groups or field names.
-- `VOLUME_OUTPUT` takes field names or groups.
-- `CONV_FIELD` takes history field names (not per-surface fields).
+- `SCREEN_OUTPUT`, `HISTORY_OUTPUT` and `VOLUME_OUTPUT` take field names or groups.
+- `CONV_FIELD` takes only history field names, and no per-surface fields.
 - `CUSTOM_OUTPUTS` lets users define new history values from expressions of existing fields, without code changes (see [User Defined Functions](../Custom-Output/#user-defined-functions)).
 
 See [History and Solution Output](../Custom-Output/) for the user documentation, and the [Option Reference](../Option-Reference/) for the options.
@@ -276,7 +274,7 @@ See [History and Solution Output](../Custom-Output/) for the user documentation,
 
    See [Running Regression Tests](../Running-Regression-Tests/).
 6. Did you add the field to a group that existing tests print on screen (for example `RMS_RES` or `AERO_COEFF`)? Then the screen columns of those tests change. Run them and update their `test_vals`.
-7. Unit tests for output classes are in `UnitTests/SU2_CFD/output/`.
+7. If needed, add or update the unit tests of the output classes in `UnitTests/SU2_CFD/output/`.
 8. If the field is of general interest, document it for users in [History and Solution Output](../Custom-Output/).
 
 Last checked against SU2 develop `11c177b904`.

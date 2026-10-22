@@ -29,8 +29,8 @@ with each value, and gives the derivative of all outputs with respect to one inp
 the derivative of one output with respect to all inputs at once; SU2 uses it for the discrete adjoint.
 SU2 gets AD from [CoDiPack](https://github.com/SciCompKL/CoDiPack), an operator-overloading tool: the type
 `su2double` replaces `double`, and its operators also record derivative information. In reverse mode this
-information goes to the tape, a stored list of all operations and their local derivatives, which CoDiPack later
-replays backwards to get the adjoint (the derivative of the output).
+information goes to the tape: a stored list of all operations and their local derivatives. CoDiPack later replays
+the tape backwards to get the adjoints, the derivatives of the output with respect to each recorded value.
 
 The type `su2double` is chosen at compile time in `Common/include/code_config.hpp`:
 
@@ -503,7 +503,8 @@ CPassiveMPI::Sendrecv(dirOut.data() + hp.offR * nDim, hp.nVertexR * nDim, MPI_DO
                       SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
 ```
 
-Halo updates of solver data (`InitiateComms` / `CompleteComms`) are recorded like any other operation.
+Halo updates of solver data (`InitiateComms` / `CompleteComms`) are recorded like any other operation. Halo
+points are local copies of points owned by other MPI ranks.
 
 ### OpenMP
 
@@ -519,8 +520,9 @@ the parallel structure for the reverse sweep. Rules:
 - `SU2_OMP_SAFE_GLOBAL_ACCESS(...)` runs code on the master thread, with barriers. It also opens a no-shared-reading
   section, because the other threads wait.
 - Preaccumulation is thread-local (`PreaccHelper` and `PreaccActive` are `threadprivate`). But in an edge loop
-  whose threads share points, it is not safe. `CScalarSolver::EdgeFluxResidual` therefore pauses it when the
-  fluxes are summed with the reducer strategy:
+  whose threads share points, it is not safe. This happens with the reducer strategy, which SU2 uses when edge
+  coloring is not efficient: the fluxes are stored per edge and summed per point afterwards.
+  `CScalarSolver::EdgeFluxResidual` therefore pauses preaccumulation in that case:
 
   ```cpp
   bool pausePreacc = false;

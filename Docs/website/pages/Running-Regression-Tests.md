@@ -10,7 +10,7 @@ pull request is merged only when they pass.
 This page explains:
 
 - where the tests are;
-- how the CI runs them;
+- how the CI (continuous integration: the automatic tests on GitHub) runs them;
 - how to run them on your computer;
 - how to add a test;
 - how to update the stored values.
@@ -124,8 +124,8 @@ Some scripts overwrite values that you set, for all tests in `test_list`:
 - `run_geo()`: for `SU2_GEO`.
 - `run_def()`: for `SU2_DEF`.
 
-The scripts call these methods one test at a time, after the main loop. The defaults loop has already run by then.
-So tests added there must set `command`, `timeout` and `tol` themselves.
+The scripts call these methods one test at a time, after the loop that fills in the defaults. So these tests must
+set `command`, `timeout` and `tol` themselves.
 
 ## How the CI runs the tests
 
@@ -142,15 +142,15 @@ The job **Build SU2** compiles SU2 in a container (`ghcr.io/su2code/su2/build-su
 - `Forward` is the direct differentiation build (`-Denable-directdiff=true`).
 
 Each one is built with MPI (`MPI`), without MPI (`NoMPI`) and with OpenMP (`OMP`). `ReverseTagNoMPI` is a discrete
-adjoint build with `-Dcodi-tape=Tag`.
+adjoint build with `-Dcodi-tape=Tag`, for the Tape Tests job.
 
 The jobs **Build SU2 (tsan)** and **Build SU2 (asan)** make the builds for the thread and address sanitizers. These
 are compiler tools that detect data races between threads (tsan) and memory errors (asan) while the program runs.
 
 ### Test jobs
 
-Each test job runs one script. It uses the `Base`, `Reverse` and `Forward` binaries of one build type (those that
-exist):
+Each test job runs one script. It uses the binaries of one build type (column **Binaries**): the `Base`, `Reverse`
+and `Forward` builds of that type, when they exist.
 
 | Job | Script | Binaries | Extra argument |
 |---|---|---|---|
@@ -306,11 +306,12 @@ Use the values computed by the CI, because your computer can give slightly diffe
 3. Put the mesh and other large files in the same folder of the TestCases repository. Open a pull request there
    against `develop` (see [Where the meshes come from](#where-the-meshes-come-from)).
 4. In the configuration file, set `SCREEN_OUTPUT` to the values you want to check. Make sure that the row of
-   `test_iter` is printed (see `SCREEN_WRT_FREQ_INNER`).
+   `test_iter` is printed: `SCREEN_WRT_FREQ_INNER` sets how often a row is printed.
 5. Add a `TestCase` entry to the script that matches the build (serial, parallel, AD, hybrid), before its block
    `RUN TESTS`. Add it to `test_list` with `test_list.append(...)`. Set at least `cfg_dir`, `cfg_file`,
    `test_iter` and `test_vals`.
 6. To get the first values, set `test_vals` to a list of zeros, with one entry per column you check. Run the test,
-   and copy `sim_vals (computed)` from the output. Then check the values with the CI, as explained above.
+   and copy `sim_vals (computed)` from the output. Then replace them with the values computed by the CI (see
+   [Update the stored values](#update-the-stored-values)).
 
 Last checked against SU2 develop `11c177b904`.

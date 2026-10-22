@@ -55,7 +55,7 @@ First find which of three cases you are in. Each case needs a different subset o
 | Case | Example in the code | Steps |
 |---|---|---|
 | New main solver with its own `SOLVER=` keyword | `HEAT_EQUATION` (`CHeatSolver`) | all |
-| New equation that runs after the flow solver in the same zone | species transport (`CSpeciesSolver`, option `KIND_SCALAR_MODEL`) | 2 to 13. No new keyword: a model option instead. |
+| New equation that runs after the flow solver in the same zone | species transport (`CSpeciesSolver`, option `KIND_SCALAR_MODEL`) | 2 to 13, with a model option instead of a new keyword |
 | New class for existing physics | a turbulence model chosen by `KIND_TURB_MODEL` in `CSolverFactory::CreateTurbSolver` | 3 to 6, 8, 13 |
 
 Then pick a class to copy:
@@ -173,7 +173,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
 An unknown value returns 0, the flow solver, without an error. Add your case.
 
-Then set the schemes of your system in `CConfig::SetGlobalParam`. `CIntegration::Space_Integration` and `CIntegration::Time_Integration` read the convective scheme (`GetKind_ConvNumScheme()`) and the time scheme (`GetKind_TimeIntScheme()`) of the *current* system. `CConfig::SetGlobalParam(MAIN_SOLVER, RUNTIME_...)` sets them. The iteration and the solver's `Preprocessing` call it before each system. Add a case for your solver and system:
+Then set the schemes of your system. `CIntegration::Space_Integration` and `CIntegration::Time_Integration` read the convective scheme (`GetKind_ConvNumScheme()`) and the time scheme (`GetKind_TimeIntScheme()`) of the *current* system. `CConfig::SetGlobalParam(MAIN_SOLVER, RUNTIME_...)` sets them; the iteration and the solver's `Preprocessing` call it before each system. Add a case there for your solver and system:
 
 ```cpp
     case MAIN_SOLVER::HEAT_EQUATION:
@@ -275,7 +275,7 @@ Store extra per-point quantities as members of the variable class (`su2activevec
 
 ## 5. The CSolver class
 
-The solver class holds the residual loops, the solution update and the restart. This section covers its constructor, the virtual functions that the integration calls, and the implicit update.
+The solver class holds the residual loops, the solution update and the restart.
 
 ### Constructor
 
@@ -311,11 +311,11 @@ Follow the order of `CHeatSolver::CHeatSolver` (`SU2_CFD/src/solvers/CHeatSolver
 
 ### Virtual functions
 
-All are declared in `SU2_CFD/include/solvers/CSolver.hpp` with an empty default body, except `GetBaseClassPointerToNodes`. The integration calls them in the order of this table (see `CSingleGridIntegration::SingleGrid_Iteration` and `CIntegration::Space_Integration`):
+The virtual functions are declared in `SU2_CFD/include/solvers/CSolver.hpp` with an empty default body, except `GetBaseClassPointerToNodes`. The integration calls them in the order of this table (see `CSingleGridIntegration::SingleGrid_Iteration` and `CIntegration::Space_Integration`):
 
 | Function | Called by | What it does | In `CScalarSolver`? |
 |---|---|---|---|
-| `Preprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output)` | integration, restart, adjoint recording | call `config->SetGlobalParam`, compute gradients and limiters, clear residual and Jacobian (`CScalarSolver::CommonPreprocessing`) | helper only |
+| `Preprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output)` | integration, restart, adjoint recording | call `config->SetGlobalParam`, compute gradients and limiters, clear residual and Jacobian (`CScalarSolver::CommonPreprocessing`) | no, but the helper `CommonPreprocessing` does most of it |
 | `Set_OldSolution()` | `SingleGrid_Iteration` | copy `Solution` to `Solution_Old` | yes (`CSolver`) |
 | `SetTime_Step(geometry, solver_container, config, iMesh, Iteration)` | integration | local time step | copies the flow time step; override for a standalone solver (`CHeatSolver` does) |
 | `Centered_Residual` / `Upwind_Residual` | `Space_Integration`, by `GetKind_ConvNumScheme()` | convective edge loop | no, implement it |
@@ -520,7 +520,7 @@ Your solver may add fields to the restart file of another solver, for example a 
 
 ## 10. MPI communication
 
-Update the halo points after you change per-point data. Each rank stores halo points: copies of points that a neighbouring rank owns. After you change a per-point quantity that other ranks read, update the halos with this pair:
+Each rank stores halo points: copies of points that a neighbouring rank owns. After you change a per-point quantity that other ranks read, update the halos with this pair:
 
 ```cpp
   InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
@@ -536,8 +536,6 @@ Update the halo points after you change per-point data. Each rank stores halo po
 Periodic boundaries use `InitiatePeriodicComms` / `CompletePeriodicComms`, with their own enum values (`PERIODIC_VOLUME`, `PERIODIC_NEIGHBORS`, ...). For any other communication, use the `SU2_MPI` wrapper (see [Code Structure](../Code-Structure/#parallelism-mpi-openmp-and-vectorization)).
 
 ## 11. OpenMP
-
-Make every solver function thread safe before you turn on OpenMP.
 
 `CSolver::GetHasHybridParallel()` returns `false` by default. The integration then opens its parallel region with a single thread, and the solver works as a pure MPI code. Start like this. Return `true` only when every function is thread safe. `CScalarSolver`, `CEulerSolver` and `CIncEulerSolver` return `true`.
 
@@ -690,8 +688,6 @@ The other parts follow the same rule:
 - **Jacobian:** `CFVMFlowSolverBase::UpdateJacobian` updates it with `CSysMatrix::UpdateBlocks`, which takes two blocks. `block_i` is added to `ii` and subtracted from `ji`. `block_j` is added to `ij` and subtracted from `jj`. With the reducer strategy it calls `CSysMatrix::SetBlocks` instead. That writes only the off-diagonal blocks `ij` and `ji`; the diagonal blocks are computed afterwards from them (`SetDiagonalAsColumnSum`).
 - **Vectorized path:** `CFVMFlowSolverBase::EdgeFluxResidual` processes several edges at once with SIMD instructions. It calls the first `updateLinearSystem` overload in `SU2_CFD/include/numerics/util.hpp` ("one conservative flux"). That overload uses `CSysVector::UpdateBlocks`: add to `iPoint`, subtract from `jPoint`.
 - **Reducer strategy:** `CFVMFlowSolverBase::SumEdgeFluxes` adds `EdgeFluxes` for the first point of the edge and subtracts it for the second. `Jacobian.SetDiagonalAsColumnSum()` builds the diagonal blocks from the off-diagonal ones.
-
-All of this assumes a conservative flux.
 
 ### Advice
 

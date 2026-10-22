@@ -29,7 +29,7 @@ For the full class documentation, see the [Code Reference](../Code-Reference/) (
 
 | Folder or file | What it holds |
 |---|---|
-| `Common` | Code shared by all programs: configuration (`CConfig`), mesh and dual grid (`CGeometry`), linear algebra, containers, MPI/OpenMP wrappers, AD types, grid movement, interface interpolation. Headers are in `Common/include`, sources in `Common/src`. |
+| `Common` | Code shared by all programs: configuration (`CConfig`), mesh and dual grid (`CGeometry`), linear algebra, containers, MPI/OpenMP wrappers, AD (automatic differentiation) types, grid movement, interface interpolation. Headers are in `Common/include`, sources in `Common/src`. |
 | `SU2_CFD` | The solver program `SU2_CFD`: drivers, iterations, integrations, solvers, variables, numerics, fluid models and output. |
 | `SU2_DEF` | The mesh deformation program `SU2_DEF` (`SU2_DEF/src/SU2_DEF.cpp`). Its drivers `CDeformationDriver` and `CDiscAdjDeformationDriver` are in `SU2_DEF/include/drivers`. |
 | `SU2_DOT` | The gradient projection program `SU2_DOT` (`SU2_DOT/src/SU2_DOT.cpp`). It uses `CDiscAdjDeformationDriver` from `SU2_DEF`. |
@@ -54,7 +54,7 @@ Headers are in `SU2_CFD/include/<folder>` and sources are in `SU2_CFD/src/<folde
 |---|---|
 | `drivers` | `CDriver` and its children. They create all objects and run the time loop. |
 | `iteration` | `CIteration` and its children. Each one runs one iteration of one physics (fluid, heat, structure, adjoint). |
-| `integration` | `CIntegration` and its children: multigrid, single grid, Newton-Krylov, structural and DG time integration. |
+| `integration` | `CIntegration` and its children: multigrid, single grid, Newton-Krylov, structural and DG (discontinuous Galerkin) time integration. |
 | `solvers` | `CSolver` and its children. A solver computes the residuals, applies the boundary conditions and holds the linear system of one set of equations. Also `CSolverFactory`. |
 | `variables` | `CVariable` and its children. They store the data at the mesh points. |
 | `numerics` | `CNumerics` and its children. They compute the fluxes for one edge or the source terms for one point. Subfolders: `flow` (`convection/`, `flow_diffusion`, `flow_sources`), `turbulent`, `species`, `scalar`, `NEMO`, `elasticity`, `continuous_adjoint`. |
@@ -261,7 +261,9 @@ Containers (`Common/include/containers`):
   - `su2passivevector`, `su2passivematrix` (of `passivedouble`).
 - `container_decorators.hpp`: `C3DDoubleMatrix` (also called `CVectorOfMatrix`, used for gradients) and `CMatrixView`.
 - `CLookUpTable`, `CFileReaderLUT`, `CTrapezoidalMap`: look-up tables. The flamelet fluid model (`CFluidFlamelet`) and the data-driven fluid model (`CDataDrivenFluid`) use them.
-- `CVertexMap`, `CFastFindAndEraseQueue`, `CPyWrapperMatrixView`.
+- `CVertexMap`: maps indices from a large range (for example all points) to a smaller one (for example the boundary vertices).
+- `CFastFindAndEraseQueue`: a queue that can also remove items from the middle quickly.
+- `CPyWrapperMatrixView`: gives the Python wrapper access to solver data such as `su2activematrix`.
 
 Toolboxes (`Common/include/toolboxes`):
 
@@ -298,7 +300,7 @@ Set the number of threads per rank with `SU2_CFD -t <threads>`.
 
 - `vectorization.hpp` defines [`simd::Array`](../../doxygen/classsimd_1_1Array.html), a short fixed-size array with arithmetic operators. The compiler turns its loops into SIMD instructions. `special_vectorization.hpp` has explicit versions for some instruction sets.
 - [`CNumericsSIMD`](../../doxygen/classCNumericsSIMD.html) (`SU2_CFD/include/numerics_simd`) uses it to compute the fluxes of several edges at once.
-- `CEulerSolver` uses these schemes for all centered schemes. It also uses them for the `ROE` and `MSW` upwind schemes, with an ideal gas and no low-Mach correction. See `CEulerSolver::Centered_Residual` and `CEulerSolver::Upwind_Residual`.
+- `CEulerSolver` uses the vectorized versions for all centered schemes. It also uses them for the `ROE` and `MSW` upwind schemes, with an ideal gas and no low-Mach correction. See `CEulerSolver::Centered_Residual` and `CEulerSolver::Upwind_Residual`.
 - The build option `cpu-arch` (default `native`) sets the target instruction set.
 
 ## Algorithmic differentiation
@@ -321,8 +323,6 @@ See [Advanced AD Techniques](../Advanced-AD-Techniques/) for more.
 
 ## Where do I change...
 
-This section lists the files and functions to change for common tasks.
-
 ### New boundary condition
 
 1. Add the kind to `enum BC_TYPE` in `Common/include/option_structure.hpp`.
@@ -340,7 +340,7 @@ This section lists the files and functions to change for common tasks.
 
 ### New turbulence model source term
 
-- The source terms are in `SU2_CFD/include/numerics/turbulent/turb_sources.hpp`: `CSourceBase_TurbSA` and `SAFactory` for SA, `CSourcePieceWise_TurbSST` for SST.
+- The source terms are in `SU2_CFD/include/numerics/turbulent/turb_sources.hpp`: `CSourceBase_TurbSA` and `SAFactory` for the Spalart-Allmaras (SA) model, `CSourcePieceWise_TurbSST` for the SST (shear stress transport) model.
 - `CDriver::InstantiateTurbulentNumerics` creates them. `CTurbSASolver::Source_Residual` / `CTurbSSTSolver::Source_Residual` use them.
 - Users choose the model variants with `SA_OPTIONS` / `SST_OPTIONS` (`enum class SA_OPTIONS`, `SST_OPTIONS` in `option_structure.hpp`).
 

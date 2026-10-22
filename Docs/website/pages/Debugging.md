@@ -4,7 +4,6 @@ permalink: /docs_v7/Debugging/
 ---
 
 This page shows practical ways to find bugs in SU2: crashes, wrong results, divergence, data races and slow code.
-It names the build options, config options and tools that exist for this.
 
 Tips marked **(advice)** are general practice, not features of SU2. Words such as "zone", "halo point" or
 "reducer strategy" are explained in the [Glossary](../Glossary/).
@@ -53,8 +52,9 @@ Notes:
 - `debugoptimized` is a good default for gdb and profilers: the code is fast enough for real cases, and the stack
   traces have function names and lines **(advice)**. Some variables show as "optimized out"; use `debug` when you
   need them.
-- `--warnlevel=3` turns on most compiler warnings. The CI builds with `--warnlevel=3` and `--werror` (warnings
-  become errors) for most configurations, so check your change with these flags before you push.
+- `--warnlevel=3` turns on most compiler warnings. The CI (continuous integration: the automatic tests on GitHub)
+  builds with `--warnlevel=3` and `--werror` (warnings become errors) for most configurations, so check your change
+  with these flags before you push.
 - `-Dcpu-arch` (default `native`) sets `-march`. `-Dcpu-arch=` (empty) removes it. This helps with tools that do
   not know the newest instructions, see [Valgrind](#valgrind).
 - SU2 always compiles with `-ffast-math -fno-finite-math-only` (when the compiler accepts these flags). NaN checks
@@ -171,8 +171,8 @@ Some bugs only show in parallel, for example at the halo points. Three ways to u
 - Attach to a running rank: start the run, find the process id with `ps` or `pgrep SU2_CFD`, then
   `gdb -p <pid>`. This is useful for a run that hangs. Run `bt` in each rank to see where they wait.
 
-When only rank 0 prints an error, the bug may be on another rank. `SU2_MPI::Error` prints the message from the
-lowest rank that called it.
+Only one rank prints the error box: the lowest rank that called `SU2_MPI::Error`. Other ranks may have failed
+too.
 
 ### The Python wrapper
 
@@ -198,7 +198,7 @@ The workflow `.github/workflows/regression.yml` has these jobs:
 | Build SU2 (asan) | `BaseNoMPI-asan`, `ReverseNoMPI-asan` | `--buildtype=debugoptimized -Dwith-mpi=disabled`; the reverse build also has `--optimization=1 -Denable-autodiff=true -Denable-normal=false` | Address Sanitizer Tests: `serial_regression.py`, `serial_regression_AD.py` with `--asan` |
 | Build SU2 (tsan) | `BaseOMP-tsan`, `ReverseOMP-tsan` | `--buildtype=debugoptimized -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false`; the reverse build also has `-Denable-autodiff=true -Denable-normal=false` | Thread Sanitizer Tests: `hybrid_regression.py`, `hybrid_regression_AD.py` with `--tsan` |
 
-The sanitizer flags themselves are not in these flags. They are set by the build containers
+The sanitizer flags are not in the table, because the build containers set them:
 `ghcr.io/su2code/su2/build-su2-asan` and `build-su2-tsan`, made from the
 [Docker-Builds](https://github.com/su2code/Docker-Builds) repository. The tsan container has a compiler and
 OpenMP library built for the thread sanitizer.
@@ -289,9 +289,9 @@ SU2 checks for NaN in a few places and stops with `SU2 has diverged (NaN detecte
   is larger than 10^20 (`SU2 has diverged (Residual > 10^20 detected).`).
 - `COutput` (`SU2_CFD/src/output/COutput.cpp`), on the history fields used for the convergence check. Here SU2
   stops without saving the solution.
-- The DG solver (`CFEM_DG_EulerSolver`) has its own checks.
+- The DG (discontinuous Galerkin) solver (`CFEM_DG_EulerSolver`) has its own checks.
 
-The NEMO solvers also check each flux and source term with `CNumerics::CheckResidualNaNs`.
+The NEMO (non-equilibrium) solvers also check each flux and source term with `CNumerics::CheckResidualNaNs`.
 
 The check happens after the iteration is done, so the NaN can come from anywhere in that iteration. The steps
 below narrow it down.
@@ -319,8 +319,8 @@ The last file written before the error shows the state just before the NaN. Usef
 The groups that exist depend on the solver. Run `SU2_CFD -d case.cfg` to print them, or see the
 [Output Fields Reference](../Output-Fields-Reference/).
 
-In a long run, write the files only from a few iterations before the failure: restart from a solution saved
-before that **(advice)**.
+In a long run, restart from a solution saved a few iterations before the failure, and write the files at every
+iteration only from there **(advice)**.
 
 ### History fields to watch
 

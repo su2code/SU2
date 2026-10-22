@@ -3,7 +3,7 @@ title: Adding a Transition Model
 permalink: /docs_v7/Adding-a-Transition-Model/
 ---
 
-This page is for developers. It shows how the transition model of SU2 is built and how it is coupled with the turbulence models. It then explains what to change to add a correlation, a variant or a new transition model. The code examples are copied from the SU2 source.
+This page shows how the transition model of SU2 is built, how it is coupled with the turbulence models, and what to change to add a correlation, a variant or a new transition model. The code examples are copied from the SU2 source.
 
 SU2 has one transport-equation transition model: the Langtry-Menter (LM) model. It works with SA and with SST. It has two equations:
 
@@ -51,11 +51,9 @@ Read [Adding a Turbulence Model](../Adding-a-Turbulence-Model/) first. The trans
 
 ## Overview
 
-The table lists the classes and settings of the LM model.
-
 | Item | LM in SU2 |
 |---|---|
-| Solver | [`CTransLMSolver`](../../doxygen/classCTransLMSolver.html), position `TRANS_SOL`, run with `RUNTIME_TRANS_SYS` |
+| Solver | [`CTransLMSolver`](../../doxygen/classCTransLMSolver.html), at position `TRANS_SOL` of the solver container, equation system `RUNTIME_TRANS_SYS` |
 | Variables | [`CTransLMVariable`](../../doxygen/classCTransLMVariable.html): intermittency (index 0) and transition momentum thickness Reynolds number (index 1) |
 | Source term | [`CSourcePieceWise_TransLM`](../../doxygen/classCSourcePieceWise__TransLM.html) |
 | Correlations | [`TransLMCorrelations`](../../doxygen/classTransLMCorrelations.html) |
@@ -88,7 +86,7 @@ enum class LM_OPTIONS {
 
 `LM_Options_Map` has the keywords `NONE`, `LM2015`, `MALAN`, `SULUKSNA`, `KRAUSE`, `KRAUSE_HYPER`, `MEDIDA_BAEDER`, `MENTER_LANGTRY` and `DEFAULT`. `MEDIDA` is in the enum but not in the map, so users cannot select it.
 
-The correlation has its own enum, `TURB_TRANS_CORRELATION`, with the same names. The parsed options struct holds the result of reading the list:
+The correlation has its own enum, `TURB_TRANS_CORRELATION`, with the same names as the correlation keywords. The parsed options struct holds the result of reading the list:
 
 ```cpp
 struct LM_ParsedOptions {
@@ -175,9 +173,9 @@ void CTransLMVariable::SetIntermittencyEff(unsigned long iPoint, su2double val_I
     nodes->SetIntermittencyEff(iPoint, Intermittency_Sep);
 ```
 
-The other functions are `Preprocessing` (`CommonPreprocessing`), `Upwind_Residual`, `Source_Residual`, the boundary conditions and `LoadRestart`.
+The solver also implements `Preprocessing` (which calls `CommonPreprocessing`), `Upwind_Residual`, `Source_Residual`, the boundary conditions and `LoadRestart`.
 
-`CSolverFactory::CreateTransSolver` creates the solver for `RANS` and `INC_RANS`:
+`CSolverFactory::CreateTransSolver` creates the solver for `RANS` and `INC_RANS`. It then runs the flow `Preprocessing`, the transition `Postprocessing` (which sets the effective intermittency) and the flow `Preprocessing` again:
 
 ```cpp
       case TURB_TRANS_MODEL::LM :
@@ -281,7 +279,7 @@ class CScalarFlux_TransLM
 
 ## Coupling with the turbulence model
 
-The transition and turbulence models exchange data in both directions. This section lists what each one reads from the other, and where.
+The transition and turbulence models exchange data in both directions.
 
 **From the turbulence model to the transition model:**
 
