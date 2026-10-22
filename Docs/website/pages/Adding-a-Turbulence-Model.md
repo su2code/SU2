@@ -373,7 +373,7 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
 
 Some code tests `TURB_MODEL::SST` or `TURB_MODEL::SA` directly. Check each place with `git grep -n "TURB_MODEL::SST"` and `git grep -n "TURB_MODEL::SA\b"`. The main ones are:
 
-- `tkeNeeded`. The flow solvers add the turbulent kinetic energy to the energy and to the stresses only for `TURB_MODEL::SST`. This happens in `CNSSolver::SetPrimitive_Variables`, `CIncNSSolver`, `CFVMFlowSolverBase::Viscous_Residual_impl`, and many boundary conditions in `CEulerSolver.cpp` and `CIncEulerSolver.cpp`. A new model that transports k must be added there.
+- `tkeNeeded`. The flow solvers read the turbulent kinetic energy for `TURB_MODEL::SST`, including its contribution to the compressible total energy. Check `CNSSolver::SetPrimitive_Variables`, `CIncNSSolver`, `CFVMFlowSolverBase::Viscous_Residual_impl`, and the boundary conditions in `CEulerSolver.cpp` and `CIncEulerSolver.cpp` for a new model that transports k. Passing k to the viscous numerics does not mean it enters the stress tensor: ordinary SST uses the "m" form, which omits the isotropic k term. With `SST_OPTIONS= UQ`, the perturbed Reynolds stress tensor includes k. See [Turbulence Models](../Turbulence-Models/#sst).
 - `CConfig::GetInlet_TurbVal`, and the check of the number of values of `MARKER_INLET_TURBULENT` in `CConfig::SetPostprocessing`.
 - `CDriver::InstantiateTurbulentNumerics`.
 - The turbomachinery averaging in `CEulerSolver::PreprocessAverage` and `CEulerSolver::TurboAverageProcess`.

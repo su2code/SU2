@@ -9,7 +9,8 @@ The workflow `.github/workflows/docs-website.yml` builds the website and publish
 2. It copies every page in `pages/` into the user guide (`_docs_v7/`). A page with the same name as a website page replaces it.
 3. It copies the Markdown pages kept in the code folders (for example `Docs/Aeroacoustics.md`) into the user guide.
 4. It makes the **Option Reference** from `Common/src/CConfig.cpp`. Each option shows:
-   - its description, type, allowed values and default value;
+   - its description, type, allowed values and default value when it can be extracted (array defaults need a
+     `DEFAULT:` comment; template examples may differ from defaults);
    - the comment of `config_template.cfg`, when it adds something;
    - the website pages and tutorials that mention it;
    - up to three test case files that use it, with their values;

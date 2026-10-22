@@ -109,6 +109,9 @@ def read_maps(su2):
   for path in glob.glob(os.path.join(su2, "Common", "include", "**", "*.*pp"), recursive=True):
     with open(path, encoding="utf-8", errors="replace") as f:
       text = f.read()
+    # Ignore disabled entries, but keep comment markers inside quoted strings.
+    text = re.sub(r'"(?:\\.|[^"\\])*"|//[^\n]*|/\*.*?\*/',
+                  lambda m: m[0] if m[0].startswith('"') else " ", text, flags=re.S)
     for m in pattern.finditer(text):
       pairs = re.findall(r'MakePair\(\s*"([^"]+)"\s*,\s*([^)]*?)\s*\)', m.group(2))
       maps[m.group(1)] = pairs
@@ -254,8 +257,6 @@ def describe_type(opt, maps):
     default = {"true": "YES", "false": "NO"}.get(args[2], args[2])
   elif kind in ("Double", "String", "UnsignedLong", "UnsignedShort", "Long") and len(args) > 2:
     default = args[2].strip('"')
-  elif kind in ("DoubleArray", "UShortArray", "ULongArray") and len(args) > 3:
-    default = args[3]
   return TYPE_NAMES.get(kind, "special format, see config_template.cfg"), values, default
 
 
@@ -317,6 +318,8 @@ def write_reference(su2, site, options, maps, commit, repo, skip):
         out.append("- **Values:** {}".format(opt_text))
       if default or def_text:
         out.append("- **Default:** `{}`".format(default if default else def_text))
+      elif opt["kind"] in ("DoubleArray", "UShortArray", "ULongArray"):
+        out.append("- **Default:** *Not extracted; see the code.*")
       if tmpl_line:
         out.append("- **In config_template.cfg:** `{}`".format(tmpl_line))
       else:
@@ -342,8 +345,10 @@ def write_reference(su2, site, options, maps, commit, repo, skip):
   missing_tmpl = sum(1 for o in options if o["name"] not in examples)
   out = ["---", "title: Option Reference", "permalink: /{}/{}/".format(URL, REF_PREFIX), "---", "",
          "{% raw %}", "",
-         "This reference lists every option of the SU2 configuration file. It is made from the source code, "
-         "so it always matches the code. {}".format(stamp), "",
+         "This reference lists the options registered in the SU2 source code. {}".format(stamp), "",
+         "Defaults initialized outside the registration calls may not be extracted. "
+         "The template lines are examples and may differ from the defaults. "
+         "Allowed keywords can have additional restrictions for a particular solver or option combination.", "",
          "Each option shows the description in the code, the text of `config_template.cfg` when it adds "
          "something, the pages of this website that mention it, and real test case files that use it.", "",
          "- Options: {}".format(len(options)),

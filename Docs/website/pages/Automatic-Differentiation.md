@@ -671,8 +671,11 @@ Tips:
 
 - Converge the primal and the adjoint tightly. Most mismatches come from poor convergence.
 - Try two or three finite-difference steps. A small step suffers from rounding, a large one from truncation.
-- Forward and reverse mode should agree to many digits, because both are exact derivatives of the same discrete
-  code. A difference between them points to an AD error, not to convergence or step size.
+- Forward mode and the discrete adjoint should agree closely when the primal, forward sensitivities and adjoint
+  are sufficiently converged and use the same model and limiter settings. Forward AD through a finite number of
+  primal iterations can differ from the fixed-point adjoint sensitivity without an AD error. Check convergence
+  and frozen-model or frozen-limiter settings before investigating the recording. This comparison has no
+  finite-difference step-size error.
 
 ### Unit tests
 

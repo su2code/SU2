@@ -52,9 +52,10 @@ Notes:
 - `debugoptimized` is a good default for gdb and profilers: the code is fast enough for real cases, and the stack
   traces have function names and lines **(advice)**. Some variables show as "optimized out"; use `debug` when you
   need them.
-- `--warnlevel=3` turns on most compiler warnings. The CI (continuous integration: the automatic tests on GitHub)
-  builds with `--warnlevel=3` and `--werror` (warnings become errors) for most configurations, so check your change
-  with these flags before you push.
+- `--warnlevel=3` turns on most compiler warnings. Check your change with `--warnlevel=3 --werror` locally;
+  `--werror` makes warnings fail the build **(advice)**. Most CI configurations use warning level 3, but the
+  current `.github/workflows/regression.yml` exports the CPU flags as its `werror` output by mistake, so those
+  builds do not currently receive `--werror`.
 - `-Dcpu-arch` (default `native`) sets `-march`. `-Dcpu-arch=` (empty) removes it. This helps with tools that do
   not know the newest instructions, see [Valgrind](#valgrind).
 - SU2 always compiles with `-ffast-math -fno-finite-math-only` (when the compiler accepts these flags). NaN checks

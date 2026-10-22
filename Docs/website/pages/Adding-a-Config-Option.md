@@ -146,7 +146,9 @@ The website adds these by itself. You do not write them in the comment:
 
 - the type, from the `add...Option` function;
 - for enum options, all the keywords of the map;
-- the default, from the last argument of the call (for an enum, the keyword of the map that has this value);
+- the default, when it is an argument of the call (for an enum, the keyword of the map that has this value).
+  Array defaults are initialized separately: write a `DEFAULT:` comment if you want the reference to show them;
+  otherwise the reference says that the default was not extracted;
 - the line of the option in `config_template.cfg`, or "Not in config_template.cfg";
 - the comment above that line in `config_template.cfg`, when it says more than the comment in the code (or in its
   place, when the code has no description);
