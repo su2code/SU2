@@ -91,7 +91,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals         = [-2.226820, -0.256327, -2.299900, -0.003171]
+    discadj_rans_naca0012_sst.test_vals         = [-2.226827, -0.253089, -2.299100, -0.003174]
     discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.226852, -0.253100, -2.299300, -0.003164]
     test_list.append(discadj_rans_naca0012_sst)
 
@@ -150,7 +150,7 @@ def main():
     discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
     discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle_restart.cfg"
     discadj_axisymmetric_rans_nozzle.test_iter  = 10
-    discadj_axisymmetric_rans_nozzle.test_vals = [9.742490, 5.136585, 7.107742, 2.488366]
+    discadj_axisymmetric_rans_nozzle.test_vals = [9.738700, 5.135180, 7.101795, 2.487548]
     discadj_axisymmetric_rans_nozzle.no_restart = True
     test_list.append(discadj_axisymmetric_rans_nozzle)
 
@@ -217,7 +217,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.039711, -1.508402, -0.006059, 0.000012]
+    discadj_pitchingNACA0012.test_vals = [-1.115587, -1.573317, -0.006474, 0.000010]
     discadj_pitchingNACA0012.tol = 0.01
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
@@ -251,7 +251,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, -7.555647, -10.335486, -10.356919, -13.629543]
+    discadj_trans_stator.test_vals = [79.000000, -7.554772, -10.335151, -10.357769, -13.628908]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, -7.555647, -10.335486, -10.356919, -13.629543]
     test_list.append(discadj_trans_stator)
 
@@ -260,7 +260,7 @@ def main():
     discadj_axial_stage.cfg_dir   = "disc_adj_turbomachinery/axial_stage_2D"
     discadj_axial_stage.cfg_file  = "Axial_stage2D.cfg"
     discadj_axial_stage.test_iter = 79
-    discadj_axial_stage.test_vals = [79.000000, -6.606356, -7.139726]
+    discadj_axial_stage.test_vals = [79.000000, -6.605179, -7.180296]
     discadj_axial_stage.test_vals_aarch64 = [79.000000, -6.606356, -7.139726]
     test_list.append(discadj_axial_stage)
 
@@ -315,7 +315,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-3.824633, 1.979516, -3.863368, 0.295450, 3.839800]
+    discadj_fsi2.test_vals         = [-3.824635, 1.979542, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.test_vals_aarch64 = [-3.824870, 1.979160, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)

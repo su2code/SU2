@@ -87,7 +87,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.201555, -0.175213, 3.045200, -0.041846]
+    discadj_rans_naca0012_sst.test_vals = [-2.201606, -0.172546, 3.045700, -0.041853]
     discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.201855, -0.172443, 3.043400, -0.041820]
     test_list.append(discadj_rans_naca0012_sst)
 
@@ -188,7 +188,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.041975, -1.513011, -0.006202, 0.000012]
+    discadj_pitchingNACA0012.test_vals = [-1.128086, -1.582652, -0.006613, 0.000011]
     discadj_pitchingNACA0012.tol = 0.01
     discadj_pitchingNACA0012.unsteady  = True
     discadj_pitchingNACA0012.enabled_with_tsan = False

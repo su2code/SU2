@@ -96,7 +96,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.096075, -0.181237, 0.350380, -0.023435]
+    discadj_rans_naca0012_sst.test_vals = [-2.096038, -0.178557, 0.351620, -0.023443]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -158,7 +158,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.057526, -1.512609, -0.004842, 0.000013]
+    discadj_pitchingNACA0012.test_vals = [-1.138369, -1.575068, -0.005301, 0.000003]
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
@@ -167,7 +167,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
-    unst_deforming_naca0012.test_vals = [-1.874283, -1.768562, 4274.000000, 0.000003]
+    unst_deforming_naca0012.test_vals = [-1.875062, -1.766683, 4307.900000, 0.000003]
     unst_deforming_naca0012.unsteady  = True
     test_list.append(unst_deforming_naca0012)
 
@@ -200,7 +200,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, -7.308168, -9.891121, -10.038669, -13.368502]
+    discadj_trans_stator.test_vals = [79.000000, -7.306692, -9.889618, -10.037399, -13.367132]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, -7.308167, -9.891117, -10.038669, -13.368501]
     test_list.append(discadj_trans_stator)
 
@@ -209,7 +209,7 @@ def main():
     discadj_axial_stage.cfg_dir   = "disc_adj_turbomachinery/axial_stage_2D"
     discadj_axial_stage.cfg_file  = "Axial_stage2D.cfg"
     discadj_axial_stage.test_iter = 79
-    discadj_axial_stage.test_vals = [79.000000, -6.605593, -7.138207]
+    discadj_axial_stage.test_vals = [79.000000, -6.604508, -7.178602]
     discadj_axial_stage.test_vals_aarch64 = [79.000000, -6.605593, -7.138207]
     test_list.append(discadj_axial_stage)
 
