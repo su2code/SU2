@@ -98,7 +98,7 @@ These are proposed next priorities. The page records completed work; it does not
 | 21 October 2026 | Generated references and Doxygen integration; developer and extension guides; model pages; nine draft setup guides; search, navigation and feed/sitemap repairs. | The linked pages above and the history of the two `docs_site` branches. Draft guidance remained explicitly marked for review. |
 | 22 October 2026 | Corrected 16 documentation/generation findings from comparison with source and model references. | SU2 `7862504f9d` and website `be90edc`, linked above. Solver limitations were documented, not silently changed. |
 | 22 October 2026 | Clarified page roles, introduced permanent checks and made local/CI builds use a shared entry point and locked Ruby/gem dependencies. | SU2 `a14b4df35d`, website `602189b` and the successful milestone workflows linked above. |
-| 22 October 2026 | Added this maintained status page, a link from Develop and contributor guidance for keeping the record current. Fixed report self-link ordering with a reproducing regression check. | This page's source history. The current build manifest identifies the revisions that include it. |
+| 22 October 2026 | Added this maintained status page under Developer Docs and contributor guidance for keeping the record current. Fixed report self-link ordering with a reproducing regression check. | This page's source history. The current build manifest identifies the revisions that include it. |
 
 ## Keeping this page current
 
@@ -111,6 +111,6 @@ For each completed batch:
 3. Remove resolved historical findings individually. Keep current generated counts in the generated reports; label any numbers quoted here with their milestone and date.
 4. Run the shared documentation build and the relevant checks. Use **Docs Website** with the reviewed website commit SHA when publishing website-only changes.
 
-See [Contribute](../contribute/) for page ownership and editing steps. Build commands and contributor details are in [Docs/website/README.md](https://github.com/rois1995/SU2/blob/docs_site/Docs/website/README.md). The [Develop page]({{ '/develop.html' | relative_url }}) provides another entry point to this status record.
+See [Contribute](../contribute/) for page ownership and editing steps. Build commands and contributor details are in [Docs/website/README.md](https://github.com/rois1995/SU2/blob/docs_site/Docs/website/README.md).
 
 Last checked against SU2 develop `a14b4df35d`.
