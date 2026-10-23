@@ -73,6 +73,13 @@ def build_ninja():
             # Specify C++17
             env = os.environ.copy()
             env["CXXFLAGS"] = env.get("CXXFLAGS", "") + " -std=c++17"
+            # ninja is a build tool and must not be instrumented by sanitizers
+            for var in ("CFLAGS", "CXXFLAGS", "LDFLAGS"):
+                env[var] = " ".join(
+                    f
+                    for f in env.get(var, "").split()
+                    if not f.startswith("-fsanitize")
+                )
             subprocess.run(
                 ["python3", "configure.py", "--bootstrap"], cwd=ninjapath, env=env
             )
