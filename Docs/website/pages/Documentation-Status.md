@@ -125,6 +125,7 @@ These are proposed next priorities. The page records completed work; it does not
 | 22 October 2026 | Clarified page roles, introduced permanent checks and made local/CI builds use a shared entry point and locked Ruby/gem dependencies. | SU2 `a14b4df35d`, website `602189b` and the successful milestone workflows linked above. |
 | 22 October 2026 | Added this maintained status page under Developer Docs and contributor guidance for keeping the record current. Fixed report self-link ordering with a reproducing regression check. | This page's source history. The current build manifest identifies the revisions that include it. |
 | 22 October 2026 | Repaired all 180 historical link findings, eight template names and the obsolete structural output keyword; reviewed nine setup guides and four model pages; added a hyphenated-enum regression check. | Review scope and primary references above; current build manifest and check results identify this batch. Eleven tooling tests; CFD validation remains pending. |
+| 23 October 2026 | Added the V&V case "NACA 0021 Beyond Stall: Hybrid RANS/LES" (SA and SST DDES/EDDES against experiment and published DES). Described the SST DES variants and the new `SA_EDDES` cell size of SU2 PR #2150 on the hybrid RANS/LES, turbulence model and unsteady setup pages. | Website `7279f4d`. Page content checked against PR #2150 at `e9e85686ad`. The V&V data come from local runs; the flow picture is still to be added. |
 
 ## Keeping this page current
 
