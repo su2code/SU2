@@ -29,6 +29,7 @@
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../include/toolboxes/partition_load.hpp"
 #include "../../include/toolboxes/C1DInterpolation.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFEM.hpp"
@@ -7449,8 +7450,8 @@ vector<unsigned long> CPhysicalGeometry::LinkAnisotropicLines(const vector<idx_t
   return root;
 }
 
-unsigned long CPhysicalGeometry::KeepLinesTogether(const vector<unsigned long>& root, vector<idx_t>& part,
-                                                   unsigned long& longestLine) const {
+unsigned long CPhysicalGeometry::KeepLinesTogether(const vector<unsigned long>& root, const vector<idx_t>& vwgt,
+                                                   vector<idx_t>& part, unsigned long& longestLine) const {
   CLinearPartitioner pointPartitioner(Global_nPointDomain, 0);
   const unsigned long firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
 
@@ -7496,12 +7497,19 @@ unsigned long CPhysicalGeometry::KeepLinesTogether(const vector<unsigned long>& 
     decision[line.first - firstIndex] = best;
   }
 
-  /*--- Every point takes the partition of its line, unless that would leave a rank without points. ---*/
+  /*--- Every point takes the partition of its line, unless that leaves the load more unbalanced than
+   *    both the limit and the partition ParMETIS returned. ---*/
   const auto chosen = FetchFromOwners(root, decision);
-  vector<unsigned long> count(size, 0), countGlobal(size);
-  for (const auto iPart : chosen) count[iPart]++;
-  SU2_MPI::Allreduce(count.data(), countGlobal.data(), size, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  if (*min_element(countGlobal.begin(), countGlobal.end()) == 0) return 0;
+  vector<unsigned long> oldLoad(size, 0), newLoad(size, 0), oldLoadGlobal(size), newLoadGlobal(size);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    oldLoad[part[iPoint]] += vwgt[iPoint];
+    newLoad[chosen[iPoint]] += vwgt[iPoint];
+  }
+  SU2_MPI::Allreduce(oldLoad.data(), oldLoadGlobal.data(), size, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(newLoad.data(), newLoadGlobal.data(), size, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  constexpr double MAX_LINE_IMBALANCE = 1.5;
+  if (*min_element(newLoadGlobal.begin(), newLoadGlobal.end()) == 0) return 0;
+  if (PartitionImbalance(newLoadGlobal) > max(MAX_LINE_IMBALANCE, PartitionImbalance(oldLoadGlobal))) return 0;
 
   unsigned long moved = 0, movedGlobal = 0;
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -7722,7 +7730,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
 
   if (anisotropic) {
     unsigned long longestLine = 0;
-    const auto moved = KeepLinesTogether(lineRoot, part, longestLine);
+    const auto moved = KeepLinesTogether(lineRoot, vwgt, part, longestLine);
     /*--- The imbalance is measured in the vertex weights ParMETIS balances. ---*/
     vector<unsigned long> load(size, 0), loadGlobal(size);
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) load[part[iPoint]] += vwgt[iPoint];

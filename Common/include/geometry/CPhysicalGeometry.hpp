@@ -365,11 +365,12 @@ class CPhysicalGeometry final : public CGeometry {
   /*!
    * \brief Moves each line to the partition that holds most of its points.
    * \param[in] root - Line roots from LinkAnisotropicLines.
+   * \param[in] vwgt - Vertex weights ParMETIS balances; no move is made if it would unbalance them.
    * \param[in,out] part - Partition of every local point.
    * \param[out] longestLine - Number of points of the longest line.
    * \return Number of points that changed partition, summed over all ranks.
    */
-  unsigned long KeepLinesTogether(const vector<unsigned long>& root, vector<idx_t>& part,
+  unsigned long KeepLinesTogether(const vector<unsigned long>& root, const vector<idx_t>& vwgt, vector<idx_t>& part,
                                   unsigned long& longestLine) const;
 #endif
 

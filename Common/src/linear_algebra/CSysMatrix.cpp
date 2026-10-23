@@ -30,6 +30,7 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
+#include "../../include/toolboxes/halo_block_buffer.hpp"
 
 #include <cmath>
 #include <limits>
@@ -1716,46 +1717,59 @@ void CSysMatrix<ScalarType>::CopyHaloRowsFromOwners(const CGeometry* geometry) {
   const auto* nodes = geometry->nodes;
   const auto blkSize = nVar * nEqn;
 
-  /*--- Per sent point: block count, then global column and block for each column not owned by the sender. ---*/
-  vector<vector<passivedouble>> sendTo(size);
+  /*--- Per sent point: block count, then global column and block for each column not owned by the sender.
+   *    Indices and coefficients travel in separate buffers so that indices keep full integer precision. ---*/
+  vector<CHaloBlockBuffer<passivedouble>> sendTo(size);
+  vector<passivedouble> tmp(blkSize);
   for (int iMsg = 0; iMsg < geometry->nP2PSend; iMsg++) {
     auto& buf = sendTo[geometry->Neighbors_P2PSend[iMsg]];
     for (auto k = geometry->nPoint_P2PSend[iMsg]; k < geometry->nPoint_P2PSend[iMsg + 1]; k++) {
       const auto iPoint = geometry->Local_Point_P2PSend[k];
-      const auto countPos = buf.size();
-      buf.push_back(0);
+      const auto countPos = buf.BeginPoint();
       for (const auto jPoint : nodes->GetPoints(iPoint)) {
         if (nodes->GetDomain(jPoint)) continue;
         const auto* blk = GetBlock(iPoint, jPoint);
         if (!blk) continue;
-        buf.push_back(nodes->GetGlobalIndex(jPoint));
-        for (auto i = 0ul; i < blkSize; i++) buf.push_back(SU2_TYPE::GetValue(blk[i]));
-        buf[countPos] += 1;
+        for (auto i = 0ul; i < blkSize; i++) tmp[i] = SU2_TYPE::GetValue(blk[i]);
+        buf.AddBlock(countPos, nodes->GetGlobalIndex(jPoint), tmp.data(), blkSize);
       }
     }
   }
 
-  vector<int> nSend(size), nRecv(size), sendDisp(size + 1, 0), recvDisp(size + 1, 0);
-  for (int iRank = 0; iRank < size; iRank++) nSend[iRank] = sendTo[iRank].size();
-  MPIWrapper::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, SU2_MPI::GetComm());
-  for (int iRank = 0; iRank < size; iRank++) {
-    sendDisp[iRank + 1] = sendDisp[iRank] + nSend[iRank];
-    recvDisp[iRank + 1] = recvDisp[iRank] + nRecv[iRank];
-  }
-  vector<passivedouble> sendBuf(sendDisp[size]), recvBuf(recvDisp[size]);
-  for (int iRank = 0; iRank < size; iRank++)
-    copy(sendTo[iRank].begin(), sendTo[iRank].end(), sendBuf.begin() + sendDisp[iRank]);
-  MPIWrapper::Alltoallv(sendBuf.data(), nSend.data(), sendDisp.data(), MPI_DOUBLE, recvBuf.data(), nRecv.data(),
-                        recvDisp.data(), MPI_DOUBLE, SU2_MPI::GetComm());
+  /*--- Exchanges one array per rank, returns the received data and the per-rank displacements. ---*/
+  auto exchange = [&](auto getArray, auto dummy, auto mpiType, auto& recvBuf, vector<int>& recvDisp) {
+    using T = decltype(dummy);
+    vector<int> nSend(size), nRecv(size), sendDisp(size + 1, 0);
+    recvDisp.assign(size + 1, 0);
+    for (int iRank = 0; iRank < size; iRank++) nSend[iRank] = getArray(sendTo[iRank]).size();
+    MPIWrapper::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, SU2_MPI::GetComm());
+    for (int iRank = 0; iRank < size; iRank++) {
+      sendDisp[iRank + 1] = sendDisp[iRank] + nSend[iRank];
+      recvDisp[iRank + 1] = recvDisp[iRank] + nRecv[iRank];
+    }
+    vector<T> sendBuf(sendDisp[size]);
+    recvBuf.resize(recvDisp[size]);
+    for (int iRank = 0; iRank < size; iRank++)
+      copy(getArray(sendTo[iRank]).begin(), getArray(sendTo[iRank]).end(), sendBuf.begin() + sendDisp[iRank]);
+    MPIWrapper::Alltoallv(sendBuf.data(), nSend.data(), sendDisp.data(), mpiType, recvBuf.data(), nRecv.data(),
+                          recvDisp.data(), mpiType, SU2_MPI::GetComm());
+  };
+  vector<unsigned long> recvIdx;
+  vector<passivedouble> recvVal;
+  vector<int> idxDisp, valDisp;
+  exchange([](auto& b) -> auto& { return b.index; }, 0ul, MPI_UNSIGNED_LONG, recvIdx, idxDisp);
+  exchange([](auto& b) -> auto& { return b.value; }, passivedouble(0), MPI_DOUBLE, recvVal, valDisp);
 
   /*--- Points arrive in receive-list order, only blocks in columns owned here are kept. ---*/
   for (int iMsg = 0; iMsg < geometry->nP2PRecv; iMsg++) {
-    const auto* data = recvBuf.data() + recvDisp[geometry->Neighbors_P2PRecv[iMsg]];
+    const auto iRank = geometry->Neighbors_P2PRecv[iMsg];
+    CHaloBlockReader<passivedouble> reader(recvIdx.data() + idxDisp[iRank], recvVal.data() + valDisp[iRank], blkSize);
     for (auto k = geometry->nPoint_P2PRecv[iMsg]; k < geometry->nPoint_P2PRecv[iMsg + 1]; k++) {
       const auto iPoint = geometry->Local_Point_P2PRecv[k];
-      const auto nBlk = static_cast<unsigned long>(*data++);
-      for (auto iBlk = 0ul; iBlk < nBlk; iBlk++, data += blkSize) {
-        const auto jGlobal = static_cast<unsigned long>(*data++);
+      const auto nBlk = reader.NextPoint();
+      for (auto iBlk = 0ul; iBlk < nBlk; iBlk++) {
+        unsigned long jGlobal;
+        const auto* data = reader.NextBlock(jGlobal);
         for (const auto jPoint : nodes->GetPoints(iPoint)) {
           if (!nodes->GetDomain(jPoint) || nodes->GetGlobalIndex(jPoint) != jGlobal) continue;
           auto* blk = GetBlock(iPoint, jPoint);
