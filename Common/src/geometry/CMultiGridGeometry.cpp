@@ -69,6 +69,39 @@ vector<unsigned long> MarkerSetClasses(unsigned long nEntity, vector<std::pair<u
   return classOfEntity;
 }
 
+/*--- A symmetry plane met at an angle by the other boundaries of a 3D node imposes nothing they do
+ *    not, so the node is agglomerated as if it were not on the plane. A plane continuing their
+ *    surface keeps its own condition. ---*/
+bool AbsorbedSymmetry(const CGeometry* grid, const CConfig* config, unsigned long iPoint, unsigned short iMarker) {
+  const auto nDim = grid->GetnDim();
+  if ((nDim != 3) || (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE)) return false;
+
+  auto unitNormal = [&](unsigned short jMarker, su2double* n) {
+    const long iVertex = grid->nodes->GetVertex(iPoint, jMarker);
+    if (iVertex < 0) return false;
+    grid->vertex[jMarker][iVertex]->GetNormal(n);
+    const su2double nrm = GeometryToolbox::Norm(nDim, n);
+    if (nrm <= 0.0) return false;
+    for (unsigned short d = 0; d < nDim; ++d) n[d] /= nrm;
+    return true;
+  };
+
+  su2double nSym[3] = {0.0}, nOther[3] = {0.0};
+  if (!unitNormal(iMarker, nSym)) return false;
+
+  bool hasOther = false;
+  for (auto jMarker = 0u; jMarker < grid->GetnMarker(); jMarker++) {
+    const auto bc = config->GetMarker_All_KindBC(jMarker);
+    if ((bc == SEND_RECEIVE) || (bc == SYMMETRY_PLANE) || (grid->nodes->GetVertex(iPoint, jMarker) < 0)) continue;
+    if ((bc == PERIODIC_BOUNDARY) || !unitNormal(jMarker, nOther)) return false;
+    if (fabs(GeometryToolbox::DotProduct(nDim, nSym, nOther)) >= sqrt(0.5)) return false;
+    hasOther = true;
+  }
+  return hasOther;
+}
+
+bool HasElements(const CGeometry* grid);
+
 }  // namespace
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
@@ -387,6 +420,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   vector<char> inCV(fine_grid->GetnPoint(), 0);
   vector<char> isCandidate(fine_grid->GetnPoint(), 0);
   vector<unsigned long> members, candidates;
+  vector<vector<unsigned long>> wholeCells;
   members.reserve(maxAgglomSize);
 
   /*--- A local frame at the seed: up to nDim of its incident edges, as mutually orthogonal as
@@ -433,6 +467,56 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       };
 
       addMember(iPoint);
+
+      /*--- A seed standing in a free quadrilateral or hexahedron takes that element whole, the one
+       *    pressing hardest against what is already agglomerated, so leftover structured mesh is
+       *    tiled by whole cells. A grid without elements, a coarse one, offers the 4-cycles of its
+       *    connectivity as quadrilaterals. ---*/
+      wholeCells.clear();
+      if (HasElements(fine_grid)) {
+        for (auto iElem = 0u; iElem < fine_grid->nodes->GetnElem(iPoint); ++iElem) {
+          const auto* elem = fine_grid->elem[fine_grid->nodes->GetElem(iPoint, iElem)];
+          if ((elem->GetVTK_Type() != QUADRILATERAL) && (elem->GetVTK_Type() != HEXAHEDRON)) continue;
+          wholeCells.emplace_back();
+          for (auto iNode = 0u; iNode < elem->GetnNodes(); ++iNode)
+            if (elem->GetNode(iNode) != static_cast<unsigned long>(iPoint))
+              wholeCells.back().push_back(elem->GetNode(iNode));
+        }
+      } else if (nDim == 2) {
+        const auto neighbours = fine_grid->nodes->GetPoints(iPoint);
+        auto touching = [&](unsigned long a, unsigned long b) {
+          const auto around = fine_grid->nodes->GetPoints(a);
+          return std::find(around.begin(), around.end(), b) != around.end();
+        };
+        for (auto a : neighbours)
+          for (auto b : neighbours) {
+            if ((a >= b) || touching(a, b)) continue;
+            for (auto m : fine_grid->nodes->GetPoints(a))
+              if ((m != iPoint) && touching(m, b) && !touching(m, iPoint)) wholeCells.push_back({a, m, b});
+          }
+      }
+
+      auto bestCell = NO_CV;
+      unsigned long bestContact = 0, bestKey = NO_CV;
+      for (auto iCell = 0ul; iCell < wholeCells.size(); ++iCell) {
+        bool free = true;
+        unsigned long contact = 0, key = fine_grid->nodes->GetGlobalIndex(iPoint);
+        for (auto kPoint : wholeCells[iCell]) {
+          key = std::min(key, fine_grid->nodes->GetGlobalIndex(kPoint));
+          free = free && !fine_grid->nodes->GetAgglomerate(kPoint) && fine_grid->nodes->GetDomain(kPoint) &&
+                 GeometricalCheck(kPoint, fine_grid, config);
+          if (!free) break;
+          for (auto mPoint : fine_grid->nodes->GetPoints(kPoint)) contact += fine_grid->nodes->GetAgglomerate(mPoint);
+        }
+        if (!free) continue;
+        if ((bestCell == NO_CV) || (contact > bestContact) || ((contact == bestContact) && (key < bestKey))) {
+          bestCell = iCell;
+          bestContact = contact;
+          bestKey = key;
+        }
+      }
+      if (bestCell != NO_CV)
+        for (auto kPoint : wholeCells[bestCell]) addMember(kPoint);
 
       edgeDir.clear();
       edgeLen.clear();
@@ -494,7 +578,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         }
 
         unsigned long best = NO_CV;
-        unsigned short best_shared = 0;
+        unsigned short best_shared = 0, best_flush = 0;
         su2double best_dist = std::numeric_limits<su2double>::max();
 
         for (auto CVPoint : candidates) {
@@ -502,6 +586,27 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
           unsigned short shared = 0;
           for (auto jPoint : fine_grid->nodes->GetPoints(CVPoint)) shared += inCV[jPoint];
+          /*--- In 2D a CV of three or more nodes only takes nodes touching two members, so it cannot
+           *    grow into a chain. ---*/
+          if ((nDim == 2) && (nChildren >= 3) && (shared < 2)) continue;
+
+          /*--- A pair does not grow into a line of three, the third node then seeds a pair of its own,
+           *    so the cells of a row keep the phase of the cells beside them. ---*/
+          if ((nDim == 2) && (nChildren == 2) && (shared == 1)) {
+            const auto around = fine_grid->nodes->GetPoints(CVPoint);
+            const bool firstTouches = std::find(around.begin(), around.end(), members[0]) != around.end();
+            const auto tip = firstTouches ? members[0] : members[1], tail = firstTouches ? members[1] : members[0];
+            su2double along[MAXNDIM] = {0.0}, across[MAXNDIM] = {0.0};
+            for (unsigned short d = 0; d < nDim; ++d) {
+              along[d] = fine_grid->nodes->GetCoord(CVPoint, d) - fine_grid->nodes->GetCoord(tip, d);
+              across[d] = fine_grid->nodes->GetCoord(tip, d) - fine_grid->nodes->GetCoord(tail, d);
+            }
+            const su2double lenAlong = GeometryToolbox::Norm(nDim, along);
+            const su2double lenAcross = GeometryToolbox::Norm(nDim, across);
+            if ((lenAlong > 0.0) && (lenAcross > 0.0) &&
+                (GeometryToolbox::DotProduct(nDim, along, across) > 0.5 * lenAlong * lenAcross))
+              continue;
+          }
 
           /*--- Distance to the centroid in cells: the offset is scaled by the seed edge pointing
            *    most nearly along it. ---*/
@@ -522,9 +627,24 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
             dist = r * r;
           }
 
-          if ((shared > best_shared) || ((shared == best_shared) && (dist < best_dist))) {
+          /*--- Between equals, the node lying flush against the same neighbouring CVs as the members
+           *    keeps the cells of a structured mesh in line with those already made. ---*/
+          unsigned short flush = 0;
+          for (auto jPoint : fine_grid->nodes->GetPoints(CVPoint)) {
+            if (!fine_grid->nodes->GetAgglomerate(jPoint) || inCV[jPoint]) continue;
+            bool lies = false;
+            for (auto kPoint : members)
+              for (auto lPoint : fine_grid->nodes->GetPoints(kPoint))
+                lies = lies || ((lPoint != jPoint) && fine_grid->nodes->GetAgglomerate(lPoint) && !inCV[lPoint] &&
+                                (fine_grid->nodes->GetParent_CV(lPoint) == fine_grid->nodes->GetParent_CV(jPoint)));
+            flush += lies;
+          }
+
+          if ((shared > best_shared) || ((shared == best_shared) && (flush > best_flush)) ||
+              ((shared == best_shared) && (flush == best_flush) && (dist < best_dist))) {
             best = CVPoint;
             best_shared = shared;
+            best_flush = flush;
             best_dist = dist;
           }
         }
@@ -638,18 +758,42 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     nodes->SetnChildren_CV(fromCV, 0);
   };
 
-  /*--- Neighbour with the fewest children that may take this CV, NO_CV if there is none. Neighbours
-   *    an earlier merge in the same pass emptied are not revived. ---*/
-  auto smallestPartner = [&](unsigned long iCV, unsigned short maxPartnerSize, bool keepOffPartition) {
+  /*--- Dual-face area and number of fine edges between the children of two coarse CVs. ---*/
+  auto sharedFaces = [&](unsigned long iCV, unsigned long jCV) {
+    su2double area = 0.0;
+    unsigned short nEdges = 0;
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCV); iChildren++) {
+      const auto iFinePoint = nodes->GetChildren_CV(iCV, iChildren);
+      for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iFinePoint); iNeigh++) {
+        if (fine_grid->nodes->GetParent_CV(fine_grid->nodes->GetPoint(iFinePoint, iNeigh)) != jCV) continue;
+        area += GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(fine_grid->nodes->GetEdge(iFinePoint, iNeigh)));
+        nEdges++;
+      }
+    }
+    return std::make_pair(area, nEdges);
+  };
+
+  /*--- Neighbour sharing the most dual-face area that may take this CV, the one with fewer children on
+   *    a tie, NO_CV if there is none. A compact merge must join the two through at least as many fine
+   *    edges as the smaller one has children. Neighbours an earlier merge in the same pass emptied are
+   *    not revived. ---*/
+  auto bestPartner = [&](unsigned long iCV, unsigned short maxPartnerSize, bool keepOffPartition, bool compact) {
     auto best = NO_CV;
     auto best_nChildren = std::numeric_limits<unsigned short>::max();
+    su2double best_area = -1.0;
     for (auto jCV : nodes->GetPoints(iCV)) {
       const auto nChildren = nodes->GetnChildren_CV(jCV);
-      if ((nChildren == 0) || (nChildren > maxPartnerSize) || (nChildren >= best_nChildren)) continue;
+      if ((nChildren == 0) || (nChildren > maxPartnerSize)) continue;
       if (keepOffPartition && touchesPartition[jCV]) continue;
       if (!mayMerge(iCV, jCV)) continue;
-      best_nChildren = nChildren;
-      best = jCV;
+      const auto shared = sharedFaces(iCV, jCV);
+      if (compact && (shared.second < min(nChildren, nodes->GetnChildren_CV(iCV)))) continue;
+      if ((shared.first > best_area * (1.0 + 1e-6)) ||
+          ((shared.first >= best_area * (1.0 - 1e-6)) && (nChildren < best_nChildren))) {
+        best_nChildren = nChildren;
+        best_area = shared.first;
+        best = jCV;
+      }
     }
     return best;
   };
@@ -686,8 +830,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     mergeInto(iCoarsePoint, iTarget);
   }
 
-  /*--- A CV left holding a single child joins the neighbour with the fewest, even where that takes
-   the neighbour one past maxAgglomSize. ---*/
+  /*--- A CV left holding a single child joins the neighbour it shares the most face with, even where
+   that takes the neighbour one past maxAgglomSize. ---*/
 
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
     if (nodes->GetnChildren_CV(iCoarsePoint) != 1) continue;
@@ -695,12 +839,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     /*--- Already handled above, or truly islanded. ---*/
     if (nodes->GetnPoint(iCoarsePoint) <= 1) continue;
 
-    const auto iTarget = smallestPartner(iCoarsePoint, std::numeric_limits<unsigned short>::max(), false);
+    const auto iTarget = bestPartner(iCoarsePoint, std::numeric_limits<unsigned short>::max(), false, false);
     if (iTarget != NO_CV) mergeInto(iCoarsePoint, iTarget);
   }
 
-  /*--- Merge a paved CV of at most SMALL_STACK_CV children into an equally small neighbour, which
-   the two passes above do not reach. Two of them can never exceed maxAgglomSize together. ---*/
+  /*--- Merge a paved CV of at most SMALL_STACK_CV children into an equally small neighbour it joins
+   compactly, which the two passes above do not reach. Two of them can never exceed maxAgglomSize together. ---*/
 
   constexpr unsigned short SMALL_STACK_CV = 2; /*!< \brief The block size a narrow stack emits
                                                      between flushes; see BlockFor. */
@@ -712,8 +856,72 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     /*--- Interior stack fragments only, a boundary row keeps its footprint. ---*/
     if (cvOnBoundary[iCoarsePoint]) continue;
 
-    const auto iTarget = smallestPartner(iCoarsePoint, SMALL_STACK_CV, true);
+    const auto iTarget = bestPartner(iCoarsePoint, SMALL_STACK_CV, true, true);
     if (iTarget != NO_CV) mergeInto(iCoarsePoint, iTarget);
+  }
+
+  /*--- In 2D, a CV of three nodes bent round a corner takes the fourth node of its quadrilateral from
+   *    a neighbouring three-node CV that can spare it, which turns staggered seams into rectangles. ---*/
+  if (nDim == 2) {
+    auto adjacent = [&](unsigned long iFinePoint, unsigned long jFinePoint) {
+      const auto neighbours = fine_grid->nodes->GetPoints(iFinePoint);
+      return std::find(neighbours.begin(), neighbours.end(), jFinePoint) != neighbours.end();
+    };
+
+    for (auto iPass = 0u; iPass < 4; iPass++) {
+      bool changed = false;
+
+      for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
+        if (nodes->GetnChildren_CV(iCoarsePoint) != 3) continue;
+        if (mustStayAlone[iCoarsePoint] || isStackBase(iCoarsePoint) || touchesPartition[iCoarsePoint]) continue;
+        if ((iCoarsePoint >= firstLineCV) && (iCoarsePoint < endLineCV)) continue;
+
+        /*--- The middle node of the bend touches the other two, which do not touch each other. ---*/
+        unsigned long child[3];
+        for (auto k = 0u; k < 3; k++) child[k] = nodes->GetChildren_CV(iCoarsePoint, k);
+        long corner = -1;
+        for (auto k = 0u; k < 3; k++) {
+          const auto a = child[(k + 1) % 3], b = child[(k + 2) % 3];
+          if (adjacent(child[k], a) && adjacent(child[k], b) && !adjacent(a, b)) corner = k;
+        }
+        if (corner < 0) continue;
+        const auto a = child[(corner + 1) % 3], b = child[(corner + 2) % 3];
+
+        /*--- The node closing the quadrilateral touches both ends of the bend, not its middle. ---*/
+        auto donor = NO_CV;
+        unsigned long fourth = NO_CV;
+        for (auto m : fine_grid->nodes->GetPoints(a)) {
+          const auto jCoarsePoint = fine_grid->nodes->GetParent_CV(m);
+          if ((jCoarsePoint == NO_CV) || (jCoarsePoint >= nPointDomain) || (jCoarsePoint == iCoarsePoint)) continue;
+          if (!adjacent(m, b) || adjacent(m, child[corner])) continue;
+          if (nodes->GetnChildren_CV(jCoarsePoint) != 3) continue;
+          if (mustStayAlone[jCoarsePoint] || isStackBase(jCoarsePoint) || touchesPartition[jCoarsePoint]) continue;
+          if ((jCoarsePoint >= firstLineCV) && (jCoarsePoint < endLineCV)) continue;
+          if (cvMarkerClass[jCoarsePoint] != cvMarkerClass[iCoarsePoint]) continue;
+
+          /*--- What the donor keeps must stay connected. ---*/
+          vector<unsigned long> kept;
+          for (auto k = 0u; k < 3; k++)
+            if (nodes->GetChildren_CV(jCoarsePoint, k) != m) kept.push_back(nodes->GetChildren_CV(jCoarsePoint, k));
+          if (!adjacent(kept[0], kept[1])) continue;
+
+          donor = jCoarsePoint;
+          fourth = m;
+          break;
+        }
+        if (donor == NO_CV) continue;
+
+        const auto nDonor = nodes->GetnChildren_CV(donor);
+        for (auto k = 0u; k < nDonor; k++)
+          if (nodes->GetChildren_CV(donor, k) == fourth)
+            nodes->SetChildren_CV(donor, k, nodes->GetChildren_CV(donor, nDonor - 1));
+        nodes->SetnChildren_CV(donor, nDonor - 1);
+        giveChild(fourth, iCoarsePoint);
+        changed = true;
+      }
+
+      if (!changed) break;
+    }
   }
 
   /*--- Compact the coarse numbering, squeezing out the indices the repair passes emptied. The
@@ -996,6 +1204,7 @@ vector<char> CMultiGridGeometry::FindMixedBoundaryNodes(const CGeometry* fine_gr
     const auto bc = static_cast<short>(config->GetMarker_All_KindBC(iMarker));
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
+      if (AbsorbedSymmetry(fine_grid, config, iPoint, iMarker)) continue;
       if (firstBC[iPoint] < 0)
         firstBC[iPoint] = bc;
       else if (firstBC[iPoint] != bc)
@@ -1616,7 +1825,7 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
   /*--- Paving order: a no-slip wall first, a slip wall next, everything else last. ---*/
   auto tierOfBC = [](unsigned short bc) -> char {
     if ((bc == HEAT_FLUX) || (bc == ISOTHERMAL) || (bc == CHT_WALL_INTERFACE) || (bc == SMOLUCHOWSKI_MAXWELL)) return 0;
-    return (bc == EULER_WALL) ? 1 : 2;
+    return ((bc == EULER_WALL) || (bc == SYMMETRY_PLANE)) ? 1 : 2;
   };
 
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
@@ -1648,6 +1857,7 @@ CMultiGridGeometry::CFrontSeeds CMultiGridGeometry::SeedFrontNodes(const CGeomet
 
       std::array<su2double, MAXNDIM> n0{};
       for (unsigned short d = 0; d < nDim; ++d) n0[d] = Normal[d];
+
       seeds.node.push_back(iPoint);
       seeds.normal.push_back(n0);
       seeds.strength.push_back(strength);
@@ -1894,9 +2104,15 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
   const auto nPointFine = fine_grid->GetnPoint();
   constexpr auto NO_COLUMN = std::numeric_limits<unsigned long>::max();
   const short int maxAgglomSize = MaxAgglomSize(nDim);
+  /*--- Largest CV a parity leftover may form by joining its neighbour. ---*/
+  const size_t maxOversize = 3 * maxAgglomSize / 2;
 
   /*--- SeedFrontNodes returns the seeds ordered by anisotropy. ---*/
-  const auto seeds = SeedFrontNodes(fine_grid, config);
+  auto seeds = SeedFrontNodes(fine_grid, config);
+
+  /*--- A node where two conditions meet stays a CV of its own, and the column above it is paved
+   *    before any other, so no column from either side reaches over to the other. ---*/
+  for (auto si = 0ul; si < seeds.node.size(); ++si) seeds.tier[si] = mixedBC[seeds.node[si]] ? 0 : seeds.tier[si] + 1;
   vector<CWalkState> walkOf;
   const auto patches = BuildFrontPatches(seeds, fine_grid, config, mixedBC, walkOf);
 
@@ -2016,7 +2232,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
   /*--- One tier is paved out everywhere before the next starts, so an inherited column belongs to
    *    the tier that is running. ---*/
-  constexpr char N_TIER = 3;
+  constexpr char N_TIER = 4;
   vector<unsigned long> active;
   for (char tier = 0; tier < N_TIER; ++tier) {
     /*--- The columns of this tier still advancing, in seed order. A column that stops drops out at
@@ -2129,7 +2345,7 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
               if (admissible(best)) {
                 candidates.push_back(best);
-                stepDir.push_back(bestStep);
+                stepDir.push_back(marching);
               } else if (!fine_grid->nodes->GetDomain(best) && (haloSlot[best] >= 0) &&
                          (haloClaim[best] == NO_COLUMN)) {
                 haloWanted.push_back(best);
@@ -2145,10 +2361,72 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
             std::sort(distinct.begin(), distinct.end());
             distinct.erase(std::unique(distinct.begin(), distinct.end()), distinct.end());
             if (distinct.size() != width) return false;
+            /*--- The layer must stay connected, or its blocks split into strands. ---*/
+            vector<unsigned long> reached(1, distinct[0]);
+            for (size_t k = 0; k < reached.size(); ++k)
+              for (auto jPoint : fine_grid->nodes->GetPoints(reached[k]))
+                if (std::binary_search(distinct.begin(), distinct.end(), jPoint) &&
+                    (std::find(reached.begin(), reached.end(), jPoint) == reached.end()))
+                  reached.push_back(jPoint);
+            return reached.size() == width;
+          };
+
+          /*--- A column follows the stiff direction of the mesh. A step whose edges couple far more
+           *    weakly than the stiffest edge at their node runs along a thin layer, not across it,
+           *    and is left to a column crossing that layer. A column rising from a no-slip wall
+           *    stops only at a much thinner layer, so moderate stretching does not cut it short. ---*/
+          auto stiffStep = [&](const vector<unsigned long>& set) {
+            const passivedouble STIFF_FRACTION = (tierOf[iColumn] <= 1) ? 0.01 : 0.1;
+            su2double ratio = 0.0;
+            for (auto iPoint : layer[iColumn]) {
+              su2double wStep = 0.0, wMax = 0.0;
+              for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
+                const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
+                const auto iEdge = fine_grid->nodes->GetEdge(iPoint, iNeigh);
+                const su2double w =
+                    GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(iEdge)) *
+                    (1.0 / fine_grid->nodes->GetVolume(iPoint) + 1.0 / fine_grid->nodes->GetVolume(jPoint));
+                wMax = std::max(wMax, w);
+                if (std::find(set.begin(), set.end(), jPoint) != set.end()) wStep = std::max(wStep, w);
+              }
+              ratio += (wMax > 0.0) ? wStep / wMax : 1.0;
+            }
+            return ratio >= STIFF_FRACTION * su2double(layer[iColumn].size());
+          };
+
+          /*--- Whether every node of the step reaches a physical boundary within a few steps on the
+           *    way it travels. A band two coarse cells thin is taken, the domain pass tiles it poorly. ---*/
+          auto nearBoundary = [&](const vector<unsigned long>& set,
+                                  const vector<std::array<su2double, MAXNDIM>>& dirs) {
+            constexpr unsigned short THIN_BAND = 4;
+            for (size_t k = 0; k < set.size(); ++k) {
+              auto iPoint = set[k];
+              bool reached = false;
+              for (unsigned short iStep = 0; (iStep < THIN_BAND) && !reached; ++iStep) {
+                auto next = NO_COLUMN;
+                su2double bestAlign = 0.0;
+                for (auto jPoint : fine_grid->nodes->GetPoints(iPoint)) {
+                  su2double step[MAXNDIM] = {0.0};
+                  GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint),
+                                            fine_grid->nodes->GetCoord(iPoint), step);
+                  const su2double len = GeometryToolbox::Norm(nDim, step);
+                  if (len <= 0.0) continue;
+                  const su2double align = GeometryToolbox::DotProduct(nDim, step, dirs[k].data()) / len;
+                  if (align > bestAlign) {
+                    bestAlign = align;
+                    next = jPoint;
+                  }
+                }
+                if (next == NO_COLUMN) return false;
+                reached = onPhysBoundary[next];
+                iPoint = next;
+              }
+              if (!reached) return false;
+            }
             return true;
           };
 
-          if (complete(candidates)) {
+          if (complete(candidates) && (stiffStep(candidates) || nearBoundary(candidates, stepDir))) {
             for (auto jPoint : candidates) {
               columnOf[jPoint] = iColumn;
               layerOf[jPoint] = iRound;
@@ -2309,6 +2587,28 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     }
   }
 
+  /*--- Last-layer nodes whose next step, the way they travel, lands on free mesh. ---*/
+  vector<char> openAhead(nPointFine, 0);
+  for (auto iColumn = 0ul; iColumn < layer.size(); ++iColumn) {
+    for (size_t k = 0; k < layer[iColumn].size(); ++k) {
+      const auto iPoint = layer[iColumn][k];
+      auto next = NO_COLUMN;
+      su2double bestAlign = 0.0;
+      for (auto jPoint : fine_grid->nodes->GetPoints(iPoint)) {
+        su2double step[MAXNDIM] = {0.0};
+        GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(iPoint), step);
+        const su2double len = GeometryToolbox::Norm(nDim, step);
+        if (len <= 0.0) continue;
+        const su2double align = GeometryToolbox::DotProduct(nDim, step, dirOf[iColumn][k].data()) / len;
+        if (align > bestAlign) {
+          bestAlign = align;
+          next = jPoint;
+        }
+      }
+      openAhead[iPoint] = (next != NO_COLUMN) && admissible(next);
+    }
+  }
+
   /*--- Gather each column by layer. ---*/
   const auto nColumn = layer.size();
   vector<vector<vector<unsigned long>>> byLayer(nColumn);
@@ -2317,6 +2617,75 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
     if (iColumn == NO_COLUMN) continue;
     if (byLayer[iColumn].size() <= layerOf[iPoint]) byLayer[iColumn].resize(layerOf[iPoint] + 1);
     byLayer[iColumn][layerOf[iPoint]].push_back(iPoint);
+  }
+
+  /*--- A boundary run with an odd number of seeds, and every node where two boundaries meet,
+   *    leaves one column a single node wide. Two such columns side by side are emitted together,
+   *    so the domain gets square cells instead of a file of narrow ones. ---*/
+  vector<long> partnerOf(nColumn, -1);
+  {
+    auto isNarrow = [&](unsigned long iColumn) {
+      return isSeeded[iColumn] && (byLayer[iColumn].size() > 1) && (byLayer[iColumn][0].size() == 1);
+    };
+
+    /*--- Both columns must stand shoulder to shoulder over every layer they share, otherwise the
+     *    cells the merge makes are not compact. ---*/
+    auto aligned = [&](unsigned long iColumn, unsigned long jColumn) {
+      const auto nCommon = std::min(byLayer[iColumn].size(), byLayer[jColumn].size());
+      for (auto iLayer = 1ul; iLayer < nCommon; ++iLayer) {
+        const auto iPoint = byLayer[iColumn][iLayer].front();
+        const auto& jLayer = byLayer[jColumn][iLayer];
+        bool touch = false;
+        for (auto kPoint : fine_grid->nodes->GetPoints(iPoint))
+          touch = touch || (std::find(jLayer.begin(), jLayer.end(), kPoint) != jLayer.end());
+        if (!touch) return false;
+      }
+      return nCommon > 1;
+    };
+
+    /*--- Taken in global index order, so the pairing does not depend on the partitioning. ---*/
+    vector<unsigned long> narrow;
+    for (auto iColumn = 0ul; iColumn < nColumn; ++iColumn)
+      if (isNarrow(iColumn)) narrow.push_back(iColumn);
+    std::sort(narrow.begin(), narrow.end(), [&](unsigned long a, unsigned long b) {
+      return fine_grid->nodes->GetGlobalIndex(byLayer[a][0].front()) <
+             fine_grid->nodes->GetGlobalIndex(byLayer[b][0].front());
+    });
+
+    /*--- A column a narrow one may lean on when no narrow neighbour is left: seeded, grown, and
+     *    narrow enough that the merged block stays within the oversize limit. ---*/
+    auto isWide = [&](unsigned long iColumn) {
+      return isSeeded[iColumn] && (byLayer[iColumn].size() > 1) && (byLayer[iColumn][0].size() > 1) &&
+             (2 * (byLayer[iColumn][0].size() + 1) <= maxOversize);
+    };
+
+    /*--- Narrow neighbours pair first, the narrow columns left over then join a wide one. ---*/
+    for (const bool toWide : {false, true}) {
+      for (auto iColumn : narrow) {
+        if (partnerOf[iColumn] >= 0) continue;
+        auto best = NO_COLUMN;
+        auto bestKey = std::numeric_limits<unsigned long>::max();
+
+        for (auto jPoint : fine_grid->nodes->GetPoints(byLayer[iColumn][1].front())) {
+          const auto jColumn = columnOf[jPoint];
+          if ((jColumn == NO_COLUMN) || (jColumn == iColumn) || (partnerOf[jColumn] >= 0)) continue;
+          if (toWide ? !isWide(jColumn) : !isNarrow(jColumn)) continue;
+          /*--- The column above a corner, tier 0, may pair with either side. ---*/
+          if ((tierOf[jColumn] != tierOf[iColumn]) && (tierOf[jColumn] != 0) && (tierOf[iColumn] != 0)) continue;
+          if (!aligned(iColumn, jColumn)) continue;
+
+          const auto key = fine_grid->nodes->GetGlobalIndex(byLayer[jColumn][0].front());
+          if (key < bestKey) {
+            bestKey = key;
+            best = jColumn;
+          }
+        }
+
+        if (best == NO_COLUMN) continue;
+        partnerOf[iColumn] = static_cast<long>(best);
+        partnerOf[best] = static_cast<long>(iColumn);
+      }
+    }
   }
 
   auto emitGroup = [&](const vector<unsigned long>& group) {
@@ -2331,11 +2700,12 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
   auto minDepth = std::numeric_limits<unsigned long>::max(), maxDepth = 0ul;
   vector<unsigned long> group;
+  vector<vector<unsigned long>> paired;
 
   /*--- Hand a set of nodes out as coarse CVs, each connected and within the size limit. ---*/
   vector<char> inSet(nPointFine, 0);
   vector<unsigned long> chunk, stack;
-  auto emitConnected = [&](const vector<unsigned long>& set) {
+  auto emitConnected = [&](const vector<unsigned long>& set, size_t maxSize) {
     for (auto iPoint : set) inSet[iPoint] = 1;
 
     for (auto iSeed : set) {
@@ -2344,13 +2714,13 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
       stack.assign(1, iSeed);
       inSet[iSeed] = 0;
 
-      while (!stack.empty() && (chunk.size() < static_cast<size_t>(maxAgglomSize))) {
+      while (!stack.empty() && (chunk.size() < maxSize)) {
         const auto iPoint = stack.back();
         stack.pop_back();
         chunk.push_back(iPoint);
         for (auto jPoint : fine_grid->nodes->GetPoints(iPoint)) {
           if (!inSet[jPoint]) continue;
-          if (chunk.size() + stack.size() >= static_cast<size_t>(maxAgglomSize)) break;
+          if (chunk.size() + stack.size() >= maxSize) break;
           inSet[jPoint] = 0;
           stack.push_back(jPoint);
         }
@@ -2376,7 +2746,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
     auto iLayer = 0ul;
     if (isSeeded[iColumn]) {
-      /*--- The boundary row is a coarse CV of its own, which fixes the footprint above it. ---*/
+      /*--- The boundary row is a coarse CV of its own, which fixes the footprint above it. A
+       *    paired column keeps its own row, which may hold a boundary condition of its own. ---*/
       const auto baseCV = emitGroup(layers[0]);
       ct[P_CVS]++;
       ct[P_COVERED] += layers[0].size();
@@ -2384,22 +2755,58 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
       iLayer = 1;
     }
 
+    /*--- Of a pair, the column of lower index emits what stands above both boundary rows. ---*/
+    if ((partnerOf[iColumn] >= 0) && (partnerOf[iColumn] < static_cast<long>(iColumn))) continue;
+
+    const auto* emitted = &layers;
+    /*--- The block depth follows the widest of the columns, as it would for each on its own. ---*/
+    auto blockWidth = layers.back().size();
+    auto maxSize = static_cast<size_t>(maxAgglomSize);
+    if (partnerOf[iColumn] > static_cast<long>(iColumn)) {
+      const auto& other = byLayer[partnerOf[iColumn]];
+      paired = layers;
+      for (auto k = 1ul; k < other.size(); ++k) {
+        if (k < paired.size())
+          paired[k].insert(paired[k].end(), other[k].begin(), other[k].end());
+        else
+          paired.push_back(other[k]);
+      }
+      emitted = &paired;
+      blockWidth = std::max(blockWidth, other.back().size());
+      /*--- A narrow column leaning on a wide one is a parity strip, its cells may be oversized. ---*/
+      if (blockWidth > 1) maxSize = maxOversize;
+    }
+    const auto block = BlockFor(maxAgglomSize, blockWidth);
+
     /*--- Above it, consecutive layers are blocked so the coarse cell coarsens by the same ratio
      *    along the column as the patch does across it. ---*/
-    while (iLayer < layers.size()) {
+    while (iLayer < emitted->size()) {
       group.clear();
-      const auto block = BlockFor(maxAgglomSize, layers[iLayer].size());
-      for (auto k = 0ul; (k < block) && (iLayer < layers.size()); ++k) {
-        if (!group.empty() && (group.size() + layers[iLayer].size() > static_cast<size_t>(maxAgglomSize))) break;
-        group.insert(group.end(), layers[iLayer].begin(), layers[iLayer].end());
+      auto groupSize = maxSize;
+      for (auto k = 0ul; (k < block) && (iLayer < emitted->size()); ++k) {
+        if (!group.empty() && (group.size() + (*emitted)[iLayer].size() > maxSize)) break;
+        group.insert(group.end(), (*emitted)[iLayer].begin(), (*emitted)[iLayer].end());
         iLayer++;
       }
       /*--- A single layer wider than the limit still has to go somewhere. ---*/
       if (group.empty()) {
-        group = layers[iLayer];
+        group = (*emitted)[iLayer];
         iLayer++;
       }
-      emitConnected(group);
+      /*--- An odd last layer facing free mesh is left to the domain pass, which can pair it with
+       *    that mesh. Otherwise it joins the block below instead of standing one layer thick. ---*/
+      if ((block > 1) && (iLayer + 1 == emitted->size())) {
+        bool open = true;
+        for (auto iPoint : emitted->back()) open = open && openAhead[iPoint];
+        if (open) {
+          iLayer++;
+        } else if (group.size() + emitted->back().size() <= static_cast<size_t>(maxOversize)) {
+          group.insert(group.end(), emitted->back().begin(), emitted->back().end());
+          groupSize = group.size();
+          iLayer++;
+        }
+      }
+      emitConnected(group, groupSize);
     }
   }
   if (minDepth == std::numeric_limits<unsigned long>::max()) minDepth = 0;

@@ -31,6 +31,9 @@
 #include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
+#include <sched.h>
+
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <type_traits>
@@ -350,9 +353,19 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     /*--- The GPU triangular solves are level-scheduled (exact, one pass per level), so they need
      * levels_ilu unconditionally; the host/OMP path only needs it when both multi-threaded and
      * requested via config. ---*/
-    if (useCuda || (omp_get_max_threads() > 1 && config->GetIluOptions().LevelScheduling)) {
+    if (useCuda) {
       levels_ilu = computeLevels(pat_ilu.l);
+    } else if (omp_get_max_threads() > 1 && config->GetIluOptions().LevelScheduling) {
+      /*--- The levels only cover the domain points, like the thread partitions. ---*/
+      const auto& pat_l = pat_ilu.l;
+      su2vector<su2uint> outerPtr(nPointDomain + 1);
+      for (auto i = 0ul; i <= nPointDomain; ++i) outerPtr(i) = pat_l.outerPtr()[i];
+      su2vector<su2uint> innerIdx(outerPtr(nPointDomain));
+      for (auto k = 0ul; k < innerIdx.size(); ++k) innerIdx(k) = pat_l.innerIdx()[k];
+      levels_ilu = computeLevels(CCompressedSparsePatternUL(std::move(outerPtr), std::move(innerIdx)));
     }
+    level_waits_fwd.clear();
+    level_waits_bwd.clear();
 
     /*--- Coloring for the GPU iterative factorization, see IluFactorColorKernel. Colors are
      * true independent sets of the (domain-only, symmetric) dependency graph, computed the same
@@ -521,7 +534,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     }
   }
 
-  /*--- Generate MKL Kernels ---*/
+  if (ilu_needed && !levels_ilu.empty() && !useCuda && num_threads > 1) BuildLevelWaits();
+
+    /*--- Generate MKL Kernels ---*/
 
 #ifdef USE_MKL
   using mkl = mkl_jit_wrapper<ScalarType>;
@@ -1061,6 +1076,102 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
 }
 
 template <class ScalarType>
+void CSysMatrix<ScalarType>::BuildLevelWaits() {
+  const auto nThreads = static_cast<unsigned long>(omp_get_max_threads());
+  const auto nLevels = levels_ilu.getOuterSize();
+
+  /*--- Level and owning thread of each row, the rows of a level are split in equal contiguous slices. ---*/
+
+  std::vector<unsigned long> level(nPointDomain, 0), owner(nPointDomain, 0);
+  for (unsigned long iLevel = 0; iLevel < nLevels; ++iLevel) {
+    const unsigned long n = levels_ilu.getNumNonZeros(iLevel);
+    for (unsigned long iThread = 0; iThread < nThreads; ++iThread) {
+      for (auto k = n * iThread / nThreads; k < n * (iThread + 1) / nThreads; ++k) {
+        const auto iPoint = levels_ilu.getInnerIdx(iLevel, k);
+        level[iPoint] = iLevel;
+        owner[iPoint] = iThread;
+      }
+    }
+  }
+
+  std::vector<uint32_t> fwd(nLevels * nThreads * nThreads, 0), bwd(fwd);
+  bool valid = true;
+
+  for (unsigned long iLevel = 0; iLevel < nLevels; ++iLevel) {
+    const unsigned long n = levels_ilu.getNumNonZeros(iLevel);
+    const auto iStep = nLevels - 1 - iLevel;  // Position in the backward sweep.
+
+    for (unsigned long iThread = 0; iThread < nThreads; ++iThread) {
+      auto* wait_f = &fwd[(iLevel * nThreads + iThread) * nThreads];
+      auto* wait_b = &bwd[(iStep * nThreads + iThread) * nThreads];
+
+      for (auto k = n * iThread / nThreads; k < n * (iThread + 1) / nThreads; ++k) {
+        const auto iPoint = levels_ilu.getInnerIdx(iLevel, k);
+
+        for (auto kl = ilu.row_ptr_l[iPoint]; kl < ilu.row_ptr_l[iPoint + 1]; ++kl) {
+          const auto jPoint = ilu.col_ind_l[kl];
+          if (level[jPoint] >= iLevel) valid = false;
+          wait_f[owner[jPoint]] = std::max<uint32_t>(wait_f[owner[jPoint]], level[jPoint] + 1);
+        }
+        for (auto ku = ilu.row_ptr_u[iPoint]; ku < ilu.row_ptr_u[iPoint + 1]; ++ku) {
+          const auto jPoint = ilu.col_ind_u[ku];
+          if (jPoint >= nPointDomain) break;
+          if (level[jPoint] <= iLevel) valid = false;
+          const auto jStep = nLevels - 1 - level[jPoint];
+          wait_b[owner[jPoint]] = std::max<uint32_t>(wait_b[owner[jPoint]], jStep + 1);
+        }
+      }
+      wait_f[iThread] = 0;
+      wait_b[iThread] = 0;
+    }
+  }
+
+  /*--- The backward sweep needs a symmetric pattern, otherwise keep the barriers. ---*/
+  if (!valid) return;
+
+  level_waits_fwd = std::move(fwd);
+  level_waits_bwd = std::move(bwd);
+  level_num_threads = nThreads;
+  level_progress = std::vector<LevelProgress>(nThreads);
+}
+
+template <class ScalarType>
+template <class F>
+void CSysMatrix<ScalarType>::LevelSweep(bool forward, const F& row_func) const {
+  const auto nThreads = level_num_threads;
+  const auto iThread = static_cast<unsigned long>(omp_get_thread_num());
+  const auto nLevels = levels_ilu.getOuterSize();
+  const auto& waits = forward ? level_waits_fwd : level_waits_bwd;
+
+  /*--- All counters are equal at the start of a sweep. ---*/
+  SU2_OMP_BARRIER
+
+  auto& progress = level_progress[iThread].steps;
+  const uint64_t base = progress.load(std::memory_order_relaxed);
+
+  for (unsigned long iStep = 0; iStep < nLevels; ++iStep) {
+    const auto* wait = &waits[(iStep * nThreads + iThread) * nThreads];
+
+    for (unsigned long jThread = 0; jThread < nThreads; ++jThread) {
+      if (wait[jThread] == 0) continue;
+      const uint64_t target = base + wait[jThread];
+      for (unsigned spin = 0; level_progress[jThread].steps.load(std::memory_order_acquire) < target; ++spin) {
+        if (spin > 4096) sched_yield();
+      }
+    }
+
+    const auto iLevel = forward ? iStep : nLevels - 1 - iStep;
+    const unsigned long n = levels_ilu.getNumNonZeros(iLevel);
+    for (auto k = n * iThread / nThreads; k < n * (iThread + 1) / nThreads; ++k) {
+      row_func(levels_ilu.getInnerIdx(iLevel, k));
+    }
+    progress.store(base + iStep + 1, std::memory_order_release);
+  }
+
+  SU2_OMP_BARRIER
+}
+
+template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
   SU2_ZONE_SCOPED
 
@@ -1159,7 +1270,12 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
     InvertDiagonalBlockILUMatrix(iPoint);
   };
 
-  if (levels_ilu.empty()) {
+  if (UseLevelWaits()) {
+    LevelSweep(true, [&](const auto iPoint) {
+      InitIluRow(iPoint);
+      BuildIluRow(iPoint, 0ul, nPointDomain);
+    });
+  } else if (levels_ilu.empty()) {
     /*--- Each OMP thread will work on the submatrix defined from
      * row/col "begin" to row/col "end-1" (i.e. the range [begin,end[).
      * Which is exactly what the MPI-only implementation does. ---*/
@@ -1256,7 +1372,10 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
     MatrixVectorProduct(invUii, aux_vec, &prod[iPoint * nVar]);
   };
 
-  if (levels_ilu.empty()) {
+  if (UseLevelWaits()) {
+    LevelSweep(true, [&](const auto iPoint) { ForwardSolve(iPoint, 0ul); });
+    LevelSweep(false, [&](const auto iPoint) { BackwardSolve(iPoint, nPointDomain); });
+  } else if (levels_ilu.empty()) {
     SU2_OMP_FOR_STAT(1)
     for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
       const auto begin = omp_partitions[thread];

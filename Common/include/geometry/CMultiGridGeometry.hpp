@@ -110,7 +110,8 @@ class CMultiGridGeometry final : public CGeometry {
     vector<std::array<su2double, MAXNDIM>> normal; /*!< \brief Unit normal there, pointing into the domain. */
     vector<su2double> strength;                    /*!< \brief Local anisotropy, the ordering key. */
     vector<char> tier;                             /*!< \brief Paving order: 0 viscous wall, 1 Euler
-                                                        wall, 2 anything else. */
+                                                        wall, 2 anything else; one more once the
+                                                        mixed nodes are put first. */
     unsigned long nRefusedCurvature = 0;           /*!< \brief Euler wall nodes the curvature limit kept out. */
   };
 
