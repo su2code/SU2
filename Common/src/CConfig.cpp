@@ -4170,6 +4170,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                    "hybrid RANS/LES models (HYBRID_RANSLES= SA_DES, SA_DDES, SA_ZDES or SA_EDDES).", CURRENT_FUNCTION);
   }
 
+  /*--- How the SST compressibility corrections should act in the LES region of the hybrid models is not validated yet
+   (e.g. Forsythe et al. 2002 keep them only in the RANS length scale). Stop rather than give unvalidated results. ---*/
+  if (hybridSST && (sstParsedOptions.compWilcox || sstParsedOptions.compSarkar)) {
+    SU2_MPI::Error(string("The SST compressibility corrections (COMPRESSIBILITY-WILCOX, COMPRESSIBILITY-SARKAR) are not ") +
+                   "supported yet with the SST hybrid RANS/LES models (HYBRID_RANSLES= SST_*).", CURRENT_FUNCTION);
+  }
+
   /*--- The SST hybrid models compute their length scale from the grid with the constant C_DES = 0.78 F1 + 0.61 (1 - F1)
    (Gritskevich et al. 2012), they do not use these options of the SA hybrid models. Stop rather than ignore them. ---*/
   if (hybridSST) {
