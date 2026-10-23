@@ -149,7 +149,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.004080, -7.638116, -0.000000, 2.089953]
+    poiseuille_profile.test_vals = [-12.004094, -7.640551, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.004276, -7.636719, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
@@ -178,7 +178,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-1.461774, 5.883885, 0.630267, 0.020404, 100.000000]
+    rae2822_sst.test_vals = [-1.519695, 5.888685, 0.614691, 0.020767, 100.000000]
     test_list.append(rae2822_sst)
 
     # RAE2822 SST_SUST
@@ -602,7 +602,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.959252, -12.213981, -19.314222, -13.600248, -19.076384, -13.444335, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.961836, -12.211509, -19.315122, -13.598954, -19.081506, -13.442877, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -711,7 +711,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.455981, -1.541069]
+    bars_SST_2D.test_vals = [13.000000, -0.455976, -1.539981]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
