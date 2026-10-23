@@ -7,6 +7,7 @@ import re
 import sys
 
 import matplotlib
+import matplotlib.figure
 import numpy as np
 import pandas as pd
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
