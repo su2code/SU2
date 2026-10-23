@@ -1001,8 +1001,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Dissipation ---*/
 
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * (1.0 + zetaFMt);
+      /*--- Hybrid RANS/LES: dk = rho k^(3/2) / l_hyb, which equals the RANS form where l_hyb = l_RANS = sqrt(k) / (beta* omega).
+       The compressibility correction (1 + zetaFMt) of the RANS form is kept so that the two forms still agree there. ---*/
       if (hybridRANSLES)
-        dk = Density_i * sqrt(pow(ScalarVar_i[0], 3)) / lengthScale_i;
+        dk = Density_i * sqrt(pow(ScalarVar_i[0], 3)) / lengthScale_i * (1.0 + zetaFMt);
         
       su2double dw = beta_blended * Density_i * pow(ScalarVar_i[1], 2) * (1.0 - 0.09/beta_blended * zetaFMt);
 
@@ -1034,7 +1036,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         /*--- Hybrid k destruction dk = rho k^(3/2) / l_hyb, with the length scale l_hyb frozen (it is computed in the
          preprocessing and treated as a constant here): d(dk)/d(rho k) = 1.5 dk / (rho k) and it does not depend on omega.
          The RANS form below would use the wrong derivative where l_hyb differs from l_RANS = sqrt(k) / (beta* omega). ---*/
-        Jacobian_i[0][0] = -1.5 * sqrt(ScalarVar_i[0]) / lengthScale_i * Volume;
+        Jacobian_i[0][0] = -1.5 * sqrt(ScalarVar_i[0]) / lengthScale_i * Volume * (1.0 + zetaFMt);
         Jacobian_i[0][1] = 0.0;
       } else {
         Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
