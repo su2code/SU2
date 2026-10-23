@@ -1631,7 +1631,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     }
     AddVolumeOutput("GRAD_VEL_XX", "Grad_Vel_xx", "VELOCITY_GRADIENT", "X-Gradient of U");
     AddVolumeOutput("GRAD_VEL_XY", "Grad_Vel_xy", "VELOCITY_GRADIENT", "Y-Gradient of U");
-    AddVolumeOutput("GRAD_VEL_YX", "Grad_Vel_yx", "VELOCITY_GRADIENT", "X-Gradient of U");
+    AddVolumeOutput("GRAD_VEL_YX", "Grad_Vel_yx", "VELOCITY_GRADIENT", "X-Gradient of V");
     AddVolumeOutput("GRAD_VEL_YY", "Grad_Vel_yy", "VELOCITY_GRADIENT", "Y-Gradient of V");
     if (nDim == 3) {
       AddVolumeOutput("GRAD_VEL_XZ", "Grad_Vel_xz", "VELOCITY_GRADIENT", "Z-Gradient of U");
