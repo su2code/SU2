@@ -56,6 +56,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, const CSolv
 
   nVarGrad = nVar;
 
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nSymMat = 3 * (nDim - 1);
+
   /*--- Single grid simulation ---*/
 
   if (iMesh == MESH_0 || config->GetMGCycle() == MG_CYCLE::FULL) {

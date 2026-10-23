@@ -37,6 +37,7 @@ CBaselineSolver_FEM::CBaselineSolver_FEM(CGeometry *geometry, CConfig *config) {
   /*--- Define geometry constants in the solver structure ---*/
 
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. If necessary, it is
