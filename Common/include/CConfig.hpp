@@ -608,6 +608,7 @@ private:
   MUSCL_Kappa_Heat,        /*!< \brief Blending coefficient for U-MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_Kappa_AdjFlow,     /*!< \brief Blending coefficient for U-MUSCL scheme for the adj flow equations.*/
   MUSCL_Kappa_Species;     /*!< \brief Blending coefficient for U-MUSCL scheme for the species equations.*/
+  bool Use_Exact_HLLC_Jacobians; /*!< \brief Exact HLLC Jacobians with wave speeds held fixed. */
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
@@ -4885,6 +4886,9 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
+
+  /*!\brief Get whether to use exact HLLC Jacobians with wave speeds held fixed. */
+  bool GetUse_Exact_HLLC_Jacobians(void) const { return Use_Exact_HLLC_Jacobians; }
 
   /*!
    * \brief Get whether to "Use Accurate Jacobians" for Standard SA turbulence model.
