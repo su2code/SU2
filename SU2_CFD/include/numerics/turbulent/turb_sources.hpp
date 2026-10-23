@@ -994,7 +994,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       }
 
       if (sstParsedOptions.production == SST_OPTIONS::COMP_Sarkar) {
-        const su2double Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * pow(Mt, 2);
+        const su2double Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Mt * Mt;
         pk += Dilatation_Sarkar;
       }
 
@@ -1004,7 +1004,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       if (hybridRANSLES)
         dk = Density_i * sqrt(pow(ScalarVar_i[0], 3)) / lengthScale_i;
         
-      su2double dw = beta_blended * Density_i * pow(ScalarVar_i[1], 2) * (1.0 - 0.09/beta_blended * zetaFMt);
+      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - 0.09/beta_blended * zetaFMt);
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
@@ -1030,15 +1030,14 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Implicit part ---*/
 
+      Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
+      Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       if (hybridRANSLES) {
         /*--- Hybrid k destruction dk = rho k^(3/2) / l_hyb, with the length scale l_hyb frozen (it is computed in the
          preprocessing and treated as a constant here): d(dk)/d(rho k) = 1.5 dk / (rho k) and it does not depend on omega.
-         The RANS form below would use the wrong derivative where l_hyb differs from l_RANS = sqrt(k) / (beta* omega). ---*/
+         The RANS form above would use the wrong derivative where l_hyb differs from l_RANS = sqrt(k) / (beta* omega). ---*/
         Jacobian_i[0][0] = -1.5 * sqrt(ScalarVar_i[0]) / lengthScale_i * Volume;
         Jacobian_i[0][1] = 0.0;
-      } else {
-        Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
-        Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       }
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
