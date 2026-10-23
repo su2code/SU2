@@ -58,7 +58,9 @@ LOGO_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logoSU2.pn
 # silences the KDE file dialog warning about the missing ThumbCreator service
 def silenceKdeServiceWarnings():
     rules = os.environ.get("QT_LOGGING_RULES", "")
-    os.environ["QT_LOGGING_RULES"] = (rules + ";" if rules else "") + "kf.service.services=false"
+    os.environ["QT_LOGGING_RULES"] = (
+        rules + ";" if rules else ""
+    ) + "kf.service.services=false"
 
 
 def cleanName(name):
@@ -98,10 +100,8 @@ class HistoryReader:
                 line = f.readline()
                 if line.startswith(b"TITLE"):
                     line = f.readline()
-                if line.startswith(b"VARIABLES") and line.partition(b"=")[2].strip() in (
-                    b"",
-                    b"\\",
-                ):
+                bare = line.partition(b"=")[2].strip() in (b"", b"\\")
+                if line.startswith(b"VARIABLES") and bare:
                     line = f.readline()
                 if not line.endswith(b"\n"):
                     return
@@ -152,7 +152,10 @@ class HistoryReader:
                 break
             try:
                 wanted = sorted(
-                    {*self.cols, *(c for c in (self.iter_col, self.time_col) if c is not None)}
+                    {
+                        *self.cols,
+                        *(c for c in (self.iter_col, self.time_col) if c is not None),
+                    }
                 )
                 table = pd.read_csv(
                     io.BytesIO(chunk[: end + 1]),
@@ -265,7 +268,15 @@ class MatplotlibFigure(QWidget):
         if update:
             self.reader.update()
 
-        key = (tuple(listonoff), normalize, start, ymin, ymax, byTime, self.reader.version)
+        key = (
+            tuple(listonoff),
+            normalize,
+            start,
+            ymin,
+            ymax,
+            byTime,
+            self.reader.version,
+        )
         if key == self.lastkey:
             return
         self.lastkey = key
@@ -278,13 +289,17 @@ class MatplotlibFigure(QWidget):
         if rebuild:
             self.visible = [names[l] for l in shown]
             ax.clear()
-            ax.set_xlabel("time iterations" if byTime and self.reader.hasTime() else "iterations")
+            ax.set_xlabel(
+                "time iterations" if byTime and self.reader.hasTime() else "iterations"
+            )
             ax.set_ylabel(self.ylabel)
             self.lines = [ax.plot([], [], label=names[l])[0] for l in shown]
 
         n = self.reader.n
         rows = self.reader.rowsFrom(start, byTime)
-        x = (self.reader.times if byTime and self.reader.hasTime() else self.reader.iters)[rows]
+        x = (
+            self.reader.times if byTime and self.reader.hasTime() else self.reader.iters
+        )[rows]
         for line, l in zip(self.lines, shown):
             y = self.reader.buf[rows, l]
             if normalize and n > 1 and abs(self.reader.buf[1, l]) > 1e-6:

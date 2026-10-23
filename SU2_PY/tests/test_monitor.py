@@ -25,7 +25,9 @@ SPEC.loader.exec_module(MONITOR)
 
 NAMES = '"Inner_Iter","rms[Rho]","rms[RhoE]","CD"'
 LEGACY = 'TITLE = "SU2 history"\nVARIABLES = ' + NAMES + '\nZONE T= "Convergence"\n'
-TECPLOT = 'TITLE = "SU2 history"\nVARIABLES = \\\n' + NAMES + '\nZONE T= "Convergence"\n'
+TECPLOT = (
+    'TITLE = "SU2 history"\nVARIABLES = \\\n' + NAMES + '\nZONE T= "Convergence"\n'
+)
 CSV = NAMES + "\n"
 
 
@@ -55,7 +57,9 @@ class MonitorTests(unittest.TestCase):
 
     def test_time_iterations(self):
         names = '"Time_Iter","Inner_Iter","rms[Rho]"\n'
-        body = "".join(f"{t}, {i}, {-t - 0.1 * i}\n" for t in range(3) for i in range(4))
+        body = "".join(
+            f"{t}, {i}, {-t - 0.1 * i}\n" for t in range(3) for i in range(4)
+        )
         reader = self.reader(names + body)
         self.assertTrue(reader.hasTime())
         np.testing.assert_array_equal(reader.iters[: reader.n][:5], [0, 1, 2, 3, 0])
