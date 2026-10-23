@@ -53,6 +53,17 @@ class MonitorTests(unittest.TestCase):
             self.assertEqual(reader.names, ["rms[Rho]", "rms[RhoE]"], header)
             self.assertEqual(reader.n, 2, header)
 
+    def test_time_iterations(self):
+        names = '"Time_Iter","Inner_Iter","rms[Rho]"\n'
+        body = "".join(f"{t}, {i}, {-t - 0.1 * i}\n" for t in range(3) for i in range(4))
+        reader = self.reader(names + body)
+        self.assertTrue(reader.hasTime())
+        np.testing.assert_array_equal(reader.iters[: reader.n][:5], [0, 1, 2, 3, 0])
+        rows = reader.rowsFrom(1, byTime=True)
+        np.testing.assert_array_equal(reader.times[rows], [1, 2])
+        np.testing.assert_array_equal(reader.iters[rows], [3, 3])
+        self.assertFalse(self.reader(CSV + row(0) + row(1)).hasTime())
+
     def test_incomplete_header_is_deferred(self):
         self.path.write_text('TITLE = "x"\nVARIABLES = \\\n"Inner_Iter","rms[Rho]')
         reader = MONITOR.HistoryReader(str(self.path))

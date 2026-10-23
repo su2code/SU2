@@ -45,8 +45,9 @@ matplotlib.rcParams["legend.fontsize"] = 20
 
 RESIDUAL_PATTERN = re.compile("rms|Res")
 COEFFICIENT_PATTERN = re.compile("^(CD|CL|CMx|CMy|CMz|CFx|CFy|CFz)$")
-# x-axis counter and start filter use the first of these columns present in the history
-ITERATION_COLUMNS = ("Inner_Iter", "Outer_Iter", "Time_Iter")
+# inner counter: first of these present in the history, else the row index
+ITERATION_COLUMNS = ("Inner_Iter", "Outer_Iter")
+TIME_COLUMN = "Time_Iter"
 MAX_POINTS = 4000
 READ_BLOCK_BYTES = 32 * 1024 * 1024
 UPDATE_INTERVAL_MS = 1000
@@ -73,9 +74,11 @@ class HistoryReader:
         self.offset = 0
         self.cols = None
         self.iter_col = None
+        self.time_col = None
         self.names = []
         self.buf = np.empty((1024, 0))
         self.iters = np.empty(1024)
+        self.times = np.empty(1024)
         self.n = 0
         self.version += 1
         self.readHeader()
@@ -112,8 +115,10 @@ class HistoryReader:
             if counter in allnames:
                 self.iter_col = allnames.index(counter)
                 break
+        self.time_col = allnames.index(TIME_COLUMN) if TIME_COLUMN in allnames else None
         self.buf = np.empty((1024, len(self.cols)))
         self.iters = np.empty(1024)
+        self.times = np.empty(1024)
         self.offset = offset
 
     # reads the complete lines appended since the last call; returns True if rows were added
@@ -139,7 +144,9 @@ class HistoryReader:
             if end < 0:
                 break
             try:
-                wanted = sorted({*self.cols, *([] if self.iter_col is None else [self.iter_col])})
+                wanted = sorted(
+                    {*self.cols, *(c for c in (self.iter_col, self.time_col) if c is not None)}
+                )
                 table = pd.read_csv(
                     io.BytesIO(chunk[: end + 1]),
                     header=None,
@@ -153,23 +160,37 @@ class HistoryReader:
                     if self.iter_col is not None
                     else np.arange(self.n, self.n + len(table), dtype=np.float64)
                 )
+                times = (
+                    table[self.time_col].to_numpy()
+                    if self.time_col is not None
+                    else iters
+                )
             except (pd.errors.EmptyDataError, pd.errors.ParserError, ValueError):
                 break
             self.offset += end + 1
-            self.append(rows, iters)
+            self.append(rows, iters, times)
             added = True
 
         if added:
             self.version += 1
         return added
 
-    # row indices at or after iteration 'start', thinned to at most MAX_POINTS
-    def rowsFrom(self, start):
-        rows = np.flatnonzero(self.iters[: self.n] >= start)
+    def hasTime(self):
+        return self.time_col is not None
+
+    # rows at or after iteration 'start', thinned to at most MAX_POINTS;
+    # by time step, only the last row of each Time_Iter is kept
+    def rowsFrom(self, start, byTime=False):
+        counter = self.times if byTime and self.hasTime() else self.iters
+        counter = counter[: self.n]
+        keep = counter >= start
+        if byTime and self.hasTime():
+            keep[:-1] &= counter[1:] != counter[:-1]
+        rows = np.flatnonzero(keep)
         rows = rows[rows >= 1]
         return rows[:: max(1, -(-len(rows) // MAX_POINTS))]
 
-    def append(self, rows, iters):
+    def append(self, rows, iters, times):
         needed = self.n + len(rows)
         if needed > len(self.buf):
             size = max(needed, 2 * len(self.buf))
@@ -179,8 +200,12 @@ class HistoryReader:
             grownIters = np.empty(size)
             grownIters[: self.n] = self.iters[: self.n]
             self.iters = grownIters
+            grownTimes = np.empty(size)
+            grownTimes[: self.n] = self.times[: self.n]
+            self.times = grownTimes
         self.buf[self.n : needed] = rows
         self.iters[self.n : needed] = iters
+        self.times[self.n : needed] = times
         self.n = needed
 
 
@@ -227,13 +252,13 @@ class MatplotlibFigure(QWidget):
         return self.reader.names if self.reader is not None else []
 
     # plots the residuals from iteration 'start' on; ymin/ymax of None means automatic range
-    def plot(self, listonoff, normalize, start, ymin, ymax, update=True):
+    def plot(self, listonoff, normalize, start, ymin, ymax, byTime=False, update=True):
         if self.reader is None:
             return
         if update:
             self.reader.update()
 
-        key = (tuple(listonoff), normalize, start, ymin, ymax, self.reader.version)
+        key = (tuple(listonoff), normalize, start, ymin, ymax, byTime, self.reader.version)
         if key == self.lastkey:
             return
         self.lastkey = key
@@ -246,13 +271,13 @@ class MatplotlibFigure(QWidget):
         if rebuild:
             self.visible = [names[l] for l in shown]
             ax.clear()
-            ax.set_xlabel("iterations")
+            ax.set_xlabel("time iterations" if byTime and self.reader.hasTime() else "iterations")
             ax.set_ylabel(self.ylabel)
             self.lines = [ax.plot([], [], label=names[l])[0] for l in shown]
 
         n = self.reader.n
-        rows = self.reader.rowsFrom(start)
-        x = self.reader.iters[rows]
+        rows = self.reader.rowsFrom(start, byTime)
+        x = (self.reader.times if byTime and self.reader.hasTime() else self.reader.iters)[rows]
         for line, l in zip(self.lines, shown):
             y = self.reader.buf[rows, l]
             if normalize and n > 1 and abs(self.reader.buf[1, l]) > 1e-6:
@@ -343,6 +368,14 @@ class PlotTab(QWidget):
         self.update_chkbx(self.figure.names())
         self.plot_data()
 
+    # the switch is enabled, and on by default, only when the history has a Time_Iter column
+    def updateTimeSwitch(self):
+        reader = self.figure.reader
+        has = reader is not None and reader.hasTime()
+        if has != self.btn_time.isEnabled() or not has:
+            self.btn_time.setEnabled(has)
+            self.btn_time.setChecked(has)
+
     def setRunning(self, running):
         self.btn_plot_data.setText("stop" if running else "start")
         self.btn_plot_data.setToolTip(
@@ -427,12 +460,19 @@ class PlotTab(QWidget):
 
         self.chk_layout = QVBoxLayout()
 
+        self.btn_time = QCheckBox("Time iterations")
+        self.btn_time.setToolTip(
+            "Plot against Time_Iter (last inner iteration of each step) instead of inner iterations"
+        )
+        self.btn_time.stateChanged.connect(lambda _: self.changedata())
+
         # now we add all the buttons in a vertical list
         self.btn_layout = QVBoxLayout()
         self.btn_layout.addWidget(self.btn_openfile)
         self.btn_layout.addWidget(self.show_filename)
         self.btn_layout.addWidget(self.btn_plot_data)
         self.btn_layout.addWidget(self.btn_normalize)
+        self.btn_layout.addWidget(self.btn_time)
         self.btn_layout.addLayout(range_layout)
         self.btn_layout.addLayout(self.chk_layout)
 
@@ -474,6 +514,7 @@ class PlotTab(QWidget):
             1 if start is None else start,
             self.parse(self.edit_ymin, float),
             self.parse(self.edit_ymax, float),
+            self.btn_time.isChecked(),
             update=update,
         )
 
@@ -483,6 +524,7 @@ class PlotTab(QWidget):
             self.figure.reader.update()
             if self.figure.names() != self.chkbx_names:
                 self.update_chkbx(self.figure.names())
+        self.updateTimeSwitch()
         self.draw(update=False)
 
     # ################################### #
