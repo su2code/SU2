@@ -229,9 +229,13 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       END_SU2_OMP_FOR
     }
 
-    /*--- Compute the DES length scale ---*/
+    /*--- Compute the DES length scale on the domain points and send it to the halo points, as for SA.
+     The EDDES length scale needs the full neighbourhood of the point, which halo points do not have. ---*/
 
     SetDES_LengthScale(solver_container, geometry, config);
+
+    InitiateComms(geometry, config, MPI_QUANTITIES::DES_LENGTHSCALE);
+    CompleteComms(geometry, config, MPI_QUANTITIES::DES_LENGTHSCALE);
 
   }
 
@@ -913,8 +917,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
 
     const su2double StrainMag = max(flowNodes->GetStrainMag(iPoint), 1e-12);
     const auto Vorticity      = flowNodes->GetVorticity(iPoint);
