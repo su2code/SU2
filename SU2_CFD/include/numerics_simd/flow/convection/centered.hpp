@@ -52,6 +52,7 @@ protected:
   const su2double fixFactor;
   const bool dynamicGrid;
   const su2double stretchParam = 0.3;
+  const CVariable* const tkeVars; /*!< \brief SST turbulence variables (k is part of the total energy), else nullptr. */
 
   /*!
    * \brief Constructor, store some constants and forward args to base.
@@ -60,7 +61,8 @@ protected:
   CCenteredBase(const CConfig& config, Ts&... args) : Base(config, args...),
     gamma(config.GetGamma()),
     fixFactor(config.GetCent_Jac_Fix_Factor()),
-    dynamicGrid(config.GetDynamic_Grid()) {
+    dynamicGrid(config.GetDynamic_Grid()),
+    tkeVars(config.GetKind_Turb_Model() == TURB_MODEL::SST ? findTurbVars(args...) : nullptr) {
   }
 
   /*!
@@ -140,8 +142,14 @@ public:
 
     MatrixDbl<nVar> jac_i, jac_j;
     if (implicit) {
-      jac_i = inviscidProjJac(gamma, V.i.velocity(), U.i.energy(), normal, 0.5);
-      jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.energy(), normal, 0.5);
+      /*--- With SST the total energy contains k, held fixed in the Jacobian. ---*/
+      Double tke_i = 0.0, tke_j = 0.0;
+      if (tkeVars) {
+        tke_i = gatherVariables(iPoint, tkeVars->GetSolution());
+        tke_j = gatherVariables(jPoint, tkeVars->GetSolution());
+      }
+      jac_i = inviscidProjJac(gamma, V.i.velocity(), U.i.energy(), normal, 0.5, tke_i);
+      jac_j = inviscidProjJac(gamma, V.j.velocity(), U.j.energy(), normal, 0.5, tke_j);
     }
 
     /*--- Grid motion. ---*/
@@ -283,6 +291,7 @@ private:
   using Base::nVar;
   using Base::gamma;
   using Base::fixFactor;
+  using Base::tkeVars;
   const su2double kappa2;
   const su2double kappa4;
   const su2double entropyFix;
@@ -350,11 +359,24 @@ public:
 
     const auto unitProjVel = dot(avgV.velocity(), unitNormal);
 
+    /*--- With SST the total energy contains k, averaged between the cells. ---*/
+    Double tke_i = 0.0, tke_j = 0.0;
+    if (tkeVars) {
+      tke_i = gatherVariables(iPoint, tkeVars->GetSolution());
+      tke_j = gatherVariables(jPoint, tkeVars->GetSolution());
+    }
+    const Double avgTke = 0.5 * (tke_i + tke_j);
+
+    /*--- Delta(rho k) = avg(rho) Delta k + avg(k) Delta rho. The part with Delta k is not a pressure jump: remove it
+     from the 2nd order dissipation before the projection and advect it with the contact wave. The 4th order term
+     keeps it (the Laplacian of k is not available). ---*/
+    const Double rhoDeltaTke = eps2 * avgV.density() * (tke_i - tke_j);
+    scalarDissip(nVar-1) -= rhoDeltaTke;
     auto pMat = pMatrix(gamma, avgV.density(), avgV.velocity(),
-                        unitProjVel, avgV.speedSound(), unitNormal);
+                        unitProjVel, avgV.speedSound(), unitNormal, avgTke);
 
     auto pMatInv = pMatrixInv(gamma, avgV.density(), avgV.velocity(),
-                              unitProjVel, avgV.speedSound(), unitNormal);
+                              unitProjVel, avgV.speedSound(), unitNormal, avgTke);
 
     /*--- Compute limited absolute eigenvalues (times area). ---*/
 
@@ -394,6 +416,7 @@ public:
         }
       }
     }
+    flux(nVar-1) += lambda(0) * rhoDeltaTke;
   }
 };
 
