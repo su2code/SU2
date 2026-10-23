@@ -1,29 +1,29 @@
 #!/usr/bin/env python
 
-"""OrderedBunch is a subclass of OrderedDict with attribute-style access.
+""" OrderedBunch is a subclass of OrderedDict with attribute-style access.
 
->>> b = OrderedBunch()
->>> b.hello = 'world'
->>> b.hello
-'world'
->>> b['hello'] += "!"
->>> b.hello
-'world!'
->>> b.foo = OrderedBunch(lol=True)
->>> b.foo.lol
-True
->>> b.foo is b['foo']
-True
+    >>> b = OrderedBunch()
+    >>> b.hello = 'world'
+    >>> b.hello
+    'world'
+    >>> b['hello'] += "!"
+    >>> b.hello
+    'world!'
+    >>> b.foo = OrderedBunch(lol=True)
+    >>> b.foo.lol
+    True
+    >>> b.foo is b['foo']
+    True
 
-It is safe to import * from this module:
+    It is safe to import * from this module:
 
-    __all__ = ('OrderedBunch', 'ordered_bunchify','ordered_unbunchify')
+        __all__ = ('OrderedBunch', 'ordered_bunchify','ordered_unbunchify')
 
-ordered_un/bunchify provide dictionary conversion; Bunches can also be
-converted via OrderedBunch.to/fromOrderedDict().
+    ordered_un/bunchify provide dictionary conversion; Bunches can also be
+    converted via OrderedBunch.to/fromOrderedDict().
 
-original source:
-https://pypi.python.org/pypi/bunch
+    original source:
+    https://pypi.python.org/pypi/bunch
 """
 
 from .ordered_dict import OrderedDict

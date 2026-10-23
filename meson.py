@@ -30,6 +30,7 @@ import sys, os
 sys.path.append(sys.path[0])
 import preconfigure
 
+
 if __name__ == "__main__":
     if sys.version_info[0] < 3:
         raise Exception("Script must be run using Python 3")

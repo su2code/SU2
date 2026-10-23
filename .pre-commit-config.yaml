@@ -18,7 +18,7 @@ repos:
         types_or: [c++, c]
   # black repo for python formatting
   - repo: https://github.com/ambv/black
-    rev: 26.10.1
+    rev: 22.6.0
     hooks:
       - id: black
         exclude: |
