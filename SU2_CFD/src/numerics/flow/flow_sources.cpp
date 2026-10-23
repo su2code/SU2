@@ -55,6 +55,7 @@ CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsi
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   viscous = config->GetViscous();
   tkeInEnergy = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  tkeInStress = tkeInEnergy && !config->GetSSTParsedOptions().modified;
 
 }
 
@@ -164,7 +165,10 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 
 void CSourceAxisymmetric_Flow::ResidualDiffusion(){
 
-  su2double laminar_viscosity_i    = V_i[nDim+5];
+  /*--- -2/3 rho k of the radial normal stress (only where k is part of the stress tensor). ---*/
+  const su2double tke = tkeInStress ? turb_ke_i : 0.0;
+
+  su2double laminar_viscosity_i   = V_i[nDim+5];
   su2double eddy_viscosity_i       = V_i[nDim+6];
   su2double thermal_conductivity_i = V_i[nDim+7];
   su2double heat_capacity_cp_i     = V_i[nDim+8];
@@ -183,6 +187,7 @@ void CSourceAxisymmetric_Flow::ResidualDiffusion(){
   residual[3] -= Volume*(yinv*(total_viscosity_i*(u*(PrimVar_Grad_i[2][0]+PrimVar_Grad_i[1][1])
                                                  +v*TWO3*(2*PrimVar_Grad_i[2][1]-PrimVar_Grad_i[1][0]
                                                  -v*yinv))
+                                                 -v*TWO3*U_i[0]*tke
                                                  +total_conductivity_i*PrimVar_Grad_i[0][1])
                                                  -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][0]));
 }

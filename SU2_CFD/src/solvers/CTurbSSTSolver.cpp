@@ -124,13 +124,23 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, const CSolv
   su2double kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
   su2double omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
+  if (sstParsedOptions.tmrBC) {
+    omega_Inf = 10 * sqrt(VelMag2) / config->GetLDomain();
+    kine_Inf = omega_Inf*(muLamInf*viscRatio)/rhoInf;
+  } else if (sstParsedOptions.sust) {
+    /*--- Ambient values of the sustaining terms, set by the flow solver (SST_SUST_TKE_AMB, SST_SUST_OMEGA_AMB). ---*/
+    kine_Inf = config->GetTke_FreeStreamND();
+    omega_Inf = config->GetOmega_FreeStreamND();
+  }
+
   /*--- A zero turbulence intensity, viscosity ratio or free-stream velocity gives k = 0 or omega = 0 (or infinite),
    and then mu_t = 0/0 in the whole field. ---*/
   if (!(kine_Inf > 0.0 && omega_Inf > 0.0 && std::isfinite(SU2_TYPE::GetValue(kine_Inf)) &&
         std::isfinite(SU2_TYPE::GetValue(omega_Inf)))) {
     SU2_MPI::Error("SST: the free-stream k and omega must be positive and finite.\n"
                    "Set FREESTREAM_TURBULENCEINTENSITY > 0 and FREESTREAM_TURB2LAMVISCRATIO > 0 with a nonzero\n"
-                   "free-stream velocity.", CURRENT_FUNCTION);
+                   "free-stream velocity, or (e.g. for MACH_NUMBER= 0 with grid motion) SST_OPTIONS= SUSTAINING with\n"
+                   "positive SST_SUST_TKE_AMB and SST_SUST_OMEGA_AMB.", CURRENT_FUNCTION);
   }
 
   Solution_Inf[0] = kine_Inf;
@@ -522,6 +532,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       su2double beta_1 = constants[4];
       solution[0] = 0.0;
       solution[1] = 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2));
+
+      /*--- Menter's wall value, omega_w = 10 * 6 nu / (beta_1 d^2) (AIAA J 32(8), 1994), grows as 1/d^2 with the
+       distance d of the first point off the wall, so on very fine wall grids it can exceed the upper limit used
+       to clip omega in the rest of the domain (upperlimit[1]). SST_OPTIONS= WALL_OMEGA_LIMIT clips it to the
+       same limit, so that the wall and the interior values stay consistent. Off by default. ---*/
+      if (sstParsedOptions.wallOmegaLimit) solution[1] = min(solution[1], upperlimit[1]);
     }
 
     /*--- Set the solution values and zero the residual ---*/
@@ -649,8 +665,13 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       const su2double viscRatio = Turb_Properties[1];
       const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
 
-      Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
-      Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
+      if (sstParsedOptions.tmrBC) {
+        Inlet_Vars[1] = 10 * sqrt(VelMag2) / config->GetLDomain();
+        Inlet_Vars[0] = Inlet_Vars[1]*(Laminar_Viscosity_Inlet*viscRatio)/Density_Inlet;
+      } else {
+        Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
+        Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
+      }
     }
     for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, Inlet_Vars[iVar]);
 

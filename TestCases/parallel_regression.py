@@ -493,7 +493,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-1.493359, 5.883418, 0.657627, 0.022989, 100.000000]
+    rae2822_sst.test_vals = [-1.493359, 5.883419, 0.657627, 0.022989, 100.000000]
     test_list.append(rae2822_sst)
 
     # RAE2822 SST_SUST
@@ -501,7 +501,7 @@ def main():
     rae2822_sst_sust.cfg_dir   = "rans/rae2822"
     rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
     rae2822_sst_sust.test_iter = 20
-    rae2822_sst_sust.test_vals = [-2.465087, 5.851605, 0.496009, 0.041100]
+    rae2822_sst_sust.test_vals = [-2.939725, 5.056446, 0.508918, 0.042703]
     test_list.append(rae2822_sst_sust)
 
     # Flat plate
@@ -511,6 +511,14 @@ def main():
     turb_flatplate.test_iter = 20
     turb_flatplate.test_vals = [-0.187388, 0.003749, 10.000000, -1.406182]
     test_list.append(turb_flatplate)
+
+    # Flat plate, standard SST-2003 with the far-field values of the NASA TMR
+    turb_flatplate_sst_tmr           = TestCase('turb_flatplate_sst_tmr')
+    turb_flatplate_sst_tmr.cfg_dir   = "rans/flatplate"
+    turb_flatplate_sst_tmr.cfg_file  = "turb_SST_flatplate_tmr.cfg"
+    turb_flatplate_sst_tmr.test_iter = 19
+    turb_flatplate_sst_tmr.test_vals = [-5.225275, 0.259404, -5.804219, 7.702339, -0.187496, 0.003596]
+    test_list.append(turb_flatplate_sst_tmr)
 
     # Flat plate (compressible) with species inlet
     turb_flatplate_species           = TestCase('turb_flatplate_species')
@@ -593,7 +601,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.037491, -16.376949, 1.080346, 0.018385, 20.000000, -1.564168, 20.000000, -4.180902, 0.000000]
+    turb_naca0012_sa.test_vals = [-12.037544, -16.376949, 1.080346, 0.018385, 20.000000, -1.564084, 20.000000, -4.180929, 0.000000]
     turb_naca0012_sa.test_vals_aarch64 = [-12.037489, -16.376949, 1.080346, 0.018385, 20.000000, -1.564143, 20.000000, -4.180945, 0.000000]
     turb_naca0012_sa.timeout   = 3200
     test_list.append(turb_naca0012_sa)
@@ -613,7 +621,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-9.963808, -11.675704, -5.093478, 1.000889, 0.019126, -1.603990]
+    turb_naca0012_sst_sust.test_vals = [-7.619031, -9.772711, -2.145272, 1.006166, 0.019331, -1.565823]
     turb_naca0012_sst_sust.test_vals_aarch64 = [-12.073964, -14.836726, -5.732390, 1.000050, 0.019144, -2.229074]
     turb_naca0012_sst_sust.timeout   = 3200
     test_list.append(turb_naca0012_sst_sust)
@@ -893,7 +901,7 @@ def main():
     inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
     inc_turb_naca0012_sst_sust.test_iter = 20
-    inc_turb_naca0012_sst_sust.test_vals = [-7.169837, 0.332730, -0.000001, 0.312131]
+    inc_turb_naca0012_sst_sust.test_vals = [-9.784857, 3.354566, -0.000002, 0.309484]
     test_list.append(inc_turb_naca0012_sst_sust)
 
     # Flat plate, pressure-based
@@ -1353,7 +1361,7 @@ def main():
     Aachen_3D_restart.cfg_file = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
     Aachen_3D_restart.tol = 0.00001
-    Aachen_3D_restart.test_vals = [-7.688483, -8.466346, -6.035067, -6.425967, -5.820125, -4.597817, -5.528297, -5.301466, -3.819862, -5.242356, -5.738805, -3.630202, -2.213240, -2.857919, -0.576864]
+    Aachen_3D_restart.test_vals = [-7.688484, -8.466836, -6.035067, -6.427477, -5.819682, -4.597818, -5.530176, -5.304393, -3.819862, -5.242396, -5.737311, -3.630202, -2.213243, -2.859696, -0.576864]
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
