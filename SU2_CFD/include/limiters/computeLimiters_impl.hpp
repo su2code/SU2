@@ -81,8 +81,12 @@ void computeLimiters_impl(CSolver* solver,
   constexpr size_t MAXNVAR = 32;
   static_assert(MAXNVAR >= MAX_TRANSPORTED_SPECIES, "MAXNVAR (size of the limiter work arrays) must be at least MAX_TRANSPORTED_SPECIES.");
 
-  if (varEnd > MAXNVAR)
+  /*--- Called by all threads of a parallel region: only the master may call MPI (MPI_THREAD_FUNNELED). ---*/
+  if (varEnd > MAXNVAR) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     SU2_MPI::Error("Number of variables is too large, increase MAXNVAR.", CURRENT_FUNCTION);
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   const size_t nPointDomain = geometry.GetnPointDomain();
   const size_t nPoint = geometry.GetnPoint();
