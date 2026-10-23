@@ -5,7 +5,6 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest import mock
 
 import numpy as np
 
@@ -16,7 +15,7 @@ for module in (
     "PyQt5.QtWidgets",
     "matplotlib.backends.backend_qt5agg",
 ):
-    sys.modules.setdefault(module, mock.MagicMock())
+    sys.modules.setdefault(module, unittest.mock.MagicMock())
 
 MODULE_PATH = Path(__file__).parents[2] / "bin" / "monitor.py"
 SPEC = importlib.util.spec_from_file_location("su2_monitor", MODULE_PATH)
