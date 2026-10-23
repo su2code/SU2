@@ -3104,7 +3104,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Window (weight) function for the cost-functional in the reverse sweep */
   addEnumOption("WINDOW_FUNCTION", Kind_WindowFct, Window_Map, WINDOW_FUNCTION::SQUARE);
 
-  /* DESCRIPTION: DES Constant */
+  /* DESCRIPTION: DES Constant of the SA hybrid models. The SST hybrid models blend their own constants with F1. */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
   /* DESCRIPTION: SBS lengthscale coefficient */
@@ -3125,7 +3125,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify if the Stochastic Backscatter Model must be activated */
   addBoolOption("STOCHASTIC_BACKSCATTER", SBSParam.StochasticBackscatter, false);
 
-  /* DESCRIPTION: Specify if the LES mode must be enforced */
+  /* DESCRIPTION: Specify if the LES mode must be enforced (SA hybrid models only) */
   addBoolOption("ENFORCE_LES", enforceLES, false);
 
   /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
@@ -3146,7 +3146,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Shielding function lower threshold for application of Stochastic Backscatter Model */
   addDoubleOption("SBS_FD_LOWER_THRESHOLD", SBSParam.stochFdThreshold, 0.9);
 
-  /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
+  /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size, SA hybrid models only) */
   addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);
 
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
@@ -4147,6 +4147,24 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (SBSParam.StochasticBackscatter && hybridSST) {
     SU2_MPI::Error(string("The stochastic backscatter model (STOCHASTIC_BACKSCATTER= YES) is only available with the SA ") +
                    "hybrid RANS/LES models (HYBRID_RANSLES= SA_DES, SA_DDES, SA_ZDES or SA_EDDES).", CURRENT_FUNCTION);
+  }
+
+  /*--- The SST hybrid models compute their length scale from the grid with the constant C_DES = 0.78 F1 + 0.61 (1 - F1)
+   (Gritskevich et al. 2012), they do not use these options of the SA hybrid models. Stop rather than ignore them. ---*/
+  if (hybridSST) {
+    if (enforceLES) {
+      SU2_MPI::Error("ENFORCE_LES= YES is only available with the SA hybrid RANS/LES models (HYBRID_RANSLES= SA_*).",
+                     CURRENT_FUNCTION);
+    }
+    if (LES_FilterWidth > 0.0) {
+      SU2_MPI::Error(string("A user-specified LES_FILTER_WIDTH is only available with the SA hybrid RANS/LES models ") +
+                     "(HYBRID_RANSLES= SA_*). The SST hybrid models compute the filter width from the grid.", CURRENT_FUNCTION);
+    }
+    if (OptionIsSet("DES_CONST")) {
+      SU2_MPI::Error(string("DES_CONST is not used by the SST hybrid RANS/LES models (HYBRID_RANSLES= SST_*), which blend ") +
+                     "their own constants: C_DES = 0.78 F1 + 0.61 (1 - F1). Remove DES_CONST from the configuration file.",
+                     CURRENT_FUNCTION);
+    }
   }
 
   if (Time_Domain){
@@ -6770,6 +6788,11 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         if (Kind_HybridRANSLES != NO_HYBRIDRANSLES) {
           if (LES_FilterWidth > 0.0) cout << "User-specified LES filter width: " << LES_FilterWidth << endl;
+          if (Kind_HybridRANSLES == SST_DDES || Kind_HybridRANSLES == SST_IDDES ||
+              Kind_HybridRANSLES == SST_SIDDES || Kind_HybridRANSLES == SST_EDDES)
+            cout << "DES constant blended with F1: C_DES = 0.78 F1 + 0.61 (1 - F1)." << endl;
+          else
+            cout << "DES constant: " << Const_DES << endl;
           cout << "Stochastic Backscatter: ";
           if (SBSParam.StochasticBackscatter) {
             cout << "ON" << endl;
