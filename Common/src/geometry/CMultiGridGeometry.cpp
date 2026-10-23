@@ -2383,8 +2383,9 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
               for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); ++iNeigh) {
                 const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
                 const auto iEdge = fine_grid->nodes->GetEdge(iPoint, iNeigh);
-                const su2double w = GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(iEdge)) *
-                                    (1.0 / fine_grid->nodes->GetVolume(iPoint) + 1.0 / fine_grid->nodes->GetVolume(jPoint));
+                const su2double w =
+                    GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(iEdge)) *
+                    (1.0 / fine_grid->nodes->GetVolume(iPoint) + 1.0 / fine_grid->nodes->GetVolume(jPoint));
                 wMax = std::max(wMax, w);
                 if (std::find(set.begin(), set.end(), jPoint) != set.end()) wStep = std::max(wStep, w);
               }
@@ -2395,7 +2396,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
 
           /*--- Whether every node of the step reaches a physical boundary within a few steps on the
            *    way it travels. A band two coarse cells thin is taken, the domain pass tiles it poorly. ---*/
-          auto nearBoundary = [&](const vector<unsigned long>& set, const vector<std::array<su2double, MAXNDIM>>& dirs) {
+          auto nearBoundary = [&](const vector<unsigned long>& set,
+                                  const vector<std::array<su2double, MAXNDIM>>& dirs) {
             constexpr unsigned short THIN_BAND = 4;
             for (size_t k = 0; k < set.size(); ++k) {
               auto iPoint = set[k];
@@ -2405,8 +2407,8 @@ string CMultiGridGeometry::PaveAdvancingFronts(unsigned long& Index_CoarseCV, co
                 su2double bestAlign = 0.0;
                 for (auto jPoint : fine_grid->nodes->GetPoints(iPoint)) {
                   su2double step[MAXNDIM] = {0.0};
-                  GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(iPoint),
-                                            step);
+                  GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint),
+                                            fine_grid->nodes->GetCoord(iPoint), step);
                   const su2double len = GeometryToolbox::Norm(nDim, step);
                   if (len <= 0.0) continue;
                   const su2double align = GeometryToolbox::DotProduct(nDim, step, dirs[k].data()) / len;

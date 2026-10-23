@@ -536,7 +536,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   if (ilu_needed && !levels_ilu.empty() && !useCuda && num_threads > 1) BuildLevelWaits();
 
-  /*--- Generate MKL Kernels ---*/
+    /*--- Generate MKL Kernels ---*/
 
 #ifdef USE_MKL
   using mkl = mkl_jit_wrapper<ScalarType>;
@@ -1121,7 +1121,7 @@ void CSysMatrix<ScalarType>::BuildLevelWaits() {
           wait_b[owner[jPoint]] = std::max<uint32_t>(wait_b[owner[jPoint]], jStep + 1);
         }
       }
-          wait_f[iThread] = 0;
+      wait_f[iThread] = 0;
       wait_b[iThread] = 0;
     }
   }
