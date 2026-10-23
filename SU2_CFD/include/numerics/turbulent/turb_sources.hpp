@@ -882,6 +882,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     AD::SetPreaccIn(V_i[idx.Velocity() + 1]);
     AD::SetPreaccIn(V_i[idx.SoundSpeed()]);
 
+    /*--- The hybrid RANS/LES length scale depends on the flow and turbulence solution, it must be a preaccumulation
+     input or its sensitivities are lost in the discrete adjoint. ---*/
+    const bool hybridRANSLES = config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES;
+    if (hybridRANSLES) AD::SetPreaccIn(lengthScale_i);
+
     Density_i = V_i[idx.Density()];
     Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
     Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
@@ -996,6 +1001,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Dissipation ---*/
 
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * (1.0 + zetaFMt);
+      if (hybridRANSLES)
+        dk = Density_i * sqrt(pow(ScalarVar_i[0], 3)) / lengthScale_i;
+        
       su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - 0.09/beta_blended * zetaFMt);
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
@@ -1024,6 +1032,13 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
+      if (hybridRANSLES) {
+        /*--- Hybrid k destruction dk = rho k^(3/2) / l_hyb, with the length scale l_hyb frozen (it is computed in the
+         preprocessing and treated as a constant here): d(dk)/d(rho k) = 1.5 dk / (rho k) and it does not depend on omega.
+         The RANS form above would use the wrong derivative where l_hyb differs from l_RANS = sqrt(k) / (beta* omega). ---*/
+        Jacobian_i[0][0] = -1.5 * sqrt(ScalarVar_i[0]) / lengthScale_i * Volume;
+        Jacobian_i[0][1] = 0.0;
+      }
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
     }
