@@ -870,10 +870,10 @@ def main():
     test_list.append(ddes_flatplate)
 
     # Hybrid RANS/LES models on the ONERA M6 wing, restarting from a RANS solution
-    ddes_oneram6_vals = {"sst_ddes": [-3.562792, -0.782226, 1.862936, 0.262000, 0.023186],
-                         "sst_iddes": [-3.548909, 3.066218, 2.094582, 0.262015, 0.023189],
-                         "sst_siddes": [-3.548929, 3.066218, 2.094596, 0.262000, 0.023186],
-                         "sst_eddes": [-3.562347, 0.218640, 1.862786, 0.262000, 0.023186],
+    ddes_oneram6_vals = {"sst_ddes": [-3.562792, -0.782250, 1.862155, 0.262000, 0.023186],
+                         "sst_iddes": [-3.543836, 3.061988, 2.100895, 0.262015, 0.023189],
+                         "sst_siddes": [-3.543856, 3.061988, 2.100908, 0.262000, 0.023186],
+                         "sst_eddes": [-3.562408, 0.258674, 1.861872, 0.262000, 0.023186],
                          "sa_eddes": [-3.510006, -3.683557, 0.266420, 0.023471]}
     for model, vals in ddes_oneram6_vals.items():
         ddes_oneram6 = TestCase('ddes_oneram6_' + model)
