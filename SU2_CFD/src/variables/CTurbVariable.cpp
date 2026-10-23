@@ -37,7 +37,8 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
     intermittency.resize(nPoint) = su2double(1.0);
 
     DES_LengthScale.resize(nPoint) = su2double(0.0);
-    
+    if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) lesMode.resize(nPoint) = su2double(0.0);
+
     Vortex_Tilting.resize(nPoint);
 
    }

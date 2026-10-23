@@ -58,7 +58,6 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
 
 
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
-    lesMode.resize(nPoint) = su2double(0.0);
     if (backscatter) {
       sbsInBox.resize(nPoint) = 1;
       stochSource.resize(nPoint, nDim) = su2double(0.0);

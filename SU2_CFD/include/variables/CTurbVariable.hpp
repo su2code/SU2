@@ -39,6 +39,7 @@ class CTurbVariable : public CScalarVariable {
 protected:
   VectorType muT;             /*!< \brief Eddy viscosity. */
   VectorType DES_LengthScale; /*!< \brief DES Length scale. */
+  VectorType lesMode;         /*!< \brief LES sensor of the hybrid RANS/LES models (only allocated for them). */
 
 public:
   static constexpr size_t MAXNVAR = 4;
@@ -114,6 +115,20 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override { DES_LengthScale(iPoint) = val_des_lengthscale; }
+
+  /*!
+   * \brief Set the LES sensor of the hybrid RANS/LES models.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_les_mode - Value of the LES sensor.
+   */
+  inline void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) override { lesMode(iPoint) = val_les_mode; }
+
+  /*!
+   * \brief Get the LES sensor of the hybrid RANS/LES models.
+   * \param[in] iPoint - Point index.
+   * \return Value of the LES sensor.
+   */
+  inline su2double GetLES_Mode(unsigned long iPoint) const override { return lesMode(iPoint); }
 
   /*!
    * \brief Set the vortex tilting measure for computation of the EDDES length scale

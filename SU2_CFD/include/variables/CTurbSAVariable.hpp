@@ -39,7 +39,6 @@
 class CTurbSAVariable final : public CTurbVariable {
 
 private:
-  VectorType lesMode;
   su2vector<int8_t> sbsInBox;
   MatrixType stochSource;
   MatrixType stochSourceOld;
@@ -108,17 +107,6 @@ public:
    * \param[in] val_sbsInBox - 1.0 if the Stochastic Backscatter Model must be applied only in a confined box.
    */
   inline void SetSbsInBox(unsigned long iPoint, int8_t val_sbsInBox) override { sbsInBox(iPoint) = val_sbsInBox; }
-
-  /*!
-   * \brief Set the LES sensor.
-   */
-  inline void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) override { lesMode(iPoint) = val_les_mode; }
-
-  /*!
-   * \brief Get the LES sensor.
-   * \return Value of the LES sensor.
-   */
-  inline su2double GetLES_Mode(unsigned long iPoint) const override { return lesMode(iPoint); }
 
   /*!
    * \brief Set the integral of the product of three Bessel functions appearing in Laplacian smoothing.

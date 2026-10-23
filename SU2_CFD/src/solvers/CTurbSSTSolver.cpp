@@ -935,6 +935,11 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
     su2double DES_lengthScale = 0.0;
 
+    /*--- LES sensor, as for the SA models: the weight of the LES branch in the hybrid length scale where the LES
+     length is the shorter one (l_LES < l_RANS), 0 elsewhere. For DDES and EDDES the weight is f_d. For IDDES and
+     SIDDES the length scale is the blend ftilda_d*l_RANS + (1-ftilda_d)*l_LES, so the weight is 1-ftilda_d. ---*/
+    su2double lesSensor = 0.0;
+
     switch(kind_hybridRANSLES){
       /*--- Every model is taken from "Development of DDES and IDDES Formulations for the k-ω Shear Stress Transport Model"
                                       Mikhail S. Gritskevich et al. (DOI:10.1007/s10494-011-9378-4)
@@ -950,6 +955,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double l_LES = C_DES * h_max;
         
         DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
+        if (l_RANS > l_LES) lesSensor = f_d;
 
         break;
       }
@@ -980,6 +986,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double l_LES = C_DES * Delta;
 
         DES_lengthScale = ftilda_d *(1.0+f_e)*l_RANS + (1.0 - ftilda_d) * l_LES;
+        if (l_RANS > l_LES) lesSensor = 1.0 - ftilda_d;
 
         break;
       }
@@ -1000,6 +1007,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double l_LES = C_DES * Delta;
 
         DES_lengthScale = ftilda_d*l_RANS + (1.0 - ftilda_d) * l_LES;
+        if (l_RANS > l_LES) lesSensor = 1.0 - ftilda_d;
 
         break;
       }
@@ -1018,12 +1026,14 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         const su2double l_LES = C_DES * delta;
         DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
+        if (l_RANS > l_LES) lesSensor = f_d;
 
         break;
       }
     }
 
     nodes->SetDES_LengthScale(iPoint, DES_lengthScale);
+    nodes->SetLES_Mode(iPoint, lesSensor);
 
   }
   END_SU2_OMP_FOR
