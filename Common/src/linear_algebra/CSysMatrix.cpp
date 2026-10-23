@@ -1757,8 +1757,10 @@ void CSysMatrix<ScalarType>::CopyHaloRowsFromOwners(const CGeometry* geometry) {
   vector<unsigned long> recvIdx;
   vector<passivedouble> recvVal;
   vector<int> idxDisp, valDisp;
-  exchange([](auto& b) -> auto& { return b.index; }, 0ul, MPI_UNSIGNED_LONG, recvIdx, idxDisp);
-  exchange([](auto& b) -> auto& { return b.value; }, passivedouble(0), MPI_DOUBLE, recvVal, valDisp);
+  exchange(
+      [](auto& b) -> auto& { return b.index; }, 0ul, MPI_UNSIGNED_LONG, recvIdx, idxDisp);
+  exchange(
+      [](auto& b) -> auto& { return b.value; }, passivedouble(0), MPI_DOUBLE, recvVal, valDisp);
 
   /*--- Points arrive in receive-list order, only blocks in columns owned here are kept. ---*/
   for (int iMsg = 0; iMsg < geometry->nP2PRecv; iMsg++) {
