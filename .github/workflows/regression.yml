@@ -46,7 +46,7 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, ReverseTagNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-cantera=true -Denable-tests=true --warnlevel=2'
           - config_set: ReverseMPI
             flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ForwardMPI
@@ -463,6 +463,7 @@ jobs:
         env:
           OMPI_MCA_osc: pt2pt
           LD_LIBRARY_PATH: /github/workspace/install/lib
+          CANTERA_DATA: /github/workspace/src/SU2/subprojects/cantera/data:/github/workspace/src/SU2/UnitTests/SU2_CFD/fluid
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
       - name: Check NEMO convergence field migration

@@ -40,10 +40,14 @@ wrapper_deps = [
 
 if get_option('enable-normal')
   cpp_source = swig_gen.process('pySU2.i')
+  swig_deps = [wrapper_deps, common_dep, su2_deps]
+  if get_option('enable-cantera')
+    swig_deps += cantera_dep
+  endif
   swig_lib = shared_library(
       '_pysu2',
       cpp_source,
-      dependencies: [wrapper_deps, common_dep, su2_deps],
+      dependencies: swig_deps,
       objects: [
         su2_cfd_lib.extract_all_objects(),
         su2_def_lib.extract_objects('drivers/CDeformationDriver.cpp')
