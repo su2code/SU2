@@ -55,6 +55,12 @@ UPDATE_INTERVAL_MS = 1000
 LOGO_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logoSU2.png")
 
 
+# silences the KDE file dialog warning about the missing ThumbCreator service
+def silenceKdeServiceWarnings():
+    rules = os.environ.get("QT_LOGGING_RULES", "")
+    os.environ["QT_LOGGING_RULES"] = (rules + ";" if rules else "") + "kf.service.services=false"
+
+
 def cleanName(name):
     return name.replace("VARIABLES=", "").replace('"', "").replace(" ", "")
 
@@ -608,6 +614,7 @@ class MyTableWidget(QWidget):
 if __name__ == "__main__":
 
     def run_app():
+        silenceKdeServiceWarnings()
         app = QApplication(sys.argv)
         app.setDesktopFileName("su2-monitor")
         app.setWindowIcon(QIcon(LOGO_FILE))
