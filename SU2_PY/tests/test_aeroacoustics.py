@@ -10,6 +10,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
+
 MODULE_PATH = Path(__file__).parents[1] / "aeroacoustics.py"
 SPEC = importlib.util.spec_from_file_location("aeroacoustics", MODULE_PATH)
 AEROACOUSTICS = importlib.util.module_from_spec(SPEC)
