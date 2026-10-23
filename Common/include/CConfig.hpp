@@ -1117,6 +1117,7 @@ private:
   su2double ParMETIS_tolerance;     /*!< \brief Load balancing tolerance for ParMETIS. */
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
+  bool ParMETIS_anisotropyWgt;      /*!< \brief Weight edges by cell anisotropy, keep lines on one rank. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
   DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
@@ -10333,6 +10334,11 @@ public:
    * \brief Get the ParMETIS load balancing weight for edges
    */
   long GetParMETIS_EdgeWeight() const { return ParMETIS_edgeWgt; }
+
+  /*!
+   * \brief Whether ParMETIS weights graph edges by cell anisotropy and keeps anisotropic lines on one rank.
+   */
+  bool GetParMETIS_AnisotropyWeight() const { return ParMETIS_anisotropyWgt; }
 
   /*!
    * \brief Find the marker index (if any) that is part of a given interface pair.

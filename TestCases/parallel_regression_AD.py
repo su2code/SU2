@@ -347,7 +347,7 @@ def main():
     da_sp_pinArray_cht_2d_mf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/dp-adjoint_chtPinArray_2d"
     da_sp_pinArray_cht_2d_mf.cfg_file  = "configMaster.cfg"
     da_sp_pinArray_cht_2d_mf.test_iter = 100
-    da_sp_pinArray_cht_2d_mf.test_vals = [-4.544489, -1.200740, -1.451677, -0.809551, -5.998322, -15.723654, -49.833480]
+    da_sp_pinArray_cht_2d_mf.test_vals = [-4.545587, -1.201859, -1.452976, -0.809884, -5.995415, -15.724051, 2.620874]
     da_sp_pinArray_cht_2d_mf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_mf)
 

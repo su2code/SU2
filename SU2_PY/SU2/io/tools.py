@@ -302,6 +302,7 @@ per_surface_map = {
     "EFFICIENCY": "CL/CD",
 }
 
+
 # -------------------------------------------------------------------
 #  Include per-surface output from History File
 # -------------------------------------------------------------------
@@ -361,9 +362,9 @@ def read_aerodynamics(
                         historyOutFields[this_objfun]["TYPE"] == "COEFFICIENT"
                         or historyOutFields[this_objfun]["TYPE"] == "D_COEFFICIENT"
                     ):
-                        Func_Values[
-                            this_objfun + "[" + str(iZone) + "]"
-                        ] = history_data[this_objfun + "[" + str(iZone) + "]"]
+                        Func_Values[this_objfun + "[" + str(iZone) + "]"] = (
+                            history_data[this_objfun + "[" + str(iZone) + "]"]
+                        )
 
     if "TIME_MARCHING" in special_cases:
         # for unsteady cases, average time-accurate objective function values
@@ -626,6 +627,7 @@ def get_dvMap():
 
 #: def get_dvMap()
 
+
 # -------------------------------------------------------------------
 #  Get Design Variable Kind Name from ID
 # -------------------------------------------------------------------
@@ -639,6 +641,7 @@ def get_dvKind(kindID):
 
 
 # def get_dvKind()
+
 
 # -------------------------------------------------------------------
 #  Get Design Variable Kind ID from Name
@@ -995,6 +998,7 @@ def get_specialCases(config):
 
 
 #: def get_specialCases()
+
 
 # -------------------------------------------------------------------
 #  Check Fluid Structure Interaction

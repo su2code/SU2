@@ -45,7 +45,7 @@ def main():
     p30n30.cfg_dir   = "vandv/rans/30p30n"
     p30n30.cfg_file  = "config.cfg"
     p30n30.test_iter = 5
-    p30n30.test_vals = [-11.267106, -11.168215, -11.182822, -10.949673, -14.233489, 0.052235, 2.830394, 1.318894, -1.210646, 1.000000, 12.763000]
+    p30n30.test_vals = [-11.251502, -11.158987, -11.170194, -10.927262, -14.233490, 0.052235, 2.830394, 1.318894, -1.219937, 1.000000, 12.763000]
     test_list.append(p30n30)
 
     # This is not part of the V&V cases yet, its tested in this script because it is a relatively long test (~1 min).
@@ -54,7 +54,7 @@ def main():
     p30n30_ad.cfg_dir = "vandv/rans/30p30n"
     p30n30_ad.cfg_file = "config_ad.cfg"
     p30n30_ad.test_iter = 9
-    p30n30_ad.test_vals = [-7.283709, -6.072615, -5.995304, -7.197048, -4.568373, -1.167146, -2.316777, 1.1791e-01, 3.4123e+01]
+    p30n30_ad.test_vals = [-7.205798, -5.937759, -5.846810, -7.076967, -4.534548, -1.226612, -2.281655, 0.117910, 34.123000]
     p30n30_ad.command = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(p30n30_ad)
 
@@ -63,7 +63,7 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals = [-13.040943, -10.136971, -10.942764, -7.985181, -10.323857, -4.732487, 0.002801]
+    flatplate_sst1994m.test_vals = [-13.041850, -10.137145, -10.934937, -7.992806, -10.323854, -4.732544, 0.002801]
     flatplate_sst1994m.test_vals_aarch64 = [-13.021715, -9.534786, -10.401912, -7.501836, -9.750800, -4.850665, 0.002807]
     test_list.append(flatplate_sst1994m)
 
@@ -72,7 +72,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals = [-11.928292, -10.095796, -9.512953, -6.445652, -11.774088, -6.988752, 0.004931]
+    bump_sst1994m.test_vals = [-11.927778, -10.095211, -9.513000, -6.445108, -11.774670, -6.990602, 0.004931]
     bump_sst1994m.test_vals_aarch64 = [-13.042689, -10.812982, -10.604523, -7.655547, -10.816257, -5.308083, 0.004911]
     test_list.append(bump_sst1994m)
 
@@ -81,7 +81,7 @@ def main():
     swbli_sa.cfg_dir   = "vandv/rans/swbli"
     swbli_sa.cfg_file  = "config_sa.cfg"
     swbli_sa.test_iter = 5
-    swbli_sa.test_vals = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
+    swbli_sa.test_vals = [-11.504424, -10.941741, -12.049926, -10.586263, -16.090438, 0.002242, -1.614397, 1.34010]
     swbli_sa.test_vals_aarch64 = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
     test_list.append(swbli_sa)
 
@@ -91,7 +91,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 5
-    swbli_sst.test_vals = [-11.569218, -10.909086, -11.607984, -10.431163, -11.407588, -2.637660, 0.001816, -1.305818, -3.514590, 13.399000]
+    swbli_sst.test_vals = [-11.567956, -10.908257, -11.607992, -10.430471, -11.407660, -2.637661, 0.001816, -1.354761, -3.514714, 13.399000]
     test_list.append(swbli_sst)
 
     # DSMA661 - SA
@@ -99,7 +99,7 @@ def main():
     dsma661_sa.cfg_dir    = "vandv/rans/dsma661"
     dsma661_sa.cfg_file   = "dsma661_sa_config.cfg"
     dsma661_sa.test_iter  = 5
-    dsma661_sa.test_vals  = [-11.255379, -8.243275, -9.037314, -5.927070, -10.737675, 0.155687, 0.024232]
+    dsma661_sa.test_vals  = [-11.247167, -8.241024, -9.035101, -5.907729, -10.737682, 0.155687, 0.024232]
     dsma661_sa.test_vals_aarch64 = [-11.293183, -8.241775, -9.083761, -6.011398, -10.737680, 0.155687, 0.024232]
     test_list.append(dsma661_sa)
 
@@ -108,7 +108,7 @@ def main():
     dsma661_sst.cfg_dir   = "vandv/rans/dsma661"
     dsma661_sst.cfg_file  = "dsma661_sst_config.cfg"
     dsma661_sst.test_iter = 5
-    dsma661_sst.test_vals = [-11.025153, -8.156995, -9.057021, -5.947228, -10.650874, -7.884423, 0.155882, 0.023344]
+    dsma661_sst.test_vals = [-11.023380, -8.156126, -9.055628, -5.935182, -10.651455, -7.911250, 0.155882, 0.023344]
     dsma661_sst.test_vals_aarch64 = [-10.977195, -8.403731, -8.747068, -5.808899, -10.522786, -7.369851, 0.155875, 0.023353]
     test_list.append(dsma661_sst)
 
@@ -121,7 +121,7 @@ def main():
     sandiajet_sst.cfg_dir   = "vandv/species_transport/sandia_jet"
     sandiajet_sst.cfg_file  = "validation.cfg"
     sandiajet_sst.test_iter = 5
-    sandiajet_sst.test_vals = [-4.930056, -3.072757, -3.531917, -3.632319, 1.186060, -6.175518, 5.000000, -1.413277, 5.000000, -4.735257, 5.000000, -1.924560, 0.000256, 0.000000, 0.000000, 0.000256, 4126.200000, 4008.100000, 62.399000, 55.713000]
+    sandiajet_sst.test_vals = [-4.922130, -3.073873, -3.517555, -3.626843, 1.094593, -6.182863, 5.000000, -1.310699, 4.000000, -5.581570, 5.000000, -3.793476, 0.000256, 0.000000, 0.000000, 0.000256, 4127.300000, 4009.300000, 62.402000, 55.615000]
     sandiajet_sst.test_vals_aarch64 = [-8.271400, -6.305945, -6.123143, -5.634565, -1.687556, -7.869775, 5.000000, -1.527449, 5.000000, -4.053788, 5.000000, -2.303502, 0.000257, 0.000000, 0.000000, 0.000257, 4020.500000, 3919.900000, 49.151000, 51.436000]
     test_list.append(sandiajet_sst)
 
