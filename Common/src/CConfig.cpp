@@ -4143,6 +4143,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                    "SA_* options require SA, SST_* options require SST.", CURRENT_FUNCTION);
   }
 
+  /*--- The stochastic backscatter model adds the Langevin equations to the SA model (turbulence variables 1 to 3). ---*/
+  if (SBSParam.StochasticBackscatter && hybridSST) {
+    SU2_MPI::Error(string("The stochastic backscatter model (STOCHASTIC_BACKSCATTER= YES) is only available with the SA ") +
+                   "hybrid RANS/LES models (HYBRID_RANSLES= SA_DES, SA_DDES, SA_ZDES or SA_EDDES).", CURRENT_FUNCTION);
+  }
+
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
 
