@@ -1,4 +1,5 @@
 # monitor: displays and updates the residuals of the su2 history file in a window.
+# Requires PyQt5, matplotlib, numpy and pandas; launch with 'SU2_MON' next to this file.
 import csv
 import io
 import os.path
@@ -44,6 +45,8 @@ matplotlib.rcParams["legend.fontsize"] = 20
 
 RESIDUAL_PATTERN = re.compile("rms|Res")
 COEFFICIENT_PATTERN = re.compile("^(CD|CL|CMx|CMy|CMz|CFx|CFy|CFz)$")
+# x-axis counter and start filter use the first of these columns present in the history
+ITERATION_COLUMNS = ("Inner_Iter", "Outer_Iter", "Time_Iter")
 MAX_POINTS = 4000
 READ_BLOCK_BYTES = 32 * 1024 * 1024
 UPDATE_INTERVAL_MS = 1000
@@ -63,38 +66,54 @@ class HistoryReader:
     def __init__(self, filename, pattern=RESIDUAL_PATTERN):
         self.filename = filename
         self.pattern = pattern
+        self.version = 0
         self.reset()
 
     def reset(self):
         self.offset = 0
         self.cols = None
+        self.iter_col = None
         self.names = []
         self.buf = np.empty((1024, 0))
+        self.iters = np.empty(1024)
         self.n = 0
-        self.version = 0
+        self.version += 1
         self.readHeader()
 
-    # legacy files start with a TITLE line and have a ZONE line after the header
+    # header is the first line, or the line after TITLE and after a bare 'VARIABLES = \' line;
+    # an optional ZONE line may follow it
     def readHeader(self):
         try:
             with open(self.filename, "rb") as f:
-                first = f.readline()
-                legacy = first.startswith(b"TITLE")
-                header = f.readline() if legacy else first
-                if legacy:
-                    f.readline()
-                if not header.endswith(b"\n"):
+                line = f.readline()
+                if line.startswith(b"TITLE"):
+                    line = f.readline()
+                if line.startswith(b"VARIABLES") and line.partition(b"=")[2].strip() in (
+                    b"",
+                    b"\\",
+                ):
+                    line = f.readline()
+                if not line.endswith(b"\n"):
                     return
                 offset = f.tell()
-            allnames = next(csv.reader([header.decode()]))
+                zone = f.readline()
+                if zone.startswith(b"ZONE") and zone.endswith(b"\n"):
+                    offset = f.tell()
+                elif zone and not zone.endswith(b"\n") and b"ZONE".startswith(zone):
+                    return
+            allnames = [cleanName(c) for c in next(csv.reader([line.decode()]))]
         except (OSError, UnicodeDecodeError, csv.Error, StopIteration):
             return
 
-        self.cols = [
-            i for i, c in enumerate(allnames) if self.pattern.search(cleanName(c))
-        ]
-        self.names = [cleanName(allnames[i]) for i in self.cols]
+        self.cols = [i for i, c in enumerate(allnames) if self.pattern.search(c)]
+        self.names = [allnames[i] for i in self.cols]
+        self.iter_col = None
+        for counter in ITERATION_COLUMNS:
+            if counter in allnames:
+                self.iter_col = allnames.index(counter)
+                break
         self.buf = np.empty((1024, len(self.cols)))
+        self.iters = np.empty(1024)
         self.offset = offset
 
     # reads the complete lines appended since the last call; returns True if rows were added
@@ -120,30 +139,48 @@ class HistoryReader:
             if end < 0:
                 break
             try:
-                rows = pd.read_csv(
+                wanted = sorted({*self.cols, *([] if self.iter_col is None else [self.iter_col])})
+                table = pd.read_csv(
                     io.BytesIO(chunk[: end + 1]),
                     header=None,
-                    usecols=self.cols,
+                    usecols=wanted,
                     dtype=np.float64,
                     on_bad_lines="skip",
-                ).to_numpy()
+                )
+                rows = table[self.cols].to_numpy()
+                iters = (
+                    table[self.iter_col].to_numpy()
+                    if self.iter_col is not None
+                    else np.arange(self.n, self.n + len(table), dtype=np.float64)
+                )
             except (pd.errors.EmptyDataError, pd.errors.ParserError, ValueError):
                 break
             self.offset += end + 1
-            self.append(rows)
+            self.append(rows, iters)
             added = True
 
         if added:
             self.version += 1
         return added
 
-    def append(self, rows):
+    # row indices at or after iteration 'start', thinned to at most MAX_POINTS
+    def rowsFrom(self, start):
+        rows = np.flatnonzero(self.iters[: self.n] >= start)
+        rows = rows[rows >= 1]
+        return rows[:: max(1, -(-len(rows) // MAX_POINTS))]
+
+    def append(self, rows, iters):
         needed = self.n + len(rows)
         if needed > len(self.buf):
-            grown = np.empty((max(needed, 2 * len(self.buf)), self.buf.shape[1]))
+            size = max(needed, 2 * len(self.buf))
+            grown = np.empty((size, self.buf.shape[1]))
             grown[: self.n] = self.buf[: self.n]
             self.buf = grown
+            grownIters = np.empty(size)
+            grownIters[: self.n] = self.iters[: self.n]
+            self.iters = grownIters
         self.buf[self.n : needed] = rows
+        self.iters[self.n : needed] = iters
         self.n = needed
 
 
@@ -214,11 +251,10 @@ class MatplotlibFigure(QWidget):
             self.lines = [ax.plot([], [], label=names[l])[0] for l in shown]
 
         n = self.reader.n
-        first = min(max(start, 1), max(n, 1))
-        step = max(1, -(-(n - first) // MAX_POINTS))
-        x = np.arange(first, n, step)
+        rows = self.reader.rowsFrom(start)
+        x = self.reader.iters[rows]
         for line, l in zip(self.lines, shown):
-            y = self.reader.buf[first:n:step, l]
+            y = self.reader.buf[rows, l]
             if normalize and n > 1 and abs(self.reader.buf[1, l]) > 1e-6:
                 y = 1 + y - self.reader.buf[1, l]
             line.set_data(x, y)
