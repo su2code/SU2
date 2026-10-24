@@ -31,6 +31,8 @@
 #include "./CBBoxTargetClass.hpp"
 #include "../parallelization/omp_structure.hpp"
 
+class CConfig;
+
 /*!
  * \class CADTElemClass
  * \ingroup ADT
@@ -41,6 +43,9 @@
 class CADTElemClass : public CADTBaseClass {
  private:
   unsigned short nDim; /*!< \brief Number of spatial dimensions. */
+
+  vector<array<su2double, 3>> periodicTranslations, periodicDual;
+  array<su2double, 3> wallMin{}, wallMax{};
 
   vector<su2double> coorPoints; /*!< \brief Vector, which contains the coordinates
                                             of the points in the ADT. */
@@ -61,8 +66,8 @@ class CADTElemClass : public CADTBaseClass {
   vector<int> ranksOfElems;            /*!< \brief Vector, which contains the ranks
                                                    of the elements in the ADT. */
 #ifdef HAVE_OMP
-  vector<vector<CBBoxTargetClass> > BBoxTargets; /*!< \brief Vector, used to store possible bounding box
-                                                             candidates during the nearest element search. */
+  vector<vector<CBBoxTargetClass>> BBoxTargets; /*!< \brief Vector, used to store possible bounding box
+                                                            candidates during the nearest element search. */
 #else
   array<vector<CBBoxTargetClass>, 1> BBoxTargets;
 #endif
@@ -83,6 +88,9 @@ class CADTElemClass : public CADTBaseClass {
   CADTElemClass(unsigned short val_nDim, vector<su2double>& val_coor, vector<unsigned long>& val_connElem,
                 vector<unsigned short>& val_VTKElem, vector<unsigned short>& val_markerID,
                 vector<unsigned long>& val_elemID, const bool globalTree);
+
+  /*! \brief Enable exact translated wall-image searches for this wall source zone. */
+  void SetPeriodicWallSearch(const CConfig* config);
 
   /*!
    * \brief Function, which determines the element that contains the given coordinate.
@@ -120,9 +128,13 @@ class CADTElemClass : public CADTBaseClass {
     const auto iThread = omp_get_thread_num();
     DetermineNearestElement_impl(BBoxTargets[iThread], FrontLeaves[iThread], FrontLeavesNew[iThread], coor, dist,
                                  markerID, elemID, rankID);
+    if (!periodicTranslations.empty()) DetermineNearestPeriodicElement(coor, dist, markerID, elemID, rankID);
   }
 
  private:
+  void DetermineNearestPeriodicElement(const su2double* coor, su2double& dist, unsigned short& markerID,
+                                       unsigned long& elemID, int& rankID);
+
   /*!
    * \brief Implementation of DetermineContainingElement.
    * \note Working variables (first two) passed explicitly for thread safety.
