@@ -73,9 +73,9 @@ For a reproducible rebuild, check out the two recorded SHAs, select the recorded
 
 ## CI and publishing
 
-`.github/workflows/docs-website.yml` checks SU2 `docs_site` pushes and pull requests. Pull requests build an artifact without deploying. Successful pushes and manual runs publish the checked artifact to this fork's Pages site. Checkout references are resolved once; the manifest records the exact revisions used.
+`.github/workflows/docs-website.yml` checks pushes to `docs_site` and `docs/developer-guides`, and pull requests targeting `develop` or `docs_site`. The PR preparation uses website branch `docs/user-guides` by default. Pull requests and pushes to the preparation branch upload checked previews without deploying. Publishing is restricted to `docs_site` runs in `rois1995/SU2`; the workflow does not publish from the official SU2 repository. Checkout references are resolved once; the manifest records the exact revisions used.
 
-The website repository's `docs-check.yml` checks its own pushes/pull requests against SU2 `docs_site` and uploads a checked preview. Website-only changes therefore get checks without cross-repository write credentials. After those checks pass, publish from the SU2 **Docs Website** workflow, choosing the website commit SHA as `site_ref`:
+The website repository's `docs-check.yml` checks pushes to `docs_site`, `docs/user-guides` and `docs/naca0021`, and pull requests targeting `master`, `docs_site` or `docs/user-guides`. It uses SU2 branch `docs/developer-guides` by default and uploads a checked preview. Website-only changes therefore get checks without cross-repository write credentials. After those checks pass, publish from the SU2 **Docs Website** workflow, choosing the website commit SHA as `site_ref`:
 
 ```sh
 gh workflow run docs-website.yml --repo rois1995/SU2 --ref docs_site -f site_repo=rois1995/su2code.github.io -f site_ref=<website-commit-sha>
@@ -83,4 +83,4 @@ gh workflow run docs-website.yml --repo rois1995/SU2 --ref docs_site -f site_rep
 
 To reproduce a historical deployment, select its SU2 revision as well. Normal branch builds follow the current website branch; use a commit SHA when reviewing or reproducing a particular pair of changes. Changes to workflow files require GitHub credentials allowed to update workflows; ordinary repository-only OAuth scopes may reject them.
 
-Both workflows target the `rois1995` forks. Do not push or publish these development changes to the official repositories.
+The paired sources currently use the `rois1995` forks. Publish both preparation branches to the forks before relying on their combined checks; a run started before the other branch is available may need to be repeated. Official website publishing remains a separate integration decision. Do not push these development branches directly to the official repositories.

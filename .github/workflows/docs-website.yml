@@ -2,9 +2,9 @@ name: Docs Website
 
 on:
   push:
-    branches: ['docs_site']
+    branches: ['docs_site', 'docs/developer-guides']
   pull_request:
-    branches: ['docs_site']
+    branches: ['docs_site', 'develop']
   workflow_dispatch:
     inputs:
       site_repo:
@@ -12,7 +12,7 @@ on:
         default: rois1995/su2code.github.io
       site_ref:
         description: Website commit SHA or branch (use a SHA to reproduce a build)
-        default: docs_site
+        default: docs/user-guides
 
 permissions:
   contents: read
@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.site_repo || 'rois1995/su2code.github.io' }}
-          ref: ${{ inputs.site_ref || 'docs_site' }}
+          ref: ${{ inputs.site_ref || 'docs/user-guides' }}
           path: site
           fetch-depth: 0
           filter: blob:none
@@ -63,13 +63,13 @@ jobs:
           path: ${{ runner.temp }}/docs-site/site
           retention-days: 7
       - name: Upload Pages artifact
-        if: github.event_name != 'pull_request'
+        if: github.repository == 'rois1995/SU2' && github.ref == 'refs/heads/docs_site' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ runner.temp }}/docs-site/site
 
   deploy:
-    if: github.event_name != 'pull_request'
+    if: github.repository == 'rois1995/SU2' && github.ref == 'refs/heads/docs_site' && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-24.04
     permissions:
