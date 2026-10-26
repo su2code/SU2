@@ -93,6 +93,82 @@ class ReferenceExtractionTests(unittest.TestCase):
             )
             self.assertEqual(result.stdout.strip(), "{}")
 
+    def test_cpp_arguments_keep_quoted_text_grouping_and_operators(self):
+        text = r"""config->GetField(i), "a,b)\"quoted\"", nested(1, 2), (a < b), {1, 2}, ',' """
+        self.assertEqual(
+            build_site.split_args(text),
+            [
+                "config->GetField(i)",
+                r'''"a,b)\"quoted\""''',
+                "nested(1, 2)",
+                "(a < b)",
+                "{1, 2}",
+                "','",
+            ],
+        )
+
+    def test_output_registration_ignores_comments_and_strings(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "SU2_CFD/src/output/CExampleOutput.cpp"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                r"""
+// The "AddHistoryOutput(" must stay on one line.
+/* AddVolumeOutput("DISABLED", "Disabled", "GROUP", "Not active"); */
+const char* help = "Use AddVolumeOutput( here";
+AddVolumeOutput("ACTIVE", "Active", "GROUP", "Real output");
+"""
+            )
+            fields = build_site.read_outputs(folder)["CExampleOutput"]
+            self.assertEqual([f["name"] for f in fields], ["ACTIVE"])
+            self.assertEqual(fields[0]["line"], 5)
+
+    def test_output_fields_keep_descriptions_and_dynamic_names(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "SU2_CFD/src/output/CExampleOutput.cpp"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                r"""
+AddVolumeOutput("EXTRAPOLATION", "Extrapolation", "PRIMITIVE", "Density, energy outside data range)");
+AddHistoryOutput("SPECIES_" + config->GetSpecies_Label(i), "Species", Format::FIXED, "SPECIES_COEFF", "Species mean");
+"""
+            )
+            fields = build_site.read_outputs(folder)["CExampleOutput"]
+            self.assertEqual(fields[0]["desc"], "Density, energy outside data range)")
+            self.assertEqual(
+                fields[1]["name"], '"SPECIES_" + config->GetSpecies_Label(i)'
+            )
+            self.assertEqual(fields[1]["group"], "SPECIES_COEFF")
+            self.assertEqual(fields[1]["desc"], "Species mean")
+
+    def test_error_messages_keep_commas_parentheses_and_ignore_comments(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "Common/example.cpp"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                r"""
+// SU2_MPI::Error("Comment only", CURRENT_FUNCTION);
+SU2_MPI::Error("Structure has changed, cannot refresh.)", CURRENT_FUNCTION);
+"""
+            )
+            self.assertEqual(
+                build_site.read_error_messages(folder),
+                [("Common/example.cpp", 3, "Structure has changed, cannot refresh.)")],
+            )
+
+    def test_string_defaults_are_values_or_explicitly_unresolved(self):
+        cases = [
+            ('string("nitrogen")', "nitrogen"),
+            ('std::string("history")', "history"),
+            ('"mesh"', "mesh"),
+            ('string("")', '""'),
+            ("config->GetName()", "not extracted (C++ expression: config->GetName())"),
+        ]
+        for expression, expected in cases:
+            with self.subTest(expression=expression):
+                option = {"kind": "String", "args": ['"NAME"', "name", expression]}
+                self.assertEqual(build_site.describe_type(option, {})[2], expected)
+
 
 if __name__ == "__main__":
     unittest.main()

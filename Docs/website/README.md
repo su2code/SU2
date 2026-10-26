@@ -21,7 +21,7 @@ Developer pages live in `pages/`, with `title` and `permalink: /docs_v7/<File-Na
 
 After checking a developer page against the implementation, update its `Last checked against SU2 develop <commit>` line. The Docs Check page flags named files changed since that commit; this is a review prompt, not a proof that the page is wrong or complete.
 
-Option descriptions belong above their registration in `Common/src/CConfig.cpp`, using the existing Doxygen `DESCRIPTION:`, `OPTIONS:` and `DEFAULT:` conventions. Keep examples in `config_template.cfg` consistent with the parser. Defaults set elsewhere may not be extractable; a template example is not necessarily a default. The reference also links to relevant pages and regression configurations.
+Option descriptions belong above their registration in `Common/src/CConfig.cpp`, using the existing Doxygen `DESCRIPTION:`, `OPTIONS:` and `DEFAULT:` conventions. Keep examples in `config_template.cfg` consistent with the parser. Defaults set elsewhere may not be extractable; a template example is not necessarily a default. Simple string literals and string constructors are shown as configuration values; unresolved string expressions are labelled as C++ expressions. The reference also links to relevant pages and regression configurations.
 
 The generator copies these pages and Markdown notes from code folders into a staged website. It produces the option, output, error and migration references and the Docs Check page, then updates navigation. Do not edit these generated copies in the website repository.
 

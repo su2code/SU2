@@ -117,31 +117,42 @@ def slugify(text):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
+CPP_TEXT = r'"(?:\\.|[^"\\])*"' + r"|'(?:\\.|[^'\\])*'" + r"|//[^\n]*|/\*.*?\*/"
+CPP_TOKENS = re.compile(CPP_TEXT + r"|[()[\]{},]", re.S)
+
+
+def cpp_code(text):
+    """Mask ordinary C++ literals and comments, preserving offsets and line numbers."""
+    return re.sub(CPP_TEXT, lambda m: re.sub(r"[^\n]", " ", m[0]), text, flags=re.S)
+
+
 def split_args(text):
-    """Split the arguments of a C++ call at the commas that are not inside brackets."""
+    """Split C++ call arguments outside literals, comments and (), [] or {} groups."""
+    # shortcut: template-argument commas are unsupported; extend if registrations use them.
     args, depth, start = [], 0, 0
-    for i, c in enumerate(text):
-        if c in "([{<":
+    for m in CPP_TOKENS.finditer(text):
+        token = m[0]
+        if token in ("(", "[", "{"):
             depth += 1
-        elif c in ")]}>":
+        elif token in (")", "]", "}"):
             depth -= 1
-        elif c == "," and depth == 0:
-            args.append(text[start:i].strip())
-            start = i + 1
+        elif token == "," and depth == 0:
+            args.append(text[start : m.start()].strip())
+            start = m.end()
     args.append(text[start:].strip())
     return args
 
 
 def call_body(text, open_paren):
-    """Return the text between the parenthesis at open_paren and its matching parenthesis."""
+    """Return a C++ call body, ignoring parentheses in literals and comments."""
     depth = 0
-    for i in range(open_paren, len(text)):
-        if text[i] == "(":
+    for m in CPP_TOKENS.finditer(text, open_paren):
+        if m[0] == "(":
             depth += 1
-        elif text[i] == ")":
+        elif m[0] == ")":
             depth -= 1
             if depth == 0:
-                return text[open_paren + 1 : i], i
+                return text[open_paren + 1 : m.start()], m.start()
     return text[open_paren + 1 :], len(text)
 
 
@@ -341,10 +352,17 @@ def describe_type(opt, maps):
         )
     if kind == "Bool" and len(args) > 2:
         default = {"true": "YES", "false": "NO"}.get(args[2], args[2])
-    elif (
-        kind in ("Double", "String", "UnsignedLong", "UnsignedShort", "Long")
-        and len(args) > 2
-    ):
+    elif kind == "String" and len(args) > 2:
+        constructor = re.fullmatch(
+            r'(?:std::)?string\s*\(\s*("(?:\\.|[^"\\])*")\s*\)', args[2]
+        )
+        value = literal(constructor[1] if constructor else args[2])
+        default = (
+            "not extracted (C++ expression: {})".format(args[2])
+            if value is None
+            else value or '""'
+        )
+    elif kind in ("Double", "UnsignedLong", "UnsignedShort", "Long") and len(args) > 2:
         default = args[2].strip('"')
     return (
         TYPE_NAMES.get(kind, "special format, see config_template.cfg"),
@@ -644,7 +662,7 @@ def read_outputs(su2):
         with open(path, encoding="utf-8", errors="replace") as f:
             text = f.read()
         seen = set()
-        for m in token.finditer(text):
+        for m in token.finditer(cpp_code(text)):
             body, _ = call_body(text, m.end() - 1)
             args = split_args(body)
             kind, igroup, idesc = calls[m.group(1)]
@@ -1055,7 +1073,7 @@ def read_error_messages(su2):
                 continue
             with open(path, encoding="utf-8", errors="replace") as f:
                 text = f.read()
-            for m in token.finditer(text):
+            for m in token.finditer(cpp_code(text)):
                 body, _ = call_body(text, m.end() - 1)
                 first = split_args(body)[0]
                 pieces = re.findall(r'"((?:[^"\\]|\\.)*)"', first)
