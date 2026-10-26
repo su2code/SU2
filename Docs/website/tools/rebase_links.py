@@ -35,37 +35,37 @@ REMOTE_FOLDERS = ("documents/", "download/", "emails/")
 
 
 def main():
-  if len(sys.argv) != 3:
-    print("usage: rebase_links.py <built site folder> <base path, e.g. /SU2>")
-    return 1
-  root = sys.argv[1]
-  base = "/" + sys.argv[2].strip("/") if sys.argv[2].strip("/") else ""
-  link = re.compile(r'((?:href|src|action)\s*=\s*["\'])/(?!/)')
+    if len(sys.argv) != 3:
+        print("usage: rebase_links.py <built site folder> <base path, e.g. /SU2>")
+        return 1
+    root = sys.argv[1]
+    base = "/" + sys.argv[2].strip("/") if sys.argv[2].strip("/") else ""
+    link = re.compile(r'((?:href|src|action)\s*=\s*["\'])/(?!/)')
 
-  def fix(m, text):
-    rest = text[m.end():]
-    if base and rest.startswith(base.lstrip("/") + "/"):
-      return m.group(0)
-    if rest.startswith(REMOTE_FOLDERS):
-      return m.group(1) + REAL_SITE + "/"
-    return m.group(1) + base + "/"
+    def fix(m, text):
+        rest = text[m.end() :]
+        if base and rest.startswith(base.lstrip("/") + "/"):
+            return m.group(0)
+        if rest.startswith(REMOTE_FOLDERS):
+            return m.group(1) + REAL_SITE + "/"
+        return m.group(1) + base + "/"
 
-  changed = 0
-  for folder, _, files in os.walk(root):
-    for name in files:
-      if not name.endswith((".html", ".xml")):
-        continue
-      path = os.path.join(folder, name)
-      with open(path, encoding="utf-8", errors="replace") as f:
-        text = f.read()
-      new = link.sub(lambda m: fix(m, text), text)
-      if new != text:
-        with open(path, "w", encoding="utf-8") as f:
-          f.write(new)
-        changed += 1
-  print("Rebased links in {} files".format(changed))
-  return 0
+    changed = 0
+    for folder, _, files in os.walk(root):
+        for name in files:
+            if not name.endswith((".html", ".xml")):
+                continue
+            path = os.path.join(folder, name)
+            with open(path, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+            new = link.sub(lambda m: fix(m, text), text)
+            if new != text:
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(new)
+                changed += 1
+    print("Rebased links in {} files".format(changed))
+    return 0
 
 
 if __name__ == "__main__":
-  sys.exit(main())
+    sys.exit(main())
