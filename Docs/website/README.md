@@ -75,7 +75,7 @@ For a reproducible rebuild, check out the two recorded SHAs, select the recorded
 
 `.github/workflows/docs-website.yml` checks pushes to `docs_site` and `docs/developer-guides`, and pull requests targeting `develop` or `docs_site`. The PR preparation uses website branch `docs/user-guides` by default. Pull requests and pushes to the preparation branch upload checked previews without deploying. Publishing is restricted to `docs_site` runs in `rois1995/SU2`; the workflow does not publish from the official SU2 repository. Checkout references are resolved once; the manifest records the exact revisions used.
 
-The website repository's `docs-check.yml` checks pushes to `docs_site`, `docs/user-guides` and `docs/naca0021`, and pull requests targeting `master`, `docs_site` or `docs/user-guides`. It uses SU2 branch `docs/developer-guides` by default and uploads a checked preview. Website-only changes therefore get checks without cross-repository write credentials. After those checks pass, publish from the SU2 **Docs Website** workflow, choosing the website commit SHA as `site_ref`:
+The website repository's `docs-check.yml` checks pushes to `docs_site`, `docs/user-guides` and `docs/naca0021`, and pull requests targeting `develop`, `docs_site` or `docs/user-guides`. It uses SU2 branch `docs/developer-guides` by default and uploads a checked preview. Website-only changes therefore get checks without cross-repository write credentials. After those checks pass, publish from the SU2 **Docs Website** workflow, choosing the website commit SHA as `site_ref`:
 
 ```sh
 gh workflow run docs-website.yml --repo rois1995/SU2 --ref docs_site -f site_repo=rois1995/su2code.github.io -f site_ref=<website-commit-sha>
