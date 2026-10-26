@@ -1,6 +1,8 @@
 """Run with python3 -m unittest discover -s Docs/website/tools."""
 
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -46,6 +48,50 @@ class ReferenceExtractionTests(unittest.TestCase):
         for option in arrays:
             with self.subTest(option=option["name"]):
                 self.assertEqual(build_site.describe_type(option, {})[2], "")
+
+    def test_parser_renames_accept_single_and_or_conditions(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "Common/src/CConfig.cpp"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                r"""
+                if (!option_name.compare("OLD"))
+                    newString.append("Use NEW instead.\n\n");
+                else if ( !option_name.compare("FIRST") ||
+                          !option_name.compare("SECOND") )
+                    newString.append("Both names were removed.\n");
+                if (!option_name.compare("BAD_FIRST") !option_name.compare("BAD_SECOND"))
+                    newString.append("No OR operator.");
+            """
+            )
+            self.assertEqual(
+                build_site.read_parser_renames(folder),
+                {
+                    "OLD": "Use NEW instead.",
+                    "FIRST": "Both names were removed.",
+                    "SECOND": "Both names were removed.",
+                },
+            )
+
+    def test_parser_renames_reject_long_malformed_conditions_promptly(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "Common/src/CConfig.cpp"
+            source.parent.mkdir(parents=True)
+            source.write_text("if(" + ' !option_name.compare("OLD")' * 48)
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    "import build_site, sys; print(build_site.read_parser_renames(sys.argv[1]))",
+                    folder,
+                ],
+                cwd=Path(__file__).resolve().parent,
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=True,
+            )
+            self.assertEqual(result.stdout.strip(), "{}")
 
 
 if __name__ == "__main__":

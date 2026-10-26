@@ -496,11 +496,11 @@ def write_reference(su2, site, options, maps, commit, repo, skip):
         ),
         "",
         "Defaults initialized outside the registration calls may not be extracted. "
-        "The template lines are examples and may differ from the defaults. "
-        "Allowed keywords can have additional restrictions for a particular solver or option combination.",
+        + "The template lines are examples and may differ from the defaults. "
+        + "Allowed keywords can have additional restrictions for a particular solver or option combination.",
         "",
         "Each option shows the description in the code, the text of `config_template.cfg` when it adds "
-        "something, the pages of this website that mention it, and real test case files that use it.",
+        + "something, the pages of this website that mention it, and real test case files that use it.",
         "",
         "- Options: {}".format(len(options)),
         "- Options without a description in the code: {} ({} without any text at all)".format(
@@ -691,10 +691,10 @@ def write_output_page(site, fields, commit, blob):
         "Generated from SU2 commit `{}`.".format(commit),
         "",
         "- A field is written only when the case needs it (for example turbulence fields only with a turbulence "
-        "model). For the exact list of your case, run a dry run: `SU2_CFD -d your_config.cfg`. It prints "
-        '"Available screen/history output fields" and "Available volume output fields".',
+        + "model). For the exact list of your case, run a dry run: `SU2_CFD -d your_config.cfg`. It prints "
+        + '"Available screen/history output fields" and "Available volume output fields".',
         "- How to select fields: [Custom Output](../Custom-Output/). How to add one: "
-        "[Adding Output Fields](../Adding-Output-Fields/).",
+        + "[Adding Output Fields](../Adding-Output-Fields/).",
         "- Names in *italics* are built at run time (for example one field per species or per marker).",
         "",
     ]
@@ -873,8 +873,8 @@ def quality_sections(stale, coverage, doxy):
         "## Developer pages that may be out of date",
         "",
         'Each developer page ends with "Last checked against SU2 develop `<commit>`". These pages name code '
-        "files that changed since that commit. Read the changes, update the page if needed, then update the "
-        "commit in its last line.",
+        + "files that changed since that commit. Read the changes, update the page if needed, then update the "
+        + "commit in its last line.",
         "",
     ]
     flagged = [r for r in stale if r[2] or r[3]]
@@ -896,8 +896,8 @@ def quality_sections(stale, coverage, doxy):
         "## Code documentation coverage",
         "",
         "This section counts the classes declared in the headers of `Common/include` and `SU2_CFD/include`. "
-        "The count uses a simple text search, so the numbers are approximate. `Docs/docmain.hpp` asks that "
-        "every class has a Doxygen comment with `\\brief` and `\\ingroup`.",
+        + "The count uses a simple text search, so the numbers are approximate. `Docs/docmain.hpp` asks that "
+        + "every class has a Doxygen comment with `\\brief` and `\\ingroup`.",
         "",
         "- Classes: {}".format(total),
         "- With a Doxygen comment: {} ({:.0f}%)".format(
@@ -967,7 +967,8 @@ def read_parser_renames(su2):
         text = f.read()
     found = {}
     pattern = re.compile(
-        r'if\s*\(((?:\s*(?:\|\|)?\s*!option_name\.compare\("\w+"\))+)\s*\)\s*'
+        r'if\s*\(\s*(!option_name\.compare\("\w+"\)'
+        r'(?:\s*\|\|\s*!option_name\.compare\("\w+"\))*)\s*\)\s*'
         r'newString\.append\("((?:[^"\\]|\\.)*)"\)'
     )
     for m in pattern.finditer(text):
@@ -1152,7 +1153,7 @@ def write_check_page(site, found, commit, options, extra=()):
         "## Options named in the docs that do not exist",
         "",
         "These names are not options of the code: the option was renamed or removed, or the name has a typo. "
-        "Fix the page in the website repository.",
+        + "Fix the page in the website repository.",
         "",
         "Found: {}".format(len(found)),
         "",
