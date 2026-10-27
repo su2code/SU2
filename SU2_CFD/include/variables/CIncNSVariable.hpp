@@ -42,6 +42,7 @@ private:
   VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
   VectorType lesMode;        /*!< \brief Sensor for local simulation mode (0=RANS, 1=LES).*/
   const bool Energy;          /*!< \brief Flag for Energy equation in incompressible flows. */
+  MatrixType MassDiffusivity; /*!< \brief (nPoint, nSpecies+1) laminar mass diffusivities, evaluated by the fluid model (Cantera). */
 
 public:
   /*!
@@ -56,6 +57,23 @@ public:
    */
   CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
                  unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
+
+  /*!
+   * \brief Store the laminar mass diffusivity of a species, which the species solver reads.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_diffusivity - Mass diffusivity.
+   * \param[in] val_ivar - Species index, the remainder species included.
+   */
+  inline void SetMassDiffusivity(unsigned long iPoint, su2double val_diffusivity, unsigned short val_ivar) {
+    MassDiffusivity(iPoint, val_ivar) = val_diffusivity;
+  }
+
+  /*!
+   * \brief Get the laminar mass diffusivity of a species stored by the flow solver.
+   */
+  inline su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const override {
+    return MassDiffusivity(iPoint, val_ivar);
+  }
 
   /*!
    * \brief Set the laminar viscosity.
