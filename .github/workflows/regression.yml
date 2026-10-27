@@ -122,6 +122,8 @@ jobs:
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+      - name: Lower ASLR entropy for TSan
+        run: sudo sysctl vm.mmap_rnd_bits=28
       - name: Build
         uses: docker://ghcr.io/su2code/su2/build-su2-tsan:261011-1107
         with:
@@ -324,6 +326,8 @@ jobs:
           done
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
+      - name: Lower ASLR entropy for TSan
+        run: sudo sysctl vm.mmap_rnd_bits=28
       - name: Run Tests in Container
         uses: docker://ghcr.io/su2code/su2/test-su2-tsan:261011-1107
         env:
