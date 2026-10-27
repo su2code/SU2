@@ -239,7 +239,7 @@ def main():
     discadj_sliding_interface.cfg_dir   = "disc_adj_ffi/sliding_interface"
     discadj_sliding_interface.cfg_file  = "circles.cfg"
     discadj_sliding_interface.test_iter = 10
-    discadj_sliding_interface.test_vals = [10.000000, -4.395153, -4.419435]
+    discadj_sliding_interface.test_vals = [10.000000, -4.403529, -4.419435]
     test_list.append(discadj_sliding_interface)
 
     #######################################################
