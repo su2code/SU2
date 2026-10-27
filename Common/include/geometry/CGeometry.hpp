@@ -238,6 +238,8 @@ class CGeometry {
     std::vector<unsigned long> colorOffsets;
 
     std::vector<uint8_t> lineletColor; /*!< \brief Coloring transfered to points, for visualization. */
+
+    bool computed = false; /*!< \brief Set once the (collective) computation is done, even if a rank has no linelets. */
   };
 
  protected:
