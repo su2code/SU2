@@ -79,6 +79,7 @@ void computeLimiters_impl(CSolver* solver,
                           FieldType& limiter)
 {
   constexpr size_t MAXNVAR = 32;
+  static_assert(MAXNVAR >= MAX_TRANSPORTED_SPECIES, "MAXNVAR (size of the limiter work arrays) must be at least MAX_TRANSPORTED_SPECIES.");
 
   /*--- Called by all threads of a parallel region: only the master may call MPI (MPI_THREAD_FUNNELED). ---*/
   if (varEnd > MAXNVAR) {
