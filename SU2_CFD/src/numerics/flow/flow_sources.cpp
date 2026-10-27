@@ -288,7 +288,7 @@ CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   energy   = config->GetEnergy_Equation();
   viscous  = config->GetViscous();
-  multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
+  multicomponent = config->GetMulticomponentFluid();
 }
 
 CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
