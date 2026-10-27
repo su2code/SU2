@@ -350,6 +350,11 @@ class AccessorImpl<Index_t, Scalar_t, StorageType::RowMajor, AlignSize, 1, Dynam
 }  // namespace container_details
 
 /*!
+ * \brief Tag to construct a static-size C2DContainer without initializing its data.
+ */
+struct C2DUninitialized {};
+
+/*!
  * \class C2DContainer
  * \brief A templated matrix/vector-like object.
  *
@@ -490,6 +495,14 @@ class C2DContainer
    * \brief Default ctor.
    */
   C2DContainer() noexcept : Base() {}
+
+  /*!
+   * \brief Static-size ctor that leaves the data uninitialized, unlike the default ctor which
+   *        value-initializes (zeroes) it. For hot-path temporaries that write before they read.
+   */
+  explicit C2DContainer(C2DUninitialized) noexcept {
+    static_assert(StaticRows != DynamicSize && StaticCols != DynamicSize, "Requires a static size.");
+  }
 
   /*!
    * \brief Sizing ctor (no initialization of data).
