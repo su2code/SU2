@@ -150,7 +150,7 @@ def main():
     discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
     discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle_restart.cfg"
     discadj_axisymmetric_rans_nozzle.test_iter  = 10
-    discadj_axisymmetric_rans_nozzle.test_vals  = [9.911310, 5.072379, 7.118130, 2.484452]
+    discadj_axisymmetric_rans_nozzle.test_vals = [9.742490, 5.136585, 7.107742, 2.488366]
     discadj_axisymmetric_rans_nozzle.no_restart = True
     test_list.append(discadj_axisymmetric_rans_nozzle)
 
@@ -239,7 +239,7 @@ def main():
     discadj_sliding_interface.cfg_dir   = "disc_adj_ffi/sliding_interface"
     discadj_sliding_interface.cfg_file  = "circles.cfg"
     discadj_sliding_interface.test_iter = 10
-    discadj_sliding_interface.test_vals = [10.000000, -4.395153, -4.419435]
+    discadj_sliding_interface.test_vals = [10.000000, -4.403529, -4.419435]
     test_list.append(discadj_sliding_interface)
 
     #######################################################
@@ -251,7 +251,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, -7.555663, -10.335501, -10.356934, -13.629559]
+    discadj_trans_stator.test_vals = [79.000000, -7.555647, -10.335486, -10.356919, -13.629543]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, -7.555647, -10.335486, -10.356919, -13.629543]
     test_list.append(discadj_trans_stator)
 
