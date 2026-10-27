@@ -243,6 +243,8 @@ class CAvgGradScalarBase {
       self->coefficientJacobians(opt, D, projGrad, res);
     }
 
+    self->diffusionCorrection(opt, iPoint, side_i, jPoint, side_j, rho, projGrad, proj_on_w_i, proj_on_w_j, res);
+
     self->extraDiffusionTerms(idx, opt, iPoint, side_i, jPoint, side_j, rho, normal, vector_ij, res);
   }
 
@@ -251,6 +253,13 @@ class CAvgGradScalarBase {
    */
   template <class... Ts>
   FORCEINLINE void coefficientJacobians(Ts&&...) const {}
+
+  /*!
+   * \brief Flux that couples the equations through the projected gradients, with the Jacobians
+   *        w.r.t. the conserved variables.
+   */
+  template <class... Ts>
+  FORCEINLINE void diffusionCorrection(Ts&&...) const {}
 
   /*!
    * \brief Diffusion of a model that transports more than one gradient, of states it
@@ -372,7 +381,8 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
         limiterTypeFlow(config.GetKind_SlopeLimit_Flow()),
         musclFlow(config.GetMUSCL_Flow() && config.GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {
     if (nEqn > Size) {
-      SU2_MPI::Error("Static arrays are too small for the requested equation count.", CURRENT_FUNCTION);
+      SU2_MPI::Error("The number of equations exceeds MAX_TRANSPORTED_SPECIES, the size of the static arrays. Increase it\n"
+                     "in Common/include/option_structure.hpp and recompile.", CURRENT_FUNCTION);
     }
   }
 
@@ -470,13 +480,15 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
       if (opt.muscl) {
         const auto phi1st = phi;
         if constexpr (nVar != Dynamic) {
-          reconstruct<nVar>(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
-                            side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp);
+          reconstruct<nVar, MusclLimiter::EDGE_SCALAR>(
+              iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
+              side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp);
         } else {
           /*--- A dynamic model's equation count is only known at runtime, so the reconstructed
            * width is passed as an argument instead of a template parameter. ---*/
-          reconstruct(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
-                      side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp, res.nVar);
+          reconstruct<0, MusclLimiter::EDGE_SCALAR>(
+              iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
+              side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp, res.nVar);
         }
 
         /*--- A face value outside the bounds of the variable (e.g. a negative k or omega next to a wall,
