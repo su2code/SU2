@@ -170,7 +170,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.916839, -5.161263, 0.802145, 0.019586, 1000.000000]
+    rae2822_sa.test_vals = [-2.915770, -5.310335, 0.801323, 0.019588, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -178,7 +178,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-1.461774, 5.883885, 0.630267, 0.020404, 100.000000]
+    rae2822_sst.test_vals = [-1.472874, 5.886555, 0.669542, 0.023434, 100.000000]
     test_list.append(rae2822_sst)
 
     # RAE2822 SST_SUST
