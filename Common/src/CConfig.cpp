@@ -3707,6 +3707,46 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Multizone_Problem = YES;
   }
 
+  /*--- Turbomachinery options are usually set in the master config and inherited by every zone.
+   *    Only compressible flow zones can be blade rows, other zones (e.g. blade solids coupled
+   *    via CHT) drop the inherited turbomachinery, Giles and mixing-plane markers. The blade
+   *    rows must be the first zones, as the turbo markers and performance are indexed by zone. ---*/
+
+  nTurboZones = nMarker_Turbomachinery;
+
+  if (!base_config && nZone > 1 && nTurboZones > 0) {
+    bool turboCapableZone = false;
+    switch (Kind_Solver) {
+      case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
+      case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+        turboCapableZone = true;
+        break;
+      default:
+        break;
+    }
+
+    if (turboCapableZone && iZone >= nTurboZones) {
+      SU2_MPI::Error("Zone " + to_string(iZone) + " is a compressible flow zone but there are only " +
+                     to_string(nTurboZones) + " MARKER_TURBOMACHINERY pairs.\n"
+                     "The blade rows must be the first zones in CONFIG_LIST.", CURRENT_FUNCTION);
+    }
+    if (!turboCapableZone) {
+      if (iZone < nTurboZones) {
+        SU2_MPI::Error("Zone " + to_string(iZone) + " is not a compressible flow zone, but it is one of the first " +
+                       to_string(nTurboZones) + " zones (one per MARKER_TURBOMACHINERY pair).\n"
+                       "The blade rows must be the first zones in CONFIG_LIST.", CURRENT_FUNCTION);
+      }
+      if (Giles_FlowDir != nullptr) {
+        for (iMarker = 0; iMarker < nMarker_Giles; iMarker++) delete [] Giles_FlowDir[iMarker];
+        delete [] Giles_FlowDir;
+        Giles_FlowDir = nullptr;
+      }
+      nMarker_Turbomachinery = 0;
+      nMarker_Giles = 0;
+      nMarker_MixingPlaneInterface = 0;
+    }
+  }
+
   /*--- The solver vectors stay on the device but the halo exchange is host-side, so more than
    * one rank would use stale halos. Use OpenMP for the host parts instead. ---*/
   if (Enable_Cuda && size > 1) {
@@ -4597,7 +4637,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     /*--- Check if turbomachinery performance kind is specified with turbo markers ---*/
-    if (GetBoolTurbomachinery() && !(nTurboMachineryKind/nZone == 1)){
+    if (GetBoolTurbomachinery() && nTurboMachineryKind < nTurboZones){
       SU2_MPI::Error("Insufficient TURBO_PERF_KIND options specified with turbomachinery markers", CURRENT_FUNCTION);
     }
 

@@ -480,6 +480,7 @@ private:
   unsigned short nFFDBox;              /*!< \brief Number of ffd boxes. */
   unsigned short nTurboMachineryKind;  /*!< \brief Number turbomachinery types specified. */
   unsigned short nTurboInterfaces;     /*!< \brief Number of turbomachiery interfaces */
+  unsigned short nTurboZones = 0;      /*!< \brief Number of turbomachinery (blade row) zones, these are the first zones. */
   unsigned short nParamDV;             /*!< \brief Number of parameters of the design variable. */
   string DV_Filename;                  /*!< \brief Filename for providing surface positions from an external parameterization. */
   string DV_Unordered_Sens_Filename;   /*!< \brief Filename of volume sensitivities in an unordered ASCII format. */
@@ -5516,6 +5517,14 @@ public:
    * \return boolean.
    */
   bool GetBoolTurbomachinery(void) const { return (nMarker_Turbomachinery !=0);}
+
+  /*!
+   * \brief Number of turbomachinery (blade row) zones in the problem, i.e. one per MARKER_TURBOMACHINERY pair.
+   * \note Blade rows are zones 0 to nTurboZones-1, any further zones (e.g. solids coupled via CHT) are not turbo zones.
+   *       Unlike GetBoolTurbomachinery, this is also known in the non-turbo zones.
+   * \return Number of turbomachinery zones.
+   */
+  unsigned short GetnTurboZones(void) const { return nTurboZones;}
 
   /*!
    * \brief Verify if a sliding plane for relative frame is specified from config file.
