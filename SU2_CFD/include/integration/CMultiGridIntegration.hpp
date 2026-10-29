@@ -325,6 +325,7 @@ private:
    *    independently of the CSysMatrix limit of the same name. ---*/
   static constexpr unsigned short MAXNVAR = 25;
   static constexpr unsigned short MAXNDIM = 3;
+  static_assert(MAXNVAR >= MAX_TRANSPORTED_SPECIES, "MAXNVAR (size of the multigrid transfer buffers) must be at least MAX_TRANSPORTED_SPECIES.");
 
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
   bool mg_early_exit_flag = false;           /*!< \brief Shared flag for early exit across OMP threads. */

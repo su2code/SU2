@@ -59,8 +59,8 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
   nPoint_Recv = new int[size+1]();
   nElem_Send  = new int[size+1]();
   nElem_Cum  = new int[size+1]();
-  nElemConn_Send = new int[size+1]();
-  nElemConn_Cum = new int[size+1]();
+  nElemConn_Send = new unsigned long[size+1]();
+  nElemConn_Cum = new unsigned long[size+1]();
 
   nElemPerType.fill(0);
   nElemPerTypeGlobal.fill(0);
@@ -95,7 +95,7 @@ CParallelDataSorter::~CParallelDataSorter(){
 
 void CParallelDataSorter::SortOutputData() {
 
-  const int VARS_PER_POINT = GlobalField_Counter;
+  const size_t VARS_PER_POINT = GlobalField_Counter;
 
   /*--- Allocate the memory that we need for receiving the conn
    values and then cue up the non-blocking receives. Note that
@@ -109,6 +109,13 @@ void CParallelDataSorter::SortOutputData() {
    * because it communicates passivedoubles and not AD types. This avoids some
    * creative C++ to communicate AD types and then convert to passive. ---*/
 
+  /*--- The data of each point is sent as one element of a contiguous datatype, so that the MPI counts are numbers
+   of points and do not overflow when a rank sends or receives more than INT_MAX values. ---*/
+
+  MPI_Datatype pointType;
+  MPI_Type_contiguous(GlobalField_Counter, MPI_DOUBLE, &pointType);
+  MPI_Type_commit(&pointType);
+
   /*--- We need double the number of messages to send both the conn. and the global IDs. ---*/
 
   auto send_req = new MPI_Request[2*nSends];
@@ -117,12 +124,11 @@ void CParallelDataSorter::SortOutputData() {
   unsigned long iMessage = 0;
   for (int ii=0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
-      int ll     = VARS_PER_POINT*nPoint_Recv[ii];
-      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
-      int count  = VARS_PER_POINT*kk;
+      size_t ll  = VARS_PER_POINT*nPoint_Recv[ii];
+      int count  = nPoint_Recv[ii+1] - nPoint_Recv[ii];
       int source = ii;
       int tag    = ii + 1;
-      MPI_Irecv(&(dataBuffer[ll]), count, MPI_DOUBLE, source, tag,
+      MPI_Irecv(&(dataBuffer[ll]), count, pointType, source, tag,
                 SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
@@ -133,12 +139,11 @@ void CParallelDataSorter::SortOutputData() {
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll = VARS_PER_POINT*nPoint_Send[ii];
-      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count  = VARS_PER_POINT*kk;
+      size_t ll  = VARS_PER_POINT*nPoint_Send[ii];
+      int count  = nPoint_Send[ii+1] - nPoint_Send[ii];
       int dest   = ii;
       int tag    = rank + 1;
-      MPI_Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
+      MPI_Isend(&(connSend[ll]), count, pointType, dest, tag,
                 SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
@@ -179,17 +184,17 @@ void CParallelDataSorter::SortOutputData() {
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
-  int mm = VARS_PER_POINT*nPoint_Recv[rank];
-  int ll = VARS_PER_POINT*nPoint_Send[rank];
-  int kk = VARS_PER_POINT*nPoint_Send[rank+1];
+  size_t mm = VARS_PER_POINT*nPoint_Recv[rank];
+  size_t ll = VARS_PER_POINT*nPoint_Send[rank];
+  size_t kk = VARS_PER_POINT*nPoint_Send[rank+1];
 
-  for (int nn=ll; nn<kk; nn++, mm++) dataBuffer[mm] = connSend[nn];
+  for (size_t nn=ll; nn<kk; nn++, mm++) dataBuffer[mm] = connSend[nn];
 
   mm = nPoint_Recv[rank];
   ll = nPoint_Send[rank];
   kk = nPoint_Send[rank+1];
 
-  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
+  for (size_t nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
 
   /*--- Wait for the non-blocking sends and recvs to complete. ---*/
 
@@ -207,17 +212,18 @@ void CParallelDataSorter::SortOutputData() {
 
   delete [] send_req;
   delete [] recv_req;
+  MPI_Type_free(&pointType);
 #endif
 
   /*--- Reorder the data in the buffer. ---*/
 
   vector<passivedouble> tmpBuffer(nPoint_Recv[size]);
 
-  for (int jj = 0; jj < VARS_PER_POINT; jj++){
-    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+  for (size_t jj = 0; jj < VARS_PER_POINT; jj++){
+    for (size_t ii = 0; ii < static_cast<size_t>(nPoint_Recv[size]); ii++){
       tmpBuffer[idRecv[ii]] = dataBuffer[ii*VARS_PER_POINT+jj];
     }
-    for (int ii = 0; ii < nPoint_Recv[size]; ii++){
+    for (size_t ii = 0; ii < static_cast<size_t>(nPoint_Recv[size]); ii++){
       dataBuffer[ii*VARS_PER_POINT+jj] = tmpBuffer[ii];
     }
   }
@@ -238,7 +244,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   unsigned long iPoint;
   unsigned short iProcessor;
 
-  int VARS_PER_POINT = GlobalField_Counter;
+  const size_t VARS_PER_POINT = GlobalField_Counter;
 
   /*--- We start with the grid nodes distributed across all procs with
    no particular ordering assumed. We need to loop through our local partition
@@ -370,8 +376,8 @@ void CParallelDataSorter::SetTotalElements(){
 
   SU2_MPI::Allreduce(nElemPerType.data(), nElemPerTypeGlobal.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-  nElemGlobal = std::accumulate(nElemPerTypeGlobal.begin(), nElemPerTypeGlobal.end(), 0);
-  nElem  = std::accumulate(nElemPerType.begin(), nElemPerType.end(), 0);
+  nElemGlobal = std::accumulate(nElemPerTypeGlobal.begin(), nElemPerTypeGlobal.end(), 0ul);
+  nElem  = std::accumulate(nElemPerType.begin(), nElemPerType.end(), 0ul);
 
   nConn = 0;
   nConnGlobal   = 0;
@@ -397,7 +403,7 @@ void CParallelDataSorter::SetTotalElements(){
   nElem_Cum[0] = 0; nElemConn_Cum[0] = 0;
   for (int ii=1; ii <= size; ii++) {
     nElem_Send[ii]     = int(nElem);
-    nElemConn_Send[ii] = int(nConn);
+    nElemConn_Send[ii] = nConn;
     nElem_Cum[ii] = 0;
     nElemConn_Cum[ii] = 0;
   }
@@ -407,8 +413,8 @@ void CParallelDataSorter::SetTotalElements(){
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                     &(nElem_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
-  SU2_MPI::Alltoall(&(nElemConn_Send[1]), 1, MPI_INT,
-                    &(nElemConn_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
+  SU2_MPI::Alltoall(&(nElemConn_Send[1]), 1, MPI_UNSIGNED_LONG,
+                    &(nElemConn_Cum[1]), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   /*--- Put the counters into cumulative storage format. ---*/
 
