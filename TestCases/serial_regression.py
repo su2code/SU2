@@ -311,7 +311,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.094431, -15.251082, -5.906366, 1.070413, 0.015775, -3.178469, 0.000000]
+    turb_naca0012_sst.test_vals = [-12.094366, -15.251082, -5.906366, 1.070413, 0.015775, -3.178304, 0.000000]
     turb_naca0012_sst.test_vals_aarch64 = [-12.076068, -15.246740, -5.861280, 1.070036, 0.015841, -3.297854, 0.000000]
     turb_naca0012_sst.timeout   = 3200
     test_list.append(turb_naca0012_sst)
@@ -343,7 +343,7 @@ def main():
     turb_naca0012_sst_sust_restart.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust_restart.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust_restart.test_iter = 10
-    turb_naca0012_sst_sust_restart.test_vals = [-12.080496, -14.837169, -5.733461, 1.000893, 0.019109, -2.634008]
+    turb_naca0012_sst_sust_restart.test_vals = [-12.080536, -14.837169, -5.733461, 1.000893, 0.019109, -2.633948]
     turb_naca0012_sst_sust_restart.test_vals_aarch64 = [-12.074189, -14.836725, -5.732398, 1.000050, 0.019144, -3.315560]
     turb_naca0012_sst_sust_restart.timeout   = 3200
     test_list.append(turb_naca0012_sst_sust_restart)
@@ -375,7 +375,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-5.135350, 0.436347, -2.878865, 1.663300, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-5.135423, 0.436257, -2.874139, 1.664112, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.143715, -9.170705, -10.848554, -5.776746, 0.000000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
@@ -385,7 +385,7 @@ def main():
     axi_rans_air_nozzle_species.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_species.cfg_file  = "air_nozzle_species.cfg"
     axi_rans_air_nozzle_species.test_iter = 10
-    axi_rans_air_nozzle_species.test_vals = [-2.243181, 3.273075, -1.958732, 5.883857, -2.469621, 0.000000]
+    axi_rans_air_nozzle_species.test_vals = [-2.243059, 3.273177, -1.947544, 5.883852, -2.469401, 0.000000]
     axi_rans_air_nozzle_species.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_species)
 
@@ -966,7 +966,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.905642, -12.212181, -19.212554, -13.508053, -19.069991, -13.439494, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.905621, -12.212078, -19.212558, -13.508063, -19.069990, -13.439493, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1688,7 +1688,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals = [-12.094431, -15.251082, -5.906366, 1.070413, 0.015775, -3.178469, 0.000000]
+    pywrapper_turb_naca0012_sst.test_vals = [-12.094366, -15.251082, -5.906366, 1.070413, 0.015775, -3.178304, 0.000000]
     pywrapper_turb_naca0012_sst.test_vals_aarch64 = [-12.076068, -15.246740, -5.861280, 1.070036, 0.015841, -3.297854, 0.000000]
     pywrapper_turb_naca0012_sst.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
     pywrapper_turb_naca0012_sst.timeout   = 3200
