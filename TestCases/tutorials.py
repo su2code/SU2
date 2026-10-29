@@ -260,3 +260,180 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
     tutorial_trans_flatplate_T3Am.test_vals  = [-5.589599, -1.700867, -3.097326, -0.104799, -3.750523, 3.287643, -2.394576, 1.119623]
+    tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-5.540938, -1.681627, -2.878831, -0.058224, -3.695533, 3.413628, -2.385345, 1.103633]
+    tutorial_trans_flatplate_T3Am.no_restart = True
+    test_list.append(tutorial_trans_flatplate_T3Am)
+
+    # Transitional E387 SA
+    tutorial_trans_e387_sa            = TestCase('tutorial_trans_e387_sa')
+    tutorial_trans_e387_sa.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
+    tutorial_trans_e387_sa.cfg_file   = "transitional_SA_LM_model_ConfigFile.cfg"
+    tutorial_trans_e387_sa.test_iter  = 20
+    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.082048, -0.795021, 1.022607, 0.150183, 2.000000, -9.581276]
+    tutorial_trans_e387_sa.no_restart = True
+    test_list.append(tutorial_trans_e387_sa)
+
+    # Transitional E387 SST
+    tutorial_trans_e387_sst            = TestCase('tutorial_trans_e387_sst')
+    tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
+    tutorial_trans_e387_sst.cfg_file   = "transitional_SST_LM_model_ConfigFile.cfg"
+    tutorial_trans_e387_sst.test_iter  = 20
+    tutorial_trans_e387_sst.test_vals  = [-6.532415, -5.082018, -0.789469, 1.078293, 0.188166, 2.000000, -9.567996]
+    tutorial_trans_e387_sst.no_restart = True
+    test_list.append(tutorial_trans_e387_sst)
+
+    # Turbulent ONERA M6
+    tutorial_turb_oneram6            = TestCase('turbulent_oneram6_tutorial')
+    tutorial_turb_oneram6.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_ONERAM6"
+    tutorial_turb_oneram6.cfg_file   = "turb_ONERAM6.cfg"
+    tutorial_turb_oneram6.test_iter  = 0
+    tutorial_turb_oneram6.test_vals = [-4.564441, -11.534937, 0.250153, 0.080951]
+    test_list.append(tutorial_turb_oneram6)
+
+    # NICFD Nozzle
+    tutorial_nicfd_nozzle           = TestCase('nicfd_nozzle')
+    tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
+    tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
+    tutorial_nicfd_nozzle.test_iter = 20
+    tutorial_nicfd_nozzle.test_vals = [-1.794899, -6.051798, 4.639477, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.no_restart = True
+    test_list.append(tutorial_nicfd_nozzle)
+
+    # NICFD Nozzle using PINN
+    tutorial_nicfd_nozzle_pinn           = TestCase('nicfd_nozzle_pinn')
+    tutorial_nicfd_nozzle_pinn.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle/PhysicsInformed"
+    tutorial_nicfd_nozzle_pinn.cfg_file  = "config_NICFD_PINN.cfg"
+    tutorial_nicfd_nozzle_pinn.test_iter = 20
+    tutorial_nicfd_nozzle_pinn.test_vals = [-2.728179, -0.849337, -1.224543, 2.898995, -11.420290]
+    tutorial_nicfd_nozzle_pinn.no_restart = True
+    test_list.append(tutorial_nicfd_nozzle_pinn)
+
+
+    # Unsteady NACA0012
+    tutorial_unst_naca0012               = TestCase('unsteady_naca0012')
+    tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
+    tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
+    tutorial_unst_naca0012.test_iter     = 520
+    tutorial_unst_naca0012.test_vals = [520.000000, 0.000000, -5.292186, 0.000000, 0.304255, 0.792893, 0.001907, 0.010888]
+    tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.292359, 0, 0.284720, 0.766329, 0.000954, 0.007565]
+    tutorial_unst_naca0012.unsteady      = True
+    test_list.append(tutorial_unst_naca0012)
+
+    # PROPELLER VARIBLE LOAD
+    propeller_var_load           = TestCase('propeller_variable_load')
+    propeller_var_load.cfg_dir   = "../Tutorials/compressible_flow/ActuatorDisk_VariableLoad"
+    propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
+    propeller_var_load.test_iter = 20
+    propeller_var_load.test_vals = [-1.831998, -4.534991, -0.000323, 0.171494]
+    propeller_var_load.timeout   = 3200
+    test_list.append(propeller_var_load)
+
+    ### Design
+
+    # Inviscid NACA 0012 Design
+    tutorial_design_inv_naca0012            = TestCase('design_inv_naca0012')
+    tutorial_design_inv_naca0012.cfg_dir    = "../Tutorials/design/Inviscid_2D_Unconstrained_NACA0012"
+    tutorial_design_inv_naca0012.cfg_file   = "inv_NACA0012_basic.cfg"
+    tutorial_design_inv_naca0012.test_iter  = 0
+    tutorial_design_inv_naca0012.test_vals = [-3.585391, -2.989014, 0.141838, 0.172252]
+    tutorial_design_inv_naca0012.no_restart = True
+    test_list.append(tutorial_design_inv_naca0012)
+
+    # Turbulent RAE 2822 Design
+    tutorial_design_turb_rae2822            = TestCase('design_turb_rae2822')
+    tutorial_design_turb_rae2822.cfg_dir    = "../Tutorials/design/Turbulent_2D_Constrained_RAE2822"
+    tutorial_design_turb_rae2822.cfg_file   = "turb_SA_RAE2822.cfg"
+    tutorial_design_turb_rae2822.test_iter  = 0
+    tutorial_design_turb_rae2822.test_vals = [-1.700114, -4.941830, 0.161066, 0.170510]
+    tutorial_design_turb_rae2822.no_restart = True
+    test_list.append(tutorial_design_turb_rae2822)
+
+    # Multi Objective Design
+    tutorial_design_multiobj            = TestCase('design_multiobj')
+    tutorial_design_multiobj.cfg_dir    = "../Tutorials/design/Multi_Objective_Shape_Design"
+    tutorial_design_multiobj.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
+    tutorial_design_multiobj.test_iter  = 0
+    tutorial_design_multiobj.test_vals  = [2.657333, -3.020635, 370220.000000, -0.000000]
+    tutorial_design_multiobj.no_restart = True
+    test_list.append(tutorial_design_multiobj)
+
+    # custom source: turbulent flamespeed closure (Zimont model) for PSI testcase
+    pywrapper_psi = TestCase('psi_adiabatic')
+    pywrapper_psi.cfg_dir = "../Tutorials/multiphysics/TFC_python/adiabatic"
+    pywrapper_psi.cfg_file = "psi.cfg"
+    pywrapper_psi.test_iter = 0
+    pywrapper_psi.test_vals = [-2.682653, -0.994981, -2.221252, -2.401462, 3.597559, -3.369865]
+    pywrapper_psi.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    test_list.append(pywrapper_psi)
+
+    # custom source: including source term for enthalpy equations
+    pywrapper_psi_hl = TestCase('psi_enthalpy')
+    pywrapper_psi_hl.cfg_dir = "../Tutorials/multiphysics/TFC_python/enthalpy"
+    pywrapper_psi_hl.cfg_file = "psi.cfg"
+    pywrapper_psi_hl.test_iter = 0
+    pywrapper_psi_hl.test_vals = [-6.211126, -4.025898, -5.405635, -3.743101, -1.314498, -3.948690]
+    pywrapper_psi_hl.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    test_list.append(pywrapper_psi_hl)
+
+    # custom source: including custom BC and source term
+    pywrapper_psi_quench = TestCase('psi_quench')
+    pywrapper_psi_quench.cfg_dir = "../Tutorials/multiphysics/TFC_python/quench"
+    pywrapper_psi_quench.cfg_file = "psi.cfg"
+    pywrapper_psi_quench.test_iter = 0
+    pywrapper_psi_quench.test_vals = [-7.370108, -6.688806, -7.839519, -4.086479, -1.223314, -4.022876]
+    pywrapper_psi_quench.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    test_list.append(pywrapper_psi_quench)
+
+
+    ######################################
+    ### RUN TESTS                      ###
+    ######################################
+
+    # set suitable defaults unless something else has been specified
+    # command: "mpirun -n 2 SU2_CFD"
+    # timeout: 1600
+    # tol:     0.00001
+    for test in test_list:
+        if test.command.empty():
+            test.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
+        if test.timeout == 0:
+            test.timeout = 1600
+        if test.tol == 0.0:
+            test.tol = 0.00001
+
+    pass_list = [ test.run_test() for test in test_list ]
+
+
+    # design-FADO: 90 degree pipe bend optimization
+    sudo_design_fado = TestCase('sudo_bend_design_fado')
+    sudo_design_fado.command  = TestCase.Command(exec = "python", param = "optimization.py")
+    sudo_design_fado.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_design_fado.cfg_file = "sudo.cfg"
+    sudo_design_fado.multizone = False
+    sudo_design_fado.test_iter = 10
+    sudo_design_fado.timeout = 1600
+    sudo_design_fado.reference_file   = "../../../TestCases/Tutorials/design/Inc_Turbulent_Bend_Wallfunctions/optim.csv.ref"
+    sudo_design_fado.test_file        = "optim.csv"
+    sudo_design_fado.comp_threshold   = 1e-6
+    sudo_design_fado.tol_file_percent = 0.1
+    pass_list.append(sudo_design_fado.run_filediff())
+    test_list.append(sudo_design_fado)
+
+    # Tests summary
+    print('==================================================================')
+    print('Summary of the parallel tests')
+    print('python version:', sys.version)
+    for i, test in enumerate(test_list):
+        if (pass_list[i]):
+            print('  passed - %s'%test.tag)
+        else:
+            print('* FAILED - %s'%test.tag)
+
+    if all(pass_list):
+        sys.exit(0)
+    else:
+        sys.exit(1)
+    # done
+
+if __name__ == '__main__':
+    main()
