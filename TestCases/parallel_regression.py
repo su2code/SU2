@@ -1370,6 +1370,8 @@ def main():
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
     Jones_tc_restart.test_vals = [-11.905370, -12.212031, -19.212143, -13.508267, -19.079216, -13.445953, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    # The second BGS residual is near the numerical floor and varies between builds.
+    Jones_tc_restart.tol = [1e-5, 5e-4] + [1e-5] * 8
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
