@@ -1617,7 +1617,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("LESIQ", "LESIQ", "DDES", "Viscosity-based LES quality index");
     if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
       AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "DDES", "Reference grid size: 10% of the SST RANS length scale");
-    AddVolumeOutput("LES_SENSOR","LES_Sensor","DDES","LES sensor value");
+    AddVolumeOutput("LES_SENSOR", "LES_Sensor", "DDES", "LES length-scale weight: 0 RANS, 1 LES, between 0 and 1 blended");
     if (config->GetSBSParam().StochasticBackscatter) {
       AddVolumeOutput("STOCHSOURCE_X", "StochSource_x", "BACKSCATTER", "x-component of the stochastic source vector");
       AddVolumeOutput("STOCHSOURCE_Y", "StochSource_y", "BACKSCATTER", "y-component of the stochastic source vector");

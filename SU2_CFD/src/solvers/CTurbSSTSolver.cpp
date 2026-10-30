@@ -950,9 +950,8 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
     su2double DES_lengthScale = 0.0;
 
-    /*--- LES sensor, as for the SA models: the weight of the LES branch in the hybrid length scale where the LES
-     length is the shorter one (l_LES < l_RANS), 0 elsewhere. For DDES and EDDES the weight is f_d. For IDDES and
-     SIDDES the length scale is the blend ftilda_d*l_RANS + (1-ftilda_d)*l_LES, so the weight is 1-ftilda_d. ---*/
+    /*--- DDES uses f_d only when the LES length is shorter. IDDES always blends the two lengths, so its
+     LES weight is 1-ftilda_d even when the LES length exceeds the RANS length. ---*/
     su2double lesSensor = 0.0;
 
     switch(kind_hybridRANSLES){
@@ -999,7 +998,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double l_LES = C_DES * Delta;
 
         DES_lengthScale = ftilda_d *(1.0+f_e)*l_RANS + (1.0 - ftilda_d) * l_LES;
-        if (l_RANS > l_LES) lesSensor = 1.0 - ftilda_d;
+        lesSensor = 1.0 - ftilda_d;
 
         break;
       }
@@ -1021,7 +1020,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double l_LES = C_DES * Delta;
 
         DES_lengthScale = ftilda_d*l_RANS + (1.0 - ftilda_d) * l_LES;
-        if (l_RANS > l_LES) lesSensor = 1.0 - ftilda_d;
+        lesSensor = 1.0 - ftilda_d;
 
         break;
       }
