@@ -34,6 +34,7 @@
 #include "CPastixWrapper.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 
+#include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <vector>
@@ -363,6 +364,19 @@ class CSysMatrix {
    * into ilu_level_ptr / d_precond_level_idx below for the GPU triangular solves. */
   CCompressedSparsePatternUL levels_ilu;
 
+  /*!< \brief Per-thread progress counter, padded to a cache line. */
+  struct alignas(64) LevelProgress {
+    std::atomic<uint64_t> steps{0};
+    LevelProgress() = default;
+    LevelProgress(const LevelProgress& other) : steps(other.steps.load()) {}
+  };
+
+  /*!< \brief Steps each thread must see completed by every other thread, per (step, thread, other thread),
+   * for the forward and backward level scheduled sweeps. Empty when barriers separate the levels. */
+  std::vector<uint32_t> level_waits_fwd, level_waits_bwd;
+  mutable std::vector<LevelProgress> level_progress;
+  unsigned long level_num_threads = 0;
+
   /*!< \brief Coloring of the (domain-only) ILU dependency graph, used only by the GPU iterative
    * factorization (see IluFactorColorKernel and ilu_color_ptr / d_ilu_color_idx below). The
    * host/OMP path and the GPU triangular solves use levels_ilu instead. */
@@ -665,6 +679,25 @@ class CSysMatrix {
    */
   void ComputeJacobiPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                       CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Compute the wait tables of the point-to-point synchronized level scheduled sweeps.
+   */
+  void BuildLevelWaits();
+
+  /*!
+   * \brief Apply a function to the rows of all levels in increasing or decreasing order, waiting only for
+   * the threads owning the rows depended on. Must be called by all threads of the team.
+   */
+  template <class F>
+  void LevelSweep(bool forward, const F& row_func) const;
+
+  /*!
+   * \brief Whether the calling thread team matches the one the wait tables were built for.
+   */
+  inline bool UseLevelWaits() const {
+    return !level_waits_fwd.empty() && static_cast<unsigned long>(omp_get_num_threads()) == level_num_threads;
+  }
 
   /*!
    * \brief Build the ILU preconditioner on the device, from the device copy of the matrix.

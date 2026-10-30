@@ -299,6 +299,12 @@ class CNEMOEulerVariable : public CFlowVariable {
   }
 
   /*!
+   * \brief Index of the momentum in the conservative solution vector, which the primitive
+   * index Velocity() does not give.
+   */
+  inline short GetVelocityIndex() const final { return static_cast<short>(nSpecies); }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the vibrational-electronic temperature.
    */

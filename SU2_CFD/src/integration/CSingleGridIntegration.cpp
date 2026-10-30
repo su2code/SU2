@@ -87,6 +87,13 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
 
   Time_Integration(geometry_fine, solvers_fine, config[iZone], NO_RK_ITER, RunTime_EqSystem);
 
+  /*--- Coarse-level residuals are per-rank sums of squares unless reduced, which the smoothing
+   *    early exit already does. ---*/
+
+  if ((FinestMesh != MESH_0) && !config[iZone]->GetMGOptions().MG_Smooth_EarlyExit) {
+    solvers_fine[Solver_Position]->SetResidual_RMS(geometry_fine, config[iZone], true);
+  }
+
   /*--- Postprocessing ---*/
 
   solvers_fine[Solver_Position]->Postprocessing(geometry_fine, solvers_fine, config[iZone], FinestMesh);

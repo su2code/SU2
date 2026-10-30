@@ -337,6 +337,42 @@ class CPhysicalGeometry final : public CGeometry {
    */
   void PrepareAdjacency(const CConfig* config);
 
+#if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
+  /*!
+   * \brief ParMETIS edge weights that make cutting across the short edges of anisotropic cells expensive.
+   * \param[in] maxWeight - Cap on the weight of any edge.
+   * \return One weight per entry of the adjacency array.
+   */
+  vector<idx_t> ComputeAnisotropyEdgeWeights(long maxWeight) const;
+
+  /*!
+   * \brief Reads, for any global points of the linear partition, a value each rank holds for its own points.
+   * \param[in] wanted - Global indices to read.
+   * \param[in] localValue - Value of every local point.
+   * \return The value of each wanted point.
+   */
+  vector<unsigned long> FetchFromOwners(const vector<unsigned long>& wanted,
+                                        const vector<unsigned long>& localValue) const;
+
+  /*!
+   * \brief Joins points into lines along the strong anisotropic edges and names each line by its lowest global index.
+   * \param[in] adjwgt - Anisotropy weight of every entry of the adjacency array.
+   * \param[out] lineEdge - Whether each entry of the adjacency array is a line edge.
+   * \return Global index of the root of the line of every local point, the point itself when it is on no line.
+   */
+  vector<unsigned long> LinkAnisotropicLines(const vector<idx_t>& adjwgt, vector<char>& lineEdge) const;
+
+  /*!
+   * \brief Moves each line to the partition that holds most of its points.
+   * \param[in] root - Line roots from LinkAnisotropicLines.
+   * \param[in,out] part - Partition of every local point.
+   * \param[out] longestLine - Number of points of the longest line.
+   * \return Number of points that changed partition, summed over all ranks.
+   */
+  unsigned long KeepLinesTogether(const vector<unsigned long>& root, vector<idx_t>& part,
+                                  unsigned long& longestLine) const;
+#endif
+
   /*!
    * \brief Find repeated nodes between two elements to identify the common face.
    * \param[in] first_elem - Identification of the first element.
