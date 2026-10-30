@@ -2,7 +2,7 @@
  * \file nemo_viscous_assembly.cpp
  * \brief Unit test for the edge assembly of the NEMO viscous residual and Jacobian.
  * \author J. Bellon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
