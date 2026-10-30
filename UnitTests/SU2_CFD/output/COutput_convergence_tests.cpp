@@ -1,7 +1,7 @@
 /*!
  * \file COutput_convergence_tests.cpp
  * \brief Tests for NEMO convergence field selection and migration.
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
