@@ -758,6 +758,15 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     nodes->SetnChildren_CV(fromCV, 0);
   };
 
+  /*--- Take one fine point out of the children of a coarse CV. ---*/
+  auto removeChild = [&](unsigned long fromCV, unsigned long iFinePoint) {
+    vector<unsigned long> kept;
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(fromCV); iChildren++)
+      if (nodes->GetChildren_CV(fromCV, iChildren) != iFinePoint) kept.push_back(nodes->GetChildren_CV(fromCV, iChildren));
+    nodes->SetChildren_CV(fromCV, kept);
+    nodes->SetnChildren_CV(fromCV, kept.size());
+  };
+
   /*--- Dual-face area and number of fine edges between the children of two coarse CVs. ---*/
   auto sharedFaces = [&](unsigned long iCV, unsigned long jCV) {
     su2double area = 0.0;
@@ -911,16 +920,110 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         }
         if (donor == NO_CV) continue;
 
-        const auto nDonor = nodes->GetnChildren_CV(donor);
-        for (auto k = 0u; k < nDonor; k++)
-          if (nodes->GetChildren_CV(donor, k) == fourth)
-            nodes->SetChildren_CV(donor, k, nodes->GetChildren_CV(donor, nDonor - 1));
-        nodes->SetnChildren_CV(donor, nDonor - 1);
+        removeChild(donor, fourth);
         giveChild(fourth, iCoarsePoint);
         changed = true;
       }
 
       if (!changed) break;
+    }
+  }
+
+  /*--- A group of halo points whose neighbors on this rank all lie in one coarse CV is enclosed by it.
+   *    The rank owning the group then gets a coarse CV with one neighbor and cancelling face normals,
+   *    so one member around the group moves to another CV. ---*/
+
+  {
+    const auto nFineDomain = fine_grid->GetnPointDomain();
+    const auto nRepaired = nPointDomain;
+    vector<char> visited(fine_grid->GetnPoint(), 0);
+    vector<unsigned long> group, around;
+
+    auto isChildOf = [&](unsigned long iFinePoint, unsigned long iCV, unsigned long except) {
+      return (iFinePoint != except) && (iFinePoint < nFineDomain) && (fine_grid->nodes->GetParent_CV(iFinePoint) == iCV);
+    };
+
+    /*--- Whether the children of a CV other than one excluded point form one connected set. ---*/
+    auto connectedWithout = [&](unsigned long iCV, unsigned long except) {
+      vector<unsigned long> stack, reached;
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCV); iChildren++) {
+        if (nodes->GetChildren_CV(iCV, iChildren) == except) continue;
+        stack.push_back(nodes->GetChildren_CV(iCV, iChildren));
+        break;
+      }
+      if (stack.empty()) return false;
+      reached = stack;
+      while (!stack.empty()) {
+        const auto iFinePoint = stack.back();
+        stack.pop_back();
+        for (auto jFinePoint : fine_grid->nodes->GetPoints(iFinePoint)) {
+          if (!isChildOf(jFinePoint, iCV, except)) continue;
+          if (find(reached.begin(), reached.end(), jFinePoint) != reached.end()) continue;
+          reached.push_back(jFinePoint);
+          stack.push_back(jFinePoint);
+        }
+      }
+      return reached.size() + 1 == nodes->GetnChildren_CV(iCV);
+    };
+
+    for (auto iSeed = nFineDomain; iSeed < fine_grid->GetnPoint(); iSeed++) {
+      if (visited[iSeed]) continue;
+
+      /*--- Collect the connected group of halo points and the domain points around it. ---*/
+      group.assign(1, iSeed);
+      around.clear();
+      visited[iSeed] = 1;
+      for (auto k = 0ul; k < group.size(); k++) {
+        for (auto jFinePoint : fine_grid->nodes->GetPoints(group[k])) {
+          if (jFinePoint >= nFineDomain) {
+            if (!visited[jFinePoint]) {
+              visited[jFinePoint] = 1;
+              group.push_back(jFinePoint);
+            }
+          } else if (find(around.begin(), around.end(), jFinePoint) == around.end()) {
+            around.push_back(jFinePoint);
+          }
+        }
+      }
+      if (around.empty()) continue;
+
+      const auto enclosing = fine_grid->nodes->GetParent_CV(around[0]);
+      bool enclosed = (enclosing < nRepaired);
+      for (auto iFinePoint : around) enclosed = enclosed && (fine_grid->nodes->GetParent_CV(iFinePoint) == enclosing);
+      if (!enclosed || (nodes->GetnChildren_CV(enclosing) < 2)) continue;
+
+      /*--- Move the member around the group with the largest face to a neighboring CV, keeping the
+       *    enclosing CV connected when possible. A new CV takes it when no neighbor may. ---*/
+      unsigned long moved = NO_CV, toCV = NO_CV;
+      su2double bestArea = -1.0;
+      for (const bool needConnected : {true, false}) {
+        for (auto iFinePoint : around) {
+          if (needConnected && !connectedWithout(enclosing, iFinePoint)) continue;
+          for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iFinePoint); iNeigh++) {
+            const auto jCV = fine_grid->nodes->GetParent_CV(fine_grid->nodes->GetPoint(iFinePoint, iNeigh));
+            if ((jCV >= nRepaired) || (jCV == enclosing) || !mayMerge(enclosing, jCV)) continue;
+            const auto area =
+                GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(fine_grid->nodes->GetEdge(iFinePoint, iNeigh)));
+            if (area > bestArea) {
+              bestArea = area;
+              moved = iFinePoint;
+              toCV = jCV;
+            }
+          }
+        }
+        if (moved != NO_CV) break;
+      }
+      if (moved == NO_CV) {
+        moved = around[0];
+        toCV = Index_CoarseCV++;
+        nodes->SetnChildren_CV(toCV, 0);
+        nodes->SetAgglomerate_Indirect(toCV, fine_grid->nodes->GetAgglomerate_Indirect(moved));
+        nPointDomain = Index_CoarseCV;
+        nPoint = Index_CoarseCV;
+      }
+
+      removeChild(enclosing, moved);
+      giveChild(moved, toCV);
     }
   }
 

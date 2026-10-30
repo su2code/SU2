@@ -1339,6 +1339,42 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   if (config->GetMGOptions().MG_Smooth_Output) {
     const su2double res = sqrt(solver->LinSysRes.squaredNorm() / (nVar * geometry->GetGlobal_nPointDomain()));
     SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][0] = SU2_TYPE::GetValue(res);)
+
+    /*--- Report a single point that carries a large share of the correction norm. ---*/
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      constexpr passivedouble peakShare = 0.2;
+      passivedouble local[2] = {0.0, 0.0}, global[2];
+      unsigned long peakPoint = 0;
+      for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); iPoint++) {
+        passivedouble sq = 0.0;
+        for (auto iVar = 0u; iVar < nVar; iVar++) sq += pow(SU2_TYPE::GetValue(solver->LinSysRes(iPoint, iVar)), 2);
+        local[1] += sq;
+        if (sq > local[0]) {
+          local[0] = sq;
+          peakPoint = iPoint;
+        }
+      }
+      SU2_MPI::Allreduce(&local[0], &global[0], 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&local[1], &global[1], 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      if ((local[0] == global[0]) && (global[0] > peakShare * global[1])) {
+        std::cout << "Corr-peak level " << iMesh << ": rank " << SU2_MPI::GetRank() << ", global point "
+                  << geometry->nodes->GetGlobalIndex(peakPoint) << ", " << 100 * global[0] / global[1]
+                  << "% of the correction norm, volume " << geometry->nodes->GetVolume(peakPoint) << ", "
+                  << geometry->nodes->GetnPoint(peakPoint) << " neighbors, parent CV "
+                  << geometry->nodes->GetParent_CV(peakPoint) << ", x =";
+        for (auto iDim = 0u; iDim < geometry->GetnDim(); iDim++)
+          std::cout << " " << geometry->nodes->GetCoord(peakPoint, iDim);
+        std::cout << ", correction =";
+        for (auto iVar = 0u; iVar < nVar; iVar++) std::cout << " " << solver->LinSysRes(peakPoint, iVar);
+        std::cout << "\n  neighbor volumes (h = halo):";
+        for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(peakPoint); iNeigh++) {
+          const auto jPoint = geometry->nodes->GetPoint(peakPoint, iNeigh);
+          std::cout << " " << geometry->nodes->GetVolume(jPoint) << (geometry->nodes->GetDomain(jPoint) ? "" : "h");
+        }
+        std::cout << std::endl;
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
