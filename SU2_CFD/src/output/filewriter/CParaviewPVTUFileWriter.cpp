@@ -25,9 +25,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../../include/output/filewriter/CParaviewFieldLayout.hpp"
 #include "../../../include/output/filewriter/CParaviewPVTUFileWriter.hpp"
 
 #include <algorithm>
+#include <cerrno>
 #include <limits>
 #include <numeric>
 
@@ -91,12 +93,6 @@ void MakeFolder(const string& name) {
 /*--- Size in bytes of a data array in the file, including the size written in front of it. ---*/
 size_t DataArraySize(size_t nValues, size_t typeSize) { return sizeof(uint64_t) + nValues * typeSize; }
 
-/*--- Name of a field without the component suffix of a vector, e.g. "Momentum_x" -> "Momentum". ---*/
-string FieldBaseName(string name) {
-  name.erase(remove(name.begin(), name.end(), '"'), name.end());
-  return name.substr(0, name.size() - 2);
-}
-
 }  // namespace
 
 const string CParaviewPVTUFileWriter::fileExt = ".pvtu";
@@ -122,13 +118,18 @@ void CParaviewPVTUFileWriter::WriteData(string val_filename) {
     SU2_MPI::Error("The Paraview parallel writer is only implemented for little endian machines.", CURRENT_FUNCTION);
   }
 
-  startTime = SU2_MPI::Wtime();
+  startTime = WallTime();
 
   /*--- The pieces are written into a folder next to the .pvtu file, one file per rank. ---*/
 
   const string folderName = val_filename;
 
-  if (rank == MASTER_NODE) MakeFolder(folderName);
+  if (rank == MASTER_NODE) {
+    // Do not leave an old index pointing at pieces that are about to be overwritten.
+    if (std::remove((val_filename + fileExt).c_str()) != 0 && errno != ENOENT)
+      SU2_MPI::Error("Unable to remove previous PVTU index " + val_filename + fileExt, CURRENT_FUNCTION);
+    MakeFolder(folderName);
+  }
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   const auto lastSlash = val_filename.find_last_of("/\\");
@@ -147,19 +148,25 @@ void CParaviewPVTUFileWriter::WriteData(string val_filename) {
   SU2_MPI::Allreduce(&localConn, &maxConn, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
   const bool connInt64 = maxConn > static_cast<unsigned long>(std::numeric_limits<int32_t>::max());
 
-  WritePiece(folderName + "/" + baseName + "_" + to_string(rank) + ".vtu", nPointsPiece, connInt64);
+  int failed = !WritePiece(folderName + "/" + baseName + "_" + to_string(rank) + ".vtu", nPointsPiece, connInt64);
+  int anyFailed = 0;
+  SU2_MPI::Allreduce(&failed, &anyFailed, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
+  if (anyFailed) SU2_MPI::Error("Unable to write or close a PVTU piece for " + val_filename, CURRENT_FUNCTION);
 
   /*--- The master node writes the file that lists the pieces. ---*/
 
-  WriteIndexFile(val_filename + fileExt, pieceNames, connInt64);
+  failed = !WriteIndexFile(val_filename + fileExt, pieceNames, connInt64);
+  SU2_MPI::Allreduce(&failed, &anyFailed, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
+  if (anyFailed) SU2_MPI::Error("Unable to write or close PVTU index " + val_filename + fileExt, CURRENT_FUNCTION);
 
-  stopTime = SU2_MPI::Wtime();
+  stopTime = WallTime();
   usedTime = stopTime - startTime;
 
-  su2double myFileSize = fileSize;
-  SU2_MPI::Allreduce(&myFileSize, &fileSize, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-  bandwidth = fileSize / (1.0e6) / usedTime;
+  passivedouble localBytes = SU2_TYPE::GetValue(fileSize), totalBytes = 0;
+  SelectMPIWrapper<passivedouble>::W::Allreduce(&localBytes, &totalBytes, 1, MPI_DOUBLE, MPI_SUM,
+                                             SU2_MPI::GetComm());
+  fileSize = totalBytes;
+  UpdateBandwidth(SU2_TYPE::GetValue(usedTime));
 }
 
 unsigned long CParaviewPVTUFileWriter::CollectExternalPoints() {
@@ -195,6 +202,8 @@ unsigned long CParaviewPVTUFileWriter::CollectExternalPoints() {
   SU2_MPI::Alltoall(nRequest.data(), 1, MPI_INT, nAnswer.data(), 1, MPI_INT, SU2_MPI::GetComm());
 
   for (int i = 0; i < size; i++) {
+    CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(requestOffset[i]) + nRequest[i]);
+    CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(answerOffset[i]) + nAnswer[i]);
     requestOffset[i + 1] = requestOffset[i] + nRequest[i];
     answerOffset[i + 1] = answerOffset[i] + nAnswer[i];
   }
@@ -218,16 +227,15 @@ unsigned long CParaviewPVTUFileWriter::CollectExternalPoints() {
       answerData[i] = dataSorter->GetData(iField, answeredPoints[i] - firstPoint);
 
     SelectMPIWrapper<passivedouble>::W::Alltoallv(answerData.data(), nAnswer.data(), answerOffset.data(), MPI_DOUBLE,
-                                                  &pieceData[iField * nPointsPiece], nRequest.data(),
+                                                  nPointsPiece ? pieceData.data() + iField * nPointsPiece : nullptr, nRequest.data(),
                                                   requestOffset.data(), MPI_DOUBLE, SU2_MPI::GetComm());
   }
 
   return usedPoints.size();
 }
 
-void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned long nPointsPiece, bool connInt64) {
+bool CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned long nPointsPiece, bool connInt64) {
   const auto& fieldNames = dataSorter->GetFieldNames();
-  const auto nFields = fieldNames.size();
   const auto nDim = dataSorter->GetnDim();
 
   /*--- Local index of a point of the piece. ---*/
@@ -293,30 +301,19 @@ void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned lo
   /*--- The fields start after the coordinates, a field whose name ends in _x is written as a vector
    together with the fields that follow it. ---*/
 
-  const size_t varStart = (nDim == 3) ? 3 : 2;
-
+  const auto fields = GetParaviewFields(fieldNames, nDim);
   header << "<PointData>\n";
-  for (size_t iField = varStart; iField < nFields; iField++) {
-    if (fieldNames[iField].find("_y") != string::npos || fieldNames[iField].find("_z") != string::npos) continue;
-
-    const bool isVector = fieldNames[iField].find("_x") != string::npos;
-    string name = fieldNames[iField];
-    if (isVector) {
-      name = FieldBaseName(name);
-    } else {
-      name.erase(remove(name.begin(), name.end(), '"'), name.end());
-    }
-
-    header << "<DataArray type=\"" << realType << "\" Name=\"" << name << "\" NumberOfComponents=\""
-           << (isVector ? NCOORDS : 1) << "\" format=\"appended\" offset=\"" << offset << "\"/>\n";
-    offset += DataArraySize(nPointsPiece * (isVector ? NCOORDS : 1), realSize);
+  for (const auto& field : fields) {
+    header << "<DataArray type=\"" << realType << "\" Name=\"" << field.name << "\" NumberOfComponents=\""
+           << field.components << "\" format=\"appended\" offset=\"" << offset << "\"/>\n";
+    offset += DataArraySize(nPointsPiece * field.components, realSize);
   }
   header << "</PointData>\n</Piece>\n</UnstructuredGrid>\n<AppendedData encoding=\"raw\">\n_";
 
   /*--- Each rank writes its own file, no rank waits for another one. The arrays are written one at a time. ---*/
 
   FILE* file = OpenFile(val_filename, "wb");
-  if (!file) SU2_MPI::Error(string("Unable to open file ") + val_filename, CURRENT_FUNCTION);
+  if (!file) return false;
 
   const auto headerString = header.str();
   fwrite(headerString.data(), sizeof(char), headerString.size(), file);
@@ -328,7 +325,8 @@ void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned lo
     buffer.assign(nPointsPiece * nComponents, 0.0);
     for (unsigned short iComp = 0; iComp < nComponents; iComp++) {
       if ((nDim == 2) && (nComponents == NCOORDS) && (iComp == 2)) continue;
-      const auto* field = &pieceData[(iField + iComp) * nPointsPiece];
+      const auto* field = pieceData.data();
+      if (nPointsPiece) field += (iField + iComp) * nPointsPiece;
       for (unsigned long iPoint = 0; iPoint < nPointsPiece; iPoint++)
         buffer[iPoint * nComponents + iComp] = field[iPoint];
     }
@@ -345,23 +343,19 @@ void CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned lo
   writeConn(offsets);
   fileSize += WriteDataArray<uint8_t>(file, types);
 
-  for (size_t iField = varStart; iField < nFields; iField++) {
-    if (fieldNames[iField].find("_y") != string::npos || fieldNames[iField].find("_z") != string::npos) continue;
-
-    const bool isVector = fieldNames[iField].find("_x") != string::npos;
-    writeField(iField, isVector ? NCOORDS : 1);
-  }
+  for (const auto& field : fields) writeField(field.first, field.components);
 
   const string tail = "\n</AppendedData>\n</VTKFile>\n";
   fwrite(tail.data(), sizeof(char), tail.size(), file);
-  fclose(file);
-
+  const bool written = ferror(file) == 0;
+  const bool closed = fclose(file) == 0;
   fileSize += tail.size();
+  return written && closed;
 }
 
-void CParaviewPVTUFileWriter::WriteIndexFile(const string& val_filename, const vector<string>& pieceNames,
+bool CParaviewPVTUFileWriter::WriteIndexFile(const string& val_filename, const vector<string>& pieceNames,
                                              bool connInt64) {
-  if (rank != MASTER_NODE) return;
+  if (rank != MASTER_NODE) return true;
 
   const auto& fieldNames = dataSorter->GetFieldNames();
   const auto nDim = dataSorter->GetnDim();
@@ -380,22 +374,10 @@ void CParaviewPVTUFileWriter::WriteIndexFile(const string& val_filename, const v
   file << "<PDataArray type=\"UInt8\" Name=\"types\"/>\n";
   file << "</PCells>\n";
 
-  const size_t varStart = (nDim == 3) ? 3 : 2;
-
   file << "<PPointData>\n";
-  for (size_t iField = varStart; iField < fieldNames.size(); iField++) {
-    if (fieldNames[iField].find("_y") != string::npos || fieldNames[iField].find("_z") != string::npos) continue;
-
-    const bool isVector = fieldNames[iField].find("_x") != string::npos;
-    string name = fieldNames[iField];
-    if (isVector) {
-      name = FieldBaseName(name);
-    } else {
-      name.erase(remove(name.begin(), name.end(), '"'), name.end());
-    }
-
-    file << "<PDataArray type=\"" << realType << "\" Name=\"" << name << "\" NumberOfComponents=\""
-         << (isVector ? NCOORDS : 1) << "\"/>\n";
+  for (const auto& field : GetParaviewFields(fieldNames, nDim)) {
+    file << "<PDataArray type=\"" << realType << "\" Name=\"" << field.name << "\" NumberOfComponents=\""
+         << field.components << "\"/>\n";
   }
   file << "</PPointData>\n";
 
@@ -406,9 +388,14 @@ void CParaviewPVTUFileWriter::WriteIndexFile(const string& val_filename, const v
   const auto fileString = file.str();
 
   FILE* indexFile = OpenFile(val_filename, "w");
-  if (!indexFile) SU2_MPI::Error(string("Unable to open file ") + val_filename, CURRENT_FUNCTION);
+  if (!indexFile) return false;
   fwrite(fileString.data(), sizeof(char), fileString.size(), indexFile);
-  fclose(indexFile);
-
+  const bool written = ferror(indexFile) == 0;
+  const bool closed = fclose(indexFile) == 0;
+  if (!written || !closed) {
+    std::remove(val_filename.c_str());
+    return false;
+  }
   fileSize += fileString.size();
+  return true;
 }

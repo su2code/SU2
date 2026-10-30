@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../../include/output/filewriter/CParaviewFieldLayout.hpp"
 #include "../../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
 #include "../../../../Common/include/toolboxes/SwapBytes.hpp"
 #include <cstdint>
@@ -225,43 +226,16 @@ void CParaviewBinaryFileWriter::WritePointData() {
 
   WriteMPIString("\nPOINT_DATA " + std::to_string(dataSorter->GetnPointsGlobal()) + "\n", MASTER_NODE);
 
-  /*--- Skip the coordinates, which are the first fields. ---*/
-
-  const unsigned short varStart = (dataSorter->GetnDim() == 3) ? 3 : 2;
-
-  /*--- Loop over all variables that have been registered in the output. A field ending in "_x" starts a
-   vector, written with its "_y" (and "_z") components, which are then skipped. ---*/
-
-  unsigned short VarCounter = varStart;
-  for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
-
-    string fieldname = fieldNames[iField];
-    fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
-
-    const bool isVector = fieldNames[iField].find("_x") != string::npos;
-    const bool isY = fieldNames[iField].find("_y") != string::npos;
-    const bool isZ = fieldNames[iField].find("_z") != string::npos;
-
-    if (isY || isZ) {
-      VarCounter += isY + isZ;
-    } else if (isVector) {
-
-      /*--- Remove the "_x" from the name. ---*/
-
-      fieldname.erase(fieldname.end()-2, fieldname.end());
-      WriteMPIString("\nVECTORS " + fieldname + " float\n", MASTER_NODE);
-      WriteVectorArray(VarCounter);
-      VarCounter++;
-
+  for (const auto& field : GetParaviewFields(fieldNames, dataSorter->GetnDim())) {
+    if (field.components == 3) {
+      WriteMPIString("\nVECTORS " + field.name + " float\n", MASTER_NODE);
+      WriteVectorArray(field.first);
     } else {
-
-      WriteMPIString("\nSCALARS " + fieldname + " float 1\n", MASTER_NODE);
-      WriteMPIString("LOOKUP_TABLE default\n", MASTER_NODE);
-
+      WriteMPIString("\nSCALARS " + field.name + " float 1\nLOOKUP_TABLE default\n", MASTER_NODE);
       vector<float> buffer(myPoint);
-      for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) buffer[iPoint] = (float)dataSorter->GetData(VarCounter, iPoint);
+      for (auto iPoint = 0ul; iPoint < myPoint; iPoint++)
+        buffer[iPoint] = static_cast<float>(dataSorter->GetData(field.first, iPoint));
       WritePointArray(buffer, 1);
-      VarCounter++;
     }
   }
 }

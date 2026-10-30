@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../../include/output/filewriter/CParaviewFieldLayout.hpp"
 #include "../../../include/output/filewriter/CParaviewXMLFileWriter.hpp"
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include <cstdint>
@@ -142,58 +143,11 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   WriteMPIString("<PointData>\n", MASTER_NODE);
 
-  /*--- Adjust container start location to avoid point coords. ---*/
+  const auto fields = GetParaviewFields(fieldNames, nDim);
+  for (const auto& field : fields)
+    AddDataArray(realType, field.name, field.components, myPoint * field.components,
+                 GlobalPoint * field.components);
 
-  unsigned short varStart = 2;
-  if (nDim == 3) varStart++;
-
-  /*--- Loop over all variables that have been registered in the output. ---*/
-
-  unsigned short VarCounter = varStart;
-  for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
-
-    string fieldname = fieldNames[iField];
-    fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
-                    fieldname.end());
-
-    /*--- Check whether this field is a vector or scalar. ---*/
-
-    bool output_variable = true, isVector = false;
-    size_t found = fieldNames[iField].find("_x");
-    if (found!=string::npos) {
-      output_variable = true;
-      isVector        = true;
-    }
-    found = fieldNames[iField].find("_y");
-    if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Y component. ---*/
-      output_variable = false;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_z");
-    if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Z component. ---*/
-      output_variable = false;
-      VarCounter++;
-    }
-
-    /*--- Write the point data as an <X,Y,Z> vector or a scalar. ---*/
-
-    if (output_variable && isVector) {
-
-      /*--- Adjust the string name to remove the leading "X-" ---*/
-
-      fieldname.erase(fieldname.end()-2,fieldname.end());
-
-      AddDataArray(realType, fieldname, NCOORDS, myPoint*NCOORDS, GlobalPoint*NCOORDS);
-
-    } else if (output_variable) {
-
-      AddDataArray(realType, fieldname, 1, myPoint, GlobalPoint);
-
-    }
-
-  }
   WriteMPIString("</PointData>\n", MASTER_NODE);
   WriteMPIString("</Piece>\n", MASTER_NODE);
   WriteMPIString("</UnstructuredGrid>\n", MASTER_NODE);
@@ -280,65 +234,16 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   /*--- Loop over all variables that have been registered in the output. ---*/
 
-  VarCounter = varStart;
-  for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
-
-    /*--- Check whether this field is a vector or scalar. ---*/
-
-    bool output_variable = true, isVector = false;
-    size_t found = fieldNames[iField].find("_x");
-    if (found!=string::npos) {
-      output_variable = true;
-      isVector        = true;
-    }
-    found = fieldNames[iField].find("_y");
-    if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Y component. ---*/
-      output_variable = false;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_z");
-    if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Z component. ---*/
-      output_variable = false;
-      VarCounter++;
-    }
-
-    /*--- Write the point data as an <X,Y,Z> vector or a scalar. ---*/
-
-    if (output_variable && isVector) {
-
-      /*--- Load up the buffer for writing this rank's vector data. ---*/
-
-      for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
-        for (unsigned short iDim = 0; iDim < NCOORDS; iDim++) {
-          if (nDim == 2 && iDim == 2) {
-            dataBuffer[iPoint*NCOORDS + iDim] = 0.0;
-          } else {
-            dataBuffer[iPoint*NCOORDS + iDim] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+iDim,iPoint));
-          }
-        }
+  for (const auto& field : fields) {
+    for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
+      for (unsigned short iDim = 0; iDim < field.components; iDim++) {
+        dataBuffer[iPoint * field.components + iDim] =
+            (nDim == 2 && field.components == NCOORDS && iDim == 2)
+                ? 0.0 : SU2_TYPE::GetValue(dataSorter->GetData(field.first + iDim, iPoint));
       }
-
-      writeRealArray(myPoint*NCOORDS, GlobalPoint*NCOORDS, dataSorter->GetnPointCumulative(rank)*NCOORDS);
-
-      VarCounter++;
-
-    } else if (output_variable) {
-
-
-      /*--- For now, create a temp 1D buffer to load up the data for writing.
-       This will be replaced with a derived data type most likely. ---*/
-
-      for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
-        dataBuffer[iPoint] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter,iPoint));
-      }
-
-      writeRealArray(myPoint, GlobalPoint, dataSorter->GetnPointCumulative(rank));
-
-      VarCounter++;
     }
-
+    writeRealArray(myPoint * field.components, GlobalPoint * field.components,
+                   dataSorter->GetnPointCumulative(rank) * field.components);
   }
 
   WriteMPIString("</AppendedData>\n", MASTER_NODE);

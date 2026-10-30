@@ -69,7 +69,7 @@ class CParaviewPVTUFileWriter final : public CFileWriter {
    * \param[in] nPointsPiece - Number of points of the piece.
    * \param[in] connInt64 - Write the connectivity and offsets as Int64 instead of Int32.
    */
-  void WritePiece(const string& val_filename, unsigned long nPointsPiece, bool connInt64);
+  bool WritePiece(const string& val_filename, unsigned long nPointsPiece, bool connInt64);
 
   /*!
    * \brief Write the .pvtu file that lists the pieces, only the master node writes it.
@@ -77,7 +77,7 @@ class CParaviewPVTUFileWriter final : public CFileWriter {
    * \param[in] pieceNames - Names of the pieces, relative to the .pvtu file.
    * \param[in] connInt64 - The connectivity and offsets of the pieces are Int64 instead of Int32.
    */
-  void WriteIndexFile(const string& val_filename, const vector<string>& pieceNames, bool connInt64);
+  bool WriteIndexFile(const string& val_filename, const vector<string>& pieceNames, bool connInt64);
 
  public:
   /*!

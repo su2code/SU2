@@ -66,6 +66,7 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
   /*--- Create a linear partition --- */
 
+  CheckIntCount(nGlobalPointBeforeSort);
   linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
   /*--- Prepare the send buffers ---*/
@@ -150,6 +151,7 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
 
   /* Allocate the memory to store the connectivity if the size is
      larger than zero. */
+  CheckIntCount(nSubElem_Local, NODES_PER_ELEMENT);
   int *Conn_SubElem = nullptr;
   if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
 
