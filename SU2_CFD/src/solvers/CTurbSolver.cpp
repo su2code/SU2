@@ -376,14 +376,25 @@ su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, u
     }
   }
 
+  /*--- Select the farthest pair without taping every candidate, then differentiate the selected distance. ---*/
+  const bool wasActive = AD::BeginPassive();
   su2double diameter2 = 0.0;
+  size_t farthestN = 0, farthestM = 0;
   for (auto n = 0ul; n < projected.size(); n++) {
     for (auto m = n + 1; m < projected.size(); m++) {
       su2double dist2 = 0.0;
       for (auto iDim = 0u; iDim < 3; iDim++) dist2 += pow(projected[n][iDim] - projected[m][iDim], 2);
-      diameter2 = max(diameter2, dist2);
+      if (dist2 > diameter2) {
+        diameter2 = dist2;
+        farthestN = n;
+        farthestM = m;
+      }
     }
   }
+  AD::EndPassive(wasActive);
+  diameter2 = 0.0;
+  for (auto iDim = 0u; iDim < 3; iDim++)
+    diameter2 += pow(projected[farthestN][iDim] - projected[farthestM][iDim], 2);
   const su2double deltaOmega = sqrt(diameter2 / 3.0);
 
   /*--- In the RANS region F_KH is set to 1 to shield the boundary layer (Eq. 6, epsilon = 0.01). ---*/
