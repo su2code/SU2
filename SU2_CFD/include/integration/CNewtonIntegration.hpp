@@ -152,6 +152,18 @@ private:
   template<class T, su2enable_if<std::is_same<T,MixedScalar>::value> = 0>
   inline unsigned long Preconditioner_impl(const CSysVector<T>& u, CSysVector<T>& v,
                                            unsigned long iters, Scalar& eps) const {
+    /*--- Unlike the matrix-free outer product this is a CSysMatrix operation, it can run on the
+     * device. The outer Krylov vectors are host resident, hence the transfers. ---*/
+    unsigned long nIters = 0;
+    ApplyPreconditionerOnDevice(u, v, config->GetCUDA(), [&] { nIters = PreconditionerApply(u, v, iters, eps); });
+    return nIters;
+  }
+
+  /*!
+   * \brief The preconditioner on its own, or a nested solve with the approximate Jacobian.
+   */
+  inline unsigned long PreconditionerApply(const CSysVector<MixedScalar>& u, CSysVector<MixedScalar>& v,
+                                           unsigned long iters, Scalar& eps) const {
     const auto inner_solver = config->GetKind_Linear_Solver_Inner();
 
     if (iters == 0 || (iters == 1 && inner_solver == LINEAR_SOLVER_INNER::SMOOTHER)) {

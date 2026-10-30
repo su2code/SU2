@@ -43,5 +43,5 @@ namespace CInterpolatorFactory {
  */
 CInterpolator* CreateInterpolator(CGeometry**** geometry_container, const CConfig* const* config,
                                   const CInterpolator* transpInterpolator, unsigned iZone, unsigned jZone,
-                                  bool verbose = true);
+                                  bool mixing_plane, bool verbose = true);
 }  // namespace CInterpolatorFactory

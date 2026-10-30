@@ -98,6 +98,20 @@ class CEulerVariable : public CFlowVariable {
                  unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
+   * \brief Get the density at time level n for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n.
+   */
+  inline su2double GetDensity_time_n(unsigned long iPoint) const final { return GetSolution_time_n(iPoint, 0); }
+
+  /*!
+   * \brief Get the density at time level n-1 for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n-1.
+   */
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const final { return GetSolution_time_n1(iPoint, 0); }
+
+  /*!
    * \brief A virtual member.
    */
   inline void SetdPdrho_e(unsigned long iPoint, su2double dPdrho_e) final { Secondary(iPoint,0) = dPdrho_e;}
@@ -344,5 +358,15 @@ class CEulerVariable : public CFlowVariable {
    * \return Number of iterations evaluated by the Newton solver
    */
   inline unsigned long GetNewtonSolverIterations(unsigned long iPoint) const final { return NIterNewtonsolver[iPoint]; }
+
+  /*!
+   * \brief Maximum value that OutlierMitigation can have.
+   */
+  static constexpr auto MAX_OUTLIER_MITIGATION = std::numeric_limits<uint8_t>::max();
+
+  /*!
+   * \brief Marks outliers (0 ok, MAX_OUTLIER_MITIGATION maximum mitigation).
+   */
+  su2vector<uint8_t> OutlierMitigation;
 
 };

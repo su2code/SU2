@@ -38,8 +38,7 @@ class CVariable;
 class CNEMOCompOutput final: public CFlowOutput {
 private:
   TURB_MODEL turb_model;   /*!< \brief Kind of turbulence model */
-  unsigned short iSpecies, /*!< \brief Species index */
-                 nSpecies; /*!< \brief Number of species */
+  unsigned short nSpecies; /*!< \brief Number of species */
 public:
   /*!
    * \brief Constructor of the class

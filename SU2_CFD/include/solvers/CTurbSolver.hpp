@@ -52,23 +52,10 @@ public:
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] flow_solver - Flow solver the boundary ghost states mirror.
    */
-  CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative);
+  CTurbSolver(CGeometry* geometry, CConfig *config, const CSolver* flow_solver, bool conservative);
 
-  /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Riemann(CGeometry *geometry,
-                  CSolver **solver_container,
-                  CNumerics *conv_numerics,
-                  CNumerics *visc_numerics,
-                  CConfig *config,
-                  unsigned short val_marker) final;
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -147,7 +134,7 @@ public:
    * \returns The number of extra variables.
    */
   unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
-  
+
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
    * a nonlinear iteration for stability.

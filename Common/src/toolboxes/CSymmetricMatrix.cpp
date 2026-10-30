@@ -38,13 +38,26 @@ using namespace std;
 #endif
 #elif defined(HAVE_LAPACK)
 /*--- Lapack / Blas routines used in CSymmetricMatrix. ---*/
-extern "C" void dsytrf_(const char*, const int*, passivedouble*, const int*, int*, passivedouble*, const int*, int*);
-extern "C" void dsytri_(const char*, const int*, passivedouble*, const int*, const int*, passivedouble*, int*);
-extern "C" void dpotrf_(const char*, const int*, passivedouble*, const int*, int*);
-extern "C" void dpotri_(const char*, const int*, passivedouble*, const int*, int*);
-extern "C" void dsymm_(const char*, const char*, const int*, const int*, const passivedouble*, const passivedouble*,
-                       const int*, const passivedouble*, const int*, const passivedouble*, passivedouble*, const int*);
-#define DSYMM dsymm_
+#ifdef USE_SINGLE_PRECISION
+#define SYTRF_IMPL ssytrf_
+#define SYTRI_IMPL ssytri_
+#define POTRF_IMPL spotrf_
+#define POTRI_IMPL spotri_
+#define SYMM_IMPL ssymm_
+#else
+#define SYTRF_IMPL dsytrf_
+#define SYTRI_IMPL dsytri_
+#define POTRF_IMPL dpotrf_
+#define POTRI_IMPL dpotri_
+#define SYMM_IMPL dsymm_
+#endif
+extern "C" void SYTRF_IMPL(const char*, const int*, passivedouble*, const int*, int*, passivedouble*, const int*, int*);
+extern "C" void SYTRI_IMPL(const char*, const int*, passivedouble*, const int*, const int*, passivedouble*, int*);
+extern "C" void POTRF_IMPL(const char*, const int*, passivedouble*, const int*, int*);
+extern "C" void POTRI_IMPL(const char*, const int*, passivedouble*, const int*, int*);
+extern "C" void SYMM_IMPL(const char*, const char*, const int*, const int*, const passivedouble*, const passivedouble*,
+                          const int*, const passivedouble*, const int*, const passivedouble*, passivedouble*,
+                          const int*);
 #endif
 
 void CSymmetricMatrix::Initialize(int N) { mat.resize(N, N); }
@@ -119,14 +132,14 @@ void CSymmetricMatrix::CalcInv_sytri() {
   /*--- Query the optimum work size. ---*/
   int query = -1;
   passivedouble tmp;
-  dsytrf_(&uplo, &sz, mat.data(), &sz, ipiv.data(), &tmp, &query, &info);
+  SYTRF_IMPL(&uplo, &sz, mat.data(), &sz, ipiv.data(), &tmp, &query, &info);
   query = static_cast<int>(tmp);
   vector<passivedouble> work(query);
 
   /*--- Factorize and invert. ---*/
-  dsytrf_(&uplo, &sz, mat.data(), &sz, ipiv.data(), work.data(), &query, &info);
+  SYTRF_IMPL(&uplo, &sz, mat.data(), &sz, ipiv.data(), work.data(), &query, &info);
   if (info != 0) SU2_MPI::Error("LDLT factorization failed.", CURRENT_FUNCTION);
-  dsytri_(&uplo, &sz, mat.data(), &sz, ipiv.data(), work.data(), &info);
+  SYTRI_IMPL(&uplo, &sz, mat.data(), &sz, ipiv.data(), work.data(), &info);
   if (info != 0) SU2_MPI::Error("Inversion with LDLT factorization failed.", CURRENT_FUNCTION);
 #endif
 }
@@ -137,9 +150,9 @@ void CSymmetricMatrix::CalcInv_potri() {
   const int sz = Size();
   int info;
 
-  dpotrf_(&uplo, &sz, mat.data(), &sz, &info);
+  POTRF_IMPL(&uplo, &sz, mat.data(), &sz, &info);
   if (info != 0) SU2_MPI::Error("LLT factorization failed.", CURRENT_FUNCTION);
-  dpotri_(&uplo, &sz, mat.data(), &sz, &info);
+  POTRI_IMPL(&uplo, &sz, mat.data(), &sz, &info);
   if (info != 0) SU2_MPI::Error("Inversion with LLT factorization failed.", CURRENT_FUNCTION);
 #endif
 }
@@ -167,7 +180,7 @@ void CSymmetricMatrix::MatMatMult(const char side, const su2passivematrix& mat_i
     /*--- Right and lower because matrices are in row major order. ---*/
     const char side = 'R', uplo = 'L';
     const passivedouble alpha = 1.0, beta = 0.0;
-    DSYMM(&side, &uplo, &N, &M, &alpha, mat.data(), &M, mat_in.data(), &N, &beta, mat_out.data(), &N);
+    SYMM_IMPL(&side, &uplo, &N, &M, &alpha, mat.data(), &M, mat_in.data(), &N, &beta, mat_out.data(), &N);
 #else  // Naive product
     for (int i = 0; i < M; ++i)
       for (int j = 0; j < N; ++j) {
@@ -187,7 +200,7 @@ void CSymmetricMatrix::MatMatMult(const char side, const su2passivematrix& mat_i
     /*--- Left and lower because matrices are in row major order. ---*/
     const char side = 'L', uplo = 'L';
     const passivedouble alpha = 1.0, beta = 0.0;
-    DSYMM(&side, &uplo, &N, &M, &alpha, mat.data(), &N, mat_in.data(), &N, &beta, mat_out.data(), &N);
+    SYMM_IMPL(&side, &uplo, &N, &M, &alpha, mat.data(), &N, mat_in.data(), &N, &beta, mat_out.data(), &N);
 #else  // Naive product
     for (int i = 0; i < M; ++i)
       for (int j = 0; j < N; ++j) {
