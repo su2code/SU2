@@ -2,7 +2,7 @@
  * \file heat_edge_flux.hpp
  * \brief Heat transport as a third-layer scalar flux, see numerics/scalar/scalar_edge_flux.hpp.
  * \author P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
