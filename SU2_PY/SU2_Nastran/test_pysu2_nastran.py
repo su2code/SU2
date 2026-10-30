@@ -2,7 +2,7 @@
 
 ## \file test_pysu2_nastran.py
 #  \brief Tests for the bulk data parsing of the Nastran structural solver.
-#  \version 8.5.0 "Harrier"
+#  \version 8.6.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
