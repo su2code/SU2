@@ -28,6 +28,26 @@
 #include "../../include/fluid/CSU2TCLib.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
+#include <iomanip>
+#include <sstream>
+
+/*--- Freestream mass fractions are supplied by the user as decimal literals and
+      accumulated in double precision, so a physically exact composition need not
+      sum to bit-exact unity (e.g. 0.999 + 4*0.00025 sums to 1 - 1.1e-16). Compare
+      against a roundoff tolerance instead: tight enough that any real typo is
+      still rejected, loose enough that valid input never is. ---*/
+constexpr passivedouble MASSFRAC_SUM_TOL = 1.0E-10;
+
+/*--- Report the offending sum with enough digits to tell it apart from unity;
+      the default six decimals of to_string would print 1.000000 for a sum that
+      fails the tolerance by less than 5e-7. ---*/
+static string MassFracSumErrorMessage(su2double mf) {
+  ostringstream msg;
+  msg << "CONFIG ERROR: Initial gas mass fractions do not sum to 1 (sum = " << setprecision(16)
+      << SU2_TYPE::GetValue(mf) << ")";
+  return msg.str();
+}
+
 CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscous): CNEMOGas(config, val_nDim){
 
   unsigned short maxEl = 0;
@@ -66,8 +86,8 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
-    if (mf != 1.0) {
-      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
+    if (fabs(mf - 1.0) > MASSFRAC_SUM_TOL) {
+      SU2_MPI::Error(MassFracSumErrorMessage(mf), CURRENT_FUNCTION);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -133,8 +153,8 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
-    if (mf != 1.0) {
-      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
+    if (fabs(mf - 1.0) > MASSFRAC_SUM_TOL) {
+      SU2_MPI::Error(MassFracSumErrorMessage(mf), CURRENT_FUNCTION);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -296,8 +316,8 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
-    if (mf != 1.0) {
-      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
+    if (fabs(mf - 1.0) > MASSFRAC_SUM_TOL) {
+      SU2_MPI::Error(MassFracSumErrorMessage(mf), CURRENT_FUNCTION);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -663,8 +683,8 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
-    if (mf != 1.0) {
-      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
+    if (fabs(mf - 1.0) > MASSFRAC_SUM_TOL) {
+      SU2_MPI::Error(MassFracSumErrorMessage(mf), CURRENT_FUNCTION);
     }
 
     /*--- Define parameters of the gas model ---*/

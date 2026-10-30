@@ -4,4 +4,5 @@ common_src += files(['CInterpolatorFactory.cpp',
                      'CSlidingMesh.cpp',
                      'CIsoparametric.cpp',
                      'CNearestNeighbor.cpp',
-                     'CRadialBasisFunction.cpp'])
+                     'CRadialBasisFunction.cpp',
+                     'CMixingPlane.cpp'])

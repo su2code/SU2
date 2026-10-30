@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <iostream>
 #include <set>
+#include <unordered_map>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -58,6 +59,8 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../limiters/CLimiterDetails.hpp"
 #include "../variables/CVariable.hpp"
+
+#include "../output/CTurboOutput.hpp"
 
 #ifdef HAVE_LIBROM
 #include "librom.h"
@@ -144,11 +147,15 @@ protected:
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
+  su2activematrix PeriodicProj;  /*!< \brief Min/max reconstruction increments at periodic receive points (for limiters). */
+  std::unordered_map<unsigned long, size_t> PeriodicProjIndex;  /*!< \brief Local point to compact projection row. */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
   vector<su2activematrix> VertexTraction;          /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
   vector<su2activematrix> VertexTractionAdjoint;   /*- Also temporary -*/
+
+  std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
 
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
 
@@ -216,6 +223,23 @@ public:
   virtual ~CSolver(void);
 
   /*!
+   * \brief Whether the artificial ignition spark is active at the current iteration.
+   * \param[in] config - Definition of the particular problem.
+   */
+  static bool SparkActive(const CConfig* config) {
+    return config->GetFlameletParsedOptions().SparkActive(config->GetIgnitionIter());
+  }
+
+  /*!
+   * \brief Whether a point lies inside the artificial ignition spark region.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] coord - Coordinates of the point.
+   */
+  bool InSpark(const CConfig* config, const su2double* coord) const {
+    return config->GetFlameletParsedOptions().InSpark(nDim, coord);
+  }
+
+  /*!
    * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
    * \return Nodes of the solver.
    */
@@ -227,6 +251,8 @@ public:
     assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
     return base_nodes;
   }
+
+  bool HasPeriodicRotation(const CConfig& config) const;
 
   /*!
    * \brief Helper function to define the type and number of variables per point for each communication type.
@@ -314,9 +340,11 @@ public:
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] force - Reduce on a coarse level too, where it is skipped by default.
    */
-  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config);
+  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config, bool force = false);
 
   /*!
    * \brief Communicate the value of the max residual and RMS residual.
@@ -388,6 +416,16 @@ public:
    * \return Value of the average local CFL number.
    */
   inline su2double GetAvg_CFL_Local(void) const { return Avg_CFL_Local; }
+
+  /*!
+   * \brief Set min/max/avg local CFL summary statistics.
+   * \param[in] val_cfl - Uniform CFL value to report.
+   */
+  inline void SetCFL_Local_Stats(su2double val_cfl) {
+    Min_CFL_Local = val_cfl;
+    Max_CFL_Local = val_cfl;
+    Avg_CFL_Local = val_cfl;
+  }
 
   /*!
    * \brief Get the number of variables of the problem.
@@ -568,6 +606,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \return flame thickness value.
+   */
+  virtual su2double GetFlameThickness() const {return 1.0;}
 
   /*!
    * \brief Compute the projection of a variable for MUSCL reconstruction.
@@ -760,6 +804,22 @@ public:
                                     unsigned long Iteration,
                                     unsigned short RunTime_EqSystem,
                                     bool Output) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ComputeEdgeMassFluxesRhieChow(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ApplyPressureVelocityCorrection(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1106,6 +1166,8 @@ public:
                                CConfig *config,
                                unsigned short val_marker) { }
 
+  inline virtual std::shared_ptr<CTurboOutput> GetTurboBladePerformance() const { return std::shared_ptr<CTurboOutput>(nullptr); }
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1287,6 +1349,29 @@ public:
    */
   virtual void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) { }
 
+  /*!
+  * \brief Get a component of the donor-side averaged state at a mixing plane interface
+  * \param[in] val_marker - marker index
+  * \param[in] val_span - span index
+  * \param[in] val_state  - requested state component
+  */
+  inline virtual su2double GetMixingState(unsigned short val_marker,
+                                   unsigned long val_span,
+                                   unsigned short val_state) const { return 0; }
+
+  /*!
+   * \brief Set a component of the donor-side averaged state at a mixing plane interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_span   - span index
+   * \param[in] val_state    - state component to set
+   * \param[in] component    - value to set
+   */
+  inline virtual void SetMixingState(unsigned short val_marker,
+                              unsigned long val_span,
+                              unsigned short val_state,
+                              // unsigned long donor_span, // Do I care about where it comes from?
+                              su2double component) { }
+
  /*!
    * \brief Get the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
@@ -1431,6 +1516,14 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    */
   void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
+
+  /*!
+   * \brief Identify points where the solution is an outlier (physics-specific concept)
+   *        so that solvers can try to restore them to a stable condition.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current iteration (time, outer, or inner, as appropriate).
+   */
+  inline virtual void IdentifySolutionOutliers(const CConfig *config, unsigned long iter) { }
 
   /*!
    * \brief Reset the local CFL adaption variables
@@ -3484,7 +3577,7 @@ public:
    * \param[in] rhs - Right hand side.
    * \param[in] nVar - Number of variables.
    */
-  void Gauss_Elimination(su2double** A,
+  void GaussElimination(su2double** A,
                          su2double* rhs,
                          unsigned short nVar);
 
@@ -3778,7 +3871,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void InitTurboContainers(CGeometry *geometry, CConfig *config) { }
+  inline virtual void InitTurboContainers(CGeometry *geometry, CConfig **config, unsigned short iZone) { }
 
    /*!
    * \brief Get Primal variables for turbo performance computation
@@ -3817,6 +3910,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   inline virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry) { }
+
+  inline virtual void ComputeTurboBladePerformance(CGeometry* geometry, CConfig* config, unsigned short iBlade) { };
 
   /*!
    * \brief A virtual member.
@@ -3866,82 +3961,6 @@ public:
    * \return Value of the Average Omega on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetAverageOmega(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Nu on the surface <i>val_marker</i>.
-   */
-  inline virtual su2double GetExtAverageNu(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Kine on the surface <i>val_marker</i>.
-   */
-  inline virtual su2double GetExtAverageKine(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Omega on the surface <i>val_marker</i>.
-   */
-  inline virtual su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Density on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageDensity(unsigned short valMarker,
-                                           unsigned short valSpan,
-                                           su2double valDensity) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAveragePressure(unsigned short valMarker,
-                                            unsigned short valSpan,
-                                            su2double valPressure) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageTurboVelocity(unsigned short valMarker,
-                                                 unsigned short valSpan,
-                                                 unsigned short valIndex,
-                                                 su2double valTurboVelocity) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Nu on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageNu(unsigned short valMarker,
-                                      unsigned short valSpan,
-                                      su2double valNu) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Kine on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageKine(unsigned short valMarker,
-                                        unsigned short valSpan,
-                                        su2double valKine) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Omega on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageOmega(unsigned short valMarker,
-                                         unsigned short valSpan,
-                                         su2double valOmega) { }
 
   /*!
    * \brief A virtual member.
@@ -4235,6 +4254,22 @@ public:
   inline void SetRotatePeriodic(bool val_rotate_periodic) { rotate_periodic = val_rotate_periodic; }
 
   /*!
+   * \brief Storage for the limiters with rotational periodicity: the min and max, over the edges of the periodic
+   *        matches of each point, of the reconstruction increments (communicated with PERIODIC_LIM_PRIM_1).
+   * \param[in] geometry - Periodic receive points of this mesh level.
+   * \param[in] config - Definition of the particular problem.
+   * \return The matrix (unique periodic receive points x 2*nPrimVarGrad, min then max), nullptr without rotation.
+   */
+  su2activematrix* GetPeriodicProjections(const CGeometry& geometry, const CConfig& config);
+
+  /*! \brief Reconstruction increment bounds for a periodic receive point, nullptr for other points. */
+  inline su2double* GetPeriodicProjection(unsigned long iPoint) {
+    const auto& indices = PeriodicProjIndex;
+    const auto it = indices.find(iPoint);
+    return it == indices.end() ? nullptr : PeriodicProj[it->second];
+  }
+
+  /*!
    * \brief Retrieve the solver name for output purposes.
    * \returns Name of the solver.
    */
@@ -4323,6 +4358,25 @@ public:
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
 
+  /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] periodic - Flag for periodic boundary conditions.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  inline virtual void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) { }
+
+  /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  inline virtual void ComputeHbyA(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
+  
   /*!
    * \brief Save snapshot or POD data using libROM
    * \param[in] geometry - Geometrical definition of the problem.

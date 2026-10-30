@@ -27,6 +27,7 @@
 
 #include "../../include/variables/CIncEulerVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
@@ -58,12 +59,23 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
+
+    if (config->GetKind_DensityModel() != INC_DENSITYMODEL::CONSTANT) {
+      Density_time_n.resize(nPoint) = su2double(0.0);
+      Density_time_n1.resize(nPoint) = su2double(0.0);
+    }
   }
 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
     Streamwise_Periodic_RecoveredPressure.resize(nPoint) = su2double(0.0);
     if (config->GetStreamwise_Periodic_Temperature())
       Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
+  }
+
+  /*--- Allocate strong BC vector for pressure-based solver ---*/
+
+  if (config->GetKind_Incomp_System() == INCOMP_SYSTEM::PRESSURE_BASED) {
+    strongBC.resize(nPoint) = false;
   }
 }
 
@@ -127,3 +139,4 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
   return physical;
 
 }
+

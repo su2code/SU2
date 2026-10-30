@@ -4123,39 +4123,39 @@ void CGeometry::SetGridVelocity(const CConfig* config) {
   }
 }
 
-const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType type, unsigned long fillLvl) {
+const CGeometry::LDUSparsePattern& CGeometry::GetSparsePattern(ConnectivityType type, unsigned long fillLvl) {
   bool fvm = (type == ConnectivityType::FiniteVolume);
-
-  CCompressedSparsePatternUL* pattern = nullptr;
-
-  if (fillLvl == 0)
-    pattern = fvm ? &finiteVolumeCSRFill0 : &finiteElementCSRFill0;
-  else
-    pattern = fvm ? &finiteVolumeCSRFillN : &finiteElementCSRFillN;
-
-  if (pattern->empty()) {
-    *pattern = buildCSRPattern(*this, type, fillLvl);
-    pattern->buildDiagPtr();
+  auto& grp = fillLvl == 0 ? (fvm ? finiteVolumePatternFill0 : finiteElementPatternFill0)
+                           : (fvm ? finiteVolumePatternFillN : finiteElementPatternFillN);
+  if (grp.empty()) {
+    grp.csr = buildCSRPattern(*this, type, static_cast<su2uint>(fillLvl));
+    grp.csr.buildDiagPtr();
+    grp.l = buildLowerPattern(grp.csr);
+    grp.u = buildUpperPattern(grp.csr);
   }
-
-  return *pattern;
+  return grp;
 }
 
-const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap() {
-  if (edgeToCSRMap.empty()) {
-    if (finiteVolumeCSRFill0.empty()) {
-      finiteVolumeCSRFill0 = buildCSRPattern(*this, ConnectivityType::FiniteVolume, 0ul);
-    }
-    edgeToCSRMap = mapEdgesToSparsePattern(*this, finiteVolumeCSRFill0);
+const su2vector<su2uint>& CGeometry::GetLToUTransposeSparsePatternMap(ConnectivityType type) {
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+  auto& l_to_u = fvm ? finiteVolumeLToUTranspMap : finiteElementLToUTranspMap;
+  if (l_to_u.empty()) {
+    auto& u_to_l = fvm ? finiteVolumeUToLTranspMap : finiteElementUToLTranspMap;
+    const auto& pat = GetSparsePattern(type);
+    buildLUTransposeMaps(pat.l, pat.u, l_to_u, u_to_l);
   }
-  return edgeToCSRMap;
+  return l_to_u;
 }
 
-const su2vector<unsigned long>& CGeometry::GetTransposeSparsePatternMap(ConnectivityType type) {
-  /*--- Yes the const cast is weird but it is still better than repeating code. ---*/
-  auto& pattern = const_cast<CCompressedSparsePatternUL&>(GetSparsePattern(type));
-  pattern.buildTransposePtr();
-  return pattern.transposePtr();
+const su2vector<su2uint>& CGeometry::GetUToLTransposeSparsePatternMap(ConnectivityType type) {
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+  auto& u_to_l = fvm ? finiteVolumeUToLTranspMap : finiteElementUToLTranspMap;
+  if (u_to_l.empty()) {
+    auto& l_to_u = fvm ? finiteVolumeLToUTranspMap : finiteElementLToUTranspMap;
+    const auto& pat = GetSparsePattern(type);
+    buildLUTransposeMaps(pat.l, pat.u, l_to_u, u_to_l);
+  }
+  return u_to_l;
 }
 
 const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficiency, bool maximizeEdgeColorGroupSize) {
@@ -4339,7 +4339,10 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
 
 const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) const {
   auto& li = lineletInfo;
-  if (!li.linelets.empty() || nPoint == 0) return li;
+  /*--- Do not use "linelets.empty()" as the check, some ranks may have no linelets, and this
+   * function contains collective communication that all ranks must call the same number of times. ---*/
+  if (li.computed) return li;
+  li.computed = true;
 
   li.lineletIdx.resize(nPoint, CLineletInfo::NO_LINELET);
 
@@ -4444,7 +4447,7 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
   SU2_MPI::Allreduce(&sumNPoints, &globalNPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLinelet, &globalNLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && globalNLineLets > 0) {
     std::cout << "Computed linelet structure, "
               << static_cast<unsigned long>(passivedouble(globalNPoints) / globalNLineLets)
               << " points in each line (average)." << std::endl;
@@ -4470,7 +4473,8 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
 
   const auto coloring = colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(
       CCompressedSparsePatternUL(adjacency), 1, false, true);
-  const auto nColors = coloring.getOuterSize();
+  /*--- unsigned long because it is communicated as MPI_UNSIGNED_LONG below. ---*/
+  const unsigned long nColors = coloring.getOuterSize();
 
   /*--- Sort linelets by color. ---*/
   std::vector<std::vector<unsigned long>> sortedLinelets;
@@ -4540,7 +4544,8 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
 }
 }  // namespace
 
-void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container) {
+void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container,
+                                    const int record_zone) {
   int nZone = config_container[ZONE_0]->GetnZone();
   bool allEmpty = true;
   vector<bool> wallDistanceNeeded(nZone, false);
@@ -4608,6 +4613,11 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     }
 
     for (int iZone = 0; iZone < nZone; iZone++) {
+      /*--- When recording for a specific zone, only compute nearest-neighbor distances (which read vertex
+       *    normals) for that zone. Reading normals from other zones at this tape position would create
+       *    cross-zone AD dependencies before those zones have had their geometry updated. ---*/
+      if (record_zone >= 0 && iZone != record_zone) continue;
+
       /*--- For the FEM solver, we use a different mesh structure ---*/
       MAIN_SOLVER kindSolver = config_container[iZone]->GetKind_Solver();
       if (!wallDistanceNeeded[iZone] || kindSolver == MAIN_SOLVER::FEM_LES || kindSolver == MAIN_SOLVER::FEM_RANS) {

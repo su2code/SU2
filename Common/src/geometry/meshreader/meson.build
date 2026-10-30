@@ -9,4 +9,8 @@ common_src += files(['CBoxMeshReaderFEM.cpp',
                      'CRectangularMeshReaderFVM.cpp',
                      'CSU2ASCIIMeshReaderBase.cpp',
                      'CSU2ASCIIMeshReaderFEM.cpp',
-                     'CSU2ASCIIMeshReaderFVM.cpp'])
+                     'CSU2ASCIIMeshReaderFVM.cpp',
+                     'CSU2BinaryMeshReaderBase.cpp',
+                     'CSU2BinaryMeshReaderFEM.cpp',
+                     'CSU2BinaryMeshReaderFVM.cpp',
+                     'CSU2MeshReaderBase.cpp'])

@@ -40,10 +40,10 @@ CMirror::CMirror(CGeometry**** geometry_container, const CConfig* const* config,
                        to_string(iZone) + string(" and ") + to_string(jZone) + string("."),
                    CURRENT_FUNCTION);
   }
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
-void CMirror::SetTransferCoeff(const CConfig* const* config) {
+void CMirror::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
   const int nProcessor = size;
 
   vector<unsigned long> allNumVertexTarget(nProcessor);
