@@ -35,7 +35,7 @@
 
 #ifdef HAVE_MPI
 namespace {
-void CheckMPIWrite(int error, const MPI_Status& status, unsigned long expected) {
+void CheckMPIWrite(int error, MPI_Status& status, unsigned long expected) {
   if (error != MPI_SUCCESS) SU2_MPI::Error("MPI output write failed", CURRENT_FUNCTION);
 #if MPI_VERSION >= 3
   MPI_Count written = 0;
