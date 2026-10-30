@@ -2,7 +2,7 @@
  * \file CParaviewBinaryFileWriter.hpp
  * \brief Headers fo paraview binary file writer class.
  * \author T. Albring
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "CFileWriter.hpp"
 
 class CParaviewBinaryFileWriter final: public CFileWriter{
@@ -36,6 +38,53 @@ class CParaviewBinaryFileWriter final: public CFileWriter{
    * \brief Boolean storing whether we are on a big or little endian machine
    */
   bool bigEndian;
+
+  static constexpr unsigned short NCOORDS = 3; /*!< \brief Points and vectors always have 3 components. */
+
+  /*!
+   * \brief Element types, in the order in which the cells are written.
+   */
+  static constexpr std::array<GEO_TYPE, 7> elemTypes = {LINE,       TRIANGLE, QUADRILATERAL, TETRAHEDRON,
+                                                        HEXAHEDRON, PRISM,    PYRAMID};
+
+  /*!
+   * \brief Write the point coordinates.
+   */
+  void WritePoints();
+
+  /*!
+   * \brief Write the cells in the classic layout: the number of nodes followed by the node ids of each cell, Int32.
+   * \param[in] GlobalCellStorage - Total size of that array.
+   */
+  void WriteCellsInt32(unsigned long GlobalCellStorage);
+
+  /*!
+   * \brief Write the cells in the layout of VTK >= 9.0: Int64 offsets and connectivity.
+   */
+  void WriteCellsInt64();
+
+  /*!
+   * \brief Write the type of each cell.
+   */
+  void WriteCellTypes();
+
+  /*!
+   * \brief Write the fields, as scalars or 3-component vectors.
+   */
+  void WritePointData();
+
+  /*!
+   * \brief Write 3 fields starting at firstVar as a vector (the third component is 0 in 2D).
+   * \param[in] firstVar - Index of the first field in the data sorter.
+   */
+  void WriteVectorArray(unsigned short firstVar);
+
+  /*!
+   * \brief Write the point values of this rank (nComponents per point) at their place in the file.
+   * \param[in,out] buffer - Values, byte-swapped in place to big endian.
+   * \param[in] nComponents - Values per point.
+   */
+  void WritePointArray(vector<float>& buffer, unsigned short nComponents);
 
 public:
 
@@ -60,16 +109,5 @@ public:
    * \param[in] val_filename - The name of the file
    */
   void WriteData(string val_filename) override ;
-
-private:
-
-  /*!
-   * \brief Change storage of buffer from big endian to little endian
-   * \param buffer - Pointer to the beginning of the buffer
-   * \param nBytes - The size in bytes of an data entry
-   * \param nVar - The number of entries
-   */
-  void SwapBytes(char *buffer, size_t nBytes, unsigned long nVar);
-
 };
 

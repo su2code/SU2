@@ -3,7 +3,7 @@
  * \brief Declarations of numerics classes for integration of source
  *        terms in species problems.
  * \author T. Kattmann
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -85,6 +85,33 @@ class CSourceAxisymmetric_Species : public CSourceBase_Species {
 
   /*!
    * \brief Residual of the axisymmetric source term.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
+};
+
+/*!
+ * \class CSourceCombustion_Species
+ * \brief Class for source term for combustion problems.
+ * \ingroup SourceDiscr
+ * \author C.Morales Ubal
+ */
+class CSourceCombustion_Species : public CSourceBase_Species {
+  const bool chemical_jacobian; /*!< \brief Add the diagonal chemical sink Jacobian to the implicit system. */
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceCombustion_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Residual of the combustion source term.
    * \param[in] config - Definition of the particular problem.
    * \return Lightweight const-view of residual and Jacobian.
    */

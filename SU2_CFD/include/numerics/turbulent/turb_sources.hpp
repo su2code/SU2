@@ -1,7 +1,7 @@
 /*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -798,10 +798,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     Residual[0] -= yinv * Volume * cdk_axi;
     Residual[1] -= yinv * Volume * cdw_axi;
 
-    Jacobian_i[0][0] -= yinv * Volume * rhov;
-    Jacobian_i[0][1] -= 0.0;
-    Jacobian_i[1][0] -= 0.0;
-    Jacobian_i[1][1] -= yinv * Volume * rhov;
+    /*--- Derivative w.r.t. the conservative variables (rho k, rho w), only the part that increases
+     * diagonal dominance (v > 0) is kept, as the term is destabilizing for flow towards the axis. ---*/
+    const su2double jac_axi = yinv * Volume * max(V_i[idx.Velocity() + 1], 0.0);
+    Jacobian_i[0][0] -= jac_axi;
+    Jacobian_i[1][1] -= jac_axi;
 
   }
 
@@ -1014,11 +1015,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Residual[0] -= dk * Volume;
       Residual[1] -= dw * Volume;
 
-      /*--- Cross diffusion is included in the viscous fluxes, discretisation in turb_diffusion.hpp ---*/
-
-      /*--- Contribution due to 2D axisymmetric formulation ---*/
-
-      if (axisymmetric) ResidualAxisymmetricConvectionDiffusion(alfa_blended, zeta);
+      /*--- Cross diffusion is included in the viscous fluxes, not this source term. ---*/
 
       /*--- Implicit part ---*/
 
@@ -1026,6 +1023,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
+
+      /*--- Contribution due to 2D axisymmetric formulation, after the implicit part since it
+       * adds to the Jacobian (which the assignments above would otherwise overwrite). ---*/
+
+      if (axisymmetric) ResidualAxisymmetricConvectionDiffusion(alfa_blended, zeta);
     }
 
     AD::SetPreaccOut(Residual, nVar);

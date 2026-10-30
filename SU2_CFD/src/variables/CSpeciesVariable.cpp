@@ -2,7 +2,7 @@
  * \file CSpeciesVariable.cpp
  * \brief Definition of the solution fields.
  * \author T. Kattmann
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,8 +30,13 @@
 CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long npoint, unsigned long ndim,
                                    unsigned long nvar, const CConfig* config)
     : CScalarVariable(npoint, ndim, nvar, config) {
-  /*--- Allocate space for the mass diffusivity. ---*/
+  /*--- Allocate space for the mass diffusivity and chemical source term. ---*/
   Diffusivity.resize(nPoint, nVar + 1) = su2double(0.0);
+  if (config->GetCanteraCombustion()) {
+    SpeciesSourceTerm.resize(nPoint, nVar + 1) = su2double(0.0);
+    SpeciesSourceJacobian.resize(nPoint, nVar + 1) = su2double(0.0);
+    HeatRelease.resize(nPoint) = su2double(0.0);
+  }
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)

@@ -2,7 +2,7 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -89,18 +89,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   if (iMesh == MESH_0 && config->GetBoolGiles() && config->GetSpatialFourier()){
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, INFLOW);
-
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, OUTFLOW);
   }
-
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    if (iMesh == MESH_0 && config->GetBoolTurbomachinery()){
-        /*--- Average quantities at the inflow and outflow boundaries ---*/
-      solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry,config,INFLOW);
-      solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry, config, OUTFLOW);
-    }
-  }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Weak boundary conditions ---*/
 

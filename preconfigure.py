@@ -3,7 +3,7 @@
 ## \file preconfigure.py
 #  \brief An preconfigure script for setting up the build environment
 #  \author T. Albring and F. Poli
-#  \version 8.5.0 "Harrier"
+#  \version 8.6.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -73,6 +73,13 @@ def build_ninja():
             # Specify C++17
             env = os.environ.copy()
             env["CXXFLAGS"] = env.get("CXXFLAGS", "") + " -std=c++17"
+            # ninja is a build tool and must not be instrumented by sanitizers
+            for var in ("CFLAGS", "CXXFLAGS", "LDFLAGS"):
+                env[var] = " ".join(
+                    f
+                    for f in env.get(var, "").split()
+                    if not f.startswith("-fsanitize")
+                )
             subprocess.run(
                 ["python3", "configure.py", "--bootstrap"], cwd=ninjapath, env=env
             )
@@ -89,6 +96,7 @@ def run(
     own_opdi=True,
     own_mpp=True,
     own_cool=True,
+    own_cantera=False,
     own_mel=True,
     own_fado=True,
     own_mlpcpp=True,
@@ -103,6 +111,7 @@ def run(
         own_opdi=own_opdi,
         own_mpp=own_mpp,
         own_cool=own_cool,
+        own_cantera=own_cantera,
         own_mel=own_mel,
         own_fado=own_fado,
         own_mlpcpp=own_mlpcpp,
@@ -147,6 +156,11 @@ if __name__ == "__main__":
         action="store_false",
     )
     parser.add_argument(
+        "--with-cantera",
+        help="download own copy of Cantera, needed for -Denable-cantera=true",
+        action="store_true",
+    )
+    parser.add_argument(
         "--no-mel", help="do not download own copy of MEL", action="store_false"
     )
     parser.add_argument(
@@ -169,6 +183,7 @@ if __name__ == "__main__":
         own_opdi=args.no_opdi,
         own_mpp=args.no_mpp,
         own_cool=args.no_coolprop,
+        own_cantera=args.with_cantera,
         own_mel=args.no_mel,
         own_fado=args.no_fado,
         own_mlpcpp=args.no_mlpcpp,

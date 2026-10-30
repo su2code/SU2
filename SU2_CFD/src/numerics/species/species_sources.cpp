@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration of
  *        species transport source-terms.
  * \author T. Kattmann
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -127,6 +127,45 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
       }
     }
 
+  }
+
+  AD::SetPreaccOut(residual, nVar);
+  AD::EndPreacc();
+
+  return ResidualType<>(residual, jacobian, nullptr);
+}
+
+CSourceCombustion_Species::CSourceCombustion_Species(unsigned short val_nDim, unsigned short val_nVar,
+                                                     const CConfig* config)
+    : CSourceBase_Species(val_nDim, val_nVar, config),
+      chemical_jacobian(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT &&
+                        config->GetChemical_Source_Jacobian()) {
+  Chemical_Source_Term_i = nullptr;
+  Chemical_Source_Jacobian_i = nullptr;
+}
+
+CNumerics::ResidualType<> CSourceCombustion_Species::ComputeResidual(const CConfig* config) {
+  /*--- Preaccumulation ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(Volume);
+  AD::SetPreaccIn(Chemical_Source_Term_i, nVar);
+
+  /*--- Initialization. ---*/
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    residual[iVar] = 0.0;
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
+      jacobian[iVar][jVar] = 0.0;
+    }
+  }
+
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    residual[iVar] += Volume * Chemical_Source_Term_i[iVar];
+  }
+
+  if (chemical_jacobian && Chemical_Source_Jacobian_i != nullptr) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      jacobian[iVar][iVar] = Volume * Chemical_Source_Jacobian_i[iVar];
+    }
   }
 
   AD::SetPreaccOut(residual, nVar);

@@ -2,7 +2,7 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -350,6 +350,11 @@ class AccessorImpl<Index_t, Scalar_t, StorageType::RowMajor, AlignSize, 1, Dynam
 }  // namespace container_details
 
 /*!
+ * \brief Tag to construct a static-size C2DContainer without initializing its data.
+ */
+struct C2DUninitialized {};
+
+/*!
  * \class C2DContainer
  * \brief A templated matrix/vector-like object.
  *
@@ -391,6 +396,8 @@ class C2DContainer
   static constexpr bool IsRowMajor = (Store == StorageType::RowMajor);
   static constexpr bool IsColumnMajor = (Store == StorageType::ColumnMajor);
   static constexpr size_t StaticSize = StaticRows * StaticCols;
+  static constexpr size_t StaticNRows = StaticRows;
+  static constexpr size_t StaticNCols = StaticCols;
 
   /*!
    * \brief Scalar iterator to the inner dimension of the container, read-only.
@@ -488,6 +495,14 @@ class C2DContainer
    * \brief Default ctor.
    */
   C2DContainer() noexcept : Base() {}
+
+  /*!
+   * \brief Static-size ctor that leaves the data uninitialized, unlike the default ctor which
+   *        value-initializes (zeroes) it. For hot-path temporaries that write before they read.
+   */
+  explicit C2DContainer(C2DUninitialized) noexcept {
+    static_assert(StaticRows != DynamicSize && StaticCols != DynamicSize, "Requires a static size.");
+  }
 
   /*!
    * \brief Sizing ctor (no initialization of data).

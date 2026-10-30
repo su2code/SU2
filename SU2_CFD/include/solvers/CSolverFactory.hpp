@@ -2,7 +2,7 @@
  * \file CSolverFactory.hpp
  * \brief Headers of the CSolverFactory class
  * \author T. Albring
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -63,6 +63,7 @@ enum class SUB_SOLVER_TYPE {
   MESH,                    /*!< \brief Mesh solver */
   RADIATION,               /*!< \brief Radiation solver */
   DISC_ADJ_RADIATION,      /*!< \brief Discrete adjoint radiation solver */
+  POISSON,                 /*!< \brief Poisson equation solver */
   NONE
 };
 

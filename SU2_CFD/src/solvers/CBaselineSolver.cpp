@@ -2,7 +2,7 @@
  * \file CBaselineSolver.cpp
  * \brief Main subroutines for CBaselineSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -106,8 +106,8 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     char fname[100];
     strcpy(fname, filename.c_str());
-    int nVar_Buf = 5;
-    int var_buf[5];
+    int nVar_Buf = SU2_RESTART_HEADER_SIZE;
+    int var_buf[SU2_RESTART_HEADER_SIZE];
 
 #ifndef HAVE_MPI
 
@@ -133,7 +133,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (var_buf[0] != 535532) {
+    if (var_buf[0] != SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
@@ -185,7 +185,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (var_buf[0] != 535532) {
+    if (var_buf[0] != SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
@@ -270,7 +270,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (magic_number == 535532) {
+    if (magic_number == SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
@@ -308,7 +308,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (magic_number == 535532) {
+    if (magic_number == SU2_RESTART_MAGIC_NUMBER) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
