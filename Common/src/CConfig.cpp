@@ -4157,8 +4157,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- The SA_* hybrid models are built on the SA model and the SST_* ones on the SST model. ---*/
   const bool hybridSA = Kind_HybridRANSLES == SA_DES || Kind_HybridRANSLES == SA_DDES ||
                         Kind_HybridRANSLES == SA_ZDES || Kind_HybridRANSLES == SA_EDDES;
-  const bool hybridSST = Kind_HybridRANSLES == SST_DDES || Kind_HybridRANSLES == SST_IDDES ||
-                         Kind_HybridRANSLES == SST_SIDDES || Kind_HybridRANSLES == SST_EDDES;
+  const bool hybridSST = IsHybridSST();
   if ((hybridSA && Kind_Turb_Model != TURB_MODEL::SA) || (hybridSST && Kind_Turb_Model != TURB_MODEL::SST)) {
     SU2_MPI::Error(string("The hybrid RANS/LES model (HYBRID_RANSLES) must match the turbulence model (KIND_TURB_MODEL): ") +
                    "SA_* options require SA, SST_* options require SST.", CURRENT_FUNCTION);
@@ -6905,8 +6904,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         if (Kind_HybridRANSLES != NO_HYBRIDRANSLES) {
           if (LES_FilterWidth > 0.0) cout << "User-specified LES filter width: " << LES_FilterWidth << endl;
-          if (Kind_HybridRANSLES == SST_DDES || Kind_HybridRANSLES == SST_IDDES ||
-              Kind_HybridRANSLES == SST_SIDDES || Kind_HybridRANSLES == SST_EDDES)
+          if (IsHybridSST())
             cout << "DES constant blended with F1: C_DES = 0.78 F1 + 0.61 (1 - F1)." << endl;
           else
             cout << "DES constant: " << Const_DES << endl;

@@ -9827,6 +9827,11 @@ public:
    */
   unsigned short GetKind_HybridRANSLES(void) const { return Kind_HybridRANSLES; }
 
+  bool IsHybridSST() const {
+    return Kind_HybridRANSLES == SST_DDES || Kind_HybridRANSLES == SST_IDDES ||
+           Kind_HybridRANSLES == SST_SIDDES || Kind_HybridRANSLES == SST_EDDES;
+  }
+
   /*!
    * \brief Get if the LES mode must be enforced.
    * \return TRUE if LES is enforced.
