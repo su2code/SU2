@@ -96,6 +96,15 @@ inline void ComputeMeanRateOfStrainMatrix(size_t nDim, Mat1& rateofstrain, const
   }
 }
 
+/*! \brief Magnitude of an edge projected onto a unit wall normal. */
+template <class T, typename Int>
+inline T WallNormalEdgeLength(Int nDim, const T* a, const T* b, const T* normal) {
+  T projection(0);
+  for (Int i = 0; i < nDim; ++i) projection += (b[i] - a[i]) * normal[i];
+  using std::abs;
+  return abs(projection);
+}
+
 /*! \return a.b */
 template <class T, typename Int>
 inline T DotProduct(Int nDim, const T* a, const T* b) {

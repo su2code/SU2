@@ -140,3 +140,15 @@ TEST_CASE("Set bound control volume", "[Geometry]") {
   CHECK(TestCase->geometry->vertex[3][2]->GetNormal()[1] == -0.0625);
   CHECK(TestCase->geometry->vertex[5][3]->GetNormal()[2] == 0.03125);
 }
+
+TEST_CASE("Wall-normal edge spacing", "[Geometry]") {
+  const su2double origin[3] = {0.0, 0.0, 0.0};
+  const su2double normal[3] = {0.6, 0.8, 0.0};
+  const su2double normalEdge[3] = {0.3, 0.4, 0.0};
+  const su2double tangentEdge[3] = {-0.8, 0.6, 0.0};
+  const su2double skewEdge[3] = {1.2, -0.275, 4.0};
+  CHECK(GeometryToolbox::WallNormalEdgeLength(3, origin, normalEdge, normal) == Approx(0.5));
+  CHECK(GeometryToolbox::WallNormalEdgeLength(3, origin, tangentEdge, normal) == Approx(0.0).margin(1e-14));
+  CHECK(GeometryToolbox::WallNormalEdgeLength(2, origin, skewEdge, normal) == Approx(0.5));
+  CHECK(GeometryToolbox::WallNormalEdgeLength(3, skewEdge, origin, normal) == Approx(0.5));
+}

@@ -933,6 +933,17 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
     const su2double C_DES2 = 0.61;
 
     const su2double h_max = geometry->nodes->GetMaxLength(iPoint);
+    su2double h_wn = 0.0;
+    if (kind_hybridRANSLES == SST_IDDES || kind_hybridRANSLES == SST_SIDDES) {
+      const auto normal = geometry->nodes->GetWallNormal(iPoint);
+      if (normal != nullptr) {
+        const auto coord = geometry->nodes->GetCoord(iPoint);
+        for (const auto neighbor : geometry->nodes->GetPoints(iPoint)) {
+          const auto neighborCoord = geometry->nodes->GetCoord(neighbor);
+          h_wn = max(h_wn, GeometryToolbox::WallNormalEdgeLength(nDim, coord, neighborCoord, normal));
+        }
+      }
+    }
     const su2double C_DES = C_DES1 * nodes->GetF1blending(iPoint) + C_DES2 * (1-nodes->GetF1blending(iPoint));
     const su2double l_RANS = max(sqrt(max(nodes->GetSolution(iPoint, 0), 0.0)) /
                                  max(constants[6] * nodes->GetSolution(iPoint, 1), 1e-10), 1e-10);
@@ -984,8 +995,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double f_e = f_e2 * max((f_e1 - 1.0), 0.0);
           
 
-        /*--- shortcut: wall-normal grid step is omitted; use full IDDES width when wall normals are available. ---*/
-        const su2double Delta = min(C_w * max(sqrt(wallDist2), h_max), h_max);
+        const su2double Delta = min(max(C_w * max(sqrt(wallDist2), h_max), h_wn), h_max);
         const su2double l_LES = C_DES * Delta;
 
         DES_lengthScale = ftilda_d *(1.0+f_e)*l_RANS + (1.0 - ftilda_d) * l_LES;
@@ -1007,8 +1017,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double f_dt = 1 - tanh(pow(C_dt1 * r_dt, C_dt2));
         const su2double ftilda_d = max(1.0 - f_dt, f_b);
 
-        /*--- shortcut: wall-normal grid step is omitted; use full IDDES width when wall normals are available. ---*/
-        const su2double Delta = min(C_w * max(sqrt(wallDist2), h_max), h_max);
+        const su2double Delta = min(max(C_w * max(sqrt(wallDist2), h_max), h_wn), h_max);
         const su2double l_LES = C_DES * Delta;
 
         DES_lengthScale = ftilda_d*l_RANS + (1.0 - ftilda_d) * l_LES;
