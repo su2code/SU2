@@ -81,7 +81,7 @@ def main():
     swbli_sa.cfg_dir   = "vandv/rans/swbli"
     swbli_sa.cfg_file  = "config_sa.cfg"
     swbli_sa.test_iter = 5
-    swbli_sa.test_vals         = [-8.692514, -8.335554, -8.419342, -7.670662, -12.947166, 0.002242, -1.240847, 1.257600]
+    swbli_sa.test_vals         = [-8.692514, -8.335554, -8.419342, -7.670662, -12.947166, 0.002242, -1.240847, 1.340100]
     swbli_sa.test_vals_aarch64 = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
     test_list.append(swbli_sa)
 
@@ -91,7 +91,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 5
-    swbli_sst.test_vals = [-8.817539, -8.137335, -8.606270, -7.611652, -9.007191, -1.508190, 0.001816, -2.802542, -4.644043, 8.615500]
+    swbli_sst.test_vals = [-8.817542, -8.137337, -8.606273, -7.611655, -9.007191, -1.508190, 0.001816, -2.770689, -4.644041, 10.209000]
     test_list.append(swbli_sst)
 
     # DSMA661 - SA

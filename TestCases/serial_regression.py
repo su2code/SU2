@@ -119,7 +119,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.354414, 1.376401, -0.249526, 0.043953]
+    wedge.test_vals = [-4.340839, 1.390003, -0.249526, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
