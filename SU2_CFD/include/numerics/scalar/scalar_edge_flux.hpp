@@ -3,7 +3,7 @@
  * \brief Model-agnostic convection and diffusion of a transported scalar, shared by every
  *        scalar solver (turbulence, transition, species, flamelet, heat).
  * \author P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
