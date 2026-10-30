@@ -6,7 +6,7 @@
 #   - Use the SU2 --dry_run mode for configs of large tests.
 #   - Restart from converged results for medium problems.
 #   - Run small cases (<20s) to convergence.
-#  \version 8.5.0 "Harrier"
+#  \version 8.6.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -63,7 +63,7 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals = [-13.040943, -10.136971, -10.942764, -7.985181, -10.323857, -4.732487, 0.002801]
+    flatplate_sst1994m.test_vals = [-13.040942, -10.136971, -10.942969, -7.985184, -10.323857, -4.732487, 0.002801]
     flatplate_sst1994m.test_vals_aarch64 = [-13.021715, -9.534786, -10.401912, -7.501836, -9.750800, -4.850665, 0.002807]
     test_list.append(flatplate_sst1994m)
 
@@ -72,7 +72,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals = [-11.928292, -10.095796, -9.512953, -6.445652, -11.774088, -6.988752, 0.004931]
+    bump_sst1994m.test_vals = [-11.928283, -10.095826, -9.512968, -6.445644, -11.774076, -6.988223, 0.004931]
     bump_sst1994m.test_vals_aarch64 = [-13.042689, -10.812982, -10.604523, -7.655547, -10.816257, -5.308083, 0.004911]
     test_list.append(bump_sst1994m)
 
@@ -121,7 +121,7 @@ def main():
     sandiajet_sst.cfg_dir   = "vandv/species_transport/sandia_jet"
     sandiajet_sst.cfg_file  = "validation.cfg"
     sandiajet_sst.test_iter = 5
-    sandiajet_sst.test_vals = [-4.930056, -3.072757, -3.531917, -3.632319, 1.186060, -6.175518, 5.000000, -1.413277, 5.000000, -4.735257, 5.000000, -1.924560, 0.000256, 0.000000, 0.000000, 0.000256, 4126.200000, 4008.100000, 62.399000, 55.713000]
+    sandiajet_sst.test_vals = [-4.930056, -3.072757, -3.531917, -3.632034, 1.186060, -6.175515, 5.000000, -1.413277, 5.000000, -4.736007, 5.000000, -1.924583, 0.000256, 0.000000, 0.000000, 0.000256, 4126.200000, 4008.100000, 62.399000, 55.713000]
     sandiajet_sst.test_vals_aarch64 = [-8.271400, -6.305945, -6.123143, -5.634565, -1.687556, -7.869775, 5.000000, -1.527449, 5.000000, -4.053788, 5.000000, -2.303502, 0.000257, 0.000000, 0.000000, 0.000257, 4020.500000, 3919.900000, 49.151000, 51.436000]
     test_list.append(sandiajet_sst)
 

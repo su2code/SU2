@@ -3,7 +3,7 @@
  * \brief Unit tests for the row-scaled block quantization used by Q_LU_SGS (int8 values, with
  *        one uint8 per-row scale holding the biased float exponent).
  * \author P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
