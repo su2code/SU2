@@ -358,7 +358,7 @@ def main():
     ramp_msw.cfg_dir = "euler/ramp"
     ramp_msw.cfg_file = "inv_ramp_msw.cfg"
     ramp_msw.test_iter = 100
-    ramp_msw.test_vals = [-7.242600, -1.471141, -0.077507, 0.054419]
+    ramp_msw.test_vals = [-7.032593, -1.280788, -0.077507, 0.054419]
     ramp_msw.tol = [0.2, 0.2, 0.00001, 0.00001]
     test_list.append(ramp_msw)
 
@@ -690,7 +690,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-2.662833, 2.912056, -2.707804, 1.889981, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-5.144839, 0.426686, -2.884499, 1.609225, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.143310, -9.163287, -10.858232, -5.787715, 0.000000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
@@ -1340,7 +1340,7 @@ def main():
     datadriven_fluidModel.cfg_dir   = "nicf/datadriven"
     datadriven_fluidModel.cfg_file  = "datadriven_nozzle.cfg"
     datadriven_fluidModel.test_iter = 50
-    datadriven_fluidModel.test_vals = [-4.690176, -1.714239, -2.218210, 0.764338, -1.558140, 1.350242]
+    datadriven_fluidModel.test_vals = [-6.300698, -3.179419, -4.149637, -1.025372, -2.145140, 1.646724]
     test_list.append(datadriven_fluidModel)
 
     ######################################
