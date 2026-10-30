@@ -30,6 +30,7 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
+#include "../../include/toolboxes/halo_block_buffer.hpp"
 
 #include <cmath>
 #include <limits>
@@ -1707,8 +1708,87 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::TransposeInPlace() {
+void CSysMatrix<ScalarType>::CopyHaloRowsFromOwners(const CGeometry* geometry) {
   SU2_ZONE_SCOPED
+  const int size = SU2_MPI::GetSize();
+  if (size == 1) return;
+
+  using MPIWrapper = SelectMPIWrapper<passivedouble>::W;
+  const auto* nodes = geometry->nodes;
+  const auto blkSize = nVar * nEqn;
+
+  /*--- Per sent point: block count, then global column and block for each column not owned by the sender.
+   *    Indices and coefficients travel in separate buffers so that indices keep full integer precision. ---*/
+  vector<CHaloBlockBuffer<passivedouble>> sendTo(size);
+  vector<passivedouble> tmp(blkSize);
+  for (int iMsg = 0; iMsg < geometry->nP2PSend; iMsg++) {
+    auto& buf = sendTo[geometry->Neighbors_P2PSend[iMsg]];
+    for (auto k = geometry->nPoint_P2PSend[iMsg]; k < geometry->nPoint_P2PSend[iMsg + 1]; k++) {
+      const auto iPoint = geometry->Local_Point_P2PSend[k];
+      const auto countPos = buf.BeginPoint();
+      for (const auto jPoint : nodes->GetPoints(iPoint)) {
+        if (nodes->GetDomain(jPoint)) continue;
+        const auto* blk = GetBlock(iPoint, jPoint);
+        if (!blk) continue;
+        for (auto i = 0ul; i < blkSize; i++) tmp[i] = SU2_TYPE::GetValue(blk[i]);
+        buf.AddBlock(countPos, nodes->GetGlobalIndex(jPoint), tmp.data(), blkSize);
+      }
+    }
+  }
+
+  /*--- Exchanges one array per rank, returns the received data and the per-rank displacements. ---*/
+  auto exchange = [&](auto getArray, auto dummy, auto mpiType, auto& recvBuf, vector<int>& recvDisp) {
+    using T = decltype(dummy);
+    vector<int> nSend(size), nRecv(size), sendDisp(size + 1, 0);
+    recvDisp.assign(size + 1, 0);
+    for (int iRank = 0; iRank < size; iRank++) nSend[iRank] = getArray(sendTo[iRank]).size();
+    MPIWrapper::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, SU2_MPI::GetComm());
+    for (int iRank = 0; iRank < size; iRank++) {
+      sendDisp[iRank + 1] = sendDisp[iRank] + nSend[iRank];
+      recvDisp[iRank + 1] = recvDisp[iRank] + nRecv[iRank];
+    }
+    vector<T> sendBuf(sendDisp[size]);
+    recvBuf.resize(recvDisp[size]);
+    for (int iRank = 0; iRank < size; iRank++)
+      copy(getArray(sendTo[iRank]).begin(), getArray(sendTo[iRank]).end(), sendBuf.begin() + sendDisp[iRank]);
+    MPIWrapper::Alltoallv(sendBuf.data(), nSend.data(), sendDisp.data(), mpiType, recvBuf.data(), nRecv.data(),
+                          recvDisp.data(), mpiType, SU2_MPI::GetComm());
+  };
+  vector<unsigned long> recvIdx;
+  vector<passivedouble> recvVal;
+  vector<int> idxDisp, valDisp;
+  exchange(
+      [](auto& b) -> auto& { return b.index; }, 0ul, MPI_UNSIGNED_LONG, recvIdx, idxDisp);
+  exchange(
+      [](auto& b) -> auto& { return b.value; }, passivedouble(0), MPI_DOUBLE, recvVal, valDisp);
+
+  /*--- Points arrive in receive-list order, only blocks in columns owned here are kept. ---*/
+  for (int iMsg = 0; iMsg < geometry->nP2PRecv; iMsg++) {
+    const auto iRank = geometry->Neighbors_P2PRecv[iMsg];
+    CHaloBlockReader<passivedouble> reader(recvIdx.data() + idxDisp[iRank], recvVal.data() + valDisp[iRank], blkSize);
+    for (auto k = geometry->nPoint_P2PRecv[iMsg]; k < geometry->nPoint_P2PRecv[iMsg + 1]; k++) {
+      const auto iPoint = geometry->Local_Point_P2PRecv[k];
+      const auto nBlk = reader.NextPoint();
+      for (auto iBlk = 0ul; iBlk < nBlk; iBlk++) {
+        unsigned long jGlobal;
+        const auto* data = reader.NextBlock(jGlobal);
+        for (const auto jPoint : nodes->GetPoints(iPoint)) {
+          if (!nodes->GetDomain(jPoint) || nodes->GetGlobalIndex(jPoint) != jGlobal) continue;
+          auto* blk = GetBlock(iPoint, jPoint);
+          if (blk)
+            for (auto i = 0ul; i < blkSize; i++) blk[i] = data[i];
+          break;
+        }
+      }
+    }
+  }
+}
+
+template <class ScalarType>
+void CSysMatrix<ScalarType>::TransposeInPlace(const CGeometry* geometry) {
+  SU2_ZONE_SCOPED
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS { CopyHaloRowsFromOwners(geometry); }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
   assert(nVar == nEqn && "Cannot transpose with nVar != nEqn.");
 
   auto swapAndTransp = [](unsigned long n, ScalarType* a, ScalarType* b) {

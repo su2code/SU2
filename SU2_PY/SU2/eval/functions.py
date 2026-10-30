@@ -35,7 +35,6 @@ from .. import io as su2io
 from .. import util as su2util
 from ..io import redirect_folder, redirect_output
 
-
 # ----------------------------------------------------------------------
 #  Main Function Interface
 # ----------------------------------------------------------------------
