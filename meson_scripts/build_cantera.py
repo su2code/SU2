@@ -5,7 +5,7 @@
 #         SCons build system, invoked automatically from meson.build so that
 #         '-Denable-cantera=true' does not require a separate manual build step.
 #  \author SU2 Contributors
-#  \version 8.5.0 "Harrier"
+#  \version 8.6.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
