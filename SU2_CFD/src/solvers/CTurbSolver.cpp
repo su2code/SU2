@@ -29,6 +29,7 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.inl"
+#include <set>
 
 /*--- Explicit instantiation of the parent class of CTurbSolver. ---*/
 template class CScalarSolver<CTurbVariable>;
@@ -331,8 +332,8 @@ su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, u
    volume (Eq. 1). The control volume of a point is its median-dual cell, whose vertices are the midpoints of the edges
    of the point and the centroids of the faces and of the elements that contain it (and the point itself where the
    cell is cut by a boundary). On hexahedral grids the extreme vertices are the 8 element centroids. ---*/
-  static thread_local vector<array<su2double, 3>> projected;
-  projected.clear();
+  vector<array<su2double, 3>> projected;
+  set<vector<unsigned long>> visitedFaces;
 
   const auto coord_i = geometry->nodes->GetCoord(iPoint);
   auto addVertex = [&](const su2double* vertex) {
@@ -359,14 +360,19 @@ su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, u
     for (auto iFace = 0u; iFace < elem->GetnFaces(); iFace++) {
       const auto nNodesFace = elem->GetnNodesFace(iFace);
       bool containsPoint = false;
+      vector<unsigned long> faceNodes;
       su2double centroid[3] = {0.0, 0.0, 0.0};
       for (auto iNode = 0u; iNode < nNodesFace; iNode++) {
         const auto jPoint = elem->GetNode(elem->GetFaces(iFace, iNode));
         containsPoint = containsPoint || (jPoint == iPoint);
+        faceNodes.push_back(jPoint);
         const auto coord_j = geometry->nodes->GetCoord(jPoint);
         for (auto iDim = 0u; iDim < nDim; iDim++) centroid[iDim] += coord_j[iDim] / nNodesFace;
       }
-      if (containsPoint) addVertex(centroid);
+      if (containsPoint) {
+        sort(faceNodes.begin(), faceNodes.end());
+        if (visitedFaces.insert(faceNodes).second) addVertex(centroid);
+      }
     }
   }
 

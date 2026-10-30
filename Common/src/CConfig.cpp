@@ -4178,7 +4178,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- The SST hybrid models compute their length scale from the grid with the constant C_DES = 0.78 F1 + 0.61 (1 - F1)
-   (Gritskevich et al. 2012), they do not use these options of the SA hybrid models. Stop rather than ignore them. ---*/
+   (Gritskevich et al. 2012), they do not use these options of the SA hybrid models. ---*/
   if (hybridSST) {
     if (enforceLES) {
       SU2_MPI::Error("ENFORCE_LES= YES is only available with the SA hybrid RANS/LES models (HYBRID_RANSLES= SA_*).",
@@ -4189,9 +4189,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                      "(HYBRID_RANSLES= SA_*). The SST hybrid models compute the filter width from the grid.", CURRENT_FUNCTION);
     }
     if (OptionIsSet("DES_CONST")) {
-      SU2_MPI::Error(string("DES_CONST is not used by the SST hybrid RANS/LES models (HYBRID_RANSLES= SST_*), which blend ") +
-                     "their own constants: C_DES = 0.78 F1 + 0.61 (1 - F1). Remove DES_CONST from the configuration file.",
-                     CURRENT_FUNCTION);
+      if (rank == MASTER_NODE) {
+        cout << "WARNING: DES_CONST is ignored by SST hybrid RANS/LES models, which use "
+                "C_DES = 0.78 F1 + 0.61 (1 - F1)." << endl;
+      }
     }
   }
 

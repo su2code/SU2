@@ -27,21 +27,22 @@
 
 
 #include "../../include/variables/CTurbVariable.hpp"
-#include "../../include/numerics/CNumerics.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
 CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CScalarVariable(npoint, ndim, nvar, config) {
 
-    turb_index.resize(nPoint) = su2double(1.0);
-    intermittency.resize(nPoint) = su2double(1.0);
+  turb_index.resize(nPoint) = su2double(1.0);
+  intermittency.resize(nPoint) = su2double(1.0);
 
+  const auto hybrid = config->GetKind_HybridRANSLES();
+  if (hybrid != NO_HYBRIDRANSLES) {
     DES_LengthScale.resize(nPoint) = su2double(0.0);
-    if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) lesMode.resize(nPoint) = su2double(0.0);
-
-    Vortex_Tilting.resize(nPoint);
-
-   }
+    lesMode.resize(nPoint) = su2double(0.0);
+  }
+  if (hybrid == SA_EDDES || hybrid == SST_EDDES) Vortex_Tilting.resize(nPoint);
+}
 
 
 void CTurbVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> VelGrad,
@@ -58,7 +59,7 @@ void CTurbVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su
   /*--- Laminar viscosity --- */
   AD::SetPreaccIn(LaminarViscosity);
 
-  CNumerics::ComputeMeanRateOfStrainMatrix(nDim, Strain, VelGrad);
+  GeometryToolbox::ComputeMeanRateOfStrainMatrix(nDim, Strain, VelGrad);
 
   Omega = GeometryToolbox::Norm(3, Vorticity);
 
