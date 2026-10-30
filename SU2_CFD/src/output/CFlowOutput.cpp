@@ -1614,6 +1614,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
+    AddVolumeOutput("LESIQ", "LESIQ", "DDES", "Viscosity-based LES quality index");
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+      AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "DDES", "Reference grid size: 10% of the SST RANS length scale");
     AddVolumeOutput("LES_SENSOR","LES_Sensor","DDES","LES sensor value");
     if (config->GetSBSParam().StochasticBackscatter) {
       AddVolumeOutput("STOCHSOURCE_X", "StochSource_x", "BACKSCATTER", "x-component of the stochastic source vector");
@@ -1723,6 +1726,15 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+    const su2double mu = max(Node_Flow->GetLaminarViscosity(iPoint), 1e-20);
+    const su2double mut = Node_Flow->GetEddyViscosity(iPoint);
+    SetVolumeOutputValue("LESIQ", iPoint, 1.0 / (1.0 + 0.05 * pow((mut + mu) / mu, 0.53)));
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+      const su2double betaStar = turb_solver->GetConstants()[6];
+      const su2double ransLength = sqrt(max(Node_Turb->GetSolution(iPoint, 0), 0.0)) /
+                                   max(betaStar * Node_Turb->GetSolution(iPoint, 1), 1e-20);
+      SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, 0.1 * ransLength);
+    }
     SetVolumeOutputValue("LES_SENSOR", iPoint, Node_Flow->GetLES_Mode(iPoint));
     if (config->GetSBSParam().StochasticBackscatter) {
       if (config->GetSBSParam().SBS_Ctau > 0.0) {
