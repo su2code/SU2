@@ -68,11 +68,17 @@ int main(int argc, char** argv) {
   SU2_MPI::Init(&argc, &argv);
   const int rank = SU2_MPI::GetRank(), size = SU2_MPI::GetSize();
   const std::string mode = argc > 1 ? argv[1] : "normal";
-  if (mode == "limit-node") CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(INT_MAX) + 1);
-  if (mode == "limit-product") CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(INT_MAX) / 8 + 1, 8);
+  if (mode == "limit-node" || mode == "limit-product") {
+    if (mode == "limit-node") CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(INT_MAX) + 1);
+    else CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(INT_MAX) / 8 + 1, 8);
+    SU2_MPI::Finalize();
+    return 0;
+  }
   if (mode == "limit-restart") {
     Fixture data(3, {"Density"}); data.OversizedRestart();
     CSU2BinaryFileWriter writer(&data); writer.WriteData("oversized");
+    SU2_MPI::Finalize();
+    return 0;
   }
   if (mode == "piece-error") {
     if (!rank) {
@@ -82,7 +88,8 @@ int main(int argc, char** argv) {
     SU2_MPI::Barrier(SU2_MPI::GetComm());
     Fixture data(3, {"Density"});
     CParaviewPVTUFileWriter writer(&data, true); writer.WriteData("failed-pieces");
-    require(false, "PVTU accepted a failed piece write");
+    SU2_MPI::Finalize();
+    return 0;
   }
 #ifndef _WIN32
   if (mode == "shared-error") {
@@ -96,7 +103,8 @@ int main(int argc, char** argv) {
     const std::array<char, 256> data{};
     writer.WriteMPIBinaryDataAll(data.data(), data.size(), data.size() * size, data.size() * rank);
     writer.CloseMPIFile();
-    require(false, "Shared writer accepted a failed output");
+    SU2_MPI::Finalize();
+    return 0;
   }
 #endif
   CParallelDataSorter::CheckIntCount(INT_MAX);

@@ -90,7 +90,7 @@ void CFileWriter::UpdateBandwidth(passivedouble elapsed) {
   passivedouble maximum = 0;
   SelectMPIWrapper<passivedouble>::W::Allreduce(&elapsed, &maximum, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
   usedTime = maximum;
-  bandwidth = maximum > 0 ? fileSize / (1.0e6 * maximum) : 0.0;
+  bandwidth = maximum > 0 ? SU2_TYPE::GetValue(fileSize) / (1.0e6 * maximum) : 0.0;
 }
 
 bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBytes,

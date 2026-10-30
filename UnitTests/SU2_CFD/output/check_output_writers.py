@@ -63,6 +63,10 @@ def check(binary,ranks,mpi,launcher_name):
         env=dict(os.environ,OMP_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1',TMPDIR=tmp,TMP=tmp,TEMP=tmp,
                  OMPI_MCA_orte_tmpdir_base=tmp,OMPI_MCA_btl_vader_backing_directory=tmp)
         launcher=[launcher_name,'-n',str(ranks)] if mpi else []
+        def expected_error(result,messages):
+            assert result.returncode!=0,result.stdout
+            # An early aborting rank can prevent the MPI launcher forwarding rank zero's message.
+            assert any(m in result.stdout for m in messages) or (ranks>1 and 'MPI_ABORT was invoked' in result.stdout),result.stdout
         def run(mode):
             folder=work/mode;folder.mkdir()
             result=subprocess.run(launcher+[str(binary),mode],cwd=folder,env=env,
@@ -94,14 +98,14 @@ def check(binary,ranks,mpi,launcher_name):
                     assert xml_arrays(path)==expected(dim,selection,[rank]),(prefix,rank)
         for rank in range(ranks):assert xml_arrays(folder/'empty'/('empty_%d.vtu'%rank))=={'Momentum_y':(1,())}
         for mode in ('limit-node','limit-product','limit-restart'):
-            _,result=run(mode);assert result.returncode!=0 and '32-bit' in result.stdout,result.stdout
+            _,result=run(mode);expected_error(result,('32-bit',))
         if os.name=='posix':
             _,result=run('shared-error')
             messages=('MPI output file is incomplete','MPI output write failed','Closing MPI output failed','Output write failed','Closing output failed')
-            assert result.returncode!=0 and any(m in result.stdout for m in messages),result.stdout
+            expected_error(result,messages)
         if Path('/dev/full').exists() and os.name=='posix':
             folder,result=run('piece-error')
-            assert result.returncode!=0 and 'Unable to write or close a PVTU piece' in result.stdout,result.stdout
+            expected_error(result,('Unable to write or close a PVTU piece',))
             assert not (folder/'failed-pieces.pvtu').exists()
     print('PASS: %d ranks, complete/partial 2D/3D vectors in four formats, empty pieces, I/O failure, size limits and byte/time accounting'%ranks)
 
