@@ -2,7 +2,7 @@
  * \file CPoissonVariable.cpp
  * \brief Definition of the variables for poisson equation problems.
  * \author T. Aalbers
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
