@@ -54,6 +54,10 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 
   Initialize(geometry, config, iMesh, nVar);
 
+  /*--- A variance cannot become negative. ---*/
+  for (const int i_var : {flamelet_config_options.idx_progvar_var, flamelet_config_options.idx_mixfrac_var})
+    if (i_var >= 0) lowerlimit[i_var] = max(lowerlimit[i_var], su2double(0.0));
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   nodes = new CSpeciesFlameletVariable(Solution_Inf, nPoint, nDim, nVar, config);
@@ -451,9 +455,44 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   }
   END_SU2_OMP_FOR
 
+  if (flamelet_config_options.idx_progvar_var >= 0)
+    ScalarVarianceResidual(geometry, solver_container, config, flamelet_config_options.idx_progvar_var, idx_progvar);
+  if (flamelet_config_options.idx_mixfrac_var >= 0)
+    ScalarVarianceResidual(geometry, solver_container, config, flamelet_config_options.idx_mixfrac_var,
+                           flamelet_config_options.idx_mixfrac);
+
   /*--- call the species solver for the shared sources (axisymmetric and custom python source term) ---*/
   CSpeciesSolver::Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
 
+}
+
+void CSpeciesFlameletSolver::ScalarVarianceResidual(CGeometry* geometry, CSolver** solver_container,
+                                                    const CConfig* config, int i_var, int i_mean) {
+  SU2_ZONE_SCOPED
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const su2double Sc_t = config->GetSchmidt_Number_Turbulent();
+  const su2double C_d = flamelet_config_options.variance_dissipation_coeff;
+  const su2double beta_star = solver_container[TURB_SOL]->GetConstants()[6];
+  const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  const auto* turbNodes = solver_container[TURB_SOL]->GetNodes();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+    const su2double volume = geometry->nodes->GetVolume(i_point);
+
+    su2double grad_mean2 = 0.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) grad_mean2 += pow(nodes->GetGradient(i_point, i_mean, iDim), 2);
+    const su2double production = 2.0 * flowNodes->GetEddyViscosity(i_point) / Sc_t * grad_mean2;
+
+    /*--- Decay rate C_d eps/k with eps/k = beta* omega; the unknown is rho*var. ---*/
+    const su2double decay = C_d * beta_star * turbNodes->GetSolution(i_point, 1);
+    const su2double rho_var = flowNodes->GetDensity(i_point) * nodes->GetSolution(i_point, i_var);
+
+    LinSysRes(i_point, i_var) -= (production - decay * rho_var) * volume;
+    if (implicit) Jacobian.AddVal2Diag(i_point, i_var, decay * volume);
+  }
+  END_SU2_OMP_FOR
 }
 
 void CSpeciesFlameletSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,

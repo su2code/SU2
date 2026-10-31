@@ -72,6 +72,8 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
+      if (n_control_vars > 3)
+        SU2_MPI::Error("The look-up table supports at most three controlling variables.", CURRENT_FUNCTION);
       if (rank == MASTER_NODE) {
         cout << "*****************************************" << endl;
         cout << "***   initializing the lookup table   ***" << endl;

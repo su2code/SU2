@@ -56,6 +56,15 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   void SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config);
 
   /*!
+   * \brief Add the turbulent production 2 mu_t/Sc_t |grad(mean)|^2 and dissipation C_d rho beta* omega var
+   *        of a scalar variance to the residual, the dissipation implicitly.
+   * \param[in] i_var - Scalar index of the variance.
+   * \param[in] i_mean - Scalar index of its mean.
+   */
+  void ScalarVarianceResidual(CGeometry* geometry, CSolver** solver_container, const CConfig* config, int i_var,
+                              int i_mean);
+
+  /*!
    * \brief Generic implementation of the isothermal wall also covering CHT cases,
    * for which the wall temperature is given by GetConjugateHeatVariable.
    */

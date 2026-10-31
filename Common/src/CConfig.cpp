@@ -1528,6 +1528,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLAME_INIT_IGNITION \n DESCRIPTION: Ignition temperature for the flame initialization \ingroup Config*/
   addDoubleOption("FLAME_INIT_IGNITION", flamelet_ParsedOptions.Flame_T_ignition, 5000.0);
 
+  /*!\brief FLAMELET_VARIANCE_DISSIPATION_COEFF \n DESCRIPTION: Coefficient C_d of the scalar variance dissipation C_d rho (eps/k) var \ingroup Config*/
+  addDoubleOption("FLAMELET_VARIANCE_DISSIPATION_COEFF", flamelet_ParsedOptions.variance_dissipation_coeff, 2.0);
+
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
   /*!\brief DIFFUSIVITY_MODEL\n DESCRIPTION: mass diffusivity model \n DEFAULT constant disffusivity \ingroup Config*/
@@ -6117,10 +6120,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       if (name == FLAMELET_CV_NAME::PROGVAR) idx = &opts.idx_progvar;
       else if (name == FLAMELET_CV_NAME::ENTHALPY) idx = &opts.idx_enth;
       else if (name == FLAMELET_CV_NAME::MIXFRAC) idx = &opts.idx_mixfrac;
+      else if (name == FLAMELET_CV_NAME::PROGVAR_VAR) idx = &opts.idx_progvar_var;
+      else if (name == FLAMELET_CV_NAME::MIXFRAC_VAR) idx = &opts.idx_mixfrac_var;
       else
-        SU2_MPI::Error("Unknown controlling variable " + name + ", expected " +
-                       FLAMELET_CV_NAME::PROGVAR + ", " + FLAMELET_CV_NAME::ENTHALPY + " or " +
-                       FLAMELET_CV_NAME::MIXFRAC + ".", CURRENT_FUNCTION);
+        SU2_MPI::Error("Unknown controlling variable " + name + ", expected " + FLAMELET_CV_NAME::PROGVAR + ", " +
+                       FLAMELET_CV_NAME::ENTHALPY + ", " + FLAMELET_CV_NAME::MIXFRAC + ", " +
+                       FLAMELET_CV_NAME::PROGVAR_VAR + " or " + FLAMELET_CV_NAME::MIXFRAC_VAR + ".",
+                       CURRENT_FUNCTION);
       if (*idx >= 0)
         SU2_MPI::Error("Controlling variable " + name + " is listed twice.",
                        CURRENT_FUNCTION);
@@ -6135,6 +6141,21 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*--- The thickened flame correction measures the progress variable gradient. ---*/
     if (opts.idx_progvar < 0) opts.thickenedflame_correction = false;
+
+    /*--- A variance needs its mean and the turbulence time scale omega of the SST model. ---*/
+    if ((opts.idx_progvar_var >= 0) && (opts.idx_progvar < 0))
+      SU2_MPI::Error(string(FLAMELET_CV_NAME::PROGVAR_VAR) + " requires " + FLAMELET_CV_NAME::PROGVAR + ".",
+                     CURRENT_FUNCTION);
+    if ((opts.idx_mixfrac_var >= 0) && (opts.idx_mixfrac < 0))
+      SU2_MPI::Error(string(FLAMELET_CV_NAME::MIXFRAC_VAR) + " requires " + FLAMELET_CV_NAME::MIXFRAC + ".",
+                     CURRENT_FUNCTION);
+    if ((opts.idx_progvar_var >= 0) || (opts.idx_mixfrac_var >= 0)) {
+      if (Kind_Turb_Model != TURB_MODEL::SST)
+        SU2_MPI::Error("Scalar variance transport requires KIND_TURB_MODEL= SST.", CURRENT_FUNCTION);
+      if (opts.preferential_diffusion)
+        SU2_MPI::Error("PREFERENTIAL_DIFFUSION is not available with scalar variance transport.", CURRENT_FUNCTION);
+      opts.thickenedflame_correction = false;
+    }
 
     /*--- Check that spark ignition has required parameters defined ---*/
     if (flamelet_ParsedOptions.ignition_method == FLAMELET_INIT_TYPE::SPARK) {

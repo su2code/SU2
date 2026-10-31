@@ -1531,6 +1531,8 @@ namespace FLAMELET_CV_NAME {
   constexpr const char* PROGVAR = "ProgressVariable";
   constexpr const char* ENTHALPY = "EnthalpyTot";
   constexpr const char* MIXFRAC = "MixtureFraction";
+  constexpr const char* PROGVAR_VAR = "ProgressVariableVariance";
+  constexpr const char* MIXFRAC_VAR = "MixtureFractionVariance";
 }
 
 /*!
@@ -1609,6 +1611,9 @@ struct FluidFlamelet_ParsedOptions {
   int idx_progvar = -1;               /*!< \brief Scalar index of the progress variable, -1 if absent. */
   int idx_enth = -1;                  /*!< \brief Scalar index of the total enthalpy. */
   int idx_mixfrac = -1;               /*!< \brief Scalar index of the mixture fraction, -1 if absent. */
+  int idx_progvar_var = -1;           /*!< \brief Scalar index of the progress variable variance, -1 if absent. */
+  int idx_mixfrac_var = -1;           /*!< \brief Scalar index of the mixture fraction variance, -1 if absent. */
+  su2double variance_dissipation_coeff = 2.0; /*!< \brief C_d in the variance dissipation C_d rho (eps/k) var. */
 
   std::string *controlling_variable_names; /*!< \brief Names of the independent, transported scalars. */
   std::string* cv_source_names;            /*!< \brief Names of the source terms of the independent, transported scalars. */
