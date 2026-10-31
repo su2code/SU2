@@ -449,7 +449,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals = [-12.003186, -7.623957, -0.000000, 2.089953]
+    poiseuille_profile.test_vals = [-12.003181, -7.626400, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.007498, -7.226926, -0.000000, 2.089953]
     poiseuille_profile.tol       = [0.001, 0.001, 1e-5, 1e-5, 1e-5]
     test_list.append(poiseuille_profile)
@@ -887,6 +887,14 @@ def main():
     inc_heatTransfer_BC.test_vals = [-8.904266, -7.745636, -8.064003, -1.079197, -1671.000000]
     test_list.append(inc_heatTransfer_BC)
 
+    # 2D pin array, periodic with a body force, flow and weakly coupled heat equation
+    inc_periodic_weak_heat = TestCase('inc_periodic_weak_heat')
+    inc_periodic_weak_heat.cfg_dir = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    inc_periodic_weak_heat.cfg_file = "periodic_weak_heat.cfg"
+    inc_periodic_weak_heat.test_iter = 10
+    inc_periodic_weak_heat.test_vals = [-4.712559, -5.747243, -5.751727, 873.702714]
+    test_list.append(inc_periodic_weak_heat)
+
     ############################
     ### Incompressible RANS  ###
     ############################
@@ -998,7 +1006,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals = [1.275731, 1.063097, -2.067745, 1.301949, 0.481304, 0.000000]
+    turbmod_sa_neg_rae2822.test_vals = [1.275906, 1.062762, -2.067335, 1.301619, 0.481422, 0.000000]
     turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.345593, 1.448310, 1.208721, -0.846597, 1.248410, 0.489117, 0.000000]
     test_list.append(turbmod_sa_neg_rae2822)
 
@@ -1284,7 +1292,7 @@ def main():
     sbs_backward_step.cfg_dir    = "backscatter/backward_step"
     sbs_backward_step.cfg_file   = "backwardStep.cfg"
     sbs_backward_step.test_iter  = 3
-    sbs_backward_step.test_vals  = [-6.352884, -3.465372, -5.507901, -3.906545, -9.506305, -6.365236, -6.331021, -6.331028]
+    sbs_backward_step.test_vals = [-6.352885, -3.465372, -5.507901, -3.906544, -9.506305, -6.365236, -6.331021, -6.331028]
     sbs_backward_step.unsteady   = True
     sbs_backward_step.decompress = True
     sbs_backward_step.grid_file  = "backward_step.su2"
@@ -1364,7 +1372,7 @@ def main():
     Aachen_3D_restart.cfg_file = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
     Aachen_3D_restart.tol = 0.00001
-    Aachen_3D_restart.test_vals = [-7.688483, -8.466346, -6.035067, -6.425967, -5.820125, -4.597817, -5.528297, -5.301466, -3.819862, -5.242356, -5.738805, -3.630202, -2.213240, -2.857919, -0.576864]
+    Aachen_3D_restart.test_vals = [-7.688401, -8.466746, -6.034652, -6.427491, -5.818347, -4.597687, -5.530255, -5.303027, -3.819060, -5.242491, -5.755143, -3.629921, -2.213103, -2.859285, -0.576337]
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
@@ -1372,7 +1380,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.905727, -12.211201, -19.212537, -13.508616, -19.078613, -13.445675, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.903625, -12.211830, -19.212534, -13.508063, -19.079489, -13.440774, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1480,7 +1488,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.464267, -1.541047]
+    bars_SST_2D.test_vals = [13.000000, -0.457907, -1.539958]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
@@ -1806,7 +1814,7 @@ def main():
     mms_fvm_vortex.cfg_dir   = "mms/fvm_euler"
     mms_fvm_vortex.cfg_file  = "inv_mms_vortex.cfg"
     mms_fvm_vortex.test_iter = 10
-    mms_fvm_vortex.test_vals = [-5.704300, -4.848072, 0.000000, 0.000000]
+    mms_fvm_vortex.test_vals = [-5.704011, -4.847997, 0.000000, 0.000000]
     mms_fvm_vortex.unsteady  = True
     test_list.append(mms_fvm_vortex)
 

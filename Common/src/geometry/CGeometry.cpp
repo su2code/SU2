@@ -127,9 +127,6 @@ CGeometry::~CGeometry() {
   delete[] bufD_PeriodicRecv;
   delete[] bufD_PeriodicSend;
 
-  delete[] bufS_PeriodicRecv;
-  delete[] bufS_PeriodicSend;
-
   delete[] req_PeriodicSend;
   delete[] req_PeriodicRecv;
 
@@ -1155,7 +1152,73 @@ void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic
   delete[] Buffer_Recv_Marker;
 }
 
+void CGeometry::PreprocessPeriodicGeometry(const CConfig& config) {
+  const auto nPairs = config.GetnMarker_Periodic() / 2;
+  if (nPairs == 0) {
+    periodicPairIntersections = false;
+    periodicEdgeWeight.clear();
+    return;
+  }
+
+  vector<unsigned short> firstPair(nPoint, 0);
+  vector<bool> rotating(nPoint, false);
+  unsigned short local[2] = {}, global[2] = {};
+  for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
+    if (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
+    const auto pair = (config.GetMarker_All_PerBound(iMarker) - 1) % nPairs + 1;
+    const auto rotation =
+        GeometryToolbox::HasRotation(config.GetPeriodicRotAngles(config.GetMarker_All_TagBound(iMarker)));
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; ++iVertex) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+      if (nodes->GetVertex(iPoint, iMarker) < 0) continue;
+      if (firstPair[iPoint] != 0 && firstPair[iPoint] != pair) {
+        local[0] = 1;
+        if (rotation || rotating[iPoint]) local[1] = 1;
+      }
+      if (firstPair[iPoint] == 0) firstPair[iPoint] = pair;
+      rotating[iPoint] = rotating[iPoint] || rotation;
+    }
+  }
+  SU2_MPI::Allreduce(local, global, 2, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
+  periodicPairIntersections = global[0] != 0;
+  if (global[1])
+    SU2_MPI::Error("Intersecting periodic pairs involving rotation are not supported yet.", CURRENT_FUNCTION);
+
+  periodicEdgeWeight.assign(nEdge, 1.0);
+  for (auto iEdge = 0ul; iEdge < nEdge; ++iEdge) {
+    const auto iPoint = edges->GetNode(iEdge, 0), jPoint = edges->GetNode(iEdge, 1);
+    if (!nodes->GetPeriodicBoundary(iPoint) || !nodes->GetPeriodicBoundary(jPoint)) continue;
+    passivedouble weight = 1.0;
+    for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
+      if (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY || nodes->GetVertex(iPoint, iMarker) < 0 ||
+          nodes->GetVertex(jPoint, iMarker) < 0)
+        continue;
+      const auto tag = config.GetMarker_All_TagBound(iMarker);
+      const auto donor = config.GetMarker_Periodic_Donor(tag);
+      if (donor < nMarker && nodes->GetVertex(iPoint, donor) >= 0 && nodes->GetVertex(jPoint, donor) >= 0) {
+        /*--- An edge along the rotation axis is shared by all N sectors,
+         * rather than by two copies of each of the two periodic faces. ---*/
+        if (config.GetMarker_All_PerBound(iMarker) > config.GetnMarker_Periodic() / 2) continue;
+        const auto* angles = config.GetPeriodicRotAngles(tag);
+        const auto angle = SU2_TYPE::GetValue(GeometryToolbox::RotationAngle(nDim, angles));
+        constexpr passivedouble angleTol = 1e-4;
+        const auto nCopy = angle > angleTol ? static_cast<int>(2 * PI_NUMBER / angle + 0.5) : 0;
+        if (fabs(nCopy * angle - 2 * PI_NUMBER) > angleTol)
+          SU2_MPI::Error(
+              "Periodic points on the rotation axis require an angle that divides 360 degrees (marker " + tag + ").",
+              CURRENT_FUNCTION);
+        weight *= 1.0 / nCopy;
+      } else {
+        weight *= 0.5;
+      }
+    }
+    periodicEdgeWeight[iEdge] = weight;
+  }
+}
+
 void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
+  geometry->PreprocessPeriodicGeometry(*config);
+
   /*--- We start with the send and receive lists already available in
    the form of stored periodic point-donor pairs. We will loop through
    these markers and establish the neighboring ranks and number of
@@ -1312,9 +1375,6 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
 
   bufD_PeriodicSend = nullptr;
   bufD_PeriodicRecv = nullptr;
-
-  bufS_PeriodicSend = nullptr;
-  bufS_PeriodicRecv = nullptr;
 
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
@@ -1518,12 +1578,6 @@ void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
 
     delete[] bufD_PeriodicRecv;
     bufD_PeriodicRecv = new su2double[nRecv]();
-
-    delete[] bufS_PeriodicSend;
-    bufS_PeriodicSend = new unsigned short[nSend]();
-
-    delete[] bufS_PeriodicRecv;
-    bufS_PeriodicRecv = new unsigned short[nRecv]();
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -1564,10 +1618,6 @@ void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, CO
       case COMM_TYPE::DOUBLE:
         SU2_MPI::Irecv(&(static_cast<su2double*>(bufD_PeriodicRecv)[offset]), count, MPI_DOUBLE, source, tag,
                        SU2_MPI::GetComm(), &(req_PeriodicRecv[iRecv]));
-        break;
-      case COMM_TYPE::UNSIGNED_SHORT:
-        SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufS_PeriodicRecv)[offset]), count, MPI_UNSIGNED_SHORT, source,
-                       tag, SU2_MPI::GetComm(), &(req_PeriodicRecv[iRecv]));
         break;
       default:
         SU2_MPI::Error("Unrecognized data type for periodic MPI comms.", CURRENT_FUNCTION);
@@ -1612,10 +1662,6 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, CO
         SU2_MPI::Isend(&(static_cast<su2double*>(bufD_PeriodicSend)[offset]), count, MPI_DOUBLE, dest, tag,
                        SU2_MPI::GetComm(), &(req_PeriodicSend[val_iSend]));
         break;
-      case COMM_TYPE::UNSIGNED_SHORT:
-        SU2_MPI::Isend(&(static_cast<unsigned short*>(bufS_PeriodicSend)[offset]), count, MPI_UNSIGNED_SHORT, dest, tag,
-                       SU2_MPI::GetComm(), &(req_PeriodicSend[val_iSend]));
-        break;
       default:
         SU2_MPI::Error("Unrecognized data type for periodic MPI comms.", CURRENT_FUNCTION);
         break;
@@ -1636,9 +1682,6 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, CO
     case COMM_TYPE::DOUBLE:
       parallelCopy(myFinal - myStart, &bufD_PeriodicSend[myStart], &bufD_PeriodicRecv[iRecv]);
       break;
-    case COMM_TYPE::UNSIGNED_SHORT:
-      parallelCopy(myFinal - myStart, &bufS_PeriodicSend[myStart], &bufS_PeriodicRecv[iRecv]);
-      break;
     default:
       SU2_MPI::Error("Unrecognized data type for periodic MPI comms.", CURRENT_FUNCTION);
       break;
@@ -1648,6 +1691,7 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, CO
 }
 
 void CGeometry::SetEdges() {
+  periodicEdgeWeight.clear();
   nEdge = 0;
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {

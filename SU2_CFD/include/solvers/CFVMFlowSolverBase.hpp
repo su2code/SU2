@@ -791,8 +791,9 @@ class CFVMFlowSolverBase : public CSolver {
       jPoint_UndLapl[iPoint] = msw ? 1 : 0;
 
       /*--- Loop over the neighbors of point i. ---*/
-      for (auto jPoint : geometry->nodes->GetPoints(iPoint))
-      {
+      for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+        const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+        const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
         bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
         /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
@@ -807,8 +808,10 @@ class CFVMFlowSolverBase : public CSolver {
           iPoint_UndLapl[iPoint] = fmax(iPoint_UndLapl[iPoint], fabs(sensVar_j - sensVar_i) / fmin(sensVar_j, sensVar_i));
         } else {
           /*--- Jameson dissipation sensor, add variable difference and variable sum. ---*/
-          iPoint_UndLapl[iPoint] += sensVar_j - sensVar_i;
-          jPoint_UndLapl[iPoint] += sensVar_j + sensVar_i;
+          const auto weight = geometry->HasPeriodicPairIntersections() ?
+                                  geometry->GetPeriodicEdgeWeight(iEdge) : 1.0;
+          iPoint_UndLapl[iPoint] += weight * (sensVar_j - sensVar_i);
+          jPoint_UndLapl[iPoint] += weight * (sensVar_j + sensVar_i);
         }
       }
 
