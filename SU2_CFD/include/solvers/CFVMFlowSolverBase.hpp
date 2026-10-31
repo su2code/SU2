@@ -412,6 +412,22 @@ class CFVMFlowSolverBase : public CSolver {
                         su2double* RestartSolution = nullptr, unsigned short nVar_Restart = 0);
 
   /*!
+   * \brief Compute the reference values and the non-dimensional free-stream values that are common
+   *        to the compressible solvers, and store them in the config.
+   * \note The reference pressure, density and temperature follow from the option REF_DIMENSIONALIZATION.
+   *       All other reference values are derived from these three, with a reference length of one.
+   * \param[in,out] config - Definition of the particular problem.
+   * \param[in] Pressure_FreeStream - Dimensional free-stream pressure.
+   * \param[in] Density_FreeStream - Dimensional free-stream density.
+   * \param[in] Temperature_FreeStream - Dimensional free-stream temperature.
+   * \param[in] Viscosity_FreeStream - Dimensional free-stream laminar viscosity.
+   * \param[in] ModVel_FreeStream - Dimensional magnitude of the free-stream velocity.
+   */
+  void SetCompressibleNonDimValues(CConfig *config, su2double Pressure_FreeStream, su2double Density_FreeStream,
+                                   su2double Temperature_FreeStream, su2double Viscosity_FreeStream,
+                                   su2double ModVel_FreeStream) const;
+
+  /*!
    * \brief Generic implementation to compute the time step based on CFL and conv/visc eigenvalues.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
