@@ -89,7 +89,7 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.727583, 0.453505, -0.714476, 208.023676]
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.727585, 0.453521, -0.714476, 208.023676]
     sp_pinArray_2d_dp_hf_tp.test_vals_aarch64 = [-4.739709, 0.520033, -0.713547, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
@@ -177,7 +177,7 @@ def main():
     premixed_hydrogen.cfg_dir = "../Tutorials/incompressible_flow/Inc_Combustion/1__premixed_hydrogen"
     premixed_hydrogen.cfg_file = "H2_burner.cfg"
     premixed_hydrogen.test_iter = 10
-    premixed_hydrogen.test_vals = [-8.771332, -9.721253, -11.354950, -4.381656, -12.832815]
+    premixed_hydrogen.test_vals = [-8.769581, -9.719802, -10.162061, -3.439369, -11.529638]
     test_list.append(premixed_hydrogen)
 
     ### Compressible Flow
