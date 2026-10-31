@@ -146,6 +146,13 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   CNearFieldOF_Inv.resize(nMarker,0.0);
 
+  /*--- Enthalpy diffusion of multicomponent and reacting flows. ---*/
+
+  if (config.GetViscous() && config.GetMulticomponentFluid() && config.GetEnergy_Equation()) {
+    EnthalpyDiffusion.resize(nPoint, config.GetnSpecies()) = su2double(0.0);
+    GradEnthalpyDiffusion.resize(nPoint, config.GetnSpecies()) = su2double(0.0);
+  }
+
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
   SlidingState.resize(nMarker);
@@ -442,6 +449,8 @@ CNumerics::ResidualType<> CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsign
                                                                           CNumerics *numerics, CConfig *config) {
   SU2_ZONE_SCOPED
 
+  if (EnthalpyDiffusion.rows() > 0) Compute_Enthalpy_Diffusion(iEdge, geometry, solver_container, numerics, config);
+
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
   const bool backscatter = config->GetSBSParam().StochasticBackscatter;
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
@@ -518,6 +527,80 @@ CNumerics::ResidualType<> CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsign
 
   /*--- The Jacobians are applied by the caller, fused with the convective contribution. ---*/
   return residual;
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::Compute_Enthalpy_Diffusion(unsigned long iEdge, const CGeometry* geometry,
+                                                          CSolver** solver_container, CNumerics* numerics,
+                                                          const CConfig* config) const {
+  SU2_ZONE_SCOPED
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const auto nSpecies = config->GetnSpecies();
+  CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
+
+  const auto iPoint = geometry->edges->GetNode(iEdge, 0);
+  const auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+  const su2double* Normal = geometry->edges->GetNormal(iEdge);
+  const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
+  const su2double* Coord_j = geometry->nodes->GetCoord(jPoint);
+
+  /*--- Projected gradient of the species variables. ---*/
+  su2double ProjGradScalarVarNoCorr[MAX_TRANSPORTED_SPECIES]{0.0};
+  su2double Proj_Mean_GradScalarVar[MAX_TRANSPORTED_SPECIES]{0.0};
+  numerics->ComputeProjectedGradient(nDim, nSpecies, Normal, Coord_i, Coord_j, speciesNodes->GetGradient(iPoint),
+                                     speciesNodes->GetGradient(jPoint), true, speciesNodes->GetSolution(iPoint),
+                                     speciesNodes->GetSolution(jPoint), ProjGradScalarVarNoCorr,
+                                     Proj_Mean_GradScalarVar);
+
+  su2double flux_enthalpy_diffusion = 0.0;
+  su2double jac_flux_enthalpy_diffusion = 0.0;
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++) {
+    flux_enthalpy_diffusion += 0.5 * (EnthalpyDiffusion(iPoint, iSpecies) + EnthalpyDiffusion(jPoint, iSpecies)) *
+                               Proj_Mean_GradScalarVar[iSpecies];
+    if (implicit)
+      jac_flux_enthalpy_diffusion +=
+          0.5 * (GradEnthalpyDiffusion(iPoint, iSpecies) + GradEnthalpyDiffusion(jPoint, iSpecies)) *
+          Proj_Mean_GradScalarVar[iSpecies];
+  }
+
+  numerics->SetHeatFluxDiffusion(flux_enthalpy_diffusion);
+  if (implicit) numerics->SetJacHeatFluxDiffusion(jac_flux_enthalpy_diffusion);
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::ComputeEnthalpyDiffusionTerms(CSolver** solver_container, const CConfig* config) {
+  SU2_ZONE_SCOPED
+
+  CFluidModel* fluid_model = GetFluidModel();
+  CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+  /*--- Mass diffusivities are evaluated here and stored in the flow variables, from where the species solver copies
+   *    them (CSpeciesSolver::Preprocessing), instead of being computed again. ---*/
+  const bool store_diffusivity = (config->GetKind_FluidModel() == FLUID_CANTERA);
+  const unsigned short nSpecies = config->GetnSpecies();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    const su2double* primitive = nodes->GetPrimitive(iPoint);
+    const su2double* species = speciesNodes->GetSolution(iPoint);
+    if (R == ENUM_REGIME::COMPRESSIBLE) {
+      fluid_model->SetComposition(species);
+      fluid_model->SetTDState_rhoT(primitive[prim_idx.Density()], primitive[prim_idx.Temperature()]);
+    } else {
+      fluid_model->SetTDState_T(primitive[prim_idx.Temperature()], species);
+    }
+    fluid_model->SetEddyViscosity(primitive[prim_idx.EddyViscosity()]);
+    fluid_model->GetEnthalpyDiffusivity(EnthalpyDiffusion[iPoint]);
+    if (implicit) fluid_model->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion[iPoint]);
+    if (store_diffusivity) {
+      for (unsigned short iVar = 0; iVar <= nSpecies; iVar++)
+        nodes->SetMassDiffusivity(iPoint, fluid_model->GetMassDiffusivity(iVar), iVar);
+    }
+  }
+  END_SU2_OMP_FOR
 }
 
 template <class V, ENUM_REGIME R>

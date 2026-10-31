@@ -83,6 +83,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
+  if (EnthalpyDiffusion.rows() > 0) ComputeEnthalpyDiffusionTerms(solver_container, config);
+
   /*--- Compute gradient for MUSCL reconstruction, for output (i.e. the
    turbulence solver, and post) only temperature and velocity are needed ---*/
 
@@ -138,6 +140,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == TURB_MODEL::SST);
+  CVariable* speciesNodes = solver_container[SPECIES_SOL] ? solver_container[SPECIES_SOL]->GetNodes() : nullptr;
 
   AD::StartNoSharedReading();
 
@@ -161,6 +164,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
     }
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
+
+    if (speciesNodes) GetFluidModel()->SetComposition(speciesNodes->GetSolution(iPoint));
 
     auto* ns_nodes = static_cast<CNSVariable*>(nodes);
     bool physical = ns_nodes->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
@@ -441,6 +446,8 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
    heat flux from config as well as the wall function treatment. ---*/
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Get the specified wall heat flux, temperature or heat transfer coefficient from config ---*/
@@ -560,8 +567,9 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
         const su2double oneOnRho = 1.0 / nodes->GetDensity(iPoint);
         const su2double oneOnCv = (Gamma - 1.0) / config->GetGas_ConstantND();
         const su2double Vel2 = nodes->GetVelocity2(iPoint);
-        const su2double dTdrho = oneOnRho * ( -Tinfinity + oneOnCv * 0.5 * Vel2);
-        const su2double dTdrhoe = oneOnCv * oneOnRho;
+        su2double dTdrho = oneOnRho * ( -Tinfinity + oneOnCv * 0.5 * Vel2);
+        su2double dTdrhoe = oneOnCv * oneOnRho;
+        if (!ideal_gas) WallTemperatureDerivatives(iPoint, dTdrho, dTdrhoe);
 
         /*--- Total specific energy: e=c_v*T+1/2*v^2 => T=1/c_v(rho*e/rho - 1/2||rho v||^2/rho^2).
         Together with cv=R/(gamma-1) the following Jacobian contributions for the energy equation can be derived. ---*/
@@ -589,6 +597,14 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
       delete [] Jacobian_i[iVar];
   delete [] Jacobian_i;
 
+}
+
+void CNSSolver::WallTemperatureDerivatives(unsigned long iPoint, su2double& dTdrho, su2double& dTdrhoE) const {
+  const auto* secondary = nodes->GetSecondary(iPoint);
+  const su2double density = nodes->GetDensity(iPoint);
+  const su2double staticEnergy = nodes->GetEnergy(iPoint) - 0.5 * nodes->GetVelocity2(iPoint);
+  dTdrho = secondary[2] + secondary[3] * (0.5 * nodes->GetVelocity2(iPoint) - staticEnergy) / density;
+  dTdrhoE = secondary[3] / density;
 }
 
 su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short val_marker,
@@ -636,6 +652,8 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
   const su2double Temperature_Ref = config->GetTemperature_Ref();
   const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const su2double Gas_Constant = config->GetGas_ConstantND();
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
 
   /*--- Identify the boundary and retrieve the specified wall temperature from
    the config (for non-CHT problems) as well as the wall function treatment. ---*/
@@ -741,13 +759,15 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       su2double Density = nodes->GetDensity(iPoint);
       su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[prim_idx.Velocity()]);
       su2double dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
+      su2double dTdrhoE = (Gamma-1.0)/(Gas_Constant*Density);
+      if (!ideal_gas) WallTemperatureDerivatives(iPoint, dTdrho, dTdrhoE);
 
       Jacobian_i[nDim+1][0] = thermal_conductivity/dist_ij * dTdrho * Area;
 
       for (auto jDim = 0u; jDim < nDim; jDim++)
         Jacobian_i[nDim+1][jDim+1] = 0.0;
 
-      Jacobian_i[nDim+1][nDim+1] = thermal_conductivity/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+      Jacobian_i[nDim+1][nDim+1] = thermal_conductivity/dist_ij * dTdrhoE * Area;
     }
 
     /*--- If the wall is moving, there are additional residual contributions
