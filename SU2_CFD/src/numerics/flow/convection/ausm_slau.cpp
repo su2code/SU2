@@ -115,11 +115,12 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
+  /*--- With SST the total enthalpy contains k, which is not part of the speed of sound. ---*/
+  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-(R*turb_ke_j+turb_ke_i)/(R+1))));
 
   /*--- Compute P and Lambda (do it with the Normal) ---*/
 
-  GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor);
+  GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor, (R*turb_ke_j+turb_ke_i)/(R+1));
 
   /*--- Flow eigenvalues and Entropy correctors ---*/
 
@@ -129,11 +130,11 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
 
   /*--- Compute inverse P ---*/
-  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor, (R*turb_ke_j+turb_ke_i)/(R+1));
 
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-  GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
-  GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
+  GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i, turb_ke_i);
+  GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j, turb_ke_j);
 
   /*--- Roe's Flux approximation ---*/
 
@@ -221,13 +222,14 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(const CConfig* config, su2dou
         sq_veli += Velocity_i[iDim] * Velocity_i[iDim];
         sq_velj += Velocity_j[iDim] * Velocity_j[iDim];
       }
-      dVi_dUi[nDim] = 0.5*Gamma_Minus_One*sq_veli;
-      dVj_dUj[nDim] = 0.5*Gamma_Minus_One*sq_velj;
+      /*--- With SST the total energy contains k, held fixed: dp/drho = (gamma-1)(|u|^2/2 - k). ---*/
+      dVi_dUi[nDim] = Gamma_Minus_One*(0.5*sq_veli - turb_ke_i);
+      dVj_dUj[nDim] = Gamma_Minus_One*(0.5*sq_velj - turb_ke_j);
 
       dVi_dUi[nDim+1] = dVj_dUj[nDim+1] = 1.0;
 
-      dHi_drhoi = 0.5*(Gamma-2.0)*sq_veli - Gamma*Pressure_i/((Gamma-1.0)*Density_i);
-      dHj_drhoj = 0.5*(Gamma-2.0)*sq_velj - Gamma*Pressure_j/((Gamma-1.0)*Density_j);
+      dHi_drhoi = 0.5*(Gamma-2.0)*sq_veli - Gamma*Pressure_i/((Gamma-1.0)*Density_i) - Gamma*turb_ke_i;
+      dHj_drhoj = 0.5*(Gamma-2.0)*sq_velj - Gamma*Pressure_j/((Gamma-1.0)*Density_j) - Gamma*turb_ke_j;
       dVi_dUi[nDim+2] = dHi_drhoi * oneOnRhoi;
       dVj_dUj[nDim+2] = dHj_drhoj * oneOnRhoj;
     }
@@ -324,6 +326,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CCo
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(V_i, nDim+4);
   AD::SetPreaccIn(V_j, nDim+4);
+  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);  // SST: k in the total energy
 
   /*--- Variables for the general form and primitives for mass flux and pressure calculation.  ---*/
   /*--- F_{1/2} = ||A|| ( 0.5 * mdot * (psi_i+psi_j) - 0.5 * |mdot| * (psi_i-psi_j) + N * pf ) ---*/
@@ -413,8 +416,9 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su
 
   /*--- Compute interface speed of sound (aF) ---*/
 
-  su2double astarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_i);
-  su2double astarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_j);
+  /*--- With SST the total enthalpy contains k, which is not part of the critical speed of sound. ---*/
+  su2double astarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*(Enthalpy_i-turb_ke_i));
+  su2double astarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*(Enthalpy_j-turb_ke_j));
 
   su2double ahatL = astarL*astarL/max(astarL, ProjVelocity_i);
   su2double ahatR = astarR*astarR/max(astarR,-ProjVelocity_j);
@@ -584,7 +588,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su
         astar_b *= 2.0*tmp;
         Vn_i_b -= tmp*tmp * aF_b;
       }
-      H_i_b = sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*Enthalpy_i)) * astar_b;
+      H_i_b = sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*(Enthalpy_i-turb_ke_i))) * astar_b;
       H_j_b = 0.0;
     }
     else {
@@ -593,7 +597,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su
         astar_b *= 2.0*tmp;
         Vn_j_b += tmp*tmp * aF_b;
       }
-      H_j_b = sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*Enthalpy_j)) * astar_b;
+      H_j_b = sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*(Enthalpy_j-turb_ke_j))) * astar_b;
       H_i_b = 0.0;
     }
 
@@ -639,8 +643,9 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(const CConfig* config, s
 
   /*--- Compute interface speed of sound (aF) ---*/
 
-  su2double astarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_i);
-  su2double astarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_j);
+  /*--- With SST the total enthalpy contains k, which is not part of the critical speed of sound. ---*/
+  su2double astarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*(Enthalpy_i-turb_ke_i));
+  su2double astarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*(Enthalpy_j-turb_ke_j));
 
   su2double ahatL = astarL*astarL/max(astarL, ProjVelocity_i);
   su2double ahatR = astarR*astarR/max(astarR,-ProjVelocity_j);
@@ -731,11 +736,12 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2doubl
     sq_velj += Velocity_j[iDim]*Velocity_j[iDim];
   }
 
+  /*--- With SST the total energy contains k, which is not part of the speed of sound. ---*/
   su2double Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_veli)));
+  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_veli-turb_ke_i)));
 
   su2double Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_velj)));
+  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_velj-turb_ke_j)));
 
   /*--- Compute interface speed of sound (aF), and left/right Mach number ---*/
 
@@ -842,6 +848,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(V_i, nDim+4);
   AD::SetPreaccIn(V_j, nDim+4);
+  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);  // SST: k in the total energy
 
   /*--- Face area (norm or the normal vector) ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -860,7 +867,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel)));
+  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel-turb_ke_i)));  // SST: E contains k
 
   /*--- Primitive variables at point j ---*/
   sq_vel = 0.0;
@@ -872,7 +879,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel)));
+  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel-turb_ke_j)));  // SST: E contains k
 
   /*--- Projected velocities ---*/
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -925,10 +932,11 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
       sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
     }
     RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-    RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
+    /*--- With SST the total enthalpy contains k, which is not part of the speed of sound. ---*/
+    RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-(R*turb_ke_j+turb_ke_i)/(R+1))));
 
     /*--- Compute P and Lambda (do it with the Normal) ---*/
-    GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor);
+    GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor, (R*turb_ke_j+turb_ke_i)/(R+1));
 
     ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -944,11 +952,11 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
     Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
 
     /*--- Compute inverse P ---*/
-    GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
+    GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor, (R*turb_ke_j+turb_ke_i)/(R+1));
 
     /*--- Jacobias of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i, turb_ke_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j, turb_ke_j);
 
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
