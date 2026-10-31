@@ -849,6 +849,8 @@ def main():
             test.timeout = 600
         test.tol = 1e-4
     #end
+    # The second BGS residual is near the numerical floor and varies between builds.
+    Jones_tc_restart.tol = [1e-4, 5e-4] + [1e-4] * 8
 
     pass_list = [ test.run_test(args.tsan) for test in test_list ]
     pass_list += [ test.run_filediff(args.tsan) for test in file_diff_list ]
