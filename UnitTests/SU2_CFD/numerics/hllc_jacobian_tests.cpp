@@ -43,7 +43,7 @@ struct HLLCJacobianTestAccess {
 
 namespace {
 
-constexpr su2double gamma = 1.4;
+constexpr su2double Gamma = 1.4;
 constexpr unsigned short maxVar = 5;
 
 using State = std::array<su2double, maxVar>;  // conservative variables (rho, rho u, rho v, [rho w], rho E)
@@ -58,14 +58,14 @@ void Primitives(unsigned short nDim, const State& U, su2double k, su2double* V, 
     q2 += V[iDim + 1] * V[iDim + 1];
   }
   const su2double e = U[nDim + 1] / rho - 0.5 * q2 - k;
-  const su2double p = (gamma - 1) * rho * e;
+  const su2double p = (Gamma - 1) * rho * e;
   V[0] = p / (rho * 287.058);
   V[nDim + 1] = p;
   V[nDim + 2] = rho;
   V[nDim + 3] = (U[nDim + 1] + p) / rho;
-  V[nDim + 4] = sqrt(gamma * p / rho);
-  S[0] = (gamma - 1) * e;
-  S[1] = (gamma - 1) * rho;
+  V[nDim + 4] = sqrt(Gamma * p / rho);
+  S[0] = (Gamma - 1) * e;
+  S[1] = (Gamma - 1) * rho;
 }
 
 /*--- Conservative state from density, velocity, pressure and k. ---*/
@@ -77,7 +77,7 @@ State Conservative(unsigned short nDim, su2double rho, const su2double* vel, su2
     U[iDim + 1] = rho * vel[iDim];
     q2 += vel[iDim] * vel[iDim];
   }
-  U[nDim + 1] = p / (gamma - 1) + rho * (0.5 * q2 + k);
+  U[nDim + 1] = p / (Gamma - 1) + rho * (0.5 * q2 + k);
   return U;
 }
 
@@ -87,10 +87,15 @@ struct Result {
 };
 
 Result Evaluate(unsigned short nDim, CNumerics& numerics, const CConfig* config, const State& Ui, const State& Uj,
-                su2double k_i, su2double k_j) {
+                su2double k_i, su2double k_j, su2double pressureOffset = 0.0) {
   su2double Vi[20] = {0.0}, Vj[20] = {0.0}, Si[2], Sj[2];
   Primitives(nDim, Ui, k_i, Vi, Si);
   Primitives(nDim, Uj, k_j, Vj, Sj);
+  // A fixed offset models independently reconstructed face pressure and enthalpy.
+  Vi[nDim + 1] += pressureOffset;
+  Vj[nDim + 1] += pressureOffset;
+  Vi[nDim + 3] += pressureOffset / Ui[0];
+  Vj[nDim + 3] += pressureOffset / Uj[0];
   numerics.SetPrimitive(Vi, Vj);
   numerics.SetSecondary(Si, Sj);
   numerics.SetTurbKineticEnergy(k_i, k_j);
@@ -106,22 +111,24 @@ Result Evaluate(unsigned short nDim, CNumerics& numerics, const CConfig* config,
   return r;
 }
 
-/*--- Largest difference between the Jacobians and central differences of the flux, relative to the largest entry. ---*/
+/*--- Compare the Jacobians with central differences; use absolute error for a selected side. ---*/
 su2double JacobianError(unsigned short nDim, CNumerics& numerics, const CConfig* config, const State& Ui,
-                        const State& Uj, su2double k_i, su2double k_j) {
+                        const State& Uj, su2double k_i, su2double k_j,
+                        su2double pressureOffset = 0.0, int sideFilter = -1) {
   const unsigned short nVar = nDim + 2;
-  const auto ref = Evaluate(nDim, numerics, config, Ui, Uj, k_i, k_j);
+  const auto ref = Evaluate(nDim, numerics, config, Ui, Uj, k_i, k_j, pressureOffset);
   su2double maxErr = 0.0, maxJac = 0.0;
   for (int side = 0; side < 2; side++) {
+    if (sideFilter >= 0 && side != sideFilter) continue;
     for (unsigned short jVar = 0; jVar < nVar; jVar++) {
       State Up = side ? Uj : Ui, Um = Up;
-      const su2double h = 1e-6 * std::max(std::abs(Up[jVar]), su2double(1.0));
+      const su2double h = 1e-6 * (sideFilter < 0 ? std::max(std::abs(Up[jVar]), su2double(1.0)) : 1.0);
       Up[jVar] += h;
       Um[jVar] -= h;
-      const auto fp = side ? Evaluate(nDim, numerics, config, Ui, Up, k_i, k_j)
-                           : Evaluate(nDim, numerics, config, Up, Uj, k_i, k_j);
-      const auto fm = side ? Evaluate(nDim, numerics, config, Ui, Um, k_i, k_j)
-                           : Evaluate(nDim, numerics, config, Um, Uj, k_i, k_j);
+      const auto fp = side ? Evaluate(nDim, numerics, config, Ui, Up, k_i, k_j, pressureOffset)
+                           : Evaluate(nDim, numerics, config, Up, Uj, k_i, k_j, pressureOffset);
+      const auto fm = side ? Evaluate(nDim, numerics, config, Ui, Um, k_i, k_j, pressureOffset)
+                           : Evaluate(nDim, numerics, config, Um, Uj, k_i, k_j, pressureOffset);
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         const su2double fd = (fp.flux[iVar] - fm.flux[iVar]) / (2 * h);
         const su2double jac = side ? ref.jac_j[iVar][jVar] : ref.jac_i[iVar][jVar];
@@ -130,7 +137,7 @@ su2double JacobianError(unsigned short nDim, CNumerics& numerics, const CConfig*
       }
     }
   }
-  return maxErr / maxJac;
+  return sideFilter < 0 ? maxErr / maxJac : maxErr;
 }
 
 /*--- Contact speed sM of the scheme, in the frame of the face (w = grid velocity along the unit normal n). ---*/
@@ -148,10 +155,10 @@ su2double ContactSpeed(unsigned short nDim, const State& Ui, const State& Uj, su
   return (p_i - p_j - rho_i * u_i * (sL - u_i) + rho_j * u_j * (sR - u_j)) / (rho_j * (sR - u_j) - rho_i * (sL - u_i));
 }
 
-std::unique_ptr<CConfig> MakeConfig(bool moving, bool accurate) {
+std::unique_ptr<CConfig> MakeConfig(bool moving, bool exact) {
   std::stringstream options;
   options << "SOLVER= EULER\nCONV_NUM_METHOD_FLOW= HLLC\nTIME_DISCRE_FLOW= EULER_IMPLICIT\n";
-  options << "USE_EXACT_HLLC_JACOBIANS= " << (accurate ? "YES" : "NO") << "\n";
+  options << "USE_EXACT_HLLC_JACOBIANS= " << (exact ? "YES" : "NO") << "\n";
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 0.0 0.0 0.0\n";
   return std::make_unique<CConfig>(options, SU2_COMPONENT::SU2_CFD, false);
 }
@@ -159,8 +166,8 @@ std::unique_ptr<CConfig> MakeConfig(bool moving, bool accurate) {
 /*--- With USE_EXACT_HLLC_JACOBIANS= YES the Jacobians are exact for fixed wave speeds in all branches. By default
  the derivative of p* is approximated (star states), the supersonic branches remain exact. ---*/
 template <class HLLC>
-void CheckAllBranches(unsigned short nDim, bool moving, su2double k, bool accurate) {
-  auto config = MakeConfig(moving, accurate);
+void CheckAllBranches(unsigned short nDim, bool moving, su2double k, bool exact) {
+  auto config = MakeConfig(moving, exact);
   HLLC numerics(nDim, nDim + 2, config.get());
 
   /*--- Oblique unit normal (face area 1.3) and, on moving faces, a grid velocity with a normal component. ---*/
@@ -198,7 +205,7 @@ void CheckAllBranches(unsigned short nDim, bool moving, su2double k, bool accura
       HLLCJacobianTestAccess::SetFixedWaveSpeeds(numerics, s[0], s[1]);
       const bool supersonic = (s[0] > 0.0) || (s[1] < 0.0);
       const su2double sM = ContactSpeed(nDim, Ui, Uj, k, 0.8 * k, n, w, s[0], s[1]);
-      CAPTURE(nDim, moving, k, accurate, dir, s[0], s[1], sM);
+      CAPTURE(nDim, moving, k, exact, dir, s[0], s[1], sM);
 
       /*--- Make sure the intended branch is the one selected. ---*/
       if (supersonic)
@@ -207,10 +214,10 @@ void CheckAllBranches(unsigned short nDim, bool moving, su2double k, bool accura
         REQUIRE(sM * dir > 0.0);
 
       const su2double error = JacobianError(nDim, numerics, config.get(), Ui, Uj, k, 0.8 * k);
-      if (accurate || supersonic)
+      if (exact || supersonic)
         CHECK(error < 1e-6);
       else
-        CHECK(error > 1e-3);  // the approximation is active
+        CHECK(error > 1e-3);  // Confirms the default approximate Jacobian is selected.
     }
   }
 }
@@ -220,9 +227,9 @@ void CheckAllBranches(unsigned short nDim, bool moving, su2double k, bool accura
 TEST_CASE("HLLC Jacobians match finite differences", "[HLLC]") {
   for (const unsigned short nDim : {2, 3}) {
     for (const bool moving : {false, true}) {
-      for (const bool accurate : {false, true}) {
-        CheckAllBranches<CUpwHLLC_Flow>(nDim, moving, 0.0, accurate);
-        CheckAllBranches<CUpwGeneralHLLC_Flow>(nDim, moving, 0.0, accurate);
+      for (const bool exact : {false, true}) {
+        CheckAllBranches<CUpwHLLC_Flow>(nDim, moving, 0.0, exact);
+        CheckAllBranches<CUpwGeneralHLLC_Flow>(nDim, moving, 0.0, exact);
       }
     }
   }
@@ -231,9 +238,9 @@ TEST_CASE("HLLC Jacobians match finite differences", "[HLLC]") {
 TEST_CASE("HLLC supersonic Jacobian uses reconstructed face enthalpy", "[HLLC-face]") {
   for (unsigned short nDim : {2, 3}) {
     for (bool moving : {false, true}) {
-      for (const bool accurate : {false, true}) {
+      for (const bool exact : {false, true}) {
         for (su2double direction : {-1.0, 1.0}) {
-          auto config = MakeConfig(moving, accurate);
+          auto config = MakeConfig(moving, exact);
           CUpwHLLC_Flow numerics(nDim, nDim + 2, config.get());
           const su2double n2[3] = {0.8, 0.6, 0.0}, n3[3] = {2.0 / 7, 3.0 / 7, 6.0 / 7};
           const auto* normal = nDim == 2 ? n2 : n3;
@@ -247,43 +254,9 @@ TEST_CASE("HLLC supersonic Jacobian uses reconstructed face enthalpy", "[HLLC-fa
           HLLCJacobianTestAccess::SetFixedWaveSpeeds(numerics, direction > 0 ? 2.0 : -4.0, direction > 0 ? 4.0 : -2.0);
           const State state = Conservative(nDim, 1.2, velocity, 1.1, 0.0);
           for (su2double pressureOffset : {0.0, 0.1}) {
-            auto evaluate = [&](const State& Ui, const State& Uj) {
-              su2double Vi[20] = {}, Vj[20] = {}, Si[2], Sj[2];
-              Primitives(nDim, Ui, 0.0, Vi, Si);
-              Primitives(nDim, Uj, 0.0, Vj, Sj);
-              // A fixed pressure offset models independently reconstructed p and h.
-              Vi[nDim + 1] += pressureOffset;
-              Vj[nDim + 1] += pressureOffset;
-              Vi[nDim + 3] += pressureOffset / Ui[0];
-              Vj[nDim + 3] += pressureOffset / Uj[0];
-              numerics.SetPrimitive(Vi, Vj);
-              numerics.SetTurbKineticEnergy(0.0, 0.0);
-              const auto residual = numerics.ComputeResidual(config.get());
-              Result result{};
-              for (auto i = 0u; i < nDim + 2; ++i) {
-                result.flux[i] = residual.residual[i];
-                for (auto j = 0u; j < nDim + 2; ++j) {
-                  result.jac_i[i][j] = residual.jacobian_i[i][j];
-                  result.jac_j[i][j] = residual.jacobian_j[i][j];
-                }
-              }
-              return result;
-            };
-            CAPTURE(nDim, moving, accurate, direction, pressureOffset);
-            const auto reference = evaluate(state, state);
-            for (auto column = 0u; column < nDim + 2; ++column) {
-              State plus = state, minus = state;
-              const su2double step = 1e-6;
-              plus[column] += step;
-              minus[column] -= step;
-              const auto fp = direction > 0 ? evaluate(plus, state) : evaluate(state, plus);
-              const auto fm = direction > 0 ? evaluate(minus, state) : evaluate(state, minus);
-              for (auto row = 0u; row < nDim + 2; ++row) {
-                const su2double fd = (fp.flux[row] - fm.flux[row]) / (2 * step);
-                const su2double jac = direction > 0 ? reference.jac_i[row][column] : reference.jac_j[row][column];
-                CHECK(jac == Approx(fd).margin(1e-6));
-              }
-            }
+            CAPTURE(nDim, moving, exact, direction, pressureOffset);
+            const int side = direction > 0 ? 0 : 1;
+            CHECK(JacobianError(nDim, numerics, config.get(), state, state, 0.0, 0.0, pressureOffset, side) < 1e-6);
           }
         }
       }

@@ -40,7 +40,7 @@ class CUpwHLLC_Flow final : public CNumerics {
 private:
   friend struct HLLCJacobianTestAccess;
   bool implicit, dynamic_grid;
-  bool useAccurateJacobian; /*!< \brief Jacobians computed exactly for fixed wave speeds (USE_EXACT_HLLC_JACOBIANS). */
+  bool useExactJacobian; /*!< \brief Jacobians computed exactly for fixed wave speeds (USE_EXACT_HLLC_JACOBIANS). */
   unsigned short iDim, jDim, iVar, jVar;
 
   su2double *IntermediateState;
@@ -82,6 +82,7 @@ public:
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
+
 };
 
 /*!
@@ -95,7 +96,7 @@ class CUpwGeneralHLLC_Flow final : public CNumerics {
 private:
   friend struct HLLCJacobianTestAccess;
   bool implicit, dynamic_grid;
-  bool useAccurateJacobian; /*!< \brief Jacobians computed exactly for fixed wave speeds (USE_EXACT_HLLC_JACOBIANS). */
+  bool useExactJacobian; /*!< \brief Jacobians computed exactly for fixed wave speeds (USE_EXACT_HLLC_JACOBIANS). */
   unsigned short iDim, jDim, iVar, jVar;
 
   su2double *IntermediateState;
@@ -138,7 +139,6 @@ public:
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
-
 
   /*!
    * \brief Compute the Average quantities for a general fluid flux between two nodes i and j.
