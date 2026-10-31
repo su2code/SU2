@@ -41,7 +41,9 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   const su2double default_flame_thickness{1.0};
   su2double global_flame_thickness;
   bool calc_flame_thickness{false};
-  bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
+  int idx_progvar = -1; /*!< \brief Scalar index of the progress variable, -1 if absent. */
+  int idx_enth = -1;    /*!< \brief Scalar index of the total enthalpy. */
+  int idx_flame_front = -1; /*!< \brief Scalar set by FLAME_FRONT: progress variable, else mixture fraction. */
   /*!< \brief Number of points outside the manifold domain, shared across OpenMP threads so it can be
    *          accumulated atomically and reduced by the master thread alone in Preprocessing. */
   unsigned long n_not_in_domain_local = 0;

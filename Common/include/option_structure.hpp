@@ -1525,14 +1525,13 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
 };
 
 /*!
- * \brief Progress variable and enthalpy are the first and second entries in the lookup table.
- * \note The order matters.
+ * \brief Names of the flamelet controlling variables in CONTROLLING_VARIABLE_NAMES; the name sets the role.
  */
-enum FLAMELET_SCALAR_VARIABLES {
-  I_PROGVAR,
-  I_ENTH,
-  I_MIXFRAC,
-};
+namespace FLAMELET_CV_NAME {
+  constexpr const char* PROGVAR = "ProgressVariable";
+  constexpr const char* ENTHALPY = "EnthalpyTot";
+  constexpr const char* MIXFRAC = "MixtureFraction";
+}
 
 /*!
  * \brief the source terms for the flamelet method. At the moment only progress variable
@@ -1607,6 +1606,9 @@ struct FluidFlamelet_ParsedOptions {
   unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
   unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
   unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
+  int idx_progvar = -1;               /*!< \brief Scalar index of the progress variable, -1 if absent. */
+  int idx_enth = -1;                  /*!< \brief Scalar index of the total enthalpy. */
+  int idx_mixfrac = -1;               /*!< \brief Scalar index of the mixture fraction, -1 if absent. */
 
   std::string *controlling_variable_names; /*!< \brief Names of the independent, transported scalars. */
   std::string* cv_source_names;            /*!< \brief Names of the source terms of the independent, transported scalars. */

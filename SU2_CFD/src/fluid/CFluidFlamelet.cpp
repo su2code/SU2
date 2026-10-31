@@ -44,7 +44,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
   n_user_scalars = flamelet_options.n_user_scalars;
   n_control_vars = flamelet_options.n_control_vars;
-  include_mixture_fraction = (n_control_vars == 3);
   n_scalars = flamelet_options.n_scalars;
 
   if (rank == MASTER_NODE) {
@@ -78,8 +77,8 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
         cout << "***   initializing the lookup table   ***" << endl;
         cout << "*****************************************" << endl;
       }
-      look_up_table = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], table_scalar_names[I_PROGVAR],
-                                       table_scalar_names[I_ENTH]);
+      look_up_table = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], table_scalar_names[0],
+                                       table_scalar_names[1]);
       break;
 
     default:
@@ -122,7 +121,7 @@ CFluidFlamelet::~CFluidFlamelet() {
 
 void CFluidFlamelet::SetTDState_h(su2double val_enthalpy, const su2double* val_scalars) {
   /*--- For the fluid flamelet model, the enthalpy (and the temperature) are passive scalars.
-  val_scalars contains the enthalpy as the second variable: val_scalars= (Progress_variable, enthalpy,...).
+  val_scalars contains the enthalpy at the index of EnthalpyTot in CONTROLLING_VARIABLE_NAMES.
   Consequently, the energy equation is not solved when the fluid flamelet model is used; instead the energy equation for
   enthalpy is solved in the species flamelet solver, and the enthalpy solution is overwritten in the CIncEulerSolver.
   Likewise, The temperature is retrieved from the look up table. Then, the thermodynamics state is fully determined with
@@ -137,7 +136,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   /*--- Add all quantities and their names to the look up vectors. ---*/
   EvaluateDataSet(scalars_vector, FLAMELET_LOOKUP_OPS::THERMO, val_vars_TD);
 
-  Enthalpy = scalars_vector[1];
+  Enthalpy = scalars_vector[flamelet_options.idx_enth];
   Temperature = val_vars_TD[LOOKUP_TD::TEMPERATURE];
   Cp = val_vars_TD[LOOKUP_TD::HEATCAPACITY];
   Mu = val_vars_TD[LOOKUP_TD::VISCOSITY];
@@ -216,10 +215,11 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   varnames_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
   val_vars_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
 
-  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = "Beta_ProgVar";
+  /*--- Beta scalars of absent controlling variables are not in the manifold. ---*/
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = (flamelet_options.idx_progvar >= 0) ? "Beta_ProgVar" : "NULL";
   varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = "Beta_Enth_Thermal";
   varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = "Beta_Enth";
-  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = "Beta_MixFrac";
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = (flamelet_options.idx_mixfrac >= 0) ? "Beta_MixFrac" : "NULL";
 
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = beta_progvar;
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = beta_enth_thermal;
@@ -268,7 +268,8 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     }
     if (preferential_diffusion) {
       for (auto iVar = 0u; iVar < varnames_PD.size(); iVar++) {
-        LUT_idx_PD.push_back(look_up_table->GetIndexOfVar(varnames_PD[iVar]));
+        LUT_idx_PD.push_back(noSource(varnames_PD[iVar]) ? look_up_table->GetNullIndex()
+                                                         : look_up_table->GetIndexOfVar(varnames_PD[iVar]));
       }
     }
   }
@@ -279,9 +280,10 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   AD::StartPreacc();
   for (auto iVar = 0u; iVar < input_scalar.size(); iVar++) AD::SetPreaccIn(input_scalar[iVar]);
 
-  su2double val_enth = input_scalar[I_ENTH];
-  su2double val_prog = input_scalar[I_PROGVAR];
-  su2double val_mixfrac = include_mixture_fraction ? input_scalar[I_MIXFRAC] : 0.0;
+  /*--- The table axes follow the order of the controlling variables, the third one is the table level. ---*/
+  const su2double val_cv1 = input_scalar[0];
+  const su2double val_cv2 = input_scalar[1];
+  const su2double val_cv3 = (n_control_vars == 3) ? input_scalar[2] : 0.0;
   vector<su2double> val_vars;
   vector<su2double*> refs_vars;
   vector<unsigned long> LUT_idx;
@@ -320,10 +322,10 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
     case ENUM_DATADRIVEN_METHOD::LUT:
       if (output_refs.size() != LUT_idx.size())
         SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
-      if (include_mixture_fraction) {
-        inside = look_up_table->LookUp_XYZ(LUT_idx, output_refs, val_prog, val_enth, val_mixfrac);
+      if (n_control_vars == 3) {
+        inside = look_up_table->LookUp_XYZ(LUT_idx, output_refs, val_cv1, val_cv2, val_cv3);
       } else {
-        inside = look_up_table->LookUp_XY(LUT_idx, output_refs, val_prog, val_enth);
+        inside = look_up_table->LookUp_XY(LUT_idx, output_refs, val_cv1, val_cv2);
       }
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:

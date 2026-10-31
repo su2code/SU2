@@ -48,8 +48,7 @@ class CFluidFlamelet final : public CFluidModel {
   su2double beta_progvar, beta_enth_thermal, beta_enth, beta_mixfrac;
   int rank;
 
-  bool include_mixture_fraction = false, /*!< \brief include mixture fraction in controlling variables. */
-       preferential_diffusion = false;     /*!< \brief use preferential diffusion physics. */
+  bool preferential_diffusion = false; /*!< \brief use preferential diffusion physics. */
 
   unsigned short n_scalars, n_lookups, n_user_scalars, /*!< \brief number of passive reactant species. */
       n_control_vars;                                  /*!< \brief number of controlling variables. */

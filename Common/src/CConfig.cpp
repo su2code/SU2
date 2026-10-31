@@ -6109,6 +6109,33 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- We can have additional user defined transported scalars ---*/
     flamelet_ParsedOptions.n_scalars = flamelet_ParsedOptions.n_control_vars + flamelet_ParsedOptions.n_user_scalars;
 
+    /*--- The name of each controlling variable sets its role. ---*/
+    auto& opts = flamelet_ParsedOptions;
+    for (int iCV = 0; iCV < opts.n_control_vars; iCV++) {
+      const string& name = opts.controlling_variable_names[iCV];
+      int* idx = nullptr;
+      if (name == FLAMELET_CV_NAME::PROGVAR) idx = &opts.idx_progvar;
+      else if (name == FLAMELET_CV_NAME::ENTHALPY) idx = &opts.idx_enth;
+      else if (name == FLAMELET_CV_NAME::MIXFRAC) idx = &opts.idx_mixfrac;
+      else
+        SU2_MPI::Error("Unknown controlling variable " + name + ", expected " +
+                       FLAMELET_CV_NAME::PROGVAR + ", " + FLAMELET_CV_NAME::ENTHALPY + " or " +
+                       FLAMELET_CV_NAME::MIXFRAC + ".", CURRENT_FUNCTION);
+      if (*idx >= 0)
+        SU2_MPI::Error("Controlling variable " + name + " is listed twice.",
+                       CURRENT_FUNCTION);
+      *idx = iCV;
+    }
+    if (opts.idx_enth < 0)
+      SU2_MPI::Error(string("CONTROLLING_VARIABLE_NAMES must include ") + FLAMELET_CV_NAME::ENTHALPY + ".",
+                     CURRENT_FUNCTION);
+    if (opts.idx_progvar < 0 && opts.idx_mixfrac < 0)
+      SU2_MPI::Error(string("CONTROLLING_VARIABLE_NAMES must include ") + FLAMELET_CV_NAME::PROGVAR + " or " +
+                     FLAMELET_CV_NAME::MIXFRAC + ".", CURRENT_FUNCTION);
+
+    /*--- The thickened flame correction measures the progress variable gradient. ---*/
+    if (opts.idx_progvar < 0) opts.thickenedflame_correction = false;
+
     /*--- Check that spark ignition has required parameters defined ---*/
     if (flamelet_ParsedOptions.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
       /*--- Check if SPARK_INIT was explicitly set in config file ---*/

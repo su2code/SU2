@@ -3948,9 +3948,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         break;
       case SPECIES_MODEL::FLAMELET: {
         const auto& flamelet_config_options = config->GetFlameletParsedOptions();
-        /*--- 2-equation flamelet model ---*/
-        columnName << left << setw(24) << "PROGRESSVAR" << left << setw(24) << "ENTHALPYTOT";
-        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" << config->GetInlet_SpeciesVal(Marker_Tag)[1] <<"\t";
+        for (unsigned short iCV = 0; iCV < flamelet_config_options.n_control_vars; iCV++) {
+          string cv_name = flamelet_config_options.controlling_variable_names[iCV];
+          transform(cv_name.begin(), cv_name.end(), cv_name.begin(), ::toupper);
+          columnName << left << setw(24) << cv_name;
+          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iCV] << "\t";
+        }
         /*--- auxiliary species transport equations ---*/
         for (unsigned short iReactant = 0; iReactant < flamelet_config_options.n_user_scalars; iReactant++) {
           columnName << left << setw(24) << flamelet_config_options.user_scalar_names[iReactant];
