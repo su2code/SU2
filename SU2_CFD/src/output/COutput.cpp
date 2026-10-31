@@ -249,7 +249,7 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
     SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboBladePerfs, config[val_iZone]); //Stage performance screen
   }
 
-  for (int iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone ++){
+  for (int iZone = 0; iZone < config[ZONE_0]->GetnTurboZones(); iZone ++){
     if (rank == MASTER_NODE) {
       WriteTurboSpanwisePerformance(TurboBladePerfs, geometry[iZone][val_iInst][MESH_0], config, iZone); //Spanwise files
     }
