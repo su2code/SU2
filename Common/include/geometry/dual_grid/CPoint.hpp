@@ -99,6 +99,7 @@ class CPoint {
   su2vector<unsigned short> nNeighbor; /*!< \brief Number of neighbors, needed by some numerical methods. */
 
   /*--- Closest element on a viscous wall, and distance to it. ---*/
+  su2activematrix WallNormal;                 /*!< \brief Unit normal of the nearest wall element. */
   su2activevector Wall_Distance;              /*!< \brief Distance to the nearest wall. */
   su2vector<int> ClosestWall_Rank;            /*!< \brief Rank of process holding the closest wall element. */
   su2vector<unsigned short> ClosestWall_Zone; /*!< \brief Zone index of closest wall element. */
@@ -885,6 +886,23 @@ class CPoint {
         AD::SetIndex(AD_OutputIndex(iPoint, iDim), Coord(iPoint, iDim));
       }
     }
+  }
+
+  /*! \brief Gather the nearest wall-element normal for each point. */
+  template <typename NormalsType>
+  void SetWallNormals(const NormalsType& normals) {
+    WallNormal.resize(GlobalIndex.size(), nDim) = su2double(0.0);
+    for (unsigned long iPoint = 0; iPoint < GlobalIndex.size(); ++iPoint) {
+      const auto rank = ClosestWall_Rank[iPoint];
+      if (rank < 0) continue;
+      const auto& normal =
+          normals[rank][ClosestWall_Zone[iPoint]][ClosestWall_Marker[iPoint]][ClosestWall_Elem[iPoint]];
+      for (auto iDim = 0u; iDim < nDim; ++iDim) WallNormal(iPoint, iDim) = normal[iDim];
+    }
+  }
+
+  inline const su2double* GetWallNormal(unsigned long iPoint) const {
+    return WallNormal.empty() ? nullptr : WallNormal[iPoint];
   }
 
   /*!

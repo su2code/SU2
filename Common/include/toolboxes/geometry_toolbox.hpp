@@ -60,6 +60,51 @@ inline void PointPointReflect(Int nDim, const T* a, const T* b, T* d) {
   for (Int i = 0; i < nDim; i++) d[i] = 2 * b[i] - a[i];
 }
 
+/*!
+ * \brief Compute the mean rate of strain matrix.
+ * \details The parameter primvargrad can be e.g. PrimVar_Grad_i or Mean_GradPrimVar.
+ * \param[in] nDim - 2 or 3
+ * \param[out] rateofstrain - Rate of strain matrix
+ * \param[in] velgrad - A velocity gradient matrix.
+ * \tparam Mat1 - any type that supports the [][] interface
+ * \tparam Mat2 - any type that supports the [][] interface
+ */
+template <class Mat1, class Mat2>
+inline void ComputeMeanRateOfStrainMatrix(size_t nDim, Mat1& rateofstrain, const Mat2& velgrad) {
+  /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
+
+  if (nDim == 3) {
+    rateofstrain[0][0] = velgrad[0][0];
+    rateofstrain[1][1] = velgrad[1][1];
+    rateofstrain[2][2] = velgrad[2][2];
+    rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
+    rateofstrain[0][2] = 0.5 * (velgrad[0][2] + velgrad[2][0]);
+    rateofstrain[1][2] = 0.5 * (velgrad[1][2] + velgrad[2][1]);
+    rateofstrain[1][0] = rateofstrain[0][1];
+    rateofstrain[2][1] = rateofstrain[1][2];
+    rateofstrain[2][0] = rateofstrain[0][2];
+  } else {  // nDim==2
+    rateofstrain[0][0] = velgrad[0][0];
+    rateofstrain[1][1] = velgrad[1][1];
+    rateofstrain[2][2] = 0.0;
+    rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
+    rateofstrain[0][2] = 0.0;
+    rateofstrain[1][2] = 0.0;
+    rateofstrain[1][0] = rateofstrain[0][1];
+    rateofstrain[2][1] = rateofstrain[1][2];
+    rateofstrain[2][0] = rateofstrain[0][2];
+  }
+}
+
+/*! \brief Magnitude of an edge projected onto a unit wall normal. */
+template <class T, typename Int>
+inline T WallNormalEdgeLength(Int nDim, const T* a, const T* b, const T* normal) {
+  T projection(0);
+  for (Int i = 0; i < nDim; ++i) projection += (b[i] - a[i]) * normal[i];
+  using std::abs;
+  return abs(projection);
+}
+
 /*! \return a.b */
 template <class T, typename Int>
 inline T DotProduct(Int nDim, const T* a, const T* b) {

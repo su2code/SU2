@@ -142,6 +142,7 @@ protected:
   const su2double
   *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
   *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
+  su2double hybridLengthScale = 0.0; /*!< \brief Hybrid RANS/LES length scale. */
   CMatrixView<const su2double>
   ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
   ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
@@ -433,44 +434,6 @@ public:
                                      CMatrixView<const su2double> val_turbpsivar_grad_j) {
     TurbPsi_Grad_i = val_turbpsivar_grad_i;
     TurbPsi_Grad_j = val_turbpsivar_grad_j;
-  }
-
-  /*!
-   * \brief Compute the mean rate of strain matrix.
-   * \details The parameter primvargrad can be e.g. PrimVar_Grad_i or Mean_GradPrimVar.
-   * \param[in] nDim - 2 or 3
-   * \param[out] rateofstrain - Rate of strain matrix
-   * \param[in] velgrad - A velocity gradient matrix.
-   * \tparam Mat1 - any type that supports the [][] interface
-   * \tparam Mat2 - any type that supports the [][] interface
-   */
-  template<class Mat1, class Mat2>
-  FORCEINLINE static void ComputeMeanRateOfStrainMatrix(size_t nDim, Mat1& rateofstrain, const Mat2& velgrad){
-
-    /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
-
-    if (nDim == 3) {
-      rateofstrain[0][0] = velgrad[0][0];
-      rateofstrain[1][1] = velgrad[1][1];
-      rateofstrain[2][2] = velgrad[2][2];
-      rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
-      rateofstrain[0][2] = 0.5 * (velgrad[0][2] + velgrad[2][0]);
-      rateofstrain[1][2] = 0.5 * (velgrad[1][2] + velgrad[2][1]);
-      rateofstrain[1][0] = rateofstrain[0][1];
-      rateofstrain[2][1] = rateofstrain[1][2];
-      rateofstrain[2][0] = rateofstrain[0][2];
-    }
-    else { // nDim==2
-      rateofstrain[0][0] = velgrad[0][0];
-      rateofstrain[1][1] = velgrad[1][1];
-      rateofstrain[2][2] = 0.0;
-      rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
-      rateofstrain[0][2] = 0.0;
-      rateofstrain[1][2] = 0.0;
-      rateofstrain[1][0] = rateofstrain[0][1];
-      rateofstrain[2][1] = rateofstrain[1][2];
-      rateofstrain[2][0] = rateofstrain[0][2];
-    }
   }
 
   /*!
@@ -963,6 +926,9 @@ public:
     dist_i = val_dist_i;
     dist_j = val_dist_j;
   }
+
+  /*! \brief Set the hybrid RANS/LES length scale for the source term. */
+  void SetHybridLengthScale(su2double value) { hybridLengthScale = value; }
 
   /*!
    * \brief Set the stochastic source term for the Langevin equations (Backscatter Model).
