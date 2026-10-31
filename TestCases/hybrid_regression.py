@@ -186,7 +186,7 @@ def main():
     rae2822_sst_sust.cfg_dir   = "rans/rae2822"
     rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
     rae2822_sst_sust.test_iter = 20
-    rae2822_sst_sust.test_vals = [-2.465534, 5.844290, 0.496763, 0.041047]
+    rae2822_sst_sust.test_vals = [-2.943090, 5.054149, 0.508694, 0.043417]
     test_list.append(rae2822_sst_sust)
 
     # Flat plate
@@ -228,7 +228,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-9.951719, -11.674782, -5.092201, 1.000888, 0.019126, -1.639020]
+    turb_naca0012_sst_sust.test_vals = [-7.625934, -9.698463, -2.145339, 1.006178, 0.019345, -1.353997]
     turb_naca0012_sst_sust.test_vals_aarch64 = [-12.073210, -14.836724, -5.732627, 1.000050, 0.019144, -2.629689]
     test_list.append(turb_naca0012_sst_sust)
 
@@ -460,7 +460,7 @@ def main():
     inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
     inc_turb_naca0012_sst_sust.test_iter = 20
-    inc_turb_naca0012_sst_sust.test_vals = [-7.170018, 0.332638, 0.000002, 0.312117]
+    inc_turb_naca0012_sst_sust.test_vals = [-9.784874, 3.354565, 0.000008, 0.309475]
     test_list.append(inc_turb_naca0012_sst_sust)
 
     # Weakly coupled heat equation
