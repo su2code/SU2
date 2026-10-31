@@ -36,6 +36,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   adjoint = true;
 
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
