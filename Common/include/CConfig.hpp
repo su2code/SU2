@@ -4863,6 +4863,15 @@ public:
    */
   bool GetMUSCL_Flow(void) const { return MUSCL_Flow; }
 
+  /*! \brief Whether the turbulence equations reconstruct. */
+  bool GetMUSCL_Turb(void) const { return MUSCL_Turb; }
+
+  /*! \brief Whether the species equations reconstruct. */
+  bool GetMUSCL_Species(void) const { return MUSCL_Species; }
+
+  /*! \brief Whether the heat equation reconstructs. */
+  bool GetMUSCL_Heat(void) const { return MUSCL_Heat; }
+
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \return MUSCL scheme.
