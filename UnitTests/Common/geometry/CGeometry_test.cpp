@@ -140,3 +140,49 @@ TEST_CASE("Set bound control volume", "[Geometry]") {
   CHECK(TestCase->geometry->vertex[3][2]->GetNormal()[1] == -0.0625);
   CHECK(TestCase->geometry->vertex[5][3]->GetNormal()[2] == 0.03125);
 }
+
+TEST_CASE("Periodic wall distance across translated images", "[Periodic][WallDistance]") {
+  UnitQuadTestCase field;
+  field.SetOption("SOLVER= RANS");
+  field.SetOption("KIND_VERIFICATION_SOLUTION= NO_VERIFICATION_SOLUTION");
+  field.SetOption("MARKER_CUSTOM= (z_plus,z_minus)");
+  field.AddOption("KIND_TURB_MODEL= SA");
+  field.AddOption("MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)");
+  field.InitConfig();
+  field.InitGeometry(true);
+  for (auto i = 0ul; i < field.geometry->GetnPoint(); ++i) {
+    const auto* x = field.geometry->nodes->GetCoord(i);
+    const auto hill = fabs(x[0] - 0.75) < 1e-12 ? 0.4 : 0.0;
+    field.geometry->nodes->SetCoord(i, 1, hill + (1 - hill) * x[1]);
+  }
+  field.geometry->SetWallDistance(std::numeric_limits<su2double>::max());
+  auto wall = field.geometry->ComputeViscousWallADT(field.config.get());
+  field.geometry->SetWallDistance(wall.get(), field.config.get(), 0);
+  su2double left = 0, right = 0, image = 0;
+  unsigned long checked = 0;
+  for (auto i = 0ul; i < field.geometry->GetnPointDomain(); ++i) {
+    const auto* x = field.geometry->nodes->GetCoord(i);
+    if (fabs(x[1] - 0.5) > 1e-12 || fabs(x[2] - 0.5) > 1e-12) continue;
+    if (fabs(x[0]) < 1e-12) {
+      left = field.geometry->nodes->GetWall_Distance(i);
+      su2double shifted[] = {x[0] + 1, x[1], x[2]};
+      unsigned short marker;
+      unsigned long elem;
+      int rank;
+      wall->DetermineNearestElement(shifted, image, marker, elem, rank);
+      ++checked;
+    }
+    if (fabs(x[0] - 1) < 1e-12) right = field.geometry->nodes->GetWall_Distance(i);
+  }
+  su2double globalLeft = 0, globalRight = 0, globalImage = 0;
+  unsigned long total = 0;
+  SU2_MPI::Allreduce(&left, &globalLeft, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&right, &globalRight, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&image, &globalImage, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&checked, &total, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  REQUIRE(total == 1);
+  const auto expected = 0.5 / sqrt(1.0 + 1.6 * 1.6);
+  CHECK(globalImage == Approx(expected));
+  CHECK(globalRight == Approx(expected));
+  CHECK(globalLeft == Approx(expected));
+}
