@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../../include/output/filewriter/CParaviewFieldLayout.hpp"
 #include "../../../include/output/filewriter/CParaviewFileWriter.hpp"
 
 const string CParaviewFileWriter::fileExt = ".vtk";
@@ -105,64 +106,22 @@ void CParaviewFileWriter::WriteData(string val_filename){
 
   WriteMPIString("\nPOINT_DATA " + to_string(dataSorter->GetnPointsGlobal()) + "\n", MASTER_NODE);
 
-  unsigned short varStart = 2;
-  if (nDim == 3) varStart++;
-
-  /*--- Need to adjust container location to avoid PointID tag and coords. ---*/
-  unsigned short VarCounter = varStart;
-
-  for (unsigned short iField = varStart; iField < fieldNames.size(); iField++) {
-
-    string fieldname = fieldNames[iField];
-
-    fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
-
-    bool output_variable = true, isVector = false;
-    size_t found = fieldNames[iField].find("_x");
-    if (found!=string::npos) {
-      output_variable = true;
-      isVector = true;
-    }
-    found = fieldNames[iField].find("_y");
-    if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Y component. ---*/
-      output_variable = false;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_z");
-    if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Z component. ---*/
-      output_variable = false;
-      VarCounter++;
-    }
-
-    if (!output_variable) continue;
-
+  for (const auto& field : GetParaviewFields(fieldNames, nDim)) {
     resetData();
-
-    if (isVector) {
-
-      fieldname.erase(fieldname.end()-2,fieldname.end());
-
-      WriteMPIString("\nVECTORS " + fieldname + " double\n", MASTER_NODE);
-
+    if (field.components == 3) {
+      WriteMPIString("\nVECTORS " + field.name + " double\n", MASTER_NODE);
       for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-        data << dataSorter->GetData(VarCounter+0, iPoint) << "\t" << dataSorter->GetData(VarCounter+1, iPoint) << "\t";
-        if (nDim == 3) data << dataSorter->GetData(VarCounter+2, iPoint) << "\t";
-        if (nDim == 2) data << "0.0" << "\t";
+        data << dataSorter->GetData(field.first, iPoint) << "\t"
+             << dataSorter->GetData(field.first + 1, iPoint) << "\t";
+        if (nDim == 3) data << dataSorter->GetData(field.first + 2, iPoint) << "\t";
+        else data << "0.0\t";
       }
-
     } else {
-
-      WriteMPIString("\nSCALARS " + fieldname + " double 1\nLOOKUP_TABLE default\n", MASTER_NODE);
-
-      for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-        data << dataSorter->GetData(VarCounter, iPoint) << "\t";
-      }
+      WriteMPIString("\nSCALARS " + field.name + " double 1\nLOOKUP_TABLE default\n", MASTER_NODE);
+      for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++)
+        data << dataSorter->GetData(field.first, iPoint) << "\t";
     }
-
     WriteMPIStringAll(data.str());
-    VarCounter++;
   }
 
   CloseMPIFile();
