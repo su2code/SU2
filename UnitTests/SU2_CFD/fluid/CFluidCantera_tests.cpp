@@ -171,7 +171,7 @@ TEST_CASE("Fluid_Cantera_Compressible", "[Multicomponent_flow]") {
   /*--- State evaluations of the compressible solver, which set the composition separately. ---*/
 
   SU2_COMPONENT val_software = SU2_COMPONENT::SU2_CFD;
-  CConfig config("multicomponent_cantera.cfg", val_software, true);
+  CConfig config("src/SU2/UnitTests/SU2_CFD/fluid/multicomponent_cantera.cfg", val_software, true);
   CFluidCantera fluid(config.GetPressure_Thermodynamic(), &config);
 
   const su2double* scalar = config.GetSpecies_Init();
