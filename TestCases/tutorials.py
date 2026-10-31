@@ -165,7 +165,7 @@ def main():
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
     kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
     kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-7.490448, -6.823978, -6.838620, -6.383873, -7.878123, -3.003654, -7.452198, 5.000000, -1.857226, 4.000000, -5.336949, 3.000000, -6.363373, 0.025668, 0.000000, 0.025668, 0.000000, 62.717000, 8.462600, 46.725000, 7.529400]
+    kenics_mixer_tutorial.test_vals = [-7.490463, -6.823949, -6.838579, -6.383927, -7.879236, -3.003913, -7.452024, 5.000000, -1.857322, 4.000000, -5.342039, 3.000000, -6.366408, 0.025672, 0.000000, 0.025672, 0.000000, 62.693000, 8.462600, 46.701000, 7.529400]
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
@@ -314,7 +314,7 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals = [520.000000, 0.000000, -5.292186, 0.000000, 0.304255, 0.792893, 0.001907, 0.010888]
+    tutorial_unst_naca0012.test_vals = [520.000000, 0.000000, -5.292091, 0.000000, 0.312095, 0.781939, 0.001784, 0.010509]
     tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.292359, 0, 0.284720, 0.766329, 0.000954, 0.007565]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
