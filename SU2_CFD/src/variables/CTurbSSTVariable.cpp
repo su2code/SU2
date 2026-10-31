@@ -33,6 +33,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   : CTurbVariable(npoint, ndim, nvar, config) {
 
   sstParsedOptions = config->GetSSTParsedOptions();
+  lmParsedOptions = config->GetLMParsedOptions();
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {

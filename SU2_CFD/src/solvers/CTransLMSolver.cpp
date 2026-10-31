@@ -53,6 +53,14 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, const CSolv
   /*--- Dimension of the problem --> 2 Transport equations (intermittency, Reth) ---*/
   nVar = 2;
   nPrimVar = 2;
+
+  /*--- Check if Simplified version is used ---*/
+  options = config->GetLMParsedOptions();
+  if (options.SLM) {
+    nVar = 1;
+    nPrimVar = 1;
+  }
+
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
@@ -60,10 +68,18 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, const CSolv
 
   nVarGrad = nVar;
 
-  /*--- Define variables needed for transition from config file */
-  options = config->GetLMParsedOptions();
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nDim = geometry->GetnDim();
+
+  /*--- Define variables needed for transition from config file ---*/
   TransCorrelations.SetOptions(options);
   TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+
+  isSepNeeded = true;
+  // If the Simplified model is used coupled with SST then we do not need the separation induced intermittency
+  // due to the added production term to k equation
+  if (options.SLM && options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) isSepNeeded = false;
 
   /*--- Single grid simulation, and every level of a Full-MG startup, which solves the transition
    *    equations on whichever grid the flow solver is currently on. ---*/
@@ -104,33 +120,27 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, const CSolv
   lowerlimit[0] = 1.0e-4;
   upperlimit[0] = 5.0;
 
-  lowerlimit[1] = 1.0e-4;
-  upperlimit[1] = 1.0e15;
+  if (!options.SLM) {
+    lowerlimit[1] = 1.0e-4;
+    upperlimit[1] = 1.0e15;
+  }
 
   /*--- Far-field flow state quantities and initialization. ---*/
-  const su2double Intensity = config->GetTurbulenceIntensity_FreeStream()*100.0;
 
   const su2double Intermittency_Inf  = 1.0;
-  su2double ReThetaT_Inf = 100.0;
+  Solution_Inf[0] = Intermittency_Inf;
 
-  /*--- Momentum thickness Reynolds number, initialized from freestream turbulent intensity*/
-  if (Intensity <= 1.3) {
-    if(Intensity >=0.027) {
-      ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(Intensity*Intensity));
-    }
-    else {
-      ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(0.27*0.27));
-    }
-  }
-  else if(Intensity>1.3) {
-    ReThetaT_Inf = 331.5*pow(Intensity-0.5658,-0.671);
-  }
+  const su2double ReThetaT_Inf =
+      TransLMCorrelations::FreestreamReThetaT(config->GetTurbulenceIntensity_FreeStream() * 100.0);
 
   Solution_Inf[0] = Intermittency_Inf;
-  Solution_Inf[1] = ReThetaT_Inf;
+  if (!options.SLM) {
+    Solution_Inf[1] = ReThetaT_Inf;
+  }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
   nodes = new CTransLMVariable(Intermittency_Inf, ReThetaT_Inf, 1.0, 1.0, nPoint, nDim, nVar, config);
+
   SetBaseClassPointerToNodes();
 
   /*--- Ghost states for boundary conditions, sized to the largest marker (see BoundaryFluxResidual). ---*/
@@ -165,7 +175,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, const CSolv
     Inlet_TurbVars[iMarker].resize(nVertex[iMarker],nVar);
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
       Inlet_TurbVars[iMarker](iVertex,0) = Intermittency_Inf;
-      Inlet_TurbVars[iMarker](iVertex,1) = ReThetaT_Inf;
+       if (!options.SLM) Inlet_TurbVars[iMarker](iVertex,1) = ReThetaT_Inf;
     }
   }
 
@@ -189,6 +199,57 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
+
+  if (options.SLM && options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) {
+
+    /*--- With cross-flow and SA, the auxiliary variables 1-3 are the direction of the vorticity, e_omega, of which
+     * the gradient gives the cross-flow strength of Lee and Baeder (AIAA 2021-1532), Eqs. 31-33. ---*/
+    const bool crossFlowSA = options.CrossFlow && TurbFamily == TURB_FAMILY::SA;
+
+    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+      auto Normal = geometry->nodes->GetNormal(iPoint);
+      nodes->SetAuxVar(iPoint, 0, flowNodes->GetProjVel(iPoint, Normal));
+      for (auto iDim = 0u; iDim < nDim; ++iDim) nodes->GetTransitionWallNormal(iPoint)[iDim] = Normal[iDim];
+      if (crossFlowSA) {
+        const auto Vorticity = flowNodes->GetVorticity(iPoint);
+        const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity);
+        for (auto iDim = 0u; iDim < 3; iDim++)
+          nodes->SetAuxVar(iPoint, 1 + iDim, VorticityMag > 1e-12 ? su2double(Vorticity[iDim] / VorticityMag) : su2double(0.0));
+      }
+    }
+    END_SU2_OMP_FOR
+
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+      SetAuxVar_Gradient_GG(geometry, config);
+    }
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+      SetAuxVar_Gradient_LS(geometry, config);
+    }
+
+    /*--- After the gradients, auxiliary variable 0 becomes dV/dy = grad(n . V) . n and, with cross-flow and SA,
+     * auxiliary variable 1 becomes Psi = |n . grad(e_omega)| d_w (Lee and Baeder, Eqs. 32-33). ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+      su2double AuxVarHere = 0.0;
+      auto Normal = geometry->nodes->GetNormal(iPoint);
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        AuxVarHere += Normal[iDim] * nodes->GetAuxVarGradient(iPoint, 0, iDim);
+      nodes->SetAuxVar(iPoint, 0, AuxVarHere);
+
+      if (crossFlowSA) {
+        su2double phi[3] = {0.0, 0.0, 0.0};
+        for (auto iVar = 0u; iVar < 3; iVar++)
+          for (auto iDim = 0u; iDim < nDim; iDim++)
+            phi[iVar] += Normal[iDim] * nodes->GetAuxVarGradient(iPoint, 1 + iVar, iDim);
+        nodes->SetAuxVar(iPoint, 1, GeometryToolbox::Norm(3, phi) * geometry->nodes->GetWall_Distance(iPoint));
+      }
+    }
+    END_SU2_OMP_FOR
+
+  }
+
 }
 
 void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -204,6 +265,25 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   }
 
   AD::StartNoSharedReading();
+
+  if (isSepNeeded) {
+    SetSeparationIntermittency(geometry, solver_container, config);
+  }
+  else {
+
+    // Effective intermittency and separation intermittency are not taken into account here! There is the added production term in the k-equation
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+      nodes->SetIntermittencyEff(iPoint, nodes->GetSolution(iPoint,0));
+    }
+    END_SU2_OMP_FOR
+  }
+
+  AD::EndNoSharedReading();
+}
+
+void CTransLMSolver::SetSeparationIntermittency(CGeometry* geometry, CSolver** solver_container, const CConfig* config) {
+
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   auto* turbNodes = su2staticcast_p<CTurbVariable*>(solver_container[TURB_SOL]->GetNodes());
 
@@ -221,7 +301,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     VorticityMag = max(VorticityMag, 1e-12);
     StrainMag = max(StrainMag, 1e-12); // safety against division by zero
     const su2double Intermittency = nodes->GetSolution(iPoint,0);
-    const su2double Re_t = nodes->GetSolution(iPoint,1);
     const su2double Re_v = rho*dist*dist*StrainMag/mu;
     const su2double vel_u = flowNodes->GetVelocity(iPoint, 0);
     const su2double vel_v = flowNodes->GetVelocity(iPoint, 1);
@@ -233,13 +312,23 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       omega = turbNodes->GetSolution(iPoint,1);
       k = turbNodes->GetSolution(iPoint,0);
     }
-    su2double Tu = 1.0;
-    if(TurbFamily == TURB_FAMILY::KW)
-      Tu = max(100.0*sqrt( 2.0 * k / 3.0 ) / VelocityMag,0.027);
-    if(TurbFamily == TURB_FAMILY::SA)
-      Tu = config->GetTurbulenceIntensity_FreeStream()*100;
 
-    const su2double Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, Re_t);
+    su2double Re_t = 0.0;
+    su2double Corr_Rec = 0.0;
+
+    if (options.SLM) {
+      Re_t = nodes->GetTransitionData(iPoint)->momentumThicknessReynolds;
+      Corr_Rec = nodes->GetTransitionData(iPoint)->criticalReynolds;
+    } else {
+      Re_t = nodes->GetSolution(iPoint,1);
+      su2double Tu = 1.0;
+      if(TurbFamily == TURB_FAMILY::KW)
+        Tu = max(100.0*sqrt( 2.0 * k / 3.0 ) / VelocityMag,0.027);
+      if(TurbFamily == TURB_FAMILY::SA)
+        Tu = config->GetTurbulenceIntensity_FreeStream()*100;
+
+      Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, Re_t);
+    }
 
     su2double R_t = 1.0;
     if(TurbFamily == TURB_FAMILY::KW)
@@ -248,6 +337,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       R_t = muT/ mu;
 
     const su2double f_reattach = exp(-pow(R_t/20,4));
+
     su2double f_wake = 0.0;
     if(TurbFamily == TURB_FAMILY::KW){
       const su2double re_omega = rho*omega*dist*dist/mu;
@@ -271,9 +361,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   }
   END_SU2_OMP_FOR
 
-  AD::EndNoSharedReading();
 }
-
 
 void CTransLMSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics**,
                                      CConfig* config, unsigned short iMesh) {
@@ -283,14 +371,14 @@ void CTransLMSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_conta
    * so there is no accurate-Jacobian correction to apply. ---*/
   const auto opt = ScalarFluxOptions::Interior(*config, config->GetBounded_Turb());
 
-  DispatchScheme<CScalarFlux_TransLM, 2>(config, [&](auto tag) {
+  DispatchScheme<CScalarFlux_TransLM, 2, 1>(config, [&](auto tag) {
     EdgeFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt);
   });
 }
 
 void CTransLMSolver::BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                   const ScalarFluxOptions& opt, unsigned short val_marker) {
-  DispatchScheme<CScalarFlux_TransLM, 2>(config, [&](auto tag) {
+  DispatchScheme<CScalarFlux_TransLM, 2, 1>(config, [&](auto tag) {
     BoundaryFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, opt, val_marker);
   });
 }
@@ -313,7 +401,6 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
 
 
     /*--- Conservative variables w/o reconstruction ---*/
@@ -352,14 +439,21 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Set coordinate (for debugging) ---*/
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
 
-    if (options.LM2015) {
-      /*--- Set local grid length (for LM2015)*/
+    if (options.CrossFlow && !options.SLM) {
+      /*--- Set local grid length (for LM2015 cross-flow corrections)*/
       numerics->SetLocalGridLength(geometry->nodes->GetMaxLength(iPoint));
+    }
+
+    if(options.SLM) {
+      if (options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) numerics->SetAuxVar(nodes->GetAuxVar(iPoint, 0));
+      if (options.CrossFlow && TurbFamily == TURB_FAMILY::SA) numerics->SetCrossFlowStrength(nodes->GetAuxVar(iPoint, 1));
     }
 
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    *nodes->GetTransitionData(iPoint) = *numerics->GetTransitionData();
 
     /*--- Subtract residual and the Jacobian ---*/
 
@@ -424,16 +518,10 @@ void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto* V_inlet = flowSolver->GetCharacPrimVar(val_marker, iVertex);
 
-    /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
-    su2double Inlet_Vars[MAXNVAR];
-    Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
-    Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1];
-    if (config->GetInlet_Profile_From_File()) {
-      Inlet_Vars[0] /= pow(config->GetVelocity_Ref(), 2);
-      Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
-    }
-
-    for (auto iVar = 0u; iVar < nVar; iVar++) ghostNodes->SetSolution(iVertex, iVar, Inlet_Vars[iVar]);
+    /*--- The transition variables are dimensionless and are not read from inlet profile files: the free-stream
+     values set in the constructor are used (nVar of them, one for the simplified model). ---*/
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      ghostNodes->SetSolution(iVertex, iVar, Inlet_TurbVars[val_marker][iVertex][iVar]);
 
     SetGhostPrimitives(iVertex, V_inlet);
 
@@ -487,12 +575,11 @@ void CTransLMSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
   /*--- LM's diffusion coefficients read no auxiliary ghost field. ---*/
   const auto fillGhostExtras = [](unsigned long, unsigned long) {};
 
-  DispatchScheme<CScalarFlux_TransLM, 2>(config, [&](auto tag) {
+  DispatchScheme<CScalarFlux_TransLM, 2, 1>(config, [&](auto tag) {
     FluidInterfaceFluxResidual<typename decltype(tag)::type>(geometry, solver_container, config, optConv, optVisc,
                                                              fillGhostExtras);
   });
 }
-
 
 void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                   bool val_update_geo) {
@@ -543,8 +630,8 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
         const auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-        nodes->SetIntermittencySep(iPoint_Local,  Restart_Data[index + 2]);
-        nodes->SetIntermittencyEff(iPoint_Local,  Restart_Data[index + 3]);
+        /*--- The separation and effective intermittencies are not in the restart (compact restarts only have the
+         * solution variables), they are recomputed by Postprocessing below. ---*/
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;

@@ -37,7 +37,126 @@ class TransLMCorrelations {
 
   LM_ParsedOptions options;
 
+  su2double MenterSLM(const su2double Tu_L, const su2double lambda_theta, const bool spalartAllmaras) const {
+    su2double rethetac = 0.0;
+
+    /*-- Thwaites parameter ---*/
+    su2double  lambda_theta_local = lambda_theta;
+
+    /*-- Function to sensitize the transition onset to the streamwise pressure gradient ---*/
+    su2double FPG = 0.0;
+    const su2double C_PG1 = 14.68;
+    const su2double C_PG1_lim = 1.5;
+    const su2double C_PG2 = -7.34;
+    const su2double C_PG2_lim = 3.0;
+    const su2double C_PG3 = 0.0;
+    if (lambda_theta_local >= 0.0) {
+      FPG = min(1+ C_PG1 * lambda_theta_local, C_PG1_lim);
+    } else {
+      const su2double FirstTerm = C_PG2 * lambda_theta_local;
+      const su2double SecondTerm = C_PG3 * min(lambda_theta_local + 0.0681, 0.0);
+      FPG = min(1 + FirstTerm + SecondTerm, C_PG2_lim);
+    }
+
+    FPG = max(FPG, 0.0);
+
+    /*--- Menter et al. (2015), Eq. 14. ---*/
+    su2double C_TU1 = 100.0;
+    su2double C_TU2 = 1000.0;
+    const su2double C_TU3 = 1.0;
+
+    if (spalartAllmaras) {
+      /*--- Lee and Baeder, AIAA 2021-1532, Eqs. 11-13: the constants of Colonia et al. (Eq. 12) below Tu = 0.51%,
+       * the original ones (Eq. 11) above Tu = 2%, linearly blended in between. Tu_L is the freestream Tu. ---*/
+      const su2double Tu_blend = min(max(Tu_L, 0.51), 2.0);
+      C_TU1 = (100.0 - 163.0) / (2.0 - 0.51) * (Tu_blend - 2.0) + 100.0;
+      C_TU2 = (1000.0 - 1002.25) / (2.0 - 0.51) * (Tu_blend - 2.0) + 1000.0;
+    }
+    rethetac = C_TU1 + C_TU2 * exp(-C_TU3 * Tu_L * FPG);
+
+    return rethetac;
+
+  }
+
+  su2double CoderSLM(const su2double Tu_L, const su2double wall_dist, const su2double VorticityMag, const su2double VelocityMag) const {
+    su2double rethetac = 0.0;
+
+    /*-- Local pressure gradient parameter ---*/
+    const su2double H_c = max(min(wall_dist * VorticityMag / VelocityMag, 1.1542), 0.3823);
+
+    /*-- Thwaites parameter ---*/
+    su2double lambda_theta_local = 0.0;
+    const su2double H_c_delta = 0.587743 - H_c;
+    if ( H_c >= 0.587743 ) {
+      const su2double FirstTerm = 0.1919 * pow(H_c_delta, 3.0);
+      const su2double SecondTerm = 0.4182 * pow(H_c_delta, 2.0);
+      const su2double ThirdTerm = 0.2959 * H_c_delta;
+      lambda_theta_local = FirstTerm + SecondTerm + ThirdTerm;
+    } else {
+      const su2double FirstTerm = 4.7596 * pow(H_c_delta, 3.0);
+      const su2double SecondTerm = -0.3837 * pow(H_c_delta, 2.0);
+      const su2double ThirdTerm = 0.3575 * H_c_delta;
+      lambda_theta_local = FirstTerm + SecondTerm + ThirdTerm;
+    }
+
+    /*-- Function to sensitize the transition onset to the streamwise pressure gradient ---*/
+    su2double FPG = 0.0;
+    if (lambda_theta_local <= 0.0) {
+      const su2double FirstTerm = -12.986 * lambda_theta_local;
+      const su2double SecondTerm = -123.66 * pow(lambda_theta_local, 2.0);
+      const su2double ThirdTerm = -405.689 * pow(lambda_theta_local, 3.0);
+      FPG = 1 - (FirstTerm + SecondTerm + ThirdTerm) * exp(-pow(Tu_L/1.5,1.5));
+    } else {
+      FPG = 1 + 0.275 * (1 - exp(-35.0 * lambda_theta_local)) * exp(-Tu_L/0.5);
+    }
+
+    if (Tu_L <= 1.3) {
+      const su2double FirstTerm = -589.428 * Tu_L;
+      const su2double SecondTerm = 0.2196 / max(pow(Tu_L, 2.0), 1e-12);
+      rethetac = 1173.51 + FirstTerm + SecondTerm;
+    } else {
+      rethetac = 331.50 * pow(Tu_L-0.5658, -0.671);
+    }
+    rethetac = rethetac * FPG;
+
+    return rethetac;
+
+  }
+
+  su2double ModifiedEpplerSLM(const su2double wall_dist, const su2double VorticityMag, const su2double VelocityMag) const {
+    su2double rethetac = 0.0;
+
+    /*-- Local pressure gradient parameter ---*/
+    const su2double H_c = max(min(wall_dist * VorticityMag / VelocityMag, 1.1542), 0.3823);
+
+    /*-- H_32 Shape factor --*/
+    const su2double H_32 = 1.515095 + 0.2041 * pow((1.1542 - H_c), 2.0956);
+
+    rethetac = exp(127.94 * pow((H_32-1.515095), 2.0) + 6.774224);
+
+    return rethetac;
+
+  }
+
+
  public:
+  /*! \brief Langtry-Menter (2009) farfield correlation, with Tu in percent.
+   *         See https://tmbwg.github.io/turbmodels/langtrymenter_4eqn.html (farfield boundary condition).
+   *         The lower Tu limit avoids the inverse-square singularity. */
+  static su2double FreestreamReThetaT(su2double intensity) {
+    constexpr passivedouble minIntensity = 0.027;
+    constexpr passivedouble intensitySwitch = 1.3;
+    constexpr passivedouble lowIntensityOffset = 1173.51;
+    constexpr passivedouble lowIntensitySlope = 589.428;
+    constexpr passivedouble inverseSquareCoefficient = 0.2196;
+    constexpr passivedouble highIntensityCoefficient = 331.5;
+    constexpr passivedouble highIntensityOffset = 0.5658;
+    constexpr passivedouble highIntensityExponent = -0.671;
+    intensity = max(intensity, minIntensity);
+    if (intensity <= intensitySwitch)
+      return lowIntensityOffset - lowIntensitySlope * intensity + inverseSquareCoefficient / (intensity * intensity);
+    return highIntensityCoefficient * pow(intensity - highIntensityOffset, highIntensityExponent);
+  }
 
   /*!
    * \brief Set LM options.
@@ -189,4 +308,36 @@ class TransLMCorrelations {
 
     return F_length1;
   }
+
+  /*!
+   * \brief Compute Re_theta_c from correlations for the Simplified LM model.
+   * \param[in] Tu_L - Turbulence intensity in percent.
+   * \param[in] lambda_theta - Local pressure-gradient parameter.
+   * \param[in] wall_dist - Wall distance.
+   * \param[in] VorticityMag - Vorticity magnitude.
+   * \param[in] VelocityMag - Velocity magnitude.
+   * \param[in] spalartAllmaras - Use the SA coefficients of Lee and Baeder.
+   * \return Critical transition Reynolds number.
+   */
+  su2double ReThetaC_Correlations_SLM(const su2double Tu_L, const su2double lambda_theta, const su2double wall_dist,
+                                      const su2double VorticityMag, const su2double VelocityMag,
+                                      const bool spalartAllmaras = false) const {
+
+    switch (options.Correlation_SLM) {
+      case TURB_TRANS_CORRELATION_SLM::MENTER_SLM:
+        return MenterSLM(Tu_L, lambda_theta, spalartAllmaras);
+      case TURB_TRANS_CORRELATION_SLM::CODER_SLM:
+        return CoderSLM(Tu_L, wall_dist, VorticityMag, VelocityMag);
+      case TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM:
+        return ModifiedEpplerSLM(wall_dist, VorticityMag, VelocityMag);
+
+      case TURB_TRANS_CORRELATION_SLM::DEFAULT:
+        SU2_MPI::Error("Transition correlation for Simplified LM model is set to DEFAULT but no default value has ben set in the code.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+
+    return 0.0;
+  }
+
 };

@@ -31,6 +31,7 @@
 #include <sstream>
 #include <vector>
 #include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
+#include "../../../SU2_CFD/include/numerics/turbulent/transition/trans_correlations.hpp"
 #include "../../../SU2_CFD/include/numerics/NEMO/NEMO_diffusion.hpp"
 
 TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
@@ -242,4 +243,21 @@ TEST_CASE("NEMO corrected viscous residual returns distinct i and j Jacobians", 
       CHECK(finite_difference == Approx(analytic).epsilon(1.0e-8).margin(1.0e-10));
     }
   }
+}
+
+TEST_CASE("LM freestream and simplified correlations retain their limits", "[transition]") {
+  // Values from the published correlations, including both branches and the low-Tu limit.
+  REQUIRE(TransLMCorrelations::FreestreamReThetaT(0.5) == Approx(879.6744));
+  REQUIRE(TransLMCorrelations::FreestreamReThetaT(2.0) == Approx(260.25459846968556));
+  REQUIRE(TransLMCorrelations::FreestreamReThetaT(0.0) == TransLMCorrelations::FreestreamReThetaT(0.027));
+
+  LM_ParsedOptions options{};
+  options.Correlation_SLM = TURB_TRANS_CORRELATION_SLM::MENTER_SLM;
+  TransLMCorrelations correlations;
+  correlations.SetOptions(options);
+  REQUIRE(correlations.ReThetaC_Correlations_SLM(1.0, 0.0, 0.1, 1.0, 1.0) == Approx(467.87944117144235));
+  REQUIRE(correlations.ReThetaC_Correlations_SLM(0.1, 0.0, 0.1, 1.0, 1.0, true) == Approx(1069.8733022265405));
+  // Above the SA blend, the original SST coefficients are recovered.
+  REQUIRE(correlations.ReThetaC_Correlations_SLM(2.0, 0.0, 0.1, 1.0, 1.0, true) ==
+          correlations.ReThetaC_Correlations_SLM(2.0, 0.0, 0.1, 1.0, 1.0));
 }
