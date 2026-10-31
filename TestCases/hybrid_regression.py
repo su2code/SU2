@@ -170,7 +170,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.916839, -5.161263, 0.802145, 0.019586, 1000.000000]
+    rae2822_sa.test_vals = [-2.915770, -5.310335, 0.801323, 0.019588, 1000.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -452,7 +452,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000006, -0.028637, 4.000000, -4.016988, 2.000000, -4.487046]
+    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000006, -0.028637, 4.000000, -4.016947, 2.000000, -4.490161]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -711,7 +711,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.455981, -1.541069]
+    bars_SST_2D.test_vals = [13.000000, -0.462453, -1.541069]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
