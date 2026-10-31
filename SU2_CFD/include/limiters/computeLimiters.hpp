@@ -50,7 +50,8 @@ void computeLimiters(LIMITER LimiterKind,
                      const GradientType& gradient,
                      FieldType& fieldMin,
                      FieldType& fieldMax,
-                     FieldType& limiter)
+                     FieldType& limiter,
+                     const su2double* refValue = nullptr)
 {
   if (geometry.GetnDim() != 2 && geometry.GetnDim() != 3)
     SU2_MPI::Error("Too many dimensions to compute limiters.", CURRENT_FUNCTION);
@@ -58,10 +59,10 @@ void computeLimiters(LIMITER LimiterKind,
 #define INSTANTIATE(KIND)\
 if (geometry.GetnDim() == 2) {\
   computeLimiters_impl<2,KIND>(solver, kindMpiComm, kindPeriodicComm1, kindPeriodicComm2, geometry,\
-                               config, varBegin, varEnd, umusclKappa, field, gradient, fieldMin, fieldMax, limiter);\
+                               config, varBegin, varEnd, umusclKappa, field, gradient, fieldMin, fieldMax, limiter, refValue);\
 } else {\
   computeLimiters_impl<3,KIND>(solver, kindMpiComm, kindPeriodicComm1, kindPeriodicComm2, geometry,\
-                               config, varBegin, varEnd, umusclKappa, field, gradient, fieldMin, fieldMax, limiter);\
+                               config, varBegin, varEnd, umusclKappa, field, gradient, fieldMin, fieldMax, limiter, refValue);\
 }
   switch (LimiterKind) {
     case LIMITER::NONE:
