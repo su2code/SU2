@@ -2,7 +2,7 @@
  * \file pressure_based.cpp
  * \brief Implementations of fluxes for pressure-based solvers.
  * \author T. Aalbers
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
