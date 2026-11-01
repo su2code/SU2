@@ -119,6 +119,10 @@ if get_option('custom-mpi')
   mpi = true
 # Otherwise they are automatically determined
 else
+# Check for MinGW MS-MPI compatibility on Windows
+if host_machine.system() == 'windows' and meson.get_compiler('cpp').get_id() == 'gcc' and get_option('with-mpi').enabled()
+  warning('Building SU2 with MinGW GCC and MS-MPI requires libmsmpi.a. If linking fails, compile using MSVC or generate a MinGW import library.')
+endif
   mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')),
              dependency('mpi', language:'cpp', required : get_option('with-mpi'))]
   if mpi_dep[0].found() or mpi_dep[1].found()
