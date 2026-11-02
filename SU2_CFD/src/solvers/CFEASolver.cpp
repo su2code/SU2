@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -258,7 +258,7 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
 
   if (!coloring.empty()) {
     /*--- We are not constrained by the color group size when using locks. ---*/
-    auto groupSize = LockStrategy? 1ul : geometry->GetElementColorGroupSize();
+    auto groupSize = static_cast<su2uint>(LockStrategy ? 1ul : geometry->GetElementColorGroupSize());
     auto nColor = coloring.getOuterSize();
     ElemColoring.reserve(nColor);
 

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -205,10 +205,10 @@ class CGeometry {
   LDUSparsePattern finiteElementPatternFill0; /*!< \brief FEM sparsity with 0-fill (structural pattern). */
   LDUSparsePattern finiteElementPatternFillN; /*!< \brief FEM sparsity with N-fill (e.g. for ILU-N). */
 
-  su2vector<unsigned long> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
-  su2vector<unsigned long> finiteVolumeUToLTranspMap;  /*!< \brief FVM U-entry -> L-entry of its transpose. */
-  su2vector<unsigned long> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
-  su2vector<unsigned long> finiteElementUToLTranspMap; /*!< \brief FEM U-entry -> L-entry of its transpose. */
+  su2vector<su2uint> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
+  su2vector<su2uint> finiteVolumeUToLTranspMap;  /*!< \brief FVM U-entry -> L-entry of its transpose. */
+  su2vector<su2uint> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
+  su2vector<su2uint> finiteElementUToLTranspMap; /*!< \brief FEM U-entry -> L-entry of its transpose. */
 
   /*--- Edge and element colorings. ---*/
 
@@ -238,6 +238,8 @@ class CGeometry {
     std::vector<unsigned long> colorOffsets;
 
     std::vector<uint8_t> lineletColor; /*!< \brief Coloring transfered to points, for visualization. */
+
+    bool computed = false; /*!< \brief Set once the (collective) computation is done, even if a rank has no linelets. */
   };
 
  protected:
@@ -894,7 +896,7 @@ class CGeometry {
   inline virtual void GatherInOutAverageValues(CConfig* config, bool allocate) {}
 
   /*!
-   * \brief Store all the turboperformance in the solver in ZONE_0.
+   * \brief Store all the turboperformance in the solver in final zone.
    * \param[in] donor_geometry  - Solution from the donor mesh.
    * \param[in] target_geometry - Solution from the target mesh.
    * \param[in] donorZone       - counter of the donor solution
@@ -1892,7 +1894,7 @@ class CGeometry {
    * \param[in] type - Finite volume or finite element.
    * \return Reference to the l_to_u map.
    */
-  const su2vector<unsigned long>& GetLToUTransposeSparsePatternMap(ConnectivityType type);
+  const su2vector<su2uint>& GetLToUTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
    * \brief Get the bijective map from U-entry indices to L-entry indices of their transposes.
@@ -1900,7 +1902,7 @@ class CGeometry {
    * \param[in] type - Finite volume or finite element.
    * \return Reference to the u_to_l map.
    */
-  const su2vector<unsigned long>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
+  const su2vector<su2uint>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
    * \brief Get the edge coloring.
@@ -1978,7 +1980,8 @@ class CGeometry {
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] geometry_container - Geometrical definition of the problem.
    */
-  static void ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container);
+  static void ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container,
+                                  const int record_zone = -1);
 
   /*!
    * \brief Set the amount of nonconvex elements in the mesh.

@@ -1,3 +1,2 @@
-common_src += files(['CTrapezoidalMap.cpp',
-                     'CFileReaderLUT.cpp',
+common_src += files(['CFileReaderLUT.cpp',
                      'CLookUpTable.cpp'])

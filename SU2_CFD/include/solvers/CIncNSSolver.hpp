@@ -2,7 +2,7 @@
  * \file CIncNSSolver.hpp
  * \brief Headers of the CIncNSSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,24 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncNSSolver final : public CIncEulerSolver {
+  su2double TemperatureLimits[2];
+  su2activematrix EnthalpyDiffusion;     /*!< \brief Enthalpy diffusion coefficient of each species at each point. */
+  su2activematrix GradEnthalpyDiffusion; /*!< \brief Temperature derivative of EnthalpyDiffusion. */
+
+  /*!
+   * \brief Evaluate the enthalpy diffusion coefficients once per point for use by the edge loop.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeEnthalpyDiffusionTerms(CSolver** solver_container, const CConfig* config);
+
+  /*!
+   * \brief Set the temperature, enthalpy and properties of the points inside the ignition spark.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ApplySpark(CGeometry* geometry, CSolver** solver_container, const CConfig* config);
 
   /*!
    * \brief Generic implementation of the isothermal, heatflux and heat-transfer/convection walls.
@@ -61,9 +79,10 @@ class CIncNSSolver final : public CIncEulerSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
+   * \return The viscous Jacobians, to be applied by the caller together with the convective part.
    */
-  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                        CNumerics *numerics, CConfig *config) override;
+  CNumerics::ResidualType<> Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                             CNumerics *numerics, CConfig *config) override;
 
 /*!
    * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.

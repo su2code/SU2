@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to sparse matrix-vector product wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,7 +72,6 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
   const CConfig* config;                /*!< \brief config of the problem. */
-  mutable bool matrix_uploaded = false; /*!< \brief Upload the matrix lazily on the first actual GPU matvec. */
 
  public:
   /*!
@@ -83,7 +82,17 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
                                  const CConfig* config_ref)
-      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {}
+      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {
+    /*--- The matrix does not change while this object lives, so it crosses the bus once,
+     * here. The vectors are uploaded by CSysSolve, see HandleTemporariesIn. ---*/
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      if (config->GetCUDA()) {
+        SU2_DEVICE_REGION(matrix.HtDTransfer();)
+      }
+    }
+#endif
+  }
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
@@ -96,21 +105,6 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    if (config->GetCUDA()) {
-#ifdef HAVE_CUDA
-      if (!matrix_uploaded) {
-        matrix.HtDTransfer();
-        matrix_uploaded = true;
-      }
-      matrix.GPUMatrixVectorProduct(u, v, geometry, config);
-#else
-      SU2_MPI::Error(
-          "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
-          "options enabled in Meson to access GPU Functions",
-          CURRENT_FUNCTION);
-#endif
-    } else {
-      matrix.MatrixVectorProduct(u, v, geometry, config);
-    }
+    matrix.MatrixVectorProduct(u, v, geometry, config);
   }
 };

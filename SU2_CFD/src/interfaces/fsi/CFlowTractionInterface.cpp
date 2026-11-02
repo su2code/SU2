@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author R. Sanchez
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,6 +38,7 @@ CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned
                                                const CConfig *config, bool conservative_) :
   CInterface(val_nVar, val_nConst),
   conservative(conservative_) {
+  InterfaceType = ENUM_TRANSFER::FLOW_TRACTION;
 }
 
 void CFlowTractionInterface::Preprocess(const CConfig *flow_config, const CConfig *struct_config,

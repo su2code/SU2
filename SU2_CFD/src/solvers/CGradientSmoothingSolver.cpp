@@ -2,7 +2,7 @@
  * \file CGradientSmoothing.cpp
  * \brief Main solver routines for the gradient smoothing problem.
  * \author T. Dick
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -107,18 +107,20 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   }
 
   /*--- initializations for linear equation systems ---*/
+  std::optional<unsigned short> override_prec =
+    config->GetSmoothGradient() ? std::optional<unsigned short>{config->GetKind_Grad_Linear_Solver_Prec()} : std::nullopt;
   if ( !config->GetSmoothOnSurface() ) {
     nVar = config->GetSmoothSepDim() ? 1 : nDim;
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config, false, true);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config, false, false, override_prec);
   } else {
     if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE) {
-      Jacobian.Initialize(nPoint, nPointDomain, nDim, nDim, false, geometry, config, false , true);
+      Jacobian.Initialize(nPoint, nPointDomain, nDim, nDim, false, geometry, config, false, false, override_prec);
     } else {
       LinSysSol.Initialize(nPoint, nPointDomain, 1, 0.0);
       LinSysRes.Initialize(nPoint, nPointDomain, 1, 0.0);
-      Jacobian.Initialize(nPoint, nPointDomain, 1, 1, false, geometry, config, false, true);
+      Jacobian.Initialize(nPoint, nPointDomain, 1, 1, false, geometry, config, false, false, override_prec);
     }
     visited.resize(geometry->GetnPoint(), false);
   }

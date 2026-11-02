@@ -2,7 +2,7 @@
  * \file viscous_fluxes.hpp
  * \brief Decorator classes for computation of viscous fluxes.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -149,8 +149,9 @@ protected:
 
     /*--- Stress and heat flux tensors. ---*/
 
-    auto tau = stressTensor(avgV.laminarVisc() + (uq? Double(0.0) : avgV.eddyVisc()), avgGrad);
-    if(useSA_QCR) addQCR(avgGrad, tau);
+    const Double eddyVisc = uq? Double(0.0) : avgV.eddyVisc();
+    auto tau = stressTensor(avgV.laminarVisc() + eddyVisc, avgGrad);
+    if(useSA_QCR) addQCR(avgGrad, tau, eddyVisc / (avgV.laminarVisc() + eddyVisc));
     if(uq) {
       Double turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
                             gatherVariables(jPoint, turbVars->GetSolution()));

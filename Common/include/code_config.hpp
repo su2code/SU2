@@ -2,7 +2,7 @@
  * \file code_config.hpp
  * \brief Header file for collecting common macros, definitions and type configurations.
  * \author T. Albring, P. Gomes, J. Blühdorn
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <type_traits>
 #include <cmath>
 
@@ -47,6 +48,13 @@
 #define NEVERINLINE inline __attribute__((noinline))
 #else
 #define NEVERINLINE inline
+#endif
+
+/*--- Marks a function callable from both host and device code, a no-op outside nvcc. ---*/
+#ifdef __CUDACC__
+#define SU2_CUDA_HOST_DEVICE __host__ __device__
+#else
+#define SU2_CUDA_HOST_DEVICE
 #endif
 
 #if defined(__INTEL_COMPILER)
@@ -95,10 +103,23 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 #define HAVE_OMP
 #endif
 
+/*--- Detect whether the CUDA kernels are part of this build. They work on su2mixedfloat
+ * and passivedouble, so reverse AD is fine: su2_gpu_capable_v is false for the active type
+ * and CSysMatrix<su2double> stays on the host. Forward AD is not, there su2mixedfloat is
+ * su2double (see below) and the active type would reach the kernels. The .cu sources are
+ * compiled with the CoDiPack defines like everything else, see codi_host_only.hpp. ---*/
+#if defined(HAVE_CUDA) && !defined(CODI_FORWARD_TYPE)
+#define SU2_ENABLE_CUDA_KERNELS
+#endif
+
 /*--- No full single precision for AD builds. ---*/
 #if (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)) && defined(USE_SINGLE_PRECISION)
 #undef USE_SINGLE_PRECISION
 #endif
+
+/*--- Default integer types. Currently used for rank-local sparse patterns. ---*/
+using su2uint = uint32_t;
+using su2int = int32_t;
 
 /*--- This type can be used for (rare) compatibility cases or for
  * computations that are intended to be (always) passive. ---*/

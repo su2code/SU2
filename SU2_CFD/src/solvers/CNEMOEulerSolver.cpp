@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz, J. Needels
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -282,7 +282,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
 
   if(!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
-    if (implicit) Jacobian.SetValZero();
+    if (implicit) Jacobian.SetValDiagonalZero();
   }
 }
 
@@ -460,7 +460,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
       if (implicit) {
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+        Jacobian.UpdateBlocks<true>(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
     }
   }
@@ -625,7 +625,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
       if (implicit) {
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+        Jacobian.UpdateBlocks<true>(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
     }
   }
@@ -936,56 +936,51 @@ void CNEMOEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, 
   PrepareImplicitIteration_impl(precond, geometry, config);
 }
 
-void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
-  SU2_ZONE_SCOPED
+su2double CNEMOEulerSolver::ComputeUnderRelaxationFactor(unsigned short nSpecies, unsigned short nVar,
+                                                       const su2double* solution, const su2double* update,
+                                                       su2double allowableRatio) {
+  su2double localUnderRelaxation = 1.0;
+  su2double num = 0.0;
+  su2double denom = 0.0;
 
-  /* Loop over the solution update given by relaxing the linear
-   system for this nonlinear iteration. */
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    /*--- Limit the sum of the species updates relative to the mixture density. ---*/
+    if (iVar < nSpecies) {
+      num += fabs(update[iVar]);
+      denom += fabs(solution[iVar]);
 
-  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    su2double localUnderRelaxation = 1.0;
-
-    su2double num = 0.0;
-    su2double denom = 0.0;
-
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      /* We impose a limit on the maximum percentage that the
-       density (sum of all species) and energy can change over a nonlinear iteration. */
-
-      const unsigned long index = iPoint * nVar + iVar;
-      if (iVar < config->GetnSpecies()) {
-        num   += fabs(LinSysSol[index]);
-        denom += fabs(nodes->GetSolution(iPoint, iVar));
-
-        /*--- If final density/species, compute Under-relaxation ---*/
-        if (iVar == (config ->GetnSpecies()-1)){
-          su2double ratio = (num/(denom+EPS));
-          if (ratio > allowableRatio) {
-            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-          }
-        }
-
-        /*--- Energy ---*/
-        if (iVar == (nVar-2)){
-          su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
-          if (ratio > allowableRatio) {
-            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-          }
+      if (iVar == nSpecies - 1) {
+        su2double ratio = num / (denom + EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
       }
     }
 
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
+    /*--- Total energy must be checked independently of the species block. ---*/
+    if (iVar == nVar - 2) {
+      su2double ratio = fabs(update[iVar]) / (fabs(solution[iVar]) + EPS);
+      if (ratio > allowableRatio) {
+        localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+      }
+    }
+  }
 
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+  /*--- Cancel very small updates to avoid non-realizable states. ---*/
+  if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+  return localUnderRelaxation;
+}
 
-    /* Store the under-relaxation factor for this point. */
+void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+  SU2_ZONE_SCOPED
 
+  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
+  const unsigned short nSpecies = config->GetnSpecies();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    const su2double localUnderRelaxation = ComputeUnderRelaxationFactor(
+        nSpecies, nVar, nodes->GetSolution(iPoint), LinSysSol.GetBlock(iPoint), allowableRatio);
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
   }
   END_SU2_OMP_FOR
@@ -1894,7 +1889,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
 //        /*--- Jacobian contribution for implicit integration ---*/
 //        if (implicit)
-//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 //      }
     }
   }

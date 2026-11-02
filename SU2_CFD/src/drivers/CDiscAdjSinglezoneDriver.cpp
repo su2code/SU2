@@ -2,7 +2,7 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@
 #include "../../include/iteration/CIterationFactory.hpp"
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
+
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,

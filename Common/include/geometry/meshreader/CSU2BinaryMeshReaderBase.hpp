@@ -3,14 +3,14 @@
  * \brief Header file for the class CSU2BinaryMeshReaderBase.
  *        The implementations are in the <i>CSU2BinaryMeshReaderBase.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -110,9 +110,15 @@ class CSU2BinaryMeshReaderBase : public CSU2MeshReaderBase {
 
  private:
   /*!
-   * \brief Read the meta data for a zone.
+   * \brief Read the meta data for a zone, advancing the file position past it.
+   * \param[in] storeMetadata - Whether to store the read values in the
+   *            dimension, numberOfGlobalElements, numberOfGlobalPoints and
+   *            numberOfMarkers members. Must be false when only skipping
+   *            past a lower-numbered zone (from
+   *            FastForwardToMyZone), so that doing so does not clobber the
+   *            metadata already read for the current (target) zone.
    */
-  void ReadMetadataZone();
+  void ReadMetadataZone(bool storeMetadata);
 
  public:
   /*!
