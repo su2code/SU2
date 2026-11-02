@@ -2,7 +2,7 @@
  * \file turb_sst_edge_flux.hpp
  * \brief Menter SST model as a third-layer scalar flux, see numerics/scalar/scalar_edge_flux.hpp.
  * \author P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

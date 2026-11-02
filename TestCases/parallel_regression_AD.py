@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.5.0 "Harrier"
+#  \version 8.6.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -373,7 +373,7 @@ def main():
     discadj_flamelet_ch4_hx.cfg_file         = "lam_prem_ch4_hx_ad.cfg"
     discadj_flamelet_ch4_hx.multizone        = False
     discadj_flamelet_ch4_hx.test_iter        = 10
-    discadj_flamelet_ch4_hx.test_vals        = [-9.083502, -9.033520, -9.529644, -8.442388, -15.399568, -6.170002, -18.881156]
+    discadj_flamelet_ch4_hx.test_vals = [-9.083502, -9.033520, -9.529644, -8.442386, -15.399568, -6.169865, -18.881156]
     test_list.append(discadj_flamelet_ch4_hx)
 
     # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)

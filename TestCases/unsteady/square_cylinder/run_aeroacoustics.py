@@ -2,7 +2,7 @@
 
 ## \file run_aeroacoustics.py
 #  \brief Regression driver for aeroacoustic pressure-history analysis.
-#  \version 8.5.0 "Harrier"
+#  \version 8.6.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
