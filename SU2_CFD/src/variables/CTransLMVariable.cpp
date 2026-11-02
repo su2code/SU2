@@ -39,6 +39,13 @@ CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, 
 
   Solution_Old = Solution;
 
+  /*--- The dual-time history starts from the initial state, not from zero. ---*/
+  if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
+      config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
+    Solution_time_n = Solution;
+    Solution_time_n1 = Solution;
+  }
+
   /*--- Setting CTransLMVariable of intermittency_Eff---*/
   Intermittency_Eff.resize(nPoint) = gammaEff;
   Intermittency_Sep.resize(nPoint) = gammaSep;
