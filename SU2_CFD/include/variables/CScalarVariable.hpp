@@ -2,7 +2,7 @@
  * \file CScalarVariable.hpp
  * \brief Base class for defining the shared variables of scalar solvers.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,8 +49,9 @@ class CScalarVariable : public CVariable {
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] muscl - Whether this scalar system reconstructs.
    */
-  CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig* config);
+  CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig* config, bool muscl);
 
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
