@@ -162,6 +162,14 @@ class CFluidModel {
   }
 
   /*!
+   * \brief Largest value a scalar variance can take, (mean - min)(max - mean) for its mean.
+   * \param[in] scalars - Transported scalars.
+   * \param[in] i_var - Index of the variance.
+   * \returns Upper limit of the variance.
+   */
+  virtual su2double GetScalarVarianceLimit(const su2double* scalars, unsigned short i_var) { return 1.0e15; }
+
+  /*!
    * \brief Get fluid dynamic viscosity.
    */
   inline virtual su2double GetLaminarViscosity() {

@@ -238,6 +238,36 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
 
+    /*--- Restart field of each variable, -1 for a variable that starts from its initial value. ---*/
+    vector<int> restart_field(nVar);
+    for (auto iVar = 0u; iVar < nVar; iVar++) restart_field[iVar] = skipVars + iVar;
+
+    /*--- Flamelet scalars are found by name, a missing variance starts from its initial value. ---*/
+    if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+      const auto& options = config->GetFlameletParsedOptions();
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const string& name = (iVar < options.n_control_vars)
+                                 ? options.controlling_variable_names[iVar]
+                                 : options.user_scalar_names[iVar - options.n_control_vars];
+        const auto field = find_if(fields.begin(), fields.end(), [&name](string field_name) {
+          field_name.erase(remove(field_name.begin(), field_name.end(), '"'), field_name.end());
+          return field_name == name;
+        });
+        if (field != fields.end()) {
+          /*--- The fields start with the point index, which is not in the restart data. ---*/
+          restart_field[iVar] = static_cast<int>(distance(fields.begin(), field)) - 1;
+        } else if (static_cast<int>(iVar) == options.idx_progvar_var ||
+                   static_cast<int>(iVar) == options.idx_mixfrac_var) {
+          restart_field[iVar] = -1;
+          if (rank == MASTER_NODE)
+            cout << "The restart file has no field " << name << ", it starts from its initial value "
+                 << config->GetSpecies_Init()[iVar] << "." << endl;
+        } else {
+          SU2_MPI::Error("The restart file " + restart_filename + " has no field " + name + ".", CURRENT_FUNCTION);
+        }
+      }
+    }
+
     /*--- Load data from the restart into correct containers. ---*/
 
     unsigned long counter = 0;
@@ -251,9 +281,12 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++)
-          nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        const auto index = counter * Restart_Vars[1];
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          const su2double value = (restart_field[iVar] >= 0) ? Restart_Data[index + restart_field[iVar]]
+                                                             : config->GetSpecies_Init()[iVar];
+          nodes->SetSolution(iPoint_Local, iVar, value);
+        }
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
