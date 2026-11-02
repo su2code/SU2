@@ -1,117 +1,70 @@
 # S809 Airfoil FIML Test Case
 
-## Description
-S809 airfoil with Field Inversion Machine Learning (FIML) turbulence model corrections.
-Ported from SU2 v5.0 FIML implementation to v8.5.0 "Harrier".
+S809 airfoil with a Field Inversion and Machine Learning (FIML) correction of the
+Spalart-Allmaras production term.
 
-## Test Case Details
-- **Airfoil**: S809 wind turbine airfoil
-- **Mesh**: 35,550 points (coarse structured grid)
-- **Flow Conditions**:
-  - Incompressible RANS
-  - Reynolds number: Re = 2.0E6 (based on chord)
-  - Angle of Attack: ~14 degrees
-  - Freestream velocity: 47.8 m/s
-  - Target CL: 1.0546 (from DNS/experiments)
+## Case
 
-## Configuration Files
+- **Mesh**: `S809_struct_coarse.su2`, 63,400 points, 62,766 quadrilaterals, chord c = 0.6 m,
+  far field at about 83 chords, first cell height 7.5e-7 m (y+ ~ 0.1).
+- **Flow**: incompressible RANS, rho = 1.2886 kg/m^3, mu = 1.853e-5 Pa s,
+  |V| = 47.9332 m/s at AoA = 14.24 deg, Re = 2.0e6 based on chord.
+- **Target**: experimental CL = 1.0546 at this angle.
 
-### 1. config_fiml_forward.cfg
-**Purpose**: Forward simulation with pre-trained neural network weights
+## Configuration files
 
-**Settings**:
-- `TRAIN_NN= NO` - Use existing weights (no training)
-- `KIND_TRAIN_NN= WEIGHTS` - Weights as design variables mode
-- `ITER_START_NN= 100` - Start applying beta corrections after 100 iterations
+| File | Purpose |
+|---|---|
+| `config_sa_baseline.cfg` | Baseline SA from free stream; writes `restart_sa.dat`. |
+| `config_fiml_forward.cfg` | SA-FIML from `restart_sa.dat` with the weights in `nn_weights.dat`. |
+| `config_fiml_training.cfg` | SA-FIML from `restart_sa.dat`, trains the network on `BETA_TARGET_FILE`. |
 
-**Usage**:
-```bash
-SU2_CFD config_fiml_forward.cfg
-```
+All three share the same numerics. The cells behind the sharp trailing edge are strongly
+skewed (minimum angle 16 deg), which requires:
 
-### 2. config_fiml_training.cfg
-**Purpose**: Train neural network to match beta target field
-
-**Settings**:
-- `TRAIN_NN= YES` - Enable training
-- `KIND_TRAIN_NN= BACKPROP` - Use backpropagation
-- `BETA_TARGET_FILE= beta_target.dat` - Load target beta values
-- `NUM_EPOCH= 100` - Train for 100 epochs
-- `LEARNING_RATE= 0.01` - Gradient descent learning rate
-- `ITER_START_NN= 1000` - Start training after flow converges (1000 iters)
-
-**Usage**:
-```bash
-SU2_CFD config_fiml_training.cfg
-```
-
-## Neural Network Architecture
-- **Input features**: 4 (prod/dest ratio, chi, delta criterion, S/Omega ratio)
-- **Hidden layers**: 3
-- **Neurons per layer**: 20
-- **Activation**: tanh
-- **Scaling**: Box-Cox transformation + Z-score normalization
-- **Output**: beta_fiml correction factor (applied to SA production term)
-
-## Files
-
-### Required Files
-- `S809_struct_coarse.su2` - Mesh file (35,550 points)
-- `S809_struct_coarse.geo` - Geometry file
-- `config_fiml_forward.cfg` - Forward mode configuration
-- `config_fiml_training.cfg` - Training mode configuration
-
-### Optional Files
-- `beta_target.dat` - Beta target values for training (35,550 lines)
-  - Format: One beta value per line
-  - Order: Same as mesh point ordering
-  - Example: Values in range [0.5, 1.5], mean=1.0
+- `NUM_METHOD_GRAD_RECON= LEAST_SQUARES` with the Venkatakrishnan limiter;
+- CFL ramped from 1 and capped at 10 (a cap of 20 diverges at 14.24 deg).
 
 ## Workflow
 
-### Option A: Forward Mode (Use Pre-trained Weights)
-1. Initialize NN weights to zero (or load from file)
-2. Run forward simulation:
-   ```bash
-   SU2_CFD config_fiml_forward.cfg
-   ```
-3. Monitor convergence and CL/CD values
+1. Run the baseline: `mpirun -n 8 SU2_CFD config_sa_baseline.cfg`.
+2. Provide `beta_target.dat`: one beta value per line, ordered by global point index
+   (63,400 lines). Points without a value get beta = 1.
+3. Train: `mpirun -n 8 SU2_CFD config_fiml_training.cfg`. One epoch runs per solver
+   iteration after `ITER_START_NN`; `nn_weights.dat` is written after the last epoch.
+4. Run forward: `mpirun -n 8 SU2_CFD config_fiml_forward.cfg`.
 
-### Option B: Training Mode (Learn from Beta Targets)
-1. Generate or provide `beta_target.dat` file
-2. Run training simulation:
-   ```bash
-   SU2_CFD config_fiml_training.cfg
-   ```
-3. Monitor training loss convergence
-4. Extract trained weights for future use
+Without `nn_weights.dat`, hidden layers start from random weights and the output layer from
+zero, so beta = 1 and SA-FIML reproduces SA exactly.
 
-### Option C: Complete Workflow (Not yet implemented)
-1. Run external optimization to find optimal beta field
-2. Save optimized beta as `beta_target.dat`
-3. Train NN using config_fiml_training.cfg
-4. Use trained NN for design studies with config_fiml_forward.cfg
+`nn_weights.dat` holds a header line, then a line with the 4 input means, 4 stds and
+4 Box-Cox lambdas, then all weights layer by layer (bias last in each layer).
 
-## Expected Results
+## Network
 
-### Baseline SA Model (without FIML)
-- CL ≈ 0.95 (under-predicts by ~10%)
-- CD ≈ 0.025
+- Inputs: production/destruction ratio, chi, normalized Q-criterion, strain/vorticity ratio.
+- Scaling: Box-Cox with lambda fitted per input by maximum likelihood, then z-score.
+- 3 hidden tanh layers of 20 neurons; output beta = 1 + tanh(.).
 
-### With FIML Correction
-- CL → 1.0546 (matches DNS/experimental target)
-- CD → improved prediction
-- Better prediction of separation/stall behavior
+## Baseline results (SA, second order)
 
-## Notes
-- The `beta_target.dat` file in this directory contains random example values for testing
-- For actual applications, beta targets should come from:
-  - DNS/LES data assimilation
-  - Experimental data matching
-  - External optimization (Python, IPOPT, etc.)
-- Training converges in ~100 epochs typically
-- Forward mode is fast (no training overhead)
+| AoA | CL | CD | Note |
+|---|---|---|---|
+| 4.10 deg | 0.599 | 0.0142 | converged to rms[P] = -9.9 in 4,000 iterations |
+| 14.24 deg | 1.383 | 0.0524 | after 29,000 iterations, still drifting; extrapolated CL 1.370, CD 0.0536 |
+
+SA over-predicts lift at 14.24 deg by about 30% (experiment 1.0546), so the correction has
+to reduce production (beta < 1) where the flow should separate.
+
+## Not yet implemented
+
+- Field inversion: the FIML objectives (`INVERSE_DESIGN_*_FIML`) and the `FIML` design
+  variable are defined but not connected to the adjoint.
+- `KIND_TRAIN_NN= WEIGHTS`, `SA_FIML_CORRECTION` other than `PRODUCTION`, `FILTER_SHIELD`.
 
 ## References
-- Original FIML implementation: Parish & Duraisamy, "A paradigm for data-driven predictive modeling using field inversion and machine learning" (2016)
-- SU2 FIML v5.0: https://github.com/su2code/SU2/tree/v5.0
+
+- Parish & Duraisamy, "A paradigm for data-driven predictive modeling using field inversion
+  and machine learning", J. Comput. Phys. 305 (2016).
+- Singh, Medida & Duraisamy, "Machine-learning-augmented predictive modeling of turbulent
+  separated flows over airfoils", AIAA J. 55 (2017).
