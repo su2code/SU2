@@ -34,6 +34,7 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/random_toolbox.hpp"
 #include <fstream>
+#include <random>
 
 
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver* flow_solver, unsigned short iMesh,
@@ -374,9 +375,9 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
           UpdateWeights(learning_rate);
 
           /*--- Compute and report loss ---*/
-          if (rank == MASTER_NODE && epoch_counter % 10 == 0) {
-            su2double loss = ComputeTrainingLoss(geometry);
-            cout << "FIML Training - Epoch " << epoch_counter << "/" << num_epoch
+          if (epoch_counter % 10 == 0) {
+            const su2double loss = ComputeTrainingLoss(geometry);
+            if (rank == MASTER_NODE) cout << "FIML Training - Epoch " << epoch_counter << "/" << num_epoch
                  << ", Loss: " << loss << endl;
           }
 
@@ -1744,20 +1745,28 @@ void CTurbSASolver::InitializeNeuralNetwork(const CConfig* config) {
     weight_gradients[n_hidden_layers][i] = new su2double[1]();
   }
 
-  /*--- Try to load pre-trained weights ---*/
-  LoadNeuralNetworkWeights("nn_weights.dat");
-
-  /*--- Compute Box-Cox scaling parameters on first call ---*/
-  // This will be done in Preprocessing after initial flow solution
+  /*--- Without saved weights: Xavier-uniform hidden layers, zero output layer, so beta starts at 1. ---*/
+  if (!LoadNeuralNetworkWeights("nn_weights.dat")) {
+    std::mt19937 gen(0);
+    for (unsigned short layer = 0; layer < n_hidden_layers; layer++) {
+      const unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
+      const passivedouble limit = sqrt(6.0 / (n_from + n_neurons));
+      std::uniform_real_distribution<passivedouble> dist(-limit, limit);
+      for (unsigned short i = 0; i < n_from; i++) {
+        for (unsigned short j = 0; j < n_neurons; j++) {
+          weights[layer][i][j] = dist(gen);
+        }
+      }
+    }
+  }
 }
 
 void CTurbSASolver::ForwardPropagate(const CConfig* config, CSolver** solver_container, CGeometry* geometry) {
 
-  const auto turbVar = nodes->GetSolution();
   auto* turbNodes = dynamic_cast<CTurbSAVariable*>(nodes);
 
   /*--- Allocate arrays for layer activations ---*/
-  su2double* layer_in = new su2double[n_neurons + 1];
+  su2double* layer_in = new su2double[max(n_inputs, n_neurons) + 1];
   su2double* layer_out = new su2double[n_neurons];
   su2double features[4];
 
@@ -1774,50 +1783,34 @@ void CTurbSASolver::ForwardPropagate(const CConfig* config, CSolver** solver_con
     ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
     ScaleNNInputs(features);
 
-    /*--- Input layer -> first hidden layer ---*/
-    layer_in[0] = 1.0;  // Bias
+    /*--- Layer inputs hold the activations followed by the bias; beta = 1 + tanh(output). ---*/
     for (unsigned short i = 0; i < n_inputs; i++) {
-      layer_in[i + 1] = features[i];
+      layer_in[i] = features[i];
     }
+    layer_in[n_inputs] = 1.0;
+    unsigned short n_from = n_inputs;
 
-    /*--- Propagate through input -> first hidden ---*/
-    for (unsigned short j = 0; j < n_neurons; j++) {
-      su2double sum = 0.0;
-      for (unsigned short i = 0; i <= n_inputs; i++) {
-        sum += weights[0][i][j] * layer_in[i];
-      }
-      layer_out[j] = tanh(sum);  // Activation function
-    }
-
-    /*--- Propagate through hidden layers ---*/
-    for (unsigned short layer = 1; layer < n_hidden_layers; layer++) {
-      layer_in[0] = 1.0;  // Bias
-      for (unsigned short i = 0; i < n_neurons; i++) {
-        layer_in[i + 1] = layer_out[i];
-      }
-
+    for (unsigned short layer = 0; layer < n_hidden_layers; layer++) {
       for (unsigned short j = 0; j < n_neurons; j++) {
         su2double sum = 0.0;
-        for (unsigned short i = 0; i <= n_neurons; i++) {
+        for (unsigned short i = 0; i <= n_from; i++) {
           sum += weights[layer][i][j] * layer_in[i];
         }
         layer_out[j] = tanh(sum);
       }
+      for (unsigned short i = 0; i < n_neurons; i++) {
+        layer_in[i] = layer_out[i];
+      }
+      layer_in[n_neurons] = 1.0;
+      n_from = n_neurons;
     }
 
-    /*--- Output layer ---*/
-    layer_in[0] = 1.0;  // Bias
-    for (unsigned short i = 0; i < n_neurons; i++) {
-      layer_in[i + 1] = layer_out[i];
-    }
-
-    su2double beta = 0.0;
+    su2double sum = 0.0;
     for (unsigned short i = 0; i <= n_neurons; i++) {
-      beta += weights[n_hidden_layers][i][0] * layer_in[i];
+      sum += weights[n_hidden_layers][i][0] * layer_in[i];
     }
-    beta = tanh(beta);  // Output activation
+    const su2double beta = 1.0 + tanh(sum);
 
-    /*--- Store beta_fiml (typically in range [-1, 1]) ---*/
     turbNodes->SetBetaFiml(iPoint, beta);
   }
 
@@ -1828,7 +1821,7 @@ void CTurbSASolver::ForwardPropagate(const CConfig* config, CSolver** solver_con
 void CTurbSASolver::ComputeNNInputFeatures(unsigned long iPoint, CSolver** solver_container,
                                             CGeometry* geometry, su2double* features) const {
 
-  const auto turbVar = nodes->GetSolution();
+  const auto& turbVar = nodes->GetSolution();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Feature 1: Production / Destruction ratio (computed from SA model terms) ---*/
@@ -2051,20 +2044,22 @@ void CTurbSASolver::LoadBetaTargets(const CConfig* config, CGeometry* geometry) 
     cout << "Loading beta targets from: " << target_file << endl;
   }
 
-  unsigned long iPoint = 0;
-  su2double beta_val;
-
-  while (beta_file >> beta_val && iPoint < nPointDomain) {
-    if (geometry->nodes->GetDomain(iPoint)) {
-      turbNodes->SetBetaFimlTrain(iPoint, beta_val);
-    }
-    iPoint++;
-  }
-
+  /*--- One value per line, ordered by global point index. ---*/
+  vector<passivedouble> beta_vals;
+  passivedouble beta_val;
+  while (beta_file >> beta_val) beta_vals.push_back(beta_val);
   beta_file.close();
 
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    const auto iGlobal = geometry->nodes->GetGlobalIndex(iPoint);
+    if (iGlobal < beta_vals.size()) turbNodes->SetBetaFimlTrain(iPoint, beta_vals[iGlobal]);
+  }
+
   if (rank == MASTER_NODE) {
-    cout << "Loaded " << iPoint << " beta target values." << endl;
+    if (beta_vals.size() != geometry->GetGlobal_nPointDomain())
+      cout << "Warning: " << beta_vals.size() << " beta targets for " << geometry->GetGlobal_nPointDomain()
+           << " points; missing targets are set to 1." << endl;
+    cout << "Loaded " << beta_vals.size() << " beta target values." << endl;
   }
 }
 
@@ -2138,6 +2133,7 @@ void CTurbSASolver::BackwardPropagate(const CConfig* config, CSolver** solver_co
 
   /*--- Backpropagate for all domain points ---*/
   su2double features[4];
+  unsigned long local_count = 0;
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (!geometry->nodes->GetDomain(iPoint)) continue;
@@ -2146,6 +2142,7 @@ void CTurbSASolver::BackwardPropagate(const CConfig* config, CSolver** solver_co
     /*--- Forward pass to compute activations ---*/
     ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
     ScaleNNInputs(features);
+    local_count++;
 
     /*--- Input layer ---*/
     for (unsigned short i = 0; i < n_inputs; i++) {
@@ -2217,6 +2214,20 @@ void CTurbSASolver::BackwardPropagate(const CConfig* config, CSolver** solver_co
     }
   }
 #endif
+
+  /*--- Average over points so the step size does not depend on the mesh size. ---*/
+  unsigned long global_count = local_count;
+  SU2_MPI::Allreduce(&local_count, &global_count, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  const su2double inv_count = 1.0 / max<unsigned long>(global_count, 1);
+  for (unsigned short layer = 0; layer < nLayers; layer++) {
+    const unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
+    const unsigned short n_to = (layer == nLayers - 1) ? 1 : n_neurons;
+    for (unsigned short i = 0; i <= n_from; i++) {
+      for (unsigned short j = 0; j < n_to; j++) {
+        weight_gradients[layer][i][j] *= inv_count;
+      }
+    }
+  }
 
   /*--- Clean up ---*/
   for (unsigned short layer = 0; layer <= nLayers; layer++) {
@@ -2300,7 +2311,7 @@ bool CTurbSASolver::LoadNeuralNetworkWeights(const string& filename) {
   if (!weight_file.is_open()) {
     if (rank == MASTER_NODE) {
       cout << "No saved neural network weights found at: " << filename << endl;
-      cout << "Starting with zero-initialized weights." << endl;
+      cout << "Starting with random hidden weights and zero output weights (beta = 1)." << endl;
     }
     return false;
   }
