@@ -332,64 +332,36 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     unsigned long iter = config->GetInnerIter();
     unsigned long iter_start_nn = config->GetIter_Start_NN();
 
-    /*--- Compute scaling parameters once after flow initialization ---*/
-    static bool scaling_computed = false;
-    static bool targets_loaded = false;
-    if (!scaling_computed && iter >= iter_start_nn) {
-      if (rank == MASTER_NODE) {
-        cout << "Computing scaling parameters for FIML..." << endl;
-      }
-      /* Box-Cox transform not supported in AD mode - using standard normalization */
-      #ifndef CODI_REVERSE_TYPE
-        ComputeBoxCoxLambda(config, solver_container, geometry);
-      #endif
-      scaling_computed = true;
+    if (iter >= iter_start_nn && !nn_scaling_set) {
+      if (rank == MASTER_NODE) cout << "Computing scaling parameters for FIML..." << endl;
+      ComputeBoxCoxLambda(config, solver_container, geometry);
+      nn_scaling_set = true;
+    }
 
-      /*--- Load beta targets for training if enabled ---*/
-      if (config->GetTrain_NN() && !targets_loaded) {
-        if (rank == MASTER_NODE) {
-          cout << "Loading beta targets for FIML training..." << endl;
-        }
-        LoadBetaTargets(config, geometry);
-        targets_loaded = true;
-      }
+    if (iter >= iter_start_nn && config->GetTrain_NN() && !targets_loaded) {
+      LoadBetaTargets(config, geometry);
+      targets_loaded = true;
     }
 
     /*--- Forward propagate to compute beta_fiml at all points ---*/
     if (iter >= iter_start_nn) {
       ForwardPropagate(config, solver_container, geometry);
 
-      /*--- Neural network training loop ---*/
-      if (config->GetTrain_NN() && config->GetKind_Train_NN() == NN_TRAIN_METHOD::BACKPROP) {
-        unsigned short num_epoch = config->GetNum_Epoch();
-        su2double learning_rate = config->GetLearning_Rate();
-
-        /*--- Training epochs ---*/
-        static unsigned short epoch_counter = 0;
-        static bool weights_saved = false;
-        if (epoch_counter < num_epoch) {
-          /*--- Backpropagation ---*/
-          BackwardPropagate(config, solver_container, geometry);
-
-          /*--- Update weights ---*/
-          UpdateWeights(learning_rate);
-
-          /*--- Compute and report loss ---*/
-          if (epoch_counter % 10 == 0) {
-            const su2double loss = ComputeTrainingLoss(geometry);
-            if (rank == MASTER_NODE) cout << "FIML Training - Epoch " << epoch_counter << "/" << num_epoch
-                 << ", Loss: " << loss << endl;
-          }
-
-          epoch_counter++;
-
-          /*--- Forward propagate again with updated weights ---*/
-          ForwardPropagate(config, solver_container, geometry);
-        } else if (!weights_saved) {
-          /*--- Training complete - save weights ---*/
-          SaveNeuralNetworkWeights("nn_weights.dat");
-          weights_saved = true;
+      /*--- One training epoch per solver iteration. ---*/
+      const unsigned short num_epoch = config->GetNum_Epoch();
+      if (config->GetTrain_NN() && config->GetKind_Train_NN() == NN_TRAIN_METHOD::BACKPROP &&
+          epoch_counter < num_epoch) {
+        const su2double loss = ComputeTrainingLoss(geometry);
+        if (rank == MASTER_NODE && (epoch_counter % 10 == 0 || epoch_counter + 1 == num_epoch)) {
+          cout << "FIML Training - Epoch " << epoch_counter << "/" << num_epoch << ", Loss: " << loss << endl;
         }
+
+        BackwardPropagate(config, solver_container, geometry);
+        UpdateWeights(config->GetLearning_Rate());
+        ForwardPropagate(config, solver_container, geometry);
+        epoch_counter++;
+
+        if (epoch_counter == num_epoch) SaveNeuralNetworkWeights("nn_weights.dat");
       }
     }
   }
@@ -1710,6 +1682,15 @@ void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
 //                     FIML Neural Network Implementation
 // ========================================================================
 
+namespace {
+/*--- Box-Cox transform of x (floored to stay positive). ---*/
+constexpr passivedouble BOX_COX_FLOOR = 1e-12;
+su2double BoxCox(su2double x, su2double lambda) {
+  x = max(x, su2double(BOX_COX_FLOOR));
+  return (fabs(lambda) < 1e-10) ? log(x) : (pow(x, lambda) - 1.0) / lambda;
+}
+}  // namespace
+
 void CTurbSASolver::InitializeNeuralNetwork(const CConfig* config) {
 
   n_neurons = config->GetN_Neurons();
@@ -1854,19 +1835,9 @@ void CTurbSASolver::ComputeNNInputFeatures(unsigned long iPoint, CSolver** solve
 
 void CTurbSASolver::ScaleNNInputs(su2double* features) const {
 
-  /*--- Apply Box-Cox transformation: (x^lambda - 1) / lambda ---*/
   for (unsigned short i = 0; i < n_inputs; i++) {
-    su2double x = features[i];
-    su2double lambda = box_cox_lambda[i];
-
-    if (fabs(lambda) < 1e-10) {
-      features[i] = log(max(x, 1e-16));  // Log transform for lambda ≈ 0
-    } else {
-      features[i] = (pow(max(x, 1e-16), lambda) - 1.0) / lambda;
-    }
-
-    /*--- Z-score normalization after Box-Cox ---*/
-    features[i] = (features[i] - feature_mean[i]) / (feature_std[i] + 1e-16);
+    const su2double y = BoxCox(features[i] + feature_shift[i], box_cox_lambda[i]);
+    features[i] = (y - feature_mean[i]) / feature_std[i];
   }
 }
 
@@ -1881,139 +1852,62 @@ bool CTurbSASolver::ApplyFilterShield(unsigned long iPoint) const {
 
 void CTurbSASolver::ComputeBoxCoxLambda(const CConfig* config, CSolver** solver_container, CGeometry* geometry) {
 
-  unsigned short n_bins = config->GetN_Bins();
-  su2double* hist = new su2double[n_bins];
-  su2double* cumsum = new su2double[n_bins];
+  /*--- Profile log-likelihood on a lambda grid, from global sums of y, y^2 and log(x). ---*/
+  constexpr unsigned short n_lambda = 81;
+  constexpr passivedouble lambda_min = -2.0, lambda_max = 2.0;
+  const auto lambda_grid = [&](unsigned short k) { return lambda_min + k * (lambda_max - lambda_min) / (n_lambda - 1); };
+
+  /*--- Per feature: sum(log x), then sum(y) and sum(y^2) for each lambda. ---*/
+  const unsigned long stride = 1 + 2 * n_lambda;
+  vector<su2double> local(n_inputs * stride + 1, 0.0), global(n_inputs * stride + 1, 0.0);
   su2double features[4];
 
-  /*--- Compute Box-Cox lambda for each feature using profile log-likelihood ---*/
-  for (unsigned short feat = 0; feat < n_inputs; feat++) {
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (filter_shield && ApplyFilterShield(iPoint)) continue;
+    ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
 
-    /*--- Collect feature values and find range ---*/
-    su2double f_min = 1e20, f_max = -1e20;
-    unsigned long valid_count = 0;
-
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (filter_shield && ApplyFilterShield(iPoint)) continue;
-
-      ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
-      su2double val = features[feat];
-      f_min = min(f_min, val);
-      f_max = max(f_max, val);
-      valid_count++;
-    }
-
-    /*--- MPI reduction for min/max ---*/
-    su2double global_vals[2];
-    MPIReduceFeatures(&f_min, &global_vals[0], 1);  // MPI_MIN
-    MPIReduceFeatures(&f_max, &global_vals[1], 1);  // MPI_MAX (handled in function)
-    f_min = -global_vals[0];  // Convert back from negative
-    f_max = global_vals[1];
-
-    /*--- Build histogram (simplified - optimal lambda search) ---*/
-    for (unsigned short iBin = 0; iBin < n_bins; iBin++) {
-      hist[iBin] = 0.0;
-    }
-
-    su2double bin_width = (f_max - f_min) / n_bins;
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (filter_shield && ApplyFilterShield(iPoint)) continue;
-
-      ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
-      su2double val = features[feat];
-
-      /* For AD types, avoid problematic casts - use clamped indexing */
-      #ifdef CODI_REVERSE_TYPE
-        /* In AD mode, just accumulate in first bin as placeholder */
-        hist[0] += 1.0;
-      #else
-        /* Normal mode: compute correct bin index */
-        su2double bin_pos_exact = (val - f_min) / bin_width;
-        su2double bin_pos = min(bin_pos_exact, su2double(n_bins - 1));
-        bin_pos = max(bin_pos, 0.0);
-        unsigned short iBin = (unsigned short)bin_pos;
-        hist[iBin] += 1.0;
-      #endif
-    }
-
-    /*--- MPI reduction for histogram ---*/
-    MPIReduceFeatures(hist, cumsum, n_bins);  // Use cumsum as temp buffer
-    for (unsigned short i = 0; i < n_bins; i++) hist[i] = cumsum[i];
-
-    /*--- Cumulative sum for quantile computation ---*/
-    cumsum[0] = hist[0];
-    for (unsigned short i = 1; i < n_bins; i++) {
-      cumsum[i] = cumsum[i - 1] + hist[i];
-    }
-    su2double total = cumsum[n_bins - 1];
-    for (unsigned short i = 0; i < n_bins; i++) {
-      cumsum[i] /= (total + 1e-16);
-    }
-
-    /*--- Estimate optimal lambda (simplified: use median deviation) ---*/
-    su2double median_bin = 0;
-    for (unsigned short i = 0; i < n_bins; i++) {
-      if (cumsum[i] >= 0.5) {
-        median_bin = i;
-        break;
+    for (unsigned short feat = 0; feat < n_inputs; feat++) {
+      su2double* sums = &local[feat * stride];
+      const su2double x = max(features[feat] + feature_shift[feat], su2double(BOX_COX_FLOOR));
+      sums[0] += log(x);
+      for (unsigned short k = 0; k < n_lambda; k++) {
+        const su2double y = BoxCox(features[feat] + feature_shift[feat], lambda_grid(k));
+        sums[1 + 2 * k] += y;
+        sums[2 + 2 * k] += y * y;
       }
     }
-
-    /*--- Simple lambda estimate based on distribution shape ---*/
-    su2double skewness_indicator = (median_bin - n_bins / 2.0) / n_bins;
-    box_cox_lambda[feat] = 0.5 - skewness_indicator;  // Heuristic
-    box_cox_lambda[feat] = max(-2.0, min(2.0, box_cox_lambda[feat]));  // Clamp
+    local.back() += 1.0;
   }
 
-  delete[] hist;
-  delete[] cumsum;
+  SU2_MPI::Allreduce(local.data(), global.data(), local.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  const su2double n = max(global.back(), su2double(1.0));
 
-  /*--- Compute feature statistics after Box-Cox transform ---*/
   for (unsigned short feat = 0; feat < n_inputs; feat++) {
-    su2double sum = 0.0, sum_sq = 0.0;
-    unsigned long count = 0;
+    const su2double* sums = &global[feat * stride];
+    su2double best_ll = -numeric_limits<passivedouble>::max();
 
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (filter_shield && ApplyFilterShield(iPoint)) continue;
+    for (unsigned short k = 0; k < n_lambda; k++) {
+      const su2double mean = sums[1 + 2 * k] / n;
+      const su2double var = max(sums[2 + 2 * k] / n - mean * mean, su2double(1e-300));
+      const su2double ll = -0.5 * n * log(var) + (lambda_grid(k) - 1.0) * sums[0];
 
-      ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
-      su2double val = features[feat];
-      su2double lambda = box_cox_lambda[feat];
-
-      /*--- Apply Box-Cox ---*/
-      if (fabs(lambda) < 1e-10) {
-        val = log(max(val, 1e-16));
-      } else {
-        val = (pow(max(val, 1e-16), lambda) - 1.0) / lambda;
+      if (ll > best_ll) {
+        best_ll = ll;
+        box_cox_lambda[feat] = lambda_grid(k);
+        feature_mean[feat] = mean;
+        feature_std[feat] = max(sqrt(var), su2double(1e-12));
       }
-
-      sum += val;
-      sum_sq += val * val;
-      count++;
     }
-
-    /*--- MPI reduction ---*/
-    su2double local_vals[3] = {sum, sum_sq, (su2double)count};
-    su2double global_vals[3];
-    MPIReduceFeatures(local_vals, global_vals, 3);
-
-    su2double global_mean = global_vals[0] / (global_vals[2] + 1e-16);
-    su2double global_var = global_vals[1] / (global_vals[2] + 1e-16) - global_mean * global_mean;
-    su2double global_std = sqrt(max(global_var, 1e-16));
-
-    feature_mean[feat] = global_mean;
-    feature_std[feat] = global_std;
   }
-}
 
-void CTurbSASolver::MPIReduceFeatures(const su2double* local_vals, su2double* global_vals, int count) const {
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(local_vals, global_vals, count, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-#else
-  for (int i = 0; i < count; i++) {
-    global_vals[i] = local_vals[i];
+  if (rank == MASTER_NODE) {
+    cout << "FIML input scaling (lambda, mean, std):\n";
+    for (unsigned short feat = 0; feat < n_inputs; feat++) {
+      cout << "  feature " << feat << ": " << box_cox_lambda[feat] << ", " << feature_mean[feat] << ", "
+           << feature_std[feat] << "\n";
+    }
+    cout << flush;
   }
-#endif
 }
 
 void CTurbSASolver::LoadBetaTargets(const CConfig* config, CGeometry* geometry) {
@@ -2276,10 +2170,11 @@ void CTurbSASolver::SaveNeuralNetworkWeights(const string& filename) const {
   weight_file << n_inputs << " Inputs," << n_hidden_layers << " Hidden Layers,"
               << n_neurons << " Hidden Nodes\n";
 
-  /*--- Scaling parameters line: means and stds for 4 features ---*/
-  weight_file << feature_mean[0] << " " << feature_mean[1] << " " << feature_mean[2] << " "
-              << feature_mean[3] << " " << feature_std[0] << " " << feature_std[1] << " "
-              << feature_std[2] << " " << feature_std[3] << "\n";
+  /*--- Scaling line: means, stds and Box-Cox lambdas of the inputs. ---*/
+  for (const auto* vals : {feature_mean, feature_std, box_cox_lambda}) {
+    for (unsigned short i = 0; i < n_inputs; i++) weight_file << vals[i] << " ";
+  }
+  weight_file << "\n";
 
   /*--- Write all weights: one per line ---*/
   const unsigned short nLayers = n_hidden_layers + 1;
@@ -2329,8 +2224,14 @@ bool CTurbSASolver::LoadNeuralNetworkWeights(const string& filename) {
   getline(weight_file, scaling_line);
   istringstream scaling_stream(scaling_line);
 
-  scaling_stream >> feature_mean[0] >> feature_mean[1] >> feature_mean[2] >> feature_mean[3]
-                 >> feature_std[0] >> feature_std[1] >> feature_std[2] >> feature_std[3];
+  for (auto* vals : {feature_mean, feature_std, box_cox_lambda}) {
+    for (unsigned short i = 0; i < n_inputs; i++) scaling_stream >> vals[i];
+  }
+  if (scaling_stream.fail()) {
+    SU2_MPI::Error("Second line of " + filename + " must hold 4 means, 4 stds and 4 Box-Cox lambdas.",
+                   CURRENT_FUNCTION);
+  }
+  nn_scaling_set = true;
 
   /*--- Read all weights ---*/
   const unsigned short nLayers = n_hidden_layers + 1;
