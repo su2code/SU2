@@ -62,6 +62,12 @@ struct ScalarFluxOptions {
   bool viscous = false;   /*!< \brief Whether the diffusion term contributes. */
   bool oneSided = false;  /*!< \brief Whether only the row of i is assembled. */
   bool muscl = false;     /*!< \brief Whether the convective scheme reconstructs. */
+  /*!
+   * \brief Bounds of the transported variables (those that clip the solution). A reconstructed face
+   *        value outside them falls back to the value of its point (first order). Null: no bounds.
+   */
+  const su2double* lowerLimit = nullptr;
+  const su2double* upperLimit = nullptr;
 
   /*!
    * \brief Options of the interior edge loop: both terms, both rows, and reconstruction and
@@ -349,10 +355,9 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
 
   /*!
    * \brief MUSCL reconstruction parameters, read from CConfig once per construction (i.e. once
-   *        per nonlinear iteration, see CScalarSolver::EdgeFluxResidual) instead of per edge;
-   *        this is also where the scalar limiter's freezing (GetLimiterIter) is resolved, by
-   *        collapsing its type to NONE once frozen. The flow limiter is not frozen this way: once
-   *        the flow solver stops recomputing it, it keeps applying the last values it has.
+   *        per nonlinear iteration, see CScalarSolver::EdgeFluxResidual) instead of per edge.
+   *        Point limiters keep applying their last stored values after LIMITER_ITER.
+   *        VAN_ALBADA_EDGE is computed on every edge and is never frozen.
    */
   const su2double kappa, umusclRamp, kappaFlow;
   const LIMITER limiterType, limiterTypeFlow;
@@ -372,9 +377,8 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
         kappa(config.GetMUSCL_Kappa()),
         umusclRamp(config.GetMUSCLRampValue()),
         kappaFlow(config.GetMUSCL_Kappa_Flow()),
-        limiterType(config.GetInnerIter() <= config.GetLimiterIter() ? config.GetKind_SlopeLimit() : LIMITER::NONE),
-        limiterTypeFlow(config.GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE ? config.GetKind_SlopeLimit_Flow()
-                                                                                     : LIMITER::NONE),
+        limiterType(config.GetKind_SlopeLimit()),
+        limiterTypeFlow(config.GetKind_SlopeLimit_Flow()),
         musclFlow(config.GetMUSCL_Flow() && config.GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {
     if (nEqn > Size) {
       SU2_MPI::Error("The number of equations exceeds MAX_TRANSPORTED_SPECIES, the size of the static arrays. Increase it\n"
@@ -474,14 +478,29 @@ class CUpwScalarBase : public CUpwScalarFlux<Double_, Derived, FlowIndices, nDim
       }
 
       if (opt.muscl) {
+        const auto phi1st = phi;
         if constexpr (nVar != Dynamic) {
-          reconstruct<nVar>(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
-                            side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp);
+          reconstruct<nVar, MusclLimiter::EDGE_SCALAR>(
+              iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
+              side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp);
         } else {
           /*--- A dynamic model's equation count is only known at runtime, so the reconstructed
            * width is passed as an argument instead of a template parameter. ---*/
-          reconstruct(iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
-                      side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp, res.nVar);
+          reconstruct<0, MusclLimiter::EDGE_SCALAR>(
+              iPoint, jPoint, vector_ij, side_i.scalarNodes.GetGradient_Reconstruction(),
+              side_i.scalarNodes.GetLimiter(), limiterType, 0, phi, kappa, umusclRamp, res.nVar);
+        }
+
+        /*--- A face value outside the bounds of the variable (e.g. a negative k or omega next to a wall,
+         * where omega varies by orders of magnitude) falls back to the value of its point. ---*/
+        if (opt.lowerLimit) {
+          for (size_t iVar = 0; iVar < res.nVar; ++iVar) {
+            const su2double lo = opt.lowerLimit[iVar], hi = opt.upperLimit[iVar];
+            const Double out_i = fmax(phi.i.all(iVar) < lo, phi.i.all(iVar) > hi);
+            const Double out_j = fmax(phi.j.all(iVar) < lo, phi.j.all(iVar) > hi);
+            phi.i.all(iVar) = out_i * phi1st.i.all(iVar) + (1 - out_i) * phi.i.all(iVar);
+            phi.j.all(iVar) = out_j * phi1st.j.all(iVar) + (1 - out_j) * phi.j.all(iVar);
+          }
         }
       }
 

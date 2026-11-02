@@ -34,6 +34,8 @@
 #include "../../../Common/include/containers/C2DContainer.hpp"
 #include "../../../Common/include/linear_algebra/CSysVector.hpp"
 #include "../../../Common/include/linear_algebra/CSysMatrix.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../limiters/CLimiterDetails.hpp"
 
 /*!
  * \enum UpdateType
@@ -498,8 +500,11 @@ FORCEINLINE auto gradientReader(typename CLaneTraits<Double>::Int iPoint, const 
 
 /*!
  * \brief How the reconstructed differences are limited.
+ * \note EDGE is the van Albada edge limiter of the flow solver, which the scalar solvers also use to
+ *       reconstruct the flow velocity so that both see the same face velocity. EDGE_SCALAR is the
+ *       van Albada function of the point limiters, used for the transported scalar variables.
  */
-enum class MusclLimiter { NONE, EDGE, POINT };
+enum class MusclLimiter { NONE, EDGE, EDGE_SCALAR, POINT };
 
 /*!
  * \brief U-MUSCL reconstruction of nVarGrad variables, from the gradient rows starting at iRow.
@@ -534,6 +539,9 @@ FORCEINLINE void muscl(typename CLaneTraits<Double>::Int iPoint, typename CLaneT
       const Double delta_ij_2 = pow(delta_ij, 2) + 1e-6;
       lim_i = (delta_ij_2 + proj_i * delta_ij) / (pow(proj_i, 2) + delta_ij_2);
       lim_j = (delta_ij_2 + proj_j * delta_ij) / (pow(proj_j, 2) + delta_ij_2);
+    } else if constexpr (limiterKind == MusclLimiter::EDGE_SCALAR) {
+      lim_i = LimiterHelpers<Double>::vanAlbadaFunction(proj_i, delta_ij, Double(EPS));
+      lim_j = LimiterHelpers<Double>::vanAlbadaFunction(proj_j, delta_ij, Double(EPS));
     } else if constexpr (limiterKind == MusclLimiter::POINT) {
       lim_i = gatherVariables(iPoint, limiter, iRow + iVar);
       lim_j = gatherVariables(jPoint, limiter, iRow + iVar);
@@ -548,21 +556,25 @@ FORCEINLINE void muscl(typename CLaneTraits<Double>::Int iPoint, typename CLaneT
 /*!
  * \brief Reconstruct a slice of nVarGrad variables starting at column iRow, dispatching on the
  *        limiter type; shared by the flow and the scalar reconstructions so both call one body.
+ * \note edgeLimiter is the form that VAN_ALBADA_EDGE uses (EDGE for flow variables, EDGE_SCALAR for
+ *       transported scalars).
  */
-template <size_t nVarGrad_ = 0, size_t nDim, class Double, class VarType, class Limiter_t, class Gradient_t>
+template <size_t nVarGrad_ = 0, MusclLimiter edgeLimiter = MusclLimiter::EDGE, size_t nDim, class Double, class VarType,
+          class Limiter_t, class Gradient_t>
 FORCEINLINE void reconstruct(typename CLaneTraits<Double>::Int iPoint, typename CLaneTraits<Double>::Int jPoint,
                              const Vector<Double, nDim>& vector_ij, const Gradient_t& gradient,
                              const Limiter_t& limiter, LIMITER limiterType, size_t iRow, CPair<VarType>& V,
                              const CNonDeduced<Double>& kappa, const CNonDeduced<Double>& umusclRamp,
                              size_t nVarGradRuntime = 0) {
+  static_assert(edgeLimiter == MusclLimiter::EDGE || edgeLimiter == MusclLimiter::EDGE_SCALAR);
   switch (limiterType) {
     case LIMITER::NONE:
       muscl<MusclLimiter::NONE, nVarGrad_>(iPoint, jPoint, vector_ij, gradient, limiter, iRow, V, kappa, umusclRamp,
                                            nVarGradRuntime);
       break;
     case LIMITER::VAN_ALBADA_EDGE:
-      muscl<MusclLimiter::EDGE, nVarGrad_>(iPoint, jPoint, vector_ij, gradient, limiter, iRow, V, kappa, umusclRamp,
-                                           nVarGradRuntime);
+      muscl<edgeLimiter, nVarGrad_>(iPoint, jPoint, vector_ij, gradient, limiter, iRow, V, kappa, umusclRamp,
+                                    nVarGradRuntime);
       break;
     default:
       muscl<MusclLimiter::POINT, nVarGrad_>(iPoint, jPoint, vector_ij, gradient, limiter, iRow, V, kappa, umusclRamp,

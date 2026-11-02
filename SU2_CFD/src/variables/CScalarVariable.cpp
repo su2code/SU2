@@ -27,14 +27,15 @@
 
 #include "../../include/variables/CScalarVariable.hpp"
 
-CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig* config)
+CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig* config,
+                                 bool muscl)
     : CVariable(npoint, ndim, nvar, config),
-      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
+      Gradient_Reconstruction(muscl && config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
   /*--- Gradient related fields ---*/
 
   Gradient.resize(nPoint, nVar, nDim, 0.0);
 
-  if (config->GetReconstructionGradientRequired()) {
+  if (muscl && config->GetReconstructionGradientRequired()) {
     Gradient_Aux.resize(nPoint, nVar, nDim, 0.0);
   }
 
