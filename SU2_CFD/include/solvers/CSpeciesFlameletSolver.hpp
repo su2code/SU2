@@ -53,6 +53,16 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
+  /*!
+   * \brief Limit the scalar variances to the maximum of a two-point distribution on the range of their mean.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                      unsigned short iMesh) override;
+
   void SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config);
 
   /*!

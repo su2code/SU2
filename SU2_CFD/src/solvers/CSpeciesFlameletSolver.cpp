@@ -425,6 +425,34 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
   END_SU2_OMP_FOR
 }
 
+void CSpeciesFlameletSolver::Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                                            unsigned short iMesh) {
+  SU2_ZONE_SCOPED
+
+  struct VarianceBound {
+    int i_var, i_mean;
+    su2double lower, upper;
+  };
+  vector<VarianceBound> bounds;
+  if (flamelet_config_options.idx_progvar_var >= 0) {
+    const auto range = solver_container[FLOW_SOL]->GetFluidModel()->GetControllingVariableRange(idx_progvar);
+    bounds.push_back({flamelet_config_options.idx_progvar_var, idx_progvar, range.first, range.second});
+  }
+  if (flamelet_config_options.idx_mixfrac_var >= 0)
+    bounds.push_back({flamelet_config_options.idx_mixfrac_var, flamelet_config_options.idx_mixfrac, 0.0, 1.0});
+
+  /*--- var <= (mean - lower) (upper - mean) for a variable bounded by lower and upper. ---*/
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto i_point = 0u; i_point < nPoint; i_point++) {
+    for (const auto& bound : bounds) {
+      const su2double mean = nodes->GetSolution(i_point, bound.i_mean);
+      const su2double max_var = max((mean - bound.lower) * (bound.upper - mean), su2double(0.0));
+      if (nodes->GetSolution(i_point, bound.i_var) > max_var) nodes->SetSolution(i_point, bound.i_var, max_var);
+    }
+  }
+  END_SU2_OMP_FOR
+}
+
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
@@ -433,10 +461,12 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   const auto n_CV = flamelet_config_options.n_control_vars;
   const auto n_aux = flamelet_config_options.n_user_scalars;
   const auto* fn = static_cast<const CSpeciesFlameletVariable*>(nodes);
+  const auto* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
     const su2double volume = geometry->nodes->GetVolume(i_point);
+    const su2double density = flowNodes->GetDensity(i_point);
 
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
@@ -445,11 +475,11 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
 
     /*--- Implicit: analytic Jacobian for auxiliary species from the split source form.
      *   S_aux_i = source_prod_i + source_cons_i * Y_aux_i
-     *   dS_aux_i/dY_aux_i = source_cons_i
-     *   J_ii += -source_cons_i * V ---*/
+     *   dS_aux_i/d(rho Y_aux_i) = source_cons_i / rho
+     *   J_ii += -source_cons_i / rho * V ---*/
     if (implicit) {
       for (auto i_aux = 0u; i_aux < n_aux; i_aux++) {
-        Jacobian.AddVal2Diag(i_point, n_CV + i_aux, -fn->GetAuxSourceCons(i_point, i_aux) * volume);
+        Jacobian.AddVal2Diag(i_point, n_CV + i_aux, -fn->GetAuxSourceCons(i_point, i_aux) / density * volume);
       }
     }
   }

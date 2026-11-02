@@ -135,6 +135,13 @@ class CFluidFlamelet final : public CFluidModel {
                                        vector<su2double>& output_refs);
 
   /*!
+   * \brief Range of a controlling variable in the look-up table, or in the training data of the networks.
+   * \param[in] i_cv - Index of the controlling variable.
+   * \returns Pair of minimum and maximum value.
+   */
+  std::pair<su2double, su2double> GetControllingVariableRange(unsigned short i_cv) const override;
+
+  /*!
    * \brief Check for out-of-bounds condition for data set interpolation.
    * \return - within bounds (0) or out of bounds (1).
    */

@@ -277,6 +277,16 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   }
 }
 
+pair<su2double, su2double> CFluidFlamelet::GetControllingVariableRange(unsigned short i_cv) const {
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT) return look_up_table->GetTableRange(i_cv);
+#ifdef USE_MLPCPP
+  const auto norm = iomap_TD->GetInputNorm(controlling_variable_names[i_cv]);
+  return {norm.first, norm.second};
+#else
+  return CFluidModel::GetControllingVariableRange(i_cv);
+#endif
+}
+
 unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
                                               vector<su2double>& output_refs) {
   AD::StartPreacc();

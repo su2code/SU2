@@ -153,6 +153,20 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   if (rank == MASTER_NODE) cout << " done." << endl;
 }
 
+pair<su2double, su2double> CLookUpTable::GetTableRange(unsigned short i_axis) const {
+  if (i_axis == 2) {
+    if (table_dim != 3) SU2_MPI::Error("The look-up table has no third coordinate.", CURRENT_FUNCTION);
+    return {*limits_table_z.first, *limits_table_z.second};
+  }
+  const auto& limits = (i_axis == 0) ? limits_table_x : limits_table_y;
+  su2double lower = *limits[0].first, upper = *limits[0].second;
+  for (auto i_level = 1u; i_level < n_table_levels; i_level++) {
+    lower = min(lower, *limits[i_level].first);
+    upper = max(upper, *limits[i_level].second);
+  }
+  return {lower, upper};
+}
+
 void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv2) {
   limits_table_x.resize(n_table_levels);
   limits_table_y.resize(n_table_levels);

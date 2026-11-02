@@ -162,6 +162,15 @@ class CFluidModel {
   }
 
   /*!
+   * \brief Range of a controlling variable covered by the data set.
+   * \param[in] i_cv - Index of the controlling variable.
+   * \returns Pair of minimum and maximum value.
+   */
+  virtual std::pair<su2double, su2double> GetControllingVariableRange(unsigned short i_cv) const {
+    return {-1.0e15, 1.0e15};
+  }
+
+  /*!
    * \brief Get fluid dynamic viscosity.
    */
   inline virtual su2double GetLaminarViscosity() {
