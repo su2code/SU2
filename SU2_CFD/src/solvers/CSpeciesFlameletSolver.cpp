@@ -58,6 +58,14 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   for (const int i_var : {flamelet_config_options.idx_progvar_var, flamelet_config_options.idx_mixfrac_var})
     if (i_var >= 0) lowerlimit[i_var] = max(lowerlimit[i_var], su2double(0.0));
 
+  for (const auto& var_mean : {make_pair(flamelet_config_options.idx_progvar_var, idx_progvar),
+                               make_pair(flamelet_config_options.idx_mixfrac_var, flamelet_config_options.idx_mixfrac)}) {
+    if (var_mean.first < 0) continue;
+    string source_name = flamelet_config_options.cv_source_names[var_mean.first];
+    transform(source_name.begin(), source_name.end(), source_name.begin(), ::toupper);
+    if (source_name != "NULL" && source_name != "ZERO") variance_sources.push_back(var_mean);
+  }
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   nodes = new CSpeciesFlameletVariable(Solution_Inf, nPoint, nDim, nVar, config);
@@ -429,25 +437,16 @@ void CSpeciesFlameletSolver::Postprocessing(CGeometry* geometry, CSolver** solve
                                             unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
-  struct VarianceBound {
-    int i_var, i_mean;
-    su2double lower, upper;
-  };
-  vector<VarianceBound> bounds;
-  if (flamelet_config_options.idx_progvar_var >= 0) {
-    const auto range = solver_container[FLOW_SOL]->GetFluidModel()->GetControllingVariableRange(idx_progvar);
-    bounds.push_back({flamelet_config_options.idx_progvar_var, idx_progvar, range.first, range.second});
-  }
-  if (flamelet_config_options.idx_mixfrac_var >= 0)
-    bounds.push_back({flamelet_config_options.idx_mixfrac_var, flamelet_config_options.idx_mixfrac, 0.0, 1.0});
+  const int variances[] = {flamelet_config_options.idx_progvar_var, flamelet_config_options.idx_mixfrac_var};
+  if (variances[0] < 0 && variances[1] < 0) return;
 
-  /*--- var <= (mean - lower) (upper - mean) for a variable bounded by lower and upper. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
-    for (const auto& bound : bounds) {
-      const su2double mean = nodes->GetSolution(i_point, bound.i_mean);
-      const su2double max_var = max((mean - bound.lower) * (bound.upper - mean), su2double(0.0));
-      if (nodes->GetSolution(i_point, bound.i_var) > max_var) nodes->SetSolution(i_point, bound.i_var, max_var);
+    CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+    for (const int i_var : variances) {
+      if (i_var < 0) continue;
+      const su2double limit = fluid_model_local->GetScalarVarianceLimit(nodes->GetSolution(i_point), i_var);
+      if (nodes->GetSolution(i_point, i_var) > limit) nodes->SetSolution(i_point, i_var, limit);
     }
   }
   END_SU2_OMP_FOR
@@ -714,6 +713,11 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
   /*--- The source term for progress variable is always positive, we clip from below to make sure. --- */
   if (idx_progvar >= 0) table_sources[idx_progvar] = fmax(0, table_sources[idx_progvar]);
+
+  /*--- Variance source 2 (mean(phi S) - mean(phi) mean(S)); the manifold gives mean(phi S). ---*/
+  for (const auto& var_mean : variance_sources)
+    table_sources[var_mean.first] =
+        2.0 * (table_sources[var_mean.first] - scalars[var_mean.second] * table_sources[var_mean.second]);
   nodes->SetTableMisses(iPoint, misses);
 
   vector<su2double> source_scalar(flamelet_config_options.n_scalars);

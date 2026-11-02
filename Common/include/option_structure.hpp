@@ -1536,6 +1536,14 @@ namespace FLAMELET_CV_NAME {
 }
 
 /*!
+ * \brief Manifold variables giving the range of the progress variable, the support of its PDF.
+ */
+namespace FLAMELET_PROGVAR_BOUNDS {
+  constexpr const char* MIN = "ProgressVariableMin";
+  constexpr const char* MAX = "ProgressVariableMax";
+}
+
+/*!
  * \brief the source terms for the flamelet method. At the moment only progress variable
  */
 enum FLAMELET_SCALAR_SOURCES {
@@ -1550,6 +1558,7 @@ enum FLAMELET_LOOKUP_OPS {
   PREFDIF,  /*!< \brief Preferential diffusion scalars. */
   SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
   LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
+  PROGVAR_BOUNDS, /*!< \brief Minimum and maximum of the progress variable. */
 };
 
 /*!

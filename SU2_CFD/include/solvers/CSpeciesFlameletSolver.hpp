@@ -44,6 +44,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   int idx_progvar = -1; /*!< \brief Scalar index of the progress variable, -1 if absent. */
   int idx_enth = -1;    /*!< \brief Scalar index of the total enthalpy. */
   int idx_flame_front = -1; /*!< \brief Scalar set by FLAME_FRONT: progress variable, else mixture fraction. */
+  vector<pair<int, int>> variance_sources; /*!< \brief Variance and mean indices of variances with a chemical source. */
   /*!< \brief Number of points outside the manifold domain, shared across OpenMP threads so it can be
    *          accumulated atomically and reduced by the master thread alone in Preprocessing. */
   unsigned long n_not_in_domain_local = 0;

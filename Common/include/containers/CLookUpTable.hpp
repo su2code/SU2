@@ -387,13 +387,6 @@ class CLookUpTable {
   }
 
   /*!
-   * \brief Minimum and maximum of a table coordinate over all table levels.
-   * \param[in] i_axis - Coordinate: 0 (first CV), 1 (second CV) or 2 (table level).
-   * \returns Pair of minimum and maximum value.
-   */
-  std::pair<su2double, su2double> GetTableRange(unsigned short i_axis) const;
-
-  /*!
    * \brief Check whether requested set of variables are included in the table.
    */
   bool CheckForVariables(const std::vector<std::string>& vars_to_check) const;

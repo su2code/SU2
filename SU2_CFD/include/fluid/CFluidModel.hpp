@@ -162,13 +162,12 @@ class CFluidModel {
   }
 
   /*!
-   * \brief Range of a controlling variable covered by the data set.
-   * \param[in] i_cv - Index of the controlling variable.
-   * \returns Pair of minimum and maximum value.
+   * \brief Largest value a scalar variance can take, (mean - min)(max - mean) for its mean.
+   * \param[in] scalars - Transported scalars.
+   * \param[in] i_var - Index of the variance.
+   * \returns Upper limit of the variance.
    */
-  virtual std::pair<su2double, su2double> GetControllingVariableRange(unsigned short i_cv) const {
-    return {-1.0e15, 1.0e15};
-  }
+  virtual su2double GetScalarVarianceLimit(const su2double* scalars, unsigned short i_var) { return 1.0e15; }
 
   /*!
    * \brief Get fluid dynamic viscosity.

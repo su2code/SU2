@@ -52,6 +52,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     cout << "Number of control variables: " << n_control_vars << endl;
   }
   scalars_vector.resize(n_scalars);
+  manifold_inputs.resize(n_control_vars);
 
   table_scalar_names.resize(n_scalars);
   for (auto iCV = 0u; iCV < n_control_vars; iCV++)
@@ -117,6 +118,7 @@ CFluidFlamelet::~CFluidFlamelet() {
     delete iomap_LookUp;
     delete lookup_mlp;
     if (preferential_diffusion) delete iomap_PD;
+    if (flamelet_options.idx_progvar_var >= 0) delete iomap_ProgVarBounds;
   }
 #endif
 }
@@ -228,6 +230,12 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = beta_enth;
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = beta_mixfrac;
 
+  /*--- The progress variable range normalizes its variance. ---*/
+  if (flamelet_options.idx_progvar_var >= 0) {
+    varnames_ProgVarBounds = {FLAMELET_PROGVAR_BOUNDS::MIN, FLAMELET_PROGVAR_BOUNDS::MAX};
+    val_vars_ProgVarBounds.resize(varnames_ProgVarBounds.size());
+  }
+
   preferential_diffusion = flamelet_options.preferential_diffusion;
 
   if (!preferential_diffusion && flamelet_options.preferential_diffusion)
@@ -240,11 +248,15 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     iomap_LookUp = new MLPToolbox::CIOMap(controlling_variable_names, varnames_LookUp);
     lookup_mlp->PairVariableswithMLPs(*iomap_TD);
     lookup_mlp->PairVariableswithMLPs(*iomap_Sources);
-    if (n_lookups > 1)
+    if (n_lookups > 0)
       lookup_mlp->PairVariableswithMLPs(*iomap_LookUp);
     if (preferential_diffusion) {
       iomap_PD = new MLPToolbox::CIOMap(controlling_variable_names, varnames_PD);
       lookup_mlp->PairVariableswithMLPs(*iomap_PD);
+    }
+    if (!varnames_ProgVarBounds.empty()) {
+      iomap_ProgVarBounds = new MLPToolbox::CIOMap(controlling_variable_names, varnames_ProgVarBounds);
+      lookup_mlp->PairVariableswithMLPs(*iomap_ProgVarBounds);
     }
 #endif
   } else {
@@ -274,17 +286,116 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
                                                          : look_up_table->GetIndexOfVar(varnames_PD[iVar]));
       }
     }
+    if (!varnames_ProgVarBounds.empty()) {
+      if (!look_up_table->CheckForVariables(varnames_ProgVarBounds))
+        SU2_MPI::Error(string("Transporting ") + FLAMELET_CV_NAME::PROGVAR_VAR + " requires the variables " +
+                           FLAMELET_PROGVAR_BOUNDS::MIN + " and " + FLAMELET_PROGVAR_BOUNDS::MAX + " in the table.",
+                       CURRENT_FUNCTION);
+      for (const auto& name : varnames_ProgVarBounds) LUT_idx_ProgVarBounds.push_back(look_up_table->GetIndexOfVar(name));
+    }
   }
 }
 
-pair<su2double, su2double> CFluidFlamelet::GetControllingVariableRange(unsigned short i_cv) const {
-  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT) return look_up_table->GetTableRange(i_cv);
+su2double CFluidFlamelet::GetScalarVarianceLimit(const su2double* scalars, unsigned short i_var) {
+  SetManifoldInputs(scalars);
+  if (i_var == flamelet_options.idx_progvar_var) return limit_progvar_var;
+  if (i_var == flamelet_options.idx_mixfrac_var) return limit_mixfrac_var;
+  return CFluidModel::GetScalarVarianceLimit(scalars, i_var);
+}
+
+bool CFluidFlamelet::SetManifoldInputs(const su2double* scalars) {
+  for (auto iCV = 0u; iCV < n_control_vars; iCV++) manifold_inputs[iCV] = scalars[iCV];
+
+  /*--- Variance divided by its upper limit, 0 where the mean is at a bound. ---*/
+  auto normalize = [](su2double variance, su2double limit) {
+    return (limit > 0) ? fmin(fmax(variance / limit, su2double(0.0)), su2double(1.0)) : su2double(0.0);
+  };
+
+  const int i_zvar = flamelet_options.idx_mixfrac_var;
+  if (i_zvar >= 0) {
+    const su2double z = scalars[flamelet_options.idx_mixfrac];
+    limit_mixfrac_var = fmax(z * (1.0 - z), su2double(0.0));
+    manifold_inputs[i_zvar] = normalize(scalars[i_zvar], limit_mixfrac_var);
+  }
+
+  bool inside{true};
+  const int i_cvar = flamelet_options.idx_progvar_var;
+  if (i_cvar >= 0) {
+    /*--- The range of the progress variable does not depend on its variance. ---*/
+    manifold_inputs[i_cvar] = 0.0;
+    inside = LookUpManifold(FLAMELET_LOOKUP_OPS::PROGVAR_BOUNDS, manifold_inputs, val_vars_ProgVarBounds);
+    const su2double c = scalars[flamelet_options.idx_progvar];
+    limit_progvar_var = fmax((c - val_vars_ProgVarBounds[0]) * (val_vars_ProgVarBounds[1] - c), su2double(0.0));
+    manifold_inputs[i_cvar] = normalize(scalars[i_cvar], limit_progvar_var);
+  }
+  return inside;
+}
+
+bool CFluidFlamelet::LookUpManifold(unsigned short lookup_type, const vector<su2double>& inputs,
+                                    vector<su2double>& output_refs) {
+  vector<unsigned long>* LUT_idx = nullptr;
 #ifdef USE_MLPCPP
-  const auto norm = iomap_TD->GetInputNorm(controlling_variable_names[i_cv]);
-  return {norm.first, norm.second};
-#else
-  return CFluidModel::GetControllingVariableRange(i_cv);
+  MLPToolbox::CIOMap* iomap = nullptr;
 #endif
+  switch (lookup_type) {
+    case FLAMELET_LOOKUP_OPS::THERMO:
+      LUT_idx = &LUT_idx_TD;
+#ifdef USE_MLPCPP
+      iomap = iomap_TD;
+#endif
+      break;
+    case FLAMELET_LOOKUP_OPS::PREFDIF:
+      LUT_idx = &LUT_idx_PD;
+#ifdef USE_MLPCPP
+      iomap = iomap_PD;
+#endif
+      break;
+    case FLAMELET_LOOKUP_OPS::SOURCES:
+      LUT_idx = &LUT_idx_Sources;
+#ifdef USE_MLPCPP
+      iomap = iomap_Sources;
+#endif
+      break;
+    case FLAMELET_LOOKUP_OPS::LOOKUP:
+      LUT_idx = &LUT_idx_LookUp;
+#ifdef USE_MLPCPP
+      iomap = iomap_LookUp;
+#endif
+      break;
+    case FLAMELET_LOOKUP_OPS::PROGVAR_BOUNDS:
+      LUT_idx = &LUT_idx_ProgVarBounds;
+#ifdef USE_MLPCPP
+      iomap = iomap_ProgVarBounds;
+#endif
+      break;
+    default:
+      SU2_MPI::Error("Unknown manifold look-up operation.", CURRENT_FUNCTION);
+  }
+
+  bool inside{true};
+  switch (Kind_DataDriven_Method) {
+    case ENUM_DATADRIVEN_METHOD::LUT:
+      if (output_refs.size() != LUT_idx->size())
+        SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
+      /*--- The table axes follow the order of the controlling variables, the third one is the table level. ---*/
+      if (n_control_vars == 3) {
+        inside = look_up_table->LookUp_XYZ(*LUT_idx, output_refs, inputs[0], inputs[1], inputs[2]);
+      } else {
+        inside = look_up_table->LookUp_XY(*LUT_idx, output_refs, inputs[0], inputs[1]);
+      }
+      break;
+    case ENUM_DATADRIVEN_METHOD::MLP: {
+#ifdef USE_MLPCPP
+      vector<su2double*> refs_vars(output_refs.size());
+      for (auto iVar = 0u; iVar < output_refs.size(); iVar++) refs_vars[iVar] = &output_refs[iVar];
+      inside = lookup_mlp->Predict(*iomap, inputs, refs_vars);
+#endif
+      break;
+    }
+    default:
+      break;
+  }
+  return inside;
 }
 
 unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
@@ -292,66 +403,10 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   AD::StartPreacc();
   for (auto iVar = 0u; iVar < input_scalar.size(); iVar++) AD::SetPreaccIn(input_scalar[iVar]);
 
-  /*--- The table axes follow the order of the controlling variables, the third one is the table level. ---*/
-  const su2double val_cv1 = input_scalar[0];
-  const su2double val_cv2 = input_scalar[1];
-  const su2double val_cv3 = (n_control_vars == 3) ? input_scalar[2] : 0.0;
-  vector<su2double> val_vars;
-  vector<su2double*> refs_vars;
-  vector<unsigned long> LUT_idx;
-  switch (lookup_type) {
-    case FLAMELET_LOOKUP_OPS::THERMO:
-      LUT_idx = LUT_idx_TD;
-#ifdef USE_MLPCPP
-      iomap_Current = iomap_TD;
-#endif
-      break;
-    case FLAMELET_LOOKUP_OPS::PREFDIF:
-      LUT_idx = LUT_idx_PD;
-#ifdef USE_MLPCPP
-      iomap_Current = iomap_PD;
-#endif
-      break;
-    case FLAMELET_LOOKUP_OPS::SOURCES:
-      LUT_idx = LUT_idx_Sources;
-#ifdef USE_MLPCPP
-      iomap_Current = iomap_Sources;
-#endif
-      break;
-    case FLAMELET_LOOKUP_OPS::LOOKUP:
-      LUT_idx = LUT_idx_LookUp;
-#ifdef USE_MLPCPP
-      iomap_Current = iomap_LookUp;
-#endif
-      break;
-    default:
-      break;
-  }
+  bool inside = SetManifoldInputs(input_scalar.data());
+  inside = LookUpManifold(lookup_type, manifold_inputs, output_refs) && inside;
 
-  /*--- Add all quantities and their names to the look up vectors. ---*/
-  bool inside{true};
-  switch (Kind_DataDriven_Method) {
-    case ENUM_DATADRIVEN_METHOD::LUT:
-      if (output_refs.size() != LUT_idx.size())
-        SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
-      if (n_control_vars == 3) {
-        inside = look_up_table->LookUp_XYZ(LUT_idx, output_refs, val_cv1, val_cv2, val_cv3);
-      } else {
-        inside = look_up_table->LookUp_XY(LUT_idx, output_refs, val_cv1, val_cv2);
-      }
-      break;
-    case ENUM_DATADRIVEN_METHOD::MLP:
-      refs_vars.resize(output_refs.size());
-      for (auto iVar = 0u; iVar < output_refs.size(); iVar++) refs_vars[iVar] = &output_refs[iVar];
-#ifdef USE_MLPCPP
-      inside=lookup_mlp->Predict(*iomap_Current, input_scalar, refs_vars);
-#endif
-      break;
-    default:
-      break;
-  }
-  if (inside) extrapolation = 0;
-      else extrapolation = 1;
+  extrapolation = inside ? 0 : 1;
   for (auto iVar = 0u; iVar < output_refs.size(); iVar++) AD::SetPreaccOut(output_refs[iVar]);
   AD::EndPreacc();
   return extrapolation;
