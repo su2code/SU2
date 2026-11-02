@@ -2,7 +2,7 @@
  * \file CPoissonVariable.cpp
  * \brief Definition of the variables for poisson equation problems.
  * \author T. Aalbers
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 #include "../../include/variables/CPoissonVariable.hpp"
 
 CPoissonVariable::CPoissonVariable(su2double value, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CScalarVariable(npoint, ndim, nvar, config) {
+  : CScalarVariable(npoint, ndim, nvar, config, false) {
 
   /*--- Initialization ---*/
 

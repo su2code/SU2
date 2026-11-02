@@ -3,7 +3,7 @@
  * \brief Memory-efficient trapezoidal map for 2D lookup table queries,
  *        based on the LUT implementation of P. Gomes (https://github.com/pcarruscag/LUT).
  * \author T. Kiymaz, P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
