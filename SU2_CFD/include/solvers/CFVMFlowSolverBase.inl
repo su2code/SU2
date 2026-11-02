@@ -1105,12 +1105,18 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
   /*--- Push back the initial condition to previous solution containers
    for a 1st-order restart or when simply initializing to freestream. ---*/
 
+  const bool trans = rans && (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE);
+
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
     if (rans) {
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
+    }
+    if (trans) {
+      solver_container[iMesh][TRANS_SOL]->GetNodes()->Set_Solution_time_n();
+      solver_container[iMesh][TRANS_SOL]->GetNodes()->Set_Solution_time_n1();
     }
 
     if (dynamic_grid) {
@@ -1134,11 +1140,16 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     if (rans)
       solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
 
+    /*--- Load an additional restart file for the transition model. ---*/
+    if (trans)
+      solver_container[MESH_0][TRANS_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
+
     /*--- Push back this new solution to time level N. ---*/
 
     for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
       if (rans) solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
+      if (trans) solver_container[iMesh][TRANS_SOL]->GetNodes()->Set_Solution_time_n();
 
       geometry[iMesh]->nodes->SetVolume_n();
       if (config->GetGrid_Movement()) geometry[iMesh]->nodes->SetCoord_n();
