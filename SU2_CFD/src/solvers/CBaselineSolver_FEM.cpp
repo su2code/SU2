@@ -157,8 +157,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     /*--- All ranks open the file using MPI. ---*/
 
-    char fname[100];
-    strcpy(fname, filename.c_str());
+    const char* fname = filename.c_str();
     ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
@@ -244,8 +243,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     /*--- All ranks open the file using MPI. ---*/
 
-    char fname[100];
-    strcpy(fname, filename.c_str());
+    const char* fname = filename.c_str();
     ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
