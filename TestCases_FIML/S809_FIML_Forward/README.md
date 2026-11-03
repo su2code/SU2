@@ -65,8 +65,8 @@ to reduce production (beta < 1) where the flow should separate.
 
 ## Not yet implemented
 
-- Field inversion: the FIML objectives (`INVERSE_DESIGN_*_FIML`) and the `FIML` design
-  variable are defined but not connected to the adjoint.
+- Field inversion on this case: the inversion loop works (see `../FIML_Classic_NACA0012`), but an S809
+  solve at 14.24 deg takes about 30,000 iterations, which is too slow for an inversion.
 - `KIND_TRAIN_NN= WEIGHTS`, `SA_FIML_CORRECTION` other than `PRODUCTION`.
 
 ## References

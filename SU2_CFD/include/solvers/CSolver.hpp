@@ -838,6 +838,13 @@ public:
   inline virtual void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) {};
 
   /*!
+   * \brief Regularization LAMBDA_FIML * sum of (beta - 1)^2 over all domain points of the FIML correction.
+   * \param[in] config - Definition of the particular problem.
+   * \return Global value of the regularization term, 0 without FIML.
+   */
+  inline virtual su2double ComputeFIMLRegularization(const CConfig *config) const { return 0.0; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

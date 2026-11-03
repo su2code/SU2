@@ -4139,6 +4139,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (unsigned short iObj=1; iObj<nObj; iObj++){
       switch(Kind_ObjFunc[iObj]) {
         case INVERSE_DESIGN_PRESSURE:
+        case INVERSE_DESIGN_PRESSURE_FIML:
+        case INVERSE_DESIGN_LIFT_FIML:
+        case INVERSE_DESIGN_DRAG_FIML:
         case INVERSE_DESIGN_HEATFLUX:
         case THRUST_COEFFICIENT:
         case TORQUE_COEFFICIENT:

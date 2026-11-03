@@ -266,6 +266,13 @@ public:
                       unsigned short iMesh) override;
 
   /*!
+   * \brief Regularization LAMBDA_FIML * sum of (beta - 1)^2 over all domain points.
+   * \param[in] config - Definition of the particular problem.
+   * \return Global value of the regularization term.
+   */
+  su2double ComputeFIMLRegularization(const CConfig* config) const override;
+
+  /*!
    * \brief Compute the spatial integration using the CScalarFlux_SA edge kernel, which computes
    *        and writes both the convective and the diffusive term of every edge.
    * \param[in] geometry - Geometrical definition of the problem.

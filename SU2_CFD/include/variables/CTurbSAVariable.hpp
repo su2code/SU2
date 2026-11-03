@@ -188,7 +188,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Value of beta_fiml gradient.
    */
-  inline su2double GetBetaFimlGrad(unsigned long iPoint) const { return beta_fiml_grad(iPoint); }
+  inline su2double GetBetaFimlGrad(unsigned long iPoint) const override { return beta_fiml_grad(iPoint); }
 
   /*!
    * \brief Set the FIML correction gradient.
@@ -220,6 +220,25 @@ public:
   }
 
   inline su2double GetSAProduction(unsigned long iPoint) const { return sa_production(iPoint); }
+
+  /*!
+   * \brief Register beta_fiml as AD input, or reset its AD index.
+   * \param[in] reset - Reset the index instead of registering.
+   */
+  void RegisterBetaFiml(bool reset) override {
+    for (unsigned long iPoint = 0; iPoint < beta_fiml.size(); iPoint++) {
+      if (reset) AD::ResetInput(beta_fiml(iPoint));
+      else AD::RegisterInput(beta_fiml(iPoint));
+    }
+  }
+
+  /*!
+   * \brief Store the adjoint of beta_fiml as its gradient.
+   */
+  void ExtractBetaFimlAdjoint() override {
+    for (unsigned long iPoint = 0; iPoint < beta_fiml.size(); iPoint++)
+      beta_fiml_grad(iPoint) = SU2_TYPE::GetDerivative(beta_fiml(iPoint));
+  }
   inline su2double GetSADestruction(unsigned long iPoint) const { return sa_destruction(iPoint); }
 
 };

@@ -305,6 +305,10 @@ public:
   void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) final {
     Total_ComboObj = EvaluateCommonObjFunc(*config);
 
+    if (IsFIMLObjective(config->GetKind_ObjFunc(0))) {
+      Total_ComboObj += config->GetWeight_ObjFunc(0) * solver[TURB_SOL]->ComputeFIMLRegularization(config);
+    }
+
     if (config->GetWeakly_Coupled_Heat()) {
       solver[HEAT_SOL]->Evaluate_ObjFunc(config, solver);
       Total_ComboObj += solver[HEAT_SOL]->GetTotal_ComboObj();

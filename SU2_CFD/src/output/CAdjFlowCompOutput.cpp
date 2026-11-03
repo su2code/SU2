@@ -278,6 +278,11 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config) {
     AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SENSITIVITY", "z-component of the sensitivity vector");
   /// DESCRIPTION: Sensitivity in normal direction.
   AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction");
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    /// DESCRIPTION: Derivative with respect to the FIML correction at every point.
+    AddVolumeOutput("SENSITIVITY_BETA_FIML", "Sensitivity_Beta_FIML", "SENSITIVITY",
+                    "Derivative of the objective function with respect to beta_fiml");
+  }
   /// END_GROUP
 
 }
@@ -317,6 +322,10 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 1));
   if (nDim == 3)
     SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 2));
+
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    SetVolumeOutputValue("SENSITIVITY_BETA_FIML", iPoint, solver[TURB_SOL]->GetNodes()->GetBetaFimlGrad(iPoint));
+  }
 
   LoadVolumeDataAdjScalar(config, solver, iPoint);
 }

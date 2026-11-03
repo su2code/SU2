@@ -1691,7 +1691,8 @@ namespace {
 constexpr passivedouble BOX_COX_FLOOR = 1e-12;
 su2double BoxCox(su2double x, su2double lambda) {
   x = max(x, su2double(BOX_COX_FLOOR));
-  return (fabs(lambda) < 1e-10) ? log(x) : (pow(x, lambda) - 1.0) / lambda;
+  if (fabs(lambda) < 1e-10) return log(x);
+  return (pow(x, lambda) - 1.0) / lambda;
 }
 }  // namespace
 
@@ -1897,6 +1898,19 @@ void CTurbSASolver::ComputeBoxCoxLambda(const CConfig* config, CSolver** solver_
     }
     cout << flush;
   }
+}
+
+su2double CTurbSASolver::ComputeFIMLRegularization(const CConfig* config) const {
+  if (config->GetKind_Turb_Model() != TURB_MODEL::SA_FIML) return 0.0;
+
+  su2double local = 0.0;
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    const su2double diff = nodes->GetBetaFiml(iPoint) - 1.0;
+    local += diff * diff;
+  }
+  su2double global = 0.0;
+  SU2_MPI::Allreduce(&local, &global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return config->GetLambda_FIML() * global;
 }
 
 void CTurbSASolver::LoadRestartAuxiliaryFields(const CGeometry* geometry, const CConfig* config) {

@@ -219,6 +219,9 @@ class CSourceBase_TurbSA : public CNumerics {
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
     AD::SetPreaccIn(stochSource, 3);
+    AD::SetPreaccIn(beta_fiml);
+    sa_production = 0.0;
+    sa_destruction = 0.0;
 
     /*--- Common auxiliary variables and constants of the model. ---*/
     CSAVariables var;
@@ -366,6 +369,7 @@ class CSourceBase_TurbSA : public CNumerics {
     }
 
     AD::SetPreaccOut(Residual, 4);
+    AD::SetPreaccOut(sa_production, sa_destruction);
     AD::EndPreacc();
 
     return ResidualType<>(Residual, Jacobian_i, nullptr);

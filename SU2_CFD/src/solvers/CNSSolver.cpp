@@ -273,7 +273,7 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
 }
 
-void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
+void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver** solver) {
   SU2_ZONE_SCOPED
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
@@ -282,6 +282,10 @@ void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
   /*--- Evaluate objective functions common to Euler and NS solvers ---*/
 
   CEulerSolver::Evaluate_ObjFunc(config, nullptr);
+
+  if (IsFIMLObjective(config->GetKind_ObjFunc(0))) {
+    Total_ComboObj += config->GetWeight_ObjFunc(0) * solver[TURB_SOL]->ComputeFIMLRegularization(config);
+  }
 
   /*--- Evaluate objective functions specific to NS solver ---*/
 

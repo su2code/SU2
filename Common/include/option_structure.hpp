@@ -2426,6 +2426,14 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
 };
 
 /*!
+ * \brief Check whether an objective includes the FIML regularization term.
+ */
+inline bool IsFIMLObjective(unsigned short kind_objfunc) {
+  return kind_objfunc == INVERSE_DESIGN_PRESSURE_FIML || kind_objfunc == INVERSE_DESIGN_LIFT_FIML ||
+         kind_objfunc == INVERSE_DESIGN_DRAG_FIML;
+}
+
+/*!
  * \brief Types of grid file formats
  */
 enum ENUM_GRID {
