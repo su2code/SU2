@@ -42,6 +42,13 @@ protected:
 
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
 
+  /*!
+   * \brief Load model-specific fields from Restart_Data, called by LoadRestart while the data is in memory.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void LoadRestartAuxiliaryFields(const CGeometry* geometry, const CConfig* config) {}
+
 public:
   /*!
    * \brief Destructor of the class.

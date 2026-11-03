@@ -1910,6 +1910,29 @@ void CTurbSASolver::ComputeBoxCoxLambda(const CConfig* config, CSolver** solver_
   }
 }
 
+void CTurbSASolver::LoadRestartAuxiliaryFields(const CGeometry* geometry, const CConfig* config) {
+  if (config->GetKind_Turb_Model() != TURB_MODEL::SA_FIML) return;
+  auto* turbNodes = dynamic_cast<CTurbSAVariable*>(nodes);
+
+  /*--- ASCII restart headers quote the field names, binary ones do not. ---*/
+  unsigned long iField = 1;
+  for (; iField < fields.size(); iField++) {
+    if (fields[iField] == "Beta_FIML" || fields[iField] == "\"Beta_FIML\"") break;
+  }
+  if (iField == fields.size()) return;
+
+  unsigned long counter = 0;
+  for (auto iPoint_Global = 0ul; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
+    const auto iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+    if (iPoint_Local > -1) {
+      turbNodes->SetBetaFiml(iPoint_Local, Restart_Data[counter * Restart_Vars[1] + iField - 1]);
+      counter++;
+    }
+  }
+
+  if (rank == MASTER_NODE) cout << "Loaded Beta_FIML from the restart file." << endl;
+}
+
 void CTurbSASolver::LoadBetaTargets(const CConfig* config, CGeometry* geometry) {
   /*--- Load beta target values into beta_fiml_train for training ---*/
 

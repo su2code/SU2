@@ -37,6 +37,9 @@ skewed (minimum angle 16 deg), which requires:
 Without `nn_weights.dat`, hidden layers start from random weights and the output layer from
 zero, so beta = 1 and SA-FIML reproduces SA exactly.
 
+SA-FIML writes the field `Beta_FIML` (output group `FIML`) to the volume output and to the
+restart file. On restart it is read back, so beta is continuous before `ITER_START_NN`.
+
 `nn_weights.dat` holds a header line, then a line with the 4 input means, 4 stds and
 4 Box-Cox lambdas, then all weights layer by layer (bias last in each layer).
 

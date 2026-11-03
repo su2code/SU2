@@ -1776,6 +1776,12 @@ public:
   inline virtual su2double GetIntermittencyEff(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the FIML correction factor of the SA production term.
+   * \return Value of beta_fiml, 1 for models without FIML.
+   */
+  inline virtual su2double GetBetaFiml(unsigned long iPoint) const { return 1.0; }
+
+  /*!
    * \brief Set the effective intermittency (gamma_eff).
    * \param[in] Value of the effective intermittency (gamma_eff).
    */

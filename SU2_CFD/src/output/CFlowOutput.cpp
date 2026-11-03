@@ -1610,6 +1610,10 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
 
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    AddVolumeOutput("BETA_FIML", "Beta_FIML", "FIML", "FIML correction factor of the SA production term");
+  }
+
   // Hybrid RANS-LES
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
@@ -1701,6 +1705,10 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
   if (config->GetSAParsedOptions().bc) {
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetIntermittencyEff(iPoint));
+  }
+
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    SetVolumeOutputValue("BETA_FIML", iPoint, Node_Turb->GetBetaFiml(iPoint));
   }
 
   switch (config->GetKind_Trans_Model()) {

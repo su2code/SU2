@@ -172,7 +172,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Value of beta_fiml.
    */
-  inline su2double GetBetaFiml(unsigned long iPoint) const { return beta_fiml(iPoint); }
+  inline su2double GetBetaFiml(unsigned long iPoint) const override { return beta_fiml(iPoint); }
 
   /*!
    * \brief Set the FIML correction factor beta_fiml.

@@ -150,6 +150,13 @@ private:
   bool LoadNeuralNetworkWeights(const string& filename = "nn_weights.dat");
 
   /*!
+   * \brief Load beta_fiml from the restart field Beta_FIML when present.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadRestartAuxiliaryFields(const CGeometry* geometry, const CConfig* config) override;
+
+  /*!
    * \brief A virtual member.
    * \param[in] solver - Solver container
    * \param[in] geometry - Geometrical definition.
