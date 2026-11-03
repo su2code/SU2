@@ -2035,6 +2035,282 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         }
       }
     }
+
+    /*--- The finest-grid nonlinear residuals drive the CFL, so the decision does not depend on how many
+     *    ranks split the preconditioner. The finest grid decides for all levels. ---*/
+
+    if (!config->OptionIsSet("OUTLIER_MITIGATION_PARAM")) {
+      constexpr size_t trendWindow = 5, jumpWindow = 3, spikeWindow = 5, frozenWindow = 30;
+      constexpr passivedouble growBelow = 0.01, shrinkAbove = 0.03, jumpAbove = 0.75, spikeAbove = 1.0;
+      constexpr passivedouble frozenSpread = 0.05, frozenProgress = 0.02;
+      constexpr passivedouble linearBrake = 0.5, linearFailure = 0.8;
+      constexpr unsigned long quietIters = 20, eventGap = 20, bestWindow = 100, regressGap = 5, regressEpisode = 30;
+      constexpr unsigned long capProbeQuiet = 50;
+      constexpr passivedouble capProbeFactor = 1.3, eventCapFactor = 0.8, eventMatch = 1.5, cutFactor = 0.7;
+      constexpr size_t flipWindow = 10, stuckWindow = 15;
+      constexpr passivedouble regressAbove = 1.0, regressCap = 0.3, growBelowBest = 0.5;
+      constexpr passivedouble stuckSpread = 0.15, flipAmplitude = 0.03, flipProgress = 0.15;
+      constexpr size_t stallWindow = 100;
+      constexpr unsigned long stallPersist = 20;
+      constexpr passivedouble stallProgress = 0.1, stallGrowth = 1.1;
+      constexpr size_t slopeWindow = 60;
+      constexpr unsigned long trialHold = 300, trialQuiet = 100, trialSettle = 150;
+      constexpr passivedouble trialCut = 0.75, trialBudget = 30.0, fallingSlope = 0.3, trialResponse = 0.5;
+      constexpr passivedouble oscCap = 0.5, oscReset = 3.0, oscRelease = 1.2;
+      constexpr unsigned long oscQuiet = 100;
+
+      if (iMesh == MESH_0) {
+        const passivedouble avgCFL = SU2_TYPE::GetValue(Avg_CFL_Local);
+
+        /*--- Short-window trend of the mean log residual. ---*/
+        ResTrend_History.push_back(SU2_TYPE::GetValue(New_Func));
+        if (ResTrend_History.size() > trendWindow + 1) ResTrend_History.erase(ResTrend_History.begin());
+        const bool full = (ResTrend_History.size() > trendWindow);
+        const passivedouble trend = full ? (ResTrend_History.back() - ResTrend_History.front()) / trendWindow : 0.0;
+        ResTrend_Increase = full && (trend < growBelow);
+        ResTrend_Reduce = full && (trend > shrinkAbove);
+
+        /*--- A divergence raises all flow residuals together, a transient usually only one, so the jump
+         *    is the median rise over the flow variables. ---*/
+        vector<passivedouble> logRes(solverFlow->GetnVar());
+        for (auto iVar = 0u; iVar < solverFlow->GetnVar(); iVar++)
+          logRes[iVar] = log10(SU2_TYPE::GetValue(solverFlow->GetRes_RMS(iVar)));
+        ResJump_History.push_back(logRes);
+        if (ResJump_History.size() > spikeWindow + 1) ResJump_History.erase(ResJump_History.begin());
+        bool jump = false;
+        if (ResJump_History.size() > jumpWindow) {
+          const auto& past = ResJump_History[ResJump_History.size() - 1 - jumpWindow];
+          vector<passivedouble> rise(logRes.size());
+          for (auto iVar = 0u; iVar < logRes.size(); iVar++) rise[iVar] = logRes[iVar] - past[iVar];
+          sort(rise.begin(), rise.end());
+          const auto n = rise.size();
+          jump = (0.5 * (rise[(n - 1) / 2] + rise[n / 2]) > jumpAbove);
+        }
+        /*--- A spike in a single equation, such as the energy at a stagnation corner, is the first sign of
+         *    a CFL that is too high even when the other residuals do not move. ---*/
+        if (ResJump_History.size() > spikeWindow) {
+          for (auto iVar = 0u; iVar < logRes.size(); iVar++)
+            jump = jump || (logRes[iVar] - ResJump_History.front()[iVar] > spikeAbove);
+        }
+
+        /*--- Flow residuals that all stop falling are frozen. The turbulence residual may still fall, so it
+         *    is left out. The CFL cannot go below its lower limit, so nothing is done there. ---*/
+        const passivedouble cflMin = SU2_TYPE::GetValue(CFLMin);
+        ResFlow_History.push_back(logRes);
+        if (ResFlow_History.size() > frozenWindow + 1) ResFlow_History.erase(ResFlow_History.begin());
+        bool frozen = (ResFlow_History.size() > frozenWindow) && (iter >= startingIter + frozenWindow) &&
+                      (iter > CFL_LastEvent + frozenWindow) && (iter > CFL_LastStall + frozenWindow) &&
+                      (avgCFL > 1.05 * cflMin);
+        for (auto iVar = 0u; frozen && (iVar < logRes.size()); iVar++) {
+          passivedouble lowest = ResFlow_History.front()[iVar], highest = lowest;
+          for (const auto& past : ResFlow_History) {
+            lowest = min(lowest, past[iVar]);
+            highest = max(highest, past[iVar]);
+          }
+          frozen = (ResFlow_History.front()[iVar] - ResFlow_History.back()[iVar] < frozenProgress) &&
+                   (highest - lowest < frozenSpread);
+        }
+
+        /*--- A divergence that grows slowly never looks like a jump from one iteration to the next, so the
+         *    flow residual is also compared with its best value of the last bestWindow iterations. A residual
+         *    far above it that no longer moves is stuck at a CFL that is too high. ---*/
+        passivedouble flowMean = 0.0;
+        for (const auto value : logRes) flowMean += value / logRes.size();
+        if (iter >= startingIter) {
+          ResMean_History.push_back(flowMean);
+          if (ResMean_History.size() > bestWindow + 1) ResMean_History.erase(ResMean_History.begin());
+        }
+        passivedouble best = flowMean;
+        for (const auto value : ResMean_History) best = min(best, value);
+        ResRise = (iter >= startingIter) ? flowMean - best : 0.0;
+        bool regress = (ResRise > regressAbove) && (iter >= CFL_LastEvent + regressGap);
+        if (!regress && (ResMean_History.size() >= stuckWindow) && (ResRise > regressAbove) &&
+            (iter >= CFL_LastEvent + stuckWindow)) {
+          passivedouble lowest = ResMean_History.back(), highest = lowest;
+          for (auto k = ResMean_History.size() - stuckWindow; k < ResMean_History.size(); ++k) {
+            lowest = min(lowest, ResMean_History[k]);
+            highest = max(highest, ResMean_History[k]);
+          }
+          regress = (highest - lowest < stuckSpread);
+        }
+
+        /*--- Most flow residuals that alternate up and down at every iteration without net progress are a
+         *    flip-flop, which a CFL that is too high produces. ---*/
+        bool flip = (ResFlow_History.size() > flipWindow) && (iter >= startingIter + flipWindow) &&
+                    (iter >= CFL_LastEvent + flipWindow) && (iter >= CFL_LastFlip + flipWindow);
+        if (flip) {
+          const auto nHist = ResFlow_History.size();
+          unsigned short nAlternating = 0;
+          passivedouble progress = 0.0;
+          for (auto iVar = 0u; iVar < logRes.size(); iVar++) {
+            unsigned short nChanges = 0;
+            passivedouble amplitude = 0.0;
+            for (auto k = nHist - flipWindow; k < nHist; ++k) {
+              const auto d1 = ResFlow_History[k][iVar] - ResFlow_History[k - 1][iVar];
+              amplitude += fabs(d1) / flipWindow;
+              if (k > nHist - flipWindow) {
+                const auto d0 = ResFlow_History[k - 1][iVar] - ResFlow_History[k - 2][iVar];
+                if (d0 * d1 < 0.0) nChanges++;
+              }
+            }
+            if ((nChanges + 1 >= flipWindow - 1) && (amplitude > flipAmplitude)) nAlternating++;
+            progress += (ResFlow_History[nHist - 1 - flipWindow][iVar] - ResFlow_History.back()[iVar]) / logRes.size();
+          }
+          flip = (nAlternating * 4 >= logRes.size() * 3) && (progress < flipProgress);
+        }
+        if (flip) CFL_LastFlip = iter;
+
+        /*--- Residuals that stop falling while the CFL no longer grows are stalled by a CFL that is too
+         *    high, whatever the shape of their oscillation. The upper envelope of each residual over a
+         *    window is compared with that of the window before. ---*/
+        ResStall_History.push_back(logRes);
+        CFLStall_History.push_back(avgCFL);
+        if (ResStall_History.size() > 2 * stallWindow) {
+          ResStall_History.erase(ResStall_History.begin());
+          CFLStall_History.erase(CFLStall_History.begin());
+        }
+        bool stall = false;
+        if ((ResStall_History.size() == 2 * stallWindow) && (iter >= startingIter + 2 * stallWindow) &&
+            (iter >= max(CFL_LastEvent, CFL_LastStall) + stallWindow) && (avgCFL > 1.05 * cflMin)) {
+          passivedouble progress = 0.0;
+          for (auto iVar = 0u; iVar < logRes.size(); iVar++) {
+            passivedouble envOld = ResStall_History.front()[iVar], envNew = ResStall_History.back()[iVar];
+            for (size_t k = 0; k < stallWindow; k++) {
+              envOld = max(envOld, ResStall_History[k][iVar]);
+              envNew = max(envNew, ResStall_History[k + stallWindow][iVar]);
+            }
+            progress += (envOld - envNew) / logRes.size();
+          }
+          const bool cflFlat = (avgCFL < stallGrowth * CFLStall_History[stallWindow - 1]);
+          Stall_Streak = ((progress < stallProgress) && cflFlat) ? Stall_Streak + 1 : 0;
+          stall = (Stall_Streak >= stallPersist);
+        } else {
+          Stall_Streak = 0;
+        }
+        /*--- Cut a plateau repeatedly unless the residual is falling, and undo the cuts if it does not respond. ---*/
+        const auto nMean = ResMean_History.size();
+        auto meanSlope = [&](size_t window) {  /* Least-squares slope in decades per 100 iterations. */
+          passivedouble sumX = 0.0, sumY = 0.0, sumXY = 0.0, sumXX = 0.0;
+          for (size_t k = 0; k <= window; k++) {
+            const passivedouble y = ResMean_History[nMean - 1 - window + k];
+            sumX += k; sumY += y; sumXY += k * y; sumXX += passivedouble(k) * k;
+          }
+          const passivedouble n = window + 1;
+          return 100.0 * (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        };
+        if (Trial_Active && (CFL_LastEvent > Trial_Start)) Trial_Active = false;
+        if (Trial_Active && (iter >= CFL_LastStall + trialQuiet)) {
+          Trial_Active = false;
+          if (rank == MASTER_NODE) cout << "CFL_ADAPT: plateau ended, CFL cuts kept." << endl;
+        }
+        if ((frozen || stall) && (iter >= Trial_Hold) && (nMean > slopeWindow)) {
+          const passivedouble slope = meanSlope(slopeWindow);
+          CFL_LastStall = iter;
+          Stall_Streak = 0;
+          if (Trial_Active && (avgCFL < Trial_CFL / trialBudget) && (Trial_Settle == 0)) {
+            Trial_Settle = iter + trialSettle;
+          } else if (Trial_Active && (Trial_Settle > 0) && (iter < Trial_Settle)) {
+            /* The residual is given time to respond at the lowest CFL. */
+          } else if (Trial_Active && (Trial_Settle > 0) && (Trial_Res - flowMean > trialResponse)) {
+            Trial_Active = false;
+            if (rank == MASTER_NODE) cout << "CFL_ADAPT: residuals responded to the CFL cuts, they are kept." << endl;
+          } else if (Trial_Active && (Trial_Settle > 0)) {
+            CFL_Cap = Trial_Cap;
+            CFL_Ceiling = Trial_Ceiling;
+            CFL_StallCap = Trial_StallCap;
+            Trial_Active = false;
+            Trial_Hold = iter + trialHold;
+            if (rank == MASTER_NODE)
+              cout << "CFL_ADAPT: residuals did not respond to the CFL cuts since iteration " << Trial_Start
+                   << ", CFL cuts undone." << endl;
+          } else if (Trial_Active || (slope > -fallingSlope)) {
+            if (!Trial_Active) {
+              Trial_Active = true;
+              Trial_Start = iter;
+              Trial_CFL = avgCFL;
+              Trial_Res = flowMean;
+              Trial_Settle = 0;
+              Trial_Ceiling = CFL_Ceiling;
+              Trial_Cap = CFL_Cap;
+              Trial_StallCap = CFL_StallCap;
+            }
+            CFL_Cap = max(trialCut * ((CFL_Cap > 0.0) ? min(CFL_Cap, avgCFL) : avgCFL), cflMin);
+            CFL_Ceiling = CFL_Cap;
+            CFL_StallCap = CFL_Cap;
+            if (rank == MASTER_NODE)
+              cout << "CFL_ADAPT: residuals " << (frozen ? "frozen" : "stalled") << " at iteration " << iter
+                   << ", CFL capped at " << CFL_Cap << "." << endl;
+          }
+        }
+
+        /*--- Halve the CFL on a jump or a failed linear solve and keep it below a ceiling. A second event
+         *    near the CFL of an earlier one sets a lasting cap below both. ---*/
+        CFL_Cut = (jump || regress || flip || (linRes > linearFailure)) && (iter >= CFL_LastEvent + jumpWindow) &&
+                  (avgCFL > 1.05 * cflMin);
+        if (CFL_Cut) {
+          /*--- Cuts that follow each other closely belong to one event, only its first CFL is recorded. ---*/
+          if (iter >= CFL_LastEvent + eventGap) {
+            for (const auto eventCFL : CFL_EventValues)
+              if ((avgCFL < eventMatch * eventCFL) && (eventCFL < eventMatch * avgCFL)) {
+                const passivedouble cap = max(eventCapFactor * min(eventCFL, avgCFL), cflMin);
+                CFL_Cap = (CFL_Cap > 0.0) ? min(CFL_Cap, cap) : cap;
+              }
+            CFL_EventValues.push_back(avgCFL);
+          }
+          if (regress && (iter >= CFL_LastRegress + regressEpisode)) {
+            const passivedouble cap = max(regressCap * avgCFL, cflMin);
+            CFL_Cap = (CFL_Cap > 0.0) ? min(CFL_Cap, cap) : cap;
+          }
+          if (regress) CFL_LastRegress = iter;
+          /*--- Flip-flops bound the CFL below the lowest level that produced one. ---*/
+          if (flip) {
+            CFL_OscLevel = (CFL_OscLevel > 0.0) ? min(CFL_OscLevel, avgCFL) : avgCFL;
+            Res_AtOsc = flowMean;
+            const passivedouble cap = max(oscCap * CFL_OscLevel, cflMin);
+            CFL_Cap = (CFL_Cap > 0.0) ? min(CFL_Cap, cap) : cap;
+          }
+          CFL_Ceiling = (CFL_Cap > 0.0) ? min(cutFactor * avgCFL, CFL_Cap) : cutFactor * avgCFL;
+          CFL_LastEvent = iter;
+          if (rank == MASTER_NODE)
+            cout << "CFL_ADAPT: "
+                 << (jump ? "residual jump" : regress ? "residual regression" : flip ? "residual flip-flop" : "linear solver failure")
+                 << " at iteration " << iter << ", CFL halved from " << avgCFL << "." << endl;
+        }
+
+        /*--- A cap that has held the CFL through a quiet, converging stretch is raised, so that it does not
+         *    outlive the transient that caused it. A new event at the higher CFL brings it back down. It
+         *    stays below the cap set at the last stall and below the flip-flop limit, which itself rises
+         *    in small steps over quiet, converging stretches. ---*/
+        if ((CFL_OscLevel > 0.0) && (flowMean < Res_AtOsc - oscReset)) CFL_OscLevel = -1.0;
+        if ((CFL_OscLevel > 0.0) && (iter > max(CFL_LastEvent, CFL_LastOscRelease) + oscQuiet) && ResTrend_Increase &&
+            (ResRise < growBelowBest)) {
+          CFL_OscLevel *= oscRelease;
+          CFL_LastOscRelease = iter;
+        }
+        passivedouble probeLimit = (CFL_StallCap > 0.0) ? CFL_StallCap : 1e30;
+        if (CFL_OscLevel > 0.0) probeLimit = min(probeLimit, max(oscCap * CFL_OscLevel, cflMin));
+        if ((CFL_Cap > 0.0) && (avgCFL > 0.95 * CFL_Cap) && (iter > max(CFL_LastEvent, CFL_LastStall) + capProbeQuiet) &&
+            (iter > CFL_LastCapProbe + capProbeQuiet) && !Trial_Active && ResTrend_Increase && (ResRise < growBelowBest) &&
+            (CFL_Cap < probeLimit)) {
+          CFL_Cap = min(CFL_Cap * capProbeFactor, probeLimit);
+          CFL_LastCapProbe = iter;
+          CFL_EventValues.clear();
+        }
+
+        /*--- Lift the ceiling again while the residuals fall, up to the cap. ---*/
+        if ((CFL_Ceiling > 0.0) && (iter > CFL_LastEvent + quietIters) && !Trial_Active && ResTrend_Increase && (ResRise < growBelowBest)) {
+          CFL_Ceiling *= 1.05;
+          if (CFL_Cap > 0.0) CFL_Ceiling = min(CFL_Ceiling, CFL_Cap);
+          else if (CFL_Ceiling > SU2_TYPE::GetValue(CFLMax)) CFL_Ceiling = -1.0;
+        }
+      }
+
+      /*--- These replace the linear-residual and oscillation rules above. A poor linear solve holds the
+       *    CFL back gently, a failed one halves it above. ---*/
+      canIncrease = ResTrend_Increase && !Trial_Active && (linRes < linearBrake) && (iter >= startingIter) && (ResRise < growBelowBest);
+      reduceCFL = (ResTrend_Reduce || (linRes > linearBrake)) && (iter >= startingIter);
+      resetCFL = false;
+    }
     } /* End safe global access, now all threads update the CFL number. */
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -2086,10 +2362,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       /* Check if we are hitting the min or max and adjust. */
 
-      if (CFL*CFLFactor <= CFLMin) {
-        CFL       = CFLMin;
+      if (CFL * CFLFactor <= CFLMin) {
+        CFL = CFLMin;
         CFLFactor = MGFactor[iMesh];
-      } else if (CFL*CFLFactor >= CFLMax) {
+      } else if (CFL * CFLFactor >= CFLMax) {
         CFL       = CFLMax;
         CFLFactor = MGFactor[iMesh];
       }
@@ -2104,7 +2380,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       /* Apply the adjustment to the CFL and store local values. */
 
+      if (CFL_Cut) CFLFactor = 0.5;
       CFL *= CFLFactor;
+      if (CFL_Cut) CFL = max(CFL, CFLMin * MGFactor[iMesh]);
+      if ((CFL_Ceiling > 0.0) && (CFL > CFL_Ceiling)) CFL = max(su2double(CFL_Ceiling), CFLMin);
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
       if ((iMesh == MESH_0) && solverTurb) {
         solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
