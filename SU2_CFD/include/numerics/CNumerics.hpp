@@ -85,7 +85,9 @@ protected:
   intermittency_eff_i, /*!< \brief effective intermittency at point i. */
   intermittency_i; /*!< \brief intermittency at point i. */
   su2double
-  beta_fiml = 1.0; /*!< \brief FIML correction factor for turbulence production term. */
+  beta_fiml = 1.0, /*!< \brief FIML correction factor for turbulence production term. */
+  sa_production = 0.0, /*!< \brief SA production per unit volume, before the FIML correction. */
+  sa_destruction = 0.0; /*!< \brief SA destruction per unit volume. */
   su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
@@ -819,6 +821,16 @@ public:
   void SetBetaFiml(su2double val_beta_fiml) {
     beta_fiml = val_beta_fiml;
   }
+
+  /*!
+   * \brief Get the SA production per unit volume of the last source evaluation, before the FIML correction.
+   */
+  su2double GetSAProduction() const { return sa_production; }
+
+  /*!
+   * \brief Get the SA destruction per unit volume of the last source evaluation.
+   */
+  su2double GetSADestruction() const { return sa_destruction; }
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

@@ -51,6 +51,8 @@ private:
   VectorType beta_fiml;          /*!< \brief FIML correction factor at each point. */
   VectorType beta_fiml_grad;     /*!< \brief Gradient of FIML correction (for adjoint). */
   VectorType beta_fiml_train;    /*!< \brief Target beta for neural network training (FIML-Embedded). */
+  VectorType sa_production;      /*!< \brief SA production per unit volume before the FIML correction. */
+  VectorType sa_destruction;     /*!< \brief SA destruction per unit volume. */
 
 public:
   /*!
@@ -208,5 +210,16 @@ public:
    * \param[in] val_beta_fiml_train - Value of beta_fiml training target.
    */
   inline void SetBetaFimlTrain(unsigned long iPoint, su2double val_beta_fiml_train) { beta_fiml_train(iPoint) = val_beta_fiml_train; }
+
+  /*!
+   * \brief Store the SA production and destruction per unit volume, used as FIML features.
+   */
+  inline void SetSASourceTerms(unsigned long iPoint, su2double production, su2double destruction) {
+    sa_production(iPoint) = production;
+    sa_destruction(iPoint) = destruction;
+  }
+
+  inline su2double GetSAProduction(unsigned long iPoint) const { return sa_production(iPoint); }
+  inline su2double GetSADestruction(unsigned long iPoint) const { return sa_destruction(iPoint); }
 
 };

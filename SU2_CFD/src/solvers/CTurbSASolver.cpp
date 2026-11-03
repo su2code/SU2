@@ -327,10 +327,13 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   }
 
-  /*--- FIML: Compute Box-Cox scaling once, then forward propagate neural network ---*/
-  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
-    unsigned long iter = config->GetInnerIter();
-    unsigned long iter_start_nn = config->GetIter_Start_NN();
+  /*--- FIML: Compute Box-Cox scaling once, then forward propagate neural network.
+   * The features use source terms stored by Source_Residual, so the network starts at iteration 1 or later. ---*/
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML && config->GetKind_Train_NN() != NN_TRAIN_METHOD::NONE &&
+      iMesh == MESH_0) {
+    const unsigned long iter = config->GetInnerIter();
+    const unsigned long iter_start_nn = max<unsigned long>(config->GetIter_Start_NN(), 1);
+    SetReferenceWallShearStress(config);
 
     if (iter >= iter_start_nn && !nn_scaling_set) {
       if (rank == MASTER_NODE) cout << "Computing scaling parameters for FIML..." << endl;
@@ -503,6 +506,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition_BC = config->GetSAParsedOptions().bc;
+  const bool fiml = (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
@@ -535,12 +539,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
     numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
 
-    /*--- FIML: Set beta correction factor if SA_FIML model is active ---*/
-
-    if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
-      auto* turbNodes = dynamic_cast<CTurbSAVariable*>(nodes);
-      numerics->SetBetaFiml(turbNodes->GetBetaFiml(iPoint));
-    }
+    if (fiml) numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint));
 
     /*--- Set volume ---*/
 
@@ -599,6 +598,11 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    if (fiml) {
+      su2staticcast_p<CTurbSAVariable*>(nodes)->SetSASourceTerms(iPoint, numerics->GetSAProduction(),
+                                                                  numerics->GetSADestruction());
+    }
 
     /*--- Store the intermittency ---*/
 
@@ -1751,17 +1755,16 @@ void CTurbSASolver::ForwardPropagate(const CConfig* config, CSolver** solver_con
   su2double* layer_out = new su2double[n_neurons];
   su2double features[4];
 
-  /*--- Forward propagate for all domain points ---*/
+  nn_filtered.assign(nPointDomain, false);
+
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    /*--- Apply spatial filter if enabled ---*/
-    if (filter_shield && ApplyFilterShield(iPoint)) {
-      turbNodes->SetBetaFiml(iPoint, 1.0);  // No correction for filtered points
+    ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
+    if (FilterShield(features)) {
+      nn_filtered[iPoint] = true;
+      turbNodes->SetBetaFiml(iPoint, 1.0);
       continue;
     }
-
-    /*--- Compute and scale input features ---*/
-    ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
     ScaleNNInputs(features);
 
     /*--- Layer inputs hold the activations followed by the bias; beta = 1 + tanh(output). ---*/
@@ -1802,52 +1805,37 @@ void CTurbSASolver::ForwardPropagate(const CConfig* config, CSolver** solver_con
 void CTurbSASolver::ComputeNNInputFeatures(unsigned long iPoint, CSolver** solver_container,
                                             CGeometry* geometry, su2double* features) const {
 
-  const auto& turbVar = nodes->GetSolution();
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  const auto* turbNodes = su2staticcast_p<const CTurbSAVariable*>(nodes);
+  const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
-  /*--- Feature 1: Production / Destruction ratio (computed from SA model terms) ---*/
-  su2double nu_tilde = turbVar(iPoint, 0);
-  su2double density = flowNodes->GetDensity(iPoint);
-  su2double lam_visc = flowNodes->GetLaminarViscosity(iPoint);
-  su2double chi = nu_tilde * density / lam_visc;
-  su2double cv1_3 = 7.1 * 7.1 * 7.1;
-  su2double fv1 = chi * chi * chi / (chi * chi * chi + cv1_3);
-  su2double strain = flowNodes->GetStrainMag(iPoint);
-  su2double production = strain * nu_tilde * fv1;  // Simplified production term
-  su2double destruction = nu_tilde * nu_tilde / lam_visc;  // Simplified destruction
-  features[0] = production / (destruction + 1e-16);
+  const su2double nu_tilde = nodes->GetSolution(iPoint, 0);
+  const su2double strain = flowNodes->GetStrainMag(iPoint);
+  const su2double vorticity = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
 
-  /*--- Feature 2: Chi parameter (nu_tilde/nu) ---*/
-  features[1] = chi;
-
-  /*--- Feature 3: Delta criterion (vorticity vs strain indicator) ---*/
-  const su2double* vorticity_vec = flowNodes->GetVorticity(iPoint);
-  su2double vorticity = sqrt(vorticity_vec[0] * vorticity_vec[0] +
-                             vorticity_vec[1] * vorticity_vec[1] +
-                             vorticity_vec[2] * vorticity_vec[2]);
-  su2double q_criterion = 0.5 * (vorticity * vorticity - strain * strain);
-  su2double s_plus_omega = strain * strain + vorticity * vorticity + 1e-16;
-  features[2] = q_criterion / s_plus_omega;
-
-  /*--- Feature 4: Strain / Vorticity ratio ---*/
+  /*--- SA production/destruction, chi, eddy stress over flat-plate wall stress, strain/vorticity. ---*/
+  features[0] = turbNodes->GetSAProduction(iPoint) / (turbNodes->GetSADestruction(iPoint) + 1e-16);
+  features[1] = nu_tilde * flowNodes->GetDensity(iPoint) / flowNodes->GetLaminarViscosity(iPoint);
+  features[2] = flowNodes->GetEddyViscosity(iPoint) * strain / (1.5 * tau_wall_ref);
   features[3] = strain / (vorticity + 1e-16);
+}
+
+void CTurbSASolver::SetReferenceWallShearStress(const CConfig* config) {
+  const su2double rho = config->GetDensity_FreeStreamND();
+  const su2double u2 = GeometryToolbox::SquaredNorm(nDim, config->GetVelocity_FreeStreamND());
+  const su2double re_x = rho * sqrt(u2) * 0.5 * config->GetRefLength() / config->GetViscosity_FreeStreamND();
+  tau_wall_ref = 0.027 * pow(re_x, -1.0 / 7.0) * rho * u2;
 }
 
 void CTurbSASolver::ScaleNNInputs(su2double* features) const {
 
   for (unsigned short i = 0; i < n_inputs; i++) {
-    const su2double y = BoxCox(features[i] + feature_shift[i], box_cox_lambda[i]);
+    const su2double y = BoxCox(features[i], box_cox_lambda[i]);
     features[i] = (y - feature_mean[i]) / feature_std[i];
   }
 }
 
-bool CTurbSASolver::ApplyFilterShield(unsigned long iPoint) const {
-
-  /*--- Note: This method requires solver_container, but we don't have it in const context.
-   *    For now, we'll skip filtering in this compact implementation.
-   *    Full implementation would need to refactor this method signature. ---*/
-
-  return false;  // Disable filtering for now
+bool CTurbSASolver::FilterShield(const su2double* features) const {
+  return filter_shield && (features[2] < 0.25 || features[3] > 2.0);
 }
 
 void CTurbSASolver::ComputeBoxCoxLambda(const CConfig* config, CSolver** solver_container, CGeometry* geometry) {
@@ -1863,15 +1851,15 @@ void CTurbSASolver::ComputeBoxCoxLambda(const CConfig* config, CSolver** solver_
   su2double features[4];
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (filter_shield && ApplyFilterShield(iPoint)) continue;
     ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
+    if (FilterShield(features)) continue;
 
     for (unsigned short feat = 0; feat < n_inputs; feat++) {
       su2double* sums = &local[feat * stride];
-      const su2double x = max(features[feat] + feature_shift[feat], su2double(BOX_COX_FLOOR));
+      const su2double x = max(features[feat], su2double(BOX_COX_FLOOR));
       sums[0] += log(x);
       for (unsigned short k = 0; k < n_lambda; k++) {
-        const su2double y = BoxCox(features[feat] + feature_shift[feat], lambda_grid(k));
+        const su2double y = BoxCox(features[feat], lambda_grid(k));
         sums[1 + 2 * k] += y;
         sums[2 + 2 * k] += y * y;
       }
@@ -1901,7 +1889,8 @@ void CTurbSASolver::ComputeBoxCoxLambda(const CConfig* config, CSolver** solver_
   }
 
   if (rank == MASTER_NODE) {
-    cout << "FIML input scaling (lambda, mean, std):\n";
+    cout << "FIML input scaling over " << n << " of " << geometry->GetGlobal_nPointDomain()
+         << " points (lambda, mean, std):\n";
     for (unsigned short feat = 0; feat < n_inputs; feat++) {
       cout << "  feature " << feat << ": " << box_cox_lambda[feat] << ", " << feature_mean[feat] << ", "
            << feature_std[feat] << "\n";
@@ -1988,7 +1977,7 @@ su2double CTurbSASolver::ComputeTrainingLoss(CGeometry* geometry) const {
   unsigned long local_count = 0;
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!nn_filtered[iPoint]) {
       su2double beta_pred = turbNodes->GetBetaFiml(iPoint);
       su2double beta_target = turbNodes->GetBetaFimlTrain(iPoint);
       su2double diff = beta_pred - beta_target;
@@ -2053,8 +2042,7 @@ void CTurbSASolver::BackwardPropagate(const CConfig* config, CSolver** solver_co
   unsigned long local_count = 0;
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (!geometry->nodes->GetDomain(iPoint)) continue;
-    if (filter_shield && ApplyFilterShield(iPoint)) continue;
+    if (nn_filtered[iPoint]) continue;
 
     /*--- Forward pass to compute activations ---*/
     ComputeNNInputFeatures(iPoint, solver_container, geometry, features);

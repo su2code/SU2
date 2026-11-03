@@ -345,6 +345,8 @@ class CSourceBase_TurbSA : public CNumerics {
 
       /*--- FIML: Apply beta_fiml correction to production term ---*/
       if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+        sa_production = Production;
+        sa_destruction = Destruction;
         Production *= beta_fiml;
       }
 

@@ -45,8 +45,12 @@ restart file. On restart it is read back, so beta is continuous before `ITER_STA
 
 ## Network
 
-- Inputs: production/destruction ratio, chi, normalized Q-criterion, strain/vorticity ratio.
+- Inputs (Holland et al.): the SA production/destruction ratio taken from the source term (before beta),
+  chi, Delta = mu_t S / (1.5 tau_w) with tau_w = 0.027 Re_x^(-1/7) rho U^2 at x = REF_LENGTH/2, and S/Omega.
 - Scaling: Box-Cox with lambda fitted per input by maximum likelihood, then z-score.
+- `FILTER_SHIELD= YES` keeps beta = 1 where Delta < 0.25 or S/Omega > 2, and leaves those points out of
+  the scaling and the training (about 11% of the S809 points remain).
+- The network starts at `max(ITER_START_NN, 1)`, since the features use the previous source evaluation.
 - 3 hidden tanh layers of 20 neurons; output beta = 1 + tanh(.).
 
 ## Baseline results (SA, second order)
@@ -63,7 +67,7 @@ to reduce production (beta < 1) where the flow should separate.
 
 - Field inversion: the FIML objectives (`INVERSE_DESIGN_*_FIML`) and the `FIML` design
   variable are defined but not connected to the adjoint.
-- `KIND_TRAIN_NN= WEIGHTS`, `SA_FIML_CORRECTION` other than `PRODUCTION`, `FILTER_SHIELD`.
+- `KIND_TRAIN_NN= WEIGHTS`, `SA_FIML_CORRECTION` other than `PRODUCTION`.
 
 ## References
 

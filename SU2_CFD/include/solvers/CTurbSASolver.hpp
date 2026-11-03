@@ -53,15 +53,13 @@ private:
   su2double box_cox_lambda[4] = {1.0, 1.0, 1.0, 1.0};  /*!< \brief Box-Cox transform parameters */
   su2double feature_mean[4] = {0.0, 0.0, 0.0, 0.0};    /*!< \brief Feature means for scaling */
   su2double feature_std[4] = {1.0, 1.0, 1.0, 1.0};     /*!< \brief Feature std devs for scaling */
-  const su2double feature_shift[4] = {0.0, 0.0, 0.5, 0.0};  /*!< \brief Shift that makes each feature non-negative before Box-Cox. */
   bool nn_scaling_set = false;                 /*!< \brief Scaling computed or loaded with the weights. */
   bool targets_loaded = false;                 /*!< \brief Beta targets have been read. */
   unsigned short epoch_counter = 0;            /*!< \brief Completed training epochs. */
 
   bool filter_shield = false;                  /*!< \brief Apply spatial filtering */
-  su2double Total_CpDiff_FIML = 0.0;          /*!< \brief FIML pressure coefficient objective */
-  su2double Total_ClDiff_FIML = 0.0;          /*!< \brief FIML lift coefficient objective */
-  su2double Total_CdDiff_FIML = 0.0;          /*!< \brief FIML drag coefficient objective */
+  vector<bool> nn_filtered;                    /*!< \brief Points excluded by the filter in the last forward pass. */
+  su2double tau_wall_ref = 1.0;                /*!< \brief Flat-plate wall shear stress that normalizes the Delta feature. */
 
   /*!
    * \brief Initialize neural network weights and structure.
@@ -94,11 +92,17 @@ private:
   void ScaleNNInputs(su2double* features) const;
 
   /*!
-   * \brief Check if point should be filtered based on flow physics.
-   * \param[in] iPoint - Grid point index.
-   * \return True if point should be filtered out.
+   * \brief Check if a point lies outside the boundary layer and is excluded from the correction.
+   * \param[in] features - Unscaled features of the point.
+   * \return True when FILTER_SHIELD is on and Delta < 0.25 or S/Omega > 2.
    */
-  bool ApplyFilterShield(unsigned long iPoint) const;
+  bool FilterShield(const su2double* features) const;
+
+  /*!
+   * \brief Set the turbulent flat-plate wall shear stress at half the reference length.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetReferenceWallShearStress(const CConfig* config);
 
   /*!
    * \brief Fit Box-Cox lambda per feature by maximum likelihood, and the mean and std of the transformed features.
