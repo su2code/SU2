@@ -1496,6 +1496,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
   addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(), false, flamelet_ParsedOptions.flame_init.data());
 
+  /*!\brief FLAME_INIT_FILENAME \n DESCRIPTION: Restart file of a steady or unsteady simulation that sets the initial flow, scalar and turbulence fields when FLAME_INIT_METHOD= RESTART_FILE. The name is used as given, without appending a zone or time iteration. \ingroup Config*/
+  addStringOption("FLAME_INIT_FILENAME", flamelet_ParsedOptions.flame_init_filename, string(""));
+
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
   addDoubleArrayOption("SPARK_INIT", flamelet_ParsedOptions.spark_init.size(), false, flamelet_ParsedOptions.spark_init.data());
 
@@ -6006,6 +6009,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   } // species transport checks
 
+  if ((flamelet_ParsedOptions.ignition_method == FLAMELET_INIT_TYPE::RESTART_FILE) &&
+      (Kind_Species_Model != SPECIES_MODEL::FLAMELET)) {
+    SU2_MPI::Error("FLAME_INIT_METHOD= RESTART_FILE is only available for the flamelet model.", CURRENT_FUNCTION);
+  }
+
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
     /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
@@ -6027,6 +6035,19 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       if (flamelet_ParsedOptions.nspark < flamelet_ParsedOptions.n_scalars) {
         SU2_MPI::Error("SPARK_REACTION_RATES must have at least " + to_string(flamelet_ParsedOptions.n_scalars) +
                        " values (one for each scalar variable), but only " + to_string(flamelet_ParsedOptions.nspark) + " were provided.", CURRENT_FUNCTION);
+      }
+    }
+    /*--- Check that initializing from a restart file has what it needs. It starts a new simulation, so
+     * it is exclusive with a regular restart. The adjoint reads the direct solution, so it is not affected. ---*/
+    if (flamelet_ParsedOptions.ignition_method == FLAMELET_INIT_TYPE::RESTART_FILE) {
+      if (flamelet_ParsedOptions.flame_init_filename.empty()) {
+        SU2_MPI::Error("FLAME_INIT_METHOD= RESTART_FILE requires FLAME_INIT_FILENAME to be defined in the config file.", CURRENT_FUNCTION);
+      }
+      if (Restart && !ContinuousAdjoint && !DiscreteAdjoint) {
+        SU2_MPI::Error("FLAME_INIT_METHOD= RESTART_FILE starts a new simulation, it cannot be used with RESTART_SOL= YES.", CURRENT_FUNCTION);
+      }
+      if (Kind_Incomp_System == INCOMP_SYSTEM::PRESSURE_BASED) {
+        SU2_MPI::Error("FLAME_INIT_METHOD= RESTART_FILE does not support KIND_INCOMP_SYSTEM= PRESSURE_BASED.", CURRENT_FUNCTION);
       }
     }
     /*--- Check if flame ignition temperature is valid ---*/

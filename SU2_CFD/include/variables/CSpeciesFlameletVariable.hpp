@@ -49,6 +49,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   su2activevector hull_miss_dcv1_; /*!< \brief Signed CV1 deviation (query minus nearest hull node) at worst-miss Z level. */
   su2activevector hull_miss_dcv2_; /*!< \brief Signed CV2 deviation (query minus nearest hull node) at worst-miss Z level. */
   su2activevector z_level_dist_;   /*!< \brief Distance to nearest table Z level in physical Z units. */
+  su2vector<uint8_t> pd_values_valid; /*!< \brief Whether the preferential diffusion values of a point come from inside the manifold. */
 
  public:
   /*!
@@ -142,6 +143,16 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   inline void SetTableMisses(unsigned long iPoint, unsigned short misses) override { table_misses[iPoint] = misses; }
 
   inline unsigned short GetTableMisses(unsigned long iPoint) const override { return table_misses[iPoint]; }
+
+  /*!
+   * \brief Record that the preferential diffusion values of a point come from inside the manifold.
+   */
+  inline void SetPDValuesValid(unsigned long iPoint) { pd_values_valid[iPoint] = true; }
+
+  /*!
+   * \brief Whether the preferential diffusion values of a point come from inside the manifold.
+   */
+  inline bool GetPDValuesValid(unsigned long iPoint) const { return pd_values_valid[iPoint]; }
 
   inline void SetHullMissDevCV1(unsigned long iPoint, su2double val) override { hull_miss_dcv1_(iPoint) = val; }
   inline su2double GetHullMissDevCV1(unsigned long iPoint) const override { return hull_miss_dcv1_(iPoint); }

@@ -88,4 +88,6 @@ CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf,
     pd_terms_per_cv = FlameletPDTermsPerCV(flamelet_config_options.n_pd_major_species);
     pd_flux_coeff.resize(nPoint, flamelet_config_options.n_control_vars * pd_terms_per_cv) = su2double(0.0);
   }
+
+  if (flamelet_config_options.preferential_diffusion) pd_values_valid.resize(nPoint) = false;
 }

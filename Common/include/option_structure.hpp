@@ -1570,12 +1570,14 @@ enum class FLAMELET_INIT_TYPE {
   FLAME_FRONT,  /*!< \brief Straight flame front. */
   SPARK,        /*!< \brief Species reaction rate in a set location. */
   NONE,         /*!< \brief No ignition, cold flow only. */
+  RESTART_FILE, /*!< \brief Solution fields of an existing restart file. */
 };
 
 static const MapType<std::string, FLAMELET_INIT_TYPE> Flamelet_Init_Map = {
   MakePair("NONE", FLAMELET_INIT_TYPE::NONE)
   MakePair("FLAME_FRONT", FLAMELET_INIT_TYPE::FLAME_FRONT)
   MakePair("SPARK", FLAMELET_INIT_TYPE::SPARK)
+  MakePair("RESTART_FILE", FLAMELET_INIT_TYPE::RESTART_FILE)
 };
 
 /*!
@@ -1637,6 +1639,7 @@ struct FluidFlamelet_ParsedOptions {
                                       1,0,0, /* flame normal (nx, ny, nz) */
                                       5e-3,1}}; /*!< \brief Flame front initialization parameters. */
   std::array<su2double,6> spark_init{{0,0,0,0,0,0}};        /*!< \brief Spark ignition initialization parameters. */
+  std::string flame_init_filename;  /*!< \brief Restart file read by FLAME_INIT_METHOD= RESTART_FILE. */
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/

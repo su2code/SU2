@@ -2868,8 +2868,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
   /*--- First, check that this is not a binary restart file. ---*/
 
-  char fname[100];
-  strcpy(fname, val_filename.c_str());
+  const char* fname = val_filename.c_str();
   int magic_number;
 
 #ifndef HAVE_MPI
@@ -3017,8 +3016,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
   SU2_ZONE_SCOPED
 
-  char str_buf[CGNS_STRING_SIZE], fname[100];
-  strcpy(fname, val_filename.c_str());
+  char str_buf[CGNS_STRING_SIZE];
+  const char* fname = val_filename.c_str();
   const int nRestart_Vars = SU2_RESTART_HEADER_SIZE;
   Restart_Vars.resize(nRestart_Vars);
   fields.clear();
