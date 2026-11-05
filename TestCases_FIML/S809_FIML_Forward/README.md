@@ -5,11 +5,27 @@ Spalart-Allmaras production term.
 
 ## Case
 
-- **Mesh**: `S809_struct_coarse.su2`, 63,400 points, 62,766 quadrilaterals, chord c = 0.6 m,
-  far field at about 83 chords, first cell height 7.5e-7 m (y+ ~ 0.1).
+- **Mesh**: `s809_cmesh.su2`, structured C-mesh with 93,241 points and 92,544 quadrilaterals,
+  chord c = 0.6 m, far field and wake at 100 chords, first cell height 1.8e-6 m (y+ ~ 0.3).
 - **Flow**: incompressible RANS, rho = 1.2886 kg/m^3, mu = 1.853e-5 Pa s,
   |V| = 47.9332 m/s at AoA = 14.24 deg, Re = 2.0e6 based on chord.
 - **Target**: experimental CL = 1.0546 at this angle.
+
+## Mesh generation
+
+`s809_cmesh.py` builds the mesh from `s809.dat` (NREL S809 coordinates from airfoiltools.com,
+`s809-nr`) with the gmsh Python API, with the markers `airfoil` and `farfield`:
+
+    python3 s809_cmesh.py --output s809_cmesh.su2              # the mesh used by the configurations
+    python3 s809_cmesh.py --output s809_fine.su2 --scale 2     # all spacings halved, for a grid study
+
+Without `--output` it writes `s809_cmesh.msh`.
+
+- Grid lines leave the wall along the normal, then turn to their far-field point; the turn of the
+  start directions at the sharp trailing edge is smoothed so that grid lines do not converge.
+- Defaults: first cell 3e-6 c (y+ ~ 0.3 at Re 2e6), growth 1.1 up to 0.04 c, 129 points normal
+  to the wall, 415 points on the airfoil, wake and far field at 100 c.
+- Quality: no cell has a corner angle below 47 deg; cells within 0.05 c of the wall stay above 74 deg.
 
 ## Configuration files
 
@@ -19,17 +35,19 @@ Spalart-Allmaras production term.
 | `config_fiml_forward.cfg` | SA-FIML from `restart_sa.dat` with the weights in `nn_weights.dat`. |
 | `config_fiml_training.cfg` | SA-FIML from `restart_sa.dat`, trains the network on `BETA_TARGET_FILE`. |
 
-All three share the same numerics. The cells behind the sharp trailing edge are strongly
-skewed (minimum angle 16 deg), which requires:
+All three share the same numerics:
 
 - `NUM_METHOD_GRAD_RECON= LEAST_SQUARES` with the Venkatakrishnan limiter;
-- CFL ramped from 1 and capped at 10 (a cap of 20 diverges at 14.24 deg).
+- CFL ramped from 1 and capped at 100;
+- `ITER= 15000`. At 14.24 deg CL alternates between two values (relative change about 1e-6 per
+  iteration) once it has converged, so the Cauchy test on `LIFT` with `CONV_CAUCHY_EPS= 1E-7` does
+  not stop the run, and a larger threshold stops it while CL is still 0.2% from its final value.
 
 ## Workflow
 
 1. Run the baseline: `mpirun -n 8 SU2_CFD config_sa_baseline.cfg`.
 2. Provide `beta_target.dat`: one beta value per line, ordered by global point index
-   (63,400 lines). Points without a value get beta = 1.
+   (93,241 lines). Points without a value get beta = 1.
 3. Train: `mpirun -n 8 SU2_CFD config_fiml_training.cfg`. One epoch runs per solver
    iteration after `ITER_START_NN`; `nn_weights.dat` is written after the last epoch.
 4. Run forward: `mpirun -n 8 SU2_CFD config_fiml_forward.cfg`.
@@ -49,7 +67,7 @@ restart file. On restart it is read back, so beta is continuous before `ITER_STA
   chi, Delta = mu_t S / (1.5 tau_w) with tau_w = 0.027 Re_x^(-1/7) rho U^2 at x = REF_LENGTH/2, and S/Omega.
 - Scaling: Box-Cox with lambda fitted per input by maximum likelihood, then z-score.
 - `FILTER_SHIELD= YES` keeps beta = 1 where Delta < 0.25 or S/Omega > 2, and leaves those points out of
-  the scaling and the training (about 11% of the S809 points remain).
+  the scaling and the training, so that only the boundary layer and the wake are trained.
 - The network starts at `max(ITER_START_NN, 1)`, since the features use the previous source evaluation.
 - 3 hidden tanh layers of 20 neurons; output beta = 1 + tanh(.).
 
@@ -57,8 +75,8 @@ restart file. On restart it is read back, so beta is continuous before `ITER_STA
 
 | AoA | CL | CD | Note |
 |---|---|---|---|
-| 4.10 deg | 0.599 | 0.0142 | converged to rms[P] = -9.9 in 4,000 iterations |
-| 14.24 deg | 1.383 | 0.0524 | after 29,000 iterations, still drifting; extrapolated CL 1.370, CD 0.0536 |
+| 4.10 deg | 0.6007 | 0.0137 | stopped by the Cauchy test on CL after 2,365 iterations (rms[P] = -11.8) |
+| 14.24 deg | 1.3427 | 0.0522 | CL within 0.1% of the final value after 8,200 iterations, within 0.01% after 11,700 |
 
 SA over-predicts lift at 14.24 deg by about 30% (experiment 1.0546), so the correction has
 to reduce production (beta < 1) where the flow should separate.
@@ -66,7 +84,7 @@ to reduce production (beta < 1) where the flow should separate.
 ## Not yet implemented
 
 - Field inversion on this case: the inversion loop works (see `../FIML_Classic_NACA0012`), but an S809
-  solve at 14.24 deg takes about 30,000 iterations, which is too slow for an inversion.
+  solve at 14.24 deg from free stream takes about 12,000 iterations.
 - `KIND_TRAIN_NN= WEIGHTS`, `SA_FIML_CORRECTION` other than `PRODUCTION`.
 
 ## References

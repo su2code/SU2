@@ -16,7 +16,7 @@ if [ ! -f "../../bin/SU2_CFD" ]; then
 fi
 
 # Check mesh file
-if [ ! -f "S809_struct_coarse.su2" ]; then
+if [ ! -f "s809_cmesh.su2" ]; then
     echo "ERROR: Mesh file not found!"
     exit 1
 fi
