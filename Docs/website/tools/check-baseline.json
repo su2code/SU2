@@ -1,0 +1,32 @@
+{
+  "note": "Existing findings at SU2 7862504f9d / website be90edc, before automated checks. Fix individual entries and remove them; do not regenerate this baseline to accept regressions. Link entries are scoped to a page and normalized destination. External links are not checked. The 22 October 2026 follow-up resolved the 180 links, eight template names and one enum finding; their arrays are now empty. The 24 missing source descriptions remain.",
+  "template_options": [],
+  "missing_descriptions": [
+    "ACTDISK_SECONDARY_FLOW",
+    "CONDUCTIVITY_MODEL",
+    "ENGINE_NU_FACTOR",
+    "FIX_AZIMUTHAL_LINE",
+    "FREESTREAM_INTERMITTENCY",
+    "FREESTREAM_NU_FACTOR",
+    "FREESTREAM_TURB2LAMVISCRATIO",
+    "FREESTREAM_TURBULENCEINTENSITY",
+    "INITIAL_BCTHRUST",
+    "LOWER_LIMIT_K_FACTOR",
+    "LOWER_LIMIT_OMEGA_FACTOR",
+    "MARKER_ACTDISK",
+    "NUM_NEAREST_NEIGHBORS",
+    "PRINT_INLET_INTERPOLATED_DATA",
+    "SPECIFIED_INLET_PROFILE",
+    "TOPOL_OPTIM_FILTER_KERNEL",
+    "TOPOL_OPTIM_FILTER_RADIUS",
+    "TOPOL_OPTIM_KERNEL_PARAM",
+    "TOPOL_OPTIM_OUTFILE",
+    "TOPOL_OPTIM_PROJECTION_PARAM",
+    "TOPOL_OPTIM_PROJECTION_TYPE",
+    "TOPOL_OPTIM_SEARCH_LIMIT",
+    "TOPOL_OPTIM_SIMP_EXPONENT",
+    "TOPOL_OPTIM_SIMP_MINSTIFF"
+  ],
+  "links": [],
+  "enum_values": []
+}
