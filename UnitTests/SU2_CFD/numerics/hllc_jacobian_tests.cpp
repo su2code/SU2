@@ -113,8 +113,8 @@ Result Evaluate(unsigned short nDim, CNumerics& numerics, const CConfig* config,
 
 /*--- Compare the Jacobians with central differences; use absolute error for a selected side. ---*/
 su2double JacobianError(unsigned short nDim, CNumerics& numerics, const CConfig* config, const State& Ui,
-                        const State& Uj, su2double k_i, su2double k_j,
-                        su2double pressureOffset = 0.0, int sideFilter = -1) {
+                        const State& Uj, su2double k_i, su2double k_j, su2double pressureOffset = 0.0,
+                        int sideFilter = -1) {
   const unsigned short nVar = nDim + 2;
   const auto ref = Evaluate(nDim, numerics, config, Ui, Uj, k_i, k_j, pressureOffset);
   su2double maxErr = 0.0, maxJac = 0.0;
