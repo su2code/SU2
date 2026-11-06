@@ -77,29 +77,38 @@ def resample(curve, s_nodes):
     return np.column_stack([np.interp(s_nodes * s[-1], s, curve[:, 0]), np.interp(s_nodes * s[-1], s, curve[:, 1])])
 
 
-def build(args):
+def c_line(foil, args, sc):
+    """Wall arc lengths from the lower trailing edge, wake distances, and the leading-edge index."""
+    lower = cluster(foil.s_le, args.ds_te / sc, args.ds_le / sc, args.ds_lower / sc, 0.04, 0.08)
+    upper = cluster(foil.length - foil.s_le, args.ds_le / sc, args.ds_te / sc, args.ds_upper / sc, 0.04, 0.08)
+    d = geometric(args.wake, args.ds_te / sc, args.wake_ratio ** (1 / sc))
+    return np.concatenate([lower, foil.s_le + upper[1:]]), d, len(lower) - 1
+
+
+def c_coord(foil, s_wall, d):
+    """Position of the C-line nodes, from the lower outlet to the upper outlet."""
+    return np.concatenate([-d[:0:-1], s_wall, foil.length + d[1:]])
+
+
+def build(args, ref):
+    """Grid lines of the C-mesh; far-field nodes are spread as for the spacings in ref at scale 1."""
     foil = Airfoil(read_selig(args.airfoil)[::-1])
     sc = args.scale
 
     # Wall nodes, ordered from the lower trailing edge over the leading edge to the upper trailing edge.
-    lower = cluster(foil.s_le, args.ds_te / sc, args.ds_le / sc, args.ds_lower / sc, 0.04, 0.08)
-    upper = cluster(foil.length - foil.s_le, args.ds_le / sc, args.ds_te / sc, args.ds_upper / sc, 0.04, 0.08)
-    s_wall = np.concatenate([lower, foil.s_le + upper[1:]])
+    s_wall, d, i_le = c_line(foil, args, sc)
     wall = foil.point(s_wall)
     tang = foil.tangent(s_wall)
     wall[0] = wall[-1] = 0.5 * (wall[0] + wall[-1])
     n_wall = np.column_stack([-tang[:, 1], tang[:, 0]])
-    i_le = len(lower) - 1
 
     # Wake cut leaves along the trailing-edge bisector and bends back to the trailing-edge height.
     te = wall[-1]
     bis = tang[-1] - tang[0]
     bis /= np.linalg.norm(bis)
     slope = bis[1] / bis[0]
-    xw = te[0] + geometric(args.wake, args.ds_te / sc, args.wake_ratio ** (1 / sc))
-    d = xw - te[0]
     yw = te[1] + slope * d * np.exp(-d / 0.5)
-    wake = np.column_stack([xw, yw])
+    wake = np.column_stack([te[0] + d, yw])
     dy = slope * np.exp(-d / 0.5) * (1 - d / 0.5)
     t_wake = np.column_stack([np.ones_like(dy), dy]) / np.hypot(1, dy)[:, None]
     n_wake_up = np.column_stack([-t_wake[:, 1], t_wake[:, 0]])
@@ -143,7 +152,10 @@ def build(args):
         r = far - q[i]
         hit[i] = sigma[np.argmax(r @ c_dir[i] / np.linalg.norm(r, axis=1))]
     hit = 0.5 * (np.maximum.accumulate(hit) + np.minimum.accumulate(hit[::-1])[::-1])
-    hit = (1 - args.far_uniform) * hit + args.far_uniform * np.linspace(0.0, sigma[-1], len(q))
+    s_ref, d_ref, _ = c_line(foil, ref, 1.0)
+    xi_ref = c_coord(foil, s_ref, d_ref)
+    uniform = np.interp(c_coord(foil, s_wall, d), xi_ref, np.linspace(0.0, sigma[-1], len(xi_ref)))
+    hit = (1 - args.far_uniform) * hit + args.far_uniform * uniform
     c_far = np.column_stack([np.interp(hit, sigma, far[:, 0]), np.interp(hit, sigma, far[:, 1])])
 
     y1 = args.y1 / sc
@@ -261,9 +273,9 @@ def main():
     p.add_argument("--growth", type=float, default=1.1, help="wall-normal growth ratio in the boundary layer")
     p.add_argument("--bl_height", type=float, default=0.04, help="height of the region with constant growth")
     p.add_argument("--n_normal", type=int, default=129, help="nodes on each wall-normal grid line")
-    p.add_argument("--ds_le", type=float, default=8e-4, help="wall spacing at the leading edge")
-    p.add_argument("--ds_te", type=float, default=8e-4, help="wall spacing at the trailing edge")
-    p.add_argument("--ds_upper", type=float, default=5e-3, help="largest spacing on the upper surface")
+    p.add_argument("--ds_le", type=float, default=1e-4, help="wall spacing at the leading edge")
+    p.add_argument("--ds_te", type=float, default=6e-4, help="wall spacing at the trailing edge")
+    p.add_argument("--ds_upper", type=float, default=3.5e-3, help="largest spacing on the upper surface")
     p.add_argument("--ds_lower", type=float, default=8e-3, help="largest spacing on the lower surface")
     p.add_argument("--wake", type=float, default=100.0, help="wake length behind the trailing edge")
     p.add_argument("--wake_ratio", type=float, default=1.06, help="growth ratio along the wake")
@@ -271,13 +283,15 @@ def main():
     p.add_argument("--farfield", type=float, default=100.0, help="far-field radius")
     p.add_argument("--tension", type=float, default=0.1, help="length over which grid lines leave the wall normally")
     p.add_argument("--te_smooth", type=float, default=0.06, help="smoothing length of start directions at the trailing edge")
-    p.add_argument("--blend", type=float, default=2.0, help="length over which grid lines turn to the far point")
+    p.add_argument("--blend", type=float, default=1.5, help="length over which grid lines turn to the far point")
     p.add_argument("--far_uniform", type=float, default=0.5, help="blend of far-field node spacing towards uniform")
     p.add_argument("--block", type=int, default=8, help="C-line nodes per transfinite block")
     p.add_argument("--gui", action="store_true")
     args = p.parse_args()
+    keys = ("ds_le", "ds_te", "ds_upper", "ds_lower", "wake_ratio")
+    ref = argparse.Namespace(**{**vars(args), **{k: p.get_default(k) for k in keys}})
 
-    g = build(args)
+    g = build(args, ref)
     mesh(g, args)
     quality()
     gmsh.write(args.output)

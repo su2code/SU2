@@ -5,7 +5,7 @@ Spalart-Allmaras production term.
 
 ## Case
 
-- **Mesh**: `s809_cmesh.su2`, structured C-mesh with 93,241 points and 92,544 quadrilaterals,
+- **Mesh**: `s809_cmesh.su2`, structured C-mesh with 113,747 points and 112,896 quadrilaterals,
   chord c = 0.6 m, far field and wake at 100 chords, first cell height 1.8e-6 m (y+ ~ 0.3).
 - **Flow**: incompressible RANS, rho = 1.2886 kg/m^3, mu = 1.853e-5 Pa s,
   |V| = 47.9332 m/s at AoA = 14.24 deg, Re = 2.0e6 based on chord.
@@ -23,9 +23,12 @@ Without `--output` it writes `s809_cmesh.msh`.
 
 - Grid lines leave the wall along the normal, then turn to their far-field point; the turn of the
   start directions at the sharp trailing edge is smoothed so that grid lines do not converge.
+- The far-field end of each grid line depends on its position along the C-line, not on the wall or
+  wake spacings, so refining one spacing leaves the other grid lines in place.
 - Defaults: first cell 3e-6 c (y+ ~ 0.3 at Re 2e6), growth 1.1 up to 0.04 c, 129 points normal
-  to the wall, 415 points on the airfoil, wake and far field at 100 c.
-- Quality: no cell has a corner angle below 47 deg; cells within 0.05 c of the wall stay above 74 deg.
+  to the wall, 564 points on the airfoil with spacing 1e-4 c at the leading edge and 6e-4 c at the
+  trailing edge, wake and far field at 100 c.
+- Quality: no cell has a corner angle below 45 deg; cells within 0.05 c of the wall stay above 76 deg.
 
 ## Configuration files
 
@@ -37,17 +40,15 @@ Without `--output` it writes `s809_cmesh.msh`.
 
 All three share the same numerics:
 
-- `NUM_METHOD_GRAD_RECON= LEAST_SQUARES` with the Venkatakrishnan limiter;
+- `NUM_METHOD_GRAD_RECON= LEAST_SQUARES` with the Venkatakrishnan limiter, `MUSCL_TURB= YES`;
 - CFL ramped from 1 and capped at 100;
-- `ITER= 15000`. At 14.24 deg CL alternates between two values (relative change about 1e-6 per
-  iteration) once it has converged, so the Cauchy test on `LIFT` with `CONV_CAUCHY_EPS= 1E-7` does
-  not stop the run, and a larger threshold stops it while CL is still 0.2% from its final value.
+- the Cauchy test on `LIFT` (`CONV_CAUCHY_EPS= 1E-7` over 500 iterations) stops the run, `ITER= 15000` is an upper limit.
 
 ## Workflow
 
 1. Run the baseline: `mpirun -n 8 SU2_CFD config_sa_baseline.cfg`.
 2. Provide `beta_target.dat`: one beta value per line, ordered by global point index
-   (93,241 lines). Points without a value get beta = 1.
+   (113,747 lines). Points without a value get beta = 1.
 3. Train: `mpirun -n 8 SU2_CFD config_fiml_training.cfg`. One epoch runs per solver
    iteration after `ITER_START_NN`; `nn_weights.dat` is written after the last epoch.
 4. Run forward: `mpirun -n 8 SU2_CFD config_fiml_forward.cfg`.
@@ -75,16 +76,32 @@ restart file. On restart it is read back, so beta is continuous before `ITER_STA
 
 | AoA | CL | CD | Note |
 |---|---|---|---|
-| 4.10 deg | 0.6007 | 0.0137 | stopped by the Cauchy test on CL after 2,365 iterations (rms[P] = -11.8) |
-| 14.24 deg | 1.3427 | 0.0522 | CL within 0.1% of the final value after 8,200 iterations, within 0.01% after 11,700 |
+| 4.10 deg | 0.6016 | 0.0135 | stopped by the Cauchy test after 2,407 iterations |
+| 14.24 deg | 1.4957 | 0.0403 | stopped by the Cauchy test after 10,422 iterations; separation at x/c = 0.62 |
 
-SA over-predicts lift at 14.24 deg by about 30% (experiment 1.0546), so the correction has
+SA over-predicts lift at 14.24 deg by about 42% (experiment 1.0546), so the correction has
 to reduce production (beta < 1) where the flow should separate.
+
+### Grid dependence at 14.24 deg
+
+The separation point, and with it CL, depends mainly on the wall spacing at the leading edge, where
+the suction peak is. With `--ds_te 8e-4 --ds_upper 5e-3 --blend 2` and the configuration above:
+
+| `--ds_le` | CL | separation x/c |
+|---|---|---|
+| 8e-4 | 1.4006 | 0.565 |
+| 4e-4 | 1.4635 | 0.600 |
+| 2e-4 | 1.4867 | 0.614 |
+| 1e-4 | 1.4949 | 0.624 |
+
+Starting from the first row, refining the wall-normal direction by a factor 1.4 changes CL by -0.3%.
+Refining all spacings along the wall and the wake by factors 1.4 and 2 gives CL 1.4567 and 1.4853,
+which extrapolates to a grid-converged CL of about 1.515, 1.3% above the default mesh.
 
 ## Not yet implemented
 
 - Field inversion on this case: the inversion loop works (see `../FIML_Classic_NACA0012`), but an S809
-  solve at 14.24 deg from free stream takes about 12,000 iterations.
+  solve at 14.24 deg from free stream takes about 10,000 iterations.
 - `KIND_TRAIN_NN= WEIGHTS`, `SA_FIML_CORRECTION` other than `PRODUCTION`.
 
 ## References
