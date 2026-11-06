@@ -516,7 +516,7 @@ private:
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
-  Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the heat equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
   LINEAR_SOLVER_INNER Kind_Linear_Solver_Inner; /*!< \brief Inner solver used in nested Krylov schemes. */
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
@@ -5069,6 +5069,12 @@ public:
    * \return Method for limiting the spatial gradients solving the species equation.
    */
   LIMITER GetKind_SlopeLimit_Species() const { return Kind_SlopeLimit_Species; }
+
+  /*!
+   * \brief Get the method for limiting the spatial gradients.
+   * \return Method for limiting the spatial gradients solving the heat equation.
+   */
+  LIMITER GetKind_SlopeLimit_Heat() const { return Kind_SlopeLimit_Heat; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.

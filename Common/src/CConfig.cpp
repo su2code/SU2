@@ -3999,6 +3999,27 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (!MUSCL_AdjFlow || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = LIMITER::NONE;
   if (!MUSCL_AdjTurb || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = LIMITER::NONE;
 
+  /*--- The SHARP_EDGES and WALL_DISTANCE limiters are first order within a distance proportional to
+   * VENKAT_LIMITER_COEFF * ADJ_SHARP_LIMITER_COEFF, with a zero width they are first order everywhere.
+   * Only the limiters of the active equations are checked. ---*/
+  const bool turb = Kind_Turb_Model != TURB_MODEL::NONE;
+  const bool heat =
+      Weakly_Coupled_Heat || Kind_Solver == MAIN_SOLVER::HEAT_EQUATION || Kind_Solver == MAIN_SOLVER::DISC_ADJ_HEAT;
+  vector<LIMITER> activeLimiters = {Kind_SlopeLimit_Flow};
+  if (turb) activeLimiters.push_back(Kind_SlopeLimit_Turb);
+  if (Kind_Species_Model != SPECIES_MODEL::NONE) activeLimiters.push_back(Kind_SlopeLimit_Species);
+  if (heat) activeLimiters.push_back(Kind_SlopeLimit_Heat);
+  if (ContinuousAdjoint) activeLimiters.push_back(Kind_SlopeLimit_AdjFlow);
+  if (ContinuousAdjoint && turb) activeLimiters.push_back(Kind_SlopeLimit_AdjTurb);
+  for (const auto kind : activeLimiters) {
+    if ((kind == LIMITER::SHARP_EDGES || kind == LIMITER::WALL_DISTANCE) &&
+        !(Venkat_LimiterCoeff > 0.0 && AdjSharp_LimiterCoeff > 0.0)) {
+      SU2_MPI::Error("The SHARP_EDGES and WALL_DISTANCE slope limiters need VENKAT_LIMITER_COEFF > 0 and\n"
+                     "ADJ_SHARP_LIMITER_COEFF > 0 (they set the width of the region limited to first order).",
+                     CURRENT_FUNCTION);
+    }
+  }
+
   /*--- Set the default for thrust in ActDisk ---*/
 
   if ((Kind_ActDisk == NET_THRUST) || (Kind_ActDisk == BC_THRUST)
