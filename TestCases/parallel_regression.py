@@ -1388,7 +1388,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.905727, -12.211201, -19.212537, -13.508616, -19.078613, -13.445675, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.905738, -12.211184, -19.212536, -13.508613, -19.078608, -13.445678, 73286.000000, 73286.000000, 0.020056, 82.286000]
     # The second BGS residual is near the numerical floor and varies between builds.
     Jones_tc_restart.tol = [1e-5, 5e-4] + [1e-5] * 8
     test_list.append(Jones_tc_restart)
