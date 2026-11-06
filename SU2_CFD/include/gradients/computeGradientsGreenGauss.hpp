@@ -69,7 +69,14 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   const auto chunkSize = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
-  static constexpr size_t MAXNVAR = 20;
+  static constexpr size_t MAXNVAR = 32;
+
+  /*--- Called by all threads of a parallel region: only the master may call MPI (MPI_THREAD_FUNNELED). ---*/
+  if (varEnd > MAXNVAR) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    SU2_MPI::Error("Number of variables is too large, increase MAXNVAR.", CURRENT_FUNCTION);
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
