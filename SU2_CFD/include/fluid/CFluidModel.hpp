@@ -286,12 +286,12 @@ class CFluidModel {
   /*!
    * \brief Get fluid dynamic viscosity partial derivative.
    */
-  su2double Getdmudrho_T() { return LaminarViscosity->Getdmudrho_T(); }
+  su2double Getdmudrho_T() { return LaminarViscosity ? LaminarViscosity->Getdmudrho_T() : dmudrho_T; }
 
   /*!
    * \brief Get fluid dynamic viscosity partial derivative.
    */
-  su2double GetdmudT_rho() { return LaminarViscosity->GetdmudT_rho(); }
+  su2double GetdmudT_rho() { return LaminarViscosity ? LaminarViscosity->GetdmudT_rho() : dmudT_rho; }
 
   /*!
    * \brief Get fluid thermal conductivity partial derivative.
@@ -408,6 +408,12 @@ class CFluidModel {
    * \param[in] val_temperature - Temperature guess, e.g. the previous value at the point.
    */
   virtual void SetTemperatureGuess(su2double val_temperature) {}
+
+  /*!
+   * \brief Set the mixture composition used by the next state evaluations without scalar arguments.
+   * \param[in] val_scalars - Transported species mass fractions.
+   */
+  virtual void SetComposition(const su2double* val_scalars) {}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

@@ -417,11 +417,13 @@ public:
    *       thread-safe manner.
    * \param[in,out] fluidModel - The fluid model.
    * \param[in] nDim - Number of physical dimensions.
+   * \param[in] scalar - Species mass fractions of the mixture, nullptr for a single fluid.
    * \param[in,out] primitive - Primitive variables.
    * \param[out] secondary - Secondary variables.
    */
   static void ComputeConsistentExtrapolation(CFluidModel *fluidModel,
                                              unsigned short nDim,
+                                             const su2double *scalar,
                                              su2double *primitive,
                                              su2double *secondary);
 
@@ -432,11 +434,14 @@ public:
    *       thread-safe manner.
    * \param[in,out] fluidModel - The fluid model.
    * \param[in] nDim - Number of physical dimensions.
+   * \param[in] scalar_i, scalar_j - Species mass fractions of the mixture, nullptr for a single fluid.
    * \param[in,out] primitive_i - Primitive variables at point i.
    * \param[in,out] primitive_j - Primitive variables at point j.
    */
   static void LowMachPrimitiveCorrection(CFluidModel *fluidModel,
                                          unsigned short nDim,
+                                         const su2double *scalar_i,
+                                         const su2double *scalar_j,
                                          su2double *primitive_i,
                                          su2double *primitive_j);
 
