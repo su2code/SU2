@@ -119,10 +119,38 @@ if get_option('custom-mpi')
   mpi = true
 # Otherwise they are automatically determined
 else
-  mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')),
-             dependency('mpi', language:'cpp', required : get_option('with-mpi'))]
-  if mpi_dep[0].found() or mpi_dep[1].found()
+  # Check for MinGW MS-MPI compatibility on Windows
+  # Use .allowed() to cover both 'enabled' and 'auto' (default) — in 'auto', Meson will
+  # auto-detect MS-MPI on Windows, so we need the fix there too.
+  if host_machine.system() == 'windows' and meson.get_compiler('cpp').get_id() == 'gcc' and get_option('with-mpi').allowed()
+    # MS-MPI provides .lib but MinGW needs .a import library
+    # Construct proper dependency with separate -L and -l flags
+    mpi_include_dir = 'C:/Program Files (x86)/Microsoft SDKs/MPI/Include'
+    mpi_lib_dir = 'C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64'
+    mpi_lib_name = 'msmpi'
+
+    # Check if import library exists
+    mpi_import_lib = file(mpi_lib_dir + '/lib' + mpi_lib_name + '.a')
+    if not mpi_import_lib.exists()
+      warning('MS-MPI import library (libmsmpi.a) not found in @0@.'.format(mpi_lib_dir) +
+              ' Create it with:\n' +
+              '  gendef msmpi.dll\n' +
+              '  dlltool -d msmpi.def -l libmsmpi.a\n' +
+              'in that directory, or install via mingw-w64-msmpi package.')
+    endif
+
+    mpi_dep = declare_dependency(
+      include_directories: include_directories(mpi_include_dir),
+      link_args: ['-L' + mpi_lib_dir, '-l' + mpi_lib_name],
+      dependencies: []
+    )
     mpi = true
+  else
+    mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')),
+               dependency('mpi', language:'cpp', required : get_option('with-mpi'))]
+    if mpi_dep[0].found() or mpi_dep[1].found()
+      mpi = true
+    endif
   endif
 endif
 
