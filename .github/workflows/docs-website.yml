@@ -9,10 +9,10 @@ on:
     inputs:
       site_repo:
         description: Website repository
-        default: rois1995/su2code.github.io
+        default: su2code/su2code.github.io
       site_ref:
         description: Website commit SHA or branch (use a SHA to reproduce a build)
-        default: docs/user-guides
+        default: develop
 
 permissions:
   contents: read
@@ -37,8 +37,8 @@ jobs:
       - name: Checkout website
         uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.site_repo || 'rois1995/su2code.github.io' }}
-          ref: ${{ inputs.site_ref || 'docs/user-guides' }}
+          repository: ${{ inputs.site_repo || 'su2code/su2code.github.io' }}
+          ref: ${{ inputs.site_ref || 'develop' }}
           path: site
           fetch-depth: 0
           filter: blob:none
