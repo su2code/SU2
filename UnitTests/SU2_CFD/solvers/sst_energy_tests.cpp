@@ -53,6 +53,18 @@ TEST_CASE("SST relaxation limits thermal energy when k dominates", "[SST][UnderR
   flow->ComputeUnderRelaxationFactor(test.config.get(), test.solver);
   CHECK(nodes->GetUnderRelaxation(0) == Approx(0.02));
   CHECK(201.0 - 10.0 * nodes->GetUnderRelaxation(0) - 200.0 > 0.0);
+  // Exercise the production implicit-Euler caller, not only the relaxation helper.
+  nodes->Set_OldSolution();
+  flow->Jacobian.SetValZero();
+  for (auto p = 0ul; p < test.geometry->GetnPoint(); ++p) {
+    nodes->SetDelta_Time(p, test.geometry->nodes->GetVolume(p));
+    nodes->SetRes_TruncErrorZero(p);
+    for (auto v = 0u; v < 4; ++v) flow->LinSysRes(p, v) = 0.0;
+    flow->LinSysRes(p, 3) = 10.0;
+  }
+  flow->ImplicitEuler_Iteration(test.geometry.get(), test.solver, test.config.get());
+  CHECK(nodes->GetUnderRelaxation(0) == Approx(0.02));
+  CHECK(nodes->GetSolution(0, 3) == Approx(200.8));
   delete test.solver[TURB_SOL];
 }
 
