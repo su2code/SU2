@@ -585,10 +585,10 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+void CFVMFlowSolverBase<V, R>::CompleteImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
   SU2_ZONE_SCOPED
 
-  if constexpr (R == ENUM_REGIME::COMPRESSIBLE) ComputeUnderRelaxationFactor(config);
+  if constexpr (R == ENUM_REGIME::COMPRESSIBLE) ComputeUnderRelaxationFactor(config, solver_container);
 
   /*--- Update solution with under-relaxation and communicate it. ---*/
 
@@ -1409,6 +1409,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
             /*--- Set primitive variables ---*/
 
             conv_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE && config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+              const auto* turb = solver_container[TURB_SOL];
+              conv_numerics->SetTurbKineticEnergy(turb->GetNodes()->GetSolution(iPoint, 0),
+                                                 turb->GetSlidingState(iMarker, iVertex, 0, jVertex));
+            }
 
             if (FlowRegime == ENUM_REGIME::COMPRESSIBLE && !ideal_gas) {
               P_static = PrimVar_j[nDim + 1];

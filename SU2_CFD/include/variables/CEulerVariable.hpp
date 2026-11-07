@@ -44,6 +44,8 @@ unsigned long EulerNPrimVarGrad(const CConfig *config, unsigned long ndim);
  * \author F. Palacios, T. Economon
  */
 class CEulerVariable : public CFlowVariable {
+  const su2double Gamma;
+
  public:
   static constexpr size_t MAXNVAR = 12;
 
@@ -234,13 +236,22 @@ class CEulerVariable : public CFlowVariable {
    * \brief Get the density of the flow.
    * \return Value of the density of the flow.
    */
-  inline su2double GetDensity(unsigned long iPoint) const final { return Solution(iPoint,0); }
+  inline su2double GetDensity(unsigned long iPoint) const final { return Solution(iPoint, 0); }
+
+  /*--- Ideal-gas rho*k, used by centered dissipation and low-Mach preconditioning. ---*/
+  inline su2double GetRhoTke(unsigned long iPoint) const override {
+    su2double rhoK = Solution(iPoint, nVar - 1) - GetPressure(iPoint) / (Gamma - 1.0);
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+      rhoK -= 0.5 * Solution(iPoint, iDim + 1) * Solution(iPoint, iDim + 1) / Solution(iPoint, 0);
+    return rhoK;
+  }
 
   /*!
-   * \brief Get the energy of the flow.
-   * \return Value of the energy of the flow.
+   * \brief Get the total energy per unit mass of the flow.
    */
-  inline su2double GetEnergy(unsigned long iPoint) const final { return Solution(iPoint,nVar-1)/Solution(iPoint,0); }
+  inline su2double GetEnergy(unsigned long iPoint) const final {
+    return Solution(iPoint, nVar - 1) / Solution(iPoint, 0);
+  }
 
   /*!
    * \brief Get the temperature of the flow.
@@ -368,5 +379,4 @@ class CEulerVariable : public CFlowVariable {
    * \brief Marks outliers (0 ok, MAX_OUTLIER_MITIGATION maximum mitigation).
    */
   su2vector<uint8_t> OutlierMitigation;
-
 };

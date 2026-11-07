@@ -971,7 +971,7 @@ su2double CNEMOEulerSolver::ComputeUnderRelaxationFactor(unsigned short nSpecies
   return localUnderRelaxation;
 }
 
-void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config, CSolver**) {
   SU2_ZONE_SCOPED
 
   const su2double allowableRatio = config->GetMaxUpdateFractionFlow();

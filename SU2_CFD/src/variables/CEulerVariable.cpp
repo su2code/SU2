@@ -50,16 +50,20 @@ unsigned long EulerNSecVar(const CConfig *config) {
   return config->GetViscous() ? 8 : 2;
 }
 
-CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,
-                               unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CFlowVariable(npoint, ndim, nvar, ndim + 9, EulerNPrimVarGrad(config, ndim), config),
-    indices(ndim, 0) {
-
+CEulerVariable::CEulerVariable(su2double density, const su2double* velocity, su2double energy, unsigned long npoint,
+                               unsigned long ndim, unsigned long nvar, const CConfig* config)
+    : CFlowVariable(npoint, ndim, nvar, ndim + 9, EulerNPrimVarGrad(config, ndim), config),
+      Gamma(config->GetGamma()),
+      indices(ndim, 0) {
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
 
   nSecondaryVar = EulerNSecVar(config);
+  // Carry rho*k separately through the matrix JST projection and periodic/MPI exchange.
+  if (Undivided_Laplacian.size() && config->GetKind_Turb_Model() == TURB_MODEL::SST &&
+      config->GetKind_Centered_Flow() == CENTERED::JST_MAT)
+    Undivided_Laplacian.resize(nPoint, nVar + 1);
 
   /*--- Solution initialization ---*/
 

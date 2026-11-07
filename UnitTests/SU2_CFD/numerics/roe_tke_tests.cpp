@@ -25,14 +25,16 @@
  */
 
 #include "catch.hpp"
+#include "../../../SU2_CFD/include/numerics_simd/flow/convection/common.hpp"
 #include <cmath>
 #include <memory>
 #include <sstream>
 #include "../../../SU2_CFD/include/numerics/flow/convection/roe.hpp"
+#include "../../../SU2_CFD/include/numerics/flow/convection/fvs.hpp"
 
 namespace {
 
-constexpr su2double gamma = 1.4;
+constexpr su2double gammaSST = 1.4;
 
 std::unique_ptr<CConfig> MakeConfig(bool implicit = true) {
   std::stringstream options;
@@ -51,14 +53,14 @@ void Primitives(unsigned short nDim, su2double rho, const su2double* vel, su2dou
   V[0] = p / (rho * 287.058);
   V[nDim + 1] = p;
   V[nDim + 2] = rho;
-  V[nDim + 3] = gamma / (gamma - 1) * p / rho + 0.5 * q2 + k;
-  V[nDim + 4] = sqrt(gamma * p / rho);
+  V[nDim + 3] = gammaSST / (gammaSST - 1) * p / rho + 0.5 * q2 + k;
+  V[nDim + 4] = sqrt(gammaSST * p / rho);
 }
 
 /*--- Secondary variables (dp/drho_e, dp/de_rho) of the ideal gas, for the general-gas schemes. ---*/
 void Secondary(su2double rho, su2double p, su2double* S) {
   S[0] = p / rho;
-  S[1] = (gamma - 1) * rho;
+  S[1] = (gammaSST - 1) * rho;
 }
 
 /*--- Common constructor for the schemes of the family. ---*/
@@ -173,4 +175,51 @@ TEST_CASE("Roe does not dissipate a stationary contact with k in the total energ
   CHECK(res.residual[1] == Approx(p * normal[0]).epsilon(1e-12));
   CHECK(res.residual[2] == Approx(p * normal[1]).epsilon(1e-12));
   CHECK(res.residual[3] == Approx(0.0).margin(1e-12));
+}
+
+TEST_CASE("Turkel preserves contacts with SST energy", "[Roe][SST][Turkel]") {
+  CheckContactsWithTkeJump<CUpwTurkel_Flow>("Turkel", true, false);
+}
+
+TEST_CASE("Scalar MSW advects a pure k jump without acoustic flux", "[MSW][SST]") {
+  auto config = MakeConfig();
+  for (const unsigned short dim : {2, 3}) {
+    for (const su2double speed : {-0.2, 0.0, 0.2}) {
+      CUpwMSW_Flow numerics(dim, dim + 2, config.get());
+      su2double Vi[10] = {}, Vj[10] = {}, vel[3] = {speed, 0.0, 0.0}, normal[3] = {1.0, 0.0, 0.0};
+      const su2double rho = 1.4, p = 1.0, ki = 0.1, kj = 3.0;
+      Primitives(dim, rho, vel, p, ki, Vi);
+      Primitives(dim, rho, vel, p, kj, Vj);
+      numerics.SetPrimitive(Vi, Vj);
+      numerics.SetTurbKineticEnergy(ki, kj);
+      numerics.SetSensor(0.0, 0.0);
+      numerics.SetNormal(normal);
+      const auto res = numerics.ComputeResidual(config.get());
+      CAPTURE(dim, speed);
+      CHECK(res[0] == Approx(rho * speed).margin(1e-12));
+      CHECK(res[1] == Approx(rho * speed * speed + p).margin(1e-12));
+      for (unsigned short d = 1; d < dim; ++d) CHECK(res[d + 1] == Approx(0.0).margin(1e-12));
+      const su2double h = gammaSST / (gammaSST - 1) * p / rho + 0.5 * speed * speed + (speed > 0 ? ki : kj);
+      CHECK(res[dim + 1] == Approx(rho * speed * h).margin(1e-12));
+    }
+  }
+}
+
+TEST_CASE("JST enthalpy dissipation Jacobian holds k fixed", "[JST][SST]") {
+  CCompressiblePrimitives<2, 6> V;
+  V.all = Double(0.0);
+  V.velocity(0) = 0.4;
+  V.velocity(1) = -0.3;
+  V.pressure() = 1.0;
+  V.density() = 1.4;
+  for (const su2double k : {0.0, 0.3, 10.0}) {
+    V.enthalpy() = gammaSST / (gammaSST - 1) / 1.4 + 0.125 + k;
+    MatrixDbl<4> jac;
+    jac = Double(0.0);
+    scalarDissipationJacobian(V, Double(gammaSST), Double(1.0), jac, Double(k));
+    // Finite difference of rho*H = gammaSST*rhoE - (gammaSST-1)*(|rho*u|^2/(2*rho)+rho*k).
+    const auto rhoH = [&](su2double rho) { return gammaSST * 7.0 - (gammaSST - 1) * (0.245 / rho + rho * k); };
+    const su2double fd = (rhoH(1.4 + 1e-5) - rhoH(1.4 - 1e-5)) / 2e-5;
+    for (size_t lane = 0; lane < Double::Size; ++lane) CHECK(jac(3, 0)[lane] == Approx(fd).margin(1e-9));
+  }
 }

@@ -643,10 +643,15 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   GetPrecondJacobian(Beta2, r_hat, s_hat, t_hat, rhoB2a2, Lambda, UnitNormal, absPeJac);
 
   /*--- Compute the matrix from entropic variables to conserved variables ---*/
-  GetinvRinvPe(Beta2, RoeEnthalpy, RoeSoundSpeed, RoeDensity, RoeVelocity, invRinvPe);
+  const su2double roeTke = (R * turb_ke_j + turb_ke_i) / (R + 1);
+  GetinvRinvPe(Beta2, RoeEnthalpy - roeTke, RoeSoundSpeed, RoeDensity, RoeVelocity, invRinvPe);
+  for (iVar = 0; iVar < nVar; ++iVar) invRinvPe[nVar - 1][iVar] += roeTke * invRinvPe[0][iVar];
 
   /*--- Compute the matrix from entropic variables to conserved variables ---*/
   GetRMatrix(RoePressure, RoeSoundSpeed, RoeDensity, RoeVelocity, R_Tensor);
+  for (iVar = 0; iVar < nVar; ++iVar) R_Tensor[iVar][0] -= roeTke * R_Tensor[iVar][nVar - 1];
+  const su2double rhoDeltaTke = RoeDensity * (turb_ke_j - turb_ke_i);
+  Diff_U[nVar - 1] -= rhoDeltaTke;
 
   if (implicit) {
     /*--- Jacobians of the inviscid flux, scaled by
@@ -682,6 +687,8 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
       }
     }
   }
+
+  Flux[nVar - 1] -= 0.5 * fabs(ProjVelocity) * Area * rhoDeltaTke;
 
   /*--- Contributions due to mesh motion---*/
   if (dynamic_grid) {

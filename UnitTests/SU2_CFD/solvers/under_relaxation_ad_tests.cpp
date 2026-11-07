@@ -57,7 +57,7 @@ TEST_CASE("Compressible under-relaxation owns its AD density values", "[UnderRel
     solver->LinSysSol(0, 0) = densityLimited ? 0.1 : 0.0;
     solver->LinSysSol(0, 1) = densityLimited ? 0.2 : 0.0;
     solver->LinSysSol(0, 3) = densityLimited ? 0.4 : 4.0;
-    solver->ComputeUnderRelaxationFactor(test.config.get());
+    solver->ComputeUnderRelaxationFactor(test.config.get(), test.solver);
     su2double factor = nodes->GetUnderRelaxation(0);
 #ifdef CODI_REVERSE_TYPE
     AD::RegisterOutput(factor);

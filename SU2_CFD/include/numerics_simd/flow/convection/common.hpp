@@ -60,7 +60,9 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
                                                       const VariableType& solution,
-                                                      Double& nonPhysical) {
+                                                      Double& nonPhysical,
+                                                      const Double& tke_i = Double(0.0),
+                                                      const Double& tke_j = Double(0.0)) {
   static_assert(ReconVarType::nVar <= PrimVarType::nVar);
 
   const auto& gradients = solution.GetGradient_Reconstruction();
@@ -101,7 +103,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
     /*--- Test the sign of the Roe-averaged speed of sound. ---*/
     const Double R = sqrt(abs(V.j.density() / V.i.density()));
     /*--- Delay dividing by R+1 until comparing enthalpy and velocity magnitude. ---*/
-    const Double enthalpy = R*V.j.enthalpy() + V.i.enthalpy();
+    const Double enthalpy = R*(V.j.enthalpy() - tke_j) + V.i.enthalpy() - tke_i;
     Double v_squared = 0.0;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
       v_squared += pow(R*V.j.velocity(iDim) + V.i.velocity(iDim), 2);
@@ -400,21 +402,20 @@ FORCEINLINE Double correctedSpectralRadius(const Int& iPoint,
 /*!
  * \brief Update of a flux Jacobian due to a scalar dissipation term.
  */
-template<class VariableType, size_t nVar>
-FORCEINLINE void scalarDissipationJacobian(const VariableType& V,
-                                           const Double& gamma,
-                                           Double dissipConst,
-                                           MatrixDbl<nVar>& jac) {
+template <class VariableType, size_t nVar>
+FORCEINLINE void scalarDissipationJacobian(const VariableType& V, const Double& gamma, Double dissipConst,
+                                           MatrixDbl<nVar>& jac, const Double& tke = Double(0.0)) {
   /*--- Diagonal entries. ---*/
-  for (size_t iVar = 0; iVar < nVar-1; ++iVar) {
-    jac(iVar,iVar) += dissipConst;
+  for (size_t iVar = 0; iVar < nVar - 1; ++iVar) {
+    jac(iVar, iVar) += dissipConst;
   }
-  jac(nVar-1,nVar-1) += dissipConst * gamma;
+  jac(nVar - 1, nVar - 1) += dissipConst * gamma;
+  jac(nVar - 1, 0) -= dissipConst * (gamma - 1.0) * tke;
 
   /*--- N-1 columns of last row. ---*/
-  dissipConst *= gamma-1.0;
+  dissipConst *= gamma - 1.0;
   for (size_t iDim = 0; iDim < VariableType::nDim; ++iDim) {
-    jac(nVar-1,iDim+1) -= dissipConst * V.velocity(iDim);
-    jac(nVar-1,0) += dissipConst * pow(V.velocity(iDim), 2);
+    jac(nVar - 1, iDim + 1) -= dissipConst * V.velocity(iDim);
+    jac(nVar - 1, 0) += 0.5 * dissipConst * pow(V.velocity(iDim), 2);
   }
 }

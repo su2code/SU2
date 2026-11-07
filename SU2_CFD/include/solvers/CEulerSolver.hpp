@@ -837,7 +837,7 @@ public:
    * a nonlinear iteration for stability.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(const CConfig *config) final;
+  void ComputeUnderRelaxationFactor(const CConfig* config, CSolver** solver_container) final;
 
   /*!
    * \brief Identify points where the static temperature is an outlier to treat them
