@@ -443,7 +443,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Perform the Full Approximation Scheme multigrid ---*/
 
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
-                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
+                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst, false);
 
   if (!fmg_warmup && !fmg_mesh0_ramp)
     SetCoarseGridCFL(geometry, solver_container, config, RunTime_EqSystem, iZone, iInst, FinestMesh, FullMG,
@@ -615,13 +615,15 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                                             unsigned short RecursiveParam,
                                             unsigned short RunTime_EqSystem,
                                             unsigned short iZone,
-                                            unsigned short iInst) {
+                                            unsigned short iInst,
+                                            bool residualReady) {
   SU2_ZONE_SCOPED
 
   CConfig* config = config_container[iZone];
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
 
   /*--- Shorter names to refer to fine grid entities. ---*/
 
@@ -645,7 +647,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
 
   PreSmoothing(RunTime_EqSystem, geometry, solver_container, config_container, solver_fine, numerics_fine,
-               geometry_fine, solver_container_fine, config, iMesh, iZone, iRKLimit);
+               geometry_fine, solver_container_fine, config, iMesh, iZone, iRKLimit, residualReady);
 
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
 
@@ -658,7 +660,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     CSolver* solver_coarse = solver_container_coarse[Solver_Position];
     CNumerics** numerics_coarse = numerics_container[iZone][iInst][iMesh+1][Solver_Position];
 
-    /*--- Temporarily disable implicit integration, for what follows we do not need the Jacobian. ---*/
+    /*--- Temporarily disable implicit integration, the fine residual needs no Jacobian. ---*/
 
     if (implicit) {
       SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_EXPLICIT);)
@@ -678,21 +680,38 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     SetResidual_Term(geometry_fine, solver_fine);
 
-    /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
+    /*--- The coarse residual is also the first coarse pre-smoothing step, so it gets its Jacobian. ---*/
+
+    const auto& mgOpts = config->GetMGOptions();
+    const bool coarseReady = (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (mgOpts.MG_PreSmooth[iMesh+1] > 0);
+
+    if (implicit && coarseReady) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_IMPLICIT);)
+    }
+
+    /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$, whose boundary conditions also act on the restricted defect. ---*/
 
     SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
+    SetRestricted_Residual(solver_fine, solver_coarse, geometry_coarse, config);
+
     solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
+
+    if (coarseReady) {
+      solver_coarse->Set_OldSolution();
+      if (classical_rk4) solver_coarse->Set_NewSolution();
+      solver_coarse->SetTime_Step(geometry_coarse, solver_container_coarse, config, iMesh+1, config->GetTimeIter());
+    }
 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
-    SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
+    SetForcing_Term(solver_coarse, geometry_coarse);
 
     /*--- Restore the time integration settings. ---*/
 
-    if (implicit) {
+    if (implicit && !coarseReady) {
       SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_IMPLICIT);)
     }
 
@@ -707,7 +726,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         nextRecurseParam = 0;
 
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
-                      iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
+                      iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst, coarseReady && (imu == 0));
     }
 
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +
@@ -716,7 +735,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config,
                               iMesh+1);
 
-    const auto& mgOpts = config->GetMGOptions();
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, mgOpts.MG_CorrecSmooth[iMesh], mgOpts.MG_Smooth_Coeff, config, iMesh);
 
     SetProlongated_Correction(solver_fine, solver_container_fine[FLOW_SOL], geometry_fine, config, iMesh);
@@ -772,7 +790,8 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                                          CConfig *config,
                                          unsigned short iMesh,
                                          unsigned short iZone,
-                                         unsigned short iRKLimit) {
+                                         unsigned short iRKLimit,
+                                         bool residualReady) {
   SU2_ZONE_SCOPED
 
   const auto& mgOpts = config->GetMGOptions();
@@ -793,21 +812,24 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
     /*--- Time and space integration ---*/
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
 
-      /*--- Send-Receive boundary conditions, and preprocessing ---*/
-      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+      if (!residualReady || (iPreSmooth > 0) || (iRKStep > 0)) {
 
-      if (iRKStep == 0) {
+        /*--- Send-Receive boundary conditions, and preprocessing ---*/
+        solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
 
-        /*--- Set the old solution ---*/
-        solver_fine->Set_OldSolution();
+        if (iRKStep == 0) {
 
-        if (classical_rk4) solver_fine->Set_NewSolution();
-        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, timeIter);
-        Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, timeIter, iZone);
+          /*--- Set the old solution ---*/
+          solver_fine->Set_OldSolution();
+
+          if (classical_rk4) solver_fine->Set_NewSolution();
+          solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, timeIter);
+          Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, timeIter, iZone);
+        }
+
+        /*--- Space integration ---*/
+        Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
       }
-
-      /*--- Space integration ---*/
-      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
@@ -1687,8 +1709,8 @@ void CMultiGridIntegration::SetProlongated_ScalarSolution(CSolver *sol_fine, CSo
 
 }
 
-void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                                            CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
+void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_coarse,
+                                                   CConfig *config) {
   SU2_ZONE_SCOPED
 
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -1725,6 +1747,11 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
       END_SU2_OMP_FOR
     }
   }
+
+}
+
+void CMultiGridIntegration::SetForcing_Term(CSolver *sol_coarse, CGeometry *geo_coarse) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {

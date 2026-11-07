@@ -78,23 +78,28 @@ private:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] mu - Variable for controlling the kind of multigrid algorithm.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
+   * \param[in] residualReady - The residual and time step of iMesh are already computed at its current solution.
    */
   void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container,
                        CNumerics ******numerics_container, CConfig **config,
                        unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                       unsigned short iZone, unsigned short iInst);
+                       unsigned short iZone, unsigned short iInst, bool residualReady);
 
   /*!
-   * \brief Compute the forcing term.
+   * \brief Store the restricted fine-grid defect in the truncation error of the coarse grid.
    * \param[in] sol_fine - Pointer to the solution on the fine grid.
    * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
-   * \param[in] geo_fine - Geometrical definition of the fine grid.
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                       CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
+  void SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_coarse, CConfig *config);
+
+  /*!
+   * \brief Subtract the coarse-grid residual from the restricted defect, which gives the forcing term.
+   * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   */
+  void SetForcing_Term(CSolver *sol_coarse, CGeometry *geo_coarse);
 
   /*!
    * \brief Add the truncation error to the residual.
@@ -193,11 +198,12 @@ private:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iZone - Index of the zone.
    * \param[in] iRKLimit - Number of Runge-Kutta steps.
+   * \param[in] residualReady - The first step starts from the residual and time step already computed.
    */
   void PreSmoothing(unsigned short RunTime_EqSystem, CGeometry**** geometry, CSolver***** solver_container,
                     CConfig **config_container, CSolver* solver_fine, CNumerics** numerics_fine,
                     CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config,
-                    unsigned short iMesh, unsigned short iZone, unsigned short iRKLimit);
+                    unsigned short iMesh, unsigned short iZone, unsigned short iRKLimit, bool residualReady);
 
   /*!
    * \brief Compute the fine grid correction from the coarse solution.
