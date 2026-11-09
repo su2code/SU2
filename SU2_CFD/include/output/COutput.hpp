@@ -950,6 +950,13 @@ protected:
   virtual bool WriteScreenOutput(const CConfig *config);
 
   /*!
+   * \brief Write solver-specific auxiliary files independently of screen/history frequency.
+   * \note Called on the master rank only, unless writing has been disabled.
+   */
+  virtual void WriteAdditionalFiles(const CConfig *config) {}
+
+
+  /*!
    * \brief Determines if the the volume output should be written.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
