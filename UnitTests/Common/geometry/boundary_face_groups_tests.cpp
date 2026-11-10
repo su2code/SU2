@@ -107,7 +107,7 @@ std::map<Key, PointGroups> CollectGroups(const CGeometry& geometry, const CConfi
     for (unsigned long iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
       const auto iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
       auto& data = out[PointKey(geometry, iPoint, h)];
-      for (unsigned short iGroup = 0; iGroup < geometry.GetnVertexGroups(iMarker, iVertex); ++iGroup) {
+      for (size_t iGroup = 0; iGroup < geometry.GetnVertexGroups(iMarker, iVertex); ++iGroup) {
         su2double unitNormal[3] = {0.0, 0.0, 0.0}, area = 0.0, distance = 0.0;
         unsigned long neighbor = 0;
         geometry.GetVertexGroup(iMarker, iVertex, iGroup, unitNormal, area, neighbor, distance);

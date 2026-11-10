@@ -523,7 +523,7 @@ class CFVMFlowSolverBase : public CSolver {
           if (geometry->HasVertexGroups(iMarker, iVertex)) {
             const su2double SoundSpeed = soundSpeed(*nodes, iPoint);
             su2double Lambda = 0.0, Area2 = 0.0;
-            for (unsigned short iGroup = 0; iGroup < geometry->GetnVertexGroups(iMarker, iVertex); iGroup++) {
+            for (size_t iGroup = 0; iGroup < geometry->GetnVertexGroups(iMarker, iVertex); iGroup++) {
               su2double UnitNormal[MAXNDIM] = {0.0}, Area = 0.0, Dist = 0.0;
               unsigned long Neighbor = 0;
               geometry->GetVertexGroup(iMarker, iVertex, iGroup, UnitNormal, Area, Neighbor, Dist);
@@ -752,7 +752,7 @@ class CFVMFlowSolverBase : public CSolver {
           if (geometry->HasVertexGroups(iMarker, iVertex)) {
             const su2double SoundSpeed = soundSpeed(*nodes, iPoint);
             su2double Lambda = 0.0;
-            for (unsigned short iGroup = 0; iGroup < geometry->GetnVertexGroups(iMarker, iVertex); iGroup++) {
+            for (size_t iGroup = 0; iGroup < geometry->GetnVertexGroups(iMarker, iVertex); iGroup++) {
               su2double UnitNormal[MAXNDIM] = {0.0}, Area = 0.0, Dist = 0.0;
               unsigned long Neighbor = 0;
               geometry->GetVertexGroup(iMarker, iVertex, iGroup, UnitNormal, Area, Neighbor, Dist);

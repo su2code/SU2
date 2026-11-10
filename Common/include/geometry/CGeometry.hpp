@@ -266,7 +266,7 @@ class CGeometry {
   struct BoundaryFaceGroupPoint {
     unsigned long point = 0;                    /*!< \brief Local index of the point. */
     vector<std::array<unsigned long, 3>> faces; /*!< \brief Faces (marker, boundary element, node), canonical order. */
-    vector<unsigned short> faceGroup;           /*!< \brief Group of every face. */
+    vector<size_t> faceGroup;           /*!< \brief Group of every face. */
     vector<unsigned long> neighbor;             /*!< \brief Normal neighbour of every group. */
     vector<std::array<su2double, MAXNDIM>> unitNormal; /*!< \brief Unit normal of every group. */
     vector<su2double> area;                            /*!< \brief Area A_q = |N_q| of every group. */
@@ -276,7 +276,7 @@ class CGeometry {
   /*! \brief Face-group data of a boundary vertex (see ComputeBoundaryFaceGroups). */
   struct BoundaryFaceGroupVertex {
     long pointData = -1;                   /*!< \brief Index in boundaryFaceGroupPoints, -1: no groups stored. */
-    vector<unsigned short> groups;         /*!< \brief Groups of the point that contain faces of the marker. */
+    vector<size_t> groups;         /*!< \brief Groups of the point that contain faces of the marker. */
     vector<su2double> share;               /*!< \brief Share a_{m,q} of the marker in each of these groups. */
     unsigned long neighbor = ULONG_MAX;    /*!< \brief Normal neighbour of a vertex without groups (ULONG_MAX: none). */
     su2double faceArea = 0.0;              /*!< \brief F_m, sum of the magnitudes of the marker's corner vectors. */
@@ -1026,7 +1026,7 @@ class CGeometry {
    * \param[in] iMarker - Marker.
    * \param[in] iVertex - Vertex of the marker.
    */
-  unsigned short GetnVertexGroups(unsigned short iMarker, unsigned long iVertex) const;
+  size_t GetnVertexGroups(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Face group of a boundary vertex. Where no groups are stored: the unit vertex normal, the vertex area
@@ -1039,7 +1039,7 @@ class CGeometry {
    * \param[out] neighbor - Normal neighbour of the group.
    * \param[out] distance - Normal distance of the neighbour (GeometryToolbox::NormalDistance).
    */
-  void GetVertexGroup(unsigned short iMarker, unsigned long iVertex, unsigned short iGroup, su2double* unitNormal,
+  void GetVertexGroup(unsigned short iMarker, unsigned long iVertex, size_t iGroup, su2double* unitNormal,
                       su2double& area, unsigned long& neighbor, su2double& distance) const;
 
   /*!
@@ -1049,7 +1049,7 @@ class CGeometry {
    * \param[in] iVertex - Vertex of the marker.
    * \param[in] iGroup - Group, 0 <= iGroup < GetnVertexGroups.
    */
-  su2double GetVertexGroupArea(unsigned short iMarker, unsigned long iVertex, unsigned short iGroup) const;
+  su2double GetVertexGroupArea(unsigned short iMarker, unsigned long iVertex, size_t iGroup) const;
 
   /*!
    * \brief Area of a boundary vertex as sum of its group areas, W_m = sum_q a_{m,q} (|sum N| where no groups are

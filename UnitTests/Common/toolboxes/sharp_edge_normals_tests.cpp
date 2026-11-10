@@ -79,7 +79,7 @@ TEST_CASE("Sharp-edge normals: face groups", "[SharpEdgeNormals]") {
    * (sum) leaves a slip plane that crosses the faces almost normally, the two group normals restrict the velocity to
    * the edge. ---*/
   Fan(164.0 * pi / 180.0, N, edge, nEdge);
-  unsigned short faceGroup[6];
+  size_t faceGroup[6];
   REQUIRE(se::FaceGroups(3, 6, N, edge, nEdge, g, faceGroup) == 2);
   for (int f = 0; f < 6; ++f) {
     const auto& q = g[faceGroup[f]];
@@ -107,7 +107,7 @@ TEST_CASE("Sharp-edge normals: face groups", "[SharpEdgeNormals]") {
     double M[3][3] = {{0.0, 0.0, 1.0}, {0.5 * r3, 0.0, 0.5}, {r3, 3.0, -2.0}};
     unsigned long e3[3][2] = {{1, 2}, {2, 3}, {3, 4}};
     unsigned short n3[3] = {2, 2, 2};
-    unsigned short fg[3];
+    size_t fg[3];
     REQUIRE(se::FaceGroups(3, 3, M, e3, n3, g, fg) == 2);
     for (int f = 0; f < 3; ++f) {
       const auto& q = g[fg[f]];
@@ -163,7 +163,8 @@ void CheckAllOrders(unsigned short nDim, const std::vector<Vec3>& N,
   for (int trial = 0;; ++trial) {
     su2double Np[32][3] = {{0.0}}, groupN[32][3], unit[32][3], Q[3][3];
     unsigned long ep[32][2] = {{0}};
-    unsigned short nep[32], lc[32], fg[32];
+    unsigned short nep[32], lc[32];
+    size_t fg[32];
     for (unsigned short a = 0; a < n; ++a) {
       for (unsigned short d = 0; d < 3; ++d) Np[a][d] = N[perm[a]][d];
       ep[a][0] = edge[perm[a]][0];
@@ -418,4 +419,22 @@ TEST_CASE("Sharp-edge normals: gradient correction over the basis", "[SharpEdgeN
         CHECK(std::fabs(e) < 1e-13);
       }
   }
+}
+
+TEST_CASE("Sharp-edge normals: more than 32 faces", "[SharpEdgeNormals]") {
+  constexpr size_t n = 40;
+  double normals[n][3] = {}, groups[n][3] = {};
+  unsigned long edges[n][2] = {};
+  unsigned short nEdges[n] = {};
+  size_t membership[n] = {};
+  for (size_t i = 0; i < n; ++i) {
+    normals[i][i % 3] = 1.0;
+    edges[i][0] = i + 1;
+    edges[i][1] = i + 2;
+    nEdges[i] = 2;
+  }
+  REQUIRE(SharpEdgeNormals::FaceGroups(3, n, normals, edges, nEdges, groups, membership) == n);
+  double basis[3][3] = {};
+  CHECK(SharpEdgeNormals::Basis(3, n, groups, basis) == 3);
+  for (size_t i = 0; i < n; ++i) CHECK(membership[i] == i);
 }

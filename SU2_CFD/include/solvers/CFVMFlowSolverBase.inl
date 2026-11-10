@@ -2661,7 +2661,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
        * on the wall ---*/
 
       su2double TauTangent[MAXNDIM] = {0.0};
-      for (unsigned short iGroup = 0; iGroup < nGroups; iGroup++) {
+      for (size_t iGroup = 0; iGroup < nGroups; iGroup++) {
         su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, GroupDist = 0.0, GroupTangent[MAXNDIM] = {0.0};
         unsigned long GroupNeighbor = 0;
         geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, GroupNeighbor, GroupDist);
@@ -2713,7 +2713,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           const su2double Twall_local =
               py_custom ? geometry->GetCustomBoundaryTemperature(iMarker, iVertex) / RefTemperature : Twall;
           su2double LocalHeatFlux = 0.0;
-          for (unsigned short iGroup = 0; iGroup < nGroups; iGroup++) {
+          for (size_t iGroup = 0; iGroup < nGroups; iGroup++) {
             su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, dist_ij = 0.0;
             unsigned long iPointNormal = 0;
             geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, iPointNormal, dist_ij);
@@ -2723,7 +2723,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           HeatFlux[iMarker][iVertex] = LocalHeatFlux * RefHeatFlux;
         } else {
           su2double dTdn = 0.0;
-          for (unsigned short iGroup = 0; iGroup < nGroups; iGroup++) {
+          for (size_t iGroup = 0; iGroup < nGroups; iGroup++) {
             su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, GroupDist = 0.0;
             unsigned long GroupNeighbor = 0;
             geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, GroupNeighbor, GroupDist);

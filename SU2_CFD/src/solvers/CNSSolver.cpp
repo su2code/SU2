@@ -750,7 +750,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     }
 
     const auto nGroups = cht_mode ? 1 : geometry->GetnVertexGroups(val_marker, iVertex);
-    for (unsigned short iGroup = 0; iGroup < nGroups; iGroup++) {
+    for (size_t iGroup = 0; iGroup < nGroups; iGroup++) {
       su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = Area, dist_q = dist_ij;
       unsigned long Point_Normal_q = Point_Normal;
       if (!cht_mode)

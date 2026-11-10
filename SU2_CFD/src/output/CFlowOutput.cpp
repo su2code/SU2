@@ -241,7 +241,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
             const su2double WettedArea = geometry->GetVertexWettedArea(iMarker, iVertex);
             Area = WettedArea * AxiFactor;
             Vn = 0.0; Vn2 = 0.0; Vtang2 = 0.0;
-            for (unsigned short iGroup = 0; iGroup < geometry->GetnVertexGroups(iMarker, iVertex); iGroup++) {
+            for (size_t iGroup = 0; iGroup < geometry->GetnVertexGroups(iMarker, iVertex); iGroup++) {
               su2double GroupNormal[3] = {0.0}, GroupArea = 0.0, GroupDist = 0.0;
               unsigned long GroupNeighbor = 0;
               geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, GroupNeighbor, GroupDist);

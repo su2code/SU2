@@ -27,6 +27,7 @@
 
 #include <iomanip>
 #include <map>
+#include <memory>
 #include <unordered_set>
 
 #include "../../include/geometry/CGeometry.hpp"
@@ -2931,7 +2932,6 @@ bool CGeometry::UseBoundaryFaceGroups(const CConfig* config) {
 }
 
 void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
-  using SharpEdgeNormals::MAX_FACES;
   boundaryFaceGroupPoints.clear();
   boundaryFaceGroupVertices.clear();
   if (!UseBoundaryFaceGroups(config)) return;
@@ -3010,17 +3010,15 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
     }
     std::sort(sorted.begin(), sorted.end());
 
-    if (sorted.size() > MAX_FACES) {
-      ++nKept;
-      continue;
-    }
-
     /*--- Corner vectors (zero ones are dropped), edge neighbours and link classes: Euler-wall faces link across
      * markers, symmetry-plane faces only within their marker, the other families have one marker. ---*/
     vector<Face> faces;
-    su2double N[MAX_FACES][3], groupN[MAX_FACES][3];
-    unsigned long edge[MAX_FACES][2] = {{0}};
-    unsigned short nEdge[MAX_FACES] = {0}, linkClass[MAX_FACES] = {0}, faceGroup[MAX_FACES] = {0};
+    const auto capacity = sorted.size();
+    auto N = std::make_unique<su2double[][3]>(capacity);
+    auto groupN = std::make_unique<su2double[][3]>(capacity);
+    auto edge = std::make_unique<unsigned long[][2]>(capacity);
+    vector<unsigned short> nEdge(capacity, 0), linkClass(capacity, 0);
+    vector<size_t> faceGroup(capacity, 0);
     for (const auto& entry : sorted) {
       const auto& face = entry.second;
       const auto f = faces.size();
@@ -3036,13 +3034,13 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
       if (config->GetMarker_All_KindBC(face[0]) == SYMMETRY_PLANE) linkClass[f] = 1 + face[0];
       faces.push_back(face);
     }
-    const auto nFaces = static_cast<unsigned short>(faces.size());
+    const auto nFaces = faces.size();
     if (nFaces == 0) continue;
 
     vector<unsigned short> markers;
     for (const auto& face : faces)
       if (std::find(markers.begin(), markers.end(), face[0]) == markers.end()) markers.push_back(face[0]);
-    const auto nGroups = SharpEdgeNormals::FaceGroups(nDim, nFaces, N, edge, nEdge, groupN, faceGroup, linkClass);
+    const auto nGroups = SharpEdgeNormals::FaceGroups(nDim, nFaces, N.get(), edge.get(), nEdge.data(), groupN.get(), faceGroup.data(), linkClass.data());
 
     /*--- Single-marker points with one group keep the vertex values; only their normal neighbour is set. ---*/
     if ((nGroups == 1) && (markers.size() == 1)) {
@@ -3064,7 +3062,7 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
         continue;
       }
       su2double sum[3] = {0.0, 0.0, 0.0}, diff2 = 0.0;
-      for (unsigned short f = 0; f < nFaces; ++f)
+      for (size_t f = 0; f < nFaces; ++f)
         if (faces[f][0] == iMarker)
           for (unsigned short iDim = 0; iDim < nDim; ++iDim) sum[iDim] += N[f][iDim];
       const su2double* normal = vertex[iMarker][iVertex]->GetNormal();
@@ -3080,14 +3078,14 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
     BoundaryFaceGroupPoint data;
     data.point = iPoint;
     data.faces = faces;
-    data.faceGroup.assign(faceGroup, faceGroup + nFaces);
-    for (unsigned short q = 0; q < nGroups; ++q) data.neighbor.push_back(normalNeighbor(iPoint, groupN[q]));
+    data.faceGroup.assign(faceGroup.begin(), faceGroup.begin() + nFaces);
+    for (size_t q = 0; q < nGroups; ++q) data.neighbor.push_back(normalNeighbor(iPoint, groupN[q]));
     for (const auto iMarker : markers) {
       auto& vertexData = boundaryFaceGroupVertices[iMarker][nodes->GetVertex(iPoint, iMarker)];
       vertexData.pointData = static_cast<long>(boundaryFaceGroupPoints.size());
-      for (unsigned short q = 0; q < nGroups; ++q) {
+      for (size_t q = 0; q < nGroups; ++q) {
         bool inGroup = false;
-        for (unsigned short f = 0; f < nFaces; ++f) inGroup |= (faces[f][0] == iMarker) && (faceGroup[f] == q);
+        for (size_t f = 0; f < nFaces; ++f) inGroup |= (faces[f][0] == iMarker) && (faceGroup[f] == q);
         if (inGroup) vertexData.groups.push_back(q);
       }
       vertexData.share.resize(vertexData.groups.size());
@@ -3216,10 +3214,11 @@ void CGeometry::UpdateBoundaryFaceGroups(const CConfig* config) {
     /*--- Slip basis: Gram-Schmidt of the unit normals of all groups of the point in canonical order. ---*/
     const auto kind = config->GetMarker_All_KindBC(data.faces[0][0]);
     if ((kind == EULER_WALL) || (kind == SYMMETRY_PLANE)) {
-      su2double unit[SharpEdgeNormals::MAX_FACES][3], Q[3][3] = {{0.0}};
+      auto unit = std::make_unique<su2double[][3]>(nGroups);
+      su2double Q[3][3] = {{0.0}};
       for (size_t q = 0; q < nGroups; ++q)
         for (unsigned short iDim = 0; iDim < 3; ++iDim) unit[q][iDim] = data.unitNormal[q][iDim];
-      data.slipRank = SharpEdgeNormals::Basis(nDim, nGroups, unit, Q);
+      data.slipRank = SharpEdgeNormals::Basis(nDim, nGroups, unit.get(), Q);
       for (unsigned short r = 0; r < MAXNDIM; ++r)
         for (unsigned short iDim = 0; iDim < MAXNDIM; ++iDim) data.slipBasis[r][iDim] = Q[r][iDim];
     }
@@ -3233,12 +3232,12 @@ const CGeometry::BoundaryFaceGroupVertex* CGeometry::StoredVertexGroups(unsigned
   return (vertexData.pointData < 0) ? nullptr : &vertexData;
 }
 
-unsigned short CGeometry::GetnVertexGroups(unsigned short iMarker, unsigned long iVertex) const {
+size_t CGeometry::GetnVertexGroups(unsigned short iMarker, unsigned long iVertex) const {
   const auto* vertexData = StoredVertexGroups(iMarker, iVertex);
   return vertexData ? vertexData->groups.size() : 1;
 }
 
-void CGeometry::GetVertexGroup(unsigned short iMarker, unsigned long iVertex, unsigned short iGroup,
+void CGeometry::GetVertexGroup(unsigned short iMarker, unsigned long iVertex, size_t iGroup,
                                su2double* unitNormal, su2double& area, unsigned long& neighbor,
                                su2double& distance) const {
   const auto* vertexData = StoredVertexGroups(iMarker, iVertex);
@@ -3258,7 +3257,7 @@ void CGeometry::GetVertexGroup(unsigned short iMarker, unsigned long iVertex, un
   distance = GeometryToolbox::NormalDistance(nDim, unitNormal, nodes->GetCoord(iPoint), nodes->GetCoord(neighbor));
 }
 
-su2double CGeometry::GetVertexGroupArea(unsigned short iMarker, unsigned long iVertex, unsigned short iGroup) const {
+su2double CGeometry::GetVertexGroupArea(unsigned short iMarker, unsigned long iVertex, size_t iGroup) const {
   const auto* vertexData = StoredVertexGroups(iMarker, iVertex);
   if (!vertexData) return GeometryToolbox::Norm(nDim, vertex[iMarker][iVertex]->GetNormal());
   return boundaryFaceGroupPoints[vertexData->pointData].area[vertexData->groups[iGroup]];
