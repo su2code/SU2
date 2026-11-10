@@ -4977,10 +4977,13 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
   if (distance > 0 && distance < max) return distance;
 
   /*--- The point only has wall neighbors, which all have 0 wall distance.
-   *    Compute an alternative distance based on volume and wall area. ---*/
+   *    Compute an alternative distance based on volume and wall area. The wall area is the magnitude of the sum of
+   *    the vertex normals, or, where face groups are stored (CGeometry::ComputeBoundaryFaceGroups; at a sharp edge
+   *    the vertex normals nearly cancel), the sum of the vertex areas W_m. ---*/
 
   const auto nDim = geometry->GetnDim();
-  su2double Normal[3] = {};
+  su2double Normal[3] = {}, WettedArea = 0.0;
+  bool faceGroups = false;
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (!config->GetViscous_Wall(iMarker)) continue;
 
@@ -4990,9 +4993,11 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       Normal[iDim] += geometry->vertex[iMarker][iVertex]->GetNormal(iDim);
     }
+    WettedArea += geometry->GetVertexWettedArea(iMarker, iVertex);
+    faceGroups = faceGroups || geometry->HasVertexGroups(iMarker, iVertex);
   }
   const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
-  return 2 * Vol / GeometryToolbox::Norm(3, Normal);
+  return 2 * Vol / (faceGroups ? WettedArea : GeometryToolbox::Norm(3, Normal));
 }
 }  // namespace
 

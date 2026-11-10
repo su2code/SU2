@@ -308,7 +308,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
           /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
           if (geometry->nodes->GetDomain(iPoint)) {
-            const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+            const auto jPoint = geometry->GetVertexNormalNeighbor(iMarker, iVertex);
 
             su2double FrictionVelocity = 0.0;
             /*--- Formulation varies for 2D and 3D problems: in 3D the friction velocity is assumed to be sqrt(mu * |Omega|)
