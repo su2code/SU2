@@ -1013,6 +1013,15 @@ class CGeometry {
   void UpdateBoundaryFaceGroups(const CConfig* config);
 
   /*!
+   * \brief Whether face groups are stored for a boundary vertex (see ComputeBoundaryFaceGroups).
+   * \param[in] iMarker - Marker.
+   * \param[in] iVertex - Vertex of the marker.
+   */
+  inline bool HasVertexGroups(unsigned short iMarker, unsigned long iVertex) const {
+    return StoredVertexGroups(iMarker, iVertex) != nullptr;
+  }
+
+  /*!
    * \brief Number of face groups of a boundary vertex (1 where no groups are stored).
    * \param[in] iMarker - Marker.
    * \param[in] iVertex - Vertex of the marker.
@@ -1032,6 +1041,15 @@ class CGeometry {
    */
   void GetVertexGroup(unsigned short iMarker, unsigned long iVertex, unsigned short iGroup, su2double* unitNormal,
                       su2double& area, unsigned long& neighbor, su2double& distance) const;
+
+  /*!
+   * \brief Area A_q = |N_q| of a face group of a boundary vertex, the whole group of the point (all its markers);
+   *        |sum N| where no groups are stored.
+   * \param[in] iMarker - Marker.
+   * \param[in] iVertex - Vertex of the marker.
+   * \param[in] iGroup - Group, 0 <= iGroup < GetnVertexGroups.
+   */
+  su2double GetVertexGroupArea(unsigned short iMarker, unsigned long iVertex, unsigned short iGroup) const;
 
   /*!
    * \brief Area of a boundary vertex as sum of its group areas, W_m = sum_q a_{m,q} (|sum N| where no groups are

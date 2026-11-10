@@ -515,6 +515,26 @@ class CFVMFlowSolverBase : public CSolver {
 
           if (!geometry->nodes->GetDomain(iPoint)) continue;
 
+          /*--- Where face groups are stored (CGeometry::ComputeBoundaryFaceGroups; static grids) the vertex normal
+           * can be the nearly cancelling sum of the group normals: the faces of the vertex contribute
+           * sum_k (|u.n_k| + c) a_k, a_k the vertex's share of group k, and to the viscous term
+           * lambdaVisc sum_k A_k a_k, A_k the area of group k (one boundary face set per group: summed over the markers
+           * of the point this is lambdaVisc sum_q A_q^2). One group and one marker: the terms below. ---*/
+          if (geometry->HasVertexGroups(iMarker, iVertex)) {
+            const su2double SoundSpeed = soundSpeed(*nodes, iPoint);
+            su2double Lambda = 0.0, Area2 = 0.0;
+            for (unsigned short iGroup = 0; iGroup < geometry->GetnVertexGroups(iMarker, iVertex); iGroup++) {
+              su2double UnitNormal[MAXNDIM] = {0.0}, Area = 0.0, Dist = 0.0;
+              unsigned long Neighbor = 0;
+              geometry->GetVertexGroup(iMarker, iVertex, iGroup, UnitNormal, Area, Neighbor, Dist);
+              Lambda += (fabs(nodes->GetProjVel(iPoint, UnitNormal)) + SoundSpeed) * Area;
+              Area2 += geometry->GetVertexGroupArea(iMarker, iVertex, iGroup) * Area;
+            }
+            nodes->AddMax_Lambda_Inv(iPoint, Lambda);
+            if (viscous) nodes->AddMax_Lambda_Visc(iPoint, lambdaVisc(*nodes, iPoint) * Area2);
+            continue;
+          }
+
           auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           auto Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
 
@@ -727,6 +747,20 @@ class CFVMFlowSolverBase : public CSolver {
           auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+          /*--- Where face groups are stored: sum_k (|u.n_k| + c) a_k, as in SetTime_Step_impl. ---*/
+          if (geometry->HasVertexGroups(iMarker, iVertex)) {
+            const su2double SoundSpeed = soundSpeed(*nodes, iPoint);
+            su2double Lambda = 0.0;
+            for (unsigned short iGroup = 0; iGroup < geometry->GetnVertexGroups(iMarker, iVertex); iGroup++) {
+              su2double UnitNormal[MAXNDIM] = {0.0}, Area = 0.0, Dist = 0.0;
+              unsigned long Neighbor = 0;
+              geometry->GetVertexGroup(iMarker, iVertex, iGroup, UnitNormal, Area, Neighbor, Dist);
+              Lambda += (fabs(nodes->GetProjVel(iPoint, UnitNormal)) + SoundSpeed) * Area;
+            }
+            nodes->AddLambda(iPoint, Lambda);
+            continue;
+          }
 
           auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           su2double Area = GeometryToolbox::Norm(nDim, Normal);

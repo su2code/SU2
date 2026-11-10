@@ -3258,6 +3258,12 @@ void CGeometry::GetVertexGroup(unsigned short iMarker, unsigned long iVertex, un
   distance = GeometryToolbox::NormalDistance(nDim, unitNormal, nodes->GetCoord(iPoint), nodes->GetCoord(neighbor));
 }
 
+su2double CGeometry::GetVertexGroupArea(unsigned short iMarker, unsigned long iVertex, unsigned short iGroup) const {
+  const auto* vertexData = StoredVertexGroups(iMarker, iVertex);
+  if (!vertexData) return GeometryToolbox::Norm(nDim, vertex[iMarker][iVertex]->GetNormal());
+  return boundaryFaceGroupPoints[vertexData->pointData].area[vertexData->groups[iGroup]];
+}
+
 su2double CGeometry::GetVertexWettedArea(unsigned short iMarker, unsigned long iVertex) const {
   const auto* vertexData = StoredVertexGroups(iMarker, iVertex);
   if (!vertexData) return GeometryToolbox::Norm(nDim, vertex[iMarker][iVertex]->GetNormal());
