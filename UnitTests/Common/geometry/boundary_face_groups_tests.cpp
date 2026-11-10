@@ -435,3 +435,77 @@ TEST_CASE("Boundary face groups: face sums and partial monitoring", "[BoundaryFa
   CHECK(totalArea == Approx(3.0).margin(1e-14));
   CHECK(selectedArea == Approx(1.0).margin(1e-14));
 }
+
+#ifdef HAVE_MPI
+TEST_CASE("Boundary face groups: partitioned owned stars match serial", "[BoundaryFaceGroups]") {
+  if (SU2_MPI::GetSize() != 2) return;
+  const auto comm = SU2_MPI::GetComm();
+  if (SU2_MPI::GetRank() == 0) WriteCubeMesh("face_groups_partition.su2", 1);
+  SU2_MPI::Barrier(comm);
+  const std::string options = "SOLVER= EULER\nMARKER_EULER= ( wall )\n"
+                              "MESH_FILENAME= face_groups_partition.su2\nMESH_FORMAT= SU2\n"
+                              "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n";
+  using FaceKey = std::vector<unsigned long>;
+  using GroupKey = std::pair<std::vector<FaceKey>, unsigned long>;
+  using Star = std::vector<GroupKey>;
+  auto collect = [](const CGeometry& geometry, const CConfig& config) {
+    std::map<unsigned long, Star> result;
+    for (const auto& point : geometry.boundaryFaceGroupPoints) {
+      if (config.GetMarker_All_TagBound(point.faces.front()[0]) != "wall") continue;
+      Star groups(point.neighbor.size());
+      for (size_t q = 0; q < groups.size(); ++q)
+        groups[q].second = geometry.nodes->GetGlobalIndex(point.neighbor[q]);
+      for (size_t f = 0; f < point.faces.size(); ++f) {
+        const auto& face = point.faces[f];
+        const auto* elem = geometry.bound[face[0]][face[1]];
+        FaceKey key;
+        for (unsigned short i = 0; i < elem->GetnNodes(); ++i)
+          key.push_back(geometry.nodes->GetGlobalIndex(elem->GetNode(i)));
+        std::sort(key.begin(), key.end());
+        groups[point.faceGroup[f]].first.push_back(key);
+      }
+      for (auto& group : groups) std::sort(group.first.begin(), group.first.end());
+      std::sort(groups.begin(), groups.end());
+      result[geometry.nodes->GetGlobalIndex(point.point)] = groups;
+    }
+    for (unsigned short marker = 0; marker < geometry.GetnMarker(); ++marker) {
+      if (config.GetMarker_All_TagBound(marker) != "wall") continue;
+      for (unsigned long vertex = 0; vertex < geometry.GetnVertex(marker); ++vertex) {
+        const auto point = geometry.vertex[marker][vertex]->GetNode();
+        if (!geometry.nodes->GetDomain(point) || geometry.HasVertexGroups(marker, vertex)) continue;
+        const auto id = geometry.nodes->GetGlobalIndex(point);
+        result[id] = Star(1);
+        result[id][0].second = geometry.nodes->GetGlobalIndex(geometry.GetVertexNormalNeighbor(marker, vertex));
+      }
+      for (unsigned long f = 0; f < geometry.nElem_Bound[marker]; ++f) {
+        const auto* elem = geometry.bound[marker][f];
+        FaceKey key;
+        for (unsigned short i = 0; i < elem->GetnNodes(); ++i)
+          key.push_back(geometry.nodes->GetGlobalIndex(elem->GetNode(i)));
+        std::sort(key.begin(), key.end());
+        for (unsigned short i = 0; i < elem->GetnNodes(); ++i) {
+          const auto point = elem->GetNode(i);
+          if (!geometry.nodes->GetDomain(point)) continue;
+          const auto vertex = geometry.nodes->GetVertex(point, marker);
+          if (vertex < 0 || geometry.HasVertexGroups(marker, vertex)) continue;
+          result[geometry.nodes->GetGlobalIndex(point)][0].first.push_back(key);
+        }
+      }
+    }
+    for (auto& point : result)
+      for (auto& group : point.second) std::sort(group.first.begin(), group.first.end());
+    return result;
+  };
+  SU2_MPI::SetComm(MPI_COMM_SELF);
+  const auto serial = BuildGeometry(options);
+  const auto reference = collect(*serial.geometry, *serial.config);
+  SU2_MPI::SetComm(comm);
+  const auto parallel = BuildGeometry(options);
+  const auto partitioned = collect(*parallel.geometry, *parallel.config);
+  CHECK_FALSE(partitioned.empty());
+  for (const auto& item : partitioned) {
+    REQUIRE(reference.count(item.first) == 1);
+    CHECK(item.second == reference.at(item.first));
+  }
+}
+#endif
