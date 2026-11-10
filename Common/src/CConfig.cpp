@@ -1817,6 +1817,8 @@ void CConfig::SetConfig_Options() {
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
   /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
   addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
+  /*!\brief WALL_SHARP_EDGE_NORMALS \n DESCRIPTION: At boundary points of Euler walls and no-slip walls where the faces fold sharply (e.g. a sharp trailing edge, whose upper and lower faces have nearly opposite normals), use the normals of the separate face groups instead of the vertex normal, which is their nearly cancelling sum: slip projection and gradient correction with all group normals (Euler walls), wetted area for prescribed heat fluxes, a normal stencil per group for isothermal walls, and the wall outputs. Compressible finite-volume solvers, static meshes, single zone, no multigrid, adjoints, periodic markers or wall functions. \ingroup Config \default false */
+  addBoolOption("WALL_SHARP_EDGE_NORMALS", Wall_Sharp_Edge_Normals, false);
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
    * Format: ( Heat transfer marker, heat transfer coefficient, wall temperature (static), ... ) \ingroup Config  */
   addExhaustOption("MARKER_HEATTRANSFER", nMarker_HeatTransfer, Marker_HeatTransfer, HeatTransfer_Coeff, HeatTransfer_WallTemp);
@@ -6127,6 +6129,23 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- Check if flame ignition temperature is valid ---*/
     if (flamelet_ParsedOptions.Flame_T_ignition <= Inc_Temperature_Init) {
       SU2_MPI::Error("Flame ignition temperature must be higher than the initial temperature of the flow field.", CURRENT_FUNCTION);
+    }
+  }
+
+  if (Wall_Sharp_Edge_Normals) {
+    /*--- The sharp-edge normals are defined for the boundary routines of the compressible finite-volume solvers on the
+     * finest grid of a static, single-zone primal problem. ---*/
+    const string name = "WALL_SHARP_EDGE_NORMALS: ";
+    if ((Kind_Solver != MAIN_SOLVER::EULER) && (Kind_Solver != MAIN_SOLVER::NAVIER_STOKES) && (Kind_Solver != MAIN_SOLVER::RANS))
+      SU2_MPI::Error(name + "only for SOLVER= EULER, NAVIER_STOKES or RANS.", CURRENT_FUNCTION);
+    if (nMGLevels > 0) SU2_MPI::Error(name + "not with multigrid (MGLEVEL= 0).", CURRENT_FUNCTION);
+    if (GetDynamic_Grid()) SU2_MPI::Error(name + "not with grid motion.", CURRENT_FUNCTION);
+    if (ContinuousAdjoint || DiscreteAdjoint) SU2_MPI::Error(name + "not with the adjoint solvers.", CURRENT_FUNCTION);
+    if (nMarker_PerBound > 0) SU2_MPI::Error(name + "not with periodic markers.", CURRENT_FUNCTION);
+    if (Multizone_Problem) SU2_MPI::Error(name + "not with multizone problems.", CURRENT_FUNCTION);
+    for (unsigned short iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
+      if (Kind_WallFunctions[iMarker] != WALL_FUNCTIONS::NONE)
+        SU2_MPI::Error(name + "not with wall functions.", CURRENT_FUNCTION);
     }
   }
 

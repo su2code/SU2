@@ -6985,6 +6985,11 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   END_SU2_OMP_FOR
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeModifiedSymmetryNormals(config);)
+
+  /*--- Normals at sharp edges of Euler and no-slip walls (WALL_SHARP_EDGE_NORMALS). ---*/
+  if (config->GetWall_Sharp_Edge_Normals()) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeSharpEdgeNormals(config);)
+  }
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {

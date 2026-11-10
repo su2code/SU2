@@ -51,6 +51,8 @@ extern "C" {
 #include <climits>
 #include <memory>
 #include <unordered_map>
+#include <map>
+#include <array>
 #include <cstdint>
 
 #include "primal_grid/CPrimalGrid.hpp"
@@ -261,6 +263,15 @@ class CGeometry {
 
   /*!< \brief Corrected normals on nodes with shared symmetry markers. */
   vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
+  /*! \brief WALL_SHARP_EDGE_NORMALS: joint orthonormal basis (rank, rows) of the wall normals of every owned point at a sharp
+   *         edge of an Euler wall (group normals of the Euler-wall faces, then the symmetry-plane normals of the point). */
+  std::map<unsigned long, std::pair<unsigned short, std::array<std::array<su2double, MAXNDIM>, MAXNDIM>>> sharpEdgeBasis;
+  /*! \brief WALL_SHARP_EDGE_NORMALS, no-slip walls, by marker and vertex: unit normals of the marker's own face groups. */
+  vector<std::map<unsigned long, std::vector<std::array<su2double, MAXNDIM>>>> sharpEdgeNormals;
+  /*! \brief Same order as sharpEdgeNormals: group wetted area, normal neighbour (0 if none eligible) and its normal distance. */
+  vector<std::map<unsigned long, std::vector<std::pair<su2double, std::pair<unsigned long, su2double>>>>> sharpEdgeGroups;
+  /*! \brief Same keys: wetted dual area of the vertex (sum of the corner-vector magnitudes). */
+  vector<std::map<unsigned long, su2double>> sharpEdgeArea;
 
   /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
   vector<bool> boundIsStraight;
@@ -950,6 +961,12 @@ class CGeometry {
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeModifiedSymmetryNormals(const CConfig* config);
+
+  /*!
+   * \brief Normals of the boundary points at sharp edges of Euler walls and no-slip walls (WALL_SHARP_EDGE_NORMALS).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeSharpEdgeNormals(const CConfig* config);
 
   /*!
    * \brief A virtual member.

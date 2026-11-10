@@ -31,6 +31,7 @@
 #include "../limiters/computeLimiters.hpp"
 #include "../numerics_simd/CNumericsSIMD.hpp"
 #include "CFVMFlowSolverBase.hpp"
+#include "../../../Common/include/toolboxes/sharp_edge_normals.hpp"
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::allocate(int size) {
@@ -1155,6 +1156,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                          (config->GetKind_FluidModel() == IDEAL_GAS);
   const auto iVel = prim_idx.Velocity();
+  const bool sharpEdges = config->GetWall_Sharp_Edge_Normals();
 
   /*--- Blazek chapter 8.:
    * The components of the momentum residual normal to the symmetry plane are zeroed out.
@@ -1182,6 +1184,54 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     } else {
       const su2double Area = GeometryToolbox::Norm(nDim, Normal);
       for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+    }
+
+    /*--- WALL_SHARP_EDGE_NORMALS: at a point where an Euler wall folds sharply the vertex normal is the nearly cancelling
+     * sum of the face normals. There the velocity must be tangent to every face group: the momentum of the old solution,
+     * the momentum residual, the momentum rows of the Jacobian and the truncation error are projected with
+     * P = I - Q^T Q, Q the orthonormal basis of the group normals and of the symmetry-plane normals of the point
+     * (CGeometry::ComputeSharpEdgeNormals). This is the projection SU2 applies where two straight markers meet at an angle;
+     * every marker call at the point applies the same P. Static meshes only (option checks). ---*/
+    if (sharpEdges) {
+      const auto itB = geometry->sharpEdgeBasis.find(iPoint);
+      if (itB != geometry->sharpEdgeBasis.end()) {
+        const auto rank = itB->second.first;
+        su2double Q[3][3] = {{0.0}};
+        for (unsigned short r = 0; r < 3; ++r)
+          for (unsigned short d = 0; d < 3; ++d) Q[r][d] = itB->second.second[r][d];
+
+        su2double* solutionOld = nodes->GetSolution_Old(iPoint);
+        SharpEdgeNormals::Project(nDim, rank, Q, iVel, solutionOld);
+
+        su2double res[MAXNVAR] = {0.0};
+        for (auto iVar = 0u; iVar < nVar; iVar++) res[iVar] = LinSysRes(iPoint, iVar);
+        SharpEdgeNormals::Project(nDim, rank, Q, iVel, res);
+        for (auto iDim = 0u; iDim < nDim; iDim++) LinSysRes(iPoint, iVel + iDim) = res[iVel + iDim];
+
+        if (implicit) {
+          auto ProjectRows = [&](const unsigned long jPoint) {
+            const auto view = Jacobian.GetBlockView(iPoint, jPoint);
+            if (!view) return;
+            su2double block[MAXNVAR * MAXNVAR];
+            for (auto iVar = 0u; iVar < nVar; iVar++)
+              for (auto jVar = 0u; jVar < nVar; jVar++) block[iVar * nVar + jVar] = view(iVar, jVar);
+            for (auto jVar = 0u; jVar < nVar; jVar++) {
+              su2double column[MAXNVAR] = {0.0};
+              for (auto iVar = 0u; iVar < nVar; iVar++) column[iVar] = block[iVar * nVar + jVar];
+              SharpEdgeNormals::Project(nDim, rank, Q, iVel, column);
+              for (auto iDim = 0u; iDim < nDim; iDim++) block[(iVel + iDim) * nVar + jVar] = column[iVel + iDim];
+            }
+            Jacobian.SetBlock(iPoint, jPoint, block);
+          };
+          ProjectRows(iPoint);
+          for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
+            ProjectRows(geometry->nodes->GetPoint(iPoint, iNeigh));
+        }
+
+        su2double* truncError = nodes->GetResTruncError(iPoint);
+        SharpEdgeNormals::Project(nDim, rank, Q, iVel, truncError);
+        continue;
+      }
     }
 
     /*--- Energy terms due to grid movement (aka work of pressure forces). ---*/

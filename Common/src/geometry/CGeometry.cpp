@@ -31,6 +31,7 @@
 #include "../../include/geometry/elements/CElement.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/toolboxes/sharp_edge_normals.hpp"
 #include "../../include/toolboxes/ndflattener.hpp"
 
 CGeometry::CGeometry() : size(SU2_MPI::GetSize()), rank(SU2_MPI::GetRank()) {}
@@ -2852,6 +2853,229 @@ su2double CGeometry::GetSurfaceArea(const CConfig* config, unsigned short val_ma
 
   SU2_MPI::Error("Unable to match local-marker with cfg-marker for Surface Area.", CURRENT_FUNCTION);
   return 0.0;
+}
+
+void CGeometry::ComputeSharpEdgeNormals(const CConfig* config) {
+  /*--- WALL_SHARP_EDGE_NORMALS. For every owned boundary point the incident faces of one wall family (Euler walls; no-slip
+   * walls: heat flux, isothermal; heat-transfer walls keep the vertex normal) are gathered over all markers of the family, so that a sharp edge inside
+   * one marker and two markers meeting at a sharp edge are treated alike, and grouped with SharpEdgeNormals::FaceGroups.
+   * A point with two or more groups is a sharp-edge point. Euler walls: the joint orthonormal basis of the group normals
+   * and of the symmetry-plane normals of the point (used by BC_Sym_Plane and the gradient correction). No-slip walls: per
+   * marker the unit normals of its own part of every group, the wetted area of that part (sum of the magnitudes of its
+   * corner vectors) and a normal neighbour per group. The corner vectors must reproduce the vertex normal of each marker
+   * (all incident faces present), otherwise, or with more than MAX_FACES faces, the point keeps the vertex normal. ---*/
+  sharpEdgeBasis.clear();
+  sharpEdgeNormals.assign(nMarker, {});
+  sharpEdgeGroups.assign(nMarker, {});
+  sharpEdgeArea.assign(nMarker, {});
+  unsigned long nEuler = 0, nNoSlip = 0, nFallback = 0;
+
+  auto family = [&](unsigned short iMarker) -> int {
+    const auto kind = config->GetMarker_All_KindBC(iMarker);
+    if (kind == EULER_WALL) return 1;
+    if ((kind == HEAT_FLUX) || (kind == ISOTHERMAL)) return 2;
+    return 0;
+  };
+  struct Face {
+    unsigned short marker;
+    unsigned long elem;
+    unsigned short node;
+  };
+  std::map<std::pair<int, unsigned long>, std::vector<Face>> facesOf;
+  for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
+    const int fam = family(iMarker);
+    if (fam == 0) continue;
+    for (auto iElem = 0ul; iElem < nElem_Bound[iMarker]; ++iElem) {
+      const auto* elem = bound[iMarker][iElem];
+      for (unsigned short iNode = 0; iNode < elem->GetnNodes(); ++iNode) {
+        const auto p = elem->GetNode(iNode);
+        if (nodes->GetDomain(p)) facesOf[{fam, p}].push_back({static_cast<unsigned short>(iMarker), iElem, iNode});
+      }
+    }
+  }
+
+  /*--- Corner vector of a face at its node iNode: the pieces of CPhysicalGeometry::SetBoundControlVolume (CVertex::
+   * SetNodes_Coord with the element CG and the edge midpoints), so that the corner vectors of a point of one marker sum to
+   * its vertex normal. ---*/
+  auto cornerVector = [&](const CPrimalGrid* elem, unsigned short iNode, su2double* N) {
+    N[0] = N[1] = N[2] = 0.0;
+    const su2double* X = nodes->GetCoord(elem->GetNode(iNode));
+    const su2double* CG = elem->GetCG();
+    if (nDim == 2) {
+      if (iNode == 0) { N[0] += X[1] - CG[1]; N[1] -= X[0] - CG[0]; }
+      if (iNode == 1) { N[0] += CG[1] - X[1]; N[1] -= CG[0] - X[0]; }
+      return;
+    }
+    for (unsigned short iNeighbor = 0; iNeighbor < elem->GetnNeighbor_Nodes(iNode); ++iNeighbor) {
+      const su2double* Y = nodes->GetCoord(elem->GetNode(elem->GetNeighbor_Nodes(iNode, iNeighbor)));
+      su2double mid[3] = {0.0}, va[3] = {0.0}, vb[3] = {0.0}, cr[3] = {0.0};
+      for (unsigned short d = 0; d < 3; ++d) mid[d] = 0.5 * (X[d] + Y[d]);
+      const su2double* edgeCG = (iNeighbor == 0) ? CG : mid;
+      const su2double* faceCG = (iNeighbor == 0) ? mid : CG;
+      for (unsigned short d = 0; d < 3; ++d) {
+        va[d] = X[d] - edgeCG[d];
+        vb[d] = faceCG[d] - edgeCG[d];
+      }
+      GeometryToolbox::CrossProduct(va, vb, cr);
+      for (unsigned short d = 0; d < 3; ++d) N[d] += 0.5 * cr[d];
+    }
+  };
+
+  using SharpEdgeNormals::MAX_FACES;
+  for (auto& item : facesOf) {
+    const int fam = item.first.first;
+    const auto iPoint = item.first.second;
+    auto& faces = item.second;
+    if (faces.size() > MAX_FACES) {
+      ++nFallback;
+      continue;
+    }
+    /*--- Faces ordered by their sorted global nodes, then marker: the same order on every partition. ---*/
+    auto key = [&](const Face& fc) {
+      const auto* elem = bound[fc.marker][fc.elem];
+      std::vector<unsigned long> g;
+      for (unsigned short iNode = 0; iNode < elem->GetnNodes(); ++iNode)
+        g.push_back(nodes->GetGlobalIndex(elem->GetNode(iNode)));
+      std::sort(g.begin(), g.end());
+      g.push_back(fc.marker);
+      return g;
+    };
+    std::sort(faces.begin(), faces.end(), [&](const Face& x, const Face& y) { return key(x) < key(y); });
+    const auto nFaces = static_cast<unsigned short>(faces.size());
+    su2double N[MAX_FACES][3], groupN[MAX_FACES][3];
+    unsigned long edge[MAX_FACES][2] = {{0}};
+    unsigned short nEdge[MAX_FACES] = {0}, faceGroup[MAX_FACES] = {0};
+    for (unsigned short f = 0; f < nFaces; ++f) {
+      const auto* elem = bound[faces[f].marker][faces[f].elem];
+      cornerVector(elem, faces[f].node, N[f]);
+      if (nDim == 3) {
+        for (unsigned short k = 0; k < elem->GetnNeighbor_Nodes(faces[f].node) && k < 2; ++k)
+          edge[f][nEdge[f]++] = elem->GetNode(elem->GetNeighbor_Nodes(faces[f].node, k));
+      }
+    }
+    const auto nGroups = SharpEdgeNormals::FaceGroups(nDim, nFaces, N, edge, nEdge, groupN, faceGroup);
+    if (nGroups < 2) continue;
+
+    /*--- Markers of the point; each must reproduce its vertex normal (1e-6 relative). ---*/
+    bool ok = true;
+    for (unsigned short q = 0; q < nGroups; ++q) ok = ok && (GeometryToolbox::Norm(nDim, groupN[q]) > 0.0);
+    std::vector<unsigned short> markers;
+    for (const auto& fc : faces)
+      if (std::find(markers.begin(), markers.end(), fc.marker) == markers.end()) markers.push_back(fc.marker);
+    for (const auto iMarker : markers) {
+      const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+      if (iVertex < 0) {
+        ok = false;
+        continue;
+      }
+      su2double sum[3] = {0.0, 0.0, 0.0}, normal[MAXNDIM] = {0.0}, diff = 0.0, ref = 0.0;
+      for (unsigned short f = 0; f < nFaces; ++f)
+        if (faces[f].marker == iMarker)
+          for (unsigned short d = 0; d < nDim; ++d) sum[d] += N[f][d];
+      vertex[iMarker][iVertex]->GetNormal(normal);
+      for (unsigned short d = 0; d < nDim; ++d) {
+        diff += pow(sum[d] - normal[d], 2);
+        ref += pow(normal[d], 2);
+      }
+      ok = ok && (diff <= 1e-12 * ref);
+    }
+    if (!ok) {
+      ++nFallback;
+      continue;
+    }
+
+    if (fam == 1) {
+      /*--- Euler walls: group normals, then the normals of the symmetry planes of the point, in marker order. ---*/
+      ++nEuler;
+      std::vector<std::array<su2double, 3>> list;
+      for (unsigned short q = 0; q < nGroups; ++q) {
+        const su2double area = GeometryToolbox::Norm(nDim, groupN[q]);
+        list.push_back({groupN[q][0] / area, groupN[q][1] / area, groupN[q][2] / area});
+      }
+      for (auto jMarker = 0u; jMarker < nMarker; ++jMarker) {
+        if (config->GetMarker_All_KindBC(jMarker) != SYMMETRY_PLANE) continue;
+        const auto jVertex = nodes->GetVertex(iPoint, jMarker);
+        if (jVertex < 0) continue;
+        std::array<su2double, 3> unit = {0.0, 0.0, 0.0};
+        const auto itS = symmetryNormals[jMarker].find(jVertex);
+        if (itS != symmetryNormals[jMarker].end()) {
+          for (auto iDim = 0u; iDim < nDim; ++iDim) unit[iDim] = itS->second[iDim];
+        } else {
+          su2double normal[MAXNDIM] = {0.0};
+          vertex[jMarker][jVertex]->GetNormal(normal);
+          const su2double area = GeometryToolbox::Norm(nDim, normal);
+          for (auto iDim = 0u; iDim < nDim; ++iDim) unit[iDim] = normal[iDim] / area;
+        }
+        list.push_back(unit);
+      }
+      su2double listQ[MAX_FACES + 8][3] = {{0.0}}, Q[3][3] = {{0.0}};
+      const auto nList = static_cast<unsigned short>(std::min<size_t>(MAX_FACES + 8, list.size()));
+      for (unsigned short a = 0; a < nList; ++a)
+        for (unsigned short d = 0; d < 3; ++d) listQ[a][d] = list[a][d];
+      auto& entry = sharpEdgeBasis[iPoint];
+      entry.first = SharpEdgeNormals::Basis(nDim, nList, listQ, Q);
+      for (unsigned short r = 0; r < 3; ++r)
+        for (unsigned short d = 0; d < 3; ++d) entry.second[r][d] = Q[r][d];
+      continue;
+    }
+
+    /*--- No-slip walls: per marker its own part of every group. Normal neighbour of a group: the neighbour with the
+     * largest cosine to the group normal (vertex normals point into the fluid, as in FindNormal_Neighbor) among the
+     * neighbours that are not on a solid wall and lie at a positive normal distance; 0 distance marks "none". ---*/
+    for (const auto iMarker : markers) {
+      const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+      std::vector<std::array<su2double, MAXNDIM>> units;
+      std::vector<std::pair<su2double, std::pair<unsigned long, su2double>>> groups;
+      su2double wetted = 0.0;
+      for (unsigned short q = 0; q < nGroups; ++q) {
+        su2double part[3] = {0.0, 0.0, 0.0}, areaQ = 0.0;
+        for (unsigned short f = 0; f < nFaces; ++f)
+          if ((faces[f].marker == iMarker) && (faceGroup[f] == q)) {
+            for (unsigned short d = 0; d < nDim; ++d) part[d] += N[f][d];
+            areaQ += GeometryToolbox::Norm(nDim, N[f]);
+          }
+        const su2double np = GeometryToolbox::Norm(nDim, part);
+        if (!(np > 0.0)) continue;
+        std::array<su2double, MAXNDIM> unit = {0.0, 0.0, 0.0};
+        for (unsigned short d = 0; d < nDim; ++d) unit[d] = part[d] / np;
+        unsigned long best = iPoint;
+        su2double cosMax = -2.0, dist = 0.0;
+        for (unsigned short iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
+          const auto jPoint = nodes->GetPoint(iPoint, iNeigh);
+          if (nodes->GetSolidBoundary(jPoint)) continue;
+          su2double dot = 0.0, len = 0.0;
+          for (unsigned short d = 0; d < nDim; ++d) {
+            const su2double dx = nodes->GetCoord(jPoint, d) - nodes->GetCoord(iPoint, d);
+            dot += dx * unit[d];
+            len += dx * dx;
+          }
+          if (!(dot > 0.0)) continue;
+          const su2double c = dot / sqrt(len);
+          if (c > cosMax) {
+            cosMax = c;
+            best = jPoint;
+            dist = dot;
+          }
+        }
+        units.push_back(unit);
+        groups.push_back({areaQ, {best, dist}});
+        wetted += areaQ;
+      }
+      if (units.empty()) continue;
+      ++nNoSlip;
+      sharpEdgeNormals[iMarker][iVertex] = units;
+      sharpEdgeGroups[iMarker][iVertex] = groups;
+      sharpEdgeArea[iMarker][iVertex] = wetted;
+    }
+  }
+
+  unsigned long local[3] = {nEuler, nNoSlip, nFallback}, global[3] = {0, 0, 0};
+  SU2_MPI::Allreduce(local, global, 3, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  if (SU2_MPI::GetRank() == MASTER_NODE) {
+    cout << "WALL_SHARP_EDGE_NORMALS: " << global[0] << " Euler-wall sharp-edge points, " << global[1]
+         << " no-slip (marker, sharp-edge point) entries, " << global[2]
+         << " points kept with the vertex normal (more than " << MAX_FACES << " faces or incomplete face data)." << endl;
+  }
 }
 
 void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
