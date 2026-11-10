@@ -408,3 +408,30 @@ TEST_CASE("Boundary face groups: incompressible integrated flux uses vertex area
     CHECK(geometry.GetSurfaceArea(test.config.get(), marker) == Approx(SU2_TYPE::GetValue(area)));
   }
 }
+
+TEST_CASE("Boundary face groups: face sums and partial monitoring", "[BoundaryFaceGroups]") {
+  if (SU2_MPI::GetSize() > 1) return;
+  const auto walls = WriteCubeMesh("face_groups_monitoring.su2", 3);
+  const auto test = BuildGeometry("SOLVER= EULER\nMARKER_EULER= ( wallx, wally, wallz )\n"
+                                  "MARKER_MONITORING= ( wallx )\nMESH_FILENAME= face_groups_monitoring.su2\n"
+                                  "MESH_FORMAT= SU2\nMACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
+  const auto& geometry = *test.geometry;
+  double selectedArea = 0.0, totalArea = 0.0;
+  for (unsigned short marker = 0; marker < geometry.GetnMarker(); ++marker) {
+    const auto tag = test.config->GetMarker_All_TagBound(marker);
+    if (std::find(walls.begin(), walls.end(), tag) == walls.end()) continue;
+    double markerArea = 0.0, projected[3] = {};
+    for (unsigned long vertex = 0; vertex < geometry.GetnVertex(marker); ++vertex) {
+      su2double faceArea = 0.0, faceProjected[3] = {};
+      REQUIRE(geometry.GetVertexFaceSums(marker, vertex, faceArea, faceProjected));
+      markerArea += SU2_TYPE::GetValue(faceArea);
+      for (unsigned short d = 0; d < 3; ++d) projected[d] += SU2_TYPE::GetValue(faceProjected[d]);
+    }
+    CHECK(markerArea == Approx(1.0).margin(1e-14));
+    for (double value : projected) CHECK(value == Approx(0.0).margin(1e-14));
+    totalArea += markerArea;
+    if (test.config->GetMarker_All_Monitoring(marker) == YES) selectedArea += markerArea;
+  }
+  CHECK(totalArea == Approx(3.0).margin(1e-14));
+  CHECK(selectedArea == Approx(1.0).margin(1e-14));
+}
