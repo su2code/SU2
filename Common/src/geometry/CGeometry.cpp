@@ -2995,7 +2995,8 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
     return std::make_pair(found ? best : legacy, found);
   };
 
-  unsigned long nKept = 0, nZero = 0;
+  unsigned long nKept = 0, nZero = 0, ordinaryFaces = 0, ordinaryPoints = 0, ordinaryNeighbors = 0;
+  passivedouble ordinaryDistances = 0.0;
   for (auto& item : facesOf) {
     const auto iPoint = item.first.second;
 
@@ -3047,8 +3048,17 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
     if ((nGroups == 1) && (markers.size() == 1)) {
       const auto iVertex = nodes->GetVertex(iPoint, markers[0]);
       if (iVertex >= 0) {
-        const auto candidate = normalNeighbor(iPoint, vertex[markers[0]][iVertex]->GetNormal());
+        const auto* normal = vertex[markers[0]][iVertex]->GetNormal();
+        const auto candidate = normalNeighbor(iPoint, normal);
         if (candidate.second) boundaryFaceGroupVertices[markers[0]][iVertex].neighbor = candidate.first;
+        ++ordinaryPoints;
+        ordinaryFaces += nFaces;
+        ordinaryNeighbors += nodes->GetGlobalIndex(candidate.first);
+        su2double unit[MAXNDIM] = {0.0};
+        const auto norm = GeometryToolbox::Norm(nDim, normal);
+        for (unsigned short d = 0; d < nDim; ++d) unit[d] = normal[d] / norm;
+        ordinaryDistances += SU2_TYPE::GetValue(GeometryToolbox::NormalDistance(
+            nDim, unit, nodes->GetCoord(iPoint), nodes->GetCoord(candidate.first)));
       }
       continue;
     }
@@ -3129,9 +3139,12 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
       localSum[FACE_AREAS] += SU2_TYPE::GetValue(vertexData.faceArea);
       for (unsigned short iDim = 0; iDim < nDim; ++iDim)
         localSum[PROJECTED] += SU2_TYPE::GetValue(vertexData.projectedArea[iDim]);
-      if (vertexData.neighbor != ULONG_MAX) localCount[NEIGHBORS] += nodes->GetGlobalIndex(vertexData.neighbor);
     }
   }
+  localCount[FACES] += ordinaryFaces;
+  localCount[GROUPS] += ordinaryPoints;
+  localCount[NEIGHBORS] += ordinaryNeighbors;
+  localSum[DISTANCES] += ordinaryDistances;
   localCount[KEPT] = nKept;
   localCount[NO_ELIGIBLE] = nNoEligible;
   localCount[CHANGED] = nChanged;
