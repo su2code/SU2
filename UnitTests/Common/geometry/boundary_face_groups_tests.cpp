@@ -321,7 +321,7 @@ TEST_CASE("Boundary face groups: 3D cube corner with the wall on 1, 2, 3 and per
       const std::string mesh = "face_groups_cube_" + std::to_string(layout) + ".su2";
       const auto walls = WriteCubeMesh(mesh, layout);
       const std::string wallOption =
-          heatFlux ? "SOLVER= NAVIER_STOKES\nMARKER_HEATFLUX= ( " + MarkerList(walls, true) + " )\n"
+          heatFlux ? "SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\nMARKER_HEATFLUX= ( " + MarkerList(walls, true) + " )\n"
                    : "SOLVER= EULER\nMARKER_EULER= ( " + MarkerList(walls, false) + " )\n";
       const auto test = BuildGeometry(wallOption + "MESH_FILENAME= " + mesh +
                                       "\nMESH_FORMAT= SU2\nMACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
@@ -364,7 +364,7 @@ TEST_CASE("Boundary face groups: 3D cube corner with the wall on 1, 2, 3 and per
 TEST_CASE("Boundary face groups: missing eligible neighbour uses vertex stencil", "[BoundaryFaceGroups]") {
   if (SU2_MPI::GetSize() > 1) return;
   const auto walls = WriteCubeMesh("face_groups_fallback.su2", 1);
-  const auto test = BuildGeometry("SOLVER= NAVIER_STOKES\nMARKER_HEATFLUX= ( wall, 0.0 )\n"
+  const auto test = BuildGeometry("SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\nMARKER_HEATFLUX= ( wall, 0.0 )\n"
                                   "MESH_FILENAME= face_groups_fallback.su2\nMESH_FORMAT= SU2\n"
                                   "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
   const auto& geometry = *test.geometry;
@@ -387,7 +387,7 @@ TEST_CASE("Boundary face groups: missing eligible neighbour uses vertex stencil"
 TEST_CASE("Boundary face groups: incompressible integrated flux uses vertex areas", "[BoundaryFaceGroups]") {
   if (SU2_MPI::GetSize() > 1) return;
   WriteCubeMesh("face_groups_incompressible.su2", 1);
-  const auto test = BuildGeometry("SOLVER= INC_NAVIER_STOKES\nMARKER_HEATFLUX= ( wall, 0.0 )\n"
+  const auto test = BuildGeometry("SOLVER= INC_NAVIER_STOKES\nVISCOSITY_MODEL= CONSTANT_VISCOSITY\nMU_CONSTANT= 1.8e-5\nMARKER_HEATFLUX= ( wall, 0.0 )\n"
                                   "MESH_FILENAME= face_groups_incompressible.su2\nMESH_FORMAT= SU2\n"
                                   "MARKER_FAR= ( far )\n");
   auto& geometry = *test.geometry;
@@ -522,7 +522,7 @@ TEST_CASE("Boundary face groups: multigrid keeps legacy geometry", "[BoundaryFac
 TEST_CASE("Boundary face groups: mixed thermal markers at one point", "[BoundaryFaceGroups]") {
   if (SU2_MPI::GetSize() > 1) return;
   WriteCubeMesh("face_groups_mixed_thermal.su2", 3);
-  const auto test = BuildGeometry("SOLVER= NAVIER_STOKES\nMARKER_HEATFLUX= ( wallx, 1.0 )\n"
+  const auto test = BuildGeometry("SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\nMARKER_HEATFLUX= ( wallx, 1.0 )\n"
                                   "MARKER_ISOTHERMAL= ( wally, 300.0 )\n"
                                   "MARKER_HEATTRANSFER= ( wallz, 10.0, 350.0 )\n"
                                   "MESH_FILENAME= face_groups_mixed_thermal.su2\nMESH_FORMAT= SU2\n"
