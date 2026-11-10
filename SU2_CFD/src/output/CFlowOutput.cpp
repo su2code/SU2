@@ -232,6 +232,29 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
             Vtang2       += TangVel[iDim]*TangVel[iDim];
           }
 
+          /*--- Where face groups are stored for the vertex (CGeometry::ComputeBoundaryFaceGroups) the vertex normal can
+           * be the nearly cancelling sum of the group normals n_k: the area is the vertex area W_m = sum_k a_k and the
+           * normal and tangential velocities are averages over the groups with the weights w_k = a_k / W_m:
+           * Vn = sum_k w_k u.n_k, Vn2 = sum_k w_k (u.n_k)^2, Vtang2 = sum_k w_k |u - (u.n_k) n_k|^2. The mass flow
+           * keeps the vertex normal (the flux of the nodal state through the dual faces). ---*/
+          if (geometry->HasVertexGroups(iMarker, iVertex)) {
+            const su2double WettedArea = geometry->GetVertexWettedArea(iMarker, iVertex);
+            Area = WettedArea * AxiFactor;
+            Vn = 0.0; Vn2 = 0.0; Vtang2 = 0.0;
+            for (unsigned short iGroup = 0; iGroup < geometry->GetnVertexGroups(iMarker, iVertex); iGroup++) {
+              su2double GroupNormal[3] = {0.0}, GroupArea = 0.0, GroupDist = 0.0;
+              unsigned long GroupNeighbor = 0;
+              geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, GroupNeighbor, GroupDist);
+              const su2double GroupWeight = GroupArea / WettedArea;
+              const su2double GroupVn = GeometryToolbox::DotProduct(nDim, Velocity, GroupNormal);
+              Vn += GroupWeight * GroupVn;
+              Vn2 += GroupWeight * GroupVn * GroupVn;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Vtang2 += GroupWeight * pow(Velocity[iDim] - GroupVn * GroupNormal[iDim], 2);
+            }
+            if (AxiFactor == 0.0) { Vn = 0.0; Vn2 = 0.0; }
+          }
+
           if (incompressible){
             if (config->GetVariable_Density_Model()) {
               Mach = sqrt(flow_nodes->GetVelocity2(iPoint))/
@@ -685,6 +708,10 @@ void CFlowOutput::SetAnalyzeSurfaceSpeciesVariance(const CSolver* const*solver, 
           }
           Area= sqrt(Area);
 
+          /*--- Vertex area W_m where face groups are stored (see SetAnalyzeSurface). ---*/
+          if (geometry->HasVertexGroups(iMarker, iVertex))
+            Area = geometry->GetVertexWettedArea(iMarker, iVertex) * AxiFactor;
+
           su2double Weight;
           if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
           else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
@@ -973,7 +1000,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           if (output.type == OperationType::MASSFLOW_AVG || output.type == OperationType::MASSFLOW_INT) {
             weight = flowNodes->GetDensity(iPoint) * flowNodes->GetProjVel(iPoint, normal);
           } else {
-            weight = GeometryToolbox::Norm(nDim, normal);
+            /*--- Vertex area: |sum N|, or the sum of its face-group areas (CGeometry::ComputeBoundaryFaceGroups). ---*/
+            weight = geometry->GetVertexWettedArea(iMarker, iVertex);
           }
           weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
           local_integral[1] += weight;
@@ -2063,8 +2091,8 @@ void CFlowOutput::SetCpInverseDesign(CSolver *solver, const CGeometry *geometry,
         const auto Cp = solver->GetCPressure(iMarker, iVertex);
         const auto CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
 
-        const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        const auto Area = GeometryToolbox::Norm(nDim, Normal);
+        /*--- Vertex area: |sum N|, or the sum of its face-group areas (CGeometry::ComputeBoundaryFaceGroups). ---*/
+        const su2double Area = geometry->GetVertexWettedArea(iMarker, iVertex);
 
         PressDiff += Area * pow(CpTarget-Cp, 2);
       }
