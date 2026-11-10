@@ -741,6 +741,25 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     su2double Res_Conv = 0.0;
     su2double Res_Visc = thermal_conductivity * dTdn * Area;
 
+    /*--- WALL_SHARP_EDGE_NORMALS: at a sharp edge the vertex normal is the nearly cancelling sum of the face normals, so
+     * Point_Normal and the normal distance along it are not a wall-normal stencil, and |sum N| is not the wetted area.
+     * The conducted heat is the sum over the face groups q of k (Twall - T_q) / d_q times the group wetted area, T_q at the
+     * group's normal neighbour (CGeometry::sharpEdgeGroups); without an eligible neighbour in every group the single-normal
+     * stencil above is kept. ---*/
+    su2double areaOverDist = 0.0;
+    bool sharpEdgePoint = false;
+    if (config->GetWall_Sharp_Edge_Normals() && !cht_mode) {
+      const auto itG = geometry->sharpEdgeGroups[val_marker].find(iVertex);
+      if (itG != geometry->sharpEdgeGroups[val_marker].end()) {
+        auto temperature = [&](unsigned long jPoint) { return nodes->GetTemperature(jPoint); };
+        su2double flux = 0.0;
+        if (SharpEdgeNormals::IsothermalFlux(itG->second, thermal_conductivity, Twall, temperature, flux, areaOverDist)) {
+          sharpEdgePoint = true;
+          Res_Visc = flux;
+        }
+      }
+    }
+
     /*--- Calculate Jacobian for implicit time stepping ---*/
 
     if (implicit) {
@@ -751,12 +770,14 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[prim_idx.Velocity()]);
       su2double dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
 
-      Jacobian_i[nDim+1][0] = thermal_conductivity/dist_ij * dTdrho * Area;
+      Jacobian_i[nDim+1][0] = sharpEdgePoint ? thermal_conductivity * areaOverDist * dTdrho
+                                             : thermal_conductivity/dist_ij * dTdrho * Area;
 
       for (auto jDim = 0u; jDim < nDim; jDim++)
         Jacobian_i[nDim+1][jDim+1] = 0.0;
 
-      Jacobian_i[nDim+1][nDim+1] = thermal_conductivity/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+      Jacobian_i[nDim+1][nDim+1] = sharpEdgePoint ? thermal_conductivity * areaOverDist * (Gamma-1.0)/(Gas_Constant*Density)
+                                                  : thermal_conductivity/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
     }
 
     /*--- If the wall is moving, there are additional residual contributions
