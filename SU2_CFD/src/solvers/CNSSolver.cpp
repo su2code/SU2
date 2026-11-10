@@ -234,7 +234,8 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
          * with the vertex area W_m (sum of the vertex's face-group areas, |sum N| where no face groups are stored,
          * see CGeometry::ComputeBoundaryFaceGroups). ---*/
 
-        if ((Monitoring == YES) && geometry->nodes->GetDomain(geometry->vertex[iMarker][iVertex]->GetNode())) {
+        if ((Monitoring == YES) && (!CGeometry::UseBoundaryFaceGroups(config) ||
+            geometry->nodes->GetDomain(geometry->vertex[iMarker][iVertex]->GetNode()))) {
 
           const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           su2double Area = GeometryToolbox::Norm(nDim, Normal);

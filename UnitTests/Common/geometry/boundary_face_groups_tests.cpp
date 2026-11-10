@@ -509,3 +509,15 @@ TEST_CASE("Boundary face groups: partitioned owned stars match serial", "[Bounda
   }
 }
 #endif
+
+TEST_CASE("Boundary face groups: multigrid keeps legacy geometry", "[BoundaryFaceGroups]") {
+  if (SU2_MPI::GetSize() > 1) return;
+  WriteCubeMesh("face_groups_multigrid.su2", 1);
+  const auto test = BuildGeometry("SOLVER= EULER\nMARKER_EULER= ( wall )\nMGLEVEL= 1\n"
+                                  "MESH_FILENAME= face_groups_multigrid.su2\nMESH_FORMAT= SU2\n"
+                                  "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
+  CHECK_FALSE(CGeometry::UseBoundaryFaceGroups(test.config.get()));
+  for (unsigned short marker = 0; marker < test.geometry->GetnMarker(); ++marker)
+    for (unsigned long vertex = 0; vertex < test.geometry->GetnVertex(marker); ++vertex)
+      CHECK_FALSE(test.geometry->HasVertexGroups(marker, vertex));
+}

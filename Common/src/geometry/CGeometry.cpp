@@ -2917,17 +2917,13 @@ void CornerVector(unsigned short nDim, CPoint* nodes, const CPrimalGrid* elem, u
 
 bool CGeometry::UseBoundaryFaceGroups(const CConfig* config) {
   if ((config->GetKind_SU2() != SU2_COMPONENT::SU2_CFD) || config->GetDynamic_Grid() ||
+      config->GetnMGLevels() != 0 || config->GetnMarker_Periodic() != 0 || config->GetMultizone_Problem() ||
+      config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ||
       (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)) return false;
   switch (config->GetKind_Solver()) {
     case MAIN_SOLVER::EULER:
     case MAIN_SOLVER::NAVIER_STOKES:
     case MAIN_SOLVER::RANS:
-    case MAIN_SOLVER::ADJ_EULER:
-    case MAIN_SOLVER::ADJ_NAVIER_STOKES:
-    case MAIN_SOLVER::ADJ_RANS:
-    case MAIN_SOLVER::DISC_ADJ_EULER:
-    case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
-    case MAIN_SOLVER::DISC_ADJ_RANS:
       return true;
     default:
       return false;
