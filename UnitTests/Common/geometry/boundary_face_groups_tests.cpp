@@ -521,3 +521,37 @@ TEST_CASE("Boundary face groups: multigrid keeps legacy geometry", "[BoundaryFac
     for (unsigned long vertex = 0; vertex < test.geometry->GetnVertex(marker); ++vertex)
       CHECK_FALSE(test.geometry->HasVertexGroups(marker, vertex));
 }
+
+TEST_CASE("Boundary face groups: mixed thermal markers at one point", "[BoundaryFaceGroups]") {
+  if (SU2_MPI::GetSize() > 1) return;
+  WriteCubeMesh("face_groups_mixed_thermal.su2", 3);
+  const auto test = BuildGeometry("SOLVER= NAVIER_STOKES\nMARKER_HEATFLUX= ( wallx, 1.0 )\n"
+                                  "MARKER_ISOTHERMAL= ( wally, 300.0 )\n"
+                                  "MARKER_HEATTRANSFER= ( wallz, 10.0, 350.0 )\n"
+                                  "MESH_FILENAME= face_groups_mixed_thermal.su2\nMESH_FORMAT= SU2\n"
+                                  "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
+  const auto& geometry = *test.geometry;
+  unsigned short markers = 0;
+  double areaSum = 0.0;
+  std::array<bool, 3> directions = {};
+  for (unsigned short marker = 0; marker < geometry.GetnMarker(); ++marker) {
+    const auto tag = test.config->GetMarker_All_TagBound(marker);
+    if (tag != "wallx" && tag != "wally" && tag != "wallz") continue;
+    for (unsigned long vertex = 0; vertex < geometry.GetnVertex(marker); ++vertex) {
+      const auto point = geometry.vertex[marker][vertex]->GetNode();
+      if (PointKey(geometry, point, 0.5) != Key{0, 0, 0}) continue;
+      ++markers;
+      REQUIRE(geometry.HasVertexGroups(marker, vertex));
+      REQUIRE(geometry.GetnVertexGroups(marker, vertex) == 1);
+      su2double normal[3] = {}, area = 0.0, distance = 0.0;
+      unsigned long neighbor = 0;
+      geometry.GetVertexGroup(marker, vertex, 0, normal, area, neighbor, distance);
+      areaSum += SU2_TYPE::GetValue(area);
+      for (unsigned short d = 0; d < 3; ++d)
+        if (std::fabs(SU2_TYPE::GetValue(normal[d])) > 0.99) directions[d] = true;
+    }
+  }
+  CHECK(markers == 3);
+  CHECK(areaSum == Approx(3.0 / 16.0).margin(1e-14));
+  for (bool present : directions) CHECK(present);
+}
