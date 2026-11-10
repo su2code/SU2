@@ -26,6 +26,7 @@
  */
 
 #include "../../include/solvers/CNSSolver.hpp"
+#include "../../../Common/include/toolboxes/sharp_edge_normals.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
@@ -501,6 +502,14 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
     su2double UnitNormal[MAXNDIM] = {0.0};
     for (auto iDim = 0u; iDim < nDim; iDim++)
       UnitNormal[iDim] = -Normal[iDim]/Area;
+
+    /*--- WALL_SHARP_EDGE_NORMALS: at a sharp edge |sum N| is the nearly cancelling sum of the face normals; a prescribed
+     * flux acts on the wetted area (sum of the dual area magnitudes). Integrated heat fluxes keep |sum N|, which is the
+     * area of their normalization (GetSurfaceArea). ---*/
+    if (config->GetWall_Sharp_Edge_Normals() && !config->GetIntegrated_HeatFlux() && (kind_boundary == HEAT_FLUX)) {
+      const auto itA = geometry->sharpEdgeArea[val_marker].find(iVertex);
+      if (itA != geometry->sharpEdgeArea[val_marker].end()) Area = itA->second;
+    }
 
     /*--- Apply a weak boundary condition for the energy equation.
      Compute the residual due to the prescribed heat flux.
