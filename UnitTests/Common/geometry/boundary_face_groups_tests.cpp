@@ -36,6 +36,7 @@
 #include <vector>
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 namespace {
 
@@ -384,4 +385,26 @@ TEST_CASE("Boundary face groups: missing eligible neighbour uses vertex stencil"
     }
   }
   CHECK(found);
+}
+
+TEST_CASE("Boundary face groups: incompressible integrated flux uses vertex areas", "[BoundaryFaceGroups]") {
+  if (SU2_MPI::GetSize() > 1) return;
+  WriteCubeMesh("face_groups_incompressible.su2", 1);
+  const auto test = BuildGeometry("SOLVER= INC_NAVIER_STOKES\nMARKER_HEATFLUX= ( wall, 0.0 )\n"
+                                  "MESH_FILENAME= face_groups_incompressible.su2\nMESH_FORMAT= SU2\n"
+                                  "MARKER_FAR= ( far )\n");
+  auto& geometry = *test.geometry;
+  REQUIRE_FALSE(CGeometry::UseBoundaryFaceGroups(test.config.get()));
+  geometry.ComputeSurfaceAreaCfgFile(test.config.get());
+  for (unsigned short marker = 0; marker < geometry.GetnMarker(); ++marker) {
+    if (test.config->GetMarker_All_TagBound(marker) != "wall") continue;
+    su2double area = 0.0;
+    for (unsigned long vertex = 0; vertex < geometry.GetnVertex(marker); ++vertex) {
+      const auto point = geometry.vertex[marker][vertex]->GetNode();
+      if (!geometry.nodes->GetDomain(point)) continue;
+      CHECK_FALSE(geometry.HasVertexGroups(marker, vertex));
+      area += GeometryToolbox::Norm(geometry.GetnDim(), geometry.vertex[marker][vertex]->GetNormal());
+    }
+    CHECK(geometry.GetSurfaceArea(test.config.get(), marker) == Approx(SU2_TYPE::GetValue(area)));
+  }
 }

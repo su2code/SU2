@@ -2914,7 +2914,8 @@ void CornerVector(unsigned short nDim, CPoint* nodes, const CPrimalGrid* elem, u
 }  // namespace
 
 bool CGeometry::UseBoundaryFaceGroups(const CConfig* config) {
-  if ((config->GetKind_SU2() != SU2_COMPONENT::SU2_CFD) || config->GetDynamic_Grid()) return false;
+  if ((config->GetKind_SU2() != SU2_COMPONENT::SU2_CFD) || config->GetDynamic_Grid() ||
+      (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)) return false;
   switch (config->GetKind_Solver()) {
     case MAIN_SOLVER::EULER:
     case MAIN_SOLVER::NAVIER_STOKES:
