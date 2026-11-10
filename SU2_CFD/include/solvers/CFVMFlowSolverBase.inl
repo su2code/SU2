@@ -2636,6 +2636,24 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         UnitNormal[iDim] = Normal[iDim] / Area;
       }
 
+      /*--- WALL_SHARP_EDGE_NORMALS: at a sharp edge of a no-slip wall the unit vertex normal is the direction of the nearly
+       * cancelling sum of the face normals. The local outputs (skin friction, wall shear stress and with it y+, heat
+       * flux) are the averages over the face groups weighted by their wetted areas, and the heat integral uses the
+       * wetted area (as the heat-flux residual, except for integrated heat fluxes). The force integral TauElem * Area =
+       * tau . sum N is the exact integral of the nodal stress over the dual faces and is unchanged. ---*/
+      const std::vector<std::array<su2double, MAXNDIM>>* sharpN = nullptr;
+      const std::vector<SharpEdgeNormals::Group>* sharpG = nullptr;
+      su2double areaHF = Area;
+      if (config->GetWall_Sharp_Edge_Normals() && !nemo) {
+        const auto itN = geometry->sharpEdgeNormals[iMarker].find(iVertex);
+        if (itN != geometry->sharpEdgeNormals[iMarker].end()) {
+          sharpN = &itN->second;
+          sharpG = &geometry->sharpEdgeGroups[iMarker].at(iVertex);
+          if (!((KindBC == BC_TYPE::HEAT_FLUX) && config->GetIntegrated_HeatFlux()))
+            areaHF = geometry->sharpEdgeArea[iMarker].at(iVertex);
+        }
+      }
+
       /*--- Evaluate Tau ---*/
       su2double Tau[3][3] = {{0.0}};
       CNumerics::ComputeStressTensor(nDim, Tau, Grad_Vel, Viscosity);
@@ -2660,6 +2678,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       GeometryToolbox::TangentProjection(nDim, Tau, UnitNormal, TauTangent);
 
       WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
+      if (sharpN) {
+        su2double wetted = 0.0;
+        for (const auto& g : *sharpG) wetted += g.first;
+        for (unsigned short iDim = 0; iDim < MAXNDIM; iDim++) TauTangent[iDim] = 0.0;
+        for (size_t q = 0; q < sharpN->size(); ++q) {
+          su2double tanQ[MAXNDIM] = {0.0};
+          GeometryToolbox::TangentProjection(nDim, Tau, (*sharpN)[q].data(), tanQ);
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) TauTangent[iDim] += (*sharpG)[q].first * tanQ[iDim] / wetted;
+        }
+        WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
+      }
 
       /*--- For wall functions, the wall stresses need to be scaled by the wallfunction stress Tau_Wall---*/
       if (wallfunctions && (YPlus[iMarker][iVertex] > minYPlus)){
@@ -2706,6 +2735,12 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord, Coord_Normal);
           const su2double There = nodes->GetTemperature(iPointNormal);
           HeatFlux[iMarker][iVertex] = thermal_conductivity * (There - Twall_local) / dist_ij * RefHeatFlux;
+          if (sharpN) {
+            auto temperature = [&](unsigned long jPoint) { return nodes->GetTemperature(jPoint); };
+            su2double flux = 0.0, unused = 0.0;
+            if (SharpEdgeNormals::IsothermalFlux(*sharpG, thermal_conductivity, Twall_local, temperature, flux, unused))
+              HeatFlux[iMarker][iVertex] = -flux / areaHF * RefHeatFlux;
+          }
         } else {
           su2double dTdn = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
           if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE && !energy) dTdn = 0.0;
@@ -2767,7 +2802,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         AccumulateMoment(nDim, RefLength, Force, MomentDist, Coord, MomentViscous, MomentX_Force, MomentY_Force,
                          MomentZ_Force);
 
-        HF_Visc_Local += HeatFlux[iMarker][iVertex] * Area;
+        HF_Visc_Local += HeatFlux[iMarker][iVertex] * areaHF;
         MaxHF_Visc_Local += pow(HeatFlux[iMarker][iVertex], MaxNorm);
       }
     }
