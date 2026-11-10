@@ -2829,8 +2829,10 @@ for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
 
         if (!nodes->GetDomain(iPoint)) continue;
 
-        /*--- Vertex area: |sum N|, or the sum of its face-group areas (see ComputeBoundaryFaceGroups). ---*/
-        LocalSurfaceArea[iMarker_Global] += GetVertexWettedArea(iMarker, iVertex);
+        const auto AreaNormal = vertex[iMarker][iVertex]->GetNormal();
+        auto Area = GeometryToolbox::Norm(nDim, AreaNormal);
+        if (HasVertexGroups(iMarker, iVertex)) Area = GetVertexWettedArea(iMarker, iVertex);
+        LocalSurfaceArea[iMarker_Global] += Area;
       }  // for iVertex
     }    // if Local == Global
   }      // for iMarker_Global

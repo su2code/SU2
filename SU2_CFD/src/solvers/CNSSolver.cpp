@@ -235,7 +235,9 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
         if ((Monitoring == YES) && geometry->nodes->GetDomain(geometry->vertex[iMarker][iVertex]->GetNode())) {
 
-          const su2double Area = geometry->GetVertexWettedArea(iMarker, iVertex);
+          const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          su2double Area = GeometryToolbox::Norm(nDim, Normal);
+          if (geometry->HasVertexGroups(iMarker, iVertex)) Area = geometry->GetVertexWettedArea(iMarker, iVertex);
 
           Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area/Sref;
 
@@ -508,7 +510,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
      * at a sharp edge |sum N| is the nearly cancelling sum of the face normals): residual q W_m, and for heat transfer
      * q = h (T_inf - T) with the Jacobian h dT/dU W_m. GetSurfaceArea sums the same areas for integrated heat
      * fluxes. ---*/
-    Area = geometry->GetVertexWettedArea(val_marker, iVertex);
+    if (geometry->HasVertexGroups(val_marker, iVertex)) Area = geometry->GetVertexWettedArea(val_marker, iVertex);
 
     /*--- Apply a weak boundary condition for the energy equation.
      Compute the residual due to the prescribed heat flux.

@@ -578,7 +578,11 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
     /*--- Dual-grid area of the vertex: the sum of its face-group areas (|sum N| where no face groups are stored,
      * see CGeometry::ComputeBoundaryFaceGroups; at a sharp edge |sum N| is the nearly cancelling sum of the face
      * normals). ---*/
-    const su2double Area = geometry->GetVertexWettedArea(val_marker, iVertex);
+    su2double Normal[MAXNDIM] = {0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+    su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    if (geometry->HasVertexGroups(val_marker, iVertex)) Area = geometry->GetVertexWettedArea(val_marker, iVertex);
 
     /*--- Get laminar_viscosity and density ---*/
     su2double sigma = 2.0/3.0;

@@ -1001,7 +1001,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
             weight = flowNodes->GetDensity(iPoint) * flowNodes->GetProjVel(iPoint, normal);
           } else {
             /*--- Vertex area: |sum N|, or the sum of its face-group areas (CGeometry::ComputeBoundaryFaceGroups). ---*/
-            weight = geometry->GetVertexWettedArea(iMarker, iVertex);
+            weight = GeometryToolbox::Norm(nDim, normal);
+            if (geometry->HasVertexGroups(iMarker, iVertex)) weight = geometry->GetVertexWettedArea(iMarker, iVertex);
           }
           weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
           local_integral[1] += weight;
@@ -2092,7 +2093,9 @@ void CFlowOutput::SetCpInverseDesign(CSolver *solver, const CGeometry *geometry,
         const auto CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
 
         /*--- Vertex area: |sum N|, or the sum of its face-group areas (CGeometry::ComputeBoundaryFaceGroups). ---*/
-        const su2double Area = geometry->GetVertexWettedArea(iMarker, iVertex);
+        const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        if (geometry->HasVertexGroups(iMarker, iVertex)) Area = geometry->GetVertexWettedArea(iMarker, iVertex);
 
         PressDiff += Area * pow(CpTarget-Cp, 2);
       }
