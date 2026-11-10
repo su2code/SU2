@@ -229,12 +229,13 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
         Buffet_Sensor[iMarker][iVertex] = 1./(1. + exp(2.*k*(SkinFrictionDot + lam)));
 
-        /*--- Integrate buffet sensor ---*/
+        /*--- Integrate buffet sensor over the owned vertices (halo vertices are integrated by their owning rank),
+         * with the vertex area W_m (sum of the vertex's face-group areas, |sum N| where no face groups are stored,
+         * see CGeometry::ComputeBoundaryFaceGroups). ---*/
 
-        if (Monitoring == YES){
+        if ((Monitoring == YES) && geometry->nodes->GetDomain(geometry->vertex[iMarker][iVertex]->GetNode())) {
 
-          auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          su2double Area = GeometryToolbox::Norm(nDim, Normal);
+          const su2double Area = geometry->GetVertexWettedArea(iMarker, iVertex);
 
           Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area/Sref;
 
