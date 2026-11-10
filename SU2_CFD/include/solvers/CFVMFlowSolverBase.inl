@@ -2712,15 +2712,21 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         } else if (KindBC == BC_TYPE::ISOTHERMAL) {
           const su2double Twall_local =
               py_custom ? geometry->GetCustomBoundaryTemperature(iMarker, iVertex) / RefTemperature : Twall;
-          su2double LocalHeatFlux = 0.0;
-          for (size_t iGroup = 0; iGroup < nGroups; iGroup++) {
-            su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, dist_ij = 0.0;
-            unsigned long iPointNormal = 0;
-            geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, iPointNormal, dist_ij);
-            const su2double There = nodes->GetTemperature(iPointNormal);
-            LocalHeatFlux += thermal_conductivity * (There - Twall_local) / dist_ij * (GroupArea / WettedArea);
+          if (!geometry->HasEligibleGroupNeighbors(iMarker, iVertex)) {
+            const auto neighbor = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+            const su2double dist = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord, geometry->nodes->GetCoord(neighbor));
+            HeatFlux[iMarker][iVertex] = thermal_conductivity * (nodes->GetTemperature(neighbor) - Twall_local) / dist * RefHeatFlux;
+          } else {
+            su2double LocalHeatFlux = 0.0;
+            for (size_t iGroup = 0; iGroup < nGroups; iGroup++) {
+              su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, dist_ij = 0.0;
+              unsigned long iPointNormal = 0;
+              geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, iPointNormal, dist_ij);
+              const su2double There = nodes->GetTemperature(iPointNormal);
+              LocalHeatFlux += thermal_conductivity * (There - Twall_local) / dist_ij * (GroupArea / WettedArea);
+            }
+            HeatFlux[iMarker][iVertex] = LocalHeatFlux * RefHeatFlux;
           }
-          HeatFlux[iMarker][iVertex] = LocalHeatFlux * RefHeatFlux;
         } else {
           su2double dTdn = 0.0;
           for (size_t iGroup = 0; iGroup < nGroups; iGroup++) {

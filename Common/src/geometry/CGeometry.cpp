@@ -2991,7 +2991,7 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
     }
     nNoEligible += !found;
     nChanged += (found && (best != legacy));
-    return found ? best : legacy;
+    return std::make_pair(found ? best : legacy, found);
   };
 
   unsigned long nKept = 0, nZero = 0;
@@ -3046,8 +3046,8 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
     if ((nGroups == 1) && (markers.size() == 1)) {
       const auto iVertex = nodes->GetVertex(iPoint, markers[0]);
       if (iVertex >= 0) {
-        boundaryFaceGroupVertices[markers[0]][iVertex].neighbor =
-            normalNeighbor(iPoint, vertex[markers[0]][iVertex]->GetNormal());
+        const auto candidate = normalNeighbor(iPoint, vertex[markers[0]][iVertex]->GetNormal());
+        if (candidate.second) boundaryFaceGroupVertices[markers[0]][iVertex].neighbor = candidate.first;
       }
       continue;
     }
@@ -3079,7 +3079,11 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
     data.point = iPoint;
     data.faces = faces;
     data.faceGroup.assign(faceGroup.begin(), faceGroup.begin() + nFaces);
-    for (size_t q = 0; q < nGroups; ++q) data.neighbor.push_back(normalNeighbor(iPoint, groupN[q]));
+    for (size_t q = 0; q < nGroups; ++q) {
+      const auto candidate = normalNeighbor(iPoint, groupN[q]);
+      data.neighbor.push_back(candidate.first);
+      data.eligibleNeighbors = data.eligibleNeighbors && candidate.second;
+    }
     for (const auto iMarker : markers) {
       auto& vertexData = boundaryFaceGroupVertices[iMarker][nodes->GetVertex(iPoint, iMarker)];
       vertexData.pointData = static_cast<long>(boundaryFaceGroupPoints.size());
@@ -3232,6 +3236,11 @@ const CGeometry::BoundaryFaceGroupVertex* CGeometry::StoredVertexGroups(unsigned
   return (vertexData.pointData < 0) ? nullptr : &vertexData;
 }
 
+bool CGeometry::HasEligibleGroupNeighbors(unsigned short iMarker, unsigned long iVertex) const {
+  const auto* data = StoredVertexGroups(iMarker, iVertex);
+  return !data || boundaryFaceGroupPoints[data->pointData].eligibleNeighbors;
+}
+
 size_t CGeometry::GetnVertexGroups(unsigned short iMarker, unsigned long iVertex) const {
   const auto* vertexData = StoredVertexGroups(iMarker, iVertex);
   return vertexData ? vertexData->groups.size() : 1;
@@ -3274,6 +3283,8 @@ su2double CGeometry::GetVertexWettedArea(unsigned short iMarker, unsigned long i
 unsigned long CGeometry::GetVertexNormalNeighbor(unsigned short iMarker, unsigned long iVertex) const {
   const auto* vertexData = StoredVertexGroups(iMarker, iVertex);
   if (vertexData) {
+    if (!boundaryFaceGroupPoints[vertexData->pointData].eligibleNeighbors)
+      return vertex[iMarker][iVertex]->GetNormal_Neighbor();
     size_t largest = 0;
     for (size_t k = 1; k < vertexData->share.size(); ++k)
       if (vertexData->share[k] > vertexData->share[largest]) largest = k;

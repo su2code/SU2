@@ -362,3 +362,26 @@ TEST_CASE("Boundary face groups: 3D cube corner with the wall on 1, 2, 3 and per
     }
   }
 }
+
+TEST_CASE("Boundary face groups: missing eligible neighbour uses vertex stencil", "[BoundaryFaceGroups]") {
+  if (SU2_MPI::GetSize() > 1) return;
+  const auto walls = WriteCubeMesh("face_groups_fallback.su2", 1);
+  const auto test = BuildGeometry("SOLVER= NAVIER_STOKES\nMARKER_HEATFLUX= ( wall, 0.0 )\n"
+                                  "MESH_FILENAME= face_groups_fallback.su2\nMESH_FORMAT= SU2\n"
+                                  "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
+  const auto& geometry = *test.geometry;
+  bool found = false;
+  for (unsigned short marker = 0; marker < geometry.GetnMarker(); ++marker) {
+    if (test.config->GetMarker_All_TagBound(marker) != "wall") continue;
+    for (unsigned long vertex = 0; vertex < geometry.GetnVertex(marker); ++vertex) {
+      const auto point = geometry.vertex[marker][vertex]->GetNode();
+      if (PointKey(geometry, point, 0.5) != Key{0, 0, 0}) continue;
+      found = true;
+      REQUIRE(geometry.HasVertexGroups(marker, vertex));
+      CHECK_FALSE(geometry.HasEligibleGroupNeighbors(marker, vertex));
+      CHECK(geometry.GetVertexNormalNeighbor(marker, vertex) ==
+            geometry.vertex[marker][vertex]->GetNormal_Neighbor());
+    }
+  }
+  CHECK(found);
+}

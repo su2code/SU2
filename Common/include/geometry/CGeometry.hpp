@@ -268,6 +268,7 @@ class CGeometry {
     vector<std::array<unsigned long, 3>> faces; /*!< \brief Faces (marker, boundary element, node), canonical order. */
     vector<size_t> faceGroup;           /*!< \brief Group of every face. */
     vector<unsigned long> neighbor;             /*!< \brief Normal neighbour of every group. */
+    bool eligibleNeighbors = true;              /*!< \brief Every group has an eligible normal neighbour. */
     vector<std::array<su2double, MAXNDIM>> unitNormal; /*!< \brief Unit normal of every group. */
     vector<su2double> area;                            /*!< \brief Area A_q = |N_q| of every group. */
     unsigned short slipRank = 0;                       /*!< \brief Rank of the slip basis (0: none). */
@@ -1020,6 +1021,9 @@ class CGeometry {
   inline bool HasVertexGroups(unsigned short iMarker, unsigned long iVertex) const {
     return StoredVertexGroups(iMarker, iVertex) != nullptr;
   }
+
+  /*! \brief Whether every stored group has an eligible normal neighbour. */
+  bool HasEligibleGroupNeighbors(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Number of face groups of a boundary vertex (1 where no groups are stored).
