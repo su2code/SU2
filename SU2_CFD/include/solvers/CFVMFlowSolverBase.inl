@@ -2637,8 +2637,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
        * stress, skin friction and with them y+, heat flux) are averages over the groups weighted by their areas
        * a_q / W, and the heat integral uses W. The force integral TauElem * Area = tau . sum N is the exact integral of
        * the nodal stress over the dual faces and keeps the vertex normal. ---*/
+      const bool faceGroups = geometry->HasVertexGroups(iMarker, iVertex);
       const auto nGroups = geometry->GetnVertexGroups(iMarker, iVertex);
-      const su2double WettedArea = geometry->GetVertexWettedArea(iMarker, iVertex);
+      const su2double WettedArea = faceGroups ? geometry->GetVertexWettedArea(iMarker, iVertex) : Area;
 
       /*--- Evaluate Tau ---*/
       su2double Tau[3][3] = {{0.0}};
@@ -2661,13 +2662,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
        * on the wall ---*/
 
       su2double TauTangent[MAXNDIM] = {0.0};
-      for (size_t iGroup = 0; iGroup < nGroups; iGroup++) {
-        su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, GroupDist = 0.0, GroupTangent[MAXNDIM] = {0.0};
-        unsigned long GroupNeighbor = 0;
-        geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, GroupNeighbor, GroupDist);
-        GeometryToolbox::TangentProjection(nDim, Tau, GroupNormal, GroupTangent);
-        for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          TauTangent[iDim] += GroupArea / WettedArea * GroupTangent[iDim];
+      if (!faceGroups) {
+        GeometryToolbox::TangentProjection(nDim, Tau, UnitNormal, TauTangent);
+      } else {
+        for (size_t iGroup = 0; iGroup < nGroups; iGroup++) {
+          su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, GroupDist = 0.0, GroupTangent[MAXNDIM] = {0.0};
+          unsigned long GroupNeighbor = 0;
+          geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, GroupNeighbor, GroupDist);
+          GeometryToolbox::TangentProjection(nDim, Tau, GroupNormal, GroupTangent);
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            TauTangent[iDim] += GroupArea / WettedArea * GroupTangent[iDim];
+        }
       }
 
       WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
@@ -2712,8 +2717,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         } else if (KindBC == BC_TYPE::ISOTHERMAL) {
           const su2double Twall_local =
               py_custom ? geometry->GetCustomBoundaryTemperature(iMarker, iVertex) / RefTemperature : Twall;
-          if (!geometry->HasEligibleGroupNeighbors(iMarker, iVertex)) {
-            const auto neighbor = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          if (!faceGroups || !geometry->HasEligibleGroupNeighbors(iMarker, iVertex)) {
+            const auto neighbor = geometry->GetVertexNormalNeighbor(iMarker, iVertex);
             const su2double dist = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord, geometry->nodes->GetCoord(neighbor));
             HeatFlux[iMarker][iVertex] = thermal_conductivity * (nodes->GetTemperature(neighbor) - Twall_local) / dist * RefHeatFlux;
           } else {
@@ -2729,7 +2734,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           }
         } else {
           su2double dTdn = 0.0;
-          for (size_t iGroup = 0; iGroup < nGroups; iGroup++) {
+          if (!faceGroups) dTdn = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
+          for (size_t iGroup = 0; faceGroups && iGroup < nGroups; iGroup++) {
             su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, GroupDist = 0.0;
             unsigned long GroupNeighbor = 0;
             geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, GroupNeighbor, GroupDist);
