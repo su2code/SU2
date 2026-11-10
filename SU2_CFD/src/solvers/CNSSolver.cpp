@@ -26,6 +26,7 @@
  */
 
 #include "../../include/solvers/CNSSolver.hpp"
+#include "../../include/solvers/thermal_group_flux.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
@@ -517,7 +518,12 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
      The convective part will be zero if the grid is not moving. ---*/
 
     su2double Res_Conv = 0.0;
-    su2double Res_Visc = Wall_HeatFlux * Area;
+    su2double Res_Visc = Wall_HeatFlux * Area, GroupTransferDerivative = 0.0;
+    const bool groupTransfer = (kind_boundary == HEAT_TRANSFER) && !config->GetMarker_All_PyCustom(val_marker) &&
+                               geometry->HasVertexGroups(val_marker, iVertex);
+    if (groupTransfer)
+      ThermalGroupFlux::HeatTransfer(Transfer_Coefficient, Tinfinity, nodes->GetTemperature(iPoint), Area,
+                                     Res_Visc, GroupTransferDerivative);
 
     /*--- Impose the value of the velocity as a strong boundary
      condition (Dirichlet). Fix the velocity and remove any
@@ -570,17 +576,18 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
         const su2double oneOnRho = 1.0 / nodes->GetDensity(iPoint);
         const su2double oneOnCv = (Gamma - 1.0) / config->GetGas_ConstantND();
         const su2double Vel2 = nodes->GetVelocity2(iPoint);
-        const su2double dTdrho = oneOnRho * ( -Tinfinity + oneOnCv * 0.5 * Vel2);
+        const su2double dTdrho = oneOnRho * ( -(groupTransfer ? nodes->GetTemperature(iPoint) : Tinfinity) + oneOnCv * 0.5 * Vel2);
         const su2double dTdrhoe = oneOnCv * oneOnRho;
 
         /*--- Total specific energy: e=c_v*T+1/2*v^2 => T=1/c_v(rho*e/rho - 1/2||rho v||^2/rho^2).
         Together with cv=R/(gamma-1) the following Jacobian contributions for the energy equation can be derived. ---*/
-        Jacobian_i[nDim+1][0] += Transfer_Coefficient * dTdrho * Area;
+        Jacobian_i[nDim+1][0] += groupTransfer ? GroupTransferDerivative * dTdrho : Transfer_Coefficient * dTdrho * Area;
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          Jacobian_i[nDim+1][iDim+1] -= Transfer_Coefficient * dTdrhoe * nodes->GetVelocity(iPoint, iDim) * Area;
+          Jacobian_i[nDim+1][iDim+1] -= groupTransfer ? GroupTransferDerivative * dTdrhoe * nodes->GetVelocity(iPoint, iDim)
+                                                       : Transfer_Coefficient * dTdrhoe * nodes->GetVelocity(iPoint, iDim) * Area;
 
-        Jacobian_i[nDim+1][nDim+1] += Transfer_Coefficient * dTdrhoe * Area;
+        Jacobian_i[nDim+1][nDim+1] += groupTransfer ? GroupTransferDerivative * dTdrhoe : Transfer_Coefficient * dTdrhoe * Area;
 
       }
       if (dynamic_grid || (kind_boundary == HEAT_TRANSFER)) {
@@ -689,14 +696,14 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     /*--- Compute closest normal neighbor ---*/
 
-    const auto Point_Normal = cht_mode ? geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor()
+    auto Point_Normal = cht_mode ? geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor()
                                        : geometry->GetVertexNormalNeighbor(val_marker, iVertex);
 
     /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
     const auto Coord_i = geometry->nodes->GetCoord(iPoint);
     const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-    const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord_i, Coord_j);
+    su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord_i, Coord_j);
 
     /*--- Store the corrected velocity at the wall which will
      be zero (v = 0), unless there is grid motion (v = u_wall)---*/
@@ -724,7 +731,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     /*--- If it is a customizable or CHT patch, retrieve the specified wall temperature. ---*/
 
-    const su2double There = nodes->GetTemperature(Point_Normal);
+    su2double There = nodes->GetTemperature(Point_Normal);
 
     if (cht_mode) {
       Twall = GetCHTWallTemperature(config, val_marker, iVertex, dist_ij,
@@ -740,32 +747,37 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
      * the face normals and its neighbour is not a wall-normal stencil. CHT interfaces keep the vertex stencil. ---*/
 
     su2double Res_Conv = 0.0;
-    const bool groupStencil = !cht_mode && geometry->HasVertexGroups(val_marker, iVertex) &&
-                              geometry->HasEligibleGroupNeighbors(val_marker, iVertex);
-    su2double Res_Visc = 0.0;
-    su2double GroupAreaOverDist = 0.0;
+    bool groupStencil = !cht_mode && geometry->HasVertexGroups(val_marker, iVertex);
+    su2double Res_Visc = 0.0, GroupDerivative = 0.0;
+    if (groupStencil) {
+      const auto group = [&](size_t iGroup, su2double& area, su2double& distance, su2double& temperature) {
+        su2double normal[MAXNDIM] = {0.0};
+        unsigned long neighbor = 0;
+        geometry->GetVertexGroup(val_marker, iVertex, iGroup, normal, area, neighbor, distance);
+        temperature = nodes->GetTemperature(neighbor);
+      };
+      groupStencil = ThermalGroupFlux::Isothermal(geometry->HasEligibleGroupNeighbors(val_marker, iVertex),
+          geometry->GetnVertexGroups(val_marker, iVertex), thermal_conductivity, Twall, group, Res_Visc, GroupDerivative);
+      if (!groupStencil) {
+        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord_i, geometry->nodes->GetCoord(Point_Normal));
+        There = nodes->GetTemperature(Point_Normal);
+      }
+    }
     if (!groupStencil) {
       const su2double dTdn = -(There - Twall)/dist_ij;
       Res_Visc = thermal_conductivity * dTdn * Area;
-    } else {
-      for (size_t iGroup = 0; iGroup < geometry->GetnVertexGroups(val_marker, iVertex); ++iGroup) {
-        su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, dist_q = 0.0;
-        unsigned long Point_Normal_q = 0;
-        geometry->GetVertexGroup(val_marker, iVertex, iGroup, GroupNormal, GroupArea, Point_Normal_q, dist_q);
-        Res_Visc += thermal_conductivity * (Twall - nodes->GetTemperature(Point_Normal_q)) / dist_q * GroupArea;
-        GroupAreaOverDist += GroupArea / dist_q;
-      }
     }
 
     if (implicit) {
       su2double Density = nodes->GetDensity(iPoint);
       su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[prim_idx.Velocity()]);
       su2double dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
-      Jacobian_i[nDim+1][0] = groupStencil ? thermal_conductivity * GroupAreaOverDist * dTdrho
+      Jacobian_i[nDim+1][0] = groupStencil ? GroupDerivative * dTdrho
                                           : thermal_conductivity/dist_ij * dTdrho * Area;
       for (auto jDim = 0u; jDim < nDim; jDim++) Jacobian_i[nDim+1][jDim+1] = 0.0;
       Jacobian_i[nDim+1][nDim+1] = groupStencil
-          ? thermal_conductivity * GroupAreaOverDist * (Gamma-1.0)/(Gas_Constant*Density)
+          ? GroupDerivative * (Gamma-1.0)/(Gas_Constant*Density)
           : thermal_conductivity/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
     }
 
