@@ -48,8 +48,6 @@ struct TestGeometry {
 /*--- Finest grid as SU2_CFD preprocesses it (serial). ---*/
 TestGeometry BuildGeometry(const std::string& options) {
   TestGeometry out;
-  auto* orig = std::cout.rdbuf();
-  std::cout.rdbuf(nullptr);
   std::stringstream ss(options);
   out.config = std::unique_ptr<CConfig>(new CConfig(ss, SU2_COMPONENT::SU2_CFD, false));
   auto* config = out.config.get();
@@ -71,7 +69,6 @@ TestGeometry BuildGeometry(const std::string& options) {
   geometry->SetControlVolume(config, ALLOCATE);
   geometry->SetBoundControlVolume(config, ALLOCATE);
   geometry->FindNormal_Neighbor(config);
-  std::cout.rdbuf(orig);
   return out;
 }
 
