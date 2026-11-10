@@ -438,3 +438,22 @@ TEST_CASE("Sharp-edge normals: more than 32 faces", "[SharpEdgeNormals]") {
   CHECK(SharpEdgeNormals::Basis(3, n, groups, basis) == 3);
   for (size_t i = 0; i < n; ++i) CHECK(membership[i] == i);
 }
+
+TEST_CASE("Sharp-edge normals: equal-cosine neighbour tie", "[SharpEdgeNormals]") {
+  for (const bool reverse : {false, true}) {
+    const unsigned long ids[2] = {reverse ? 19ul : 7ul, reverse ? 7ul : 19ul};
+    bool found = false;
+    double bestCosine = 0.0;
+    unsigned long best = 0;
+    for (const auto id : ids) {
+      if (SharpEdgeNormals::BetterNeighbor(found, 0.8, bestCosine, id, best)) {
+        found = true;
+        bestCosine = 0.8;
+        best = id;
+      }
+    }
+    CHECK(best == 7);
+    CHECK(SharpEdgeNormals::BetterNeighbor(found, 0.9, bestCosine, 19, best));
+    CHECK_FALSE(SharpEdgeNormals::BetterNeighbor(found, 0.7, bestCosine, 1, best));
+  }
+}

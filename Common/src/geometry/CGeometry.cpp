@@ -2983,8 +2983,8 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
         cosLegacy = cos_alpha;
       }
       if (nodes->GetSolidBoundary(jPoint) || !(scalar_prod > 0.0)) continue;
-      if (!found || (cos_alpha > cosBest) ||
-          ((cos_alpha == cosBest) && (nodes->GetGlobalIndex(jPoint) < nodes->GetGlobalIndex(best)))) {
+      if (SharpEdgeNormals::BetterNeighbor(found, cos_alpha, cosBest, nodes->GetGlobalIndex(jPoint),
+                                           nodes->GetGlobalIndex(best))) {
         found = true;
         best = jPoint;
         cosBest = cos_alpha;

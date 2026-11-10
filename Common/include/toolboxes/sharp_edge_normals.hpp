@@ -64,6 +64,12 @@
 
 namespace SharpEdgeNormals {
 
+/*! \brief Prefer the largest cosine, breaking exact ties by global point index. */
+inline bool BetterNeighbor(bool found, const su2double& cosine, const su2double& bestCosine,
+                           unsigned long globalIndex, unsigned long bestGlobalIndex) {
+  return !found || cosine > bestCosine || (cosine == bestCosine && globalIndex < bestGlobalIndex);
+}
+
 /*! \brief Compatibility threshold c0 of the cosine of two corner vectors (the parallel tolerance of
  *         CGeometry::ComputeModifiedSymmetryNormals). */
 constexpr passivedouble COMPATIBLE_COS = 0.001;
