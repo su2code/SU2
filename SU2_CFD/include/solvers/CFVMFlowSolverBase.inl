@@ -1156,7 +1156,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                          (config->GetKind_FluidModel() == IDEAL_GAS);
   const auto iVel = prim_idx.Velocity();
-  const bool sharpEdges = config->GetWall_Sharp_Edge_Normals();
 
   /*--- Blazek chapter 8.:
    * The components of the momentum residual normal to the symmetry plane are zeroed out.
@@ -1186,52 +1185,48 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
     }
 
-    /*--- WALL_SHARP_EDGE_NORMALS: at a point where an Euler wall folds sharply the vertex normal is the nearly cancelling
-     * sum of the face normals. There the velocity must be tangent to every face group: the momentum of the old solution,
-     * the momentum residual, the momentum rows of the Jacobian and the truncation error are projected with
-     * P = I - Q^T Q, Q the orthonormal basis of the group normals and of the symmetry-plane normals of the point
-     * (CGeometry::ComputeSharpEdgeNormals). This is the projection SU2 applies where two straight markers meet at an angle;
-     * every marker call at the point applies the same P. Static meshes only (option checks). ---*/
-    if (sharpEdges) {
-      const auto itB = geometry->sharpEdgeBasis.find(iPoint);
-      if (itB != geometry->sharpEdgeBasis.end()) {
-        const auto rank = itB->second.first;
-        su2double Q[3][3] = {{0.0}};
-        for (unsigned short r = 0; r < 3; ++r)
-          for (unsigned short d = 0; d < 3; ++d) Q[r][d] = itB->second.second[r][d];
+    /*--- Where the faces of the slip walls of the point form several groups (e.g. a sharp trailing edge, whose
+     * vertex normal is the nearly cancelling sum of the upper and lower face normals) or the point is shared by
+     * several slip markers, the velocity must be tangent to every group: the momentum of the old solution, the
+     * momentum residual, the momentum rows of the Jacobian and the truncation error are projected with I - Q^T Q, Q
+     * the orthonormal basis of all group normals of the point (CGeometry::ComputeBoundaryFaceGroups). This is the
+     * projection that the orthogonalized normals of ComputeModifiedSymmetryNormals give where two plane markers meet;
+     * every marker of the point applies the same projection. Static grids only (no basis otherwise). ---*/
+    su2double Q[MAXNDIM][MAXNDIM] = {};
+    const unsigned short slipRank =
+        (FlowRegime == ENUM_REGIME::COMPRESSIBLE) ? geometry->GetSlipBasis(val_marker, iVertex, Q) : 0;
+    if (slipRank > 0) {
+      su2double* solutionOld = nodes->GetSolution_Old(iPoint);
+      SharpEdgeNormals::Project(nDim, slipRank, Q, iVel, solutionOld);
 
-        su2double* solutionOld = nodes->GetSolution_Old(iPoint);
-        SharpEdgeNormals::Project(nDim, rank, Q, iVel, solutionOld);
+      su2double res[MAXNVAR] = {0.0};
+      for (auto iVar = 0u; iVar < nVar; iVar++) res[iVar] = LinSysRes(iPoint, iVar);
+      SharpEdgeNormals::Project(nDim, slipRank, Q, iVel, res);
+      for (auto iDim = 0u; iDim < nDim; iDim++) LinSysRes(iPoint, iVel + iDim) = res[iVel + iDim];
 
-        su2double res[MAXNVAR] = {0.0};
-        for (auto iVar = 0u; iVar < nVar; iVar++) res[iVar] = LinSysRes(iPoint, iVar);
-        SharpEdgeNormals::Project(nDim, rank, Q, iVel, res);
-        for (auto iDim = 0u; iDim < nDim; iDim++) LinSysRes(iPoint, iVel + iDim) = res[iVel + iDim];
-
-        if (implicit) {
-          auto ProjectRows = [&](const unsigned long jPoint) {
-            const auto view = Jacobian.GetBlockView(iPoint, jPoint);
-            if (!view) return;
-            su2double block[MAXNVAR * MAXNVAR];
-            for (auto iVar = 0u; iVar < nVar; iVar++)
-              for (auto jVar = 0u; jVar < nVar; jVar++) block[iVar * nVar + jVar] = view(iVar, jVar);
-            for (auto jVar = 0u; jVar < nVar; jVar++) {
-              su2double column[MAXNVAR] = {0.0};
-              for (auto iVar = 0u; iVar < nVar; iVar++) column[iVar] = block[iVar * nVar + jVar];
-              SharpEdgeNormals::Project(nDim, rank, Q, iVel, column);
-              for (auto iDim = 0u; iDim < nDim; iDim++) block[(iVel + iDim) * nVar + jVar] = column[iVel + iDim];
-            }
-            Jacobian.SetBlock(iPoint, jPoint, block);
-          };
-          ProjectRows(iPoint);
-          for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
-            ProjectRows(geometry->nodes->GetPoint(iPoint, iNeigh));
-        }
-
-        su2double* truncError = nodes->GetResTruncError(iPoint);
-        SharpEdgeNormals::Project(nDim, rank, Q, iVel, truncError);
-        continue;
+      if (implicit) {
+        auto ProjectRows = [&](const unsigned long jPoint) {
+          const auto view = Jacobian.GetBlockView(iPoint, jPoint);
+          if (!view) return;
+          su2double block[MAXNVAR * MAXNVAR];
+          for (auto iVar = 0u; iVar < nVar; iVar++)
+            for (auto jVar = 0u; jVar < nVar; jVar++) block[iVar * nVar + jVar] = view(iVar, jVar);
+          for (auto jVar = 0u; jVar < nVar; jVar++) {
+            su2double column[MAXNVAR] = {0.0};
+            for (auto iVar = 0u; iVar < nVar; iVar++) column[iVar] = block[iVar * nVar + jVar];
+            SharpEdgeNormals::Project(nDim, slipRank, Q, iVel, column);
+            for (auto iDim = 0u; iDim < nDim; iDim++) block[(iVel + iDim) * nVar + jVar] = column[iVel + iDim];
+          }
+          Jacobian.SetBlock(iPoint, jPoint, block);
+        };
+        ProjectRows(iPoint);
+        for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
+          ProjectRows(geometry->nodes->GetPoint(iPoint, iNeigh));
       }
+
+      su2double* truncError = nodes->GetResTruncError(iPoint);
+      SharpEdgeNormals::Project(nDim, slipRank, Q, iVel, truncError);
+      continue;
     }
 
     /*--- Energy terms due to grid movement (aka work of pressure forces). ---*/
@@ -2636,23 +2631,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         UnitNormal[iDim] = Normal[iDim] / Area;
       }
 
-      /*--- WALL_SHARP_EDGE_NORMALS: at a sharp edge of a no-slip wall the unit vertex normal is the direction of the nearly
-       * cancelling sum of the face normals. The local outputs (skin friction, wall shear stress and with it y+, heat
-       * flux) are the averages over the face groups weighted by their wetted areas, and the heat integral uses the
-       * wetted area (as the heat-flux residual, except for integrated heat fluxes). The force integral TauElem * Area =
-       * tau . sum N is the exact integral of the nodal stress over the dual faces and is unchanged. ---*/
-      const std::vector<std::array<su2double, MAXNDIM>>* sharpN = nullptr;
-      const std::vector<SharpEdgeNormals::Group>* sharpG = nullptr;
-      su2double areaHF = Area;
-      if (config->GetWall_Sharp_Edge_Normals() && !nemo) {
-        const auto itN = geometry->sharpEdgeNormals[iMarker].find(iVertex);
-        if (itN != geometry->sharpEdgeNormals[iMarker].end()) {
-          sharpN = &itN->second;
-          sharpG = &geometry->sharpEdgeGroups[iMarker].at(iVertex);
-          if (!((KindBC == BC_TYPE::HEAT_FLUX) && config->GetIntegrated_HeatFlux()))
-            areaHF = geometry->sharpEdgeArea[iMarker].at(iVertex);
-        }
-      }
+      /*--- Face groups of the vertex (CGeometry::ComputeBoundaryFaceGroups; one group with the vertex normal and
+       * |sum N| where none are stored) and the vertex area W = sum of the group areas. At a sharp edge the unit vertex
+       * normal is the direction of the nearly cancelling sum of the face normals: the local outputs (wall shear
+       * stress, skin friction and with them y+, heat flux) are averages over the groups weighted by their areas
+       * a_q / W, and the heat integral uses W. The force integral TauElem * Area = tau . sum N is the exact integral of
+       * the nodal stress over the dual faces and keeps the vertex normal. ---*/
+      const auto nGroups = geometry->GetnVertexGroups(iMarker, iVertex);
+      const su2double WettedArea = geometry->GetVertexWettedArea(iMarker, iVertex);
 
       /*--- Evaluate Tau ---*/
       su2double Tau[3][3] = {{0.0}};
@@ -2675,20 +2661,16 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
        * on the wall ---*/
 
       su2double TauTangent[MAXNDIM] = {0.0};
-      GeometryToolbox::TangentProjection(nDim, Tau, UnitNormal, TauTangent);
+      for (unsigned short iGroup = 0; iGroup < nGroups; iGroup++) {
+        su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, GroupDist = 0.0, GroupTangent[MAXNDIM] = {0.0};
+        unsigned long GroupNeighbor = 0;
+        geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, GroupNeighbor, GroupDist);
+        GeometryToolbox::TangentProjection(nDim, Tau, GroupNormal, GroupTangent);
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          TauTangent[iDim] += GroupArea / WettedArea * GroupTangent[iDim];
+      }
 
       WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
-      if (sharpN) {
-        su2double wetted = 0.0;
-        for (const auto& g : *sharpG) wetted += g.first;
-        for (unsigned short iDim = 0; iDim < MAXNDIM; iDim++) TauTangent[iDim] = 0.0;
-        for (size_t q = 0; q < sharpN->size(); ++q) {
-          su2double tanQ[MAXNDIM] = {0.0};
-          GeometryToolbox::TangentProjection(nDim, Tau, (*sharpN)[q].data(), tanQ);
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) TauTangent[iDim] += (*sharpG)[q].first * tanQ[iDim] / wetted;
-        }
-        WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
-      }
 
       /*--- For wall functions, the wall stresses need to be scaled by the wallfunction stress Tau_Wall---*/
       if (wallfunctions && (YPlus[iMarker][iVertex] > minYPlus)){
@@ -2730,17 +2712,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         } else if (KindBC == BC_TYPE::ISOTHERMAL) {
           const su2double Twall_local =
               py_custom ? geometry->GetCustomBoundaryTemperature(iMarker, iVertex) / RefTemperature : Twall;
-          const auto iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-          const su2double* Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
-          const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord, Coord_Normal);
-          const su2double There = nodes->GetTemperature(iPointNormal);
-          HeatFlux[iMarker][iVertex] = thermal_conductivity * (There - Twall_local) / dist_ij * RefHeatFlux;
-          if (sharpN) {
-            auto temperature = [&](unsigned long jPoint) { return nodes->GetTemperature(jPoint); };
-            su2double flux = 0.0, unused = 0.0;
-            if (SharpEdgeNormals::IsothermalFlux(*sharpG, thermal_conductivity, Twall_local, temperature, flux, unused))
-              HeatFlux[iMarker][iVertex] = -flux / areaHF * RefHeatFlux;
+          su2double LocalHeatFlux = 0.0;
+          for (unsigned short iGroup = 0; iGroup < nGroups; iGroup++) {
+            su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, dist_ij = 0.0;
+            unsigned long iPointNormal = 0;
+            geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, iPointNormal, dist_ij);
+            const su2double There = nodes->GetTemperature(iPointNormal);
+            LocalHeatFlux += thermal_conductivity * (There - Twall_local) / dist_ij * (GroupArea / WettedArea);
           }
+          HeatFlux[iMarker][iVertex] = LocalHeatFlux * RefHeatFlux;
         } else {
           su2double dTdn = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
           if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE && !energy) dTdn = 0.0;
@@ -2802,7 +2782,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         AccumulateMoment(nDim, RefLength, Force, MomentDist, Coord, MomentViscous, MomentX_Force, MomentY_Force,
                          MomentZ_Force);
 
-        HF_Visc_Local += HeatFlux[iMarker][iVertex] * areaHF;
+        HF_Visc_Local += HeatFlux[iMarker][iVertex] * WettedArea;
         MaxHF_Visc_Local += pow(HeatFlux[iMarker][iVertex], MaxNorm);
       }
     }

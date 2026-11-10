@@ -116,27 +116,23 @@ void correctGradientsSymmetry(CGeometry& geometry, const CConfig& config, const 
     }
   }
 
-  /*--- WALL_SHARP_EDGE_NORMALS: at a sharp edge of an Euler wall the correction is applied once per vector of the
-   * orthonormal basis of the wall normals of the point (CGeometry::sharpEdgeBasis), as at a corner between two straight
-   * markers; repeated calls (one per marker of the point) change nothing. ---*/
-  const bool sharpEdges = config.GetWall_Sharp_Edge_Normals();
-
   for (const auto iMarker : symMarkers) {
     SU2_OMP_FOR_STAT(32)
     for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
 
       const auto iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
 
-      if (sharpEdges) {
-        const auto itB = geometry.sharpEdgeBasis.find(iPoint);
-        if (itB != geometry.sharpEdgeBasis.end()) {
-          for (unsigned short r = 0; r < itB->second.first; ++r) {
-            su2double q[nDim] = {};
-            for (size_t iDim = 0; iDim < nDim; iDim++) q[iDim] = itB->second.second[r][iDim];
-            detail::correctGradient<nDim>(varBegin, varEnd, idxVel, q, gradient[iPoint]);
-          }
-          continue;
+      /*--- Where the point has a slip basis (CGeometry::ComputeBoundaryFaceGroups: several face groups, e.g. at a sharp
+       * edge, or several slip markers), the correction is applied once per vector of the orthonormal basis, as for the
+       * orthogonalized normals of two plane markers; the corrections commute and repeated calls (one per marker of the
+       * point) change nothing. ---*/
+      su2double Q[3][3] = {};
+      const auto slipRank = geometry.GetSlipBasis(iMarker, iVertex, Q);
+      if (slipRank > 0) {
+        for (unsigned short r = 0; r < slipRank; ++r) {
+          detail::correctGradient<nDim>(varBegin, varEnd, idxVel, Q[r], gradient[iPoint]);
         }
+        continue;
       }
 
       /*--- Get the normal of the current symmetry. This may be the original normal of the vertex

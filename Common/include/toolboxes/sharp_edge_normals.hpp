@@ -29,8 +29,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <utility>
-#include <vector>
 #include "../basic_types/datatype_structure.hpp"
 
 /*--- The vertex normal of a boundary point is the sum of the dual area pieces ("corner vectors" N_f) of its incident
@@ -218,29 +216,6 @@ inline void Project(unsigned short nDim, unsigned short rank, const su2double (*
     for (unsigned short d = 0; d < nDim; ++d) proj += Q[r][d] * vec[iVel + d];
     for (unsigned short d = 0; d < nDim; ++d) vec[iVel + d] -= proj * Q[r][d];
   }
-}
-
-/*! \brief Per face group of a no-slip wall vertex: wetted area A_q, normal neighbour and its normal distance d_q. */
-using Group = std::pair<su2double, std::pair<unsigned long, su2double>>;
-
-/*!
- * \brief Isothermal wall flux of a sharp-edge vertex: flux = sum_q k (Twall - T_q) / d_q A_q (the conducted heat, same
- * sign convention as k dT/dn Area of the isothermal wall), areaOverDist = sum_q A_q / d_q (for the Jacobian).
- * \param[in] T - Callable returning the temperature of a point.
- * \return false if a group has no eligible neighbour (d_q <= 0): the caller keeps its single-normal stencil.
- */
-template <class TemperatureFn>
-inline bool IsothermalFlux(const std::vector<Group>& groups, su2double k, su2double Twall, const TemperatureFn& T,
-                           su2double& flux, su2double& areaOverDist) {
-  flux = 0.0;
-  areaOverDist = 0.0;
-  for (const auto& g : groups)
-    if (!(g.second.second > 0.0)) return false;
-  for (const auto& g : groups) {
-    flux += k * (Twall - T(g.second.first)) / g.second.second * g.first;
-    areaOverDist += g.first / g.second.second;
-  }
-  return true;
 }
 
 }  // namespace SharpEdgeNormals

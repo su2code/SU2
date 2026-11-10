@@ -6986,9 +6986,12 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeModifiedSymmetryNormals(config);)
 
-  /*--- Normals at sharp edges of Euler and no-slip walls (WALL_SHARP_EDGE_NORMALS). ---*/
-  if (config->GetWall_Sharp_Edge_Normals()) {
-    SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeSharpEdgeNormals(config);)
+  /*--- Face groups of the boundary points: topology and values on ALLOCATE, values from the current coordinates on
+   * every update (e.g. inside the geometry recordings of the discrete adjoint). ---*/
+  if (action == ALLOCATE) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeBoundaryFaceGroups(config);)
+  } else {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(UpdateBoundaryFaceGroups(config);)
   }
 }
 

@@ -51,8 +51,6 @@ extern "C" {
 #include <climits>
 #include <memory>
 #include <unordered_map>
-#include <map>
-#include <array>
 #include <cstdint>
 
 #include "primal_grid/CPrimalGrid.hpp"
@@ -263,16 +261,35 @@ class CGeometry {
 
   /*!< \brief Corrected normals on nodes with shared symmetry markers. */
   vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
-  /*! \brief WALL_SHARP_EDGE_NORMALS: joint orthonormal basis (rank, rows) of the wall normals of every owned point at a sharp
-   *         edge of an Euler wall (group normals of the Euler-wall faces, then the symmetry-plane normals of the point). */
-  std::map<unsigned long, std::pair<unsigned short, std::array<std::array<su2double, MAXNDIM>, MAXNDIM>>> sharpEdgeBasis;
-  /*! \brief WALL_SHARP_EDGE_NORMALS, no-slip walls, by marker and vertex: unit normals of the marker's own face groups. */
-  vector<std::map<unsigned long, std::vector<std::array<su2double, MAXNDIM>>>> sharpEdgeNormals;
-  /*! \brief Same order as sharpEdgeNormals: group wetted area, normal neighbour (0 if none eligible) and its normal distance. */
-  vector<std::map<unsigned long, std::vector<std::pair<su2double, std::pair<unsigned long, su2double>>>>> sharpEdgeGroups;
-  /*! \brief Same keys: wetted dual area of the vertex (sum of the corner-vector magnitudes). */
-  vector<std::map<unsigned long, su2double>> sharpEdgeArea;
+  /*! \brief Face groups of a boundary point of one boundary family (see ComputeBoundaryFaceGroups). The topology
+   *         (faces, groups, neighbours) is set once; the values are updated with the coordinates. */
+  struct BoundaryFaceGroupPoint {
+    unsigned long point = 0;                    /*!< \brief Local index of the point. */
+    vector<std::array<unsigned long, 3>> faces; /*!< \brief Faces (marker, boundary element, node), canonical order. */
+    vector<unsigned short> faceGroup;           /*!< \brief Group of every face. */
+    vector<unsigned long> neighbor;             /*!< \brief Normal neighbour of every group. */
+    vector<std::array<su2double, MAXNDIM>> unitNormal; /*!< \brief Unit normal of every group. */
+    vector<su2double> area;                            /*!< \brief Area A_q = |N_q| of every group. */
+    unsigned short slipRank = 0;                       /*!< \brief Rank of the slip basis (0: none). */
+    su2double slipBasis[MAXNDIM][MAXNDIM] = {};        /*!< \brief Orthonormal slip basis (rows). */
+  };
+  /*! \brief Face-group data of a boundary vertex (see ComputeBoundaryFaceGroups). */
+  struct BoundaryFaceGroupVertex {
+    long pointData = -1;                   /*!< \brief Index in boundaryFaceGroupPoints, -1: no groups stored. */
+    vector<unsigned short> groups;         /*!< \brief Groups of the point that contain faces of the marker. */
+    vector<su2double> share;               /*!< \brief Share a_{m,q} of the marker in each of these groups. */
+    unsigned long neighbor = ULONG_MAX;    /*!< \brief Normal neighbour of a vertex without groups (ULONG_MAX: none). */
+    su2double faceArea = 0.0;              /*!< \brief F_m, sum of the magnitudes of the marker's corner vectors. */
+    su2double projectedArea[MAXNDIM] = {}; /*!< \brief P_m[d], sum of max(-N_f[d], 0) over the marker's corners. */
+  };
+  vector<BoundaryFaceGroupPoint> boundaryFaceGroupPoints;            /*!< \brief Points with stored face groups. */
+  vector<vector<BoundaryFaceGroupVertex>> boundaryFaceGroupVertices; /*!< \brief By marker and vertex (empty: none). */
 
+ private:
+  /*! \brief Face-group data of a vertex with stored groups, nullptr for the other vertices. */
+  const BoundaryFaceGroupVertex* StoredVertexGroups(unsigned short iMarker, unsigned long iVertex) const;
+
+ public:
   /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
   vector<bool> boundIsStraight;
   vector<su2double> SurfaceAreaCfgFile; /*!< \brief Total Surface area for all markers. */
@@ -963,10 +980,96 @@ class CGeometry {
   void ComputeModifiedSymmetryNormals(const CConfig* config);
 
   /*!
-   * \brief Normals of the boundary points at sharp edges of Euler walls and no-slip walls (WALL_SHARP_EDGE_NORMALS).
+   * \brief Whether the boundary face groups are computed (ComputeBoundaryFaceGroups): SU2_CFD with the compressible
+   *        finite-volume flow solvers (EULER, NAVIER_STOKES, RANS and their adjoints) on static grids.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeSharpEdgeNormals(const CConfig* config);
+  static bool UseBoundaryFaceGroups(const CConfig* config);
+
+  /*!
+   * \brief Face groups of the boundary points (finest grid). The vertex normal of a boundary point is the sum of the
+   *        corner vectors N_f (dual area pieces) of its incident faces; where the boundary folds by 90 degrees or
+   *        more at the point these nearly cancel. The faces of the owned points are grouped per boundary family with
+   *        SharpEdgeNormals::FaceGroups: SLIP (Euler walls, linked across markers, and symmetry planes, each linked
+   *        only within its own marker), NOSLIP (heat-flux, isothermal and heat-transfer walls without wall
+   *        functions, linked across markers) and one family per other marker (send-receive, periodic, internal,
+   *        near-field, interface and wall-function markers are excluded). Data are stored where a family point has
+   *        two or more groups or is shared by two or more markers of its family: group unit normals
+   *        n_q = N_q / |N_q| and areas A_q = |N_q| (N_q the sum of the group's corner vectors), the share of every
+   *        marker in every group, a_{m,q} = A_q sum_{f in m,q} |N_f| / sum_{f in q} |N_f| (the shares of a group sum
+   *        to A_q), a normal neighbour per group and, for the SLIP family, the orthonormal slip basis of all group
+   *        normals. Every vertex of the families gets the face sums of its marker, F_m = sum_f |N_f| and
+   *        P_m[d] = sum_f max(-N_f[d], 0), and a normal neighbour. Elsewhere the accessors return the legacy vertex
+   *        values. Sets the topology (faces, groups, neighbours) once and the values (UpdateBoundaryFaceGroups).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeBoundaryFaceGroups(const CConfig* config);
+
+  /*!
+   * \brief Values of the boundary face groups (normals, areas, shares, face sums, slip bases) from the current
+   *        coordinates, for the topology set by ComputeBoundaryFaceGroups.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateBoundaryFaceGroups(const CConfig* config);
+
+  /*!
+   * \brief Number of face groups of a boundary vertex (1 where no groups are stored).
+   * \param[in] iMarker - Marker.
+   * \param[in] iVertex - Vertex of the marker.
+   */
+  unsigned short GetnVertexGroups(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Face group of a boundary vertex. Where no groups are stored: the unit vertex normal, the vertex area
+   *        |sum N|, the normal neighbour of the vertex (GetVertexNormalNeighbor) and its normal distance.
+   * \param[in] iMarker - Marker.
+   * \param[in] iVertex - Vertex of the marker.
+   * \param[in] iGroup - Group, 0 <= iGroup < GetnVertexGroups.
+   * \param[out] unitNormal - Unit normal of the group (orientation of the vertex normals).
+   * \param[out] area - Area of the group for this marker (the share a_{m,q}).
+   * \param[out] neighbor - Normal neighbour of the group.
+   * \param[out] distance - Normal distance of the neighbour (GeometryToolbox::NormalDistance).
+   */
+  void GetVertexGroup(unsigned short iMarker, unsigned long iVertex, unsigned short iGroup, su2double* unitNormal,
+                      su2double& area, unsigned long& neighbor, su2double& distance) const;
+
+  /*!
+   * \brief Area of a boundary vertex as sum of its group areas, W_m = sum_q a_{m,q} (|sum N| where no groups are
+   *        stored).
+   * \param[in] iMarker - Marker.
+   * \param[in] iVertex - Vertex of the marker.
+   */
+  su2double GetVertexWettedArea(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Normal neighbour of a boundary vertex: the neighbour of its largest group where groups are stored, the
+   *        neighbour of the vertex normal for the other vertices of the face-group families, else the legacy
+   *        Normal_Neighbor of the vertex.
+   * \param[in] iMarker - Marker.
+   * \param[in] iVertex - Vertex of the marker.
+   */
+  unsigned long GetVertexNormalNeighbor(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Orthonormal slip basis of a vertex of an Euler wall or symmetry plane (rows of Q, for the projection
+   *        I - Q^T Q of the momentum and the symmetry correction of the gradients).
+   * \param[in] iMarker - Marker.
+   * \param[in] iVertex - Vertex of the marker.
+   * \param[out] Q - Basis, Q[r][iDim] for r < rank.
+   * \return Rank of the basis, 0 where none is stored (the legacy symmetry normals apply).
+   */
+  unsigned short GetSlipBasis(unsigned short iMarker, unsigned long iVertex, su2double (*Q)[3]) const;
+
+  /*!
+   * \brief Face sums of an owned boundary vertex of the face-group families (see ComputeBoundaryFaceGroups).
+   * \param[in] iMarker - Marker.
+   * \param[in] iVertex - Vertex of the marker.
+   * \param[out] faceArea - F_m, sum of the magnitudes of the marker's corner vectors at the vertex.
+   * \param[out] projectedArea - P_m[iDim], sum of max(-N_f[iDim], 0) over the marker's corner vectors at the vertex.
+   * \return false where they are not available (no face-group data, halo vertex).
+   */
+  bool GetVertexFaceSums(unsigned short iMarker, unsigned long iVertex, su2double& faceArea,
+                         su2double* projectedArea) const;
 
   /*!
    * \brief A virtual member.

@@ -1,6 +1,6 @@
 /*!
  * \file sharp_edge_normals_tests.cpp
- * \brief Unit tests of the wall normals at sharp edges (WALL_SHARP_EDGE_NORMALS).
+ * \brief Unit tests of the grouping of the dual area pieces of a boundary point at sharp edges.
  * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -28,15 +28,9 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <fstream>
-#include <map>
-#include <memory>
 #include <random>
-#include <set>
-#include <sstream>
 #include <vector>
-#include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/toolboxes/sharp_edge_normals.hpp"
 #include "../../../SU2_CFD/include/gradients/correctGradientsSymmetry.hpp"
 
@@ -394,9 +388,9 @@ TEST_CASE("Sharp-edge normals: gradient correction over the basis", "[SharpEdgeN
       list[1][d] = n2[d];
     }
     REQUIRE(SharpEdgeNormals::Basis(3, 2, list, Q) == 2);
-    double G0[5][3], A[5][3], B[5][3];
+    double A[5][3], B[5][3];
     for (int v = 0; v < 5; ++v)
-      for (int d = 0; d < 3; ++d) G0[v][d] = A[v][d] = B[v][d] = uni(gen);
+      for (int d = 0; d < 3; ++d) A[v][d] = B[v][d] = uni(gen);
     detail::correctGradient<3>(0, 5, 1, Q[0], A);
     detail::correctGradient<3>(0, 5, 1, Q[1], A);
     detail::correctGradient<3>(0, 5, 1, Q[1], B);
@@ -423,156 +417,5 @@ TEST_CASE("Sharp-edge normals: gradient correction over the basis", "[SharpEdgeN
           for (int j = 0; j < 3; ++j) e += dirs[x][i] * A[1 + i][j] * dirs[y][j];
         CHECK(std::fabs(e) < 1e-13);
       }
-  }
-}
-
-TEST_CASE("Sharp-edge normals: isothermal flux of the face groups", "[SharpEdgeNormals]") {
-  /*--- Manufactured linear temperature T = T0 + g . x, wall point at xi, group neighbours at xi + d_q n_q: the group
-   * stencil gives exactly the conducted heat -k sum_q (g . n_q) A_q. ---*/
-  const double k = 0.7, T0 = 1.3, g[3] = {0.4, -1.1, 2.0}, xi[3] = {0.2, 0.1, -0.3};
-  const double n[2][3] = {{0.0, 0.6, 0.8}, {0.0, 0.6, -0.8}}, d[2] = {1e-3, 2e-3}, A[2] = {0.25, 0.75};
-  std::vector<SharpEdgeNormals::Group> groups;
-  std::map<unsigned long, double> T;
-  double exact = 0.0;
-  for (int q = 0; q < 2; ++q) {
-    double xq[3], tq = T0;
-    for (int c = 0; c < 3; ++c) {
-      xq[c] = xi[c] + d[q] * n[q][c];
-      tq += g[c] * xq[c];
-    }
-    T[10 + q] = tq;
-    groups.push_back({A[q], {10ul + q, d[q]}});
-    exact -= k * (g[0] * n[q][0] + g[1] * n[q][1] + g[2] * n[q][2]) * A[q];
-  }
-  const double Twall = T0 + g[0] * xi[0] + g[1] * xi[1] + g[2] * xi[2];
-  auto temperature = [&](unsigned long j) { return T.at(j); };
-  double flux = 0.0, aod = 0.0;
-  REQUIRE(SharpEdgeNormals::IsothermalFlux(groups, k, Twall, temperature, flux, aod));
-  CHECK(flux == Approx(exact).epsilon(1e-12));
-  CHECK(aod == Approx(A[0] / d[0] + A[1] / d[1]).epsilon(1e-14));
-  /*--- A group without an eligible neighbour (distance 0): no group stencil. ---*/
-  groups[1].second.second = 0.0;
-  CHECK_FALSE(SharpEdgeNormals::IsothermalFlux(groups, k, Twall, temperature, flux, aod));
-}
-
-namespace {
-
-/*--- L-shaped 2D domain [0,2]^2 minus (1,2]x(1,2], triangles on a 0.5 grid. Wall edges: y = 0, x = 2, and the step
- * x = 1 (y >= 1), y = 1 (x >= 1); the others are far field. split = true puts the step on a second wall marker. Concave
- * corner (2,0), corners (2,1) and convex (1,1) are sharp edges. ---*/
-void WriteLMesh(const std::string& name, bool split) {
-  const double h = 0.5;
-  std::map<std::pair<int, int>, int> id;
-  std::vector<std::array<double, 2>> pts;
-  auto node = [&](int i, int j) {
-    auto it = id.find({i, j});
-    if (it != id.end()) return it->second;
-    const int n = static_cast<int>(pts.size());
-    id[{i, j}] = n;
-    pts.push_back({i * h, j * h});
-    return n;
-  };
-  std::vector<std::array<int, 3>> tri;
-  for (int i = 0; i < 4; ++i)
-    for (int j = 0; j < 4; ++j) {
-      if (i >= 2 && j >= 2) continue;
-      const int a = node(i, j), b = node(i + 1, j), c = node(i + 1, j + 1), dd = node(i, j + 1);
-      tri.push_back({a, b, c});
-      tri.push_back({a, c, dd});
-    }
-  std::map<std::pair<int, int>, int> count;
-  for (const auto& t : tri)
-    for (int e = 0; e < 3; ++e) {
-      const int u = t[e], v = t[(e + 1) % 3];
-      count[{std::min(u, v), std::max(u, v)}]++;
-    }
-  std::vector<std::array<int, 2>> wallA, wallB, far;
-  for (const auto& t : tri)
-    for (int e = 0; e < 3; ++e) {
-      const int u = t[e], v = t[(e + 1) % 3];
-      if (count[{std::min(u, v), std::max(u, v)}] != 1) continue;
-      const double xm = 0.5 * (pts[u][0] + pts[v][0]), ym = 0.5 * (pts[u][1] + pts[v][1]);
-      const bool outer = (std::fabs(ym) < 1e-12) || (std::fabs(xm - 2.0) < 1e-12);
-      const bool step = (std::fabs(xm - 1.0) < 1e-12 && ym > 1.0) || (std::fabs(ym - 1.0) < 1e-12 && xm > 1.0);
-      if (outer)
-        wallA.push_back({u, v});
-      else if (step)
-        (split ? wallB : wallA).push_back({u, v});
-      else
-        far.push_back({u, v});
-    }
-  std::ofstream f(name);
-  f << "NDIME= 2\nNELEM= " << tri.size() << "\n";
-  for (size_t e = 0; e < tri.size(); ++e)
-    f << "5 " << tri[e][0] << " " << tri[e][1] << " " << tri[e][2] << " " << e << "\n";
-  f << "NPOIN= " << pts.size() << "\n";
-  f.precision(17);
-  for (size_t p = 0; p < pts.size(); ++p) f << pts[p][0] << " " << pts[p][1] << " " << p << "\n";
-  f << "NMARK= " << (split ? 3 : 2) << "\n";
-  auto marker = [&](const std::string& tag, const std::vector<std::array<int, 2>>& edges) {
-    f << "MARKER_TAG= " << tag << "\nMARKER_ELEMS= " << edges.size() << "\n";
-    for (const auto& e : edges) f << "3 " << e[0] << " " << e[1] << "\n";
-  };
-  marker("wall", wallA);
-  if (split) marker("step", wallB);
-  marker("far", far);
-}
-
-std::map<std::pair<long, long>, std::pair<unsigned short, std::array<double, 4>>> SharpEdgeBases(bool split) {
-  const std::string mesh = split ? "sharp_edge_L_split.su2" : "sharp_edge_L.su2";
-  WriteLMesh(mesh, split);
-  std::stringstream ss;
-  ss << "SOLVER= EULER\nMESH_FILENAME= " << mesh << "\nMESH_FORMAT= SU2\nMACH_NUMBER= 0.3\n"
-     << "MARKER_EULER= ( wall" << (split ? ", step" : "") << " )\nMARKER_FAR= ( far )\nWALL_SHARP_EDGE_NORMALS= YES\n";
-  auto* orig = std::cout.rdbuf();
-  std::cout.rdbuf(nullptr);
-  CConfig config(ss, SU2_COMPONENT::SU2_CFD, false);
-  std::unique_ptr<CGeometry> geometry;
-  {
-    auto aux = std::unique_ptr<CGeometry>(new CPhysicalGeometry(&config, 0, 1));
-    aux->SetColorGrid_Parallel(&config);
-    geometry = std::unique_ptr<CGeometry>(new CPhysicalGeometry(aux.get(), &config));
-  }
-  geometry->SetSendReceive(&config);
-  geometry->SetBoundaries(&config);
-  geometry->SetPoint_Connectivity();
-  geometry->SetElement_Connectivity();
-  geometry->SetBoundVolume();
-  geometry->Check_IntElem_Orientation(&config);
-  geometry->Check_BoundElem_Orientation(&config);
-  geometry->SetEdges();
-  geometry->SetVertex(&config);
-  geometry->SetControlVolume(&config, ALLOCATE);
-  geometry->SetBoundControlVolume(&config, ALLOCATE);
-  std::cout.rdbuf(orig);
-  std::map<std::pair<long, long>, std::pair<unsigned short, std::array<double, 4>>> out;
-  for (const auto& item : geometry->sharpEdgeBasis) {
-    const auto* x = geometry->nodes->GetCoord(item.first);
-    std::array<double, 4> q = {
-        SU2_TYPE::GetValue(item.second.second[0][0]), SU2_TYPE::GetValue(item.second.second[0][1]),
-        SU2_TYPE::GetValue(item.second.second[1][0]), SU2_TYPE::GetValue(item.second.second[1][1])};
-    out[{std::lround(2 * SU2_TYPE::GetValue(x[0])), std::lround(2 * SU2_TYPE::GetValue(x[1]))}] = {item.second.first,
-                                                                                                   q};
-  }
-  return out;
-}
-
-}  // namespace
-
-TEST_CASE("Sharp-edge normals: corners of one marker and of two markers", "[SharpEdgeNormals]") {
-  if (SU2_MPI::GetSize() > 1) return;  // serial geometry test
-  const auto one = SharpEdgeBases(false);
-  const auto two = SharpEdgeBases(true);
-  /*--- Exactly the corners (2,0) (concave), (2,1) and (1,1) (convex), in units of 0.5: rank 2 (velocity zero). ---*/
-  const std::set<std::pair<long, long>> expected = {{4, 0}, {4, 2}, {2, 2}};
-  REQUIRE(one.size() == expected.size());
-  REQUIRE(two.size() == expected.size());
-  for (const auto& p : expected) {
-    REQUIRE(one.count(p) == 1);
-    REQUIRE(two.count(p) == 1);
-    CHECK(one.at(p).first == 2);
-    CHECK(two.at(p).first == 2);
-    /*--- Same basis in both layouts. ---*/
-    for (int c = 0; c < 4; ++c) CHECK(one.at(p).second[c] == Approx(two.at(p).second[c]).margin(1e-14));
   }
 }

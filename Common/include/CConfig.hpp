@@ -137,7 +137,6 @@ private:
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
   Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
   Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
-  Wall_Sharp_Edge_Normals,  /*!< \brief Separate wall normals at sharp edges of Euler and no-slip walls. */
   Pressure_Based;           /*!< \brief Flag to check if we are using a pressure-based system.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
@@ -9899,12 +9898,6 @@ public:
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
   bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
-
-  /*!
-   * \brief WALL_SHARP_EDGE_NORMALS: at boundary points where the wall folds sharply (e.g. a sharp trailing edge), use the
-   *        normals of the separate face groups instead of their cancelling sum.
-   */
-  bool GetWall_Sharp_Edge_Normals() const { return Wall_Sharp_Edge_Normals; }
 
   /*!
    * \brief Get Compute Average.

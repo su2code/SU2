@@ -26,7 +26,6 @@
  */
 
 #include "../../include/solvers/CNSSolver.hpp"
-#include "../../../Common/include/toolboxes/sharp_edge_normals.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
@@ -503,13 +502,11 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
     for (auto iDim = 0u; iDim < nDim; iDim++)
       UnitNormal[iDim] = -Normal[iDim]/Area;
 
-    /*--- WALL_SHARP_EDGE_NORMALS: at a sharp edge |sum N| is the nearly cancelling sum of the face normals; a prescribed
-     * flux acts on the wetted area (sum of the dual area magnitudes). Integrated heat fluxes keep |sum N|, which is the
-     * area of their normalization (GetSurfaceArea). ---*/
-    if (config->GetWall_Sharp_Edge_Normals() && !config->GetIntegrated_HeatFlux() && (kind_boundary == HEAT_FLUX)) {
-      const auto itA = geometry->sharpEdgeArea[val_marker].find(iVertex);
-      if (itA != geometry->sharpEdgeArea[val_marker].end()) Area = itA->second;
-    }
+    /*--- A prescribed heat flux acts on the vertex area W_m (sum of the vertex's shares of its face-group areas,
+     * which is |sum N| where no face groups are stored, see CGeometry::ComputeBoundaryFaceGroups; at a sharp edge
+     * |sum N| is the nearly cancelling sum of the face normals). GetSurfaceArea sums the same areas for integrated
+     * heat fluxes. ---*/
+    if (kind_boundary == HEAT_FLUX) Area = geometry->GetVertexWettedArea(val_marker, iVertex);
 
     /*--- Apply a weak boundary condition for the energy equation.
      Compute the residual due to the prescribed heat flux.
@@ -731,53 +728,40 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
     }
 
-    /*--- Compute the normal gradient in temperature using Twall ---*/
-
-    su2double dTdn = -(There - Twall)/dist_ij;
-
-    /*--- Apply a weak boundary condition for the energy equation.
-     Compute the residual due to the prescribed heat flux. ---*/
+    /*--- Conducted heat and its Jacobian as sums over the face groups q of the vertex (CGeometry::
+     * ComputeBoundaryFaceGroups; one group with the vertex normal and |sum N| where none are stored): k dT/dn_q a_q
+     * with dT/dn_q = -(T_q - Twall) / d_q, T_q at the group's normal neighbour (off the walls, at the normal distance
+     * d_q), a_q the vertex's share of the group area. At a sharp edge the vertex normal is the nearly cancelling sum of
+     * the face normals and its neighbour is not a wall-normal stencil. CHT interfaces keep the vertex stencil. ---*/
 
     su2double Res_Conv = 0.0;
-    su2double Res_Visc = thermal_conductivity * dTdn * Area;
+    su2double Res_Visc = 0.0;
 
-    /*--- WALL_SHARP_EDGE_NORMALS: at a sharp edge the vertex normal is the nearly cancelling sum of the face normals, so
-     * Point_Normal and the normal distance along it are not a wall-normal stencil, and |sum N| is not the wetted area.
-     * The conducted heat is the sum over the face groups q of k (Twall - T_q) / d_q times the group wetted area, T_q at the
-     * group's normal neighbour (CGeometry::sharpEdgeGroups); without an eligible neighbour in every group the single-normal
-     * stencil above is kept. ---*/
-    su2double areaOverDist = 0.0;
-    bool sharpEdgePoint = false;
-    if (config->GetWall_Sharp_Edge_Normals() && !cht_mode) {
-      const auto itG = geometry->sharpEdgeGroups[val_marker].find(iVertex);
-      if (itG != geometry->sharpEdgeGroups[val_marker].end()) {
-        auto temperature = [&](unsigned long jPoint) { return nodes->GetTemperature(jPoint); };
-        su2double flux = 0.0;
-        if (SharpEdgeNormals::IsothermalFlux(itG->second, thermal_conductivity, Twall, temperature, flux, areaOverDist)) {
-          sharpEdgePoint = true;
-          Res_Visc = flux;
-        }
-      }
+    su2double Density = 0.0, dTdrho = 0.0;
+    if (implicit) {
+      Density = nodes->GetDensity(iPoint);
+      su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[prim_idx.Velocity()]);
+      dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
+
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        Jacobian_i[nDim+1][iVar] = 0.0;
     }
 
-    /*--- Calculate Jacobian for implicit time stepping ---*/
+    const auto nGroups = cht_mode ? 1 : geometry->GetnVertexGroups(val_marker, iVertex);
+    for (unsigned short iGroup = 0; iGroup < nGroups; iGroup++) {
+      su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = Area, dist_q = dist_ij;
+      unsigned long Point_Normal_q = Point_Normal;
+      if (!cht_mode)
+        geometry->GetVertexGroup(val_marker, iVertex, iGroup, GroupNormal, GroupArea, Point_Normal_q, dist_q);
 
-    if (implicit) {
+      const su2double dTdn = -(nodes->GetTemperature(Point_Normal_q) - Twall)/dist_q;
+      Res_Visc += thermal_conductivity * dTdn * GroupArea;
 
-      /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
-
-      su2double Density = nodes->GetDensity(iPoint);
-      su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[prim_idx.Velocity()]);
-      su2double dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
-
-      Jacobian_i[nDim+1][0] = sharpEdgePoint ? thermal_conductivity * areaOverDist * dTdrho
-                                             : thermal_conductivity/dist_ij * dTdrho * Area;
-
-      for (auto jDim = 0u; jDim < nDim; jDim++)
-        Jacobian_i[nDim+1][jDim+1] = 0.0;
-
-      Jacobian_i[nDim+1][nDim+1] = sharpEdgePoint ? thermal_conductivity * areaOverDist * (Gamma-1.0)/(Gas_Constant*Density)
-                                                  : thermal_conductivity/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+      /*--- Jacobian contributions of the weak enforcement of the energy equation. ---*/
+      if (implicit) {
+        Jacobian_i[nDim+1][0] += thermal_conductivity/dist_q * dTdrho * GroupArea;
+        Jacobian_i[nDim+1][nDim+1] += thermal_conductivity/dist_q * (Gamma-1.0)/(Gas_Constant*Density) * GroupArea;
+      }
     }
 
     /*--- If the wall is moving, there are additional residual contributions
