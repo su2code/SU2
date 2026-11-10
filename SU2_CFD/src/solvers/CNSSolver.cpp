@@ -502,11 +502,12 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
     for (auto iDim = 0u; iDim < nDim; iDim++)
       UnitNormal[iDim] = -Normal[iDim]/Area;
 
-    /*--- A prescribed heat flux acts on the vertex area W_m (sum of the vertex's shares of its face-group areas,
-     * which is |sum N| where no face groups are stored, see CGeometry::ComputeBoundaryFaceGroups; at a sharp edge
-     * |sum N| is the nearly cancelling sum of the face normals). GetSurfaceArea sums the same areas for integrated
-     * heat fluxes. ---*/
-    if (kind_boundary == HEAT_FLUX) Area = geometry->GetVertexWettedArea(val_marker, iVertex);
+    /*--- A prescribed heat flux or a heat-transfer flux acts on the vertex area W_m (sum of the vertex's shares of its
+     * face-group areas, which is |sum N| where no face groups are stored, see CGeometry::ComputeBoundaryFaceGroups;
+     * at a sharp edge |sum N| is the nearly cancelling sum of the face normals): residual q W_m, and for heat transfer
+     * q = h (T_inf - T) with the Jacobian h dT/dU W_m. GetSurfaceArea sums the same areas for integrated heat
+     * fluxes. ---*/
+    Area = geometry->GetVertexWettedArea(val_marker, iVertex);
 
     /*--- Apply a weak boundary condition for the energy equation.
      Compute the residual due to the prescribed heat flux.

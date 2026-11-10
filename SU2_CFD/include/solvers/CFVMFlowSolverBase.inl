@@ -2722,7 +2722,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           }
           HeatFlux[iMarker][iVertex] = LocalHeatFlux * RefHeatFlux;
         } else {
-          su2double dTdn = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
+          su2double dTdn = 0.0;
+          for (unsigned short iGroup = 0; iGroup < nGroups; iGroup++) {
+            su2double GroupNormal[MAXNDIM] = {0.0}, GroupArea = 0.0, GroupDist = 0.0;
+            unsigned long GroupNeighbor = 0;
+            geometry->GetVertexGroup(iMarker, iVertex, iGroup, GroupNormal, GroupArea, GroupNeighbor, GroupDist);
+            dTdn += GroupArea / WettedArea * GeometryToolbox::DotProduct(nDim, Grad_Temp, GroupNormal);
+          }
           if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE && !energy) dTdn = 0.0;
           HeatFlux[iMarker][iVertex] = thermal_conductivity * dTdn * RefHeatFlux;
         }
