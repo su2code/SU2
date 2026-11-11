@@ -9,17 +9,19 @@ discrete adjoint and L-BFGS-B from SciPy.
   (`disc_adj_incomp_rans/naca0012`), 14,576 points.
 - **Flow**: incompressible SA, same conditions as the `disc_adj_incomp_rans` NACA0012 test
   (AoA 10 deg); baseline CL = 1.0722, CD = 0.01738.
-- **Target**: `TARGET_INVERSE_CL= 0.95`, a synthetic value that requires beta < 1.
+- **Target**: CL = 0.95, a synthetic value that requires beta < 1.
 
 ## Problem
 
-    J(beta) = (CL - TARGET_INVERSE_CL)^2 + LAMBDA_FIML * sum_i (beta_i - 1)^2
+    OBJECTIVE_FUNCTION= CUSTOM_OBJFUNC
+    CUSTOM_OBJFUNC= 'pow(LIFT - 0.95, 2) + 1e-6 * BETA_REG'
 
 - `KIND_TURB_MODEL= SA_FIML` with `KIND_TRAIN_NN= NONE`: beta is a field, no neural network.
 - beta is read from and written to the column `Beta_FIML` of the flow restart.
-- `OBJECTIVE_FUNCTION= INVERSE_DESIGN_LIFT_FIML` (also `INVERSE_DESIGN_DRAG_FIML` with
-  `TARGET_INVERSE_CD`, and `INVERSE_DESIGN_PRESSURE_FIML` with `INV_DESIGN_CP= YES`).
-- The discrete adjoint writes dJ/dbeta as `Sensitivity_Beta_FIML` to the adjoint volume output and restart.
+- `BETA_REG` is the history output sum_i (beta_i - 1)^2 (group `FIML`). Any history output can enter the
+  expression, for instance `DRAG` or `INVERSE_DESIGN_PRESSURE` (Cp difference to `TargetCp.dat`, group `CP_DIFF`).
+- The discrete adjoint writes dJ/dbeta as `Sensitivity_Beta_FIML` to the adjoint volume output and to
+  `restart_adj_custom.csv`.
 
 ## Running
 
@@ -30,15 +32,16 @@ discrete adjoint and L-BFGS-B from SciPy.
 
 2. Inversion (needs `SU2_CFD` and `SU2_CFD_AD`, built with `-Denable-autodiff=true`):
 
-       python3 fiml_inversion.py -n 8 --maxiter 10 --adjoint_iter 3000
+       python3 ../fiml_inversion.py -n 8 --maxiter 10 --adjoint_iter 3000
 
    Each evaluation runs the direct solver from the previous restart, then the adjoint. The script
-   logs J, CL and CD per evaluation to `inversion_history.csv`, keeps every restart as
-   `restart_eval_NNN.csv`, and writes the final field to `beta_inverted.dat` (ordered by global point index).
+   logs J and the history fields given with `--fields` per evaluation to `inversion_history.csv`, keeps beta
+   of every evaluation as `x_eval_NNN.npy`, and writes the final field to `beta_inverted.dat` (ordered by
+   global point index).
 
 ## Gradient verification
 
-Central differences along three directions d, at a non-uniform beta and `LAMBDA_FIML= 1e-4`,
+Central differences along three directions d, at a non-uniform beta and a weight of 1e-4 on `BETA_REG`,
 against g.d from the adjoint (direct runs converged to rms[P] = -12):
 
 | Direction | FD, eps = 1e-2 | Adjoint | Ratio |
@@ -52,7 +55,7 @@ remaining differences are finite-difference error (they grow at eps = 1e-3).
 
 ## Result
 
-`fiml_inversion.py -n 8 --maxiter 10 --adjoint_iter 3000`, starting from beta = 1, `LAMBDA_FIML= 1e-6`:
+`../fiml_inversion.py -n 8 --maxiter 10 --adjoint_iter 3000`, starting from beta = 1, weight 1e-6 on `BETA_REG`:
 
 | Evaluation | J | CL | CD |
 |---|---|---|---|
@@ -63,5 +66,5 @@ remaining differences are finite-difference error (they grow at eps = 1e-3).
 
 CL reaches the target within 9 evaluations (14 in total, about 2.4 min each on 8 ranks); J is then
 the regularization term. beta differs from 1 by more than 0.1 at 368 points, all in the boundary
-layer (|y| < 0.07); at 18 points beta is below 0.1. A larger `LAMBDA_FIML` gives a smoother, less
+layer (|y| < 0.07); at 18 points beta is below 0.1. A larger weight on `BETA_REG` gives a smoother, less
 intrusive correction.

@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""Classic FIML field inversion: L-BFGS-B on beta at every point, gradients from the SU2 discrete adjoint.
+"""FIML inversion with L-BFGS-B and gradients from the SU2 discrete adjoint.
 
-beta lives in the Beta_FIML column of the ASCII flow restart. Each evaluation runs the direct solver
-(objective = ComboObj in the history file) and the discrete adjoint (Sensitivity_Beta_FIML in the adjoint restart).
+--mode field:   the design variables are beta at every point (KIND_TRAIN_NN= NONE). beta lives in the
+                Beta_FIML column of the ASCII flow restart, the gradient is Sensitivity_Beta_FIML.
+--mode weights: the design variables are the network weights in nn_weights.dat (KIND_TRAIN_NN= WEIGHTS),
+                the gradient is nn_weights_grad.dat.
+
+Each evaluation runs the direct solver from the previous restart, then the discrete adjoint, which restarts
+from the previous adjoint solution when there is one. The objective is ComboObj of the last history
+line, normally a CUSTOM_OBJFUNC expression.
 """
 
 import argparse
@@ -49,13 +55,13 @@ def read_column(path, name):
     return out
 
 
-def write_beta(path, beta):
-    """Replace the Beta_FIML column of an SU2 ASCII restart."""
+def write_column(path, name, values):
+    """Replace a column of an SU2 ASCII restart."""
     with open(path) as f:
         rows = list(csv.reader(f))
-    col = [h.strip().strip('"') for h in rows[0]].index("Beta_FIML")
+    col = [h.strip().strip('"') for h in rows[0]].index(name)
     for r in rows[1:]:
-        r[col] = f"{beta[int(r[0])]:.15e}"
+        r[col] = f"{values[int(r[0])]:.15e}"
     with open(path, "w") as f:
         f.write(",".join(rows[0]) + "\n")
         for r in rows[1:]:
@@ -67,19 +73,80 @@ def last_history(path):
     return {h: float(v) for h, v in zip(header, rows[-1])}
 
 
-class FieldInversion:
+def read_weights(path):
+    """Header and scaling lines, and the weights of an nn_weights.dat file."""
+    with open(path) as f:
+        lines = f.read().splitlines()
+    return lines[:2], np.array([float(v) for v in lines[2:] if v.strip()])
+
+
+def write_weights(path, head, w):
+    with open(path, "w") as f:
+        f.write("\n".join(head) + "\n")
+        f.writelines(f"{v:.15e}\n" for v in w)
+
+
+class Inversion:
     def __init__(self, args):
         self.args = args
         self.n_eval = 0
+        self.best = None
         self.direct_cfg = "inv_direct.cfg"
         self.adjoint_cfg = "inv_adjoint.cfg"
+        self.adjoint_warm_cfg = "inv_adjoint_warm.cfg"
         write_config(args.config, self.direct_cfg, {"MATH_PROBLEM": "DIRECT", "RESTART_SOL": "YES"})
-        write_config(args.config, self.adjoint_cfg,
-                     {"MATH_PROBLEM": "DISCRETE_ADJOINT", "RESTART_SOL": "NO", "ITER": str(args.adjoint_iter),
-                      "CONV_FIELD": "RMS_ADJ_PRESSURE", "CONV_RESIDUAL_MINVAL": str(args.adjoint_tol),
-                      "OUTPUT_FILES": "RESTART_ASCII"})
-        self.log = open("inversion_history.csv", "w")
-        self.log.write("eval,J,CL,CD,beta_min,beta_max\n")
+        adjoint = {"MATH_PROBLEM": "DISCRETE_ADJOINT", "RESTART_SOL": "NO", "ITER": str(args.adjoint_iter),
+                   "CONV_FIELD": "RMS_ADJ_PRESSURE", "CONV_RESIDUAL_MINVAL": str(args.adjoint_tol),
+                   "OUTPUT_FILES": "RESTART_ASCII", "CONV_FILENAME": "history_adjoint",
+                   "SCREEN_OUTPUT": "INNER_ITER, RMS_ADJ_PRESSURE, RMS_ADJ_NU_TILDE"}
+        self.adjoint = adjoint
+        self.adjoint_cfl = args.adjoint_cfl
+        self.write_adjoint_configs()
+        if args.mode == "weights":
+            self.weight_head, _ = read_weights(args.weights)
+        self.log = open(args.log, "w")
+        self.log.write("eval,J," + ",".join(args.fields) + ",beta_min,beta_max,grad_norm,adjoint_rms_p\n")
+
+    def write_adjoint_configs(self):
+        adjoint = dict(self.adjoint)
+        if self.adjoint_cfl:
+            adjoint.update({"CFL_NUMBER": str(self.adjoint_cfl), "CFL_ADAPT": "NO"})
+        write_config(self.args.config, self.adjoint_cfg, adjoint)
+        adjoint.update({"RESTART_SOL": "YES", "ITER": str(self.args.adjoint_iter_warm or self.args.adjoint_iter)})
+        write_config(self.args.config, self.adjoint_warm_cfg, adjoint)
+
+    def run_adjoint(self):
+        """Run the adjoint and return its gradient and final rms[A_P], or None if every attempt diverged.
+        Retries restart from the previous adjoint solution at a quarter of the CFL, the last one from zero."""
+        backup = self.args.adjoint_restart + ".bak"
+        if os.path.exists(self.args.adjoint_restart):
+            shutil.copy(self.args.adjoint_restart, backup)
+        self.adjoint_cfl = self.args.adjoint_cfl
+        for attempt in range(self.args.adjoint_retries + 1):
+            if attempt:
+                self.adjoint_cfl = 0.25 * (self.adjoint_cfl or 1.0)
+                if os.path.exists(backup) and attempt < self.args.adjoint_retries:
+                    shutil.copy(backup, self.args.adjoint_restart)
+                elif os.path.exists(self.args.adjoint_restart):
+                    os.remove(self.args.adjoint_restart)
+            self.write_adjoint_configs()
+            warm = os.path.exists(self.args.adjoint_restart)
+            log = f"log_adjoint_{self.n_eval:03d}" + (f"_retry{attempt}" if attempt else "") + ".txt"
+            self.run(self.args.su2_cfd_ad, self.adjoint_warm_cfg if warm else self.adjoint_cfg, log)
+            header, rows = read_csv("history_adjoint.csv")
+            col = header.index("rms[A_P]")
+            rms_start, rms_end = float(rows[0][col]), float(rows[-1][col])
+            if self.args.mode == "field":
+                grad = read_column(self.args.adjoint_restart, "Sensitivity_Beta_FIML")
+            else:
+                grad = np.loadtxt("nn_weights_grad.dat")
+            if np.all(np.isfinite(grad)) and (rms_end < rms_start - 1 or rms_end < self.args.adjoint_accept):
+                return grad, rms_end
+            print(f"eval {self.n_eval}: adjoint did not converge at CFL {self.adjoint_cfl:g} "
+                  f"(rms[A_P] {rms_start:.2f} -> {rms_end:.2f})", flush=True)
+        if os.path.exists(backup):
+            shutil.copy(backup, self.args.adjoint_restart)
+        return None
 
     def run(self, exe, cfg, log):
         cmd = ["mpirun", "-n", str(self.args.np), exe, cfg]
@@ -87,45 +154,103 @@ class FieldInversion:
             if subprocess.call(cmd, stdout=f, stderr=subprocess.STDOUT) != 0:
                 sys.exit(f"{' '.join(cmd)} failed, see {log}")
 
-    def evaluate(self, beta):
-        write_beta(self.args.restart, beta)
-        self.run(self.args.su2_cfd, self.direct_cfg, "log_direct.txt")
-        hist = last_history("history.csv")
-        self.run(self.args.su2_cfd_ad, self.adjoint_cfg, "log_adjoint.txt")
-        grad = read_column(self.args.adjoint_restart, "Sensitivity_Beta_FIML")
+    def evaluate(self, x):
+        if self.args.mode == "field":
+            write_column(self.args.restart, "Beta_FIML", x)
+        else:
+            write_weights(self.args.weights, self.weight_head, x)
 
-        shutil.copy(self.args.restart, f"restart_eval_{self.n_eval:03d}.csv")
-        self.log.write(f"{self.n_eval},{hist['ComboObj']:.10e},{hist['CL']:.8f},{hist['CD']:.8f},"
-                       f"{beta.min():.6f},{beta.max():.6f}\n")
+        self.run(self.args.su2_cfd, self.direct_cfg, f"log_direct_{self.n_eval:03d}.txt")
+        hist = last_history("history.csv")
+        shutil.copy("history.csv", f"history_eval_{self.n_eval:03d}.csv")
+        J = hist["ComboObj"]
+        adjoint = self.run_adjoint()
+        if adjoint is None:
+            if self.best is None or J <= self.best[0]:
+                sys.exit(f"eval {self.n_eval}: no adjoint at a point that improves J")
+            # The gradient of the best point keeps the line search backtracking from this trial point.
+            print(f"eval {self.n_eval}: J above the best, using the gradient of the best point", flush=True)
+            grad, adj_rms = self.best[1], float("nan")
+        else:
+            grad, adj_rms = adjoint
+            if self.best is None or J < self.best[0]:
+                self.best = (J, grad)
+
+        beta = read_column(self.args.restart, "Beta_FIML")
+        np.save(f"x_eval_{self.n_eval:03d}.npy", x)
+        terms = ",".join(f"{hist[k]:.10e}" for k in self.args.fields)
+        self.log.write(f"{self.n_eval},{J:.10e},{terms},{beta.min():.6f},{beta.max():.6f},"
+                       f"{np.linalg.norm(grad):.6e},{adj_rms:.3f}\n")
         self.log.flush()
-        print(f"eval {self.n_eval}: J = {hist['ComboObj']:.6e}, CL = {hist['CL']:.6f}, |grad| = "
-              f"{np.linalg.norm(grad):.3e}", flush=True)
+        print(f"eval {self.n_eval}: J = {J:.6e}, " +
+              ", ".join(f"{k} = {hist[k]:.6g}" for k in self.args.fields), flush=True)
         self.n_eval += 1
-        return self.args.scale * hist["ComboObj"], self.args.scale * grad
+        return self.args.scale * J, self.args.scale * grad
 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("-f", "--config", default="config_inversion.cfg")
     p.add_argument("-n", "--np", type=int, default=8, help="MPI ranks")
+    p.add_argument("--mode", choices=("field", "weights"), default="field")
     p.add_argument("--su2_cfd", default="SU2_CFD")
     p.add_argument("--su2_cfd_ad", default="SU2_CFD_AD")
-    p.add_argument("--restart", default="restart_flow.csv", help="flow restart holding Beta_FIML")
-    p.add_argument("--adjoint_restart", default="restart_adj.csv")
+    p.add_argument("--restart", default="restart_flow.csv", help="ASCII flow restart holding Beta_FIML")
+    p.add_argument("--adjoint_restart", default="restart_adj_custom.csv")
+    p.add_argument("--weights", default="nn_weights.dat")
     p.add_argument("--adjoint_iter", type=int, default=5000)
     p.add_argument("--adjoint_tol", type=float, default=-11)
+    p.add_argument("--adjoint_cfl", type=float, help="fixed CFL of the adjoint, which does not adapt it")
+    p.add_argument("--adjoint_iter_warm", type=int,
+                   help="adjoint iterations from the previous adjoint solution, after the first evaluation")
+    p.add_argument("--adjoint_retries", type=int, default=2, help="reruns of a diverged adjoint at lower CFL")
+    p.add_argument("--adjoint_accept", type=float, default=-3.0,
+                   help="final rms[A_P] that accepts an adjoint run that fell less than one decade")
+    p.add_argument("--x0", help="initial design vector (.npy), instead of the restart or weight file")
     p.add_argument("--maxiter", type=int, default=20)
     p.add_argument("--scale", type=float, default=1.0, help="objective scale seen by the optimizer")
+    p.add_argument("--x_scale", type=float, default=1.0,
+                   help="the optimizer works on x / x_scale, so its first step has length x_scale")
     p.add_argument("--beta_bounds", type=float, nargs=2, default=(0.0, 2.0))
+    p.add_argument("--fields", nargs="*", default=["CL", "CD", "Beta_Reg"], help="history columns to log")
+    p.add_argument("--log", default="inversion_history.csv")
+    p.add_argument("--output", default="beta_inverted.dat")
     args = p.parse_args()
 
-    inv = FieldInversion(args)
-    beta0 = read_column(args.restart, "Beta_FIML")
-    result = minimize(inv.evaluate, beta0, jac=True, method="L-BFGS-B",
-                      bounds=[tuple(args.beta_bounds)] * beta0.size,
+    inv = Inversion(args)
+    if args.mode == "field":
+        x0 = read_column(args.restart, "Beta_FIML")
+        bounds = [tuple(args.beta_bounds)] * x0.size
+    else:
+        _, x0 = read_weights(args.weights)
+        bounds = None
+    if args.x0:
+        x0 = np.load(args.x0)
+    s = args.x_scale
+    if bounds:
+        bounds = [(lo / s, hi / s) for lo, hi in bounds]
+
+    def scaled(z):
+        J, grad = inv.evaluate(s * z)
+        return J, s * grad
+
+    result = minimize(scaled, x0 / s, jac=True, method="L-BFGS-B", bounds=bounds,
                       options={"maxiter": args.maxiter, "ftol": 1e-12, "gtol": 1e-14})
     print(result.message)
-    np.savetxt("beta_inverted.dat", result.x)
+    result.x = s * result.x
+
+    # The restart must hold the flow of the optimum, not of the last line-search trial.
+    last = np.load(f"x_eval_{inv.n_eval - 1:03d}.npy")
+    if not np.array_equal(last, result.x):
+        if args.mode == "field":
+            write_column(args.restart, "Beta_FIML", result.x)
+        else:
+            write_weights(args.weights, inv.weight_head, result.x)
+        inv.run(args.su2_cfd, inv.direct_cfg, "log_direct_final.txt")
+    if args.mode == "field":
+        np.savetxt(args.output, result.x)
+    else:
+        write_weights(args.weights, inv.weight_head, result.x)
 
 
 if __name__ == "__main__":

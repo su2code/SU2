@@ -49,7 +49,7 @@ All three share the same numerics:
 1. Run the baseline: `mpirun -n 8 SU2_CFD config_sa_baseline.cfg`.
 2. Provide `beta_target.dat`: one beta value per line, ordered by global point index
    (113,747 lines). Points without a value get beta = 1.
-3. Train: `mpirun -n 8 SU2_CFD config_fiml_training.cfg`. One epoch runs per solver
+3. Train: `mpirun -n 8 SU2_CFD config_fiml_training.cfg`. One Adam step runs per solver
    iteration after `ITER_START_NN`; `nn_weights.dat` is written after the last epoch.
 4. Run forward: `mpirun -n 8 SU2_CFD config_fiml_forward.cfg`.
 
@@ -98,11 +98,10 @@ Starting from the first row, refining the wall-normal direction by a factor 1.4 
 Refining all spacings along the wall and the wake by factors 1.4 and 2 gives CL 1.4567 and 1.4853,
 which extrapolates to a grid-converged CL of about 1.515, 1.3% above the default mesh.
 
-## Not yet implemented
+## Field inversion
 
-- Field inversion on this case: the inversion loop works (see `../FIML_Classic_NACA0012`), but an S809
-  solve at 14.24 deg from free stream takes about 10,000 iterations.
-- `KIND_TRAIN_NN= WEIGHTS`, `SA_FIML_CORRECTION` other than `PRODUCTION`.
+`../S809_FIML_Inversion` inverts beta against the measured upper-surface Cp and lift on this mesh, trains the
+network on the inverted field, and optimizes the network weights with the adjoint (`KIND_TRAIN_NN= WEIGHTS`).
 
 ## References
 
