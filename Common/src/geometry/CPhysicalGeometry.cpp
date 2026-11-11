@@ -4316,6 +4316,40 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
     if (((config->GetSolid_Wall(iMarker) || Boundary == LOAD_BOUNDARY || Boundary == DISPLACEMENT_BOUNDARY) &&
          Monitoring == YES) ||
         fea) {
+      if (!fea) {
+        /* Count each face contribution before opposite directions can cancel at a vertex. */
+        for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; ++iElem) {
+          const auto* face = bound[iMarker][iElem];
+          for (unsigned short iNode = 0; iNode < face->GetnNodes(); ++iNode) {
+            const auto point = face->GetNode(iNode);
+            if (!nodes->GetDomain(point)) continue;
+            const auto* x = nodes->GetCoord(point);
+            const auto* center = face->GetCG();
+            su2double normal[3] = {0.0, 0.0, 0.0};
+            if (nDim == 2) {
+              const auto* edgeCenter = (iNode == 0) ? center : x;
+              const auto* elemCenter = (iNode == 0) ? x : center;
+              normal[0] = elemCenter[1] - edgeCenter[1];
+              normal[1] = -(elemCenter[0] - edgeCenter[0]);
+            } else {
+              for (unsigned short k = 0; k < face->GetnNeighbor_Nodes(iNode); ++k) {
+                const auto* y = nodes->GetCoord(face->GetNode(face->GetNeighbor_Nodes(iNode, k)));
+                su2double midpoint[3], a[3], b[3], cross[3];
+                for (unsigned short d = 0; d < 3; ++d) midpoint[d] = 0.5 * (x[d] + y[d]);
+                const auto* edgeCenter = (k == 0) ? center : midpoint;
+                const auto* faceCenter = (k == 0) ? midpoint : center;
+                GeometryToolbox::Distance(3, x, edgeCenter, a);
+                GeometryToolbox::Distance(3, faceCenter, edgeCenter, b);
+                GeometryToolbox::CrossProduct(a, b, cross);
+                for (unsigned short d = 0; d < 3; ++d) normal[d] += 0.5 * cross[d];
+              }
+            }
+            if (normal[0] < 0) PositiveXArea -= normal[0];
+            if (normal[1] < 0) PositiveYArea -= normal[1];
+            if (nDim == 3 && normal[2] < 0) PositiveZArea -= normal[2];
+          }
+        }
+      }
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
 
@@ -4332,9 +4366,11 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
 
           WettedArea += AxiFactor * GeometryToolbox::Norm(nDim, Normal);
 
-          if (Normal[0] < 0) PositiveXArea -= Normal[0];
-          if (Normal[1] < 0) PositiveYArea -= Normal[1];
-          if ((nDim == 3) && (Normal[2] < 0)) PositiveZArea -= Normal[2];
+          if (fea) {
+            if (Normal[0] < 0) PositiveXArea -= Normal[0];
+            if (Normal[1] < 0) PositiveYArea -= Normal[1];
+            if ((nDim == 3) && (Normal[2] < 0)) PositiveZArea -= Normal[2];
+          }
 
           if (CoordX < MinCoordX) MinCoordX = CoordX;
           if (CoordX > MaxCoordX) MaxCoordX = CoordX;
