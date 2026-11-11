@@ -214,12 +214,19 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   AddAerodynamicCoefficients(config);
 
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    AddHistoryOutput("BETA_REG", "Beta_Reg", ScreenOutputFormat::SCIENTIFIC, "FIML",
+                     "Sum of (beta - 1)^2 of the FIML correction", HistoryFieldType::COEFFICIENT);
+  }
+
   if (heat || weakly_coupled_heat) {
     AddHeatCoefficients(config);
     AddHistoryOutput("AVG_TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Average temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   }
 
   AddRotatingFrameCoefficients();
+
+  AddCpInverseDesignOutput();
 
 }
 
@@ -318,6 +325,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   /*--- Set rotating frame coefficients --- */
 
   SetRotatingFrameCoefficients(flow_solver);
+
+  /*--- Set Cp diff fields ---*/
+
+  SetCpInverseDesign(flow_solver, geometry, config);
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
 

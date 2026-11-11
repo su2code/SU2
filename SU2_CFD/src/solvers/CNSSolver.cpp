@@ -283,10 +283,6 @@ void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver** solver) {
 
   CEulerSolver::Evaluate_ObjFunc(config, nullptr);
 
-  if (IsFIMLObjective(config->GetKind_ObjFunc(0))) {
-    Total_ComboObj += config->GetWeight_ObjFunc(0) * solver[TURB_SOL]->ComputeFIMLRegularization(config);
-  }
-
   /*--- Evaluate objective functions specific to NS solver ---*/
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {

@@ -1252,6 +1252,9 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
     case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[TURB_SOL]->GetRes_Max(0)));
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+        SetHistoryOutputValue("BETA_REG", solver[TURB_SOL]->ComputeFIMLRegularization(config));
+      }
       if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
         SetHistoryOutputValue("RMS_STOCH_VAR-X", log10(solver[TURB_SOL]->GetRes_RMS(1)));
         SetHistoryOutputValue("RMS_STOCH_VAR-Y", log10(solver[TURB_SOL]->GetRes_RMS(2)));
@@ -1612,6 +1615,10 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
 
   if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
     AddVolumeOutput("BETA_FIML", "Beta_FIML", "FIML", "FIML correction factor of the SA production term");
+    AddVolumeOutput("FIML_PROD_DEST", "FIML_Prod_Dest", "FIML_FEATURES", "SA production over destruction");
+    AddVolumeOutput("FIML_CHI", "FIML_Chi", "FIML_FEATURES", "Ratio of nu_tilde to the laminar viscosity");
+    AddVolumeOutput("FIML_DELTA", "FIML_Delta", "FIML_FEATURES", "Eddy stress over the flat-plate wall stress");
+    AddVolumeOutput("FIML_STRAIN_VORT", "FIML_Strain_Vort", "FIML_FEATURES", "Strain rate over vorticity");
   }
 
   // Hybrid RANS-LES
@@ -1709,6 +1716,12 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
   if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
     SetVolumeOutputValue("BETA_FIML", iPoint, Node_Turb->GetBetaFiml(iPoint));
+    su2double features[4];
+    solver[TURB_SOL]->GetFIMLFeatures(iPoint, solver, features);
+    SetVolumeOutputValue("FIML_PROD_DEST", iPoint, features[0]);
+    SetVolumeOutputValue("FIML_CHI", iPoint, features[1]);
+    SetVolumeOutputValue("FIML_DELTA", iPoint, features[2]);
+    SetVolumeOutputValue("FIML_STRAIN_VORT", iPoint, features[3]);
   }
 
   switch (config->GetKind_Trans_Model()) {
@@ -2017,7 +2030,11 @@ void CFlowOutput::SetCpInverseDesign(CSolver *solver, const CGeometry *geometry,
     return;
   }
 
-  if ((config->GetInnerIter() == 0) || config->GetDiscrete_Adjoint()) {
+  if ((config->GetInnerIter() == 0) || config->GetDiscrete_Adjoint() || cpTargetSet.empty()) {
+    cpTargetSet.resize(geometry->GetnMarker());
+    for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); ++iMarker)
+      cpTargetSet[iMarker].assign(geometry->GetnVertex(iMarker), false);
+
     string text_line;
     getline(Surface_file, text_line);
 
@@ -2045,6 +2062,7 @@ void CFlowOutput::SetCpInverseDesign(CSolver *solver, const CGeometry *geometry,
 
           if (iVertex >= 0) {
             solver->SetCPressureTarget(iMarker, iVertex, PressureCoeff);
+            cpTargetSet[iMarker][iVertex] = true;
             set = true;
           }
         }
@@ -2066,7 +2084,7 @@ void CFlowOutput::SetCpInverseDesign(CSolver *solver, const CGeometry *geometry,
       for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (!geometry->nodes->GetDomain(iPoint)) continue;
+        if (!geometry->nodes->GetDomain(iPoint) || !cpTargetSet[iMarker][iVertex]) continue;
 
         const auto Cp = solver->GetCPressure(iMarker, iVertex);
         const auto CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
@@ -2853,9 +2871,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           else
             file << "Menter's SST\n";
          break;
-        case TURB_MODEL::SST_FIML:
-          file << "Menter's SST with FIML correction\n";
-          break;
       }
       if (transition) {
         file << "Transition model: ";

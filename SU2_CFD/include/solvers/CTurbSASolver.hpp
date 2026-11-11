@@ -60,6 +60,21 @@ private:
   bool filter_shield = false;                  /*!< \brief Apply spatial filtering */
   vector<bool> nn_filtered;                    /*!< \brief Points excluded by the filter in the last forward pass. */
   su2double tau_wall_ref = 1.0;                /*!< \brief Flat-plate wall shear stress that normalizes the Delta feature. */
+  vector<su2double> adam_m, adam_v;            /*!< \brief Adam moments of the weights, in file order. */
+  unsigned long adam_step = 0;                 /*!< \brief Number of Adam updates. */
+
+  /*!
+   * \brief Call f(layer, i, j) for every weight, in the order of nn_weights.dat (bias last in each layer).
+   */
+  template <class F>
+  void ForEachWeight(F&& f) const {
+    for (unsigned short layer = 0; layer <= n_hidden_layers; layer++) {
+      const unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
+      const unsigned short n_to = (layer == n_hidden_layers) ? 1 : n_neurons;
+      for (unsigned short i = 0; i <= n_from; i++)
+        for (unsigned short j = 0; j < n_to; j++) f(layer, i, j);
+    }
+  }
 
   /*!
    * \brief Initialize neural network weights and structure.
@@ -79,11 +94,9 @@ private:
    * \brief Compute neural network input features at a point.
    * \param[in] iPoint - Grid point index.
    * \param[in] solver_container - Container with all solvers.
-   * \param[in] geometry - Geometrical definition.
    * \param[out] features - Array of 4 feature values.
    */
-  void ComputeNNInputFeatures(unsigned long iPoint, CSolver** solver_container,
-                               CGeometry* geometry, su2double* features) const;
+  void ComputeNNInputFeatures(unsigned long iPoint, const CSolver* const* solver_container, su2double* features) const;
 
   /*!
    * \brief Apply Box-Cox transform and z-score normalization to input features.
@@ -121,7 +134,7 @@ private:
   void BackwardPropagate(const CConfig* config, CSolver** solver_container, CGeometry* geometry);
 
   /*!
-   * \brief Update neural network weights using gradient descent.
+   * \brief Update the neural network weights with one Adam step.
    * \param[in] learning_rate - Learning rate for weight update.
    */
   void UpdateWeights(su2double learning_rate);
@@ -266,11 +279,32 @@ public:
                       unsigned short iMesh) override;
 
   /*!
-   * \brief Regularization LAMBDA_FIML * sum of (beta - 1)^2 over all domain points.
+   * \brief Sum of (beta - 1)^2 over all domain points, the history output BETA_REG.
    * \param[in] config - Definition of the particular problem.
    * \return Global value of the regularization term.
    */
   su2double ComputeFIMLRegularization(const CConfig* config) const override;
+
+  /*!
+   * \brief Unscaled FIML input features at a point.
+   */
+  void GetFIMLFeatures(unsigned long iPoint, const CSolver* const* solver_container,
+                       su2double* features) const override;
+
+  /*!
+   * \brief Register the neural network weights as AD inputs, or reset their AD indices.
+   */
+  void RegisterNNWeights(bool reset) override;
+
+  /*!
+   * \brief Store the adjoints of the neural network weights.
+   */
+  void ExtractNNWeightAdjoints() override;
+
+  /*!
+   * \brief Write the objective gradient with respect to the weights, summed over ranks, in file order.
+   */
+  void WriteNNWeightGradients(const string& filename) const override;
 
   /*!
    * \brief Compute the spatial integration using the CScalarFlux_SA edge kernel, which computes

@@ -1084,14 +1084,12 @@ enum class TURB_MODEL {
   SA,        /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
   SA_FIML,   /*!< \brief Spalart-Allmaras with Field Inversion and Machine Learning correction. */
-  SST_FIML,  /*!< \brief Menter SST with Field Inversion and Machine Learning correction (future). */
 };
 static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("NONE", TURB_MODEL::NONE)
   MakePair("SA", TURB_MODEL::SA)
   MakePair("SST", TURB_MODEL::SST)
   MakePair("SA_FIML", TURB_MODEL::SA_FIML)
-  MakePair("SST_FIML", TURB_MODEL::SST_FIML)
 };
 
 /*!
@@ -1113,7 +1111,6 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
     case TURB_MODEL::SA_FIML:
       return TURB_FAMILY::SA;
     case TURB_MODEL::SST:
-    case TURB_MODEL::SST_FIML:
       return TURB_FAMILY::KW;
   }
   return TURB_FAMILY::NONE;
@@ -1380,22 +1377,6 @@ inline SA_ParsedOptions ParseSAOptions(const SA_OPTIONS *SA_Options, unsigned sh
 }
 
 /*!
- * \brief Types of SA FIML corrections
- */
-enum class SA_FIML_CORRECTION {
-  PRODUCTION,  /*!< \brief Apply beta to SA production term. */
-  KAPPA,       /*!< \brief Apply beta to SA von Karman constant. */
-  APG,         /*!< \brief Apply beta to SA von Karman constant only in denominator of r term (APG correction). */
-  APGR,        /*!< \brief Apply beta to SA von Karman constant only in denominator of r term when r < threshold. */
-};
-static const MapType<std::string, SA_FIML_CORRECTION> SA_Fiml_Correction_Map = {
-  MakePair("PRODUCTION", SA_FIML_CORRECTION::PRODUCTION)
-  MakePair("KAPPA", SA_FIML_CORRECTION::KAPPA)
-  MakePair("APG", SA_FIML_CORRECTION::APG)
-  MakePair("APGR", SA_FIML_CORRECTION::APGR)
-};
-
-/*!
  * \brief Types of neural network training for FIML
  */
 enum class NN_TRAIN_METHOD {
@@ -1407,24 +1388,6 @@ static const MapType<std::string, NN_TRAIN_METHOD> NN_Train_Method_Map = {
   MakePair("NONE", NN_TRAIN_METHOD::NONE)
   MakePair("BACKPROP", NN_TRAIN_METHOD::BACKPROP)
   MakePair("WEIGHTS", NN_TRAIN_METHOD::WEIGHTS)
-};
-
-/*!
- * \brief Types of neural network input scaling for FIML
- */
-enum class NN_INPUT_SCALING {
-  NO_SCALE,     /*!< \brief No scaling of neural network inputs. */
-  MIN_MAX,      /*!< \brief Min-max scaling to [0,1]. */
-  Z_SCALE,      /*!< \brief Z-score (standardization) scaling. */
-  Q_TRANSFORM,  /*!< \brief Quantile transform (inverse CDF). */
-  BOX_COX,      /*!< \brief Box-Cox power transform. */
-};
-static const MapType<std::string, NN_INPUT_SCALING> NN_Input_Scaling_Map = {
-  MakePair("NO_SCALE", NN_INPUT_SCALING::NO_SCALE)
-  MakePair("MIN_MAX", NN_INPUT_SCALING::MIN_MAX)
-  MakePair("Z_SCALE", NN_INPUT_SCALING::Z_SCALE)
-  MakePair("Q_TRANSFORM", NN_INPUT_SCALING::Q_TRANSFORM)
-  MakePair("BOX_COX", NN_INPUT_SCALING::BOX_COX)
 };
 
 /*!
@@ -2335,9 +2298,6 @@ enum ENUM_OBJECTIVE {
   EFFICIENCY = 4,               /*!< \brief Efficiency objective function definition. */
   INVERSE_DESIGN_PRESSURE = 5,  /*!< \brief Pressure objective function definition (inverse design). */
   INVERSE_DESIGN_HEATFLUX = 6,  /*!< \brief Heat flux objective function definition (inverse design). */
-  INVERSE_DESIGN_PRESSURE_FIML = 38, /*!< \brief Inverse pressure design with regularization on FIML correction. */
-  INVERSE_DESIGN_LIFT_FIML = 40,     /*!< \brief Inverse design based on target lift with regularization on FIML correction. */
-  INVERSE_DESIGN_DRAG_FIML = 42,     /*!< \brief Inverse design based on target drag with regularization on FIML correction. */
   TOTAL_HEATFLUX = 7,           /*!< \brief Total heat flux. */
   MAXIMUM_HEATFLUX = 8,         /*!< \brief Maximum heat flux. */
   AVG_TEMPERATURE = 70,         /*!< \brief Total averaged temperature. */
@@ -2383,9 +2343,6 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("EFFICIENCY", EFFICIENCY)
   MakePair("INVERSE_DESIGN_PRESSURE", INVERSE_DESIGN_PRESSURE)
   MakePair("INVERSE_DESIGN_HEATFLUX", INVERSE_DESIGN_HEATFLUX)
-  MakePair("INVERSE_DESIGN_PRESSURE_FIML", INVERSE_DESIGN_PRESSURE_FIML)
-  MakePair("INVERSE_DESIGN_LIFT_FIML", INVERSE_DESIGN_LIFT_FIML)
-  MakePair("INVERSE_DESIGN_DRAG_FIML", INVERSE_DESIGN_DRAG_FIML)
   MakePair("MOMENT_X", MOMENT_X_COEFFICIENT)
   MakePair("MOMENT_Y", MOMENT_Y_COEFFICIENT)
   MakePair("MOMENT_Z", MOMENT_Z_COEFFICIENT)
@@ -2424,14 +2381,6 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
   MakePair("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 };
-
-/*!
- * \brief Check whether an objective includes the FIML regularization term.
- */
-inline bool IsFIMLObjective(unsigned short kind_objfunc) {
-  return kind_objfunc == INVERSE_DESIGN_PRESSURE_FIML || kind_objfunc == INVERSE_DESIGN_LIFT_FIML ||
-         kind_objfunc == INVERSE_DESIGN_DRAG_FIML;
-}
 
 /*!
  * \brief Types of grid file formats
@@ -2638,7 +2587,6 @@ enum ENUM_PARAM {
   ROTATE_GRID = 51,           /*!< \brief Rotate the volume grid */
   SCALE_GRID = 52,            /*!< \brief Scale the volume grid. */
   ANGLE_OF_ATTACK = 101,      /*!< \brief Angle of attack for airfoils. */
-  FIML = 103                  /*!< \brief FIML correction - design variable at every point or NN weights. */
 };
 static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("FFD_SETTING", FFD_SETTING)
@@ -2675,7 +2623,6 @@ static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("TRANSLATE_GRID", TRANSLATE_GRID)
   MakePair("ROTATE_GRID", ROTATE_GRID)
   MakePair("SCALE_GRID", SCALE_GRID)
-  MakePair("FIML", FIML)
 };
 
 /*!

@@ -2869,14 +2869,7 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       objFun += weight * TotalCoeff.CEff;
       break;
     case INVERSE_DESIGN_PRESSURE:
-    case INVERSE_DESIGN_PRESSURE_FIML:
       objFun += weight * Total_CpDiff;
-      break;
-    case INVERSE_DESIGN_LIFT_FIML:
-      objFun += weight * pow(TotalCoeff.CL - config.GetTarget_Inverse_CL(), 2);
-      break;
-    case INVERSE_DESIGN_DRAG_FIML:
-      objFun += weight * pow(TotalCoeff.CD - config.GetTarget_Inverse_CD(), 2);
       break;
     case INVERSE_DESIGN_HEATFLUX:
       objFun += weight * Total_HeatFluxDiff;

@@ -792,24 +792,15 @@ private:
   unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
 
   /* FIML configuration variables */
-  SA_FIML_CORRECTION SA_Fiml_Correction;  /*!< \brief Type of SA FIML correction (production, kappa, etc.). */
   bool Train_NN;                      /*!< \brief Flag to activate neural network training. */
   NN_TRAIN_METHOD Kind_Train_NN;      /*!< \brief Neural network training method (NONE, BACKPROP, WEIGHTS). */
-  NN_INPUT_SCALING Kind_NN_Scaling;   /*!< \brief Neural network input scaling method. */
   unsigned short N_Neurons;           /*!< \brief Number of neurons in each hidden layer. */
   unsigned short N_Hidden_Layers;     /*!< \brief Number of hidden layers in neural network. */
-  unsigned short N_Bins;              /*!< \brief Number of bins for quantile transform scaling. */
   unsigned long Iter_Start_NN;        /*!< \brief Iteration to start using neural network. */
   unsigned short Num_Epoch;           /*!< \brief Number of epochs for backpropagation training. */
   su2double Learning_Rate;            /*!< \brief Learning rate for backpropagation. */
-  su2double Lambda_FIML;              /*!< \brief Regularization parameter for FIML objective functions. */
-  su2double Target_Inverse_CL;        /*!< \brief Target lift coefficient for inverse design. */
-  su2double Target_Inverse_CD;        /*!< \brief Target drag coefficient for inverse design. */
-  su2double Target_Inverse_CP;        /*!< \brief Target pressure coefficient for inverse design. */
   string Beta_Target_FileName;        /*!< \brief File containing beta target values for NN training. */
   bool Filter_Shield;                 /*!< \brief Flag to filter out regions for correction. */
-  bool Multi_Mesh;                    /*!< \brief Flag for multi-mesh FIML-Direct cases. */
-  unsigned long NPOIN_FIML;           /*!< \brief Number of grid points (for sizing design variable vector). */
 
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
@@ -4812,12 +4803,6 @@ public:
   TURB_TRANS_CORRELATION GetKind_Trans_Correlation(void) const { return Kind_Trans_Correlation; }
 
   /*!
-   * \brief Get the kind of SA FIML correction.
-   * \return Kind of SA FIML correction.
-   */
-  SA_FIML_CORRECTION GetSA_Fiml_Correction(void) const { return SA_Fiml_Correction; }
-
-  /*!
    * \brief Get flag for neural network training.
    * \return True if neural network training is active.
    */
@@ -4830,12 +4815,6 @@ public:
   NN_TRAIN_METHOD GetKind_Train_NN(void) const { return Kind_Train_NN; }
 
   /*!
-   * \brief Get the neural network input scaling method.
-   * \return Neural network input scaling method.
-   */
-  NN_INPUT_SCALING GetKind_NN_Scaling(void) const { return Kind_NN_Scaling; }
-
-  /*!
    * \brief Get number of neurons per hidden layer.
    * \return Number of neurons.
    */
@@ -4846,12 +4825,6 @@ public:
    * \return Number of hidden layers.
    */
   unsigned short GetN_Hidden_Layers(void) const { return N_Hidden_Layers; }
-
-  /*!
-   * \brief Get number of bins for quantile transform.
-   * \return Number of bins.
-   */
-  unsigned short GetN_Bins(void) const { return N_Bins; }
 
   /*!
    * \brief Get iteration to start neural network.
@@ -4872,30 +4845,6 @@ public:
   su2double GetLearning_Rate(void) const { return Learning_Rate; }
 
   /*!
-   * \brief Get FIML regularization parameter.
-   * \return Lambda FIML value.
-   */
-  su2double GetLambda_FIML(void) const { return Lambda_FIML; }
-
-  /*!
-   * \brief Get target lift coefficient for inverse design.
-   * \return Target CL.
-   */
-  su2double GetTarget_Inverse_CL(void) const { return Target_Inverse_CL; }
-
-  /*!
-   * \brief Get target drag coefficient for inverse design.
-   * \return Target CD.
-   */
-  su2double GetTarget_Inverse_CD(void) const { return Target_Inverse_CD; }
-
-  /*!
-   * \brief Get target pressure coefficient for inverse design.
-   * \return Target CP.
-   */
-  su2double GetTarget_Inverse_CP(void) const { return Target_Inverse_CP; }
-
-  /*!
    * \brief Get beta target filename for NN training.
    * \return Beta target file name.
    */
@@ -4906,18 +4855,6 @@ public:
    * \return True if filtering is active.
    */
   bool GetFilter_Shield(void) const { return Filter_Shield; }
-
-  /*!
-   * \brief Get flag for multi-mesh cases.
-   * \return True if multi-mesh is active.
-   */
-  bool GetMulti_Mesh(void) const { return Multi_Mesh; }
-
-  /*!
-   * \brief Get number of grid points for FIML.
-   * \return Number of points.
-   */
-  unsigned long GetNPOIN_FIML(void) const { return NPOIN_FIML; }
 
   /*!
    * \brief Get RMS roughness for Transtion model from config

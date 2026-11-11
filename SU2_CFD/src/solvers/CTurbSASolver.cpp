@@ -208,6 +208,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver
   if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
     InitializeNeuralNetwork(config);
     filter_shield = config->GetFilter_Shield();
+    SetReferenceWallShearStress(config);
   }
 
 }
@@ -328,31 +329,32 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   }
 
   /*--- FIML: Compute Box-Cox scaling once, then forward propagate neural network.
-   * The features use source terms stored by Source_Residual, so the network starts at iteration 1 or later. ---*/
+   * The features use source terms stored by Source_Residual, so the network starts at iteration 1 or later.
+   * The discrete adjoint records the network in every iteration. ---*/
   if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML && config->GetKind_Train_NN() != NN_TRAIN_METHOD::NONE &&
       iMesh == MESH_0) {
-    const unsigned long iter = config->GetInnerIter();
-    const unsigned long iter_start_nn = max<unsigned long>(config->GetIter_Start_NN(), 1);
-    SetReferenceWallShearStress(config);
+    const bool adjoint = config->GetDiscrete_Adjoint();
+    const bool nn_active = adjoint || config->GetInnerIter() >= max<unsigned long>(config->GetIter_Start_NN(), 1);
 
-    if (iter >= iter_start_nn && !nn_scaling_set) {
+    if (nn_active && !nn_scaling_set) {
+      if (adjoint) SU2_MPI::Error("The adjoint of the neural network needs nn_weights.dat.", CURRENT_FUNCTION);
       if (rank == MASTER_NODE) cout << "Computing scaling parameters for FIML..." << endl;
       ComputeBoxCoxLambda(config, solver_container, geometry);
       nn_scaling_set = true;
     }
 
-    if (iter >= iter_start_nn && config->GetTrain_NN() && !targets_loaded) {
+    if (nn_active && config->GetTrain_NN() && !targets_loaded) {
       LoadBetaTargets(config, geometry);
       targets_loaded = true;
     }
 
     /*--- Forward propagate to compute beta_fiml at all points ---*/
-    if (iter >= iter_start_nn) {
+    if (nn_active) {
       ForwardPropagate(config, solver_container, geometry);
 
       /*--- One training epoch per solver iteration. ---*/
       const unsigned short num_epoch = config->GetNum_Epoch();
-      if (config->GetTrain_NN() && config->GetKind_Train_NN() == NN_TRAIN_METHOD::BACKPROP &&
+      if (!adjoint && config->GetTrain_NN() && config->GetKind_Train_NN() == NN_TRAIN_METHOD::BACKPROP &&
           epoch_counter < num_epoch) {
         const su2double loss = ComputeTrainingLoss(geometry);
         if (rank == MASTER_NODE && (epoch_counter % 10 == 0 || epoch_counter + 1 == num_epoch)) {
@@ -1760,7 +1762,7 @@ void CTurbSASolver::ForwardPropagate(const CConfig* config, CSolver** solver_con
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
+    ComputeNNInputFeatures(iPoint, solver_container, features);
     if (FilterShield(features)) {
       nn_filtered[iPoint] = true;
       turbNodes->SetBetaFiml(iPoint, 1.0);
@@ -1803,8 +1805,8 @@ void CTurbSASolver::ForwardPropagate(const CConfig* config, CSolver** solver_con
   delete[] layer_out;
 }
 
-void CTurbSASolver::ComputeNNInputFeatures(unsigned long iPoint, CSolver** solver_container,
-                                            CGeometry* geometry, su2double* features) const {
+void CTurbSASolver::ComputeNNInputFeatures(unsigned long iPoint, const CSolver* const* solver_container,
+                                            su2double* features) const {
 
   const auto* turbNodes = su2staticcast_p<const CTurbSAVariable*>(nodes);
   const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
@@ -1813,8 +1815,11 @@ void CTurbSASolver::ComputeNNInputFeatures(unsigned long iPoint, CSolver** solve
   const su2double strain = flowNodes->GetStrainMag(iPoint);
   const su2double vorticity = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
 
-  /*--- SA production/destruction, chi, eddy stress over flat-plate wall stress, strain/vorticity. ---*/
-  features[0] = turbNodes->GetSAProduction(iPoint) / (turbNodes->GetSADestruction(iPoint) + 1e-16);
+  /*--- SA production/destruction, chi, eddy stress over flat-plate wall stress, strain/vorticity.
+   * The source terms come from the previous evaluation, so they are passive for the adjoint. ---*/
+  const passivedouble production = SU2_TYPE::GetValue(turbNodes->GetSAProduction(iPoint));
+  const passivedouble destruction = SU2_TYPE::GetValue(turbNodes->GetSADestruction(iPoint));
+  features[0] = production / (destruction + 1e-16);
   features[1] = nu_tilde * flowNodes->GetDensity(iPoint) / flowNodes->GetLaminarViscosity(iPoint);
   features[2] = flowNodes->GetEddyViscosity(iPoint) * strain / (1.5 * tau_wall_ref);
   features[3] = strain / (vorticity + 1e-16);
@@ -1852,7 +1857,7 @@ void CTurbSASolver::ComputeBoxCoxLambda(const CConfig* config, CSolver** solver_
   su2double features[4];
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
+    ComputeNNInputFeatures(iPoint, solver_container, features);
     if (FilterShield(features)) continue;
 
     for (unsigned short feat = 0; feat < n_inputs; feat++) {
@@ -1910,7 +1915,7 @@ su2double CTurbSASolver::ComputeFIMLRegularization(const CConfig* config) const 
   }
   su2double global = 0.0;
   SU2_MPI::Allreduce(&local, &global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-  return config->GetLambda_FIML() * global;
+  return global;
 }
 
 void CTurbSASolver::LoadRestartAuxiliaryFields(const CGeometry* geometry, const CConfig* config) {
@@ -2059,7 +2064,7 @@ void CTurbSASolver::BackwardPropagate(const CConfig* config, CSolver** solver_co
     if (nn_filtered[iPoint]) continue;
 
     /*--- Forward pass to compute activations ---*/
-    ComputeNNInputFeatures(iPoint, solver_container, geometry, features);
+    ComputeNNInputFeatures(iPoint, solver_container, features);
     ScaleNNInputs(features);
     local_count++;
 
@@ -2161,20 +2166,60 @@ void CTurbSASolver::BackwardPropagate(const CConfig* config, CSolver** solver_co
 }
 
 void CTurbSASolver::UpdateWeights(su2double learning_rate) {
-  /*--- Gradient descent: weights -= learning_rate * gradients ---*/
 
-  const unsigned short nLayers = n_hidden_layers + 1;
-
-  for (unsigned short layer = 0; layer < nLayers; layer++) {
-    unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
-    unsigned short n_to = (layer == nLayers - 1) ? 1 : n_neurons;
-
-    for (unsigned short i = 0; i <= n_from; i++) {
-      for (unsigned short j = 0; j < n_to; j++) {
-        weights[layer][i][j] -= learning_rate * weight_gradients[layer][i][j];
-      }
-    }
+  /*--- Adam with the default moment decay rates. ---*/
+  constexpr passivedouble beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
+  if (adam_m.empty()) {
+    unsigned long n = 0;
+    ForEachWeight([&](unsigned short, unsigned short, unsigned short) { n++; });
+    adam_m.assign(n, 0.0);
+    adam_v.assign(n, 0.0);
   }
+  adam_step++;
+  const su2double corr1 = 1.0 - pow(beta1, adam_step), corr2 = 1.0 - pow(beta2, adam_step);
+
+  unsigned long k = 0;
+  ForEachWeight([&](unsigned short layer, unsigned short i, unsigned short j) {
+    const su2double g = weight_gradients[layer][i][j];
+    adam_m[k] = beta1 * adam_m[k] + (1.0 - beta1) * g;
+    adam_v[k] = beta2 * adam_v[k] + (1.0 - beta2) * g * g;
+    weights[layer][i][j] -= learning_rate * (adam_m[k] / corr1) / (sqrt(adam_v[k] / corr2) + eps);
+    k++;
+  });
+}
+
+void CTurbSASolver::GetFIMLFeatures(unsigned long iPoint, const CSolver* const* solver_container,
+                                    su2double* features) const {
+  ComputeNNInputFeatures(iPoint, solver_container, features);
+}
+
+void CTurbSASolver::RegisterNNWeights(bool reset) {
+  ForEachWeight([&](unsigned short layer, unsigned short i, unsigned short j) {
+    if (reset) AD::ResetInput(weights[layer][i][j]);
+    else AD::RegisterInput(weights[layer][i][j]);
+  });
+}
+
+void CTurbSASolver::ExtractNNWeightAdjoints() {
+  ForEachWeight([&](unsigned short layer, unsigned short i, unsigned short j) {
+    weight_gradients[layer][i][j] = SU2_TYPE::GetDerivative(weights[layer][i][j]);
+  });
+}
+
+void CTurbSASolver::WriteNNWeightGradients(const string& filename) const {
+
+  vector<passivedouble> local, global;
+  ForEachWeight([&](unsigned short layer, unsigned short i, unsigned short j) {
+    local.push_back(SU2_TYPE::GetValue(weight_gradients[layer][i][j]));
+  });
+  global.resize(local.size());
+  using CPassiveMPI = SelectMPIWrapper<passivedouble>::W;
+  CPassiveMPI::Allreduce(local.data(), global.data(), local.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+  if (rank != MASTER_NODE) return;
+  ofstream file(filename);
+  file.precision(15);
+  for (const auto g : global) file << g << "\n";
 }
 
 void CTurbSASolver::SaveNeuralNetworkWeights(const string& filename) const {

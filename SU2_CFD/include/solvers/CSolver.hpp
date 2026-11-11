@@ -838,11 +838,32 @@ public:
   inline virtual void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) {};
 
   /*!
-   * \brief Regularization LAMBDA_FIML * sum of (beta - 1)^2 over all domain points of the FIML correction.
+   * \brief Sum of (beta - 1)^2 over all domain points of the FIML correction.
    * \param[in] config - Definition of the particular problem.
    * \return Global value of the regularization term, 0 without FIML.
    */
   inline virtual su2double ComputeFIMLRegularization(const CConfig *config) const { return 0.0; }
+
+  /*!
+   * \brief Unscaled FIML input features at a point.
+   */
+  inline virtual void GetFIMLFeatures(unsigned long iPoint, const CSolver* const* solver_container,
+                                      su2double* features) const {}
+
+  /*!
+   * \brief Register the FIML neural network weights as AD inputs, or reset their AD indices.
+   */
+  inline virtual void RegisterNNWeights(bool reset) {}
+
+  /*!
+   * \brief Store the adjoints of the FIML neural network weights.
+   */
+  inline virtual void ExtractNNWeightAdjoints() {}
+
+  /*!
+   * \brief Write the objective gradient with respect to the FIML neural network weights.
+   */
+  inline virtual void WriteNNWeightGradients(const string& filename) const {}
 
   /*!
    * \brief A virtual member.
