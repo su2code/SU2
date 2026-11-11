@@ -4329,19 +4329,18 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
             if (nDim == 2) {
               const auto* edgeCenter = (iNode == 0) ? center : x;
               const auto* elemCenter = (iNode == 0) ? x : center;
-              normal[0] = elemCenter[1] - edgeCenter[1];
-              normal[1] = -(elemCenter[0] - edgeCenter[0]);
+              const su2double* coords[2] = {elemCenter, edgeCenter};
+              GeometryToolbox::LineNormal(coords, normal);
             } else {
               for (unsigned short k = 0; k < face->GetnNeighbor_Nodes(iNode); ++k) {
                 const auto* y = nodes->GetCoord(face->GetNode(face->GetNeighbor_Nodes(iNode, k)));
-                su2double midpoint[3], a[3], b[3], cross[3];
+                su2double midpoint[3], faceNormal[3];
                 for (unsigned short d = 0; d < 3; ++d) midpoint[d] = 0.5 * (x[d] + y[d]);
                 const auto* edgeCenter = (k == 0) ? center : midpoint;
                 const auto* faceCenter = (k == 0) ? midpoint : center;
-                GeometryToolbox::Distance(3, x, edgeCenter, a);
-                GeometryToolbox::Distance(3, faceCenter, edgeCenter, b);
-                GeometryToolbox::CrossProduct(a, b, cross);
-                for (unsigned short d = 0; d < 3; ++d) normal[d] += 0.5 * cross[d];
+                const su2double* coords[3] = {edgeCenter, x, faceCenter};
+                GeometryToolbox::TriangleNormal(coords, faceNormal);
+                for (unsigned short d = 0; d < 3; ++d) normal[d] += faceNormal[d];
               }
             }
             if (normal[0] < 0) PositiveXArea -= normal[0];
