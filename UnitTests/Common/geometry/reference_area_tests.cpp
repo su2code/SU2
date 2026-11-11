@@ -55,29 +55,53 @@ void WriteDiamond(const std::string& filename, unsigned short nDim, bool split) 
   }
 }
 
-void WriteRefinedDiamond(const std::string& filename, unsigned int n) {
+void WriteRefinedDiamond(const std::string& filename, unsigned short nDim, unsigned int n) {
   const std::array<std::array<double, 2>, 4> corners = {{{0, 0}, {1, 1}, {2, 0}, {1, -1}}};
-  const unsigned int count = 4 * n;
+  const unsigned int count = 4 * n, layerSize = count + 1;
   std::ofstream mesh(filename);
-  mesh << "NDIME= 2\nNELEM= " << count << "\n";
-  for (unsigned int i = 0; i < count; ++i)
-    mesh << "5 " << count << " " << i << " " << (i + 1) % count << " " << i << "\n";
-  mesh << "NPOIN= " << count + 1 << "\n";
-  for (unsigned int edge = 0; edge < 4; ++edge) {
-    for (unsigned int j = 0; j < n; ++j) {
-      const double t = double(j) / n;
-      mesh << (1-t)*corners[edge][0] + t*corners[(edge+1)%4][0] << " "
-           << (1-t)*corners[edge][1] + t*corners[(edge+1)%4][1] << " " << edge*n+j << "\n";
+  mesh << "NDIME= " << nDim << "\nNELEM= " << count << "\n";
+  for (unsigned int i = 0; i < count; ++i) {
+    const auto j = (i + 1) % count;
+    if (nDim == 2) mesh << "5 " << count << " " << i << " " << j << " " << i << "\n";
+    else mesh << "13 " << count << " " << i << " " << j << " " << count + layerSize << " "
+              << i + layerSize << " " << j + layerSize << " " << i << "\n";
+  }
+  mesh << "NPOIN= " << layerSize * (nDim == 2 ? 1 : 2) << "\n";
+  for (unsigned int layer = 0; layer < (nDim == 2 ? 1u : 2u); ++layer) {
+    for (unsigned int edge = 0; edge < 4; ++edge) {
+      for (unsigned int j = 0; j < n; ++j) {
+        const double t = double(j) / n;
+        const auto x = (1-t)*corners[edge][0] + t*corners[(edge+1)%4][0];
+        const auto z = (1-t)*corners[edge][1] + t*corners[(edge+1)%4][1];
+        mesh << x << " ";
+        if (nDim == 3) mesh << layer << " ";
+        mesh << z << " " << layer*layerSize + edge*n+j << "\n";
+      }
+    }
+    mesh << "1 ";
+    if (nDim == 3) mesh << layer << " ";
+    mesh << "0 " << layer*layerSize + count << "\n";
+  }
+  mesh << "NMARK= " << (nDim == 3 ? 2 : 1) << "\nMARKER_TAG= wall\nMARKER_ELEMS= " << count << "\n";
+  for (unsigned int i = 0; i < count; ++i) {
+    const auto j = (i + 1) % count;
+    if (nDim == 2) mesh << "3 " << i << " " << j << "\n";
+    else mesh << "9 " << i << " " << j << " " << j + layerSize << " " << i + layerSize << "\n";
+  }
+  if (nDim == 3) {
+    mesh << "MARKER_TAG= ends\nMARKER_ELEMS= " << 2*count << "\n";
+    for (unsigned int i = 0; i < count; ++i) {
+      const auto j = (i + 1) % count;
+      mesh << "5 " << count << " " << j << " " << i << "\n";
+      mesh << "5 " << count + layerSize << " " << i + layerSize << " " << j + layerSize << "\n";
     }
   }
-  mesh << "1 0 " << count << "\nNMARK= 1\nMARKER_TAG= wall\nMARKER_ELEMS= " << count << "\n";
-  for (unsigned int i = 0; i < count; ++i) mesh << "3 " << i << " " << (i+1)%count << "\n";
 }
 
 double ReferenceArea(unsigned short nDim, bool split, unsigned int refinements = 0) {
   const std::string file = "reference_diamond_" + std::to_string(nDim) + (split ? "_split.su2" : ".su2");
   if (SU2_MPI::GetRank() == 0) {
-    if (refinements) WriteRefinedDiamond(file, refinements);
+    if (refinements) WriteRefinedDiamond(file, nDim, refinements);
     else WriteDiamond(file, nDim, split);
   }
   SU2_MPI::Barrier(SU2_MPI::GetComm());
@@ -116,10 +140,13 @@ TEST_CASE("Automatic reference area matches a diamond projection", "[ReferenceAr
 }
 
 TEST_CASE("Reference area under diamond edge refinement", "[ReferenceAreaRefinement]") {
-  for (unsigned int n : {1, 2, 4, 10}) {
-    const auto area = ReferenceArea(2, false, n);
-    if (SU2_MPI::GetRank() == 0) std::cout << "REFINEMENT_RESULT n=" << n << " area=" << area << std::endl;
-    CAPTURE(n);
-    CHECK(area == Approx(2.0).margin(1e-12));
+  for (unsigned short nDim : {2, 3}) {
+    for (unsigned int n : {1, 2, 4, 10}) {
+      const auto area = ReferenceArea(nDim, false, n);
+      if (SU2_MPI::GetRank() == 0)
+        std::cout << "REFINEMENT_RESULT dimension=" << nDim << " n=" << n << " area=" << area << std::endl;
+      CAPTURE(nDim, n);
+      CHECK(area == Approx(2.0).margin(1e-12));
+    }
   }
 }
