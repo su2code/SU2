@@ -2,7 +2,7 @@
  * \file CDataDrivenFluid.cpp
  * \brief Source of the data-driven fluid model class
  * \author E.C.Bunschoten M.Mayer A.Capiello
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -471,4 +471,4 @@ size_t MiniTable2D::FindNode(const size_t iX, const su2double val_x, const size_
         }
     }
     return iMin;
-}  
+}
