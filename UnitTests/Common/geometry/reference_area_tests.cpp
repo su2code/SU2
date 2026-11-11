@@ -167,3 +167,48 @@ TEST_CASE("Reference area under diamond edge refinement", "[ReferenceAreaRefinem
     }
   }
 }
+
+#if defined(CODI_REVERSE_TYPE)
+TEST_CASE("Reference area derivative matches the diamond chord", "[ReferenceArea][AD]") {
+  if (SU2_MPI::GetSize() != 1) return;
+  const std::string file = "reference_diamond_ad.su2";
+  WriteDiamond(file, 2, false);
+  std::stringstream options;
+  options << "SOLVER= EULER\nMESH_FORMAT= SU2\nMESH_FILENAME= " << file
+          << "\nMACH_NUMBER= 0.3\nREF_AREA= 0\nMARKER_EULER= ( wall )\nMARKER_MONITORING= ( wall )\n";
+  auto config = std::make_unique<CConfig>(options, SU2_COMPONENT::SU2_CFD, false);
+  auto aux = std::make_unique<CPhysicalGeometry>(config.get(), 0, 1);
+  aux->SetColorGrid_Parallel(config.get());
+  auto geometry = std::make_unique<CPhysicalGeometry>(aux.get(), config.get());
+  geometry->SetSendReceive(config.get());
+  geometry->SetBoundaries(config.get());
+  geometry->SetPoint_Connectivity();
+  geometry->SetElement_Connectivity();
+  geometry->SetBoundVolume();
+  geometry->Check_IntElem_Orientation(config.get());
+  geometry->Check_BoundElem_Orientation(config.get());
+  geometry->SetEdges();
+  geometry->SetVertex(config.get());
+  geometry->SetControlVolume(config.get(), ALLOCATE);
+  geometry->SetBoundControlVolume(config.get(), ALLOCATE);
+
+  su2double* trailingX = nullptr;
+  for (unsigned long i = 0; i < geometry->GetnPoint(); ++i) {
+    if (geometry->nodes->GetGlobalIndex(i) == 2) trailingX = &geometry->nodes->GetCoord(i)[0];
+  }
+  REQUIRE(trailingX != nullptr);
+  AD::Reset();
+  AD::StartRecording();
+  AD::RegisterInput(*trailingX);
+  geometry->SetBoundControlVolume(config.get(), UPDATE);
+  geometry->SetPositive_ZArea(config.get());
+  su2double area = config->GetRefArea();
+  AD::RegisterOutput(area);
+  AD::StopRecording();
+  SU2_TYPE::SetDerivative(area, 1.0);
+  AD::ComputeAdjoint();
+  CHECK(SU2_TYPE::GetValue(area) == Approx(2.0).margin(1e-12));
+  CHECK(SU2_TYPE::GetDerivative(*trailingX) == Approx(1.0).margin(1e-12));
+  AD::Reset();
+}
+#endif
