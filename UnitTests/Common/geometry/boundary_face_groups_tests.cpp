@@ -37,6 +37,8 @@
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../SU2_CFD/include/solvers/CNSSolver.hpp"
+#include "../../../SU2_CFD/include/variables/CNSVariable.hpp"
 
 namespace {
 
@@ -586,4 +588,57 @@ TEST_CASE("Boundary face groups: exactly cancelling cusp", "[BoundaryFaceGroups]
     found = true;
   }
   CHECK(found);
+}
+
+TEST_CASE("Grouped isothermal wall assembles its temperature linearization", "[BoundaryFaceGroups]") {
+  if (SU2_MPI::GetSize() > 1) return;
+  const std::string mesh = "face_groups_isothermal_assembly.su2";
+  WriteLMesh(mesh, false);
+  struct Values { double residual, jacobian, temperatureRef, density, gas, gamma; };
+  auto evaluate = [&](double wallTemperature) {
+    auto test = BuildGeometry("SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\n"
+                              "MESH_FILENAME= " + mesh + "\nMESH_FORMAT= SU2\nMACH_NUMBER= 0.3\n"
+                              "TIME_DISCRE_FLOW= EULER_IMPLICIT\nMARKER_ISOTHERMAL= ( wall, " +
+                              std::to_string(wallTemperature) + " )\nMARKER_FAR= ( far )\n");
+    auto* geometry = test.geometry.get();
+    auto* config = test.config.get();
+    geometry->SetGlobal_to_Local_Point();
+    geometry->PreprocessP2PComms(geometry, config);
+    CNSSolver solver(geometry, config, MESH_0);
+    auto* nodes = static_cast<CNSVariable*>(solver.GetNodes());
+    for (unsigned long point = 0; point < geometry->GetnPoint(); ++point) {
+      nodes->SetPrimVar(point, 0.0, 0.0, solver.GetFluidModel());
+      nodes->SetSecondaryVar(point, solver.GetFluidModel());
+    }
+    unsigned short wall = 0;
+    while (wall < geometry->GetnMarker() && config->GetMarker_All_TagBound(wall) != "wall") ++wall;
+    REQUIRE(wall < geometry->GetnMarker());
+    unsigned long vertex = 0;
+    while (vertex < geometry->GetnVertex(wall) &&
+           !(PointKey(*geometry, geometry->vertex[wall][vertex]->GetNode(), 0.5) == Key{4, 2, 0})) ++vertex;
+    REQUIRE(vertex < geometry->GetnVertex(wall));
+    REQUIRE(geometry->HasVertexGroups(wall, vertex));
+    REQUIRE(geometry->HasEligibleGroupNeighbors(wall, vertex));
+    const auto point = geometry->vertex[wall][vertex]->GetNode();
+    solver.LinSysRes.SetValZero();
+    solver.Jacobian.SetValZero();
+    CSolver* solvers[MAX_SOLS] = {};
+    solvers[FLOW_SOL] = &solver;
+    solver.BC_Isothermal_Wall(geometry, solvers, nullptr, nullptr, config, wall);
+    const auto energy = geometry->GetnDim() + 1;
+    const auto block = solver.Jacobian.GetBlockView(point, point);
+    REQUIRE(block);
+    return Values{SU2_TYPE::GetValue(solver.LinSysRes(point, energy)),
+                  SU2_TYPE::GetValue(block(energy, energy)), SU2_TYPE::GetValue(config->GetTemperature_Ref()),
+                  SU2_TYPE::GetValue(nodes->GetDensity(point)), SU2_TYPE::GetValue(config->GetGas_ConstantND()),
+                  SU2_TYPE::GetValue(config->GetGamma())};
+  };
+  const double wall = 300.0, step = 0.003;
+  const auto center = evaluate(wall);
+  REQUIRE(center.jacobian > 0.0);
+  const auto plus = evaluate(wall + step);
+  const auto minus = evaluate(wall - step);
+  const double dResidualdT = (plus.residual - minus.residual) * center.temperatureRef / (2.0 * step);
+  // The existing implicit wall linearization uses the negative temperature-residual derivative.
+  CHECK(center.jacobian == Approx(-dResidualdT * (center.gamma - 1.0) / (center.gas * center.density)).epsilon(1e-7));
 }
