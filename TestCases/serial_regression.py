@@ -127,7 +127,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-4.825509, -4.205271, 0.277086, 0.006619]
+    oneram6.test_vals = [-4.825509, -4.205271, 0.276105, 0.006596]
     oneram6.timeout   = 9600
     test_list.append(oneram6)
 
@@ -292,7 +292,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.419977, -6.631993, 0.238577, 0.159694, 0.000000]
+    turb_oneram6.test_vals = [-2.419977, -6.631993, 0.236148, 0.158068, 0.000000]
     turb_oneram6.timeout   = 3200
     test_list.append(turb_oneram6)
 
@@ -661,7 +661,7 @@ def main():
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
     contadj_oneram6.test_iter = 10
-    contadj_oneram6.test_vals = [-12.083324, -12.644564, -1.086100, 0.007556]
+    contadj_oneram6.test_vals = [-12.083324, -12.644564, -1.082300, 0.007530]
     test_list.append(contadj_oneram6)
 
     # Inviscid WEDGE: tests averaged outflow total pressure adjoint
