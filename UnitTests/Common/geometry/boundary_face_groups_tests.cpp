@@ -552,3 +552,38 @@ TEST_CASE("Boundary face groups: mixed thermal markers at one point", "[Boundary
   CHECK(areaSum == Approx(3.0 / 16.0).margin(1e-14));
   for (bool present : directions) CHECK(present);
 }
+
+TEST_CASE("Boundary face groups: exactly cancelling cusp", "[BoundaryFaceGroups]") {
+  if (SU2_MPI::GetSize() > 1) return;
+  WriteLMesh("face_groups_exact_cusp.su2", false);
+  const auto test = BuildGeometry("SOLVER= EULER\nMARKER_EULER= ( wall )\n"
+                                  "MESH_FILENAME= face_groups_exact_cusp.su2\nMESH_FORMAT= SU2\n"
+                                  "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
+  auto& geometry = *test.geometry;
+  unsigned long cusp = geometry.GetnPoint(), neighbor = geometry.GetnPoint();
+  for (unsigned long point = 0; point < geometry.GetnPoint(); ++point) {
+    if (PointKey(geometry, point, 0.5) == Key{4, 0, 0}) cusp = point;
+    if (PointKey(geometry, point, 0.5) == Key{4, 1, 0}) neighbor = point;
+  }
+  REQUIRE(cusp < geometry.GetnPoint());
+  REQUIRE(neighbor < geometry.GetnPoint());
+  geometry.nodes->SetCoord(neighbor, 0, 1.5);
+  geometry.nodes->SetCoord(neighbor, 1, 0.0);
+  geometry.SetBoundControlVolume(test.config.get(), UPDATE);
+  geometry.ComputeBoundaryFaceGroups(test.config.get());
+  bool found = false;
+  for (unsigned short marker = 0; marker < geometry.GetnMarker(); ++marker) {
+    if (test.config->GetMarker_All_TagBound(marker) != "wall") continue;
+    const auto vertex = geometry.nodes->GetVertex(cusp, marker);
+    REQUIRE(vertex >= 0);
+    const auto* normal = geometry.vertex[marker][vertex]->GetNormal();
+    CHECK(normal[0] == EPS * EPS);
+    CHECK(normal[1] == 0.0);
+    CHECK(geometry.HasVertexGroups(marker, vertex));
+    CHECK(geometry.GetnVertexGroups(marker, vertex) == 2);
+    su2double basis[3][3] = {};
+    CHECK(geometry.GetSlipBasis(marker, vertex, basis) == 1);
+    found = true;
+  }
+  CHECK(found);
+}
