@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <vector>
 #include "../basic_types/datatype_structure.hpp"
 
@@ -68,6 +69,23 @@ namespace SharpEdgeNormals {
 inline bool BetterNeighbor(bool found, const su2double& cosine, const su2double& bestCosine,
                            unsigned long globalIndex, unsigned long bestGlobalIndex) {
   return !found || cosine > bestCosine || (cosine == bestCosine && globalIndex < bestGlobalIndex);
+}
+
+/*! \brief Check a reconstructed sum, including roundoff and the zero-normal placeholder. */
+inline bool ConsistentCornerSum(unsigned short nDim, const su2double* sum, const su2double* normal,
+                                const su2double& faceMagnitude, size_t nFaces, passivedouble placeholder) {
+  su2double diff2 = 0.0, normal2 = 0.0;
+  bool isPlaceholder = normal[0] == placeholder;
+  for (unsigned short d = 0; d < nDim; ++d) {
+    const auto delta = sum[d] - normal[d];
+    diff2 += delta * delta;
+    normal2 += normal[d] * normal[d];
+    if (d > 0) isPlaceholder = isPlaceholder && (normal[d] == 0.0);
+  }
+  const su2double tolerance = 1e-6 * sqrt(normal2) +
+      16.0 * std::numeric_limits<passivedouble>::epsilon() * nFaces * faceMagnitude +
+      (isPlaceholder ? placeholder : 0.0);
+  return diff2 <= tolerance * tolerance;
 }
 
 /*! \brief Compatibility threshold c0 of the cosine of two corner vectors (the parallel tolerance of

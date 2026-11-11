@@ -457,3 +457,15 @@ TEST_CASE("Sharp-edge normals: equal-cosine neighbour tie", "[SharpEdgeNormals]"
     CHECK_FALSE(SharpEdgeNormals::BetterNeighbor(found, 0.7, bestCosine, 1, best));
   }
 }
+
+TEST_CASE("Sharp-edge normals: consistency at an exactly cancelling cusp", "[SharpEdgeNormals]") {
+  const double placeholder = EPS * EPS;
+  const double substituted[3] = {placeholder, 0.0, 0.0};
+  const double cancelling[3] = {0.0, 0.0, 0.0};
+  CHECK(SharpEdgeNormals::ConsistentCornerSum(2, cancelling, substituted, 2.0, 2, placeholder));
+  const double normal[3] = {0.1, 0.2, 0.0};
+  const double matching[3] = {0.1 + 1e-15, 0.2, 0.0};
+  CHECK(SharpEdgeNormals::ConsistentCornerSum(2, matching, normal, 2.0, 2, placeholder));
+  const double missingFace[3] = {0.5, 0.0, 0.0};
+  CHECK_FALSE(SharpEdgeNormals::ConsistentCornerSum(2, missingFace, substituted, 2.0, 2, placeholder));
+}

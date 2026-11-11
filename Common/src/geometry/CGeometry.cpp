@@ -3061,8 +3061,7 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
       continue;
     }
 
-    /*--- The corner vectors of every marker must sum to its vertex normal (1e-6 relative), otherwise the point keeps
-     * the vertex values. ---*/
+    /*--- Retain the vertex path if corner vectors disagree beyond rounding and the zero-normal placeholder. ---*/
     bool consistent = true;
     for (const auto iMarker : markers) {
       const auto iVertex = nodes->GetVertex(iPoint, iMarker);
@@ -3070,13 +3069,16 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
         consistent = false;
         continue;
       }
-      su2double sum[3] = {0.0, 0.0, 0.0}, diff2 = 0.0;
-      for (size_t f = 0; f < nFaces; ++f)
-        if (faces[f][0] == iMarker)
-          for (unsigned short iDim = 0; iDim < nDim; ++iDim) sum[iDim] += N[f][iDim];
+      su2double sum[3] = {0.0, 0.0, 0.0}, faceMagnitude = 0.0;
+      size_t markerFaces = 0;
+      for (size_t f = 0; f < nFaces; ++f) {
+        if (faces[f][0] != iMarker) continue;
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim) sum[iDim] += N[f][iDim];
+        faceMagnitude += GeometryToolbox::Norm(nDim, N[f]);
+        ++markerFaces;
+      }
       const su2double* normal = vertex[iMarker][iVertex]->GetNormal();
-      for (unsigned short iDim = 0; iDim < nDim; ++iDim) diff2 += pow(sum[iDim] - normal[iDim], 2);
-      consistent = consistent && (diff2 <= 1e-12 * GeometryToolbox::SquaredNorm(nDim, normal));
+      consistent = consistent && SharpEdgeNormals::ConsistentCornerSum(nDim, sum, normal, faceMagnitude, markerFaces, EPS * EPS);
     }
     if (!consistent) {
       ++nKept;
