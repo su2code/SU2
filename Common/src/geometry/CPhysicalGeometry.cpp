@@ -4330,23 +4330,11 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
           else
             AxiFactor = 1.0;
 
-          /*--- Where the boundary face groups provide them (CGeometry::ComputeBoundaryFaceGroups), the face sums of
-           * the vertex: the magnitudes and the negative parts of the corner vectors of each face, so that every face
-           * piece counts once whatever the marker split and the vertex normals do not cancel at edges (e.g. at
-           * leading and trailing edges). Otherwise the vertex normal. ---*/
-          su2double FaceArea = 0.0, ProjectedArea[MAXNDIM] = {0.0};
-          if (GetVertexFaceSums(iMarker, iVertex, FaceArea, ProjectedArea)) {
-            WettedArea += AxiFactor * FaceArea;
-            PositiveXArea += ProjectedArea[0];
-            PositiveYArea += ProjectedArea[1];
-            if (nDim == 3) PositiveZArea += ProjectedArea[2];
-          } else {
-            WettedArea += AxiFactor * GeometryToolbox::Norm(nDim, Normal);
+          WettedArea += AxiFactor * GeometryToolbox::Norm(nDim, Normal);
 
-            if (Normal[0] < 0) PositiveXArea -= Normal[0];
-            if (Normal[1] < 0) PositiveYArea -= Normal[1];
-            if ((nDim == 3) && (Normal[2] < 0)) PositiveZArea -= Normal[2];
-          }
+          if (Normal[0] < 0) PositiveXArea -= Normal[0];
+          if (Normal[1] < 0) PositiveYArea -= Normal[1];
+          if ((nDim == 3) && (Normal[2] < 0)) PositiveZArea -= Normal[2];
 
           if (CoordX < MinCoordX) MinCoordX = CoordX;
           if (CoordX > MaxCoordX) MaxCoordX = CoordX;

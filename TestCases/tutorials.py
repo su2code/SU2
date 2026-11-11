@@ -269,7 +269,7 @@ def main():
     tutorial_trans_e387_sa.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sa.cfg_file   = "transitional_SA_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sa.test_iter  = 20
-    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.082048, -0.795021, 1.022596, 0.150181, 2.000000, -9.581276]
+    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.082048, -0.795021, 1.022607, 0.150183, 2.000000, -9.581276]
     tutorial_trans_e387_sa.no_restart = True
     test_list.append(tutorial_trans_e387_sa)
 
@@ -278,7 +278,7 @@ def main():
     tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sst.cfg_file   = "transitional_SST_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sst.test_iter  = 20
-    tutorial_trans_e387_sst.test_vals  = [-6.532415, -5.082018, -0.789469, 1.078282, 0.188164, 2.000000, -9.567997]
+    tutorial_trans_e387_sst.test_vals  = [-6.532415, -5.082018, -0.789469, 1.078293, 0.188166, 2.000000, -9.567996]
     tutorial_trans_e387_sst.no_restart = True
     test_list.append(tutorial_trans_e387_sst)
 
@@ -287,7 +287,7 @@ def main():
     tutorial_turb_oneram6.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_ONERAM6"
     tutorial_turb_oneram6.cfg_file   = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter  = 0
-    tutorial_turb_oneram6.test_vals = [-4.564441, -11.534950, 0.247610, 0.080125]
+    tutorial_turb_oneram6.test_vals = [-4.564441, -11.534937, 0.250153, 0.080951]
     test_list.append(tutorial_turb_oneram6)
 
     # NICFD Nozzle
@@ -324,7 +324,7 @@ def main():
     propeller_var_load.cfg_dir   = "../Tutorials/compressible_flow/ActuatorDisk_VariableLoad"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.831988, -4.534991, -0.000323, 0.171494]
+    propeller_var_load.test_vals = [-1.831998, -4.534991, -0.000323, 0.171494]
     propeller_var_load.timeout   = 3200
     test_list.append(propeller_var_load)
 
@@ -344,7 +344,7 @@ def main():
     tutorial_design_turb_rae2822.cfg_dir    = "../Tutorials/design/Turbulent_2D_Constrained_RAE2822"
     tutorial_design_turb_rae2822.cfg_file   = "turb_SA_RAE2822.cfg"
     tutorial_design_turb_rae2822.test_iter  = 0
-    tutorial_design_turb_rae2822.test_vals = [-1.700114, -4.941829, 0.161099, 0.170507]
+    tutorial_design_turb_rae2822.test_vals = [-1.700114, -4.941830, 0.161066, 0.170510]
     tutorial_design_turb_rae2822.no_restart = True
     test_list.append(tutorial_design_turb_rae2822)
 

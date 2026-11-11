@@ -3113,7 +3113,7 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
   /*--- Counts and global checksums over the owned points: equal for every partitioning (integers exactly, sums up to
    * round-off). ---*/
   enum { POINTS, MULTIPLE, GROUPS, FACES, NEIGHBORS, KEPT, NO_ELIGIBLE, CHANGED, ZERO, N_COUNTS };
-  enum { AREAS, SHARES, FACE_AREAS, PROJECTED, BASES, DISTANCES, N_SUMS };
+  enum { AREAS, SHARES, BASES, DISTANCES, N_SUMS };
   unsigned long localCount[N_COUNTS] = {0}, globalCount[N_COUNTS] = {0};
   passivedouble localSum[N_SUMS] = {0.0}, globalSum[N_SUMS] = {0.0};
   for (const auto& data : boundaryFaceGroupPoints) {
@@ -3136,9 +3136,6 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
       if (!nodes->GetDomain(vertex[iMarker][iVertex]->GetNode())) continue;
       const auto& vertexData = boundaryFaceGroupVertices[iMarker][iVertex];
       for (const auto& share : vertexData.share) localSum[SHARES] += SU2_TYPE::GetValue(share);
-      localSum[FACE_AREAS] += SU2_TYPE::GetValue(vertexData.faceArea);
-      for (unsigned short iDim = 0; iDim < nDim; ++iDim)
-        localSum[PROJECTED] += SU2_TYPE::GetValue(vertexData.projectedArea[iDim]);
     }
   }
   localCount[FACES] += ordinaryFaces;
@@ -3161,8 +3158,7 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
     std::ostringstream sums;
     sums << std::scientific << std::setprecision(15) << "Boundary face groups checksums: faces " << globalCount[FACES]
          << ", groups " << globalCount[GROUPS] << ", neighbour indices " << globalCount[NEIGHBORS] << ", group areas "
-         << globalSum[AREAS] << ", shares " << globalSum[SHARES] << ", face areas " << globalSum[FACE_AREAS]
-         << ", projected areas " << globalSum[PROJECTED] << ", slip bases " << globalSum[BASES]
+         << globalSum[AREAS] << ", shares " << globalSum[SHARES] << ", slip bases " << globalSum[BASES]
          << ", neighbour distances " << globalSum[DISTANCES] << ".";
     cout << sums.str() << endl;
   }
@@ -3170,28 +3166,6 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
 
 void CGeometry::UpdateBoundaryFaceGroups(const CConfig* config) {
   if (boundaryFaceGroupVertices.empty()) return;
-
-  /*--- Face sums F_m and P_m of every vertex of the families (owned points). ---*/
-  for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
-    auto& markerData = boundaryFaceGroupVertices[iMarker];
-    if (markerData.empty()) continue;
-    for (auto& vertexData : markerData) {
-      vertexData.faceArea = 0.0;
-      for (auto& projected : vertexData.projectedArea) projected = 0.0;
-    }
-    for (auto iElem = 0ul; iElem < nElem_Bound[iMarker]; ++iElem) {
-      for (unsigned short iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); ++iNode) {
-        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
-        if (!nodes->GetDomain(iPoint)) continue;
-        su2double N[3];
-        CornerVector(nDim, nodes, bound[iMarker][iElem], iNode, N);
-        auto& vertexData = markerData[nodes->GetVertex(iPoint, iMarker)];
-        vertexData.faceArea += GeometryToolbox::Norm(nDim, N);
-        for (unsigned short iDim = 0; iDim < nDim; ++iDim)
-          if (N[iDim] < 0.0) vertexData.projectedArea[iDim] -= N[iDim];
-      }
-    }
-  }
 
   /*--- Group normals and areas, shares and slip bases of the points with stored groups. ---*/
   for (auto& data : boundaryFaceGroupPoints) {
@@ -3317,17 +3291,6 @@ unsigned short CGeometry::GetSlipBasis(unsigned short iMarker, unsigned long iVe
   for (unsigned short r = 0; r < data.slipRank; ++r)
     for (unsigned short iDim = 0; iDim < MAXNDIM; ++iDim) Q[r][iDim] = data.slipBasis[r][iDim];
   return data.slipRank;
-}
-
-bool CGeometry::GetVertexFaceSums(unsigned short iMarker, unsigned long iVertex, su2double& faceArea,
-                                  su2double* projectedArea) const {
-  if (boundaryFaceGroupVertices.empty() || boundaryFaceGroupVertices[iMarker].empty() ||
-      !nodes->GetDomain(vertex[iMarker][iVertex]->GetNode()))
-    return false;
-  const auto& vertexData = boundaryFaceGroupVertices[iMarker][iVertex];
-  faceArea = vertexData.faceArea;
-  for (unsigned short iDim = 0; iDim < nDim; ++iDim) projectedArea[iDim] = vertexData.projectedArea[iDim];
-  return true;
 }
 
 void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {

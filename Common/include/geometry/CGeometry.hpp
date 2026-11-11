@@ -280,8 +280,6 @@ class CGeometry {
     vector<size_t> groups;         /*!< \brief Groups of the point that contain faces of the marker. */
     vector<su2double> share;               /*!< \brief Share a_{m,q} of the marker in each of these groups. */
     unsigned long neighbor = ULONG_MAX;    /*!< \brief Normal neighbour of a vertex without groups (ULONG_MAX: none). */
-    su2double faceArea = 0.0;              /*!< \brief F_m, sum of the magnitudes of the marker's corner vectors. */
-    su2double projectedArea[MAXNDIM] = {}; /*!< \brief P_m[d], sum of max(-N_f[d], 0) over the marker's corners. */
   };
   vector<BoundaryFaceGroupPoint> boundaryFaceGroupPoints;            /*!< \brief Points with stored face groups. */
   vector<vector<BoundaryFaceGroupVertex>> boundaryFaceGroupVertices; /*!< \brief By marker and vertex (empty: none). */
@@ -1081,17 +1079,6 @@ class CGeometry {
    * \return Rank of the basis, 0 where none is stored (the legacy symmetry normals apply).
    */
   unsigned short GetSlipBasis(unsigned short iMarker, unsigned long iVertex, su2double (*Q)[3]) const;
-
-  /*!
-   * \brief Face sums of an owned boundary vertex of the face-group families (see ComputeBoundaryFaceGroups).
-   * \param[in] iMarker - Marker.
-   * \param[in] iVertex - Vertex of the marker.
-   * \param[out] faceArea - F_m, sum of the magnitudes of the marker's corner vectors at the vertex.
-   * \param[out] projectedArea - P_m[iDim], sum of max(-N_f[iDim], 0) over the marker's corner vectors at the vertex.
-   * \return false where they are not available (no face-group data, halo vertex).
-   */
-  bool GetVertexFaceSums(unsigned short iMarker, unsigned long iVertex, su2double& faceArea,
-                         su2double* projectedArea) const;
 
   /*!
    * \brief A virtual member.
