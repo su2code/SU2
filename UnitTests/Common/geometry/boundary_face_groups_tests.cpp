@@ -588,12 +588,17 @@ TEST_CASE("Boundary face groups: cancelling curved markers keep finite symmetry 
   geometry.SetBoundControlVolume(test.config.get(), UPDATE);
   geometry.ComputeBoundaryFaceGroups(test.config.get());
   unsigned short found = 0;
+  su2double normalSum[3] = {};
   for (unsigned short marker = 0; marker < geometry.GetnMarker(); ++marker) {
     const auto tag = test.config->GetMarker_All_TagBound(marker);
     if (tag != "wall" && tag != "step") continue;
     const auto vertex = geometry.nodes->GetVertex(cusp, marker);
     REQUIRE(vertex >= 0);
     REQUIRE(geometry.HasVertexGroups(marker, vertex));
+    su2double basis[3][3] = {};
+    CHECK(geometry.GetSlipBasis(marker, vertex, basis) == 1);
+    for (unsigned short dim = 0; dim < geometry.GetnDim(); ++dim)
+      normalSum[dim] += geometry.vertex[marker][vertex]->GetNormal(dim);
     const auto normal = geometry.symmetryNormals[marker].find(vertex);
     if (normal != geometry.symmetryNormals[marker].end())
       for (unsigned short dim = 0; dim < geometry.GetnDim(); ++dim)
@@ -601,6 +606,7 @@ TEST_CASE("Boundary face groups: cancelling curved markers keep finite symmetry 
     ++found;
   }
   CHECK(found == 2);
+  for (unsigned short dim = 0; dim < geometry.GetnDim(); ++dim) CHECK(normalSum[dim] == 0.0);
 }
 
 TEST_CASE("Grouped isothermal wall assembles its temperature linearization", "[BoundaryFaceGroups]") {
