@@ -1516,6 +1516,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
   addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(), false, flamelet_ParsedOptions.flame_init.data());
 
+  /*!\brief FLAME_INIT_FILENAME \n DESCRIPTION: Restart file of a steady or unsteady simulation that sets the initial flow, scalar and turbulence fields when FLAME_INIT_METHOD= RESTART_FILE. The name is used as given, without appending a zone or time iteration. \ingroup Config*/
+  addStringOption("FLAME_INIT_FILENAME", flamelet_ParsedOptions.flame_init_filename, string(""));
+
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
   addDoubleArrayOption("SPARK_INIT", flamelet_ParsedOptions.spark_init.size(), false, flamelet_ParsedOptions.spark_init.data());
 
@@ -2413,6 +2416,20 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Enable preferential diffusion for FGM simulations. \n DEFAULT: false */
   addBoolOption("PREFERENTIAL_DIFFUSION", flamelet_ParsedOptions.preferential_diffusion, false);
+
+  /* DESCRIPTION: Print per-CV breakdown of manifold miss counts (Progress variable / Enthalpy / Mixture fraction / Hull). \n DEFAULT: false */
+  addBoolOption("FLAMELET_VERBOSE_MISSES", flamelet_ParsedOptions.verbose_misses, false);
+
+  /* DESCRIPTION: Active preferential diffusion terms. BETA_CORRECTION (default): β-scalar viscous flux
+   * correction. SOURCE_TERM: PD closure source terms for non-major species. COMBINED: both. */
+  addEnumOption("PREFERENTIAL_DIFFUSION_METHOD", flamelet_ParsedOptions.pd_method, Flamelet_PD_Method_Map, FLAMELET_PD_METHOD::BETA_CORRECTION);
+
+  /* DESCRIPTION: Major species carrying the resolved Eq. (14) preferential diffusion fluxes of the
+   * SOURCE_TERM method. The manifold variables are composed from these names, so the order and
+   * spelling must match the table: species "H2" implies "D_<cv>_H2" for every controlling variable
+   * <cv> and the mass fraction "Y-H2". Required when PREFERENTIAL_DIFFUSION_METHOD= SOURCE_TERM. */
+  addStringListOption("PREFERENTIAL_DIFFUSION_MAJOR_SPECIES", flamelet_ParsedOptions.n_pd_major_species,
+                      flamelet_ParsedOptions.pd_major_species_names);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
@@ -6101,6 +6118,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   } // species transport checks
 
+  if ((flamelet_ParsedOptions.ignition_method == FLAMELET_INIT_TYPE::RESTART_FILE) &&
+      (Kind_Species_Model != SPECIES_MODEL::FLAMELET)) {
+    SU2_MPI::Error("FLAME_INIT_METHOD= RESTART_FILE is only available for the flamelet model.", CURRENT_FUNCTION);
+  }
+
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
     /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
@@ -6124,9 +6146,34 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                        " values (one for each scalar variable), but only " + to_string(flamelet_ParsedOptions.nspark) + " were provided.", CURRENT_FUNCTION);
       }
     }
+    /*--- Check that initializing from a restart file has what it needs. It starts a new simulation, so
+     * it is exclusive with a regular restart. The adjoint reads the direct solution, so it is not affected. ---*/
+    if (flamelet_ParsedOptions.ignition_method == FLAMELET_INIT_TYPE::RESTART_FILE) {
+      if (flamelet_ParsedOptions.flame_init_filename.empty()) {
+        SU2_MPI::Error("FLAME_INIT_METHOD= RESTART_FILE requires FLAME_INIT_FILENAME to be defined in the config file.", CURRENT_FUNCTION);
+      }
+      if (Restart && !ContinuousAdjoint && !DiscreteAdjoint) {
+        SU2_MPI::Error("FLAME_INIT_METHOD= RESTART_FILE starts a new simulation, it cannot be used with RESTART_SOL= YES.", CURRENT_FUNCTION);
+      }
+      if (Kind_Incomp_System == INCOMP_SYSTEM::PRESSURE_BASED) {
+        SU2_MPI::Error("FLAME_INIT_METHOD= RESTART_FILE does not support KIND_INCOMP_SYSTEM= PRESSURE_BASED.", CURRENT_FUNCTION);
+      }
+    }
     /*--- Check if flame ignition temperature is valid ---*/
     if (flamelet_ParsedOptions.Flame_T_ignition <= Inc_Temperature_Init) {
       SU2_MPI::Error("Flame ignition temperature must be higher than the initial temperature of the flow field.", CURRENT_FUNCTION);
+    }
+
+    /*--- The SOURCE_TERM preferential diffusion method resolves the Eq. (14) flux of a set of major
+     species at run time, so that set has to be named: the manifold variables looked up
+     ("D_<cv>_<species>", "Y-<species>") are composed from these names. Without them there is nothing
+     to look up and the method degenerates silently to no preferential diffusion at all. ---*/
+    if (flamelet_ParsedOptions.preferential_diffusion &&
+        flamelet_ParsedOptions.pd_method == FLAMELET_PD_METHOD::SOURCE_TERM &&
+        flamelet_ParsedOptions.n_pd_major_species == 0) {
+      SU2_MPI::Error("PREFERENTIAL_DIFFUSION_METHOD= SOURCE_TERM requires PREFERENTIAL_DIFFUSION_MAJOR_SPECIES "
+                     "to list the major species carried by the resolved preferential diffusion flux "
+                     "(e.g. PREFERENTIAL_DIFFUSION_MAJOR_SPECIES= (H2, H2O, H)).", CURRENT_FUNCTION);
     }
   }
 

@@ -54,6 +54,9 @@ class CFluidFlamelet final : public CFluidModel {
   unsigned short n_scalars, n_lookups, n_user_scalars, /*!< \brief number of passive reactant species. */
       n_control_vars;                                  /*!< \brief number of controlling variables. */
 
+  unsigned short n_pd_major_species = 0; /*!< \brief number of preferential diffusion major species carrying the
+                                              resolved Eq. (14) flux (SOURCE_TERM method, zero otherwise). */
+
   unsigned long extrapolation;
 
   INC_DENSITYMODEL density_model;
@@ -167,4 +170,23 @@ class CFluidFlamelet final : public CFluidModel {
    * \return Inclusion of preferential diffusion model.
    */
   inline bool GetPreferentialDiffusion() const override { return preferential_diffusion; }
+
+  /*!
+   * \brief Get the global bounds of all controlling variables over all table levels.
+   * Used for per-CV miss classification when FLAMELET_VERBOSE_MISSES is enabled.
+   */
+  void GetTableCVBounds(su2double& cv1_min, su2double& cv1_max,
+                        su2double& cv2_min, su2double& cv2_max,
+                        su2double& cv3_min, su2double& cv3_max) const;
+
+  void ResetHullMissDistance() override;
+  su2double GetHullMissCV1Dev() const override;
+  su2double GetHullMissCV2Dev() const override;
+
+  /*!
+   * \brief Distance from val_CV3 to the nearest table Z level (physical Z units).
+   *        Returns 0 for 2D tables.
+   */
+  su2double GetDistanceToNearestZLevel(su2double val_CV3) const;
+
 };

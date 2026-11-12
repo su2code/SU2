@@ -26,6 +26,8 @@
  */
 
 #include <iostream>
+#include <iomanip>
+#include <algorithm>
 #include <csignal>
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
@@ -289,7 +291,10 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
 
   if (rank == MASTER_NODE && !noWriting) {
 
-    if (WriteHistoryFileOutput(config)) SetHistoryFileOutput(config);
+    if (WriteHistoryFileOutput(config)) {
+      SetHistoryFileOutput(config);
+      SetProbeHistoryFileOutput(config);
+    }
 
     if (WriteScreenHeader(config)) SetScreenHeader(config);
 
@@ -1287,8 +1292,10 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
   if (rank == MASTER_NODE && !noWriting){
 
     /*--- Open history file and print the header ---*/
-    if (!config->GetMultizone_Problem() || config->GetWrt_ZoneHist())
+    if (!config->GetMultizone_Problem() || config->GetWrt_ZoneHist()) {
       PrepareHistoryFile(config);
+      PrepareProbeHistoryFiles(config);
+    }
 
     total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
 
@@ -1394,6 +1401,63 @@ void COutput::PrepareHistoryFile(CConfig *config){
 
   SetHistoryFileHeader(config);
 
+}
+
+void COutput::PrepareProbeHistoryFiles(const CConfig* config) {
+
+  /*--- Derive a common base name/extension from the main history file so probe files
+        land alongside it and follow the same zone/restart-iteration naming. ---*/
+
+  string ext = ".csv";
+  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) ext = ".dat";
+
+  string base = historyFilename;
+  PrintingToolbox::TrimExtension(ext, base);
+
+  probeHistoryFiles.clear();
+
+  /*--- Group "Probe"-type custom outputs that target the same [x,y,z] location into a single
+        dedicated file, so every variable probed at one physical point lands together (e.g.
+        Probe{SPECIES[0]}, Probe{SPECIES[2]}, Probe{VELOCITY_Y} all at the same coordinates). ---*/
+  for (const auto& output : customOutputs) {
+    if (output.type != OperationType::PROBE) continue;
+
+    auto it = std::find_if(probeHistoryFiles.begin(), probeHistoryFiles.end(),
+                            [&](const ProbeHistoryFile& f) { return f.coords == output.markers; });
+    if (it == probeHistoryFiles.end()) {
+      probeHistoryFiles.emplace_back();
+      it = std::prev(probeHistoryFiles.end());
+      it->coords = output.markers;
+    }
+    it->names.push_back(output.name);
+  }
+
+  for (auto& probeFile : probeHistoryFiles) {
+    string suffix;
+    for (const auto& name : probeFile.names) suffix += "_" + name;
+    probeFile.file.open(base + "_probe" + suffix + ext, ios::out);
+
+    probeFile.file << "\"Time_Iter\",\"Outer_Iter\",\"Inner_Iter\"";
+    for (const auto& name : probeFile.names) probeFile.file << ",\"" << name << "\"";
+    probeFile.file << endl;
+  }
+}
+
+void COutput::SetProbeHistoryFileOutput(const CConfig* config) {
+
+  /*--- Probe values were already computed (and Allreduced) earlier this iteration as part of the
+        regular history output evaluation (CFlowOutput::SetCustomOutputs). This only re-reads the
+        cached value(s) from the history map, so the extra cost per probe location is one map
+        lookup per variable. ---*/
+
+  for (auto& probeFile : probeHistoryFiles) {
+    probeFile.file << curTimeIter << ", " << curOuterIter << ", " << curInnerIter;
+    for (const auto& name : probeFile.names) {
+      probeFile.file << ", " << std::setprecision(config->GetOutput_Precision()) << GetHistoryFieldValue(name);
+    }
+    probeFile.file << "\n";
+    probeFile.file.flush();
+  }
 }
 
 void COutput::CheckHistoryOutput(unsigned short nZone) {
@@ -1734,6 +1798,10 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
   fieldIndexCacheCompact.clear();
   curGetFieldIndex = 0;
   fieldGetIndexCache.clear();
+
+  /*--- Per-write preparation. Runs unconditionally on every rank, which is what makes it safe for
+   collectives, unlike anything reached from the per-point loop below. ---*/
+  PrepareVolumeData(config, geometry, solver);
 
   if (femOutput) {
 

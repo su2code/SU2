@@ -106,6 +106,9 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
 
   /*!
    * \brief Retrieve the preferential diffusion scalar values from manifold.
+   * \note Where the manifold cannot be evaluated all preferential diffusion values of a point keep their
+   *       last valid values. A point that has not had valid values yet has nothing to keep: it uses the
+   *       auxiliary variables the manifold returns, zero flux coefficients and no closure source.
    * \param[in] fluid_model_local - pointer to flamelet fluid model.
    * \param[in] iPoint - node ID.
    * \param[in] scalars - local scalar solution.
@@ -161,6 +164,17 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   void SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
                            unsigned long ExtIter) override;
+
+  /*!
+   * \brief Set the initial flow, scalar, turbulence and transition solution from the fields of a restart
+   *        file, for FLAME_INIT_METHOD= RESTART_FILE.
+   * \note Unlike LoadRestart this does not read the iteration metadata, the time history or the grid, so
+   *       the file may come from a steady or unsteady simulation of a different setup.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadFlameInitFile(CGeometry** geometry, CSolver*** solver, CConfig* config) override;
 
   /*!
    * \brief Source term computation.

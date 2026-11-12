@@ -3493,6 +3493,16 @@ public:
                                   bool val_update_geo) { }
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void LoadFlameInitFile(CGeometry **geometry,
+                                        CSolver ***solver,
+                                        CConfig *config) { }
+
+  /*!
    * \brief Read a native SU2 restart file in ASCII format.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
