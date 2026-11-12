@@ -148,6 +148,7 @@ double ReferenceArea(unsigned short nDim, bool split, unsigned int refinements =
 }  // namespace
 
 TEST_CASE("Automatic reference area matches a diamond projection", "[ReferenceArea]") {
+  /* Splitting the wall at the sharp corners must not change the projected area. */
   for (unsigned short nDim : {2, 3}) {
     CAPTURE(nDim);
     CHECK(ReferenceArea(nDim, false) == Approx(2.0).margin(1e-12));
@@ -197,6 +198,7 @@ TEST_CASE("Reference area derivative matches the diamond chord", "[ReferenceArea
     if (geometry->nodes->GetGlobalIndex(i) == 2) trailingX = &geometry->nodes->GetCoord(i)[0];
   }
   REQUIRE(trailingX != nullptr);
+  /* Moving the trailing edge changes the projected chord one-for-one. */
   AD::Reset();
   AD::StartRecording();
   AD::RegisterInput(*trailingX);

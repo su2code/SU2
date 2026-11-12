@@ -4322,10 +4322,12 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
           const auto* face = bound[iMarker][iElem];
           for (unsigned short iNode = 0; iNode < face->GetnNodes(); ++iNode) {
             const auto point = face->GetNode(iNode);
+            /* Count each dual-face contribution only on the rank that owns its vertex. */
             if (!nodes->GetDomain(point)) continue;
             const auto* x = nodes->GetCoord(point);
             const auto* center = face->GetCG();
             su2double normal[3] = {0.0, 0.0, 0.0};
+            /* Reconstruct the oriented dual-face pieces used by SetBoundControlVolume. */
             if (nDim == 2) {
               const auto* edgeCenter = (iNode == 0) ? center : x;
               const auto* elemCenter = (iNode == 0) ? x : center;
@@ -4365,6 +4367,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
 
           WettedArea += AxiFactor * GeometryToolbox::Norm(nDim, Normal);
 
+          /* Structural geometry retains the existing vertex-normal calculation. */
           if (fea) {
             if (Normal[0] < 0) PositiveXArea -= Normal[0];
             if (Normal[1] < 0) PositiveYArea -= Normal[1];
