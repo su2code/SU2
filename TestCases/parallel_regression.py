@@ -343,7 +343,7 @@ def main():
     ea_naca64206.cfg_dir   = "optimization_euler/equivalentarea_naca64206"
     ea_naca64206.cfg_file  = "NACA64206.cfg"
     ea_naca64206.test_iter = 10
-    ea_naca64206.test_vals = [-1.126282, -0.474499, -0.002405, 67775.000000]
+    ea_naca64206.test_vals = [-1.127015, -0.473329, -0.000541, 67775.000000]
     test_list.append(ea_naca64206)
 
     # SUPERSONIC FLOW PAST A RAMP IN A CHANNEL
@@ -567,7 +567,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.419976, -6.631992, 0.238577, 0.159694, 0.000000]
+    turb_oneram6.test_vals = [-2.420041, -6.632014, 0.238585, 0.159688, 0.000000]
     turb_oneram6.timeout   = 3200
     test_list.append(turb_oneram6)
 
@@ -576,7 +576,7 @@ def main():
     turb_oneram6_vc.cfg_dir = "rans/oneram6"
     turb_oneram6_vc.cfg_file = "turb_ONERAM6_vc.cfg"
     turb_oneram6_vc.test_iter = 15
-    turb_oneram6_vc.test_vals = [-2.295077, -6.572734, 0.234428, 0.145063, 0.000000]
+    turb_oneram6_vc.test_vals = [-2.295125, -6.572754, 0.234428, 0.145063, 0.000000]
     turb_oneram6_vc.timeout = 3200
     test_list.append(turb_oneram6_vc)
 
@@ -615,7 +615,7 @@ def main():
     turb_naca0012_sst_muscl_edge.cfg_dir = "rans/naca0012"
     turb_naca0012_sst_muscl_edge.cfg_file = "turb_NACA0012_sst_muscl_edge.cfg"
     turb_naca0012_sst_muscl_edge.test_iter = 10
-    turb_naca0012_sst_muscl_edge.test_vals = [-7.395492, -9.461721, -2.848756, 1.074672, 0.014912, -2.784876, 0.000000]
+    turb_naca0012_sst_muscl_edge.test_vals = [-7.395492, -9.461721, -2.850521, 1.074672, 0.014912, -2.784876, 0.000000]
     turb_naca0012_sst_muscl_edge.timeout = 3200
     test_list.append(turb_naca0012_sst_muscl_edge)
 
@@ -624,7 +624,7 @@ def main():
     turb_naca0012_sst_muscl_frozen.cfg_dir = "rans/naca0012"
     turb_naca0012_sst_muscl_frozen.cfg_file = "turb_NACA0012_sst_muscl_frozen.cfg"
     turb_naca0012_sst_muscl_frozen.test_iter = 10
-    turb_naca0012_sst_muscl_frozen.test_vals = [-8.102153, -9.310635, -3.623485, 1.071750, 0.015836, -2.241139, 0.000000]
+    turb_naca0012_sst_muscl_frozen.test_vals = [-8.102153, -9.310635, -3.623793, 1.071750, 0.015836, -2.241139, 0.000000]
     test_list.append(turb_naca0012_sst_muscl_frozen)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -642,7 +642,7 @@ def main():
     turb_naca0012_sst_2003_Vm.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_2003_Vm.cfg_file  = "turb_NACA0012_sst_2003-Vm.cfg"
     turb_naca0012_sst_2003_Vm.test_iter = 10
-    turb_naca0012_sst_2003_Vm.test_vals = [-10.168739, -3.668709, 1.060563, 0.019147, -2.282800]
+    turb_naca0012_sst_2003_Vm.test_vals = [-10.168739, -3.669165, 1.060563, 0.019147, -2.282801]
     turb_naca0012_sst_2003_Vm.timeout   = 3200
     test_list.append(turb_naca0012_sst_2003_Vm)
 
@@ -651,7 +651,7 @@ def main():
     turb_naca0012_sst_1994_KLm.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_1994_KLm.cfg_file  = "turb_NACA0012_sst_1994-KLm.cfg"
     turb_naca0012_sst_1994_KLm.test_iter = 10
-    turb_naca0012_sst_1994_KLm.test_vals = [-10.390871, -3.701584, 1.062164, 0.019076, -2.426123]
+    turb_naca0012_sst_1994_KLm.test_vals = [-10.390872, -3.701997, 1.062164, 0.019076, -2.426124]
     turb_naca0012_sst_1994_KLm.timeout   = 3200
     test_list.append(turb_naca0012_sst_1994_KLm)
 
@@ -669,7 +669,7 @@ def main():
     turb_naca0012_sst_expliciteuler.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_expliciteuler.cfg_file  = "turb_NACA0012_sst_expliciteuler.cfg"
     turb_naca0012_sst_expliciteuler.test_iter = 10
-    turb_naca0012_sst_expliciteuler.test_vals = [-3.532365, -3.157224, 3.743381, 1.124798, 0.501715, -16.000000]
+    turb_naca0012_sst_expliciteuler.test_vals = [-3.532364, -3.157224, 3.743381, 1.124826, 0.501554, -16.000000]
     turb_naca0012_sst_expliciteuler.timeout   = 3200
     test_list.append(turb_naca0012_sst_expliciteuler)
 
@@ -1166,7 +1166,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.583617, 1.229594, 0.463384, -0.035444]
+    turb_naca0012_3c.test_vals = [-5.583606, 1.229597, 0.463269, -0.035479]
     test_list.append(turb_naca0012_3c)
 
     # NACA0012 p1c1
