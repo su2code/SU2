@@ -26,6 +26,9 @@
  */
 
 #include "CIntegration.hpp"
+#include "../../../Common/include/containers/container_decorators.hpp"
+
+class CEulerVariable;
 
 /*!
  * \class CMultiGridIntegration
@@ -75,23 +78,28 @@ private:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] mu - Variable for controlling the kind of multigrid algorithm.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
+   * \param[in] residualReady - The residual and time step of iMesh are already computed at its current solution.
    */
   void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container,
                        CNumerics ******numerics_container, CConfig **config,
                        unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                       unsigned short iZone, unsigned short iInst);
+                       unsigned short iZone, unsigned short iInst, bool residualReady);
 
   /*!
-   * \brief Compute the forcing term.
+   * \brief Store the restricted fine-grid defect in the truncation error of the coarse grid.
    * \param[in] sol_fine - Pointer to the solution on the fine grid.
    * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
-   * \param[in] geo_fine - Geometrical definition of the fine grid.
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                       CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
+  void SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_coarse, CConfig *config);
+
+  /*!
+   * \brief Subtract the coarse-grid residual from the restricted defect, which gives the forcing term.
+   * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   */
+  void SetForcing_Term(CSolver *sol_coarse, CGeometry *geo_coarse);
 
   /*!
    * \brief Add the truncation error to the residual.
@@ -103,10 +111,12 @@ private:
   /*!
    * \brief Set the value of the corrected fine grid solution.
    * \param[out] sol_fine - Pointer to the solution on the fine grid.
+   * \param[in] sol_flow - Flow solver on the fine grid, which flags the points that get no correction.
    * \param[in] geo_fine - Geometrical definition of the fine grid.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh);
+  void SetProlongated_Correction(CSolver *sol_fine, CSolver *sol_flow, CGeometry *geo_fine, CConfig *config,
+                                 unsigned short iMesh);
 
   /*!
    * \brief Compute the gradient in coarse grid using the fine grid information.
@@ -141,9 +151,22 @@ private:
    * \param[in] geo_fine - Geometrical definition of the fine grid.
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the coarse mesh.
    */
   void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                               CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+                               CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Set the solution of every fine child from its coarse parent, constant or linearly reconstructed.
+   * \param[in,out] sol_fine - Solver on the fine grid.
+   * \param[in] sol_coarse - Solver on the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the coarse mesh.
+   */
+  void InterpolateSolutionToChildren(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
+                                     CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
 
 
   /*!
@@ -175,11 +198,12 @@ private:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iZone - Index of the zone.
    * \param[in] iRKLimit - Number of Runge-Kutta steps.
+   * \param[in] residualReady - The first step starts from the residual and time step already computed.
    */
   void PreSmoothing(unsigned short RunTime_EqSystem, CGeometry**** geometry, CSolver***** solver_container,
                     CConfig **config_container, CSolver* solver_fine, CNumerics** numerics_fine,
                     CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config,
-                    unsigned short iMesh, unsigned short iZone, unsigned short iRKLimit);
+                    unsigned short iMesh, unsigned short iZone, unsigned short iRKLimit, bool residualReady);
 
   /*!
    * \brief Compute the fine grid correction from the coarse solution.
@@ -190,7 +214,21 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                                 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+                                 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config,
+                                 unsigned short iMesh);
+
+  /*!
+   * \brief Least-squares gradient of the coarse-grid correction, limited so no child value
+   * leaves the range of the coarse stencil.
+   * \param[in] sol_coarse - Solver holding the correction in Solution_Old, or the solution itself.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the coarse mesh.
+   * \param[in] useSolution - Differentiate Solution instead of Solution_Old.
+   */
+  void ComputeProlongationGradient(CSolver *sol_coarse, CGeometry *geo_coarse, CGeometry *geo_fine,
+                                   const CConfig *config, unsigned short iMesh, bool useSolution);
 
   /*!
    * \brief Do an implicit smoothing of the prolongated correction.
@@ -296,9 +334,11 @@ private:
    * \param[in]     geo_coarse     - Geometry of the level handing over.
    * \param[in]     config         - Definition of the particular problem.
    * \param[in]     eddy_viscosity - Carry the eddy viscosity across as well.
+   * \param[in]     iMesh          - Index of the coarse mesh.
    */
   void SetProlongated_ScalarSolution(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                                     CGeometry *geo_coarse, CConfig *config, bool eddy_viscosity);
+                                     CGeometry *geo_coarse, CConfig *config, bool eddy_viscosity,
+                                     unsigned short iMesh);
 
   /*!
    * \brief Helper function for early-exit logic during pre/post-smoothing.
@@ -319,7 +359,8 @@ private:
                         passivedouble lastRMS[2], char& exitReason,
                         passivedouble& worstStepRatio, unsigned short& worstStep);
 
-  static constexpr int MAX_MG_LEVELS = 10;
+  /*--- CConfig rejects a larger MGLEVEL, so the per-level arrays below always fit. ---*/
+  static constexpr int MAX_MG_LEVELS = MAX_MGLEVELS;
 
   /*--- Bounds the fixed-size stack buffers in the restriction and prolongation kernels,
    *    independently of the CSysMatrix limit of the same name. ---*/
@@ -354,6 +395,14 @@ private:
   unsigned short lastPreSmoothWorstStep[MAX_MG_LEVELS+1] = {};
   unsigned short lastPostSmoothWorstStep[MAX_MG_LEVELS+1] = {};
 
+  /*--- Linear solver iterations and final relative residual of each smoothing step, per level. ---*/
+  struct LinSolInfo {
+    unsigned long iters;
+    passivedouble res;
+  };
+  std::vector<LinSolInfo> lastPreLinSol[MAX_MG_LEVELS+1];
+  std::vector<LinSolInfo> lastPostLinSol[MAX_MG_LEVELS+1];
+
   /*! \brief FinestMesh observed on the previous call; 0 also serves as the sentinel forcing a
    *  reset on the first call, since a FULL cycle starts at FinestMesh == nMGLevels > 0. */
   unsigned short mg_ramp_last_FinestMesh = 0;
@@ -367,6 +416,24 @@ private:
   /*! \brief Why the active level was last promoted, for the report message. */
   enum class MGStartupPromote { NONE, BUDGET, CONVERGENCE, STAGNATION };
   MGStartupPromote mg_startup_promote_reason = MGStartupPromote::NONE;
+
+  /*! \brief Limited least-squares gradient of the correction, indexed by coarse level.
+   *  Allocated on first use, only when MG_LINEAR_PROLONGATION is on. */
+  vector<CVectorOfMatrix> prolongGradient;
+  vector<vector<passivedouble>> correctionWeight; /*!< \brief Per level, weight of the correction near wall ends. */
+
+  /*!
+   * \brief Weight each level's prolongated correction from zero where a wall ends to one a few coarse CVs away.
+   * \param[in] geometry - Geometry of all levels of this zone and instance.
+   * \param[in] flowNodes - Flow variables of the finest grid, which flag the wall ends.
+   * \param[in] nLevels - Number of multigrid levels.
+   */
+  void ComputeCorrectionWeights(CGeometry** geometry, const CEulerVariable* flowNodes, unsigned short nLevels);
+
+  /*! \brief Coarse cells per level whose gradient fit is too ill-conditioned and keep the constant
+   *  operator, and whether that level has been reported. */
+  unsigned long prolongIllConditioned[MAX_MG_LEVELS + 1] = {};
+  bool prolongReported[MAX_MG_LEVELS + 1] = {};
 
   vector<passivedouble> mg_startup_conv_start; /*!< \brief Field values when the active level became active. */
   vector<passivedouble> mg_startup_conv_prev;  /*!< \brief Field values on the previous iteration. */

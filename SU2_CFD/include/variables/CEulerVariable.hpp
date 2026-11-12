@@ -299,6 +299,11 @@ class CEulerVariable : public CFlowVariable {
   }
 
   /*!
+   * \brief Index of the momentum in the conservative solution vector.
+   */
+  inline short GetVelocityIndex() const final { return 1; }
+
+  /*!
    * \brief Set the momentum part of the truncation error to zero.
    * \param[in] iPoint - Point index.
    */
@@ -368,5 +373,15 @@ class CEulerVariable : public CFlowVariable {
    * \brief Marks outliers (0 ok, MAX_OUTLIER_MITIGATION maximum mitigation).
    */
   su2vector<uint8_t> OutlierMitigation;
+
+  /*!
+   * \brief Points whose edges are reconstructed to first order (1), others use MUSCL (0).
+   */
+  su2vector<uint8_t> FirstOrderReconstruction;
+
+  /*!
+   * \brief Points, and their neighbours, where the multigrid correction is not prolongated (1), others (0).
+   */
+  su2vector<uint8_t> SkipMGCorrection;
 
 };

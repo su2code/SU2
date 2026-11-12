@@ -100,9 +100,17 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     }
   }
 
-  /*--- Compute gradient of the primitive variables ---*/
+  /*--- Compute gradient of the primitive variables. Coarse levels take the viscous flux from the edge
+   *    difference only, as their Jacobian does. ---*/
 
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+  if (iMesh != MESH_0) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned short iVar = 0; iVar < nPrimVarGrad; iVar++)
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) nodes->GetGradient_Primitive()(iPoint, iVar, iDim) = 0.0;
+    END_SU2_OMP_FOR
+  }
+  else if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetPrimitive_Gradient_GG(geometry, config);
   }
   else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {

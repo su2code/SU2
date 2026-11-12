@@ -821,6 +821,79 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     return range;
   };
 
+  /*--- The face normals of a closed control volume sum to zero. Reports the CV with the largest
+   *    sum relative to the sum of the face areas, and how many CVs exceed a small tolerance. ---*/
+  auto closureReport = [&](const CGeometry* grid, const CGeometry* fine, unsigned short iLevel) {
+    const auto nDomain = grid->GetnPointDomain();
+    const auto nDim = grid->GetnDim();
+    vector<std::array<passivedouble, 3>> boundary(nDomain, {0.0, 0.0, 0.0});
+    for (auto iMarker = 0u; iMarker < grid->GetnMarker(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+      for (auto iVertex = 0ul; iVertex < grid->GetnVertex(iMarker); iVertex++) {
+        const auto iPoint = grid->vertex[iMarker][iVertex]->GetNode();
+        if (iPoint >= nDomain) continue;
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          boundary[iPoint][iDim] -= SU2_TYPE::GetValue(grid->vertex[iMarker][iVertex]->GetNormal(iDim));
+      }
+    }
+
+    passivedouble worst = 0.0;
+    unsigned long worstPoint = 0, nBad = 0, nBadGlobal = 0;
+    for (auto iPoint = 0ul; iPoint < nDomain; iPoint++) {
+      std::array<passivedouble, 3> sum = boundary[iPoint];
+      passivedouble area = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++) area += fabs(sum[iDim]);
+      for (auto iNeigh = 0u; iNeigh < grid->nodes->GetnPoint(iPoint); iNeigh++) {
+        const auto iEdge = grid->nodes->GetEdge(iPoint, iNeigh);
+        const passivedouble sign = (grid->edges->GetNode(iEdge, 0) == iPoint) ? 1.0 : -1.0;
+        passivedouble norm2 = 0.0;
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          const passivedouble n = SU2_TYPE::GetValue(grid->edges->GetNormal(iEdge)[iDim]);
+          sum[iDim] += sign * n;
+          norm2 += n * n;
+        }
+        area += sqrt(norm2);
+      }
+      passivedouble defect = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++) defect += sum[iDim] * sum[iDim];
+      defect = sqrt(defect) / max(area, std::numeric_limits<passivedouble>::min());
+      if (defect > 1e-6) nBad++;
+      if (defect > worst) {
+        worst = defect;
+        worstPoint = iPoint;
+      }
+    }
+    passivedouble worstGlobal = 0.0;
+    CPassiveMPI::Allreduce(&worst, &worstGlobal, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&nBad, &nBadGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+    if (rank == MASTER_NODE) {
+      cout << "  MG level " << iLevel << " CV closure: " << nBadGlobal << " CVs with a face normal sum above 1e-6 of the "
+           << "face area, worst " << worstGlobal << "\n";
+    }
+    if ((worst == worstGlobal) && (worst > 1e-6)) {
+      cout << "  MG level " << iLevel << " worst closure on rank " << rank << ", global point "
+           << grid->nodes->GetGlobalIndex(worstPoint) << ", volume " << grid->nodes->GetVolume(worstPoint) << ", "
+           << grid->nodes->GetnPoint(worstPoint) << " neighbors, x =";
+      for (auto iDim = 0u; iDim < nDim; iDim++) cout << " " << grid->nodes->GetCoord(worstPoint, iDim);
+      cout << "\n";
+      for (auto iChild = 0u; iChild < grid->nodes->GetnChildren_CV(worstPoint); iChild++) {
+        const auto iFine = grid->nodes->GetChildren_CV(worstPoint, iChild);
+        cout << "    child " << fine->nodes->GetGlobalIndex(iFine) << " volume " << fine->nodes->GetVolume(iFine)
+             << ", neighbors (global index, h = halo, parent):";
+        for (auto jFine : fine->nodes->GetPoints(iFine)) {
+          const auto parent = fine->nodes->GetParent_CV(jFine);
+          cout << " " << fine->nodes->GetGlobalIndex(jFine) << (fine->nodes->GetDomain(jFine) ? "" : "h") << ":";
+          if (parent == std::numeric_limits<unsigned long>::max()) cout << "none";
+          else cout << parent;
+        }
+        cout << "\n";
+      }
+      cout << "    coarse neighbors:";
+      for (auto jPoint : grid->nodes->GetPoints(worstPoint)) cout << " " << jPoint << (grid->nodes->GetDomain(jPoint) ? "" : "h");
+      cout << " (this CV " << worstPoint << ")\n";
+    }
+  };
+
   /*--- Agglomeration should not spread the CV volumes far wider than the fine grid already does.
    *    An absolute limit cannot tell a coarsened mesh from a badly stretched input one. ---*/
   constexpr passivedouble VOL_RATIO_GROWTH_WARN = 10.0;
@@ -879,11 +952,9 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
     geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
 
+    closureReport(geometry[iMGlevel], geometry[iMGlevel-1], iMGlevel);
+
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
-
-    /*--- Find closest, most normal, neighbor to a surface point ---*/
-
-    geometry[iMGlevel]->FindNormal_Neighbor(config);
 
     /*--- Store our multigrid index. ---*/
 
@@ -933,6 +1004,18 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
   /*--- Perform a few preprocessing routines and communications. ---*/
 
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+
+    /*--- SetCoord centred a halo agglomerate on the partial child list this rank holds. Take
+     the owner's coordinate, otherwise coarse stencils depend on the partitioning. ---*/
+
+    if (iMGlevel > MESH_0) {
+      geometry[iMGlevel]->InitiateComms(geometry[iMGlevel], config, MPI_QUANTITIES::COORDINATES);
+      geometry[iMGlevel]->CompleteComms(geometry[iMGlevel], config, MPI_QUANTITIES::COORDINATES);
+
+      /*--- Find closest, most normal, neighbor to a surface point ---*/
+
+      geometry[iMGlevel]->FindNormal_Neighbor(config);
+    }
 
     /*--- Compute the max length. ---*/
 
@@ -1809,7 +1892,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         /*--- Compressible flow Ideal gas ---*/
         numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGrad_Flow(nDim, nVar_Flow, true, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGrad_Flow(nDim, nVar_Flow, false, config);
+          numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGrad_Flow(nDim, nVar_Flow, true, config);
 
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1820,7 +1903,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         /*--- Compressible flow Real gas ---*/
         numerics[MESH_0][FLOW_SOL][visc_term] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, true, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics[iMGlevel][FLOW_SOL][visc_term] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, false, config);
+          numerics[iMGlevel][FLOW_SOL][visc_term] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, true, config);
 
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1832,7 +1915,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       /*--- Incompressible flow, use preconditioning method ---*/
       numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, true, config);
       for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, false, config);
+        numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, true, config);
 
       /*--- Definition of the boundary condition method ---*/
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)

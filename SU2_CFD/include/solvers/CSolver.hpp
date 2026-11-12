@@ -82,6 +82,40 @@ protected:
   vector<su2double> NonLinRes_Series; /*!< \brief Vector holding the nonlinear residual indicator series. */
   su2double Old_Func,  /*!< \brief Old value of the nonlinear residual indicator. */
   New_Func;            /*!< \brief Current value of the nonlinear residual indicator. */
+  /*--- State of the residual-driven CFL adaption, a negative ceiling or cap means none is active. ---*/
+  vector<passivedouble> ResTrend_History;             /*!< \brief Recent mean log residuals. */
+  vector<vector<passivedouble>> ResJump_History;      /*!< \brief Recent log residuals of the flow variables. */
+  vector<vector<passivedouble>> ResFlow_History;      /*!< \brief Recent log residuals of the flow variables. */
+  vector<passivedouble> ResMean_History;              /*!< \brief Recent mean log residuals of the flow variables. */
+  passivedouble ResRise = 0.0;                        /*!< \brief Rise of the flow residual above its recent best. */
+  unsigned long CFL_LastFlip = 0;                     /*!< \brief Iteration of the last flip-flop. */
+  unsigned long CFL_LastRegress = 0;                  /*!< \brief Iteration of the last residual regression. */
+  bool ResTrend_Increase = false;                     /*!< \brief The residual trend allows a larger CFL. */
+  bool ResTrend_Reduce = false;                       /*!< \brief The residual trend requires a smaller CFL. */
+  bool CFL_Cut = false;                               /*!< \brief Halve the CFL in this update. */
+  passivedouble CFL_Ceiling = -1.0;                   /*!< \brief Temporary ceiling after a cut. */
+  passivedouble CFL_Cap = -1.0;                       /*!< \brief Lasting limit learned from repeated events. */
+  vector<passivedouble> CFL_EventValues;              /*!< \brief CFL at each cut. */
+  unsigned long CFL_LastEvent = 0;                    /*!< \brief Iteration of the last cut. */
+  unsigned long CFL_LastCapProbe = 0;                 /*!< \brief Iteration of the last cap increase. */
+  vector<vector<passivedouble>> ResStall_History;     /*!< \brief Log flow residuals over two stall windows. */
+  vector<passivedouble> CFLStall_History;             /*!< \brief Mean CFL over two stall windows. */
+  unsigned long Stall_Streak = 0;                     /*!< \brief Consecutive iterations without envelope progress. */
+  unsigned long CFL_LastStall = 0;                    /*!< \brief Iteration of the last plateau probe decision. */
+  passivedouble CFL_StallCap = -1.0;                  /*!< \brief Cap kept after a plateau probe, which cap increases stay below. */
+  passivedouble CFL_OscLevel = -1.0;                  /*!< \brief Lowest CFL at which the residuals flip-flopped. */
+  unsigned long CFL_LastOscRelease = 0;               /*!< \brief Iteration of the last flip-flop limit increase. */
+  passivedouble Res_AtOsc = 0.0;                      /*!< \brief Mean log flow residual at that flip-flop. */
+  bool Trial_Active = false;                          /*!< \brief A CFL cut at a residual plateau is being evaluated. */
+  bool Trial_Off = false;                             /*!< \brief A probe showed slower convergence at the lower CFL, no more probes. */
+  unsigned long Trial_Start = 0;                      /*!< \brief Iteration of the probe cut. */
+  unsigned long Trial_Hold = 0;                       /*!< \brief No probe starts before this iteration. */
+  passivedouble Trial_Rate = 0.0;                     /*!< \brief Residual fall before the probe, in decades per 100 iterations. */
+  passivedouble Trial_CFL = 0.0;                      /*!< \brief CFL at the plateau, which sets how far a kept cut may grow back. */
+  passivedouble Trial_MaxRate = 1e30;                 /*!< \brief A probe starts only below this residual fall. */
+  passivedouble Trial_Ceiling = -1.0;                 /*!< \brief CFL ceiling before the probe. */
+  passivedouble Trial_Cap = -1.0;                     /*!< \brief CFL cap before the probe. */
+  passivedouble Trial_StallCap = -1.0;                /*!< \brief Plateau cap before the probe. */
   unsigned short nVar,           /*!< \brief Number of variables of the problem. */
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */

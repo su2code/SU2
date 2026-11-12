@@ -455,9 +455,10 @@ class CSysSolve {
    * \param[in,out] LinSysSol - Linear system solution
    * \param[in] geometry -  Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] maxIter - Iteration cap replacing LINEAR_SOLVER_ITER in standard mode, 0 keeps the config value.
    */
   unsigned long Solve(MatrixType& Jacobian, const CSysVector<su2double>& LinSysRes, CSysVector<su2double>& LinSysSol,
-                      CGeometry* geometry, const CConfig* config);
+                      CGeometry* geometry, const CConfig* config, unsigned long maxIter = 0);
 
   /*!
    * \brief Solve the adjoint linear system using a Krylov subspace method

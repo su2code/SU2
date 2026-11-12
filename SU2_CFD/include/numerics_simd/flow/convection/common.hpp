@@ -119,9 +119,16 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
           fmax(solution.OutlierMitigation(iPoint[k]),
                solution.OutlierMitigation(jPoint[k])) / VariableType::MAX_OUTLIER_MITIGATION);
     }
+    /*--- Edges of flagged points drop to first order without the extra dissipation of a
+     *    non-physical edge. ---*/
+    Double firstOrder = nonPhysical;
+    for (size_t k = 0; k < Double::Size; ++k) {
+      firstOrder[k] = fmax(firstOrder[k], fmax(solution.FirstOrderReconstruction(iPoint[k]),
+                                               solution.FirstOrderReconstruction(jPoint[k])));
+    }
     for (size_t iVar = 0; iVar < ReconVarType::nVar; ++iVar) {
-      V.i.all(iVar) = nonPhysical * V1st.i.all(iVar) + (1-nonPhysical) * V.i.all(iVar);
-      V.j.all(iVar) = nonPhysical * V1st.j.all(iVar) + (1-nonPhysical) * V.j.all(iVar);
+      V.i.all(iVar) = firstOrder * V1st.i.all(iVar) + (1-firstOrder) * V.i.all(iVar);
+      V.j.all(iVar) = firstOrder * V1st.j.all(iVar) + (1-firstOrder) * V.j.all(iVar);
     }
   } else {
     nonPhysical = 0;
