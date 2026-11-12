@@ -2435,7 +2435,10 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
 
         /*--- Setup the interpolation. ---*/
 
-        if (!config[donor]->GetBoolTurbomachinery()) {
+        /*--- Blade row to blade row interfaces build their own (mixing-plane or sliding) interpolation below. ---*/
+        const bool turbo_interface = config[donor]->GetBoolTurbomachinery() && config[target]->GetBoolTurbomachinery();
+
+        if (!turbo_interface) {
           interpolation[donor][target] = unique_ptr<CInterpolator>(CInterpolatorFactory::CreateInterpolator(
                                        geometry, config, interpolation[target][donor].get(), donor, target, false));
           if (rank == MASTER_NODE) cout << " Transferring ";
@@ -2511,7 +2514,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
         }
         else if (fluid_donor && fluid_target) {
           /*--- Interface handling for turbomachinery applications. ---*/
-          if (config[donor]->GetBoolTurbomachinery()) {
+          if (turbo_interface) {
             auto interfaceIndex = donor+target; // Here we assume that the interfaces at each side are the same kind
             switch (config[donor]->GetKind_TurboInterface(interfaceIndex)) {
               case TURBO_INTERFACE_KIND::MIXING_PLANE: {
@@ -2655,6 +2658,7 @@ void CDriver::PreprocessTurboVertex(CConfig** config, CGeometry**** geometry, CS
 
   unsigned short nSpanMax = 0;
   mixingplane = config[ZONE_0]->GetBoolMixingPlaneInterface();
+  const auto nTurboZones = config[ZONE_0]->GetnTurboZones();
 
   /*--- Create turbovertex structure ---*/
   if (rank == MASTER_NODE) cout<<endl<<"Initialize Turbo Vertex Structure." << endl;
@@ -2667,7 +2671,7 @@ void CDriver::PreprocessTurboVertex(CConfig** config, CGeometry**** geometry, CS
         nSpanMax = config[iZone]->GetnSpanWiseSections();
       }
 
-      config[nZone-1]->SetnSpan_iZones(config[iZone]->GetnSpanWiseSections(), iZone);
+      config[nTurboZones-1]->SetnSpan_iZones(config[iZone]->GetnSpanWiseSections(), iZone);
 
       geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, INFLOW, true);
       geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, OUTFLOW, true);
@@ -2691,9 +2695,12 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
   bool discrete_adjoint = config[ZONE_0]->GetDiscrete_Adjoint();
   su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
 
+  /*--- Only the blade rows (the first zones) are turbo zones, other zones (e.g. solids) are skipped. ---*/
+  const auto nTurboZones = config[ZONE_0]->GetnTurboZones();
+
   // TODO(turbo): make it general for turbo HB
   if (rank == MASTER_NODE) cout<<"Compute inflow and outflow average geometric quantities." << endl;
-  for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nTurboZones; iZone++) {
     geometry[iZone][INST_0][MESH_0]->SetAvgTurboValue(config[iZone], iZone, INFLOW, true);
     geometry[iZone][INST_0][MESH_0]->SetAvgTurboValue(config[iZone], iZone, OUTFLOW, true);
     geometry[iZone][INST_0][MESH_0]->GatherInOutAverageValues(config[iZone], true);
@@ -2701,15 +2708,15 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
 
   if (rank == MASTER_NODE) cout<<"Initialize solver containers for average quantities." << endl;
   if (!dummy){
-    for (iZone = 0; iZone < nZone; iZone++) {
+    for (iZone = 0; iZone < nTurboZones; iZone++) {
       solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboContainers(geometry[iZone][INST_0][MESH_0],config, iZone);
     }
   }
 
   if(mixingplane){
     if (rank == MASTER_NODE) cout << "Set span-wise sections between zones on Mixing-Plane interface." << endl;
-    for (donorZone = 0; donorZone < nZone; donorZone++) {
-      for (targetZone = 0; targetZone < nZone; targetZone++) {
+    for (donorZone = 0; donorZone < nTurboZones; donorZone++) {
+      for (targetZone = 0; targetZone < nTurboZones; targetZone++) {
         if (interface_container[donorZone][targetZone] != nullptr){
           interface[donorZone][targetZone]->SetSpanWiseLevels(config[donorZone], config[targetZone]);
         }
@@ -2718,13 +2725,13 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
   }
 
   /*--- Transfer number of blade to ZONE_0 to correctly compute turbo performance---*/
-  for (iZone = 1; iZone < nZone; iZone++) {
+  for (iZone = 1; iZone < nTurboZones; iZone++) {
     nBlades = config[iZone]->GetnBlades(iZone);
     config[ZONE_0]->SetnBlades(iZone, nBlades);
   }
 
   if (rank == MASTER_NODE && !dummy){
-    for (iZone = 0; iZone < nZone; iZone++) {
+    for (iZone = 0; iZone < nTurboZones; iZone++) {
     areaIn  = geometry[iZone][INST_0][MESH_0]->GetSpanAreaIn(iZone, config[iZone]->GetnSpanWiseSections());
     areaOut = geometry[iZone][INST_0][MESH_0]->GetSpanAreaOut(iZone, config[iZone]->GetnSpanWiseSections());
     nBlades = config[iZone]->GetnBlades(iZone);
@@ -2736,14 +2743,14 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
 
   if(!restart && !discrete_adjoint){
     if (rank == MASTER_NODE) cout<<"Initialize turbomachinery solution quantities." << endl;
-    for(iZone = 0; iZone < nZone; iZone++) {
+    for(iZone = 0; iZone < nTurboZones; iZone++) {
       solver[iZone][INST_0][MESH_0][FLOW_SOL]->SetFreeStream_TurboSolution(config[iZone]);
     }
   }
 
   if (dummy) return; // No need to go further for a dummy run
   if (rank == MASTER_NODE) cout<<"Initialize inflow and outflow average solution quantities." << endl;
-  for(iZone = 0; iZone < nZone; iZone++) {
+  for(iZone = 0; iZone < nTurboZones; iZone++) {
     solver[iZone][INST_0][MESH_0][FLOW_SOL]->PreprocessAverage(solver[iZone][INST_0][MESH_0], geometry[iZone][INST_0][MESH_0],config[iZone],INFLOW);
     solver[iZone][INST_0][MESH_0][FLOW_SOL]->PreprocessAverage(solver[iZone][INST_0][MESH_0], geometry[iZone][INST_0][MESH_0],config[iZone],OUTFLOW);
     solver[iZone][INST_0][MESH_0][FLOW_SOL]->TurboAverageProcess(solver[iZone][INST_0][MESH_0], geometry[iZone][INST_0][MESH_0],config[iZone],INFLOW);

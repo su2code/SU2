@@ -206,7 +206,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddNearfieldInverseDesignOutput();
 
-  if (config->GetBoolTurbomachinery()) AddTurboOutput(config->GetnZone());
+  if (config->GetBoolTurbomachinery()) AddTurboOutput(config->GetnTurboZones());
 
 }
 
@@ -535,7 +535,7 @@ void CFlowCompOutput::SetTurboPerformance_Output(su2vector<std::shared_ptr<CTurb
   TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
   TurboInOut.PrintHeader();
 
-  for (unsigned short iZone = 0; iZone <= config->GetnZone()-1; iZone++) {
+  for (unsigned short iZone = 0; iZone < config->GetnTurboZones(); iZone++) {
     auto nSpan = config->GetnSpan_iZones(iZone);
     const auto& BladePerf = TurboBladePerfs[iZone]->GetBladesPerformances().at(nSpan);
 
@@ -589,7 +589,7 @@ void CFlowCompOutput::SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbo
 }
 
 void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config) {
-  for (unsigned short iZone = 0; iZone <= config->GetnZone()-1; iZone++) {
+  for (unsigned short iZone = 0; iZone < config->GetnTurboZones(); iZone++) {
     auto nSpan = config->GetnSpan_iZones(iZone);
     const auto& BladePerf = TurboBladePerfs[iZone]->GetBladesPerformances().at(nSpan);
 
