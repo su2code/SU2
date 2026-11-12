@@ -2916,10 +2916,10 @@ void CornerVector(unsigned short nDim, CPoint* nodes, const CPrimalGrid* elem, u
 }  // namespace
 
 bool CGeometry::UseBoundaryFaceGroups(const CConfig* config) {
-  if ((config->GetKind_SU2() != SU2_COMPONENT::SU2_CFD) || config->GetDynamic_Grid() ||
-      config->GetnMGLevels() != 0 || config->GetnMarker_Periodic() != 0 || config->GetMultizone_Problem() ||
-      config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ||
-      (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)) return false;
+  if ((config->GetKind_SU2() != SU2_COMPONENT::SU2_CFD) || config->GetDynamic_Grid() || config->GetnMGLevels() != 0 ||
+      config->GetnMarker_Periodic() != 0 || config->GetMultizone_Problem() || config->GetContinuous_Adjoint() ||
+      config->GetDiscrete_Adjoint() || (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET))
+    return false;
   switch (config->GetKind_Solver()) {
     case MAIN_SOLVER::EULER:
     case MAIN_SOLVER::NAVIER_STOKES:
@@ -3040,7 +3040,8 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
     vector<unsigned short> markers;
     for (const auto& face : faces)
       if (std::find(markers.begin(), markers.end(), face[0]) == markers.end()) markers.push_back(face[0]);
-    const auto nGroups = SharpEdgeNormals::FaceGroups(nDim, nFaces, N.get(), edge.get(), nEdge.data(), groupN.get(), faceGroup.data(), linkClass.data());
+    const auto nGroups = SharpEdgeNormals::FaceGroups(nDim, nFaces, N.get(), edge.get(), nEdge.data(), groupN.get(),
+                                                      faceGroup.data(), linkClass.data());
 
     /*--- Single-marker points with one group keep the vertex values; only their normal neighbour is set. ---*/
     if ((nGroups == 1) && (markers.size() == 1)) {
@@ -3055,8 +3056,8 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
         su2double unit[MAXNDIM] = {0.0};
         const auto norm = GeometryToolbox::Norm(nDim, normal);
         for (unsigned short d = 0; d < nDim; ++d) unit[d] = normal[d] / norm;
-        ordinaryDistances += SU2_TYPE::GetValue(GeometryToolbox::NormalDistance(
-            nDim, unit, nodes->GetCoord(iPoint), nodes->GetCoord(candidate.first)));
+        ordinaryDistances += SU2_TYPE::GetValue(
+            GeometryToolbox::NormalDistance(nDim, unit, nodes->GetCoord(iPoint), nodes->GetCoord(candidate.first)));
       }
       continue;
     }
@@ -3078,7 +3079,8 @@ void CGeometry::ComputeBoundaryFaceGroups(const CConfig* config) {
         ++markerFaces;
       }
       const su2double* normal = vertex[iMarker][iVertex]->GetNormal();
-      consistent = consistent && SharpEdgeNormals::ConsistentCornerSum(nDim, sum, normal, faceMagnitude, markerFaces, EPS * EPS);
+      consistent =
+          consistent && SharpEdgeNormals::ConsistentCornerSum(nDim, sum, normal, faceMagnitude, markerFaces, EPS * EPS);
     }
     if (!consistent) {
       ++nKept;
@@ -3234,9 +3236,8 @@ size_t CGeometry::GetnVertexGroups(unsigned short iMarker, unsigned long iVertex
   return vertexData ? vertexData->groups.size() : 1;
 }
 
-void CGeometry::GetVertexGroup(unsigned short iMarker, unsigned long iVertex, size_t iGroup,
-                               su2double* unitNormal, su2double& area, unsigned long& neighbor,
-                               su2double& distance) const {
+void CGeometry::GetVertexGroup(unsigned short iMarker, unsigned long iVertex, size_t iGroup, su2double* unitNormal,
+                               su2double& area, unsigned long& neighbor, su2double& distance) const {
   const auto* vertexData = StoredVertexGroups(iMarker, iVertex);
   if (vertexData) {
     const auto& data = boundaryFaceGroupPoints[vertexData->pointData];

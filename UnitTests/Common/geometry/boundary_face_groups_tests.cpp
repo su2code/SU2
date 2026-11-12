@@ -322,9 +322,9 @@ TEST_CASE("Boundary face groups: 3D cube corner with the wall on 1, 2, 3 and per
     for (int layout = 1; layout <= 4; ++layout) {
       const std::string mesh = "face_groups_cube_" + std::to_string(layout) + ".su2";
       const auto walls = WriteCubeMesh(mesh, layout);
-      const std::string wallOption =
-          heatFlux ? "SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\nMARKER_HEATFLUX= ( " + MarkerList(walls, true) + " )\n"
-                   : "SOLVER= EULER\nMARKER_EULER= ( " + MarkerList(walls, false) + " )\n";
+      const std::string wallOption = heatFlux ? "SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\nMARKER_HEATFLUX= ( " +
+                                                    MarkerList(walls, true) + " )\n"
+                                              : "SOLVER= EULER\nMARKER_EULER= ( " + MarkerList(walls, false) + " )\n";
       const auto test = BuildGeometry(wallOption + "MESH_FILENAME= " + mesh +
                                       "\nMESH_FORMAT= SU2\nMACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
       const auto groups = CollectGroups(*test.geometry, *test.config, walls, 0.5);
@@ -366,9 +366,10 @@ TEST_CASE("Boundary face groups: 3D cube corner with the wall on 1, 2, 3 and per
 TEST_CASE("Boundary face groups: missing eligible neighbour uses vertex stencil", "[BoundaryFaceGroups]") {
   if (SU2_MPI::GetSize() > 1) return;
   const auto walls = WriteCubeMesh("face_groups_fallback.su2", 1);
-  const auto test = BuildGeometry("SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\nMARKER_HEATFLUX= ( wall, 0.0 )\n"
-                                  "MESH_FILENAME= face_groups_fallback.su2\nMESH_FORMAT= SU2\n"
-                                  "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
+  const auto test = BuildGeometry(
+      "SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\nMARKER_HEATFLUX= ( wall, 0.0 )\n"
+      "MESH_FILENAME= face_groups_fallback.su2\nMESH_FORMAT= SU2\n"
+      "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
   const auto& geometry = *test.geometry;
   bool found = false;
   for (unsigned short marker = 0; marker < geometry.GetnMarker(); ++marker) {
@@ -379,8 +380,7 @@ TEST_CASE("Boundary face groups: missing eligible neighbour uses vertex stencil"
       found = true;
       REQUIRE(geometry.HasVertexGroups(marker, vertex));
       CHECK_FALSE(geometry.HasEligibleGroupNeighbors(marker, vertex));
-      CHECK(geometry.GetVertexNormalNeighbor(marker, vertex) ==
-            geometry.vertex[marker][vertex]->GetNormal_Neighbor());
+      CHECK(geometry.GetVertexNormalNeighbor(marker, vertex) == geometry.vertex[marker][vertex]->GetNormal_Neighbor());
     }
   }
   CHECK(found);
@@ -389,9 +389,11 @@ TEST_CASE("Boundary face groups: missing eligible neighbour uses vertex stencil"
 TEST_CASE("Boundary face groups: incompressible integrated flux uses vertex areas", "[BoundaryFaceGroups]") {
   if (SU2_MPI::GetSize() > 1) return;
   WriteCubeMesh("face_groups_incompressible.su2", 1);
-  const auto test = BuildGeometry("SOLVER= INC_NAVIER_STOKES\nVISCOSITY_MODEL= CONSTANT_VISCOSITY\nMU_CONSTANT= 1.8e-5\nMARKER_HEATFLUX= ( wall, 0.0 )\n"
-                                  "MESH_FILENAME= face_groups_incompressible.su2\nMESH_FORMAT= SU2\n"
-                                  "MARKER_FAR= ( far )\n");
+  const auto test = BuildGeometry(
+      "SOLVER= INC_NAVIER_STOKES\nVISCOSITY_MODEL= CONSTANT_VISCOSITY\nMU_CONSTANT= 1.8e-5\nMARKER_HEATFLUX= ( wall, "
+      "0.0 )\n"
+      "MESH_FILENAME= face_groups_incompressible.su2\nMESH_FORMAT= SU2\n"
+      "MARKER_FAR= ( far )\n");
   auto& geometry = *test.geometry;
   REQUIRE_FALSE(CGeometry::UseBoundaryFaceGroups(test.config.get()));
   geometry.ComputeSurfaceAreaCfgFile(test.config.get());
@@ -414,9 +416,10 @@ TEST_CASE("Boundary face groups: partitioned owned stars match serial", "[Bounda
   const auto comm = SU2_MPI::GetComm();
   if (SU2_MPI::GetRank() == 0) WriteCubeMesh("face_groups_partition.su2", 1);
   SU2_MPI::Barrier(comm);
-  const std::string options = "SOLVER= EULER\nMARKER_EULER= ( wall )\n"
-                              "MESH_FILENAME= face_groups_partition.su2\nMESH_FORMAT= SU2\n"
-                              "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n";
+  const std::string options =
+      "SOLVER= EULER\nMARKER_EULER= ( wall )\n"
+      "MESH_FILENAME= face_groups_partition.su2\nMESH_FORMAT= SU2\n"
+      "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n";
   using FaceKey = std::vector<unsigned long>;
   using GroupKey = std::pair<std::vector<FaceKey>, unsigned long>;
   using Star = std::vector<GroupKey>;
@@ -425,8 +428,7 @@ TEST_CASE("Boundary face groups: partitioned owned stars match serial", "[Bounda
     for (const auto& point : geometry.boundaryFaceGroupPoints) {
       if (config.GetMarker_All_TagBound(point.faces.front()[0]) != "wall") continue;
       Star groups(point.neighbor.size());
-      for (size_t q = 0; q < groups.size(); ++q)
-        groups[q].second = geometry.nodes->GetGlobalIndex(point.neighbor[q]);
+      for (size_t q = 0; q < groups.size(); ++q) groups[q].second = geometry.nodes->GetGlobalIndex(point.neighbor[q]);
       for (size_t f = 0; f < point.faces.size(); ++f) {
         const auto& face = point.faces[f];
         const auto* elem = geometry.bound[face[0]][face[1]];
@@ -485,9 +487,10 @@ TEST_CASE("Boundary face groups: partitioned owned stars match serial", "[Bounda
 TEST_CASE("Boundary face groups: multigrid keeps legacy geometry", "[BoundaryFaceGroups]") {
   if (SU2_MPI::GetSize() > 1) return;
   WriteCubeMesh("face_groups_multigrid.su2", 1);
-  const auto test = BuildGeometry("SOLVER= EULER\nMARKER_EULER= ( wall )\nMGLEVEL= 1\n"
-                                  "MESH_FILENAME= face_groups_multigrid.su2\nMESH_FORMAT= SU2\n"
-                                  "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
+  const auto test = BuildGeometry(
+      "SOLVER= EULER\nMARKER_EULER= ( wall )\nMGLEVEL= 1\n"
+      "MESH_FILENAME= face_groups_multigrid.su2\nMESH_FORMAT= SU2\n"
+      "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
   CHECK_FALSE(CGeometry::UseBoundaryFaceGroups(test.config.get()));
   for (unsigned short marker = 0; marker < test.geometry->GetnMarker(); ++marker)
     for (unsigned long vertex = 0; vertex < test.geometry->GetnVertex(marker); ++vertex)
@@ -497,11 +500,12 @@ TEST_CASE("Boundary face groups: multigrid keeps legacy geometry", "[BoundaryFac
 TEST_CASE("Boundary face groups: mixed thermal markers at one point", "[BoundaryFaceGroups]") {
   if (SU2_MPI::GetSize() > 1) return;
   WriteCubeMesh("face_groups_mixed_thermal.su2", 3);
-  const auto test = BuildGeometry("SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\nMARKER_HEATFLUX= ( wallx, 1.0 )\n"
-                                  "MARKER_ISOTHERMAL= ( wally, 300.0 )\n"
-                                  "MARKER_HEATTRANSFER= ( wallz, 10.0, 350.0 )\n"
-                                  "MESH_FILENAME= face_groups_mixed_thermal.su2\nMESH_FORMAT= SU2\n"
-                                  "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
+  const auto test = BuildGeometry(
+      "SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\nMARKER_HEATFLUX= ( wallx, 1.0 )\n"
+      "MARKER_ISOTHERMAL= ( wally, 300.0 )\n"
+      "MARKER_HEATTRANSFER= ( wallz, 10.0, 350.0 )\n"
+      "MESH_FILENAME= face_groups_mixed_thermal.su2\nMESH_FORMAT= SU2\n"
+      "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
   const auto& geometry = *test.geometry;
   unsigned short markers = 0;
   double areaSum = 0.0;
@@ -531,9 +535,10 @@ TEST_CASE("Boundary face groups: mixed thermal markers at one point", "[Boundary
 TEST_CASE("Boundary face groups: exactly cancelling cusp", "[BoundaryFaceGroups]") {
   if (SU2_MPI::GetSize() > 1) return;
   WriteLMesh("face_groups_exact_cusp.su2", false);
-  const auto test = BuildGeometry("SOLVER= EULER\nMARKER_EULER= ( wall )\n"
-                                  "MESH_FILENAME= face_groups_exact_cusp.su2\nMESH_FORMAT= SU2\n"
-                                  "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
+  const auto test = BuildGeometry(
+      "SOLVER= EULER\nMARKER_EULER= ( wall )\n"
+      "MESH_FILENAME= face_groups_exact_cusp.su2\nMESH_FORMAT= SU2\n"
+      "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
   auto& geometry = *test.geometry;
   unsigned long cusp = geometry.GetnPoint(), neighbor = geometry.GetnPoint();
   for (unsigned long point = 0; point < geometry.GetnPoint(); ++point) {
@@ -567,12 +572,17 @@ TEST_CASE("Grouped isothermal wall assembles its temperature linearization", "[B
   if (SU2_MPI::GetSize() > 1) return;
   const std::string mesh = "face_groups_isothermal_assembly.su2";
   WriteLMesh(mesh, false);
-  struct Values { double residual, jacobian, temperatureRef, density, gas, gamma; };
+  struct Values {
+    double residual, jacobian, temperatureRef, density, gas, gamma;
+  };
   auto evaluate = [&](double wallTemperature) {
-    auto test = BuildGeometry("SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\n"
-                              "MESH_FILENAME= " + mesh + "\nMESH_FORMAT= SU2\nMACH_NUMBER= 0.3\n"
-                              "TIME_DISCRE_FLOW= EULER_IMPLICIT\nMARKER_ISOTHERMAL= ( wall, " +
-                              std::to_string(wallTemperature) + " )\nMARKER_FAR= ( far )\n");
+    auto test = BuildGeometry(
+        "SOLVER= NAVIER_STOKES\nREYNOLDS_NUMBER= 1000000\n"
+        "MESH_FILENAME= " +
+        mesh +
+        "\nMESH_FORMAT= SU2\nMACH_NUMBER= 0.3\n"
+        "TIME_DISCRE_FLOW= EULER_IMPLICIT\nMARKER_ISOTHERMAL= ( wall, " +
+        std::to_string(wallTemperature) + " )\nMARKER_FAR= ( far )\n");
     auto* geometry = test.geometry.get();
     auto* config = test.config.get();
     geometry->SetGlobal_to_Local_Point();
@@ -588,7 +598,8 @@ TEST_CASE("Grouped isothermal wall assembles its temperature linearization", "[B
     REQUIRE(wall < geometry->GetnMarker());
     unsigned long vertex = 0;
     while (vertex < geometry->GetnVertex(wall) &&
-           !(PointKey(*geometry, geometry->vertex[wall][vertex]->GetNode(), 0.5) == Key{4, 2, 0})) ++vertex;
+           !(PointKey(*geometry, geometry->vertex[wall][vertex]->GetNode(), 0.5) == Key{4, 2, 0}))
+      ++vertex;
     REQUIRE(vertex < geometry->GetnVertex(wall));
     REQUIRE(geometry->HasVertexGroups(wall, vertex));
     REQUIRE(geometry->HasEligibleGroupNeighbors(wall, vertex));
@@ -601,10 +612,9 @@ TEST_CASE("Grouped isothermal wall assembles its temperature linearization", "[B
     const auto energy = geometry->GetnDim() + 1;
     const auto block = solver.Jacobian.GetBlockView(point, point);
     REQUIRE(block);
-    return Values{SU2_TYPE::GetValue(solver.LinSysRes(point, energy)),
-                  SU2_TYPE::GetValue(block(energy, energy)), SU2_TYPE::GetValue(config->GetTemperature_Ref()),
-                  SU2_TYPE::GetValue(nodes->GetDensity(point)), SU2_TYPE::GetValue(config->GetGas_ConstantND()),
-                  SU2_TYPE::GetValue(config->GetGamma())};
+    return Values{SU2_TYPE::GetValue(solver.LinSysRes(point, energy)), SU2_TYPE::GetValue(block(energy, energy)),
+                  SU2_TYPE::GetValue(config->GetTemperature_Ref()),    SU2_TYPE::GetValue(nodes->GetDensity(point)),
+                  SU2_TYPE::GetValue(config->GetGas_ConstantND()),     SU2_TYPE::GetValue(config->GetGamma())};
   };
   const double wall = 300.0, step = 0.003;
   const auto center = evaluate(wall);

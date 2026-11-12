@@ -66,8 +66,8 @@
 namespace SharpEdgeNormals {
 
 /*! \brief Prefer the largest cosine, breaking exact ties by global point index. */
-inline bool BetterNeighbor(bool found, const su2double& cosine, const su2double& bestCosine,
-                           unsigned long globalIndex, unsigned long bestGlobalIndex) {
+inline bool BetterNeighbor(bool found, const su2double& cosine, const su2double& bestCosine, unsigned long globalIndex,
+                           unsigned long bestGlobalIndex) {
   return !found || cosine > bestCosine || (cosine == bestCosine && globalIndex < bestGlobalIndex);
 }
 
@@ -83,8 +83,8 @@ inline bool ConsistentCornerSum(unsigned short nDim, const su2double* sum, const
     if (d > 0) isPlaceholder = isPlaceholder && (normal[d] == 0.0);
   }
   const su2double tolerance = 1e-6 * sqrt(normal2) +
-      16.0 * std::numeric_limits<passivedouble>::epsilon() * nFaces * faceMagnitude +
-      (isPlaceholder ? placeholder : 0.0);
+                              16.0 * std::numeric_limits<passivedouble>::epsilon() * nFaces * faceMagnitude +
+                              (isPlaceholder ? placeholder : 0.0);
   return diff2 <= tolerance * tolerance;
 }
 
@@ -108,9 +108,9 @@ constexpr passivedouble PARALLEL_SIN2 = 2.0 * 0.001 - 0.001 * 0.001;
  * \param[in] linkClass - Link class of every face (optional): two faces can only be linked if their classes are equal.
  * \return Number of groups.
  */
-inline size_t FaceGroups(unsigned short nDim, size_t nFaces, const su2double (*N)[3],
-                                 const unsigned long (*edge)[2], const unsigned short* nEdge, su2double (*groupN)[3],
-                                 size_t* faceGroup = nullptr, const unsigned short* linkClass = nullptr) {
+inline size_t FaceGroups(unsigned short nDim, size_t nFaces, const su2double (*N)[3], const unsigned long (*edge)[2],
+                         const unsigned short* nEdge, su2double (*groupN)[3], size_t* faceGroup = nullptr,
+                         const unsigned short* linkClass = nullptr) {
   /*--- Products and lengths; the test is symmetric in f and g (c0 multiplies the product of the lengths). ---*/
   std::vector<std::vector<su2double>> dotFG(nFaces, std::vector<su2double>(nFaces));
   std::vector<su2double> len(nFaces);
@@ -122,9 +122,7 @@ inline size_t FaceGroups(unsigned short nDim, size_t nFaces, const su2double (*N
     }
     len[f] = sqrt(dotFG[f][f]);
   }
-  auto compatible = [&](size_t f, size_t g) {
-    return dotFG[f][g] > COMPATIBLE_COS * (len[f] * len[g]);
-  };
+  auto compatible = [&](size_t f, size_t g) { return dotFG[f][g] > COMPATIBLE_COS * (len[f] * len[g]); };
 
   /*--- Links: adjacent, permitted and compatible pairs, with their cosine. ---*/
   std::vector<size_t> linkA, linkB;
@@ -200,8 +198,7 @@ inline size_t FaceGroups(unsigned short nDim, size_t nFaces, const su2double (*N
  * when its orthogonalized squared norm (relative to its own) is below PARALLEL_SIN2. \return Rank (number of rows of Q,
  * at most nDim).
  */
-inline unsigned short Basis(unsigned short nDim, size_t nNormals, const su2double (*normals)[3],
-                            su2double (*Q)[3]) {
+inline unsigned short Basis(unsigned short nDim, size_t nNormals, const su2double (*normals)[3], su2double (*Q)[3]) {
   unsigned short rank = 0;
   for (size_t a = 0; a < nNormals && rank < nDim; ++a) {
     su2double v[3] = {0.0, 0.0, 0.0}, norm2 = 0.0;

@@ -11,7 +11,11 @@
 
 TEST_CASE("Grouped wall thermal residual derivatives", "[BoundaryFaceGroups]") {
   const double area[] = {0.4, 0.7, 0.2}, distance[] = {0.1, 0.3, 0.5}, temperature[] = {1.1, 0.9, 0.8};
-  auto group = [&](size_t i, double& a, double& d, double& t) { a = area[i]; d = distance[i]; t = temperature[i]; };
+  auto group = [&](size_t i, double& a, double& d, double& t) {
+    a = area[i];
+    d = distance[i];
+    t = temperature[i];
+  };
   auto flux = [&](double wall, double& derivative) {
     double value = 0.0;
     REQUIRE(ThermalGroupFlux::Isothermal(true, 3, 0.6, wall, group, value, derivative));
@@ -26,7 +30,10 @@ TEST_CASE("Grouped wall thermal residual derivatives", "[BoundaryFaceGroups]") {
   double unused = 42.0;
   CHECK_FALSE(ThermalGroupFlux::Isothermal(false, 3, 0.6, wall, group, unused, scratch));
   CHECK(unused == 42.0);
-  auto invalid = [&](size_t i, double& a, double& d, double& t) { group(i, a, d, t); if (i == 1) d = 0.0; };
+  auto invalid = [&](size_t i, double& a, double& d, double& t) {
+    group(i, a, d, t);
+    if (i == 1) d = 0.0;
+  };
   CHECK_FALSE(ThermalGroupFlux::Isothermal(true, 3, 0.6, wall, invalid, unused, scratch));
   auto transfer = [&](double t, double& jacobian) {
     double q = 0.0;
@@ -46,14 +53,17 @@ TEST_CASE("Grouped wall thermal residual derivatives", "[BoundaryFaceGroups]") {
   };
   const double temperatureWall = inverseCv * (energy / rho - 0.5 * momentum * momentum / (rho * rho));
   const double dTdrho = (-temperatureWall + inverseCv * 0.5 * momentum * momentum / (rho * rho)) / rho;
-  const double densityFD = (conservativeResidual(rho + step, momentum, energy) -
-                            conservativeResidual(rho - step, momentum, energy)) / (2 * step);
-  const double energyFD = (conservativeResidual(rho, momentum, energy + step) -
-                           conservativeResidual(rho, momentum, energy - step)) / (2 * step);
+  const double densityFD =
+      (conservativeResidual(rho + step, momentum, energy) - conservativeResidual(rho - step, momentum, energy)) /
+      (2 * step);
+  const double energyFD =
+      (conservativeResidual(rho, momentum, energy + step) - conservativeResidual(rho, momentum, energy - step)) /
+      (2 * step);
   CHECK(transferJacobian * dTdrho == Approx(densityFD).epsilon(1e-8));
   CHECK(transferJacobian * inverseCv / rho == Approx(energyFD).epsilon(1e-8));
-  CHECK(derivative + transferJacobian == Approx((isoPlus + transferPlus - isoMinus - transferMinus) /
-                                                 (2 * step)).epsilon(1e-8));
-  CHECK(value + transferResidual == Approx(0.6 * ((wall - 1.1) * 4.0 + (wall - 0.9) * (0.7 / 0.3) +
-                                                   (wall - 0.8) * 0.4) - 2.5 * (1.7 - wall) * 0.3));
+  CHECK(derivative + transferJacobian ==
+        Approx((isoPlus + transferPlus - isoMinus - transferMinus) / (2 * step)).epsilon(1e-8));
+  CHECK(
+      value + transferResidual ==
+      Approx(0.6 * ((wall - 1.1) * 4.0 + (wall - 0.9) * (0.7 / 0.3) + (wall - 0.8) * 0.4) - 2.5 * (1.7 - wall) * 0.3));
 }

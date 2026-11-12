@@ -266,7 +266,7 @@ class CGeometry {
   struct BoundaryFaceGroupPoint {
     unsigned long point = 0;                    /*!< \brief Local index of the point. */
     vector<std::array<unsigned long, 3>> faces; /*!< \brief Faces (marker, boundary element, node), canonical order. */
-    vector<size_t> faceGroup;           /*!< \brief Group of every face. */
+    vector<size_t> faceGroup;                   /*!< \brief Group of every face. */
     vector<unsigned long> neighbor;             /*!< \brief Normal neighbour of every group. */
     bool eligibleNeighbors = true;              /*!< \brief Every group has an eligible normal neighbour. */
     vector<std::array<su2double, MAXNDIM>> unitNormal; /*!< \brief Unit normal of every group. */
@@ -276,10 +276,10 @@ class CGeometry {
   };
   /*! \brief Face-group data of a boundary vertex (see ComputeBoundaryFaceGroups). */
   struct BoundaryFaceGroupVertex {
-    long pointData = -1;                   /*!< \brief Index in boundaryFaceGroupPoints, -1: no groups stored. */
-    vector<size_t> groups;         /*!< \brief Groups of the point that contain faces of the marker. */
-    vector<su2double> share;               /*!< \brief Share a_{m,q} of the marker in each of these groups. */
-    unsigned long neighbor = ULONG_MAX;    /*!< \brief Normal neighbour of a vertex without groups (ULONG_MAX: none). */
+    long pointData = -1;                /*!< \brief Index in boundaryFaceGroupPoints, -1: no groups stored. */
+    vector<size_t> groups;              /*!< \brief Groups of the point that contain faces of the marker. */
+    vector<su2double> share;            /*!< \brief Share a_{m,q} of the marker in each of these groups. */
+    unsigned long neighbor = ULONG_MAX; /*!< \brief Normal neighbour of a vertex without groups (ULONG_MAX: none). */
   };
   vector<BoundaryFaceGroupPoint> boundaryFaceGroupPoints;            /*!< \brief Points with stored face groups. */
   vector<vector<BoundaryFaceGroupVertex>> boundaryFaceGroupVertices; /*!< \brief By marker and vertex (empty: none). */
