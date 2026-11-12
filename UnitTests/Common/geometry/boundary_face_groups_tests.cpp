@@ -568,6 +568,41 @@ TEST_CASE("Boundary face groups: exactly cancelling cusp", "[BoundaryFaceGroups]
   CHECK(found);
 }
 
+TEST_CASE("Boundary face groups: cancelling curved markers keep finite symmetry normals", "[BoundaryFaceGroups]") {
+  if (SU2_MPI::GetSize() > 1) return;
+  WriteLMesh("face_groups_split_cusp.su2", true);
+  const auto test = BuildGeometry(
+      "SOLVER= EULER\nMARKER_EULER= ( wall, step )\n"
+      "MESH_FILENAME= face_groups_split_cusp.su2\nMESH_FORMAT= SU2\n"
+      "MACH_NUMBER= 0.3\nMARKER_FAR= ( far )\n");
+  auto& geometry = *test.geometry;
+  unsigned long cusp = geometry.GetnPoint(), neighbor = geometry.GetnPoint();
+  for (unsigned long point = 0; point < geometry.GetnPoint(); ++point) {
+    if (PointKey(geometry, point, 0.5) == Key{4, 2, 0}) cusp = point;
+    if (PointKey(geometry, point, 0.5) == Key{4, 1, 0}) neighbor = point;
+  }
+  REQUIRE(cusp < geometry.GetnPoint());
+  REQUIRE(neighbor < geometry.GetnPoint());
+  geometry.nodes->SetCoord(neighbor, 0, 1.5);
+  geometry.nodes->SetCoord(neighbor, 1, 1.0);
+  geometry.SetBoundControlVolume(test.config.get(), UPDATE);
+  geometry.ComputeBoundaryFaceGroups(test.config.get());
+  unsigned short found = 0;
+  for (unsigned short marker = 0; marker < geometry.GetnMarker(); ++marker) {
+    const auto tag = test.config->GetMarker_All_TagBound(marker);
+    if (tag != "wall" && tag != "step") continue;
+    const auto vertex = geometry.nodes->GetVertex(cusp, marker);
+    REQUIRE(vertex >= 0);
+    REQUIRE(geometry.HasVertexGroups(marker, vertex));
+    const auto normal = geometry.symmetryNormals[marker].find(vertex);
+    if (normal != geometry.symmetryNormals[marker].end())
+      for (unsigned short dim = 0; dim < geometry.GetnDim(); ++dim)
+        CHECK(std::isfinite(SU2_TYPE::GetValue(normal->second[dim])));
+    ++found;
+  }
+  CHECK(found == 2);
+}
+
 TEST_CASE("Grouped isothermal wall assembles its temperature linearization", "[BoundaryFaceGroups]") {
   if (SU2_MPI::GetSize() > 1) return;
   const std::string mesh = "face_groups_isothermal_assembly.su2";
