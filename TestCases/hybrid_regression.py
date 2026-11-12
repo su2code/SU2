@@ -153,6 +153,14 @@ def main():
     poiseuille_profile.test_vals_aarch64 = [-12.004276, -7.636719, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
+    # Streamwise periodic pressure-drop update with two OpenMP threads.
+    sp_massflow_box = TestCase('sp_massflow_box')
+    sp_massflow_box.cfg_dir = "incomp_navierstokes/streamwise_periodic"
+    sp_massflow_box.cfg_file = "massflow_box.cfg"
+    sp_massflow_box.test_iter = 4
+    sp_massflow_box.test_vals = [-4.914357, 0.248162, -0.092770]
+    test_list.append(sp_massflow_box)
+
     # 2D Rotational Periodic
     periodic2d           = TestCase('periodic2d')
     periodic2d.cfg_dir   = "navierstokes/periodic2D"

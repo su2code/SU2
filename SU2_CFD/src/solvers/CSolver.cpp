@@ -229,6 +229,12 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = 2;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
+    case PERIODIC_AUXVAR_GG:
+      COUNT_PER_POINT  = base_nodes->GetnAuxVar()*nDim;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      ICOUNT           = base_nodes->GetnAuxVar();
+      JCOUNT           = nDim;
+      break;
     case PERIODIC_SOL_GG:
     case PERIODIC_SOL_GG_R:
       COUNT_PER_POINT  = nVar*nDim;
@@ -242,6 +248,12 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nPrimVarGrad;
       JCOUNT           = nDim;
+      break;
+    case PERIODIC_AUXVAR_LS:
+      COUNT_PER_POINT = static_cast<unsigned long>(nDim)*nDim + base_nodes->GetnAuxVar()*nDim;
+      MPI_TYPE = COMM_TYPE::DOUBLE;
+      ICOUNT = base_nodes->GetnAuxVar();
+      JCOUNT = nDim;
       break;
     case PERIODIC_SOL_LS:
     case PERIODIC_SOL_ULS:
@@ -297,6 +309,9 @@ namespace PeriodicCommHelpers {
       case PERIODIC_PRIM_ULS:
         return nodes->GetGradient_Primitive();
         break;
+      case PERIODIC_AUXVAR_LS:
+      case PERIODIC_AUXVAR_GG:
+        return nodes->GetAuxVarGradient();
       case PERIODIC_SOL_GG:
       case PERIODIC_SOL_LS:
       case PERIODIC_SOL_ULS:
@@ -310,6 +325,9 @@ namespace PeriodicCommHelpers {
 
   const su2activematrix& selectField(CVariable* nodes, unsigned short commType) {
     switch(commType) {
+      case PERIODIC_AUXVAR_LS:
+      case PERIODIC_AUXVAR_GG:
+        return nodes->GetAuxVar();
       case PERIODIC_PRIM_GG:
       case PERIODIC_PRIM_LS:
       case PERIODIC_PRIM_ULS:
@@ -383,6 +401,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   bool boundary_i, boundary_j;
   bool weighted = true;
+  const bool auxiliary = commType == PERIODIC_AUXVAR_GG || commType == PERIODIC_AUXVAR_LS;
+  const auto nRotVars = max<unsigned long>(max(nVar, nPrimVar), base_nodes->GetnAuxVar());
 
   unsigned short iVar, jVar, iDim;
   unsigned short nNeighbor       = 0;
@@ -399,8 +419,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   auto *Und_Lapl  = new su2double[nVar];
   auto *Sol_Min   = new su2double[std::max(nVar, nPrimVarGrad)];
   auto *Sol_Max   = new su2double[std::max(nVar, nPrimVarGrad)];
-  auto *rotPrim_i = new su2double[std::max(nVar, nPrimVar)];
-  auto *rotPrim_j = new su2double[std::max(nVar, nPrimVar)];
+  auto *rotPrim_i = new su2double[nRotVars];
+  auto *rotPrim_j = new su2double[nRotVars];
 
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
   const su2double *Coord_i, *Coord_j;
@@ -803,6 +823,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
           case PERIODIC_SOL_GG_R:
           case PERIODIC_PRIM_GG:
           case PERIODIC_PRIM_GG_R:
+          case PERIODIC_AUXVAR_GG:
 
             /*--- Access and rotate the partial G-G gradient. These will be
              summed on both sides of the periodic faces before dividing
@@ -820,9 +841,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
             }
 
-            /*--- Rotate the vector components of the solution. ---*/
+            /*--- Auxiliary fields are scalars: rotate their spatial gradients only. ---*/
 
-            if (rotate_periodic) {
+            if (rotate_periodic && !auxiliary) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 su2double d_diDim[3] = {0.0};
                 for (iVar = 1; iVar < 1+nDim; ++iVar) {
@@ -846,6 +867,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             break;
 
+          case PERIODIC_AUXVAR_LS:
           case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
           case PERIODIC_SOL_LS_R: case PERIODIC_SOL_ULS_R:
           case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
@@ -888,7 +910,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             for (iVar = 0; iVar < ICOUNT; iVar++)
               rotPrim_i[iVar] = field(iPoint, iVar);
 
-            if (rotate_periodic) {
+            if (rotate_periodic && !auxiliary) {
               Rotate(zeros, &field(iPoint,1), &rotPrim_i[1]);
             }
 
@@ -923,7 +945,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 for (iVar = 0; iVar < ICOUNT; iVar++)
                   rotPrim_j[iVar] = field(jPoint,iVar);
 
-                if (rotate_periodic) {
+                if (rotate_periodic && !auxiliary) {
                   Rotate(zeros, &field(jPoint,1), &rotPrim_j[1]);
                 }
 
@@ -1345,6 +1367,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
             case PERIODIC_SOL_GG_R:
             case PERIODIC_PRIM_GG:
             case PERIODIC_PRIM_GG_R:
+            case PERIODIC_AUXVAR_GG:
 
               /*--- For G-G, we accumulate partial gradients then compute
                the final value using the entire volume of the periodic cell. ---*/
@@ -1355,6 +1378,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               break;
 
+            case PERIODIC_AUXVAR_LS:
             case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
             case PERIODIC_SOL_LS_R: case PERIODIC_SOL_ULS_R:
             case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
@@ -2329,19 +2353,19 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
   const auto& solution = base_nodes->GetAuxVar();
   auto& gradient = base_nodes->GetAuxVarGradient();
 
-  computeGradientsGreenGauss(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
+  computeGradientsGreenGauss(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_AUXVAR_GG, *geometry,
                              *config, solution, 0, base_nodes->GetnAuxVar(), -1, gradient);
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
   SU2_ZONE_SCOPED
 
-  bool weighted = true;
+  const bool weighted = true;
   const auto& solution = base_nodes->GetAuxVar();
   auto& gradient = base_nodes->GetAuxVarGradient();
   auto& rmatrix  = base_nodes->GetRmatrix();
 
-  computeGradientsLeastSquares(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
+  computeGradientsLeastSquares(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_AUXVAR_LS, *geometry, *config,
                                weighted, solution, 0, base_nodes->GetnAuxVar(), -1, gradient, rmatrix);
 }
 

@@ -56,6 +56,7 @@ CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf,
   source_cons_jac.resize(nPoint, flamelet_config_options.n_user_scalars) = su2double(0.0);
 
   if (flamelet_config_options.preferential_diffusion) {
+    nAuxVar = FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS;
     AuxVar.resize(nPoint, FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS) = su2double(0.0);
     Grad_AuxVar.resize(nPoint, FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS, nDim, 0.0);
   }
