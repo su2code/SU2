@@ -66,8 +66,9 @@ Target CL = 1.0546. Upper-surface Cp at x/c = 0.1, 0.3, 0.5, 0.7, 0.9:
 | experiment | -1.2 | -0.58 | -0.61 | -0.63 | -0.64 |
 
 - Step 3: J falls from 761 to 81 in the first 7 evaluations, then little progress; beta in [0, 1.23], differing from 1 by
-  more than 0.1 at 2,982 of 113,747 points. One adjoint evaluation takes 2,000 warm-started iterations
-  (about 11 min on 8 ranks), a direct solve 2.5 to 12 min.
+  more than 0.1 at 2,982 of 113,747 points. The reported runs restarted each adjoint from the previous one for 2,000
+  iterations (about 11 min on 8 ranks, `--warm_adjoint --adjoint_iter 2000`); a cold adjoint needs about 5,000
+  iterations (28 min). A direct solve takes 2.5 to 12 min.
 - Step 4: 17,323 points inside the filter; validation RMS(beta) 0.021, R^2 = 0.989 for the 961 weights.
   The 1,058 points outside the filter with |beta - 1| > 0.05 stay at beta = 1 in SU2.
 - Step 5: stops at ITER with CL still falling by 0.001 per 1000 iterations.
@@ -75,5 +76,6 @@ Target CL = 1.0546. Upper-surface Cp at x/c = 0.1, 0.3, 0.5, 0.7, 0.9:
   started with `--resume` from weights that an earlier run had brought to J = 86.4.
 - The remaining misfit is ahead of x/c = 0.4, where the plateau of the experiment starts at x/c ~ 0.15 and
   the computed suction stays higher. The beta penalty keeps the correction from going further.
-- The adjoint of the converged flow can diverge at CFL 100 with a warm start. The driver then restores the
-  previous adjoint solution and retries at a quarter of the CFL (`--adjoint_retries`).
+- The adjoint runs at a fixed CFL (`--adjoint_cfl`, default 100) and the driver stops if its residual does not
+  fall. `--warm_adjoint` starts each adjoint from the previous one: faster, but a diverged adjoint then
+  spoils the following ones.

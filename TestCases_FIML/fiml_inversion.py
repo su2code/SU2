@@ -90,63 +90,40 @@ class Inversion:
     def __init__(self, args):
         self.args = args
         self.n_eval = 0
-        self.best = None
         self.direct_cfg = "inv_direct.cfg"
         self.adjoint_cfg = "inv_adjoint.cfg"
-        self.adjoint_warm_cfg = "inv_adjoint_warm.cfg"
         write_config(args.config, self.direct_cfg, {"MATH_PROBLEM": "DIRECT", "RESTART_SOL": "YES"})
         adjoint = {"MATH_PROBLEM": "DISCRETE_ADJOINT", "RESTART_SOL": "NO", "ITER": str(args.adjoint_iter),
                    "CONV_FIELD": "RMS_ADJ_PRESSURE", "CONV_RESIDUAL_MINVAL": str(args.adjoint_tol),
                    "OUTPUT_FILES": "RESTART_ASCII", "CONV_FILENAME": "history_adjoint",
                    "SCREEN_OUTPUT": "INNER_ITER, RMS_ADJ_PRESSURE, RMS_ADJ_NU_TILDE"}
+        if args.adjoint_cfl:
+            adjoint.update({"CFL_NUMBER": str(args.adjoint_cfl), "CFL_ADAPT": "NO"})
         self.adjoint = adjoint
-        self.adjoint_cfl = args.adjoint_cfl
-        self.write_adjoint_configs()
         if args.mode == "weights":
             self.weight_head, _ = read_weights(args.weights)
         self.log = open(args.log, "w")
         self.log.write("eval,J," + ",".join(args.fields) + ",beta_min,beta_max,grad_norm,adjoint_rms_p\n")
 
-    def write_adjoint_configs(self):
-        adjoint = dict(self.adjoint)
-        if self.adjoint_cfl:
-            adjoint.update({"CFL_NUMBER": str(self.adjoint_cfl), "CFL_ADAPT": "NO"})
-        write_config(self.args.config, self.adjoint_cfg, adjoint)
-        adjoint.update({"RESTART_SOL": "YES", "ITER": str(self.args.adjoint_iter_warm or self.args.adjoint_iter)})
-        write_config(self.args.config, self.adjoint_warm_cfg, adjoint)
-
     def run_adjoint(self):
-        """Run the adjoint and return its gradient and final rms[A_P], or None if every attempt diverged.
-        Retries restart from the previous adjoint solution at a quarter of the CFL, the last one from zero."""
-        backup = self.args.adjoint_restart + ".bak"
-        if os.path.exists(self.args.adjoint_restart):
-            shutil.copy(self.args.adjoint_restart, backup)
-        self.adjoint_cfl = self.args.adjoint_cfl
-        for attempt in range(self.args.adjoint_retries + 1):
-            if attempt:
-                self.adjoint_cfl = 0.25 * (self.adjoint_cfl or 1.0)
-                if os.path.exists(backup) and attempt < self.args.adjoint_retries:
-                    shutil.copy(backup, self.args.adjoint_restart)
-                elif os.path.exists(self.args.adjoint_restart):
-                    os.remove(self.args.adjoint_restart)
-            self.write_adjoint_configs()
-            warm = os.path.exists(self.args.adjoint_restart)
-            log = f"log_adjoint_{self.n_eval:03d}" + (f"_retry{attempt}" if attempt else "") + ".txt"
-            self.run(self.args.su2_cfd_ad, self.adjoint_warm_cfg if warm else self.adjoint_cfg, log)
-            header, rows = read_csv("history_adjoint.csv")
-            col = header.index("rms[A_P]")
-            rms_start, rms_end = float(rows[0][col]), float(rows[-1][col])
-            if self.args.mode == "field":
-                grad = read_column(self.args.adjoint_restart, "Sensitivity_Beta_FIML")
-            else:
-                grad = np.loadtxt("nn_weights_grad.dat")
-            if np.all(np.isfinite(grad)) and (rms_end < rms_start - 1 or rms_end < self.args.adjoint_accept):
-                return grad, rms_end
-            print(f"eval {self.n_eval}: adjoint did not converge at CFL {self.adjoint_cfl:g} "
-                  f"(rms[A_P] {rms_start:.2f} -> {rms_end:.2f})", flush=True)
-        if os.path.exists(backup):
-            shutil.copy(backup, self.args.adjoint_restart)
-        return None
+        """Run the adjoint, from the previous adjoint solution with --warm_adjoint, and return the gradient
+        and the final rms[A_P]. Stops if the adjoint residual did not fall."""
+        overrides = dict(self.adjoint)
+        if self.args.warm_adjoint and os.path.exists(self.args.adjoint_restart):
+            overrides["RESTART_SOL"] = "YES"
+        write_config(self.args.config, self.adjoint_cfg, overrides)
+        self.run(self.args.su2_cfd_ad, self.adjoint_cfg, f"log_adjoint_{self.n_eval:03d}.txt")
+        header, rows = read_csv("history_adjoint.csv")
+        col = header.index("rms[A_P]")
+        rms_start, rms_end = float(rows[0][col]), float(rows[-1][col])
+        if self.args.mode == "field":
+            grad = read_column(self.args.adjoint_restart, "Sensitivity_Beta_FIML")
+        else:
+            grad = np.loadtxt("nn_weights_grad.dat")
+        if not (np.all(np.isfinite(grad)) and rms_end < rms_start):
+            sys.exit(f"eval {self.n_eval}: the adjoint diverged (rms[A_P] {rms_start:.2f} -> {rms_end:.2f}), "
+                     "lower --adjoint_cfl or the step of the optimizer")
+        return grad, rms_end
 
     def run(self, exe, cfg, log):
         cmd = ["mpirun", "-n", str(self.args.np), exe, cfg]
@@ -164,17 +141,7 @@ class Inversion:
         hist = last_history("history.csv")
         shutil.copy("history.csv", f"history_eval_{self.n_eval:03d}.csv")
         J = hist["ComboObj"]
-        adjoint = self.run_adjoint()
-        if adjoint is None:
-            if self.best is None or J <= self.best[0]:
-                sys.exit(f"eval {self.n_eval}: no adjoint at a point that improves J")
-            # The gradient of the best point keeps the line search backtracking from this trial point.
-            print(f"eval {self.n_eval}: J above the best, using the gradient of the best point", flush=True)
-            grad, adj_rms = self.best[1], float("nan")
-        else:
-            grad, adj_rms = adjoint
-            if self.best is None or J < self.best[0]:
-                self.best = (J, grad)
+        grad, adj_rms = self.run_adjoint()
 
         beta = read_column(self.args.restart, "Beta_FIML")
         np.save(f"x_eval_{self.n_eval:03d}.npy", x)
@@ -201,12 +168,7 @@ def main():
     p.add_argument("--adjoint_iter", type=int, default=5000)
     p.add_argument("--adjoint_tol", type=float, default=-11)
     p.add_argument("--adjoint_cfl", type=float, help="fixed CFL of the adjoint, which does not adapt it")
-    p.add_argument("--adjoint_iter_warm", type=int,
-                   help="adjoint iterations from the previous adjoint solution, after the first evaluation")
-    p.add_argument("--adjoint_retries", type=int, default=2, help="reruns of a diverged adjoint at lower CFL")
-    p.add_argument("--adjoint_accept", type=float, default=-3.0,
-                   help="final rms[A_P] that accepts an adjoint run that fell less than one decade")
-    p.add_argument("--x0", help="initial design vector (.npy), instead of the restart or weight file")
+    p.add_argument("--warm_adjoint", action="store_true", help="start each adjoint from the previous one")
     p.add_argument("--maxiter", type=int, default=20)
     p.add_argument("--scale", type=float, default=1.0, help="objective scale seen by the optimizer")
     p.add_argument("--x_scale", type=float, default=1.0,
@@ -224,8 +186,6 @@ def main():
     else:
         _, x0 = read_weights(args.weights)
         bounds = None
-    if args.x0:
-        x0 = np.load(args.x0)
     s = args.x_scale
     if bounds:
         bounds = [(lo / s, hi / s) for lo, hi in bounds]

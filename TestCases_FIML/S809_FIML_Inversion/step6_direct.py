@@ -19,7 +19,7 @@ def main():
     p.add_argument("--maxiter", type=int, default=10, help="L-BFGS-B iterations")
     p.add_argument("--adjoint_iter", type=int, default=5000)
     p.add_argument("--adjoint_cfl", type=float, default=100.0)
-    p.add_argument("--adjoint_iter_warm", type=int, default=2000)
+    p.add_argument("--warm_adjoint", action="store_true", help="start each adjoint from the previous one")
     p.add_argument("--x_scale", type=float, default=0.01, help="length of the first L-BFGS-B step in weight space")
     p.add_argument("--resume", action="store_true",
                    help="continue from nn_weights.dat, restart_flow.csv and the adjoint restart of an earlier run")
@@ -36,8 +36,10 @@ def main():
     driver = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fiml_inversion.py")
     cmd = [sys.executable, driver, "-f", "direct.cfg", "-n", str(args.np), "--mode", "weights",
            "--su2_cfd", args.su2_cfd, "--su2_cfd_ad", args.su2_cfd_ad, "--maxiter", str(args.maxiter),
-           "--adjoint_iter", str(args.adjoint_iter), "--adjoint_cfl", str(args.adjoint_cfl), "--adjoint_iter_warm", str(args.adjoint_iter_warm), "--x_scale", str(args.x_scale),
+           "--adjoint_iter", str(args.adjoint_iter), "--adjoint_cfl", str(args.adjoint_cfl), "--x_scale", str(args.x_scale),
            "--fields", "CL", "CD", "Cp_Diff", "Beta_Reg", "--log", args.log]
+    if args.warm_adjoint:
+        cmd.append("--warm_adjoint")
     if subprocess.call(cmd) != 0:
         sys.exit("the weight optimization failed")
 
