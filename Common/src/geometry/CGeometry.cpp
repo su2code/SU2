@@ -3350,6 +3350,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
     const auto iPoint = item.first;
     auto normal = item.second;
     const su2double area = GeometryToolbox::Norm(int(MAXNDIM), normal.data());
+    // Exact cancellation has no direction; each marker retains its own normal.
     if ((area == 0.0) && UseBoundaryFaceGroups(config)) continue;
     for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) normal[iDim] /= area;
 
