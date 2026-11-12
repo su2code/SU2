@@ -308,7 +308,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
           /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
           if (geometry->nodes->GetDomain(iPoint)) {
-            const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+            const auto jPoint = geometry->GetVertexNormalNeighbor(iMarker, iVertex);
 
             su2double FrictionVelocity = 0.0;
             /*--- Formulation varies for 2D and 3D problems: in 3D the friction velocity is assumed to be sqrt(mu * |Omega|)
@@ -575,12 +575,14 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
     * where \nu is the solution variable, $n$ is the wall normal direction
     * and k_s is the equivalent sand grain roughness specified. ---*/
 
-    /*--- Compute dual-grid area and boundary normal ---*/
+    /*--- Dual-grid area of the vertex: the sum of its face-group areas (|sum N| where no face groups are stored,
+     * see CGeometry::ComputeBoundaryFaceGroups; at a sharp edge |sum N| is the nearly cancelling sum of the face
+     * normals). ---*/
     su2double Normal[MAXNDIM] = {0.0};
     for (auto iDim = 0u; iDim < nDim; iDim++)
       Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
     su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    if (geometry->HasVertexGroups(val_marker, iVertex)) Area = geometry->GetVertexWettedArea(val_marker, iVertex);
 
     /*--- Get laminar_viscosity and density ---*/
     su2double sigma = 2.0/3.0;

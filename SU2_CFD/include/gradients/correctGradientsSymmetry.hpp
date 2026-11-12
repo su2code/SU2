@@ -122,6 +122,19 @@ void correctGradientsSymmetry(CGeometry& geometry, const CConfig& config, const 
 
       const auto iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
 
+      /*--- Where the point has a slip basis (CGeometry::ComputeBoundaryFaceGroups: several face groups, e.g. at a sharp
+       * edge, or several slip markers), the correction is applied once per vector of the orthonormal basis, as for the
+       * orthogonalized normals of two plane markers; the corrections commute and repeated calls (one per marker of the
+       * point) change nothing. ---*/
+      su2double Q[3][3] = {};
+      const auto slipRank = geometry.GetSlipBasis(iMarker, iVertex, Q);
+      if (slipRank > 0) {
+        for (unsigned short r = 0; r < slipRank; ++r) {
+          detail::correctGradient<nDim>(varBegin, varEnd, idxVel, Q[r], gradient[iPoint]);
+        }
+        continue;
+      }
+
       /*--- Get the normal of the current symmetry. This may be the original normal of the vertex
        * or a modified normal if there are intersecting symmetries. ---*/
 

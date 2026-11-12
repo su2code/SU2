@@ -273,7 +273,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
         if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-        const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+        const auto jPoint = geometry->GetVertexNormalNeighbor(iMarker, iVertex);
 
         su2double shearStress = 0.0;
         for(auto iDim = 0u; iDim < nDim; iDim++) {
