@@ -206,6 +206,20 @@ inline void RotationMatrix(Scalar psi, Matrix& mat) {
   mat[1][1] = cosPsi;
 }
 
+/*! \return Principal rotation angle in radians, using only the z angle in 2D. */
+template <class Scalar>
+inline Scalar RotationAngle(unsigned short nDim, const Scalar* angles) {
+  Scalar cosAngle;
+  if (nDim == 2) {
+    cosAngle = cos(angles[2]);
+  } else {
+    Scalar rotation[3][3];
+    RotationMatrix(angles[0], angles[1], angles[2], rotation);
+    cosAngle = 0.5 * (rotation[0][0] + rotation[1][1] + rotation[2][2] - 1.0);
+  }
+  return acos(std::max(Scalar(-1.0), std::min(Scalar(1.0), cosAngle)));
+}
+
 /*! \brief Apply a rotation matrix (R) about origin (O) to a point at
  *         distance (d) from it to obtain new coordinate (c). */
 template <class Scalar, int nDim>
