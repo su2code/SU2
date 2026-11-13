@@ -119,7 +119,9 @@ bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   /*--- Check will be moved inside fluid model plus error description strings ---*/
 
+  FluidModel->SetTemperatureGuess(GetTemperature(iPoint));
   FluidModel->SetTDState_rhoe(density, staticEnergy);
+  const bool temperature_failed = FluidModel->GetTemperatureIterationFailed();
 
   bool check_dens  = SetDensity(iPoint);
   bool check_press = SetPressure(iPoint, FluidModel->GetPressure());
@@ -128,7 +130,7 @@ bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   /*--- Check that the solution has a physical meaning ---*/
 
-  if (check_dens || check_press || check_sos || check_temp) {
+  if (check_dens || check_press || check_sos || check_temp || temperature_failed) {
 
     /*--- Copy the old solution ---*/
 
