@@ -168,6 +168,11 @@ private:
   bool LoadNeuralNetworkWeights(const string& filename = "nn_weights.dat");
 
   /*!
+   * \brief Objective gradient with respect to the weights, summed over ranks, in file order.
+   */
+  vector<passivedouble> GlobalNNWeightGradients() const;
+
+  /*!
    * \brief Load beta_fiml from the restart field Beta_FIML when present.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -306,6 +311,13 @@ public:
    * \brief Write the objective gradient with respect to the weights, summed over ranks, in file order.
    */
   void WriteNNWeightGradients(const string& filename) const override;
+
+  /*!
+   * \brief L2 norm of dJ/dbeta (KIND_TRAIN_NN= NONE) or dJ/dw (WEIGHTS), the history output SENS_FIML.
+   * \param[in] config - Definition of the particular problem.
+   * \return Global norm of the gradient.
+   */
+  su2double ComputeFIMLSensitivityNorm(const CConfig* config) const override;
 
   /*!
    * \brief Compute the spatial integration using the CScalarFlux_SA edge kernel, which computes

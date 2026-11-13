@@ -205,7 +205,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver
   SolverName = "SA";
 
   if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
-    InitializeNeuralNetwork(config);
+    if (config->GetKind_Train_NN() != NN_TRAIN_METHOD::NONE) InitializeNeuralNetwork(config);
     filter_shield = config->GetFilter_Shield();
     SetReferenceWallShearStress(config);
     nn_filtered.resize(nPointDomain) = 0;
@@ -1831,7 +1831,10 @@ void CTurbSASolver::LoadRestartAuxiliaryFields(const CGeometry* geometry, const 
   for (; iField < fields.size(); iField++) {
     if (fields[iField] == "Beta_FIML" || fields[iField] == "\"Beta_FIML\"") break;
   }
-  if (iField == fields.size()) return;
+  if (iField == fields.size()) {
+    if (rank == MASTER_NODE) cout << "The restart file has no Beta_FIML, beta starts at 1." << endl;
+    return;
+  }
 
   unsigned long counter = 0;
   for (auto iPoint_Global = 0ul; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
@@ -1991,7 +1994,7 @@ void CTurbSASolver::ExtractNNWeightAdjoints() {
   });
 }
 
-void CTurbSASolver::WriteNNWeightGradients(const string& filename) const {
+vector<passivedouble> CTurbSASolver::GlobalNNWeightGradients() const {
 
   vector<passivedouble> local, global;
   ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
@@ -2000,11 +2003,35 @@ void CTurbSASolver::WriteNNWeightGradients(const string& filename) const {
   global.resize(local.size());
   using CPassiveMPI = SelectMPIWrapper<passivedouble>::W;
   CPassiveMPI::Allreduce(local.data(), global.data(), local.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return global;
+}
+
+void CTurbSASolver::WriteNNWeightGradients(const string& filename) const {
+
+  const auto global = GlobalNNWeightGradients();
 
   if (rank != MASTER_NODE) return;
   ofstream file(filename);
   file.precision(15);
   for (const auto g : global) file << g << "\n";
+}
+
+su2double CTurbSASolver::ComputeFIMLSensitivityNorm(const CConfig* config) const {
+
+  passivedouble sum = 0.0;
+  if (config->GetKind_Train_NN() == NN_TRAIN_METHOD::WEIGHTS) {
+    for (const auto g : GlobalNNWeightGradients()) sum += g * g;
+    return sqrt(sum);
+  }
+
+  passivedouble local = 0.0;
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    const passivedouble g = SU2_TYPE::GetValue(nodes->GetBetaFimlGrad(iPoint));
+    local += g * g;
+  }
+  using CPassiveMPI = SelectMPIWrapper<passivedouble>::W;
+  CPassiveMPI::Allreduce(&local, &sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return sqrt(sum);
 }
 
 void CTurbSASolver::SaveNeuralNetworkWeights(const string& filename) const {

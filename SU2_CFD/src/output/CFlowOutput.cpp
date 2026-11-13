@@ -1619,6 +1619,12 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("FIML_CHI", "FIML_Chi", "FIML_FEATURES", "Ratio of nu_tilde to the laminar viscosity");
     AddVolumeOutput("FIML_DELTA", "FIML_Delta", "FIML_FEATURES", "Eddy stress over the flat-plate wall stress");
     AddVolumeOutput("FIML_STRAIN_VORT", "FIML_Strain_Vort", "FIML_FEATURES", "Strain rate over vorticity");
+
+    /*--- beta is part of the restart, so its group is always written. ---*/
+    if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), "FIML") == requestedVolumeFields.end()) {
+      requestedVolumeFields.emplace_back("FIML");
+      nRequestedVolumeFields++;
+    }
   }
 
   // Hybrid RANS-LES

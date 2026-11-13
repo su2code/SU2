@@ -65,14 +65,6 @@ CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : C
     }
   }
 
-  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
-    auto notFound = requestedVolumeFields.end();
-    if (find(requestedVolumeFields.begin(), notFound, string("FIML")) == notFound) {
-      requestedVolumeFields.emplace_back("FIML");
-      nRequestedVolumeFields++;
-    }
-  }
-
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Comp. Fluid)";
   multiZoneHeaderString = ss.str();

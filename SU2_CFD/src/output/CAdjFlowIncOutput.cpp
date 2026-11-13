@@ -194,6 +194,10 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
   AddHistoryOutput("SENS_VEL_IN", "Sens_Vin", ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", " Sensitivity of the objective function with respect to the inlet velocity.", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Sensitivity of the objective function with respect to the outlet pressure.
   AddHistoryOutput("SENS_PRESS_OUT",  "Sens_Pout",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the outlet pressure.", HistoryFieldType::COEFFICIENT);
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    /// DESCRIPTION: L2 norm of the objective gradient with respect to beta or the network weights.
+    AddHistoryOutput("SENS_FIML", "Sens_FIML", ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "L2 norm of the objective gradient with respect to beta or the network weights.", HistoryFieldType::COEFFICIENT);
+  }
   /// END_GROUP
 
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
@@ -279,6 +283,9 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("SENS_TEMP", adjflow_solver->GetTotal_Sens_Temp());
   SetHistoryOutputValue("SENS_VEL_IN", adjflow_solver->GetTotal_Sens_ModVel());
   SetHistoryOutputValue("SENS_PRESS_OUT", adjflow_solver->GetTotal_Sens_BPress());
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    SetHistoryOutputValue("SENS_FIML", solver[TURB_SOL]->ComputeFIMLSensitivityNorm(config));
+  }
 
   SetHistoryOutputValue("LINSOL_ITER", adjflow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(adjflow_solver->GetResLinSolver()));

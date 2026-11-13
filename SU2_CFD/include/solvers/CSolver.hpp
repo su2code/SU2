@@ -866,6 +866,13 @@ public:
   inline virtual void WriteNNWeightGradients(const string& filename) const {}
 
   /*!
+   * \brief L2 norm of the objective gradient with respect to the FIML design variables.
+   * \param[in] config - Definition of the particular problem.
+   * \return Norm of dJ/dbeta (KIND_TRAIN_NN= NONE) or dJ/dw (WEIGHTS), 0 without FIML.
+   */
+  inline virtual su2double ComputeFIMLSensitivityNorm(const CConfig *config) const { return 0.0; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
