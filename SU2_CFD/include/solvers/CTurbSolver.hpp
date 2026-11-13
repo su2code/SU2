@@ -56,6 +56,12 @@ public:
    */
   CTurbSolver(CGeometry* geometry, CConfig *config, const CSolver* flow_solver, bool conservative);
 
+  /*!
+   * \brief The turbulence (and transition) variables span orders of magnitude and have units, so their limiters
+   *        use an epsilon relative to the free-stream values.
+   */
+  inline const su2double* GetLimiterReference() const override { return Solution_Inf; }
+
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
