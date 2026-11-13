@@ -3124,7 +3124,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Window (weight) function for the cost-functional in the reverse sweep */
   addEnumOption("WINDOW_FUNCTION", Kind_WindowFct, Window_Map, WINDOW_FUNCTION::SQUARE);
 
-  /* DESCRIPTION: DES Constant */
+  /* DESCRIPTION: DES Constant of the SA hybrid models. The SST hybrid models blend their own constants with F1. */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
   /* DESCRIPTION: SBS lengthscale coefficient */
@@ -3145,7 +3145,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify if the Stochastic Backscatter Model must be activated */
   addBoolOption("STOCHASTIC_BACKSCATTER", SBSParam.StochasticBackscatter, false);
 
-  /* DESCRIPTION: Specify if the LES mode must be enforced */
+  /* DESCRIPTION: Specify if the LES mode must be enforced (SA hybrid models only) */
   addBoolOption("ENFORCE_LES", enforceLES, false);
 
   /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
@@ -3166,7 +3166,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Shielding function lower threshold for application of Stochastic Backscatter Model */
   addDoubleOption("SBS_FD_LOWER_THRESHOLD", SBSParam.stochFdThreshold, 0.9);
 
-  /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
+  /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size, SA hybrid models only) */
   addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);
 
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
@@ -4147,6 +4147,52 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
        TimeMarching == TIME_MARCHING::DT_STEPPING_2ND) && !Time_Domain){
     SU2_MPI::Error("TIME_DOMAIN must be set to YES if TIME_MARCHING is "
                    "TIME_STEPPING, DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER", CURRENT_FUNCTION);
+  }
+
+  if (Kind_HybridRANSLES != NO_HYBRIDRANSLES && !Time_Domain) {
+    SU2_MPI::Error("Hybrid RANS/LES models (HYBRID_RANSLES) require an unsteady simulation, set TIME_DOMAIN= YES.",
+                   CURRENT_FUNCTION);
+  }
+
+  /*--- The SA_* hybrid models are built on the SA model and the SST_* ones on the SST model. ---*/
+  const bool hybridSA = Kind_HybridRANSLES == SA_DES || Kind_HybridRANSLES == SA_DDES ||
+                        Kind_HybridRANSLES == SA_ZDES || Kind_HybridRANSLES == SA_EDDES;
+  const bool hybridSST = IsHybridSST();
+  if ((hybridSA && Kind_Turb_Model != TURB_MODEL::SA) || (hybridSST && Kind_Turb_Model != TURB_MODEL::SST)) {
+    SU2_MPI::Error(string("The hybrid RANS/LES model (HYBRID_RANSLES) must match the turbulence model (KIND_TURB_MODEL): ") +
+                   "SA_* options require SA, SST_* options require SST.", CURRENT_FUNCTION);
+  }
+
+  /*--- The stochastic backscatter model adds the Langevin equations to the SA model (turbulence variables 1 to 3). ---*/
+  if (SBSParam.StochasticBackscatter && hybridSST) {
+    SU2_MPI::Error(string("The stochastic backscatter model (STOCHASTIC_BACKSCATTER= YES) is only available with the SA ") +
+                   "hybrid RANS/LES models (HYBRID_RANSLES= SA_DES, SA_DDES, SA_ZDES or SA_EDDES).", CURRENT_FUNCTION);
+  }
+
+  /*--- How the SST compressibility corrections should act in the LES region of the hybrid models is not validated yet
+   (e.g. Forsythe et al. 2002 keep them only in the RANS length scale). Stop rather than give unvalidated results. ---*/
+  if (hybridSST && (sstParsedOptions.compWilcox || sstParsedOptions.compSarkar)) {
+    SU2_MPI::Error(string("The SST compressibility corrections (COMPRESSIBILITY-WILCOX, COMPRESSIBILITY-SARKAR) are not ") +
+                   "supported yet with the SST hybrid RANS/LES models (HYBRID_RANSLES= SST_*).", CURRENT_FUNCTION);
+  }
+
+  /*--- The SST hybrid models compute their length scale from the grid with the constant C_DES = 0.78 F1 + 0.61 (1 - F1)
+   (Gritskevich et al. 2012), they do not use these options of the SA hybrid models. ---*/
+  if (hybridSST) {
+    if (enforceLES) {
+      SU2_MPI::Error("ENFORCE_LES= YES is only available with the SA hybrid RANS/LES models (HYBRID_RANSLES= SA_*).",
+                     CURRENT_FUNCTION);
+    }
+    if (LES_FilterWidth > 0.0) {
+      SU2_MPI::Error(string("A user-specified LES_FILTER_WIDTH is only available with the SA hybrid RANS/LES models ") +
+                     "(HYBRID_RANSLES= SA_*). The SST hybrid models compute the filter width from the grid.", CURRENT_FUNCTION);
+    }
+    if (OptionIsSet("DES_CONST")) {
+      if (rank == MASTER_NODE) {
+        cout << "WARNING: DES_CONST is ignored by SST hybrid RANS/LES models, which use "
+                "C_DES = 0.78 F1 + 0.61 (1 - F1)." << endl;
+      }
+    }
   }
 
   if (Time_Domain){
@@ -6847,13 +6893,21 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES) {
           case NO_HYBRIDRANSLES: cout << "No Hybrid RANS/LES" << endl; break;
-          case SA_DES:   cout << "Detached Eddy Simulation (DES97) " << endl; break;
-          case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
-          case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
-          case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+          case SA_DES:         cout << "Detached Eddy Simulation (DES97) " << endl; break;
+          case SA_DDES:        cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
+          case SA_ZDES:        cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
+          case SA_EDDES:       cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+          case SST_DDES:       cout << "Delayed Detached Eddy Simulation (DDES)" << endl; break;
+          case SST_IDDES:      cout << "Improved Delayed Detached Eddy Simulation (IDDES)" << endl; break;
+          case SST_SIDDES:     cout << "Simplified Improved Delayed Detached Eddy Simulation (SIDDES)" << endl; break;
+          case SST_EDDES:      cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         if (Kind_HybridRANSLES != NO_HYBRIDRANSLES) {
           if (LES_FilterWidth > 0.0) cout << "User-specified LES filter width: " << LES_FilterWidth << endl;
+          if (IsHybridSST())
+            cout << "DES constant blended with F1: C_DES = 0.78 F1 + 0.61 (1 - F1)." << endl;
+          else
+            cout << "DES constant: " << Const_DES << endl;
           cout << "Stochastic Backscatter: ";
           if (SBSParam.StochasticBackscatter) {
             cout << "ON" << endl;

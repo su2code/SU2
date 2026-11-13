@@ -1614,7 +1614,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
-    AddVolumeOutput("LES_SENSOR","LES_Sensor","DDES","LES sensor value");
+    AddVolumeOutput("LESIQ", "LESIQ", "DDES", "Viscosity-based LES quality index");
+    AddVolumeOutput("LES_SENSOR", "LES_Sensor", "DDES", "LES length-scale weight: 0 RANS, 1 LES, between 0 and 1 blended");
     if (config->GetSBSParam().StochasticBackscatter) {
       AddVolumeOutput("STOCHSOURCE_X", "StochSource_x", "BACKSCATTER", "x-component of the stochastic source vector");
       AddVolumeOutput("STOCHSOURCE_Y", "StochSource_y", "BACKSCATTER", "y-component of the stochastic source vector");
@@ -1632,6 +1633,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       AddVolumeOutput("VORTICITY", "Vorticity", "VORTEX_IDENTIFICATION", "Value of the vorticity");
     }
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
+
   }
 
   // Timestep info
@@ -1657,6 +1659,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   SetVolumeOutputValue("CFL", iPoint, Node_Flow->GetLocalCFL(iPoint));
 
   if (config->GetViscous()) {
+    const auto VelGrad = Node_Flow->GetVelocityGradient(iPoint);
     if (nDim == 3){
       SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity(iPoint)[0]);
       SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity(iPoint)[1]);
@@ -1664,7 +1667,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     } else {
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(VelGrad));
+
   }
 
   const bool limiter = ((config->GetKind_SlopeLimit_Turb() != LIMITER::NONE && config->GetKind_SlopeLimit_Turb() != LIMITER::VAN_ALBADA_EDGE));
@@ -1720,6 +1724,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+    const su2double mu = max(Node_Flow->GetLaminarViscosity(iPoint), 1e-20);
+    const su2double mut = Node_Flow->GetEddyViscosity(iPoint);
+    SetVolumeOutputValue("LESIQ", iPoint, 1.0 / (1.0 + 0.05 * pow((mut + mu) / mu, 0.53)));
     SetVolumeOutputValue("LES_SENSOR", iPoint, Node_Flow->GetLES_Mode(iPoint));
     if (config->GetSBSParam().StochasticBackscatter) {
       if (config->GetSBSParam().SBS_Ctau > 0.0) {
