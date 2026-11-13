@@ -31,10 +31,19 @@
 CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, su2double gammaSep, su2double gammaEff, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
 
-  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
-  {
-    Solution(iPoint,0) = Intermittency;
-    Solution(iPoint,1) = ReThetaT;
+  LM_ParsedOptions options = config->GetLMParsedOptions();
+
+  if (!options.SLM) {
+    for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    {
+      Solution(iPoint,0) = Intermittency;
+      Solution(iPoint,1) = ReThetaT;
+    }
+  } else {
+    for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    {
+      Solution(iPoint,0) = Intermittency;
+    }
   }
 
   Solution_Old = Solution;
@@ -42,6 +51,18 @@ CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, 
   /*--- Setting CTransLMVariable of intermittency_Eff---*/
   Intermittency_Eff.resize(nPoint) = gammaEff;
   Intermittency_Sep.resize(nPoint) = gammaSep;
+
+  TransitionData.resize(nPoint);
+  if (options.SLM) {
+    for (auto& data : TransitionData) data.momentumThicknessReynolds = ReThetaT;
+
+    /*--- Wall-normal velocity, and with cross-flow for SA the three components of the vorticity direction. ---*/
+    const bool crossFlowSA = options.CrossFlow && TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::SA;
+    nAuxVar = crossFlowSA ? 4 : 1;
+    Grad_AuxVar.resize(nPoint, nAuxVar, nDim, su2double(0.0));
+    AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
+    WallNormal.resize(nPoint, 3) = su2double(0.0);
+  }
 
 }
 

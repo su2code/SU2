@@ -45,6 +45,7 @@ protected:
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
   SST_ParsedOptions sstParsedOptions;
+  LM_ParsedOptions lmParsedOptions;
 public:
   /*!
    * \brief Constructor of the class.
