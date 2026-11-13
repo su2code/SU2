@@ -72,6 +72,29 @@ private:
    */
   void SetTau_Wall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
 
+  /*!
+   * \brief Impose the velocity of a wall point as a strong (Dirichlet) boundary condition.
+   *        The velocity is fixed and the momentum residual and truncation error are set to zero.
+   * \param[in] iPoint - Index of the wall point.
+   * \param[in] velocity - Velocity to impose (zero for no-slip, slip velocity otherwise).
+   */
+  void SetWallVelocity_Strong(unsigned long iPoint, const su2double *velocity);
+
+  /*!
+   * \brief Compute the residual of the two energy equations that weakly imposes the wall temperatures.
+   * \param[in] iPoint - Index of the wall point.
+   * \param[in] jPoint - Index of the closest normal neighbor of the wall point.
+   * \param[in] Twall - Target translational-rotational temperature at the wall.
+   * \param[in] Tvewall - Target vibrational-electronic temperature at the wall.
+   * \param[in] pcontrol - "Proportional control" constant of the temperature difference term.
+   * \param[in] area - Area of the dual-grid face on the wall.
+   * \param[in] dist - Distance between the wall point and its normal neighbor.
+   * \param[out] residual - Residual, only the two energy entries are set.
+   */
+  void SetWallEnergyFlux_Weak(unsigned long iPoint, unsigned long jPoint, su2double Twall, su2double Tvewall,
+                              su2double pcontrol, su2double area, su2double dist,
+                              su2double *residual) const;
+
 public:
 
   /*!

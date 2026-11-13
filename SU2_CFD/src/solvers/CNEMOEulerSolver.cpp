@@ -439,12 +439,8 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     numerics->SetPrimitive   (nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
 
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdU  ( nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-    numerics->SetdTdU  ( nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-    numerics->SetdTvedU( nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-    numerics->SetEve   ( nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-    numerics->SetCvve  ( nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-    numerics->SetGamma ( nodes->GetGamma(iPoint),  nodes->GetGamma(jPoint));
+    SetNumericsThermoState(numerics, nodes, iPoint, nodes, jPoint);
+    numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(jPoint));
 
     /*--- Set the largest convective eigenvalue ---*/
     numerics->SetLambda(nodes->GetLambda(iPoint), nodes->GetLambda(jPoint));
@@ -520,12 +516,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
       numerics->SetPrimitive   (V_i, V_j);
       numerics->SetConservative(U_i, U_j);
-      numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-      numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-      numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-      numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-      numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-      numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(jPoint));
+      SetNumericsThermoState(numerics, nodes, iPoint, nodes, jPoint);
+      numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(jPoint));
 
     } else {
 
@@ -991,21 +983,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   su2double
   Temperature_FreeStream = 0.0, Temperature_ve_FreeStream = 0.0, Mach2Vel_FreeStream         = 0.0,
-  ModVel_FreeStream      = 0.0, Energy_FreeStream         = 0.0, ModVel_FreeStreamND         = 0.0,
-  Velocity_Reynolds      = 0.0, Omega_FreeStream          = 0.0, Omega_FreeStreamND          = 0.0,
+  ModVel_FreeStream      = 0.0, Energy_FreeStream         = 0.0, Velocity_Reynolds           = 0.0,
   Viscosity_FreeStream   = 0.0, Density_FreeStream        = 0.0, Pressure_FreeStream         = 0.0,
-  Tke_FreeStream         = 0.0, Length_Ref                = 0.0, Density_Ref                 = 0.0,
-  Pressure_Ref           = 0.0, Velocity_Ref              = 0.0, Temperature_Ref             = 0.0,
-  Temperature_ve_Ref     = 0.0, Time_Ref                  = 0.0, Omega_Ref                   = 0.0,
-  Force_Ref              = 0.0, Gas_Constant_Ref          = 0.0, Viscosity_Ref               = 0.0,
-  Conductivity_Ref       = 0.0, Energy_Ref                = 0.0, Pressure_FreeStreamND       = 0.0,
-  Energy_FreeStreamND    = 0.0, Temperature_FreeStreamND  = 0.0, Temperature_ve_FreeStreamND = 0.0,
-  Gas_ConstantND         = 0.0, Viscosity_FreeStreamND    = 0.0, sqvel                       = 0.0,
-  Tke_FreeStreamND       = 0.0, Total_UnstTimeND          = 0.0, Delta_UnstTimeND            = 0.0,
-  soundspeed             = 0.0, GasConstant_Inf           = 0.0, Froude                      = 0.0,
-  Density_FreeStreamND   = 0.0, Heat_Flux_Ref             = 0.0;
-
-  su2double Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
+  Tke_FreeStream         = 0.0, Energy_Ref                = 0.0, Energy_FreeStreamND         = 0.0,
+  sqvel                  = 0.0, Total_UnstTimeND          = 0.0, Delta_UnstTimeND            = 0.0,
+  soundspeed             = 0.0, GasConstant_Inf           = 0.0;
 
   /*--- Local variables ---*/
   const su2double Alpha= config->GetAoA()*PI_NUMBER/180.0;
@@ -1129,79 +1111,27 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   /*-- Compute the freestream energy. ---*/
   if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
 
-  /*--- Compute non dimensional quantities. By definition,
-     Lref is one because we have converted the grid to meters. ---*/
+  /*--- Compute the reference values and the non-dimensional free-stream values,
+   and store them in the config. By definition, Lref is one because we have
+   converted the grid to meters. ---*/
 
-  if (config->GetRef_NonDim() == DIMENSIONAL) {
-    Pressure_Ref       = 1.0;
-    Density_Ref        = 1.0;
-    Temperature_Ref    = 1.0;
-    Temperature_ve_Ref = 1.0;
-  }
-  else if (config->GetRef_NonDim() == FREESTREAM_PRESS_EQ_ONE) {
-    Pressure_Ref       = Pressure_FreeStream;       // Pressure_FreeStream = 1.0
-    Density_Ref        = Density_FreeStream;        // Density_FreeStream = 1.0
-    Temperature_Ref    = Temperature_FreeStream;    // Temperature_FreeStream = 1.0
-    Temperature_ve_Ref = Temperature_ve_FreeStream; // Temperature_ve_FreeStream = 1.0
-  }
-  else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
-    Pressure_Ref       = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
-    Density_Ref        = Density_FreeStream;        // Density_FreeStream = 1.0
-    Temperature_Ref    = Temperature_FreeStream;    // Temp_FreeStream = 1.0
-    Temperature_ve_Ref = Temperature_ve_FreeStream; // Temp_ve_FreeStream = 1.0
-  }
-  else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
-    Pressure_Ref       = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
-    Density_Ref        = Density_FreeStream;                  // Density_FreeStream = 1.0
-    Temperature_Ref    = Temperature_FreeStream;              // Temp_FreeStream = 1.0
-    Temperature_ve_Ref = Temperature_ve_FreeStream;           // Temp_ve_FreeStream = 1.0
-  }
-  config->SetPressure_Ref(Pressure_Ref);
-  config->SetDensity_Ref(Density_Ref);
-  config->SetTemperature_Ref(Temperature_Ref);
+  SetCompressibleNonDimValues(config, Pressure_FreeStream, Density_FreeStream, Temperature_FreeStream,
+                              Viscosity_FreeStream, ModVel_FreeStream);
+
+  /*--- Reference value and non-dimensional free-stream value of the vib.-el. temperature ---*/
+
+  const su2double Temperature_ve_Ref = (config->GetRef_NonDim() == DIMENSIONAL) ? 1.0 : Temperature_ve_FreeStream;
   config->SetTemperature_ve_Ref(Temperature_ve_Ref);
 
-  Length_Ref        = 1.0;                                                         config->SetLength_Ref(Length_Ref);
-  Velocity_Ref      = sqrt(config->GetPressure_Ref()/config->GetDensity_Ref());    config->SetVelocity_Ref(Velocity_Ref);
-  Time_Ref          = Length_Ref/Velocity_Ref;                                     config->SetTime_Ref(Time_Ref);
-  Omega_Ref         = Velocity_Ref/Length_Ref;                                     config->SetOmega_Ref(Omega_Ref);
-  Force_Ref         = config->GetDensity_Ref()*Velocity_Ref*Velocity_Ref*Length_Ref*Length_Ref; config->SetForce_Ref(Force_Ref);
-  Heat_Flux_Ref     = Density_Ref*Velocity_Ref*Velocity_Ref*Velocity_Ref;           config->SetHeat_Flux_Ref(Heat_Flux_Ref);
-  Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();      config->SetGas_Constant_Ref(Gas_Constant_Ref);
-  Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
-  Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
-  Froude            = ModVel_FreeStream/sqrt(STANDARD_GRAVITY*Length_Ref);         config->SetFroude(Froude);
+  const su2double Temperature_ve_FreeStreamND = Temperature_ve_FreeStream/config->GetTemperature_ve_Ref();
+  config->SetTemperature_ve_FreeStreamND(Temperature_ve_FreeStreamND);
 
-  /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
+  /*--- Local copies of values stored in the config ---*/
 
-  Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref();  config->SetPressure_FreeStreamND(Pressure_FreeStreamND);
-  Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();    config->SetDensity_FreeStreamND(Density_FreeStreamND);
-
-  for (auto iDim = 0ul; iDim < nDim; iDim++) {
-    Velocity_FreeStreamND[iDim] = config->GetVelocity_FreeStream()[iDim]/Velocity_Ref; config->SetVelocity_FreeStreamND(Velocity_FreeStreamND[iDim], iDim);
-  }
-
-  Temperature_FreeStreamND    = Temperature_FreeStream/config->GetTemperature_Ref();       config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
-  Temperature_ve_FreeStreamND = Temperature_ve_FreeStream/config->GetTemperature_ve_Ref(); config->SetTemperature_ve_FreeStreamND(Temperature_ve_FreeStreamND);
-  Gas_ConstantND              = config->GetGas_Constant()/Gas_Constant_Ref;                config->SetGas_ConstantND(Gas_ConstantND);
-
-  ModVel_FreeStreamND = 0.0;
-  for (auto iDim = 0ul; iDim < nDim; iDim++) ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
-  ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
-
-  Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
-
-  Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  config->SetTke_FreeStream(Tke_FreeStream);
-
-  Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  config->SetTke_FreeStreamND(Tke_FreeStreamND);
-
-  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
-  config->SetOmega_FreeStream(Omega_FreeStream);
-
-  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
-  config->SetOmega_FreeStreamND(Omega_FreeStreamND);
+  const su2double Time_Ref            = config->GetTime_Ref();
+  const su2double Froude              = config->GetFroude();
+  const su2double ModVel_FreeStreamND = config->GetModVel_FreeStreamND();
+  const su2double Tke_FreeStreamND    = config->GetTke_FreeStreamND();
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
@@ -1405,6 +1335,67 @@ void CNEMOEulerSolver::SetReferenceValues(const CConfig& config) {
 
 }
 
+void CNEMOEulerSolver::SetNumericsTransportState(CNumerics *numerics, unsigned long iPoint, unsigned long jPoint) {
+
+  /*--- Species diffusion coefficients ---*/
+  numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
+                              nodes->GetDiffusionCoeff(jPoint));
+
+  /*--- Laminar viscosity ---*/
+  numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
+                                nodes->GetLaminarViscosity(jPoint));
+
+  /*--- Eddy viscosity ---*/
+  numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+                             nodes->GetEddyViscosity(jPoint));
+
+  /*--- Thermal conductivity ---*/
+  numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
+                                   nodes->GetThermalConductivity(jPoint));
+
+  /*--- Vib-el. thermal conductivity ---*/
+  numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
+                                      nodes->GetThermalConductivity_ve(jPoint));
+}
+
+void CNEMOEulerSolver::AddViscousBoundaryResidual(CGeometry *geometry, CNumerics *visc_numerics, const CConfig *config,
+                                                  unsigned long iPoint, unsigned long Point_Normal,
+                                                  const su2double *Normal, CNEMOEulerVariable *nodes_bound,
+                                                  unsigned long iPoint_bound) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+  /*--- Set the normal vector and the coordinates. The second point is the
+   reflection of the closest interior node with respect to the boundary point. ---*/
+  su2double Coord_Reflected[MAXNDIM];
+  GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                     geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+  visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+  visc_numerics->SetNormal(Normal);
+
+  /*--- Conservative and primitive variables, and gradient ---*/
+  visc_numerics->SetConservative(nodes->GetSolution(iPoint),
+                                 nodes_bound->GetSolution(iPoint_bound));
+  visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                              nodes_bound->GetPrimitive(iPoint_bound));
+  visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                    nodes_bound->GetGradient_Primitive(iPoint_bound));
+
+  /*--- Pass supplementary information to CNumerics ---*/
+  SetNumericsThermoState(visc_numerics, nodes, iPoint, nodes_bound, iPoint_bound);
+
+  /*--- Transport properties, the values of the boundary point are used for both states ---*/
+  SetNumericsTransportState(visc_numerics, iPoint, iPoint);
+
+  /*--- Compute and update residual ---*/
+  auto residual = visc_numerics->ComputeResidual(config);
+  LinSysRes.SubtractBlock(iPoint, residual);
+
+  /*--- Jacobian contribution for implicit integration ---*/
+  if (implicit)
+    Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+}
+
 void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
@@ -1539,12 +1530,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
                                   node_infty->GetPrimitive(0));
 
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
-      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
-      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-      conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
-      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
-      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      SetNumericsThermoState(conv_numerics, nodes, iPoint, node_infty, 0);
+      conv_numerics->SetGamma(nodes->GetGamma(iPoint), node_infty->GetGamma(0));
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
@@ -1561,62 +1548,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
-      const bool viscous = config->GetViscous();
-      if (viscous) {
-        su2double Coord_Reflected[MAXNDIM];
-        GeometryToolbox::PointPointReflect(
-            nDim, geometry->nodes->GetCoord(Point_Normal),
-            geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                                Coord_Reflected);
-        visc_numerics->SetNormal(Normal);
-
-        /*--- Primitive variables, and gradient ---*/
-        visc_numerics->SetConservative(nodes->GetSolution(iPoint),
-                                       node_infty->GetSolution(0));
-        visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
-                                    node_infty->GetPrimitive(0));
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                          node_infty->GetGradient_Primitive(0));
-
-        /*--- Pass supplementary information to CNumerics ---*/
-        visc_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
-        visc_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
-        visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint),
-                                 node_infty->GetdTvedU(0));
-        visc_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
-        visc_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
-
-        /*--- Species diffusion coefficients ---*/
-        visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
-                                         nodes->GetDiffusionCoeff(iPoint));
-
-        /*--- Laminar viscosity ---*/
-        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
-                                           nodes->GetLaminarViscosity(iPoint));
-
-        /*--- Eddy viscosity ---*/
-        visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                                        nodes->GetEddyViscosity(iPoint));
-
-        /*--- Thermal conductivity ---*/
-        visc_numerics->SetThermalConductivity(
-            nodes->GetThermalConductivity(iPoint),
-            nodes->GetThermalConductivity(iPoint));
-
-        /*--- Vib-el. thermal conductivity ---*/
-        visc_numerics->SetThermalConductivity_ve(
-            nodes->GetThermalConductivity_ve(iPoint),
-            nodes->GetThermalConductivity_ve(iPoint));
-
-        /*--- Compute and update residual ---*/
-        auto residual = visc_numerics->ComputeResidual(config);
-
-        LinSysRes.SubtractBlock(iPoint, residual);
-        if (implicit) {
-          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-        }
-      }
+      if (config->GetViscous())
+        AddViscousBoundaryResidual(geometry, visc_numerics, config, iPoint, Point_Normal, Normal, node_infty, 0);
     }
   }
 }
@@ -1624,283 +1557,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
 void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
+  /*--- The subsonic inlet is not implemented for a two-temperature mixture. ---*/
   SU2_MPI::Error("BC_INLET: Not operational in NEMO.", CURRENT_FUNCTION);
-
-  unsigned short RHO_INDEX, nSpecies;
-
-  su2double  T_Total, P_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
-  Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
-  alpha, aa, bb, cc, dd, Area, UnitNormal[3] = {0.0};
-
-  su2double Flow_Dir[MAXNDIM] = {};
-  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  bool dynamic_grid         = config->GetGrid_Movement();
-  su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
-  su2double Gas_Constant    = config->GetGas_ConstantND();
-  INLET_TYPE Kind_Inlet     = config->GetKind_Inlet();
-
-  auto *U_domain = new su2double[nVar];      auto *U_inlet = new su2double[nVar];
-  auto *V_domain = new su2double[nPrimVar];  auto *V_inlet = new su2double[nPrimVar];
-  auto *Normal   = new su2double[nDim];
-
-  nSpecies = config->GetnSpecies();
-  auto *Spec_Density = new su2double[nSpecies];
-  for (auto iSpecies = 0ul; iSpecies<nSpecies; iSpecies++)
-    Spec_Density[iSpecies] = 0.0;               /*--- To avoid a compiler warning. ---*/
-
-  RHO_INDEX = nodes->GetRhoIndex();
-
-  /*--- Loop over all the vertices on this boundary marker ---*/
-  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (auto iDim = 0ul; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      conv_numerics->SetNormal(Normal);
-
-      Area = GeometryToolbox::Norm(nDim, Normal);
-
-      for (auto iDim = 0ul; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
-
-      /*--- Retrieve solution at this boundary node ---*/
-      for (auto iVar = 0ul; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);
-      for (auto iVar = 0ul; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint,iVar);
-
-      const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
-      const su2double mag = GeometryToolbox::Norm(nDim, dir);
-      if (config->GetInletUseNormal()) {
-        for (auto iDim = 0u; iDim < nDim; iDim++)
-          Flow_Dir[iDim] = -UnitNormal[iDim];
-      } else {
-        for (auto iDim = 0u; iDim < nDim; iDim++)
-          Flow_Dir[iDim] = dir[iDim]/mag;
-      }
-
-      /*--- Build the fictitious intlet state based on characteristics ---*/
-
-      /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
-       therefore we can specify all but one state variable at the inlet.
-       The outgoing Riemann invariant provides the final piece of info.
-       Adapted from an original implementation in the Stanford University
-       multi-block (SUmb) solver in the routine bcSubsonicInflow.f90
-       written by Edwin van der Weide, last modified 04-20-2009. ---*/
-
-      switch (Kind_Inlet) {
-
-      /*--- Total properties have been specified at the inlet. ---*/
-      case INLET_TYPE::TOTAL_CONDITIONS:
-
-        /*--- Retrieve the specified total conditions for this inlet. ---*/
-        P_Total  = Inlet_Ptotal[val_marker][iVertex];
-        T_Total  = Inlet_Ttotal[val_marker][iVertex];
-
-        /*--- Non-dim. the inputs if necessary. ---*/
-        P_Total /= config->GetPressure_Ref();
-        T_Total /= config->GetTemperature_Ref();
-
-        /*--- Store primitives and set some variables for clarity. ---*/
-        Density = V_domain[RHO_INDEX];
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          Velocity[iDim] = U_domain[nSpecies+iDim]/Density;
-
-        Velocity2   = GeometryToolbox::SquaredNorm(nDim, Velocity);
-        Energy      = U_domain[nVar-2]/Density;
-        Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-        H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
-        SoundSpeed2 = Gamma*Pressure/Density;
-
-        /*--- Compute the acoustic Riemann invariant that is extrapolated
-           from the domain interior. ---*/
-        Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          Riemann += Velocity[iDim]*UnitNormal[iDim];
-
-        /*--- Total speed of sound ---*/
-        SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
-
-        /*--- Dot product of normal and flow direction. This should
-           be negative due to outward facing boundary normal convention. ---*/
-        alpha = GeometryToolbox::DotProduct(nDim, UnitNormal, Flow_Dir);
-
-        /*--- Coefficients in the quadratic equation for the velocity ---*/
-        aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
-        bb = -1.0*Gamma_Minus_One*alpha*Riemann;
-        cc =  0.5*Gamma_Minus_One*Riemann*Riemann
-            -2.0*SoundSpeed_Total2/Gamma_Minus_One;
-
-        /*--- Solve quadratic equation for velocity magnitude. Value must
-           be positive, so the choice of root is clear. ---*/
-        dd = bb*bb - 4.0*aa*cc;
-        dd = sqrt(max(0.0,dd));
-        Vel_Mag   = (-bb + dd)/(2.0*aa);
-        Vel_Mag   = max(0.0,Vel_Mag);
-        Velocity2 = Vel_Mag*Vel_Mag;
-
-        /*--- Compute speed of sound from total speed of sound eqn. ---*/
-        SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-        /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-        Mach2 = Velocity2/SoundSpeed2;
-        Mach2 = min(1.0,Mach2);
-        Velocity2   = Mach2*SoundSpeed2;
-        Vel_Mag     = sqrt(Velocity2);
-        SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-        /*--- Compute new velocity vector at the inlet ---*/
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
-
-        /*--- Static temperature from the speed of sound relation ---*/
-        Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-        //NEED TVE AS WELL
-
-        /*--- Static pressure using isentropic relation at a point ---*/
-        Pressure = P_Total*pow((Temperature/T_Total),Gamma/Gamma_Minus_One);
-
-        /*--- Density at the inlet from the gas law ---*/
-        Density = Pressure/(Gas_Constant*Temperature);
-        //NEED SPECIES DENSITIES
-
-        /*--- Using pressure, density, & velocity, compute the energy ---*/
-        Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
-        //NEED EVE AS WELL
-
-        /*--- Conservative variables, using the derived quantities ---*/
-        for (auto iSpecies = 0ul; iSpecies<nSpecies; iSpecies++)
-          U_inlet[iSpecies] = Spec_Density[iSpecies];
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          U_inlet[nSpecies+iDim] = Velocity[iDim]*Density;
-        U_inlet[nVar-2] = Energy*Density;
-        //U_inlet[nVar-1]=Eve
-
-        /*--- Primitive variables, using the derived quantities ---*/
-        for (auto iSpecies = 0ul; iSpecies<nSpecies; iSpecies++)
-          V_inlet[iSpecies] = Spec_Density[iSpecies];
-        V_inlet[nSpecies] = Temperature;
-        //V_inlet[nSpecies+1] = Tve
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          V_inlet[nSpecies+2] = Velocity[iDim];
-        V_inlet[nSpecies+nDim+2] = Pressure;
-        V_inlet[RHO_INDEX] = Density;
-        //V_inlet[H_INDEX] = H;
-        //V_inlet[A_INDEX] = A;
-        //V_inlet[RHO_CVTR_INDEX] = rcvtr;
-        //V_inlet[RHO_CVVE_INDEX] = rcvve;
-
-        break;
-
-      /*--- Mass flow has been specified at the inlet. ---*/
-      case INLET_TYPE::MASS_FLOW:
-
-        /*--- Retrieve the specified mass flow for the inlet. ---*/
-        Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
-        Density  = Inlet_Ttotal[val_marker][iVertex];
-
-        /*--- Non-dim. the inputs if necessary. ---*/
-        Density /= config->GetDensity_Ref();
-        Vel_Mag /= config->GetVelocity_Ref();
-
-        /*--- Get primitives from current inlet state. ---*/
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
-        Pressure    = nodes->GetPressure(iPoint);
-        SoundSpeed2 = Gamma*Pressure/U_domain[0];
-
-        /*--- Compute the acoustic Riemann invariant that is extrapolated
-           from the domain interior. ---*/
-        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          Riemann += Velocity[iDim]*UnitNormal[iDim];
-
-        /*--- Speed of sound squared for fictitious inlet state ---*/
-        SoundSpeed2 = Riemann;
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
-
-        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
-
-        /*--- Pressure for the fictitious inlet state ---*/
-        Pressure = SoundSpeed2*Density/Gamma;
-
-        /*--- Energy for the fictitious inlet state ---*/
-        Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Vel_Mag*Vel_Mag;
-
-        /*--- Conservative variables, using the derived quantities ---*/
-        U_inlet[0] = Density;
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          U_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim]*Density;
-        U_inlet[nDim+1] = Energy*Density;
-
-        /*--- Primitive variables, using the derived quantities ---*/
-        V_inlet[0] = Pressure / ( Gas_Constant * Density);
-        for (auto iDim = 0ul; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
-        V_inlet[nDim+1] = Pressure;
-        V_inlet[nDim+2] = Density;
-
-        break;
-
-      default:
-        SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
-        break;
-      }
-
-      /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetConservative(U_domain, U_inlet);
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute the residual using an upwind scheme ---*/
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-//      /*--- Viscous contribution ---*/
-//      if (viscous) {
-
-//        /*--- Set the normal vector and the coordinates ---*/
-//        visc_numerics->SetNormal(Normal);
-//        su2double Coord_Reflected[MAXNDIM];
-//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-//                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(), Coord_Reflected);
-
-//        /*--- Primitive variables, and gradient ---*/
-//        visc_numerics->SetPrimitive(V_domain, V_inlet);
-//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(), nodes->GetGradient_Primitive());
-
-//        /*--- Laminar viscosity ---*/
-//        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(), nodes->GetLaminarViscosity());
-
-//        /*--- Compute and update residual ---*/
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
-
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-//      }
-    }
-  }
-
-  /*--- Free locally allocated memory ---*/
-  delete [] U_domain;
-  delete [] U_inlet;
-  delete [] V_domain;
-  delete [] V_inlet;
-  delete [] Normal;
-  delete [] Spec_Density;
 }
 
 void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
@@ -1917,10 +1575,10 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   su2double *U_domain;
-  auto *U_outlet = new su2double[nVar];
+  su2double U_outlet[MAXNVAR] = {0.0};
   su2double *V_domain, *V_outlet;
-  auto *Normal   = new su2double[nDim];
-  auto *Ys       = new su2double[nSpecies];
+  su2double Normal[MAXNDIM] = {0.0};
+  su2double Ys[MAXNVAR] = {0.0};
 
   const unsigned short T_INDEX       = nodes->GetTIndex();
   const unsigned short TVE_INDEX     = nodes->GetTveIndex();
@@ -2079,12 +1737,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Passing supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
-      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
-      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-      conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
-      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
-      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+      SetNumericsThermoState(conv_numerics, nodes, iPoint, node_infty, 0);
+      conv_numerics->SetGamma(nodes->GetGamma(iPoint), node_infty->GetGamma(0));
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
@@ -2095,64 +1749,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-      /*--- Viscous contribution ---*/
-//      if (viscous) {
-
-//        /*--- Set the normal vector and the coordinates ---*/
-//        visc_numerics->SetNormal(Normal);
-//        su2double Coord_Reflected[MAXNDIM];
-//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-//                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(), Coord_Reflected);
-
-//        /*--- Primitive variables, and gradient ---*/
-//        visc_numerics->SetPrimitive(V_domain, V_outlet);
-//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(), nodes->GetGradient_Primitive());
-
-//        /*--- Conservative variables, and gradient ---*/
-//        visc_numerics->SetConservative(U_domain, U_outlet);
-
-//        /*--- Pass supplementary information to CNumerics ---*/
-//        visc_numerics->SetdPdU(nodes->GetdPdU(), node_infty->GetdPdU());
-//        visc_numerics->SetdTdU(nodes->GetdTdU(), node_infty->GetdTdU());
-//        visc_numerics->SetdTvedU(nodes->GetdTvedU(), node_infty->GetdTvedU());
-
-//        /*--- Species diffusion coefficients ---*/
-//        visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(),
-//                                         node_infty->GetDiffusionCoeff() );
-
-//        /*--- Laminar viscosity ---*/
-//        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(),
-//                                           node_infty->GetLaminarViscosity() );
-
-//        /*--- Thermal conductivity ---*/
-//        visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(),
-//                                              node_infty->GetThermalConductivity());
-
-//        /*--- Vib-el. thermal conductivity ---*/
-//        visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(),
-//                                                 node_infty->GetThermalConductivity_ve() );
-
-//        /*--- Laminar viscosity ---*/
-//        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(), nodes->GetLaminarViscosity());
-
-//        /*--- Compute and update residual ---*/
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
-
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-//      }
     }
   }
-
-  /*--- Free locally allocated memory ---*/
-  delete [] U_outlet;
-  delete [] Normal;
-  delete [] Ys;
-
 }
 
 void CNEMOEulerSolver::BC_Supersonic_Inlet(
@@ -2222,11 +1820,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
                                 node_inlet.GetPrimitive(0));
 
     /*--- Pass supplementary info to CNumerics ---*/
-    conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
-    conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
-    conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_inlet.GetdTvedU(0));
-    conv_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
-    conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
+    SetNumericsThermoState(conv_numerics, nodes, iPoint, &node_inlet, 0);
 
     const bool dynamic_grid = config->GetGrid_Movement();
     if (dynamic_grid)
@@ -2243,60 +1837,8 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     /*--- Viscous contribution ---*/
-    const bool viscous = config->GetViscous();
-    if (viscous) {
-
-      /*--- Set the normal vector and the coordinates ---*/
-      su2double Coord_Reflected[MAXNDIM];
-      GeometryToolbox::PointPointReflect(
-          nDim, geometry->nodes->GetCoord(Point_Normal),
-          geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                              Coord_Reflected);
-      visc_numerics->SetNormal(Normal);
-
-      /*--- Primitive variables, and gradient ---*/
-      visc_numerics->SetConservative(nodes->GetSolution(iPoint),
-                                     node_inlet.GetSolution(0));
-      visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
-                                  node_inlet.GetPrimitive(0));
-      visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                        node_inlet.GetGradient_Primitive(0));
-
-      /*--- Pass supplementary information to CNumerics ---*/
-      visc_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_inlet.GetdPdU(0));
-      visc_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_inlet.GetdTdU(0));
-      visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint),
-                               node_inlet.GetdTvedU(0));
-      visc_numerics->SetEve(nodes->GetEve(iPoint), node_inlet.GetEve(0));
-      visc_numerics->SetCvve(nodes->GetCvve(iPoint), node_inlet.GetCvve(0));
-
-      /*--- Species diffusion coefficients ---*/
-      visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
-                                       nodes->GetDiffusionCoeff(iPoint));
-      /*--- Laminar viscosity ---*/
-      visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
-                                         nodes->GetLaminarViscosity(iPoint));
-      /*--- Eddy viscosity ---*/
-      visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                                      nodes->GetEddyViscosity(iPoint));
-      /*--- Thermal conductivity ---*/
-      visc_numerics->SetThermalConductivity(
-          nodes->GetThermalConductivity(iPoint),
-          nodes->GetThermalConductivity(iPoint));
-      /*--- Vib-el. thermal conductivity ---*/
-      visc_numerics->SetThermalConductivity_ve(
-          nodes->GetThermalConductivity_ve(iPoint),
-          nodes->GetThermalConductivity_ve(iPoint));
-
-      /*--- Compute and update residual ---*/
-      auto residual = visc_numerics->ComputeResidual(config);
-      LinSysRes.SubtractBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-      if (implicit)
-        Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-    }
+    if (config->GetViscous())
+      AddViscousBoundaryResidual(geometry, visc_numerics, config, iPoint, Point_Normal, Normal, &node_inlet, 0);
   }
 }
 
@@ -2336,12 +1878,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(
                                    nodes->GetSolution(iPoint));
 
     /*--- Pass supplementary information to CNumerics ---*/
-    conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), nodes->GetdPdU(iPoint));
-    conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), nodes->GetdTdU(iPoint));
-    conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint),
-                             nodes->GetdTvedU(iPoint));
-    conv_numerics->SetEve(nodes->GetEve(iPoint), nodes->GetEve(iPoint));
-    conv_numerics->SetCvve(nodes->GetCvve(iPoint), nodes->GetCvve(iPoint));
+    SetNumericsThermoState(conv_numerics, nodes, iPoint, nodes, iPoint);
     conv_numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(iPoint));
 
     const bool dynamic_grid = config->GetGrid_Movement();
