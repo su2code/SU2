@@ -29,6 +29,7 @@
 #include <sstream>
 #include <string>
 #include "../../Common/include/CConfig.hpp"
+#include "../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 namespace {
 
@@ -86,4 +87,33 @@ TEST_CASE("INIT_OPTION_INC defaults", "[Config]") {
   CHECK(GetInitOptionInc(ideal_gas_options + "INIT_OPTION_INC= OPERATING_PRESSURE\n") ==
         INIT_OPTION_INC::OPERATING_PRESSURE);
   CHECK(GetInitOptionInc(ideal_gas_options + "INIT_OPTION_INC= DENSITY_INIT\n") == INIT_OPTION_INC::DENSITY_INIT);
+}
+
+TEST_CASE("Periodic affine transformation and its inverse", "[Config][Periodic]") {
+  const auto angles = GENERATE(std::string("0,0,0"), std::string("0,0,30"), std::string("20,30,10"),
+                               std::string("90,0,90"), std::string("-90,0,90"));
+  std::stringstream options(base_options + "MARKER_PERIODIC= (a,b, 2,-3,1, " + angles + ", 1,2,-3)\n");
+  auto* original = std::cout.rdbuf(nullptr);
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+  std::cout.rdbuf(original);
+  su2double rotations[2][3][3];
+  const std::string markers[] = {"a", "b"};
+  for (auto side = 0u; side < 2; ++side) {
+    const auto* rotation = config.GetPeriodicRotAngles(markers[side]);
+    GeometryToolbox::RotationMatrix(rotation[0], rotation[1], rotation[2], rotations[side]);
+  }
+  su2double error = 0;
+  for (auto iDim = 0u; iDim < 3; ++iDim) {
+    for (auto jDim = 0u; jDim < 3; ++jDim) {
+      su2double product = 0;
+      for (auto kDim = 0u; kDim < 3; ++kDim) product += rotations[1][iDim][kDim] * rotations[0][kDim][jDim];
+      error = std::max(error, fabs(product - (iDim == jDim)));
+    }
+    const auto* forward = config.GetPeriodicTranslation("a");
+    su2double translation = config.GetPeriodicTranslation("b")[iDim];
+    for (auto jDim = 0u; jDim < 3; ++jDim) translation += rotations[1][iDim][jDim] * forward[jDim];
+    error = std::max(error, fabs(translation));
+  }
+  INFO("Euler angles: " << angles);
+  CHECK(error < 1e-12);
 }

@@ -34,6 +34,7 @@
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 #include "../../include/adt/CADTElemClass.hpp"
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
 /* Prototypes for Lapack functions, if MKL or LAPACK is used. */
 #if defined(HAVE_MKL) || defined(HAVE_LAPACK)
@@ -1744,31 +1745,15 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
             transformation from the donor. This is the transpose of the
             transformation to the donor. ---*/
 
-      /* Store (center-trans) as it is constant and will be added on. */
-      su2double translation[] = {center[0] - trans[0], center[1] - trans[1], center[2] - trans[2]};
-
-      /* Store angles separately for clarity. Compute sines/cosines. */
-      su2double theta = angles[0];
-      su2double phi = angles[1];
-      su2double psi = angles[2];
-
-      su2double cosTheta = cos(theta), cosPhi = cos(phi), cosPsi = cos(psi);
-      su2double sinTheta = sin(theta), sinPhi = sin(phi), sinPsi = sin(psi);
-
-      /* Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis, then z-axis. */
       su2double rotMatrix[3][3];
-      rotMatrix[0][0] = cosPhi * cosPsi;
-      rotMatrix[0][1] = cosPhi * sinPsi;
-      rotMatrix[0][2] = -sinPhi;
+      GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotMatrix);
+      for (auto i = 0u; i < 3; ++i)
+        for (auto j = 0u; j < i; ++j) std::swap(rotMatrix[i][j], rotMatrix[j][i]);
 
-      rotMatrix[1][0] = sinTheta * sinPhi * cosPsi - cosTheta * sinPsi;
-      rotMatrix[1][1] = sinTheta * sinPhi * sinPsi + cosTheta * cosPsi;
-      rotMatrix[1][2] = sinTheta * cosPhi;
-
-      rotMatrix[2][0] = cosTheta * sinPhi * cosPsi + sinTheta * sinPsi;
-      rotMatrix[2][1] = cosTheta * sinPhi * sinPsi - sinTheta * cosPsi;
-      rotMatrix[2][2] = cosTheta * cosPhi;
+      /*--- Invert the complete affine map: c + R^T (x-c-t). ---*/
+      su2double translation[] = {center[0], center[1], center[2]};
+      for (auto i = 0u; i < 3; ++i)
+        for (auto j = 0u; j < 3; ++j) translation[i] -= rotMatrix[i][j] * trans[j];
 
       /* Loop over the halo points for this periodic transformation. */
       for (unsigned long i = iLow; i < iUpp; ++i) {
