@@ -98,6 +98,7 @@ void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
 }
 
 void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
+  CheckIntCount(geometry->GetnElem());
 
   /*--- Sort connectivity for each type of element (excluding halos). Note
    In these routines, we sort the connectivity into a linear partitioning
@@ -242,7 +243,9 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
     if ((ii != rank) && (nElem_Cum[ii+1] > 0)) nRecvs++;
 
+    CheckIntCount(static_cast<unsigned long>(nElem_Send[ii]) + nElem_Send[ii+1], NODES_PER_ELEMENT);
     nElem_Send[ii+1] += nElem_Send[ii];
+    CheckIntCount(static_cast<unsigned long>(nElem_Cum[ii]) + nElem_Cum[ii+1], NODES_PER_ELEMENT);
     nElem_Cum[ii+1] += nElem_Cum[ii];
   }
 

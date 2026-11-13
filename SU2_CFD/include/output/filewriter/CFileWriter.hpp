@@ -41,6 +41,10 @@ using namespace std;
 
 class CFileWriter{
 protected:
+  static passivedouble WallTime();
+  passivedouble fileStartTime = 0.0; //!< Open-to-close timer, independent of per-write scratch timers.
+  void UpdateBandwidth(passivedouble elapsed);
+
 
   /*!
    * \brief The MPI rank
