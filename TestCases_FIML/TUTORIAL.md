@@ -262,8 +262,9 @@ minutes with `--warm_adjoint --adjoint_iter 2000`, and a direct solve 2.5 to 12 
 3. Write `CUSTOM_OBJFUNC` and evaluate it on the baseline with a 1-iteration run from the baseline restart;
    all terms should be finite and J should be the number you expect.
 4. Choose the adjoint CFL: run the adjoint once on the baseline (`MATH_PROBLEM= DISCRETE_ADJOINT`,
-   `RESTART_SOL= YES`, fixed `CFL_NUMBER`, `CFL_ADAPT= NO`) and make sure the residual falls. On a small
-   mesh CFL 25 worked, on the S809 CFL 100.
+   `RESTART_SOL= NO`, fixed `CFL_NUMBER`, `CFL_ADAPT= NO`; the flow restart is always read) and make sure the
+   residual falls. On a small mesh CFL 25 worked, on the S809 CFL 100. The history field `SENS_FIML`, the norm
+   of dJ/dbeta or dJ/dw, shows when the gradient has settled.
 5. Check the gradient once, before an expensive run: central differences of J along a random direction of
    beta (or of the weights, with `FILTER_SHIELD= NO`) against the adjoint gradient, both from flows converged
    to a residual of about -12. Agreement within a few percent is what to expect; the NACA0012 case documents
@@ -297,8 +298,19 @@ minutes with `--warm_adjoint --adjoint_iter 2000`, and a direct solve 2.5 to 12 
 | `FILTER_SHIELD` | `NO` | beta = 1 where Delta < 0.25 or S/Omega > 2 |
 | `SA_OPTIONS` | - | the usual SA options also apply to `SA_FIML` |
 
-History fields: `BETA_REG` (group `FIML`), `INVERSE_DESIGN_PRESSURE` (group `CP_DIFF`, column `Cp_Diff`).
+History fields: `BETA_REG` (group `FIML`), `INVERSE_DESIGN_PRESSURE` (group `CP_DIFF`, column `Cp_Diff`), and in
+the adjoint `SENS_FIML` (group `SENSITIVITY`), the L2 norm of dJ/dbeta (`NONE`) or dJ/dw (`WEIGHTS`).
 Volume fields: `Beta_FIML` in the group `FIML`, and the four network inputs in the group `FIML_FEATURES`.
+The group `FIML` is always written, so beta is part of every flow restart.
+
+Regression tests:
+
+| Test | Script | What it checks |
+|---|---|---|
+| `inc_turb_s809_sa`, `inc_turb_s809_fiml` | `parallel_regression.py` | S809 against the measured Cp: SA, and SA with the trained network |
+| `inc_turb_s809_fiml` | `hybrid_regression.py` | the network with OpenMP threads |
+| `discadj_incomp_turb_NACA0012_fiml_beta` | `parallel_regression_AD.py` | adjoint with beta as the design variable (Classic) |
+| `discadj_incomp_turb_NACA0012_fiml_weights` | `parallel_regression_AD.py` | adjoint with the network weights as design variables (Direct) |
 
 ## 10. Background
 

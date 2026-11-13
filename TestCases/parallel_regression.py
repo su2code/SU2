@@ -907,6 +907,23 @@ def main():
     inc_turb_naca0012_sst_sust.test_vals = [-7.169837, 0.332730, -0.000001, 0.312131]
     test_list.append(inc_turb_naca0012_sst_sust)
 
+    # S809 at 14.24 deg against the measured upper-surface Cp (Cp_Diff) and lift (CL 1.05)
+    # SA
+    inc_turb_s809_sa           = TestCase('inc_turb_s809_sa')
+    inc_turb_s809_sa.cfg_dir   = "incomp_rans/s809_fiml"
+    inc_turb_s809_sa.cfg_file  = "s809_sa.cfg"
+    inc_turb_s809_sa.test_iter = 20
+    inc_turb_s809_sa.test_vals = [-11.482711, -7.781876, 1.495734, 0.040286, 0.412146]
+    test_list.append(inc_turb_s809_sa)
+
+    # SA with the FIML correction of a network trained on the measured Cp and lift
+    inc_turb_s809_fiml           = TestCase('inc_turb_s809_fiml')
+    inc_turb_s809_fiml.cfg_dir   = "incomp_rans/s809_fiml"
+    inc_turb_s809_fiml.cfg_file  = "s809_fiml.cfg"
+    inc_turb_s809_fiml.test_iter = 20
+    inc_turb_s809_fiml.test_vals = [-10.925958, -7.107953, 1.026911, 0.106583, 0.054883, 861.970000]
+    test_list.append(inc_turb_s809_fiml)
+
     # Flat plate, pressure-based
     inc_flatplate_pb = TestCase('inc_flatplate_pb')
     inc_flatplate_pb.cfg_dir = "incomp_rans/rough_flatplate"

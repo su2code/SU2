@@ -19,7 +19,8 @@ Spalart-Allmaras production term.
     python3 s809_cmesh.py --output s809_cmesh.su2              # the mesh used by the configurations
     python3 s809_cmesh.py --output s809_fine.su2 --scale 2     # all spacings halved, for a grid study
 
-Without `--output` it writes `s809_cmesh.msh`.
+Without `--output` it writes `s809_cmesh.msh`. The mesh is not in this repository: generate it as
+above, or copy `incomp_rans/s809_fiml/s809_cmesh.su2` from the su2code/TestCases repository.
 
 - Grid lines leave the wall along the normal, then turn to their far-field point; the turn of the
   start directions at the sharp trailing edge is smoothed so that grid lines do not converge.

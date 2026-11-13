@@ -463,6 +463,14 @@ def main():
     inc_turb_naca0012_sst_sust.test_vals = [-7.170018, 0.332638, 0.000002, 0.312117]
     test_list.append(inc_turb_naca0012_sst_sust)
 
+    # S809, SA with the FIML correction of a trained network
+    inc_turb_s809_fiml           = TestCase('inc_turb_s809_fiml')
+    inc_turb_s809_fiml.cfg_dir   = "incomp_rans/s809_fiml"
+    inc_turb_s809_fiml.cfg_file  = "s809_fiml.cfg"
+    inc_turb_s809_fiml.test_iter = 20
+    inc_turb_s809_fiml.test_vals = [-10.925959, -7.107953, 1.026911, 0.106583, 0.054883, 861.970000]
+    test_list.append(inc_turb_s809_fiml)
+
     # Weakly coupled heat equation
     inc_weakly_coupled = TestCase('inc_weakly_coupled')
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"

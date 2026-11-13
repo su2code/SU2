@@ -17,7 +17,8 @@ fi
 
 # Check mesh file
 if [ ! -f "s809_cmesh.su2" ]; then
-    echo "ERROR: Mesh file not found!"
+    echo "ERROR: s809_cmesh.su2 not found, generate it with:"
+    echo "  python3 s809_cmesh.py --output s809_cmesh.su2"
     exit 1
 fi
 
