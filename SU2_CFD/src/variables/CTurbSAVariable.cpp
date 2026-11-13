@@ -69,9 +69,8 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
     }
   }
 
-  /*--- Initialize FIML variables ---*/
   if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
-    beta_fiml.resize(nPoint) = su2double(1.0);  // Initialize to 1.0 (no correction)
+    beta_fiml.resize(nPoint) = su2double(1.0);
     beta_fiml_grad.resize(nPoint) = su2double(0.0);
     beta_fiml_train.resize(nPoint) = su2double(1.0);
     sa_production.resize(nPoint) = su2double(0.0);

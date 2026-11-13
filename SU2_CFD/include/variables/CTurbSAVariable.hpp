@@ -49,7 +49,7 @@ private:
 
   /* FIML variables */
   VectorType beta_fiml;          /*!< \brief FIML correction factor at each point. */
-  VectorType beta_fiml_grad;     /*!< \brief Gradient of FIML correction (for adjoint). */
+  VectorType beta_fiml_grad;     /*!< \brief Derivative of the objective function with respect to beta_fiml. */
   VectorType beta_fiml_train;    /*!< \brief Target beta for neural network training (FIML-Embedded). */
   VectorType sa_production;      /*!< \brief SA production per unit volume before the FIML correction. */
   VectorType sa_destruction;     /*!< \brief SA destruction per unit volume. */
@@ -219,7 +219,15 @@ public:
     sa_destruction(iPoint) = destruction;
   }
 
+  /*!
+   * \brief Get the SA production per unit volume before the FIML correction.
+   */
   inline su2double GetSAProduction(unsigned long iPoint) const { return sa_production(iPoint); }
+
+  /*!
+   * \brief Get the SA destruction per unit volume.
+   */
+  inline su2double GetSADestruction(unsigned long iPoint) const { return sa_destruction(iPoint); }
 
   /*!
    * \brief Register beta_fiml as AD input, or reset its AD index.
@@ -239,6 +247,5 @@ public:
     for (unsigned long iPoint = 0; iPoint < beta_fiml.size(); iPoint++)
       beta_fiml_grad(iPoint) = SU2_TYPE::GetDerivative(beta_fiml(iPoint));
   }
-  inline su2double GetSADestruction(unsigned long iPoint) const { return sa_destruction(iPoint); }
 
 };

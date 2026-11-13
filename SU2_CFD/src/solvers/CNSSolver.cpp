@@ -273,7 +273,7 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
 }
 
-void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver** solver) {
+void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
   SU2_ZONE_SCOPED
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;

@@ -3877,6 +3877,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     saParsedOptions = ParseSAOptions(SA_Options, nSA_Options, rank);
   }
 
+  if (Kind_Turb_Model == TURB_MODEL::SA_FIML) {
+    if (N_Hidden_Layers < 1 || N_Neurons < 1) {
+      SU2_MPI::Error("SA_FIML needs N_HIDDEN_LAYERS and N_NEURONS of at least 1.", CURRENT_FUNCTION);
+    }
+    if (DiscreteAdjoint && Kind_Train_NN == NN_TRAIN_METHOD::BACKPROP) {
+      SU2_MPI::Error("The discrete adjoint of SA_FIML needs KIND_TRAIN_NN= NONE (beta at every point) or "
+                     "WEIGHTS (network weights).", CURRENT_FUNCTION);
+    }
+  }
+
   if (Kind_Solver == MAIN_SOLVER::INC_RANS && sstParsedOptions.compSarkar){
     SU2_MPI::Error("COMPRESSIBILITY-SARKAR only supported for SOLVER= RANS", CURRENT_FUNCTION);
   }

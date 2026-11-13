@@ -43,9 +43,9 @@ private:
   su2double nu_tilde_Engine[4] = {0.0};
   su2double nu_tilde_ActDisk[4] = {0.0};
 
-  /*--- FIML Neural Network Components ---*/
-  su2double*** weights = nullptr;              /*!< \brief NN weights [layer][neuron_from][neuron_to] */
-  su2double*** weight_gradients = nullptr;     /*!< \brief Weight gradients [layer][neuron_from][neuron_to] */
+  /*--- FIML neural network. ---*/
+  vector<su2activematrix> weights;             /*!< \brief Weights per layer, (inputs + bias) x outputs. */
+  vector<su2activematrix> weight_gradients;    /*!< \brief Gradients of the training loss or of the objective. */
   unsigned short n_neurons = 0;                /*!< \brief Number of neurons per hidden layer */
   unsigned short n_hidden_layers = 0;          /*!< \brief Number of hidden layers */
   unsigned short n_inputs = 4;                 /*!< \brief Number of NN inputs (features) */
@@ -58,7 +58,7 @@ private:
   unsigned short epoch_counter = 0;            /*!< \brief Completed training epochs. */
 
   bool filter_shield = false;                  /*!< \brief Apply spatial filtering */
-  vector<bool> nn_filtered;                    /*!< \brief Points excluded by the filter in the last forward pass. */
+  su2vector<uint8_t> nn_filtered;              /*!< \brief Points excluded by the filter in the last forward pass. */
   su2double tau_wall_ref = 1.0;                /*!< \brief Flat-plate wall shear stress that normalizes the Delta feature. */
   vector<su2double> adam_m, adam_v;            /*!< \brief Adam moments of the weights, in file order. */
   unsigned long adam_step = 0;                 /*!< \brief Number of Adam updates. */
@@ -68,12 +68,9 @@ private:
    */
   template <class F>
   void ForEachWeight(F&& f) const {
-    for (unsigned short layer = 0; layer <= n_hidden_layers; layer++) {
-      const unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
-      const unsigned short n_to = (layer == n_hidden_layers) ? 1 : n_neurons;
-      for (unsigned short i = 0; i <= n_from; i++)
-        for (unsigned short j = 0; j < n_to; j++) f(layer, i, j);
-    }
+    for (unsigned long layer = 0; layer < weights.size(); layer++)
+      for (unsigned long i = 0; i < weights[layer].rows(); i++)
+        for (unsigned long j = 0; j < weights[layer].cols(); j++) f(layer, i, j);
   }
 
   /*!
@@ -83,12 +80,20 @@ private:
   void InitializeNeuralNetwork(const CConfig* config);
 
   /*!
-   * \brief Forward propagate through neural network to compute beta_fiml at all points.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver_container - Container with all solvers.
-   * \param[in] geometry - Geometrical definition.
+   * \brief Activation buffers of one point: each layer's inputs followed by the bias input 1, then tanh(output).
    */
-  void ForwardPropagate(const CConfig* config, CSolver** solver_container, CGeometry* geometry);
+  vector<vector<su2double>> NetworkActivations() const;
+
+  /*!
+   * \brief Evaluate the network for scaled inputs, filling the activations of every layer.
+   */
+  void EvaluateNetwork(const su2double* inputs, vector<vector<su2double>>& activations) const;
+
+  /*!
+   * \brief Set beta_fiml at all domain points from the network, or to 1 where the filter excludes the point.
+   * \param[in] solver_container - Container with all solvers.
+   */
+  void ForwardPropagate(CSolver** solver_container);
 
   /*!
    * \brief Compute neural network input features at a point.
@@ -126,12 +131,10 @@ private:
   void ComputeBoxCoxLambda(const CConfig* config, CSolver** solver_container, CGeometry* geometry);
 
   /*!
-   * \brief Backward propagate to compute weight gradients from beta targets.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Gradients of the training loss with respect to the weights, averaged over the unfiltered points.
    * \param[in] solver_container - Container with all solvers.
-   * \param[in] geometry - Geometrical definition.
    */
-  void BackwardPropagate(const CConfig* config, CSolver** solver_container, CGeometry* geometry);
+  void BackwardPropagate(CSolver** solver_container);
 
   /*!
    * \brief Update the neural network weights with one Adam step.
@@ -147,11 +150,9 @@ private:
   void LoadBetaTargets(const CConfig* config, CGeometry* geometry);
 
   /*!
-   * \brief Compute training loss (MSE between predicted and target beta).
-   * \param[in] geometry - Geometrical definition.
-   * \return Total training loss.
+   * \brief Half the mean square difference between predicted and target beta over the unfiltered points.
    */
-  su2double ComputeTrainingLoss(CGeometry* geometry) const;
+  su2double ComputeTrainingLoss() const;
 
   /*!
    * \brief Save neural network weights to file.
@@ -247,7 +248,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver() override;
+  ~CTurbSASolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.

@@ -204,78 +204,13 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver
   /*--- Add the solver name. ---*/
   SolverName = "SA";
 
-  /*--- Initialize FIML neural network if SA_FIML model is active ---*/
   if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
     InitializeNeuralNetwork(config);
     filter_shield = config->GetFilter_Shield();
     SetReferenceWallShearStress(config);
+    nn_filtered.resize(nPointDomain) = 0;
   }
 
-}
-
-CTurbSASolver::~CTurbSASolver() {
-
-  /*--- Deallocate neural network weights if allocated ---*/
-  if (weights != nullptr) {
-    /*--- Input layer ---*/
-    if (weights[0] != nullptr) {
-      for (unsigned short i = 0; i <= n_inputs; i++) {
-        delete[] weights[0][i];
-      }
-      delete[] weights[0];
-    }
-
-    /*--- Hidden layers ---*/
-    for (unsigned short layer = 1; layer < n_hidden_layers; layer++) {
-      if (weights[layer] != nullptr) {
-        for (unsigned short i = 0; i <= n_neurons; i++) {
-          delete[] weights[layer][i];
-        }
-        delete[] weights[layer];
-      }
-    }
-
-    /*--- Output layer ---*/
-    if (weights[n_hidden_layers] != nullptr) {
-      for (unsigned short i = 0; i <= n_neurons; i++) {
-        delete[] weights[n_hidden_layers][i];
-      }
-      delete[] weights[n_hidden_layers];
-    }
-
-    delete[] weights;
-  }
-
-  /*--- Deallocate neural network weight gradients if allocated ---*/
-  if (weight_gradients != nullptr) {
-    /*--- Input layer ---*/
-    if (weight_gradients[0] != nullptr) {
-      for (unsigned short i = 0; i <= n_inputs; i++) {
-        delete[] weight_gradients[0][i];
-      }
-      delete[] weight_gradients[0];
-    }
-
-    /*--- Hidden layers ---*/
-    for (unsigned short layer = 1; layer < n_hidden_layers; layer++) {
-      if (weight_gradients[layer] != nullptr) {
-        for (unsigned short i = 0; i <= n_neurons; i++) {
-          delete[] weight_gradients[layer][i];
-        }
-        delete[] weight_gradients[layer];
-      }
-    }
-
-    /*--- Output layer ---*/
-    if (weight_gradients[n_hidden_layers] != nullptr) {
-      for (unsigned short i = 0; i <= n_neurons; i++) {
-        delete[] weight_gradients[n_hidden_layers][i];
-      }
-      delete[] weight_gradients[n_hidden_layers];
-    }
-
-    delete[] weight_gradients;
-  }
 }
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -335,38 +270,46 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
       iMesh == MESH_0) {
     const bool adjoint = config->GetDiscrete_Adjoint();
     const bool nn_active = adjoint || config->GetInnerIter() >= max<unsigned long>(config->GetIter_Start_NN(), 1);
+    const unsigned short num_epoch = config->GetNum_Epoch();
+    const bool train = nn_active && !adjoint && config->GetTrain_NN() &&
+                       config->GetKind_Train_NN() == NN_TRAIN_METHOD::BACKPROP && epoch_counter < num_epoch;
 
-    if (nn_active && !nn_scaling_set) {
-      if (adjoint) SU2_MPI::Error("The adjoint of the neural network needs nn_weights.dat.", CURRENT_FUNCTION);
-      if (rank == MASTER_NODE) cout << "Computing scaling parameters for FIML..." << endl;
-      ComputeBoxCoxLambda(config, solver_container, geometry);
-      nn_scaling_set = true;
-    }
-
-    if (nn_active && config->GetTrain_NN() && !targets_loaded) {
-      LoadBetaTargets(config, geometry);
-      targets_loaded = true;
-    }
-
-    /*--- Forward propagate to compute beta_fiml at all points ---*/
     if (nn_active) {
-      ForwardPropagate(config, solver_container, geometry);
+      /*--- Scaling, targets, training and file output are serial; the forward pass is shared by the threads. ---*/
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        if (!nn_scaling_set) {
+          if (adjoint) SU2_MPI::Error("The adjoint of the neural network needs nn_weights.dat.", CURRENT_FUNCTION);
+          if (rank == MASTER_NODE) cout << "Computing scaling parameters for FIML..." << endl;
+          ComputeBoxCoxLambda(config, solver_container, geometry);
+          nn_scaling_set = true;
+        }
+        if (config->GetTrain_NN() && !targets_loaded) {
+          LoadBetaTargets(config, geometry);
+          targets_loaded = true;
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+      ForwardPropagate(solver_container);
 
       /*--- One training epoch per solver iteration. ---*/
-      const unsigned short num_epoch = config->GetNum_Epoch();
-      if (!adjoint && config->GetTrain_NN() && config->GetKind_Train_NN() == NN_TRAIN_METHOD::BACKPROP &&
-          epoch_counter < num_epoch) {
-        const su2double loss = ComputeTrainingLoss(geometry);
-        if (rank == MASTER_NODE && (epoch_counter % 10 == 0 || epoch_counter + 1 == num_epoch)) {
-          cout << "FIML Training - Epoch " << epoch_counter << "/" << num_epoch << ", Loss: " << loss << endl;
+      if (train) {
+        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+          const su2double loss = ComputeTrainingLoss();
+          if (rank == MASTER_NODE && (epoch_counter % 10 == 0 || epoch_counter + 1 == num_epoch)) {
+            cout << "FIML Training - Epoch " << epoch_counter << "/" << num_epoch << ", Loss: " << loss << endl;
+          }
+          BackwardPropagate(solver_container);
+          UpdateWeights(config->GetLearning_Rate());
+          epoch_counter++;
         }
+        END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-        BackwardPropagate(config, solver_container, geometry);
-        UpdateWeights(config->GetLearning_Rate());
-        ForwardPropagate(config, solver_container, geometry);
-        epoch_counter++;
+        ForwardPropagate(solver_container);
 
-        if (epoch_counter == num_epoch) SaveNeuralNetworkWeights("nn_weights.dat");
+        if (epoch_counter == num_epoch) {
+          SU2_OMP_SAFE_GLOBAL_ACCESS(SaveNeuralNetworkWeights("nn_weights.dat");)
+        }
       }
     }
   }
@@ -1684,10 +1627,6 @@ void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
   }
 }
 
-// ========================================================================
-//                     FIML Neural Network Implementation
-// ========================================================================
-
 namespace {
 /*--- Box-Cox transform of x (floored to stay positive). ---*/
 constexpr passivedouble BOX_COX_FLOOR = 1e-12;
@@ -1703,106 +1642,71 @@ void CTurbSASolver::InitializeNeuralNetwork(const CConfig* config) {
   n_neurons = config->GetN_Neurons();
   n_hidden_layers = config->GetN_Hidden_Layers();
 
-  /*--- Allocate 3D weight array: [layer][neuron_from][neuron_to] ---*/
-  weights = new su2double**[n_hidden_layers + 1];
-  weight_gradients = new su2double**[n_hidden_layers + 1];
-
-  /*--- Input layer -> first hidden layer ---*/
-  weights[0] = new su2double*[n_inputs + 1];  // +1 for bias
-  weight_gradients[0] = new su2double*[n_inputs + 1];
-  for (unsigned short i = 0; i <= n_inputs; i++) {
-    weights[0][i] = new su2double[n_neurons]();  // () initializes to 0.0
-    weight_gradients[0][i] = new su2double[n_neurons]();
-  }
-
-  /*--- Hidden layers ---*/
-  for (unsigned short layer = 1; layer < n_hidden_layers; layer++) {
-    weights[layer] = new su2double*[n_neurons + 1];  // +1 for bias
-    weight_gradients[layer] = new su2double*[n_neurons + 1];
-    for (unsigned short i = 0; i <= n_neurons; i++) {
-      weights[layer][i] = new su2double[n_neurons]();
-      weight_gradients[layer][i] = new su2double[n_neurons]();
-    }
-  }
-
-  /*--- Last hidden layer -> output (1 neuron) ---*/
-  weights[n_hidden_layers] = new su2double*[n_neurons + 1];
-  weight_gradients[n_hidden_layers] = new su2double*[n_neurons + 1];
-  for (unsigned short i = 0; i <= n_neurons; i++) {
-    weights[n_hidden_layers][i] = new su2double[1]();
-    weight_gradients[n_hidden_layers][i] = new su2double[1]();
+  weights.resize(n_hidden_layers + 1);
+  weight_gradients.resize(n_hidden_layers + 1);
+  for (unsigned short layer = 0; layer <= n_hidden_layers; layer++) {
+    const unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
+    const unsigned short n_to = (layer == n_hidden_layers) ? 1 : n_neurons;
+    weights[layer].resize(n_from + 1, n_to) = su2double(0.0);
+    weight_gradients[layer].resize(n_from + 1, n_to) = su2double(0.0);
   }
 
   /*--- Without saved weights: Xavier-uniform hidden layers, zero output layer, so beta starts at 1. ---*/
   if (!LoadNeuralNetworkWeights("nn_weights.dat")) {
     std::mt19937 gen(0);
     for (unsigned short layer = 0; layer < n_hidden_layers; layer++) {
-      const unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
+      const unsigned long n_from = weights[layer].rows() - 1;
       const passivedouble limit = sqrt(6.0 / (n_from + n_neurons));
       std::uniform_real_distribution<passivedouble> dist(-limit, limit);
-      for (unsigned short i = 0; i < n_from; i++) {
-        for (unsigned short j = 0; j < n_neurons; j++) {
-          weights[layer][i][j] = dist(gen);
-        }
+      for (unsigned long i = 0; i < n_from; i++) {
+        for (unsigned long j = 0; j < weights[layer].cols(); j++) weights[layer](i, j) = dist(gen);
       }
     }
   }
 }
 
-void CTurbSASolver::ForwardPropagate(const CConfig* config, CSolver** solver_container, CGeometry* geometry) {
+vector<vector<su2double>> CTurbSASolver::NetworkActivations() const {
+  vector<vector<su2double>> activations(weights.size() + 1);
+  for (unsigned long layer = 0; layer < weights.size(); layer++) activations[layer].assign(weights[layer].rows(), 1.0);
+  activations.back().assign(1, 0.0);
+  return activations;
+}
 
-  auto* turbNodes = dynamic_cast<CTurbSAVariable*>(nodes);
+void CTurbSASolver::EvaluateNetwork(const su2double* inputs, vector<vector<su2double>>& activations) const {
+  for (unsigned short i = 0; i < n_inputs; i++) activations[0][i] = inputs[i];
 
-  /*--- Allocate arrays for layer activations ---*/
-  su2double* layer_in = new su2double[max(n_inputs, n_neurons) + 1];
-  su2double* layer_out = new su2double[n_neurons];
+  for (unsigned long layer = 0; layer < weights.size(); layer++) {
+    const auto& W = weights[layer];
+    for (unsigned long j = 0; j < W.cols(); j++) {
+      su2double sum = 0.0;
+      for (unsigned long i = 0; i < W.rows(); i++) sum += W(i, j) * activations[layer][i];
+      activations[layer + 1][j] = tanh(sum);
+    }
+  }
+}
+
+void CTurbSASolver::ForwardPropagate(CSolver** solver_container) {
+
+  auto* turbNodes = su2staticcast_p<CTurbSAVariable*>(nodes);
+
+  /*--- Activations of one point, private to each thread. ---*/
+  auto activations = NetworkActivations();
   su2double features[4];
 
-  nn_filtered.assign(nPointDomain, false);
-
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     ComputeNNInputFeatures(iPoint, solver_container, features);
-    if (FilterShield(features)) {
-      nn_filtered[iPoint] = true;
+    nn_filtered[iPoint] = FilterShield(features);
+    if (nn_filtered[iPoint]) {
       turbNodes->SetBetaFiml(iPoint, 1.0);
       continue;
     }
     ScaleNNInputs(features);
-
-    /*--- Layer inputs hold the activations followed by the bias; beta = 1 + tanh(output). ---*/
-    for (unsigned short i = 0; i < n_inputs; i++) {
-      layer_in[i] = features[i];
-    }
-    layer_in[n_inputs] = 1.0;
-    unsigned short n_from = n_inputs;
-
-    for (unsigned short layer = 0; layer < n_hidden_layers; layer++) {
-      for (unsigned short j = 0; j < n_neurons; j++) {
-        su2double sum = 0.0;
-        for (unsigned short i = 0; i <= n_from; i++) {
-          sum += weights[layer][i][j] * layer_in[i];
-        }
-        layer_out[j] = tanh(sum);
-      }
-      for (unsigned short i = 0; i < n_neurons; i++) {
-        layer_in[i] = layer_out[i];
-      }
-      layer_in[n_neurons] = 1.0;
-      n_from = n_neurons;
-    }
-
-    su2double sum = 0.0;
-    for (unsigned short i = 0; i <= n_neurons; i++) {
-      sum += weights[n_hidden_layers][i][0] * layer_in[i];
-    }
-    const su2double beta = 1.0 + tanh(sum);
-
-    turbNodes->SetBetaFiml(iPoint, beta);
+    EvaluateNetwork(features, activations);
+    turbNodes->SetBetaFiml(iPoint, 1.0 + activations.back()[0]);
   }
-
-  delete[] layer_in;
-  delete[] layer_out;
+  END_SU2_OMP_FOR
 }
 
 void CTurbSASolver::ComputeNNInputFeatures(unsigned long iPoint, const CSolver* const* solver_container,
@@ -1920,7 +1824,7 @@ su2double CTurbSASolver::ComputeFIMLRegularization(const CConfig* config) const 
 
 void CTurbSASolver::LoadRestartAuxiliaryFields(const CGeometry* geometry, const CConfig* config) {
   if (config->GetKind_Turb_Model() != TURB_MODEL::SA_FIML) return;
-  auto* turbNodes = dynamic_cast<CTurbSAVariable*>(nodes);
+  auto* turbNodes = su2staticcast_p<CTurbSAVariable*>(nodes);
 
   /*--- ASCII restart headers quote the field names, binary ones do not. ---*/
   unsigned long iField = 1;
@@ -1942,38 +1846,25 @@ void CTurbSASolver::LoadRestartAuxiliaryFields(const CGeometry* geometry, const 
 }
 
 void CTurbSASolver::LoadBetaTargets(const CConfig* config, CGeometry* geometry) {
-  /*--- Load beta target values into beta_fiml_train for training ---*/
 
-  auto* turbNodes = dynamic_cast<CTurbSAVariable*>(nodes);
-  string target_file = config->GetBeta_Target_FileName();
+  auto* turbNodes = su2staticcast_p<CTurbSAVariable*>(nodes);
+  const string target_file = config->GetBeta_Target_FileName();
 
-  /*--- Initialize all to 1.0 (baseline) ---*/
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    turbNodes->SetBetaFimlTrain(iPoint, 1.0);
-  }
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) turbNodes->SetBetaFimlTrain(iPoint, 1.0);
 
-  /*--- Try to open beta target file ---*/
-  ifstream beta_file;
-  beta_file.open(target_file.c_str(), ios::in);
-
+  ifstream beta_file(target_file);
   if (!beta_file.is_open()) {
     if (rank == MASTER_NODE) {
-      cout << "Warning: Beta target file '" << target_file << "' not found." << endl;
-      cout << "         Using baseline beta_train = 1.0 for all points." << endl;
+      cout << "Warning: Beta target file '" << target_file << "' not found, the targets are 1." << endl;
     }
     return;
   }
-
-  /*--- Read beta values from file (one value per line) ---*/
-  if (rank == MASTER_NODE) {
-    cout << "Loading beta targets from: " << target_file << endl;
-  }
+  if (rank == MASTER_NODE) cout << "Loading beta targets from: " << target_file << endl;
 
   /*--- One value per line, ordered by global point index. ---*/
   vector<passivedouble> beta_vals;
   passivedouble beta_val;
   while (beta_file >> beta_val) beta_vals.push_back(beta_val);
-  beta_file.close();
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     const auto iGlobal = geometry->nodes->GetGlobalIndex(iPoint);
@@ -1988,181 +1879,75 @@ void CTurbSASolver::LoadBetaTargets(const CConfig* config, CGeometry* geometry) 
   }
 }
 
-su2double CTurbSASolver::ComputeTrainingLoss(CGeometry* geometry) const {
-  /*--- Compute MSE loss: sum((beta_predicted - beta_target)^2) / N ---*/
+su2double CTurbSASolver::ComputeTrainingLoss() const {
 
-  auto* turbNodes = dynamic_cast<CTurbSAVariable*>(nodes);
-  su2double local_loss = 0.0;
-  unsigned long local_count = 0;
+  const auto* turbNodes = su2staticcast_p<const CTurbSAVariable*>(nodes);
+  su2double local[2] = {0.0, 0.0}, global[2] = {0.0, 0.0};
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (!nn_filtered[iPoint]) {
-      su2double beta_pred = turbNodes->GetBetaFiml(iPoint);
-      su2double beta_target = turbNodes->GetBetaFimlTrain(iPoint);
-      su2double diff = beta_pred - beta_target;
-      local_loss += diff * diff;
-      local_count++;
-    }
+    if (nn_filtered[iPoint]) continue;
+    const su2double diff = turbNodes->GetBetaFiml(iPoint) - turbNodes->GetBetaFimlTrain(iPoint);
+    local[0] += diff * diff;
+    local[1] += 1.0;
   }
-
-  /*--- MPI reduction ---*/
-  su2double global_loss = 0.0;
-  unsigned long global_count = 0;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&local_loss, &global_loss, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&local_count, &global_count, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-#else
-  global_loss = local_loss;
-  global_count = local_count;
-#endif
-if (global_count > 0) {
-    return 0.5 * global_loss / global_count;
-  } else {
-    return 0.0;
-  }
+  SU2_MPI::Allreduce(local, global, 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return 0.5 * global[0] / max(global[1], su2double(1.0));
 }
 
-void CTurbSASolver::BackwardPropagate(const CConfig* config, CSolver** solver_container, CGeometry* geometry) {
-  /*--- Backpropagation algorithm to compute weight gradients ---*/
+void CTurbSASolver::BackwardPropagate(CSolver** solver_container) {
 
-  auto* turbNodes = dynamic_cast<CTurbSAVariable*>(nodes);
-  const unsigned short nLayers = n_hidden_layers + 1;
+  const auto* turbNodes = su2staticcast_p<const CTurbSAVariable*>(nodes);
+  const auto n_layers = weights.size();
 
-  /*--- Zero out gradient accumulators ---*/
-  for (unsigned short layer = 0; layer < nLayers; layer++) {
-    unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
-    unsigned short n_to = (layer == nLayers - 1) ? 1 : n_neurons;
+  for (auto& gradient : weight_gradients) gradient = su2double(0.0);
 
-    for (unsigned short i = 0; i <= n_from; i++) {
-      for (unsigned short j = 0; j < n_to; j++) {
-        weight_gradients[layer][i][j] = 0.0;
-      }
-    }
-  }
-
-  /*--- Allocate layer activation and delta arrays ---*/
-  su2double** activations = new su2double*[nLayers + 1];
-  su2double** deltas = new su2double*[nLayers];
-
-  activations[0] = new su2double[n_inputs + 1];  // Input + bias
-  for (unsigned short layer = 1; layer < nLayers; layer++) {
-    activations[layer] = new su2double[n_neurons + 1];  // Hidden + bias
-  }
-  activations[nLayers] = new su2double[1];  // Output
-
-  for (unsigned short layer = 0; layer < nLayers; layer++) {
-    unsigned short n_nodes = (layer == nLayers - 1) ? 1 : n_neurons;
-    deltas[layer] = new su2double[n_nodes];
-  }
-
-  /*--- Backpropagate for all domain points ---*/
+  auto activations = NetworkActivations();
+  vector<vector<su2double>> deltas(n_layers);
+  for (unsigned long layer = 0; layer < n_layers; layer++) deltas[layer].resize(weights[layer].cols());
   su2double features[4];
-  unsigned long local_count = 0;
+  su2double local_count = 0.0;
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (nn_filtered[iPoint]) continue;
 
-    /*--- Forward pass to compute activations ---*/
     ComputeNNInputFeatures(iPoint, solver_container, features);
     ScaleNNInputs(features);
-    local_count++;
+    EvaluateNetwork(features, activations);
+    local_count += 1.0;
 
-    /*--- Input layer ---*/
-    for (unsigned short i = 0; i < n_inputs; i++) {
-      activations[0][i] = features[i];
-    }
-    activations[0][n_inputs] = 1.0;  // Bias
+    /*--- Loss 0.5 (beta - target)^2 with beta = 1 + tanh(output), back through the tanh layers. ---*/
+    const su2double output = activations.back()[0];
+    deltas.back()[0] = (output + 1.0 - turbNodes->GetBetaFimlTrain(iPoint)) * (1.0 - output * output);
 
-    /*--- Hidden layers ---*/
-    for (unsigned short layer = 0; layer < n_hidden_layers; layer++) {
-      for (unsigned short j = 0; j < n_neurons; j++) {
+    for (int layer = static_cast<int>(n_layers) - 2; layer >= 0; layer--) {
+      const auto& W = weights[layer + 1];
+      for (unsigned long j = 0; j < deltas[layer].size(); j++) {
         su2double sum = 0.0;
-        unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
-        for (unsigned short i = 0; i <= n_from; i++) {
-          sum += weights[layer][i][j] * activations[layer][i];
-        }
-        activations[layer + 1][j] = tanh(sum);
-      }
-      activations[layer + 1][n_neurons] = 1.0;  // Bias
-    }
-
-    /*--- Output layer ---*/
-    su2double sum = 0.0;
-    for (unsigned short i = 0; i <= n_neurons; i++) {
-      sum += weights[n_hidden_layers][i][0] * activations[n_hidden_layers][i];
-    }
-    activations[nLayers][0] = tanh(sum);
-
-    /*--- Compute output error ---*/
-    su2double beta_pred = activations[nLayers][0] + 1.0;
-    su2double beta_target = turbNodes->GetBetaFimlTrain(iPoint);
-    deltas[nLayers - 1][0] = (beta_pred - beta_target) * (1.0 - activations[nLayers][0] * activations[nLayers][0]);
-
-    /*--- Backpropagate through hidden layers ---*/
-    for (int layer = nLayers - 2; layer >= 0; layer--) {
-      unsigned short n_curr = (layer == nLayers - 2) ? n_neurons : n_neurons;
-      unsigned short n_next = (layer == nLayers - 2) ? 1 : n_neurons;
-
-      for (unsigned short j = 0; j < n_curr; j++) {
-        deltas[layer][j] = 0.0;
-        for (unsigned short k = 0; k < n_next; k++) {
-          deltas[layer][j] += deltas[layer + 1][k] * weights[layer + 1][j][k];
-        }
-        deltas[layer][j] *= (1.0 - activations[layer + 1][j] * activations[layer + 1][j]);
+        for (unsigned long k = 0; k < W.cols(); k++) sum += deltas[layer + 1][k] * W(j, k);
+        const su2double a = activations[layer + 1][j];
+        deltas[layer][j] = sum * (1.0 - a * a);
       }
     }
 
-    /*--- Accumulate gradients ---*/
-    for (unsigned short layer = 0; layer < nLayers; layer++) {
-      unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
-      unsigned short n_to = (layer == nLayers - 1) ? 1 : n_neurons;
-
-      for (unsigned short i = 0; i <= n_from; i++) {
-        for (unsigned short j = 0; j < n_to; j++) {
-          weight_gradients[layer][i][j] += deltas[layer][j] * activations[layer][i];
-        }
-      }
-    }
+    ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+      weight_gradients[layer](i, j) += deltas[layer][j] * activations[layer][i];
+    });
   }
 
-  /*--- MPI reduction of gradients ---*/
-#ifdef HAVE_MPI
-  for (unsigned short layer = 0; layer < nLayers; layer++) {
-    unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
-    unsigned short n_to = (layer == nLayers - 1) ? 1 : n_neurons;
+  /*--- Average over the points of all ranks, so the step size does not depend on the mesh size. ---*/
+  vector<su2double> local, global;
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    local.push_back(weight_gradients[layer](i, j));
+  });
+  local.push_back(local_count);
+  global.resize(local.size());
+  SU2_MPI::Allreduce(local.data(), global.data(), local.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-    for (unsigned short i = 0; i <= n_from; i++) {
-      SU2_MPI::Allreduce(MPI_IN_PLACE, weight_gradients[layer][i], n_to,
-                         MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    }
-  }
-#endif
-
-  /*--- Average over points so the step size does not depend on the mesh size. ---*/
-  unsigned long global_count = local_count;
-  SU2_MPI::Allreduce(&local_count, &global_count, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  const su2double inv_count = 1.0 / max<unsigned long>(global_count, 1);
-  for (unsigned short layer = 0; layer < nLayers; layer++) {
-    const unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
-    const unsigned short n_to = (layer == nLayers - 1) ? 1 : n_neurons;
-    for (unsigned short i = 0; i <= n_from; i++) {
-      for (unsigned short j = 0; j < n_to; j++) {
-        weight_gradients[layer][i][j] *= inv_count;
-      }
-    }
-  }
-
-  /*--- Clean up ---*/
-  for (unsigned short layer = 0; layer <= nLayers; layer++) {
-    delete[] activations[layer];
-  }
-  delete[] activations;
-
-  for (unsigned short layer = 0; layer < nLayers; layer++) {
-    delete[] deltas[layer];
-  }
-  delete[] deltas;
+  const su2double inv_count = 1.0 / max(global.back(), su2double(1.0));
+  unsigned long k = 0;
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    weight_gradients[layer](i, j) = global[k++] * inv_count;
+  });
 }
 
 void CTurbSASolver::UpdateWeights(su2double learning_rate) {
@@ -2171,7 +1956,7 @@ void CTurbSASolver::UpdateWeights(su2double learning_rate) {
   constexpr passivedouble beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
   if (adam_m.empty()) {
     unsigned long n = 0;
-    ForEachWeight([&](unsigned short, unsigned short, unsigned short) { n++; });
+    ForEachWeight([&](unsigned long, unsigned long, unsigned long) { n++; });
     adam_m.assign(n, 0.0);
     adam_v.assign(n, 0.0);
   }
@@ -2179,11 +1964,11 @@ void CTurbSASolver::UpdateWeights(su2double learning_rate) {
   const su2double corr1 = 1.0 - pow(beta1, adam_step), corr2 = 1.0 - pow(beta2, adam_step);
 
   unsigned long k = 0;
-  ForEachWeight([&](unsigned short layer, unsigned short i, unsigned short j) {
-    const su2double g = weight_gradients[layer][i][j];
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    const su2double g = weight_gradients[layer](i, j);
     adam_m[k] = beta1 * adam_m[k] + (1.0 - beta1) * g;
     adam_v[k] = beta2 * adam_v[k] + (1.0 - beta2) * g * g;
-    weights[layer][i][j] -= learning_rate * (adam_m[k] / corr1) / (sqrt(adam_v[k] / corr2) + eps);
+    weights[layer](i, j) -= learning_rate * (adam_m[k] / corr1) / (sqrt(adam_v[k] / corr2) + eps);
     k++;
   });
 }
@@ -2194,23 +1979,23 @@ void CTurbSASolver::GetFIMLFeatures(unsigned long iPoint, const CSolver* const* 
 }
 
 void CTurbSASolver::RegisterNNWeights(bool reset) {
-  ForEachWeight([&](unsigned short layer, unsigned short i, unsigned short j) {
-    if (reset) AD::ResetInput(weights[layer][i][j]);
-    else AD::RegisterInput(weights[layer][i][j]);
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    if (reset) AD::ResetInput(weights[layer](i, j));
+    else AD::RegisterInput(weights[layer](i, j));
   });
 }
 
 void CTurbSASolver::ExtractNNWeightAdjoints() {
-  ForEachWeight([&](unsigned short layer, unsigned short i, unsigned short j) {
-    weight_gradients[layer][i][j] = SU2_TYPE::GetDerivative(weights[layer][i][j]);
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    weight_gradients[layer](i, j) = SU2_TYPE::GetDerivative(weights[layer](i, j));
   });
 }
 
 void CTurbSASolver::WriteNNWeightGradients(const string& filename) const {
 
   vector<passivedouble> local, global;
-  ForEachWeight([&](unsigned short layer, unsigned short i, unsigned short j) {
-    local.push_back(SU2_TYPE::GetValue(weight_gradients[layer][i][j]));
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    local.push_back(SU2_TYPE::GetValue(weight_gradients[layer](i, j)));
   });
   global.resize(local.size());
   using CPassiveMPI = SelectMPIWrapper<passivedouble>::W;
@@ -2223,56 +2008,32 @@ void CTurbSASolver::WriteNNWeightGradients(const string& filename) const {
 }
 
 void CTurbSASolver::SaveNeuralNetworkWeights(const string& filename) const {
-  /*--- Save NN weights to file in format: header, scaling, then all weights ---*/
 
   if (rank != MASTER_NODE) return;
 
-  ofstream weight_file;
-  weight_file.open(filename.c_str(), ios::out);
-  weight_file.precision(15);
-
+  ofstream weight_file(filename);
   if (!weight_file.is_open()) {
     cout << "Warning: Could not open file '" << filename << "' for writing." << endl;
     return;
   }
+  weight_file.precision(15);
 
-  /*--- Header line: num_inputs, num_hidden_layers, num_neurons ---*/
-  weight_file << n_inputs << " Inputs," << n_hidden_layers << " Hidden Layers,"
-              << n_neurons << " Hidden Nodes\n";
-
-  /*--- Scaling line: means, stds and Box-Cox lambdas of the inputs. ---*/
+  /*--- Network size, then the means, stds and Box-Cox lambdas of the inputs, then one weight per line. ---*/
+  weight_file << n_inputs << " Inputs," << n_hidden_layers << " Hidden Layers," << n_neurons << " Hidden Nodes\n";
   for (const auto* vals : {feature_mean, feature_std, box_cox_lambda}) {
     for (unsigned short i = 0; i < n_inputs; i++) weight_file << vals[i] << " ";
   }
   weight_file << "\n";
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    weight_file << weights[layer](i, j) << "\n";
+  });
 
-  /*--- Write all weights: one per line ---*/
-  const unsigned short nLayers = n_hidden_layers + 1;
-
-  for (unsigned short layer = 0; layer < nLayers; layer++) {
-    unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
-    unsigned short n_to = (layer == nLayers - 1) ? 1 : n_neurons;
-
-    for (unsigned short i = 0; i <= n_from; i++) {
-      for (unsigned short j = 0; j < n_to; j++) {
-        weight_file << weights[layer][i][j] << "\n";
-      }
-    }
-  }
-
-  weight_file.close();
-
-  if (rank == MASTER_NODE) {
-    cout << "Saved neural network weights to: " << filename << endl;
-  }
+  cout << "Saved neural network weights to: " << filename << endl;
 }
 
 bool CTurbSASolver::LoadNeuralNetworkWeights(const string& filename) {
-  /*--- Load NN weights from file ---*/
 
-  ifstream weight_file;
-  weight_file.open(filename.c_str(), ios::in);
-
+  ifstream weight_file(filename);
   if (!weight_file.is_open()) {
     if (rank == MASTER_NODE) {
       cout << "No saved neural network weights found at: " << filename << endl;
@@ -2281,15 +2042,25 @@ bool CTurbSASolver::LoadNeuralNetworkWeights(const string& filename) {
     return false;
   }
 
-  /*--- Read header line ---*/
+  /*--- The header must describe the network of the configuration. ---*/
   string header_line;
   getline(weight_file, header_line);
-  if (rank == MASTER_NODE) {
-    cout << "Loading neural network weights from: " << filename << endl;
-    cout << "Network structure: " << header_line << endl;
+  unsigned short file_inputs = 0, file_layers = 0, file_neurons = 0;
+  if (sscanf(header_line.c_str(), "%hu Inputs,%hu Hidden Layers,%hu Hidden Nodes", &file_inputs, &file_layers,
+             &file_neurons) != 3) {
+    SU2_MPI::Error("First line of " + filename + " must read '<n> Inputs,<n> Hidden Layers,<n> Hidden Nodes'.",
+                   CURRENT_FUNCTION);
   }
+  if (file_inputs != n_inputs || file_layers != n_hidden_layers || file_neurons != n_neurons) {
+    SU2_MPI::Error(filename + " holds a network with " + to_string(file_inputs) + " inputs, " +
+                   to_string(file_layers) + " hidden layers and " + to_string(file_neurons) +
+                   " neurons; the configuration has " + to_string(n_inputs) + ", " + to_string(n_hidden_layers) +
+                   " (N_HIDDEN_LAYERS) and " + to_string(n_neurons) + " (N_NEURONS).",
+                   CURRENT_FUNCTION);
+  }
+  if (rank == MASTER_NODE) cout << "Loading neural network weights from: " << filename << endl;
 
-  /*--- Read scaling parameters ---*/
+  /*--- Means, stds and Box-Cox lambdas of the inputs. ---*/
   string scaling_line;
   getline(weight_file, scaling_line);
   istringstream scaling_stream(scaling_line);
@@ -2303,37 +2074,25 @@ bool CTurbSASolver::LoadNeuralNetworkWeights(const string& filename) {
   }
   nn_scaling_set = true;
 
-  /*--- Read all weights ---*/
-  const unsigned short nLayers = n_hidden_layers + 1;
-  unsigned long weight_count = 0;
-  su2double weight_val;
-
-  for (unsigned short layer = 0; layer < nLayers; layer++) {
-    unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
-    unsigned short n_to = (layer == nLayers - 1) ? 1 : n_neurons;
-
-    for (unsigned short i = 0; i <= n_from; i++) {
-      for (unsigned short j = 0; j < n_to; j++) {
-        if (weight_file >> weight_val) {
-          weights[layer][i][j] = weight_val;
-          weight_count++;
-        }
-      }
+  /*--- The file must hold exactly one value per weight. ---*/
+  unsigned long n_expected = 0, n_read = 0;
+  passivedouble value;
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    n_expected++;
+    if (weight_file >> value) {
+      weights[layer](i, j) = value;
+      n_read++;
     }
+  });
+  if (n_read != n_expected || (weight_file >> value)) {
+    SU2_MPI::Error(filename + " must hold " + to_string(n_expected) + " weights after the scaling line.",
+                   CURRENT_FUNCTION);
   }
 
-  weight_file.close();
-
-  if (rank == MASTER_NODE) {
-    cout << "Successfully loaded " << weight_count << " weights." << endl;
-  }
+  if (rank == MASTER_NODE) cout << "Loaded " << n_read << " weights." << endl;
 
   return true;
 }
-
-// ========================================================================
-//                     End FIML Implementation
-// ========================================================================
 
 void CTurbSASolver::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) {
   SU2_ZONE_SCOPED

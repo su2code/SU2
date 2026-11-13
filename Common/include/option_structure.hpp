@@ -2586,7 +2586,7 @@ enum ENUM_PARAM {
   TRANSLATE_GRID = 50,        /*!< \brief Translate the volume grid. */
   ROTATE_GRID = 51,           /*!< \brief Rotate the volume grid */
   SCALE_GRID = 52,            /*!< \brief Scale the volume grid. */
-  ANGLE_OF_ATTACK = 101,      /*!< \brief Angle of attack for airfoils. */
+  ANGLE_OF_ATTACK = 101       /*!< \brief Angle of attack for airfoils. */
 };
 static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("FFD_SETTING", FFD_SETTING)
