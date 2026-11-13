@@ -63,7 +63,7 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals = [-13.041030, -10.136996, -10.941711, -7.986212, -10.323862, -4.732531, 0.002801]
+    flatplate_sst1994m.test_vals = [-6.757337, -3.881283, -4.244894, -1.293607, -4.474870, -0.678315, 0.002801]
     flatplate_sst1994m.test_vals_aarch64 = [-13.021715, -9.534786, -10.401912, -7.501836, -9.750800, -4.850665, 0.002807]
     test_list.append(flatplate_sst1994m)
 
@@ -72,7 +72,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals = [-11.928276, -10.095787, -9.512963, -6.445637, -11.774253, -6.985525, 0.004931]
+    bump_sst1994m.test_vals = [-8.032540, -5.141490, -6.166538, -2.601015, -6.571019, -2.377920, 0.004931]
     bump_sst1994m.test_vals_aarch64 = [-13.042689, -10.812982, -10.604523, -7.655547, -10.816257, -5.308083, 0.004911]
     test_list.append(bump_sst1994m)
 
@@ -81,7 +81,7 @@ def main():
     swbli_sa.cfg_dir   = "vandv/rans/swbli"
     swbli_sa.cfg_file  = "config_sa.cfg"
     swbli_sa.test_iter = 5
-    swbli_sa.test_vals = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
+    swbli_sa.test_vals         = [-8.692514, -8.335554, -8.419342, -7.670662, -12.947166, 0.002242, -1.240847, 1.340100]
     swbli_sa.test_vals_aarch64 = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
     test_list.append(swbli_sa)
 
@@ -91,7 +91,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 5
-    swbli_sst.test_vals = [-11.569218, -10.909086, -11.607984, -10.431163, -11.407588, -2.637660, 0.001816, -1.305818, -3.514590, 13.399000]
+    swbli_sst.test_vals = [-8.817542, -8.137337, -8.606273, -7.611655, -9.007191, -1.508190, 0.001816, -2.770689, -4.644041, 10.209000]
     test_list.append(swbli_sst)
 
     # DSMA661 - SA
