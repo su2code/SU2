@@ -1,0 +1,22 @@
+name: Python Tests
+on:
+  pull_request:
+    paths:
+      - "bin/monitor.py"
+      - "SU2_PY/tests/**"
+      - ".github/workflows/python-tests.yml"
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install numpy pandas matplotlib
+      - name: Run monitor tests
+        run: python3 SU2_PY/tests/test_monitor.py
