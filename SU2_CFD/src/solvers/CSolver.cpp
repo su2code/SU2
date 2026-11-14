@@ -1919,9 +1919,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double startingIter      = config->GetCFL_AdaptParam(5);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
-  /* Number of iterations considered to check for stagnation. */
-  const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
-
   static bool reduceCFL, resetCFL, canIncrease;
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -1937,7 +1934,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     if (iMesh == MESH_0) {
       MGFactor[iMesh] = 1.0;
     } else {
-      const su2double CFLRatio = config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
+      const su2double CFLRatio = max(su2double(1e-6), min(su2double(1.0), config->GetMGOptions().MG_CflScaling[iMesh-1]));
       MGFactor[iMesh] = MGFactor[iMesh-1]*CFLRatio;
     }
 
@@ -1971,14 +1968,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     canIncrease = (linRes < linTol) && (iter >= startingIter);
 
-    /* Do not use the residual flip-flop criteria when we are mitigating outliers
-     * because the former was never very reliable for large cases where monotonic
-     * residual reduction is impossible to achieve. */
-    if (!config->OptionIsSet("OUTLIER_MITIGATION_PARAM") && iMesh == MESH_0 && Res_Count > 0) {
-      Old_Func = New_Func;
-      if (NonLinRes_Series.empty()) NonLinRes_Series.resize(Res_Count,0.0);
+    if (!config->OptionIsSet("OUTLIER_MITIGATION_PARAM") && iMesh == MESH_0) {
 
-      /* Sum the RMS residuals for all equations. */
+      /* Mean of the log RMS residuals of all equations. */
 
       New_Func = 0.0;
       unsigned short totalVars = 0;
@@ -1999,41 +1991,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         }
       }
       New_Func /= totalVars;
-
-      /* Compute the difference in the nonlinear residuals between the
-       current and previous iterations, taking care with very low initial
-       residuals (due to initialization). */
-
-      if ((config->GetInnerIter() == 1) && (New_Func - Old_Func > 10)) {
-        Old_Func = New_Func;
-      }
-      NonLinRes_Series[NonLinRes_Counter] = New_Func - Old_Func;
-
-      /* Increment the counter, if we hit the max size, then start over. */
-
-      NonLinRes_Counter++;
-      if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
-
-      /* Detect flip-flop convergence to reduce CFL and large increases
-       to reset to minimum value, in that case clear the history. */
-
-      if (config->GetInnerIter() >= Res_Count) {
-        unsigned long signChanges = 0;
-        su2double totalChange = 0.0;
-        auto prev = NonLinRes_Series.front();
-        for (const auto& val : NonLinRes_Series) {
-          totalChange += val;
-          signChanges += (prev > 0) ^ (val > 0);
-          prev = val;
-        }
-        reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
-
-        if (totalChange > 2.0) { // orders of magnitude
-          resetCFL = true;
-          NonLinRes_Counter = 0;
-          for (auto& val : NonLinRes_Series) val = 0.0;
-        }
-      }
     }
 
     /*--- The finest-grid nonlinear residuals drive the CFL, so the decision does not depend on how many
@@ -2387,10 +2344,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       /* Check if we are hitting the min or max and adjust. */
 
-      if (CFL * CFLFactor <= CFLMin) {
+      if (CFL * CFLFactor <= CFLMin * MGFactor[iMesh]) {
         CFL = CFLMin;
         CFLFactor = MGFactor[iMesh];
-      } else if (CFL * CFLFactor >= CFLMax) {
+      } else if (CFL * CFLFactor >= CFLMax * MGFactor[iMesh]) {
         CFL       = CFLMax;
         CFLFactor = MGFactor[iMesh];
       }
@@ -2453,9 +2410,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config, bool force) {
   SU2_ZONE_SCOPED
 
-  /*--- On coarse levels the reduction is skipped for performance, unless MG_Smooth_EarlyExit
-   *    needs it or the caller asks for it. ---*/
-  if (!force && geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit) return;
+  /*--- On coarse levels the reduction is skipped for performance, unless MG_Smooth_EarlyExit or
+   *    MG_Smooth_Output needs it, or the caller asks for it. ---*/
+  if (!force && geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit &&
+      !config->GetMGOptions().MG_Smooth_Output) return;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 

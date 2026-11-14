@@ -330,6 +330,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
     if (config[iZone]->GetInnerIter() < mg_ramp_level_start_iter)
       mg_ramp_level_start_iter = config[iZone]->GetInnerIter();
+
+    for (unsigned short i = 0; i <= nMGLevels; ++i)
+      mg_work_weight[i] = passivedouble(geometry[iZone][iInst][i]->GetGlobal_nPointDomain()) /
+                          passivedouble(geometry[iZone][iInst][MESH_0]->GetGlobal_nPointDomain());
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -417,6 +421,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
       /*--- The EMA is measured on a different grid after a promotion. ---*/
       mg_fine_rms_ema = 0.0;
+      mg_prev_cycle_defect = 0.0;
       config[iZone]->SetDamp_Res_Restric(mg_damp_restric_initial);
       config[iZone]->SetDamp_Correc_Prolong(mg_damp_prolong_initial);
 
@@ -452,7 +457,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Coarse-level residuals are per-rank partial sums; reduce once so the promotion criterion
    *    agrees on every rank. The smoothing early exit already reduces when it is on. ---*/
 
-  if (fmg_warmup && !config[iZone]->GetMGOptions().MG_Smooth_EarlyExit) {
+  if (fmg_warmup && !config[iZone]->GetMGOptions().MG_Smooth_EarlyExit &&
+      !config[iZone]->GetMGOptions().MG_Smooth_Output) {
     solver_container[iZone][iInst][FinestMesh][Solver_Position]->SetResidual_RMS(
         geometry[iZone][iInst][FinestMesh], config[iZone], true);
   }
@@ -596,8 +602,18 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       cout << std::fixed << std::setprecision(4)
             << "Damping [restrict | prolong] : " << config[iZone]->GetDamp_Res_Restric()
             << " | " << config[iZone]->GetDamp_Correc_Prolong()
-            << "  cross-cycle: " << std::setprecision(3) << last_crossCycleRatio << "\n"
-            << std::defaultfloat << std::setprecision(6);
+            << "  cross-cycle: " << std::setprecision(3) << last_crossCycleRatio << "\n";
+
+      /*--- Defect ratios of the finest level: over its pre-smoothing, and from there to the start of
+       *    this cycle, which spans the coarse-grid correction and the scalar solvers. ---*/
+      if (FinestMesh < nMGLevels) {
+        const passivedouble d0 = lastPreSmoothRMS[FinestMesh][0], d1 = lastPreSmoothRMS[FinestMesh][1];
+        cout << "Gain [smoothing | correction] : " << ((d0 > 0.0) ? d1 / d0 : 0.0) << " | "
+             << ((mg_prev_cycle_defect > 0.0) ? d0 / mg_prev_cycle_defect : 0.0);
+        mg_prev_cycle_defect = d1;
+      }
+      cout << "  work [residual | linear] : " << std::setprecision(1) << mg_work_residual << " | " << mg_work_linear;
+      cout << "\n" << std::defaultfloat << std::setprecision(6);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
@@ -651,7 +667,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
 
-  if ( iMesh < config->GetnMGLevels() ) {
+  if (iMesh < config->GetnMGLevels()) {
 
     /*--- Shorter names to refer to coarse grid entities. ---*/
 
@@ -672,17 +688,17 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem);
 
-    /*--- LinSysRes = R(u_N) here, before tau is added by SetResidual_Term. ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      lastPreSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver_fine);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
     SetResidual_Term(geometry_fine, solver_fine);
 
-    /*--- The coarse residual is also the first coarse pre-smoothing step, so it gets its Jacobian. ---*/
-
     const auto& mgOpts = config->GetMGOptions();
+
+    /*--- Defect left by the pre-smoothing, forcing term included. ---*/
+    if (mgOpts.MG_Smooth_Output) {
+      const su2double defect = sqrt(solver_fine->LinSysRes.squaredNorm() / geometry_fine->GetGlobal_nPointDomain());
+      SU2_OMP_SAFE_GLOBAL_ACCESS(lastPreSmoothRMS[iMesh][1] = SU2_TYPE::GetValue(defect);)
+    }
+
+    /*--- The coarse residual is also the first coarse pre-smoothing step, so it gets its Jacobian. ---*/
     const bool coarseReady = (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (mgOpts.MG_PreSmooth[iMesh+1] > 0);
 
     if (implicit && coarseReady) {
@@ -708,6 +724,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
     SetForcing_Term(solver_coarse, geometry_coarse);
+
+    /*--- The coarse evaluation is counted with the pre-smoothing step that reuses it. ---*/
+    SU2_OMP_SAFE_GLOBAL_ACCESS(mg_work_residual += mg_work_weight[iMesh] + (coarseReady ? 0.0 : mg_work_weight[iMesh+1]);)
 
     /*--- Restore the time integration settings. ---*/
 
@@ -796,7 +815,8 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
 
   const auto& mgOpts = config->GetMGOptions();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
-  const unsigned short nPreSmooth = mgOpts.MG_PreSmooth[iMesh];
+  /*--- The coarsest level is smoothed at least once. ---*/
+  const unsigned short nPreSmooth = max<unsigned short>(mgOpts.MG_PreSmooth[iMesh], (iMesh == config->GetnMGLevels()) ? 1 : 0);
   const unsigned long timeIter = config->GetTimeIter();
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
   const bool need_per_step_rms = early_exit || mgOpts.MG_Smooth_Output;
@@ -834,13 +854,13 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
-      if (mgOpts.MG_Smooth_Output) {
-        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        if (mgOpts.MG_Smooth_Output)
           lastPreLinSol[iMesh].push_back({solver_fine->GetIterLinSolver(),
                                         SU2_TYPE::GetValue(solver_fine->GetResLinSolver())});
-        }
-        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+        AddWork(config, iMesh, solver_fine->GetIterLinSolver());
       }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
       /*--- At iRKStep==0 LinSysRes = R(u_k). ---*/
       if (iRKStep == 0 && need_initial_rms) {
@@ -915,13 +935,13 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
-      if (mgOpts.MG_Smooth_Output) {
-        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        if (mgOpts.MG_Smooth_Output)
           lastPostLinSol[iMesh].push_back({solver_fine->GetIterLinSolver(),
-                                        SU2_TYPE::GetValue(solver_fine->GetResLinSolver())});
-        }
-        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+                                         SU2_TYPE::GetValue(solver_fine->GetResLinSolver())});
+        AddWork(config, iMesh, solver_fine->GetIterLinSolver());
       }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
       /*--- At iRKStep==0 LinSysRes = R(u_k) ---*/
       if (iRKStep == 0 && need_per_step_rms) {

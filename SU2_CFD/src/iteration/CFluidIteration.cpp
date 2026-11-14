@@ -132,8 +132,9 @@ void CFluidIteration::CommonAuxiliarySolvers(CIntegration**** integration, CGeom
     /*--- Solve the turbulence model ---*/
 
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
-    integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                      RUNTIME_TURB_SYS, val_iZone, val_iInst);
+    for (auto iSub = 0u; iSub < max<unsigned short>(config[val_iZone]->GetTurb_SubIter(), 1); iSub++)
+      integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                        RUNTIME_TURB_SYS, val_iZone, val_iInst);
   }
 
   if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {

@@ -1947,6 +1947,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
+  /* DESCRIPTION: Number of turbulence iterations per flow iteration. */
+  addUnsignedShortOption("TURB_SUBITER", Turb_SubIter, 1);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /*!\brief CFL_REDUCTION_SPECIES \n DESCRIPTION: Reduction factor of the CFL coefficient in the species problem \n DEFAULT: 1.0 */
@@ -2109,11 +2111,11 @@ void CConfig::SetConfig_Options() {
   addUShortListOption("MG_POST_SMOOTH", nMG_PostSmooth_p, MG_PostSmooth_p);
   /*!\brief MG_CORRECTION_SMOOTH\n DESCRIPTION: Jacobi implicit smoothing of the correction \ingroup Config*/
   addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth_p, MG_CorrecSmooth_p);
-  /*!\brief MG_DAMP_RESTRICTION\n DESCRIPTION: Damping factor for the residual restriction. DEFAULT: 0.75 \ingroup Config*/
+  /*!\brief MG_DAMP_RESTRICTION\n DESCRIPTION: Damping factor for the residual restriction. DEFAULT: 0.5 \ingroup Config*/
   addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.5);
-  /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT 0.75 \ingroup Config*/
+  /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT: 0.5 \ingroup Config*/
   addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.5);
-  /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing when RMS drops below threshold. DEFAULT: NO \ingroup Config*/
+  /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing when RMS drops below threshold. DEFAULT: YES \ingroup Config*/
   addBoolOption("MG_SMOOTH_EARLY_EXIT", MGOptions.MG_Smooth_EarlyExit, true);
   /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: Early exit smoothing when current_rms drops below threshold * initial_rms. DEFAULT: 0.9 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MGOptions.MG_Smooth_Res_Threshold, 0.9);
@@ -2153,7 +2155,7 @@ void CConfig::SetConfig_Options() {
    * If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
   /*!\brief MG_LINEAR_SOLVER_ITER\n DESCRIPTION: Maximum linear solver iterations on coarse MG levels. Entry i applies to level i+1;
-   * the last value is repeated, and the cap never exceeds LINEAR_SOLVER_ITER. DEFAULT: LINEAR_SOLVER_ITER \ingroup Config*/
+   * the last value is repeated, and the cap never exceeds LINEAR_SOLVER_ITER. DEFAULT: 3 \ingroup Config*/
   addUShortListOption("MG_LINEAR_SOLVER_ITER", nMG_LinSolIter_p, MG_LinSolIter_p);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
@@ -5145,8 +5147,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*--- Linear solver iteration cap per level; level 0 always uses LINEAR_SOLVER_ITER. ---*/
     MGOptions.MG_LinSolIter.assign(nMGLevels + 1, Linear_Solver_Iter);
-    for (unsigned short i = 1; i <= nMGLevels && nMG_LinSolIter_p != 0; ++i) {
-      const auto cap = MG_LinSolIter_p[min<unsigned short>(i - 1, nMG_LinSolIter_p - 1)];
+    for (unsigned short i = 1; i <= nMGLevels; ++i) {
+      const unsigned long cap = (nMG_LinSolIter_p != 0) ? MG_LinSolIter_p[min<unsigned short>(i - 1, nMG_LinSolIter_p - 1)] : 3;
       MGOptions.MG_LinSolIter[i] = min<unsigned long>(cap, Linear_Solver_Iter);
     }
   }

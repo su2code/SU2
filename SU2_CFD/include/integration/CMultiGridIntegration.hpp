@@ -375,6 +375,20 @@ private:
   passivedouble mg_fine_rms_ema = 0.0;       /*!< \brief EMA of fine-grid pre-smooth RMS across cycles; cross-cycle trend signal. */
   passivedouble last_crossCycleRatio = 1.0;  /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
 
+  /*--- Diagnostics of MG_SMOOTH_OUTPUT, with work in finest-grid equivalents. ---*/
+  passivedouble mg_prev_cycle_defect = 0.0;            /*!< \brief Finest-level defect after the previous cycle's pre-smoothing. */
+  passivedouble mg_work_weight[MAX_MG_LEVELS+1] = {};  /*!< \brief Points of each level over those of the finest grid. */
+  passivedouble mg_work_residual = 0.0;                /*!< \brief Accumulated residual evaluations. */
+  passivedouble mg_work_linear = 0.0;                  /*!< \brief Accumulated linear solver iterations. */
+
+  /*!
+   * \brief Add one residual evaluation and its linear iterations on a level to the work counters.
+   */
+  void AddWork(const CConfig* config, unsigned short iMesh, unsigned long linIters) {
+    mg_work_residual += mg_work_weight[iMesh];
+    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) mg_work_linear += mg_work_weight[iMesh] * linIters;
+  }
+
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
   unsigned short lastPostSmoothIters[MAX_MG_LEVELS+1] = {};

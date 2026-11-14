@@ -1150,6 +1150,7 @@ private:
   bool RelFrame_SlidingPlane;       /*!< \brief option for relative frame slidingplane */
   bool RampMotionFrame;             /*!< \brief option for ramping up or down the motion Frame values */
   bool RampOutlet;                  /*!< \brief option for ramping up or down the outlet values */
+  unsigned short Turb_SubIter; /*!< \brief Turbulence iterations per flow iteration. */
   bool RampMUSCL;
   bool RampRotatingFrame;           /*!< \brief option for ramping up or down the motion Frame values */
   bool RampTranslationFrame;        /*!< \brief option for ramping up or down the outlet values */
@@ -7491,6 +7492,11 @@ public:
    * \return Value of the CFL reduction in turbulence problems.
    */
   su2double GetCFLRedCoeff_Turb(void) const { return CFLRedCoeff_Turb; }
+
+  /*!
+   * \brief Get the number of turbulence iterations per flow iteration.
+   */
+  unsigned short GetTurb_SubIter(void) const { return Turb_SubIter; }
 
   /*!
    * \brief Value of the CFL reduction in species problems.
