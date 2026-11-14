@@ -41,7 +41,10 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   const su2double default_flame_thickness{1.0};
   su2double global_flame_thickness;
   bool calc_flame_thickness{false};
-  bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
+  int idx_progvar = -1; /*!< \brief Scalar index of the progress variable, -1 if absent. */
+  int idx_enth = -1;    /*!< \brief Scalar index of the total enthalpy. */
+  int idx_flame_front = -1; /*!< \brief Scalar set by FLAME_FRONT: progress variable, else mixture fraction. */
+  vector<pair<int, int>> variance_sources; /*!< \brief Variance and mean indices of variances with a chemical source. */
   /*!< \brief Number of points outside the manifold domain, shared across OpenMP threads so it can be
    *          accumulated atomically and reduced by the master thread alone in Preprocessing. */
   unsigned long n_not_in_domain_local = 0;
@@ -51,7 +54,26 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
+  /*!
+   * \brief Limit the scalar variances to the maximum of a two-point distribution on the range of their mean.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                      unsigned short iMesh) override;
+
   void SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config);
+
+  /*!
+   * \brief Add the turbulent production 2 mu_t/Sc_t |grad(mean)|^2 and dissipation C_d rho beta* omega var
+   *        of a scalar variance to the residual, the dissipation implicitly.
+   * \param[in] i_var - Scalar index of the variance.
+   * \param[in] i_mean - Scalar index of its mean.
+   */
+  void ScalarVarianceResidual(CGeometry* geometry, CSolver** solver_container, const CConfig* config, int i_var,
+                              int i_mean);
 
   /*!
    * \brief Generic implementation of the isothermal wall also covering CHT cases,

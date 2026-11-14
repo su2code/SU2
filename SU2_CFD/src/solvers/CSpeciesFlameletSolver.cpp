@@ -48,9 +48,23 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 
   /*--- Dimension of the problem. ---*/
   nVar = flamelet_config_options.n_scalars;
-  include_mixture_fraction = (flamelet_config_options.n_control_vars == 3);
+  idx_progvar = flamelet_config_options.idx_progvar;
+  idx_enth = flamelet_config_options.idx_enth;
+  idx_flame_front = (idx_progvar >= 0) ? idx_progvar : flamelet_config_options.idx_mixfrac;
 
   Initialize(geometry, config, iMesh, nVar);
+
+  /*--- A variance cannot become negative. ---*/
+  for (const int i_var : {flamelet_config_options.idx_progvar_var, flamelet_config_options.idx_mixfrac_var})
+    if (i_var >= 0) lowerlimit[i_var] = max(lowerlimit[i_var], su2double(0.0));
+
+  for (const auto& var_mean : {make_pair(flamelet_config_options.idx_progvar_var, idx_progvar),
+                               make_pair(flamelet_config_options.idx_mixfrac_var, flamelet_config_options.idx_mixfrac)}) {
+    if (var_mean.first < 0) continue;
+    string source_name = flamelet_config_options.cv_source_names[var_mean.first];
+    transform(source_name.begin(), source_name.end(), source_name.begin(), ::toupper);
+    if (source_name != "NULL" && source_name != "ZERO") variance_sources.push_back(var_mean);
+  }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
@@ -214,7 +228,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     }
 
     const su2double temp_inlet = config->GetInc_Temperature_Init();
-    su2double enth_inlet = config->GetSpecies_Init()[I_ENTH];
+    su2double enth_inlet = config->GetSpecies_Init()[idx_enth];
 
     su2double prog_burnt = 0, prog_unburnt, point_loc;
     su2double scalar_init[MAXNVAR]= {0.0};
@@ -254,11 +268,11 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
       n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, config->GetSpecies_Init(), &enth_inlet);
-      scalar_init[I_ENTH] = enth_inlet;
+      scalar_init[idx_enth] = enth_inlet;
 
       if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init, flamelet_config_options.Flame_T_ignition);
 
-      prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
+      prog_unburnt = config->GetSpecies_Init()[idx_flame_front];
       const auto nPoint_iMesh = geometry[i_mesh]->GetnPoint();
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long i_point = 0; i_point < nPoint_iMesh; i_point++) {
@@ -277,26 +291,26 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
           /* --- Unburnt region upstream of the flame. --- */
           if (point_loc <= 0) {
-            scalar_init[I_PROGVAR] = prog_unburnt;
+            scalar_init[idx_flame_front] = prog_unburnt;
             n_points_unburnt_local++;
 
             /* --- Flame zone where we lineary increase from unburnt to burnt conditions. --- */
           } else if ((point_loc > 0) && (point_loc <= flame_thickness)) {
-            scalar_init[I_PROGVAR] = prog_unburnt + point_loc * (prog_burnt - prog_unburnt) / flame_thickness;
+            scalar_init[idx_flame_front] = prog_unburnt + point_loc * (prog_burnt - prog_unburnt) / flame_thickness;
             n_points_flame_local++;
 
             /* --- Burnt region behind the flame zone. --- */
           } else if ((point_loc > flame_thickness) && (point_loc <= flame_thickness + flame_burnt_thickness)) {
-            scalar_init[I_PROGVAR] = prog_burnt;
+            scalar_init[idx_flame_front] = prog_burnt;
             n_points_burnt_local++;
 
             /* --- Unburnt region downstream of the flame and burnt region. --- */
           } else {
-            scalar_init[I_PROGVAR] = prog_unburnt;
+            scalar_init[idx_flame_front] = prog_unburnt;
             n_points_unburnt_local++;
           }
         } else {
-          scalar_init[I_PROGVAR] = prog_unburnt;
+          scalar_init[idx_flame_front] = prog_unburnt;
         }
         /* --- Perform manifold evaluation to check whether initial scalar is out-of-bounds. --- */
         fluid_model_local->SetTDState_T(temp_inlet, scalar_init);
@@ -419,6 +433,25 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
   END_SU2_OMP_FOR
 }
 
+void CSpeciesFlameletSolver::Postprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                                            unsigned short iMesh) {
+  SU2_ZONE_SCOPED
+
+  const int variances[] = {flamelet_config_options.idx_progvar_var, flamelet_config_options.idx_mixfrac_var};
+  if (variances[0] < 0 && variances[1] < 0) return;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto i_point = 0u; i_point < nPoint; i_point++) {
+    CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+    for (const int i_var : variances) {
+      if (i_var < 0) continue;
+      const su2double limit = fluid_model_local->GetScalarVarianceLimit(nodes->GetSolution(i_point), i_var);
+      if (nodes->GetSolution(i_point, i_var) > limit) nodes->SetSolution(i_point, i_var, limit);
+    }
+  }
+  END_SU2_OMP_FOR
+}
+
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
@@ -427,10 +460,12 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   const auto n_CV = flamelet_config_options.n_control_vars;
   const auto n_aux = flamelet_config_options.n_user_scalars;
   const auto* fn = static_cast<const CSpeciesFlameletVariable*>(nodes);
+  const auto* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
     const su2double volume = geometry->nodes->GetVolume(i_point);
+    const su2double density = flowNodes->GetDensity(i_point);
 
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
@@ -439,19 +474,54 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
 
     /*--- Implicit: analytic Jacobian for auxiliary species from the split source form.
      *   S_aux_i = source_prod_i + source_cons_i * Y_aux_i
-     *   dS_aux_i/dY_aux_i = source_cons_i
-     *   J_ii += -source_cons_i * V ---*/
+     *   dS_aux_i/d(rho Y_aux_i) = source_cons_i / rho
+     *   J_ii += -source_cons_i / rho * V ---*/
     if (implicit) {
       for (auto i_aux = 0u; i_aux < n_aux; i_aux++) {
-        Jacobian.AddVal2Diag(i_point, n_CV + i_aux, -fn->GetAuxSourceCons(i_point, i_aux) * volume);
+        Jacobian.AddVal2Diag(i_point, n_CV + i_aux, -fn->GetAuxSourceCons(i_point, i_aux) / density * volume);
       }
     }
   }
   END_SU2_OMP_FOR
 
+  if (flamelet_config_options.idx_progvar_var >= 0)
+    ScalarVarianceResidual(geometry, solver_container, config, flamelet_config_options.idx_progvar_var, idx_progvar);
+  if (flamelet_config_options.idx_mixfrac_var >= 0)
+    ScalarVarianceResidual(geometry, solver_container, config, flamelet_config_options.idx_mixfrac_var,
+                           flamelet_config_options.idx_mixfrac);
+
   /*--- call the species solver for the shared sources (axisymmetric and custom python source term) ---*/
   CSpeciesSolver::Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
 
+}
+
+void CSpeciesFlameletSolver::ScalarVarianceResidual(CGeometry* geometry, CSolver** solver_container,
+                                                    const CConfig* config, int i_var, int i_mean) {
+  SU2_ZONE_SCOPED
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const su2double Sc_t = config->GetSchmidt_Number_Turbulent();
+  const su2double C_d = flamelet_config_options.variance_dissipation_coeff;
+  const su2double beta_star = solver_container[TURB_SOL]->GetConstants()[6];
+  const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  const auto* turbNodes = solver_container[TURB_SOL]->GetNodes();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+    const su2double volume = geometry->nodes->GetVolume(i_point);
+
+    su2double grad_mean2 = 0.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) grad_mean2 += pow(nodes->GetGradient(i_point, i_mean, iDim), 2);
+    const su2double production = 2.0 * flowNodes->GetEddyViscosity(i_point) / Sc_t * grad_mean2;
+
+    /*--- Decay rate C_d eps/k with eps/k = beta* omega; the unknown is rho*var. ---*/
+    const su2double decay = C_d * beta_star * turbNodes->GetSolution(i_point, 1);
+    const su2double rho_var = flowNodes->GetDensity(i_point) * nodes->GetSolution(i_point, i_var);
+
+    LinSysRes(i_point, i_var) -= (production - decay * rho_var) * volume;
+    if (implicit) Jacobian.AddVal2Diag(i_point, i_var, decay * volume);
+  }
+  END_SU2_OMP_FOR
 }
 
 void CSpeciesFlameletSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
@@ -490,7 +560,7 @@ void CSpeciesFlameletSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** sol
 
     /*--- Neumann condition: q_wall is the prescribed heat flux (W/m^2, positive into domain).
      This adds a source term dH/dn * lambda = q_wall to the enthalpy residual. ---*/
-    LinSysRes(iPoint, I_ENTH) -= Wall_HeatFlux * Area;
+    LinSysRes(iPoint, idx_enth) -= Wall_HeatFlux * Area;
   }
   END_SU2_OMP_FOR
 }
@@ -511,12 +581,12 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   } else {
     /*--- Use the enthalpy value directly from MARKER_INLET_SPECIES (default).
      The user is responsible for providing a thermodynamically consistent value. ---*/
-    enth_inlet = config->GetInlet_SpeciesVal(Marker_Tag)[I_ENTH];
+    enth_inlet = config->GetInlet_SpeciesVal(Marker_Tag)[idx_enth];
   }
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
+    Inlet_SpeciesVars[val_marker][iVertex][idx_enth] = enth_inlet;
   }
   END_SU2_OMP_FOR
 
@@ -550,7 +620,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
     if (geometry->nodes->GetDomain(iPoint)) {
       if (config->GetMarker_StrongBC(Marker_Tag)) {
         /*--- Initial guess for enthalpy value. ---*/
-        enth_wall = nodes->GetSolution(iPoint, I_ENTH);
+        enth_wall = nodes->GetSolution(iPoint, idx_enth);
 
         /*--- Set enthalpy on the wall. ---*/
         n_not_iterated += GetEnthFromTemp(fluid_model_local, temp_wall, nodes->GetSolution(iPoint), &enth_wall);
@@ -559,15 +629,15 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
         condition (Dirichlet) and remove any
         contribution to the residual at this node. ---*/
 
-        nodes->SetSolution(iPoint, I_ENTH, enth_wall);
-        nodes->SetSolution_Old(iPoint, I_ENTH, enth_wall);
+        nodes->SetSolution(iPoint, idx_enth, enth_wall);
+        nodes->SetSolution_Old(iPoint, idx_enth, enth_wall);
 
-        LinSysRes(iPoint, I_ENTH) = 0.0;
+        LinSysRes(iPoint, idx_enth) = 0.0;
 
-        nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
+        nodes->SetVal_ResTruncError_Zero(iPoint, idx_enth);
 
         if (implicit) {
-          Jacobian.DeleteValsRowi(iPoint, I_ENTH);
+          Jacobian.DeleteValsRowi(iPoint, idx_enth);
         }
       } else {
         /*--- Weak BC formulation. ---*/
@@ -597,7 +667,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
         /*--- Apply a weak boundary condition for the energy equation.
         Compute the residual due to the prescribed heat flux. ---*/
 
-        LinSysRes(iPoint, I_ENTH) -= thermal_conductivity * dTdn * Area;
+        LinSysRes(iPoint, idx_enth) -= thermal_conductivity * dTdn * Area;
       }
     }
   }
@@ -641,10 +711,14 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
 
   vector<su2double> table_sources(flamelet_config_options.n_control_vars + 2 * flamelet_config_options.n_user_scalars);
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
-  table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
-  nodes->SetTableMisses(iPoint, misses);
-
   /*--- The source term for progress variable is always positive, we clip from below to make sure. --- */
+  if (idx_progvar >= 0) table_sources[idx_progvar] = fmax(0, table_sources[idx_progvar]);
+
+  /*--- Variance source 2 (mean(phi S) - mean(phi) mean(S)); the manifold gives mean(phi S). ---*/
+  for (const auto& var_mean : variance_sources)
+    table_sources[var_mean.first] =
+        2.0 * (table_sources[var_mean.first] - scalars[var_mean.second] * table_sources[var_mean.second]);
+  nodes->SetTableMisses(iPoint, misses);
 
   vector<su2double> source_scalar(flamelet_config_options.n_scalars);
   for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++) source_scalar[iCV] = table_sources[iCV];
@@ -715,7 +789,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
   SU2_ZONE_SCOPED
   /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
   su2double delta_temp_final = 0.001;
-  su2double enth_iter = scalar_solution[I_ENTH];
+  su2double enth_iter = scalar_solution[idx_enth];
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
   unsigned long exit_code = 0;
@@ -730,7 +804,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
     /*--- Add all quantities and their names to the look up vectors. ---*/
-    val_scalars[I_ENTH] = enth_iter;
+    val_scalars[idx_enth] = enth_iter;
     fluid_model->SetTDState_T(val_temp, val_scalars);
 
     su2double Temperature = fluid_model->GetTemperature();
@@ -758,14 +832,14 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
   su2double scalars[MAXNVAR], delta = 1e-3;
   for (auto iVar = 0u; iVar < nVar; iVar++) scalars[iVar] = scalar_solution[iVar];
   bool outside = false;
-  scalars[I_PROGVAR] += delta;
+  scalars[idx_flame_front] += delta;
   while (!outside) {
     /*--- Note that 300.0 is a dummy temperature here and not used. ---*/
     fluid_model->SetTDState_T(300.0, scalars);
     if ((fluid_model->GetExtrapolation() == 1) || fluid_model->GetTemperature() > T_ignition) outside = true;
-    scalars[I_PROGVAR] += delta;
+    scalars[idx_flame_front] += delta;
   }
-  su2double pv_burnt = scalars[I_PROGVAR] - delta;
+  su2double pv_burnt = scalars[idx_flame_front] - delta;
   if (rank == MASTER_NODE) {
     cout << "Burnt progress variable determined from flamelet table: " << pv_burnt << endl;
     cout << "Burnt temperature from flamelet table: " << fluid_model->GetTemperature() << endl;
@@ -800,13 +874,13 @@ su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, 
 
   SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
   for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
-      su2double pv_local = nodes->GetSolution(iPoint, I_PROGVAR);
+      su2double pv_local = nodes->GetSolution(iPoint, idx_progvar);
       su2double T_local = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
       
       /* Parallel projection of progress variable gradient against velocity */
       su2double proj_grad_pv_u[MAXNDIM]={0};
       for (auto iDim=0u; iDim < nDim; iDim++) {
-        su2double gradpv = nodes->GetGradient(iPoint, I_PROGVAR, iDim);
+        su2double gradpv = nodes->GetGradient(iPoint, idx_progvar, iDim);
         su2double val_u = flowNodes->GetVelocity(iPoint, iDim);
         proj_grad_pv_u[iDim] = gradpv * val_u * val_u / (flowNodes->GetVelocity2(iPoint) + EPS);
       }

@@ -1525,14 +1525,23 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
 };
 
 /*!
- * \brief Progress variable and enthalpy are the first and second entries in the lookup table.
- * \note The order matters.
+ * \brief Names of the flamelet controlling variables in CONTROLLING_VARIABLE_NAMES; the name sets the role.
  */
-enum FLAMELET_SCALAR_VARIABLES {
-  I_PROGVAR,
-  I_ENTH,
-  I_MIXFRAC,
-};
+namespace FLAMELET_CV_NAME {
+  constexpr const char* PROGVAR = "ProgressVariable";
+  constexpr const char* ENTHALPY = "EnthalpyTot";
+  constexpr const char* MIXFRAC = "MixtureFraction";
+  constexpr const char* PROGVAR_VAR = "ProgressVariableVariance";
+  constexpr const char* MIXFRAC_VAR = "MixtureFractionVariance";
+}
+
+/*!
+ * \brief Manifold variables giving the range of the progress variable, the support of its PDF.
+ */
+namespace FLAMELET_PROGVAR_BOUNDS {
+  constexpr const char* MIN = "ProgressVariableMin";
+  constexpr const char* MAX = "ProgressVariableMax";
+}
 
 /*!
  * \brief the source terms for the flamelet method. At the moment only progress variable
@@ -1549,6 +1558,7 @@ enum FLAMELET_LOOKUP_OPS {
   PREFDIF,  /*!< \brief Preferential diffusion scalars. */
   SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
   LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
+  PROGVAR_BOUNDS, /*!< \brief Minimum and maximum of the progress variable. */
 };
 
 /*!
@@ -1607,6 +1617,12 @@ struct FluidFlamelet_ParsedOptions {
   unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
   unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
   unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
+  int idx_progvar = -1;               /*!< \brief Scalar index of the progress variable, -1 if absent. */
+  int idx_enth = -1;                  /*!< \brief Scalar index of the total enthalpy. */
+  int idx_mixfrac = -1;               /*!< \brief Scalar index of the mixture fraction, -1 if absent. */
+  int idx_progvar_var = -1;           /*!< \brief Scalar index of the progress variable variance, -1 if absent. */
+  int idx_mixfrac_var = -1;           /*!< \brief Scalar index of the mixture fraction variance, -1 if absent. */
+  su2double variance_dissipation_coeff = 2.0; /*!< \brief C_d in the variance dissipation C_d rho (eps/k) var. */
 
   std::string *controlling_variable_names; /*!< \brief Names of the independent, transported scalars. */
   std::string* cv_source_names;            /*!< \brief Names of the source terms of the independent, transported scalars. */

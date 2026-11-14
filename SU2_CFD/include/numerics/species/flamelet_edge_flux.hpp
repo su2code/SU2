@@ -50,7 +50,9 @@ class CScalarFlux_Flamelet final
   explicit CScalarFlux_Flamelet(const CConfig& config)
       : Base(config),
         preferentialDiffusion(config.GetFlameletParsedOptions().preferential_diffusion),
-        nControlVars(config.GetFlameletParsedOptions().n_control_vars) {}
+        nControlVars(config.GetFlameletParsedOptions().n_control_vars),
+        idxProgVar(config.GetFlameletParsedOptions().idx_progvar),
+        idxEnth(config.GetFlameletParsedOptions().idx_enth) {}
 
   /*!
    * \brief Preferential diffusion, two terms with the shape of the ordinary diffusion but of
@@ -114,8 +116,6 @@ class CScalarFlux_Flamelet final
     }
 
     /*--- Thermal term, on the enthalpy equation alone, driven by the temperature gradient. ---*/
-    if (nControlVars <= I_ENTH) return;
-
     const Double T_i = gatherVariables(iPoint, side_i.flowNodes->GetPrimitive(), idx.Temperature());
     const Double T_j = gatherVariables(jPoint, side_j.flowNodes->GetPrimitive(), idx.Temperature());
 
@@ -123,33 +123,29 @@ class CScalarFlux_Flamelet final
     const auto gradT_j = gatherVariables<nDim>(jPoint, side_j.flowNodes->GetGradient_Primitive(), idx.Temperature());
 
     const Double Dth_i = gatherVariables(iPoint, side_i.scalarNodes.GetAuxVar(), I_BETA_ENTH_THERMAL) *
-                         gatherVariables(iPoint, side_i.scalarNodes.GetDiffusivity(), I_ENTH);
+                         gatherVariables(iPoint, side_i.scalarNodes.GetDiffusivity(), idxEnth);
     const Double Dth_j = gatherVariables(jPoint, side_j.scalarNodes.GetAuxVar(), I_BETA_ENTH_THERMAL) *
-                         gatherVariables(jPoint, side_j.scalarNodes.GetDiffusivity(), I_ENTH);
+                         gatherVariables(jPoint, side_j.scalarNodes.GetDiffusivity(), idxEnth);
     const Double Dth = 0.5 * (rho.i * Dth_i + rho.j * Dth_j) + diffTurb;
 
     const Double projGradT = projectedGradient(opt, gradT_i, gradT_j, T_i, T_j, normal, vector_ij, dist2_ij);
 
-    res.flux_i(I_ENTH) -= Dth * projGradT;
-    if (!opt.oneSided) res.flux_j(I_ENTH) += Dth * projGradT;
+    res.flux_i(idxEnth) -= Dth * projGradT;
+    if (!opt.oneSided) res.flux_j(idxEnth) += Dth * projGradT;
   }
 
  private:
   const bool preferentialDiffusion;
   const unsigned short nControlVars;
+  const int idxProgVar, idxEnth;
 
   /*!
    * \brief Auxiliary variable holding the beta scalar of a controlling variable.
    */
-  static FORCEINLINE unsigned short betaIndex(unsigned short iScalar) {
-    switch (iScalar) {
-      case I_PROGVAR:
-        return I_BETA_PROGVAR;
-      case I_ENTH:
-        return I_BETA_ENTH;
-      default:
-        return I_BETA_MIXFRAC;
-    }
+  FORCEINLINE unsigned short betaIndex(int iScalar) const {
+    if (iScalar == idxProgVar) return I_BETA_PROGVAR;
+    if (iScalar == idxEnth) return I_BETA_ENTH;
+    return I_BETA_MIXFRAC;
   }
 
   /*!
