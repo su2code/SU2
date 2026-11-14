@@ -4,6 +4,7 @@ import importlib.util
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 import numpy as np
@@ -50,9 +51,10 @@ class MonitorTests(unittest.TestCase):
 
     def test_header_formats(self):
         for header in (LEGACY, TECPLOT, CSV):
-            reader = self.reader(header + row(0) + row(1))
+            reader = self.reader(header + row(0) + row(10) + row(20))
             self.assertEqual(reader.names, ["rms[Rho]", "rms[RhoE]"], header)
-            self.assertEqual(reader.n, 2, header)
+            self.assertEqual(reader.n, 3, header)
+            np.testing.assert_array_equal(reader.iters[:3], [0, 10, 20], header)
 
     def test_time_iterations(self):
         names = '"Time_Iter","Inner_Iter","rms[Rho]"\n'
@@ -66,6 +68,27 @@ class MonitorTests(unittest.TestCase):
         np.testing.assert_array_equal(reader.times[rows], [1, 2])
         np.testing.assert_array_equal(reader.iters[rows], [3, 3])
         self.assertFalse(self.reader(CSV + row(0) + row(1)).hasTime())
+
+    def test_steady_time_counter_does_not_advance(self):
+        names = '"Time_Iter","Inner_Iter","rms[Rho]"\n'
+        reader = self.reader(names + "".join(f"0, {i}, {-0.1 * i}\n" for i in range(5)))
+        self.assertTrue(reader.hasTime())
+        self.assertFalse(reader.timeAdvances())
+        unsteady = self.reader(names + "0, 0, -1\n1, 0, -2\n")
+        self.assertTrue(unsteady.timeAdvances())
+
+    def test_first_row_kept_when_it_passes_the_filter(self):
+        names = '"Time_Iter","Inner_Iter","rms[Rho]"\n'
+        reader = self.reader(names + "100, 0, -1\n")
+        np.testing.assert_array_equal(reader.rowsFrom(100, byTime=True), [0])
+
+    def test_partial_zone_line_is_deferred(self):
+        self.path.write_text(CSV + 'ZONE T="Conv')
+        reader = MONITOR.HistoryReader(str(self.path))
+        self.assertFalse(reader.update())
+        self.path.write_text(CSV + 'ZONE T="Convergence"\n' + row(0) + row(1))
+        self.assertTrue(reader.update())
+        self.assertEqual(reader.n, 2)
 
     def test_incomplete_header_is_deferred(self):
         self.path.write_text('TITLE = "x"\nVARIABLES = \\\n"Inner_Iter","rms[Rho]')

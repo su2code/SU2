@@ -64,7 +64,7 @@ def silenceKdeServiceWarnings():
 
 
 def cleanName(name):
-    return name.replace("VARIABLES=", "").replace('"', "").replace(" ", "")
+    return name.replace('"', "").replace(" ", "").replace("VARIABLES=", "")
 
 
 # ############################################################### #
@@ -109,8 +109,9 @@ class HistoryReader:
                 zone = f.readline()
                 if zone.startswith(b"ZONE") and zone.endswith(b"\n"):
                     offset = f.tell()
-                elif zone and not zone.endswith(b"\n") and b"ZONE".startswith(zone):
-                    return
+                elif zone and not zone.endswith(b"\n"):
+                    if zone.startswith(b"ZONE") or b"ZONE".startswith(zone):
+                        return
             allnames = [cleanName(c) for c in next(csv.reader([line.decode()]))]
         except (OSError, UnicodeDecodeError, csv.Error, StopIteration):
             return
@@ -188,6 +189,11 @@ class HistoryReader:
     def hasTime(self):
         return self.time_col is not None
 
+    # True once Time_Iter takes more than one value, i.e. the history is unsteady
+    def timeAdvances(self):
+        times = self.times[: self.n]
+        return self.hasTime() and self.n > 0 and times.max() > times.min()
+
     # rows at or after iteration 'start', thinned to at most MAX_POINTS;
     # by time step, only the last row of each Time_Iter is kept
     def rowsFrom(self, start, byTime=False):
@@ -197,7 +203,6 @@ class HistoryReader:
         if byTime and self.hasTime():
             keep[:-1] &= counter[1:] != counter[:-1]
         rows = np.flatnonzero(keep)
-        rows = rows[rows >= 1]
         return rows[:: max(1, -(-len(rows) // MAX_POINTS))]
 
     def append(self, rows, iters, times):
@@ -289,12 +294,12 @@ class MatplotlibFigure(QWidget):
         if rebuild:
             self.visible = [names[l] for l in shown]
             ax.clear()
-            ax.set_xlabel(
-                "time iterations" if byTime and self.reader.hasTime() else "iterations"
-            )
             ax.set_ylabel(self.ylabel)
             self.lines = [ax.plot([], [], label=names[l])[0] for l in shown]
 
+        ax.set_xlabel(
+            "time iterations" if byTime and self.reader.hasTime() else "iterations"
+        )
         n = self.reader.n
         rows = self.reader.rowsFrom(start, byTime)
         x = (
@@ -390,10 +395,10 @@ class PlotTab(QWidget):
         self.update_chkbx(self.figure.names())
         self.plot_data()
 
-    # the switch is enabled, and on by default, only when the history has a Time_Iter column
+    # the switch is enabled, and on by default, only when Time_Iter advances in the history
     def updateTimeSwitch(self):
         reader = self.figure.reader
-        has = reader is not None and reader.hasTime()
+        has = reader is not None and reader.timeAdvances()
         if has != self.btn_time.isEnabled() or not has:
             self.btn_time.setEnabled(has)
             self.btn_time.setChecked(has)
