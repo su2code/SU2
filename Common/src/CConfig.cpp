@@ -1233,8 +1233,12 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LEARNING_RATE", Learning_Rate, 0.01);
   /*!\brief BETA_TARGET_FILE \n DESCRIPTION: File containing beta target values for NN training \n DEFAULT: beta_target.dat \ingroup Config*/
   addStringOption("BETA_TARGET_FILE", Beta_Target_FileName, string("beta_target.dat"));
-  /*!\brief FILTER_SHIELD \n DESCRIPTION: Enable shield filtering for FIML correction \n Options: NO, YES \n DEFAULT: NO \ingroup Config*/
-  addBoolOption("FILTER_SHIELD", Filter_Shield, false);
+  /*!\brief FIML_INPUTS \n DESCRIPTION: Inputs of the FIML network, in order \n Options: see \link FIML_Input_Map \endlink \n DEFAULT: (PROD_DEST, CHI, DELTA, STRAIN_VORT) \ingroup Config*/
+  addEnumListOption("FIML_INPUTS", nFIML_Inputs, FIML_Inputs, FIML_Input_Map);
+  /*!\brief FIML_SHIELD \n DESCRIPTION: Regions where the FIML network is switched off \n Options: see \link FIML_Shield_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumOption("FIML_SHIELD", Kind_FIML_Shield, FIML_Shield_Map, FIML_SHIELD::NONE);
+  /*!\brief FIML_SHIELD_COEFF \n DESCRIPTION: Coefficient C of f_d = 1 - tanh((C r_d)^3) for FIML_SHIELD= FD; smaller values shield only the inner layer \n DEFAULT: 8 \ingroup Config*/
+  addDoubleOption("FIML_SHIELD_COEFF", FIML_Shield_Coeff, 8.0);
 
   /*!\brief KIND_SCALAR_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_SCALAR_MODEL", Kind_Species_Model, Species_Model_Map, SPECIES_MODEL::NONE);
@@ -3884,6 +3888,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (DiscreteAdjoint && Kind_Train_NN == NN_TRAIN_METHOD::BACKPROP) {
       SU2_MPI::Error("The discrete adjoint of SA_FIML needs KIND_TRAIN_NN= NONE (beta at every point) or "
                      "WEIGHTS (network weights).", CURRENT_FUNCTION);
+    }
+  }
+
+  if (nFIML_Inputs == 0) {
+    FIML_Input_List = {FIML_INPUT::PROD_DEST, FIML_INPUT::CHI, FIML_INPUT::DELTA, FIML_INPUT::STRAIN_VORT};
+  } else {
+    FIML_Input_List.assign(FIML_Inputs, FIML_Inputs + nFIML_Inputs);
+  }
+  for (auto it = FIML_Input_List.begin(); it != FIML_Input_List.end(); ++it) {
+    if (std::find(it + 1, FIML_Input_List.end(), *it) != FIML_Input_List.end()) {
+      SU2_MPI::Error("FIML_INPUTS lists an input twice.", CURRENT_FUNCTION);
     }
   }
 

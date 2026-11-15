@@ -29,6 +29,7 @@
 #pragma once
 
 #include "CTurbSolver.hpp"
+#include "../fiml/FIMLInputs.hpp"
 
 /*!
  * \class CTurbSASolver
@@ -48,16 +49,18 @@ private:
   vector<su2activematrix> weight_gradients;    /*!< \brief Gradients of the training loss or of the objective. */
   unsigned short n_neurons = 0;                /*!< \brief Number of neurons per hidden layer */
   unsigned short n_hidden_layers = 0;          /*!< \brief Number of hidden layers */
-  unsigned short n_inputs = 4;                 /*!< \brief Number of NN inputs (features) */
+  vector<FIML_INPUT> nn_inputs;                /*!< \brief Network inputs, in order. */
+  unsigned short n_inputs = 0;                 /*!< \brief Number of network inputs. */
 
-  su2double box_cox_lambda[4] = {1.0, 1.0, 1.0, 1.0};  /*!< \brief Box-Cox transform parameters */
-  su2double feature_mean[4] = {0.0, 0.0, 0.0, 0.0};    /*!< \brief Feature means for scaling */
-  su2double feature_std[4] = {1.0, 1.0, 1.0, 1.0};     /*!< \brief Feature std devs for scaling */
+  su2double box_cox_lambda[FIML::N_INPUTS];    /*!< \brief Box-Cox parameters of the inputs. */
+  su2double feature_mean[FIML::N_INPUTS];      /*!< \brief Means of the transformed inputs. */
+  su2double feature_std[FIML::N_INPUTS];       /*!< \brief Standard deviations of the transformed inputs. */
   bool nn_scaling_set = false;                 /*!< \brief Scaling computed or loaded with the weights. */
   bool targets_loaded = false;                 /*!< \brief Beta targets have been read. */
   unsigned short epoch_counter = 0;            /*!< \brief Completed training epochs. */
 
-  bool filter_shield = false;                  /*!< \brief Apply spatial filtering */
+  FIML_SHIELD shield = FIML_SHIELD::NONE;      /*!< \brief Regions where the network is switched off. */
+  su2double shield_coeff = 8.0;                /*!< \brief Coefficient of f_d for FIML_SHIELD= FD. */
   su2vector<uint8_t> nn_filtered;              /*!< \brief Points excluded by the filter in the last forward pass. */
   su2double tau_wall_ref = 1.0;                /*!< \brief Flat-plate wall shear stress that normalizes the Delta feature. */
   vector<su2double> adam_m, adam_v;            /*!< \brief Adam moments of the weights, in file order. */
@@ -90,31 +93,32 @@ private:
   void EvaluateNetwork(const su2double* inputs, vector<vector<su2double>>& activations) const;
 
   /*!
-   * \brief Set beta_fiml at all domain points from the network, or to 1 where the filter excludes the point.
-   * \param[in] solver_container - Container with all solvers.
+   * \brief Set beta_fiml at all domain points from the network, or to 1 where the shield excludes the point.
    */
-  void ForwardPropagate(CSolver** solver_container);
+  void ForwardPropagate(const CGeometry* geometry, CSolver** solver_container);
 
   /*!
-   * \brief Compute neural network input features at a point.
-   * \param[in] iPoint - Grid point index.
-   * \param[in] solver_container - Container with all solvers.
-   * \param[out] features - Array of 4 feature values.
+   * \brief Local quantities of a point from which the inputs are computed.
    */
-  void ComputeNNInputFeatures(unsigned long iPoint, const CSolver* const* solver_container, su2double* features) const;
+  FIML::LocalState GetFIMLLocalState(unsigned long iPoint, const CGeometry* geometry,
+                                     const CSolver* const* solver_container) const;
 
   /*!
-   * \brief Apply Box-Cox transform and z-score normalization to input features.
-   * \param[in,out] features - Feature array to scale (in place).
+   * \brief Unscaled values of the network inputs, in the order of FIML_INPUTS.
+   */
+  void ComputeNNInputFeatures(const FIML::LocalState& state, su2double* features) const;
+
+  /*!
+   * \brief Box-Cox transform and z-score of the inputs that use them; the bounded inputs are left as they are.
+   * \param[in,out] features - Input values, scaled in place.
    */
   void ScaleNNInputs(su2double* features) const;
 
   /*!
-   * \brief Check if a point lies outside the boundary layer and is excluded from the correction.
-   * \param[in] features - Unscaled features of the point.
-   * \return True when FILTER_SHIELD is on and Delta < 0.25 or S/Omega > 2.
+   * \brief Whether FIML_SHIELD switches the network off at a point.
+   * \return True for LEGACY where DELTA < 0.25 or STRAIN_VORT > 2.
    */
-  bool FilterShield(const su2double* features) const;
+  bool FilterShield(const FIML::LocalState& state) const;
 
   /*!
    * \brief Set the turbulent flat-plate wall shear stress at half the reference length.
@@ -132,9 +136,8 @@ private:
 
   /*!
    * \brief Gradients of the training loss with respect to the weights, averaged over the unfiltered points.
-   * \param[in] solver_container - Container with all solvers.
    */
-  void BackwardPropagate(CSolver** solver_container);
+  void BackwardPropagate(const CGeometry* geometry, CSolver** solver_container);
 
   /*!
    * \brief Update the neural network weights with one Adam step.
@@ -292,10 +295,10 @@ public:
   su2double ComputeFIMLRegularization(const CConfig* config) const override;
 
   /*!
-   * \brief Unscaled FIML input features at a point.
+   * \brief Unscaled values of all FIML inputs at a point, in the order of FIML_INPUT.
    */
-  void GetFIMLFeatures(unsigned long iPoint, const CSolver* const* solver_container,
-                       su2double* features) const override;
+  void GetFIMLInputs(unsigned long iPoint, const CGeometry* geometry, const CSolver* const* solver_container,
+                     su2double* values) const override;
 
   /*!
    * \brief Register the neural network weights as AD inputs, or reset their AD indices.

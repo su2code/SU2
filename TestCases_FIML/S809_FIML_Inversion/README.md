@@ -39,7 +39,7 @@ Every step reads the files of the previous one and prints the quantities to chec
 | - | `compare.py` | `cp_upper.png` | table of all steps, Cp plot |
 
 - Step 3 runs `../fiml_inversion.py --mode field` (L-BFGS-B on beta at every point, `KIND_TRAIN_NN= NONE`).
-- Step 4 trains offline, in NumPy, on the points that `FILTER_SHIELD` keeps. It uses the scaling, network and
+- Step 4 trains offline, in NumPy, on the points that `FIML_SHIELD= LEGACY` keeps. It uses the scaling, network and
   file layout of `CTurbSASolver`, so SU2 reproduces the trained beta.
 - Step 6 runs `../fiml_inversion.py --mode weights`: `KIND_TRAIN_NN= WEIGHTS`, the adjoint gives dJ/dw
   through the network and its features (`nn_weights_grad.dat`).

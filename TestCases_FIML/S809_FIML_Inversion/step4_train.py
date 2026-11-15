@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Step 4: train the network offline on the inverted beta and write nn_weights.dat.
 
-One SU2 iteration from restart_inverted.csv writes the four features at every point (features.csv). The points
-that FILTER_SHIELD keeps are split into training and validation sets. The scaling (Box-Cox lambda by maximum
-likelihood, then z-score), the network (tanh layers, beta = 1 + tanh(output)) and the file layout are those of
-CTurbSASolver, so SU2 reproduces the predicted beta.
+One SU2 iteration from restart_inverted.csv writes all network inputs at every point (features.csv). The points
+that the shield keeps are split into training and validation sets. The scaling (Box-Cox lambda by maximum
+likelihood, then z-score, for PROD_DEST, CHI, DELTA and STRAIN_VORT; none for the bounded inputs), the network
+(tanh layers, beta = 1 + tanh(output)) and the file layout are those of CTurbSASolver, so SU2 reproduces the
+predicted beta. Use the same --inputs and --shield as FIML_INPUTS and FIML_SHIELD in the configuration.
 """
 
 import os
@@ -13,7 +14,18 @@ import numpy as np
 
 from fiml_case import read_restart, require, run_parser, run_su2
 
-FEATURES = ["FIML_Prod_Dest", "FIML_Chi", "FIML_Delta", "FIML_Strain_Vort"]
+# Name in FIML_INPUTS: (column of the volume output, scaled with Box-Cox), as in FIMLInputs.hpp.
+INPUTS = {
+    "PROD_DEST": ("FIML_Prod_Dest", True),
+    "CHI": ("FIML_Chi", True),
+    "DELTA": ("FIML_Delta", True),
+    "STRAIN_VORT": ("FIML_Strain_Vort", True),
+    "VISC_RATIO": ("FIML_Visc_Ratio", False),
+    "PROD_DEST_RATIO": ("FIML_Prod_Dest_Ratio", False),
+    "Q_CRIT": ("FIML_Q_Crit", False),
+    "BL_RATIO": ("FIML_BL_Ratio", False),
+    "FD": ("FIML_Fd", False),
+}
 BOX_COX_FLOOR = 1e-12
 
 
@@ -85,9 +97,10 @@ def train(net, x, y, x_val, y_val, epochs, batch, lr, rng):
             print(f"epoch {epoch:4d}: training MSE {mse:.4e}, validation MSE {mse_val:.4e}", flush=True)
 
 
-def write_weights(path, net, mean, std, lam, n_neurons):
+def write_weights(path, net, names, mean, std, lam, n_neurons):
     with open(path, "w") as f:
         f.write(f"{len(mean)} Inputs,{len(net.W) - 1} Hidden Layers,{n_neurons} Hidden Nodes\n")
+        f.write("Inputs: " + " ".join(names) + "\n")
         f.write(" ".join(f"{v:.15g}" for v in [*mean, *std, *lam]) + "\n")
         for W in net.W:
             f.writelines(f"{w:.15e}\n" for w in W.ravel())
@@ -102,38 +115,52 @@ def main():
     p.add_argument("--lr", type=float, default=2e-3)
     p.add_argument("--validation", type=float, default=0.2, help="fraction of points held out")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--inputs", default="PROD_DEST,CHI,DELTA,STRAIN_VORT", help="FIML_INPUTS, comma separated")
+    p.add_argument("--shield", default="LEGACY", choices=["NONE", "LEGACY", "FD"],
+                   help="FIML_SHIELD; FD acts in the source term, so all points are used")
     args = p.parse_args()
+    names = [n.strip() for n in args.inputs.split(",")]
+    unknown = [n for n in names if n not in INPUTS]
+    if unknown:
+        raise SystemExit(f"unknown inputs {unknown}; choose from {list(INPUTS)}")
 
     if not os.path.exists("features.csv"):
         require("restart_inverted.csv")
         run_su2(args, "features", {"SOLUTION_FILENAME": "restart_inverted", "RESTART_FILENAME": "features",
                                    "ITER": "1", "WRT_RESTART_COMPACT": "NO",
-                                   "VOLUME_OUTPUT": "COORDINATES, SOLUTION, FIML, FIML_FEATURES",
+                                   "VOLUME_OUTPUT": "COORDINATES, SOLUTION, FIML, FIML_INPUTS",
                                    "OUTPUT_FILES": "RESTART_ASCII"})
     data = read_restart("features.csv")
-    feats = np.column_stack([data[k] for k in FEATURES])
+    feats = np.column_stack([data[INPUTS[n][0]] for n in names])
     beta = data["Beta_FIML"]
 
-    shield = (feats[:, 2] >= 0.25) & (feats[:, 3] <= 2.0)
+    if args.shield == "LEGACY":
+        shield = (data["FIML_Delta"] >= 0.25) & (data["FIML_Strain_Vort"] <= 2.0)
+    else:
+        shield = np.ones(beta.size, dtype=bool)
     outside = ~shield & (abs(beta - 1.0) > 0.05)
-    print(f"{shield.sum()} of {beta.size} points inside the filter; "
+    print(f"{shield.sum()} of {beta.size} points inside the shield; "
           f"{outside.sum()} points outside it have |beta - 1| > 0.05 and stay at beta = 1")
 
-    scaling = [fit_scaling(feats[shield, k]) for k in range(4)]
-    lam, mean, std = (np.array(v) for v in zip(*scaling))
-    x = np.column_stack([(box_cox(feats[shield, k], lam[k]) - mean[k]) / std[k] for k in range(4)])
+    lam, mean, std = np.ones(len(names)), np.zeros(len(names)), np.ones(len(names))
+    x = feats[shield].copy()
+    for k, n in enumerate(names):
+        if INPUTS[n][1]:
+            lam[k], mean[k], std[k] = fit_scaling(feats[shield, k])
+            x[:, k] = (box_cox(feats[shield, k], lam[k]) - mean[k]) / std[k]
+        print(f"{n}: range [{feats[shield, k].min():.3g}, {feats[shield, k].max():.3g}]"
+              + (f", Box-Cox lambda {lam[k]:.3f}, mean {mean[k]:.3f}, std {std[k]:.3f}" if INPUTS[n][1] else ""))
     y = beta[shield]
-    print("Box-Cox lambda", np.round(lam, 3), "mean", np.round(mean, 3), "std", np.round(std, 3))
 
     rng = np.random.default_rng(args.seed)
     val = rng.random(len(y)) < args.validation
-    net = Network(4, args.neurons, args.hidden, rng)
+    net = Network(len(names), args.neurons, args.hidden, rng)
     train(net, x[~val], y[~val], x[val], y[val], args.epochs, args.batch, args.lr, rng)
-    write_weights("nn_weights.dat", net, mean, std, lam, args.neurons)
+    write_weights("nn_weights.dat", net, names, mean, std, lam, args.neurons)
 
     pred = net.forward(x)[0]
     r2 = 1.0 - np.sum((pred - y) ** 2) / np.sum((y - y.mean()) ** 2)
-    print(f"inside the filter: RMS(beta_nn - beta_inverted) = {np.sqrt(np.mean((pred - y) ** 2)):.4f}, "
+    print(f"inside the shield: RMS(beta_nn - beta_inverted) = {np.sqrt(np.mean((pred - y) ** 2)):.4f}, "
           f"R^2 = {r2:.3f}, max error = {abs(pred - y).max():.3f}")
     print("wrote nn_weights.dat")
 

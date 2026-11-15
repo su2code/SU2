@@ -1391,6 +1391,46 @@ static const MapType<std::string, NN_TRAIN_METHOD> NN_Train_Method_Map = {
 };
 
 /*!
+ * \brief Inputs of the FIML neural network; the first four are scaled with Box-Cox, the others are bounded.
+ */
+enum class FIML_INPUT {
+  PROD_DEST,        /*!< \brief SA production over destruction. */
+  CHI,              /*!< \brief nu_tilde over the laminar viscosity. */
+  DELTA,            /*!< \brief Eddy stress over a flat-plate wall stress of the free stream. */
+  STRAIN_VORT,      /*!< \brief Strain rate over vorticity. */
+  VISC_RATIO,       /*!< \brief nu_t / (nu_t + 100 nu). */
+  PROD_DEST_RATIO,  /*!< \brief SA production / (production + destruction). */
+  Q_CRIT,           /*!< \brief (Omega^2 - S^2) / (Omega^2 + S^2). */
+  BL_RATIO,         /*!< \brief 1 / (1 + r_d), with r_d of delayed DES. */
+  FD,               /*!< \brief 1 - tanh((8 r_d)^3), the shielding function of delayed DES. */
+};
+static const MapType<std::string, FIML_INPUT> FIML_Input_Map = {
+  MakePair("PROD_DEST", FIML_INPUT::PROD_DEST)
+  MakePair("CHI", FIML_INPUT::CHI)
+  MakePair("DELTA", FIML_INPUT::DELTA)
+  MakePair("STRAIN_VORT", FIML_INPUT::STRAIN_VORT)
+  MakePair("VISC_RATIO", FIML_INPUT::VISC_RATIO)
+  MakePair("PROD_DEST_RATIO", FIML_INPUT::PROD_DEST_RATIO)
+  MakePair("Q_CRIT", FIML_INPUT::Q_CRIT)
+  MakePair("BL_RATIO", FIML_INPUT::BL_RATIO)
+  MakePair("FD", FIML_INPUT::FD)
+};
+
+/*!
+ * \brief Regions where the FIML network is switched off (beta = 1).
+ */
+enum class FIML_SHIELD {
+  NONE,    /*!< \brief The correction acts everywhere. */
+  LEGACY,  /*!< \brief Network off where DELTA < 0.25 or STRAIN_VORT > 2. */
+  FD,      /*!< \brief beta - 1 multiplied by the delayed-DES function f_d, which is 0 in attached boundary layers. */
+};
+static const MapType<std::string, FIML_SHIELD> FIML_Shield_Map = {
+  MakePair("NONE", FIML_SHIELD::NONE)
+  MakePair("LEGACY", FIML_SHIELD::LEGACY)
+  MakePair("FD", FIML_SHIELD::FD)
+};
+
+/*!
  * \brief Types of transition models
  */
 enum class TURB_TRANS_MODEL {

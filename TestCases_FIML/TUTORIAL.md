@@ -59,7 +59,7 @@ differentiates with respect to.
 Start from a converged SA configuration and add:
 
     KIND_TURB_MODEL= SA_FIML
-    FILTER_SHIELD= YES               % beta = 1 where Delta < 0.25 or S/Omega > 2 (boundary layer and wake only)
+    FIML_SHIELD= LEGACY              % beta = 1 where Delta < 0.25 or S/Omega > 2 (boundary layer and wake only)
 
 Output and restart settings that the driver relies on:
 
@@ -173,7 +173,7 @@ three iterations (CL 1.072 to 0.949) in about 12 minutes.
 - Scaling: Box-Cox with one lambda per input (fitted by maximum likelihood), then z-score.
 - Hidden layers: `N_HIDDEN_LAYERS` (default 3) of `N_NEURONS` (default 20) tanh neurons. Output
   beta = 1 + tanh(output).
-- Points removed by `FILTER_SHIELD` keep beta = 1 and are excluded from scaling and training.
+- Points removed by `FIML_SHIELD` keep beta = 1 and are excluded from scaling and training.
 
 ### 5.2 The weight file
 
@@ -200,7 +200,7 @@ Three ways to produce it:
     ITER_START_NN= 1                 % the network acts from iteration 1 (the features need a previous iteration)
     N_NEURONS= 20
     N_HIDDEN_LAYERS= 3
-    FILTER_SHIELD= YES
+    FIML_SHIELD= LEGACY
 
 The flow restart for the first evaluation should come from a forward run with the same network, so that the
 direct solves are short (`S809_FIML_Inversion/step5_predict.py`).
@@ -225,8 +225,8 @@ direct solves are short (`S809_FIML_Inversion/step5_predict.py`).
 
 - The network and its features are recorded on the AD tape, so the gradient includes how the features respond
   to the flow. The production/destruction input is treated as constant, because the source terms are lagged.
-- `FILTER_SHIELD` switches points to beta = 1 when a feature crosses its threshold, which makes J slightly
-  non-smooth in the weights. For a finite-difference check, set `FILTER_SHIELD= NO`.
+- `FIML_SHIELD= LEGACY` switches points to beta = 1 when a feature crosses its threshold, which makes J slightly
+  non-smooth in the weights. For a finite-difference check, set `FIML_SHIELD= NONE`.
 
 ## 6. The full pipeline with the S809 case
 
@@ -265,10 +265,12 @@ minutes with `--warm_adjoint --adjoint_iter 2000`, and a direct solve 2.5 to 12 
    `RESTART_SOL= NO`, fixed `CFL_NUMBER`, `CFL_ADAPT= NO`; the flow restart is always read) and make sure the
    residual falls. On a small mesh CFL 25 worked, on the S809 CFL 100. The history field `SENS_FIML`, the norm
    of dJ/dbeta or dJ/dw, shows when the gradient has settled.
-5. Check the gradient once, before an expensive run: central differences of J along a random direction of
-   beta (or of the weights, with `FILTER_SHIELD= NO`) against the adjoint gradient, both from flows converged
-   to a residual of about -12. Agreement within a few percent is what to expect; the NACA0012 case documents
-   this check.
+5. Check the gradient once, before an expensive run: central differences of J along the gradient direction
+   of beta or of the weights (`FIML_SHIELD= NONE` or `FD`; `LEGACY` makes J jump) against the adjoint gradient.
+   Converge the perturbed flows until J stops changing, not only until the residual is small: with
+   `1e3 * pow(LIFT - 0.95, 2)` in J, a residual of -12 still leaves a drift of about 1e-4 in J, which makes the
+   difference quotient wrong by 50% for a step of 1e-4. Converged to -14, a step of 5e-3 in the weights of a
+   network with bounded inputs and `FIML_SHIELD= FD` agrees with the adjoint to 0.1% (NACA0012).
 6. Run Classic (section 4). Look at beta and the fit.
 7. If you want a model, train (section 5.2), run forward, and refine with Direct mode.
 
@@ -280,7 +282,7 @@ minutes with `--warm_adjoint --adjoint_iter 2000`, and a direct solve 2.5 to 12 
 | Adjoint residual rises, or the driver stops with "the adjoint diverged" | CFL of the adjoint too high, or the direct flow not converged |
 | Surface CSV has no `Pressure_Coefficient` | `WRT_RESTART_COMPACT= YES`; set it to `NO` |
 | `INVERSE_DESIGN_PRESSURE` is zero | `TargetCp.dat` missing from the working directory, or not listing wall nodes |
-| J does not fall in the first Direct iterations | `--x_scale` too small, or beta of most points frozen by `FILTER_SHIELD` |
+| J does not fall in the first Direct iterations | `--x_scale` too small, or beta of most points frozen by `FIML_SHIELD` |
 | J jumps up by a large factor at the first Direct evaluation | `--x_scale` too large |
 | Network gives a worse J than the inverted field | beta outside the filter cannot be reproduced; refine with Direct mode |
 
@@ -295,13 +297,55 @@ minutes with `--warm_adjoint --adjoint_iter 2000`, and a direct solve 2.5 to 12 
 | `ITER_START_NN` | 1000 | iteration from which the network acts (at least 1 is used) |
 | `NUM_EPOCH`, `LEARNING_RATE` | 1, 0.01 | in-solver training |
 | `BETA_TARGET_FILE` | `beta_target.dat` | one beta per line, global point order, for in-solver training |
-| `FILTER_SHIELD` | `NO` | beta = 1 where Delta < 0.25 or S/Omega > 2 |
+| `FIML_INPUTS` | `(PROD_DEST, CHI, DELTA, STRAIN_VORT)` | network inputs, in order (section 9.1) |
+| `FIML_SHIELD` | `NONE` | where the correction is switched off (section 9.2) |
+| `FIML_SHIELD_COEFF` | 8 | C in f_d = 1 - tanh((C r_d)^3) for `FIML_SHIELD= FD` |
 | `SA_OPTIONS` | - | the usual SA options also apply to `SA_FIML` |
 
 History fields: `BETA_REG` (group `FIML`), `INVERSE_DESIGN_PRESSURE` (group `CP_DIFF`, column `Cp_Diff`), and in
 the adjoint `SENS_FIML` (group `SENSITIVITY`), the L2 norm of dJ/dbeta (`NONE`) or dJ/dw (`WEIGHTS`).
-Volume fields: `Beta_FIML` in the group `FIML`, and the four network inputs in the group `FIML_FEATURES`.
-The group `FIML` is always written, so beta is part of every flow restart.
+Volume fields: `Beta_FIML` in the group `FIML`, and all inputs of section 9.1 in the group `FIML_INPUTS`
+(columns `FIML_Prod_Dest`, ..., `FIML_Fd`). The group `FIML` is always written, so beta is part of every flow restart.
+
+### 9.1 Network inputs
+
+`FIML_INPUTS` lists the inputs in the order the network uses them. All are local, dimensionless and Galilean
+invariant, except `DELTA`, which divides by a wall stress built from the free stream.
+
+| Name | Definition | Range | Scaling |
+|---|---|---|---|
+| `PROD_DEST` | SA production / destruction | >= 0 | Box-Cox + z-score |
+| `CHI` | nu_tilde / nu | >= 0 | Box-Cox + z-score |
+| `DELTA` | mu_t S / (1.5 tau_w), tau_w of a flat plate at half `REF_LENGTH` in the free stream | >= 0 | Box-Cox + z-score |
+| `STRAIN_VORT` | S / Omega | >= 0 | Box-Cox + z-score |
+| `VISC_RATIO` | nu_t / (nu_t + 100 nu) | [0, 1) | none |
+| `PROD_DEST_RATIO` | P / (P + D) of SA | [0, 1] | none |
+| `Q_CRIT` | (Omega^2 - S^2) / (Omega^2 + S^2) | [-1, 1] | none |
+| `BL_RATIO` | 1 / (1 + r_d), r_d = (nu_t + nu) / (kappa^2 d^2 sqrt(u_i,j u_i,j)), r_d <= 10 | [1/11, 1] | none |
+| `FD` | 1 - tanh((8 r_d)^3) | [0, 1] | none |
+
+- The Box-Cox constants are fitted on the training case and stored in `nn_weights.dat`; the bounded inputs need
+  no constants, so a new case cannot push them outside the range the network was trained on.
+- `PROD_DEST` and `PROD_DEST_RATIO` use the SA source terms of the previous iteration; in the adjoint they are
+  constants. The other inputs are differentiated.
+- The network file names its inputs on the line after the header, `Inputs: VISC_RATIO Q_CRIT BL_RATIO`, and SU2
+  stops if they differ from `FIML_INPUTS`. A file without that line holds `PROD_DEST CHI DELTA STRAIN_VORT`.
+- `step4_train.py --inputs VISC_RATIO,Q_CRIT,BL_RATIO --shield FD` trains on the columns of `FIML_INPUTS` and
+  writes this file.
+
+### 9.2 Shield
+
+| `FIML_SHIELD` | Effect |
+|---|---|
+| `NONE` | the correction acts everywhere |
+| `LEGACY` | the network sets beta = 1 where `DELTA` < 0.25 or `STRAIN_VORT` > 2; no effect in Classic mode |
+| `FD` | the source term uses 1 + (beta - 1) f_d, f_d = 1 - tanh((C r_d)^3), in Classic and network modes |
+
+f_d is the shielding function of delayed DES: 0 in attached boundary layers, 1 outside them. With `FD` the
+correction cannot change attached boundary layers: on the turbulent flat plate (`rans/flatplate`) beta = 2
+everywhere changes the skin friction by 13-17% without a shield, by 0.7% with C = 8, by 3-4% with C = 4 and by
+7-10% with C = 2. A smaller C leaves the outer part of the boundary layer to the correction, which matters when
+the error lies in an adverse-pressure-gradient boundary layer, as at trailing-edge stall.
 
 Regression tests:
 

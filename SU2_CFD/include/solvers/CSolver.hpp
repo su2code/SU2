@@ -866,10 +866,10 @@ public:
   inline virtual su2double ComputeFIMLRegularization(const CConfig *config) const { return 0.0; }
 
   /*!
-   * \brief Unscaled FIML input features at a point.
+   * \brief Unscaled values of all FIML inputs at a point, in the order of FIML_INPUT.
    */
-  inline virtual void GetFIMLFeatures(unsigned long iPoint, const CSolver* const* solver_container,
-                                      su2double* features) const {}
+  inline virtual void GetFIMLInputs(unsigned long iPoint, const CGeometry* geometry,
+                                    const CSolver* const* solver_container, su2double* values) const {}
 
   /*!
    * \brief Register the FIML neural network weights as AD inputs, or reset their AD indices.

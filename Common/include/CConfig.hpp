@@ -800,7 +800,11 @@ private:
   unsigned short Num_Epoch;           /*!< \brief Number of epochs for backpropagation training. */
   su2double Learning_Rate;            /*!< \brief Learning rate for backpropagation. */
   string Beta_Target_FileName;        /*!< \brief File containing beta target values for NN training. */
-  bool Filter_Shield;                 /*!< \brief Flag to filter out regions for correction. */
+  FIML_INPUT *FIML_Inputs;            /*!< \brief Network inputs as given in FIML_INPUTS. */
+  unsigned short nFIML_Inputs;        /*!< \brief Number of entries in FIML_INPUTS. */
+  vector<FIML_INPUT> FIML_Input_List; /*!< \brief Network inputs, in order, with the default applied. */
+  FIML_SHIELD Kind_FIML_Shield;       /*!< \brief Regions where the network is switched off. */
+  su2double FIML_Shield_Coeff;        /*!< \brief Coefficient C of f_d = 1 - tanh((C r_d)^3) for FIML_SHIELD= FD. */
 
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
@@ -4851,10 +4855,19 @@ public:
   string GetBeta_Target_FileName(void) const { return Beta_Target_FileName; }
 
   /*!
-   * \brief Get flag for shield filtering.
-   * \return True if filtering is active.
+   * \brief Get the inputs of the FIML network, in order.
    */
-  bool GetFilter_Shield(void) const { return Filter_Shield; }
+  const vector<FIML_INPUT>& GetFIML_Inputs(void) const { return FIML_Input_List; }
+
+  /*!
+   * \brief Get the regions where the FIML network is switched off.
+   */
+  FIML_SHIELD GetKind_FIML_Shield(void) const { return Kind_FIML_Shield; }
+
+  /*!
+   * \brief Get the coefficient C of f_d = 1 - tanh((C r_d)^3) for FIML_SHIELD= FD.
+   */
+  su2double GetFIML_Shield_Coeff(void) const { return FIML_Shield_Coeff; }
 
   /*!
    * \brief Get RMS roughness for Transtion model from config

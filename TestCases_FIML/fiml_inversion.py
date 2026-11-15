@@ -74,10 +74,11 @@ def last_history(path):
 
 
 def read_weights(path):
-    """Header and scaling lines, and the weights of an nn_weights.dat file."""
+    """Header, input names (if present) and scaling lines, and the weights of an nn_weights.dat file."""
     with open(path) as f:
         lines = f.read().splitlines()
-    return lines[:2], np.array([float(v) for v in lines[2:] if v.strip()])
+    n_head = 3 if lines[1].startswith("Inputs:") else 2
+    return lines[:n_head], np.array([float(v) for v in lines[n_head:] if v.strip()])
 
 
 def write_weights(path, head, w):

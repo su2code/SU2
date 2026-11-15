@@ -36,6 +36,7 @@
 #include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
+#include "../../include/fiml/FIMLInputs.hpp"
 #include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 
@@ -1611,10 +1612,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
 
   if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
     AddVolumeOutput("BETA_FIML", "Beta_FIML", "FIML", "FIML correction factor of the SA production term");
-    AddVolumeOutput("FIML_PROD_DEST", "FIML_Prod_Dest", "FIML_FEATURES", "SA production over destruction");
-    AddVolumeOutput("FIML_CHI", "FIML_Chi", "FIML_FEATURES", "Ratio of nu_tilde to the laminar viscosity");
-    AddVolumeOutput("FIML_DELTA", "FIML_Delta", "FIML_FEATURES", "Eddy stress over the flat-plate wall stress");
-    AddVolumeOutput("FIML_STRAIN_VORT", "FIML_Strain_Vort", "FIML_FEATURES", "Strain rate over vorticity");
+    for (const auto& input : FIML::Catalogue()) {
+      AddVolumeOutput(string("FIML_") + input.name, input.field, "FIML_INPUTS", input.description);
+    }
 
     /*--- beta is part of the restart, so its group is always written. ---*/
     if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), "FIML") == requestedVolumeFields.end()) {
@@ -1718,12 +1718,11 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
   if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
     SetVolumeOutputValue("BETA_FIML", iPoint, Node_Turb->GetBetaFiml(iPoint));
-    su2double features[4];
-    solver[TURB_SOL]->GetFIMLFeatures(iPoint, solver, features);
-    SetVolumeOutputValue("FIML_PROD_DEST", iPoint, features[0]);
-    SetVolumeOutputValue("FIML_CHI", iPoint, features[1]);
-    SetVolumeOutputValue("FIML_DELTA", iPoint, features[2]);
-    SetVolumeOutputValue("FIML_STRAIN_VORT", iPoint, features[3]);
+    su2double values[FIML::N_INPUTS];
+    solver[TURB_SOL]->GetFIMLInputs(iPoint, geometry, solver, values);
+    for (const auto& input : FIML::Catalogue()) {
+      SetVolumeOutputValue(string("FIML_") + input.name, iPoint, values[static_cast<unsigned short>(input.kind)]);
+    }
   }
 
   switch (config->GetKind_Trans_Model()) {

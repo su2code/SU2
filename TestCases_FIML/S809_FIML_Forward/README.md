@@ -68,7 +68,7 @@ restart file. On restart it is read back, so beta is continuous before `ITER_STA
 - Inputs (Holland et al.): the SA production/destruction ratio taken from the source term (before beta),
   chi, Delta = mu_t S / (1.5 tau_w) with tau_w = 0.027 Re_x^(-1/7) rho U^2 at x = REF_LENGTH/2, and S/Omega.
 - Scaling: Box-Cox with lambda fitted per input by maximum likelihood, then z-score.
-- `FILTER_SHIELD= YES` keeps beta = 1 where Delta < 0.25 or S/Omega > 2, and leaves those points out of
+- `FIML_SHIELD= LEGACY` keeps beta = 1 where Delta < 0.25 or S/Omega > 2, and leaves those points out of
   the scaling and the training, so that only the boundary layer and the wake are trained.
 - The network starts at `max(ITER_START_NN, 1)`, since the features use the previous source evaluation.
 - 3 hidden tanh layers of 20 neurons; output beta = 1 + tanh(.).
