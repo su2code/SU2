@@ -130,8 +130,14 @@ else
     mpi_lib_name = 'msmpi'
 
     # Check if import library exists
-    mpi_import_lib = file(mpi_lib_dir + '/lib' + mpi_lib_name + '.a')
-    if not mpi_import_lib.exists()
+    mpi_import_lib_path = mpi_lib_dir + '/lib' + mpi_lib_name + '.a'
+    mpi_include_found = fsmod.exists(mpi_include_dir)
+    mpi_lib_found = fsmod.exists(mpi_import_lib_path)
+
+    if not mpi_include_found
+      warning('MS-MPI include directory not found at @0@.'.format(mpi_include_dir))
+    endif
+    if not mpi_lib_found
       warning('MS-MPI import library (libmsmpi.a) not found in @0@.'.format(mpi_lib_dir) +
               ' Create it with:\n' +
               '  gendef msmpi.dll\n' +
@@ -139,12 +145,22 @@ else
               'in that directory, or install via mingw-w64-msmpi package.')
     endif
 
-    mpi_dep = declare_dependency(
-      include_directories: include_directories(mpi_include_dir),
-      link_args: ['-L' + mpi_lib_dir, '-l' + mpi_lib_name],
-      dependencies: []
-    )
-    mpi = true
+    # Only enable MPI if both headers and library are present
+    if mpi_include_found and mpi_lib_found
+      mpi_dep = declare_dependency(
+        include_directories: include_directories(mpi_include_dir),
+        link_args: ['-L' + mpi_lib_dir, '-l' + mpi_lib_name],
+        dependencies: []
+      )
+      mpi = true
+    elif get_option('with-mpi') == 'enabled'
+      # User explicitly requested MPI but MS-MPI is incomplete — hard error
+      error('with-mpi=enabled but MS-MPI SDK not fully found (include: @0@, lib: @1@).'
+            .format(mpi_include_found ? 'found' : 'missing', mpi_lib_found ? 'found' : 'missing'))
+    else
+      # with-mpi=auto: fall back to serial (mpi stays false, will hit the else branch below)
+      # Silent fallback — user didn't explicitly ask for MPI
+    endif
   else
     mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')),
                dependency('mpi', language:'cpp', required : get_option('with-mpi'))]
