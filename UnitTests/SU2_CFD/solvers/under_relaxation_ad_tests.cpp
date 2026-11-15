@@ -2,7 +2,7 @@
  * \file under_relaxation_ad_tests.cpp
  * \brief Tests density ownership and derivatives in compressible under-relaxation.
  * \author SU2 Contributors
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

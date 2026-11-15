@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -4858,6 +4858,15 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_Flow(void) const { return MUSCL_Flow; }
+
+  /*! \brief Whether the turbulence equations reconstruct. */
+  bool GetMUSCL_Turb(void) const { return MUSCL_Turb; }
+
+  /*! \brief Whether the species equations reconstruct. */
+  bool GetMUSCL_Species(void) const { return MUSCL_Species; }
+
+  /*! \brief Whether the heat equation reconstructs. */
+  bool GetMUSCL_Heat(void) const { return MUSCL_Heat; }
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.

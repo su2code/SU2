@@ -3,7 +3,7 @@
  * \brief Pressure correction (Poisson) equation as a third-layer scalar flux,
  *        see numerics/scalar/scalar_edge_flux.hpp.
  * \author T. Aalbers, P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
