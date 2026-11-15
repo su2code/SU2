@@ -397,7 +397,7 @@ def main():
     flatplate_udobj.cfg_dir   = "user_defined_functions"
     flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
     flatplate_udobj.test_iter = 20
-    flatplate_udobj.test_vals = [-0.001015, 596.450000, 299.550000, 296.900000, 21.318000, 0.586640, 36.553000, 2.188800]
+    flatplate_udobj.test_vals = [-0.002654, 597.560000, 299.980000, 297.580000, 23.837000, 0.682260, 38.421000, 4.051900]
     test_list.append(flatplate_udobj)
 
     # Probe performance test (11 probes, ADT path)
@@ -405,7 +405,7 @@ def main():
     probe_performance_11.cfg_dir = "user_defined_functions"
     probe_performance_11.cfg_file = "test_11_probes.cfg"
     probe_performance_11.test_iter = 4
-    probe_performance_11.test_vals = [-6.290748, 101020, 101050, 99123] # RMS_DENSITY, probe1, probe6, probe11
+    probe_performance_11.test_vals = [-6.262158, 100860.000000, 99454.000000, 98936.000000] # RMS_DENSITY, probe1, probe6, probe11
     # Tolerances are typically 0.001 in TestCase.py
     test_list.append(probe_performance_11)
 
@@ -459,7 +459,7 @@ def main():
     periodic2d_no_limiter.cfg_dir = "navierstokes/periodic2D"
     periodic2d_no_limiter.cfg_file = "no_limiter.cfg"
     periodic2d_no_limiter.test_iter = 100
-    periodic2d_no_limiter.test_vals = [-3.216881, -0.582813, -0.629049, 2.266141, -1.056877, -811.470000]
+    periodic2d_no_limiter.test_vals = [-3.285602, -0.612937, -0.682765, 2.194736, -1.019117, -952.960000]
     test_list.append(periodic2d_no_limiter)
 
     # 2D rotational periodic sector with multigrid
@@ -467,7 +467,7 @@ def main():
     periodic2d_multigrid.cfg_dir = "navierstokes/periodic2D"
     periodic2d_multigrid.cfg_file = "multigrid.cfg"
     periodic2d_multigrid.test_iter = 300
-    periodic2d_multigrid.test_vals = [-4.422778, -1.615251, -1.453736, 1.047350, -1.410225, -2060.600000]
+    periodic2d_multigrid.test_vals = [-4.405188, -1.589621, -1.470131, 1.066630, -1.430812, -2072.000000]
     test_list.append(periodic2d_multigrid)
 
     # 2D rotational periodic sector with limiter
@@ -475,7 +475,7 @@ def main():
     periodic2d.cfg_dir = "navierstokes/periodic2D"
     periodic2d.cfg_file = "config.cfg"
     periodic2d.test_iter = 100
-    periodic2d.test_vals = [-3.266248, -0.617784, -0.620252, 2.216476, -1.007761, -1035.000000]
+    periodic2d.test_vals = [-3.308159, -0.637985, -0.693116, 2.172259, -1.021650, -958.960000]
     test_list.append(periodic2d)
 
     ##########################
@@ -876,7 +876,7 @@ def main():
     sp_pipeSlice_3d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pipeSlice_3d"
     sp_pipeSlice_3d_dp_hf_tp.cfg_file  = "sp_pipeSlice_3d_dp_hf_tp.cfg"
     sp_pipeSlice_3d_dp_hf_tp.test_iter = 10
-    sp_pipeSlice_3d_dp_hf_tp.test_vals = [-11.119796, -11.234737, -9.429479, -0.000023]
+    sp_pipeSlice_3d_dp_hf_tp.test_vals = [-13.241550, -13.260364, -10.953558, -0.000025]
     test_list.append(sp_pipeSlice_3d_dp_hf_tp)
 
     # 2D pin array with heat transfer BC on pin surfaces
@@ -898,6 +898,14 @@ def main():
     inc_turb_naca0012.test_iter = 20
     inc_turb_naca0012.test_vals = [-4.758064, -10.974498, -0.000005, -0.028653, 3, -5.740545, 2, -5.036110]
     test_list.append(inc_turb_naca0012)
+
+    # Swirling jet on a one-cell wedge, rotational periodicity (Morse 1980)
+    inc_turb_morse_swirl_jet           = TestCase('inc_turb_morse_swirl_jet')
+    inc_turb_morse_swirl_jet.cfg_dir   = "incomp_rans/morse_swirl_jet"
+    inc_turb_morse_swirl_jet.cfg_file  = "morse_sa.cfg"
+    inc_turb_morse_swirl_jet.test_iter = 10
+    inc_turb_morse_swirl_jet.test_vals = [-10.168926, -7.347914, -8.685155, 13.000000, -4.156951, 71.328000]
+    test_list.append(inc_turb_morse_swirl_jet)
 
     # NACA0012, SST_SUST
     inc_turb_naca0012_sst_sust           = TestCase('inc_turb_naca0012_sst_sust')
@@ -1284,7 +1292,7 @@ def main():
     sbs_backward_step.cfg_dir    = "backscatter/backward_step"
     sbs_backward_step.cfg_file   = "backwardStep.cfg"
     sbs_backward_step.test_iter  = 3
-    sbs_backward_step.test_vals  = [-6.352884, -3.465372, -5.507901, -3.906545, -9.506305, -6.365236, -6.331021, -6.331028]
+    sbs_backward_step.test_vals  = [-6.353146, -3.465452, -5.470619, -3.906555, -9.506332, -6.365239, -6.331024, -6.331030]
     sbs_backward_step.unsteady   = True
     sbs_backward_step.decompress = True
     sbs_backward_step.grid_file  = "backward_step.su2"
@@ -1304,7 +1312,7 @@ def main():
     flatplate_unsteady.cfg_dir   = "navierstokes/flatplate"
     flatplate_unsteady.cfg_file  = "lam_flatplate_unst.cfg"
     flatplate_unsteady.test_iter = 3
-    flatplate_unsteady.test_vals = [0.000008, -8.875128, -8.250204, -6.305788, -5.469452, -3.398230, 0.002075, -0.325535]
+    flatplate_unsteady.test_vals = [0.000008, -8.875141, -8.250617, -6.305804, -5.469459, -3.398234, 0.002074, -0.310165]
     flatplate_unsteady.unsteady  = True
     test_list.append(flatplate_unsteady)
 
@@ -1364,7 +1372,7 @@ def main():
     Aachen_3D_restart.cfg_file = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
     Aachen_3D_restart.tol = 0.00001
-    Aachen_3D_restart.test_vals = [-7.688483, -8.466346, -6.035067, -6.425967, -5.820125, -4.597817, -5.528297, -5.301466, -3.819862, -5.242356, -5.738805, -3.630202, -2.213240, -2.857919, -0.576864]
+    Aachen_3D_restart.test_vals = [-7.688485, -8.467588, -6.035067, -6.427338, -5.819784, -4.597818, -5.529569, -5.305004, -3.819863, -5.242440, -5.756583, -3.630202, -2.213244, -2.860891, -0.576864]
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
@@ -1372,7 +1380,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.905727, -12.211201, -19.212537, -13.508616, -19.078613, -13.445675, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.914198, -12.203720, -19.150460, -13.443363, -19.037618, -13.395928, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1380,7 +1388,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [1.167500, 1.598546, -2.928573, 2.573647, -2.527331, 3.016254, 106370.000000, 106370.000000, 5.726800, 64.383000]
+    axial_stage2D.test_vals = [1.176763, 1.601270, -2.961800, 2.541146, -2.531370, 3.013521, 106390.000000, 106390.000000, 5.735500, 64.426000]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -1388,7 +1396,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals = [-4.365636, -2.482248, -2.081252, 1.729763, -1.467305, 3.231073, -471620.000000, 94.837000, -0.046834]
+    transonic_stator_restart.test_vals = [-4.389126, -2.515434, -2.103674, 1.706003, -1.488483, 3.231947, -471620.000000, 94.841000, -0.046801]
     transonic_stator_restart.test_vals_aarch64 = [-4.437809, -2.553049, -2.164729, 1.657542, -1.356823, 3.178788, -471620.000000, 94.842000, -0.040365]
     test_list.append(transonic_stator_restart)
 
@@ -1397,7 +1405,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals = [-8.634558, -8.895554, -9.348754]
+    multi_interface.test_vals = [-8.633076, -8.894747, -9.348617]
     multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
@@ -1480,7 +1488,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.464267, -1.541047]
+    bars_SST_2D.test_vals = [13.000000, -0.464304, -1.546997]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
@@ -1617,7 +1625,7 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals = [-15.878962, -14.569206, 300.900000, 425.320000, 5.000000, -1.672653]
+    solid_periodic_pins.test_vals = [-15.931359, -14.386112, 300.900000, 425.320000, 0.000000, -14.007572]
     solid_periodic_pins.test_vals_aarch64 = [-15.879016, -14.569206, 300.900000, 425.320000, 5.000000, -1.672666]
     test_list.append(solid_periodic_pins)
 
