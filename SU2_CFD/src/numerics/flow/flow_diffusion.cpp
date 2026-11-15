@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -580,7 +580,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
+  AD::SetPreaccIn(V_i, nDim+10);   AD::SetPreaccIn(V_j, nDim+10);
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(PrimVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nVar, nDim);

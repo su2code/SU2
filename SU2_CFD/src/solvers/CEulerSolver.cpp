@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2551,9 +2551,13 @@ void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
     su2double ratio = fabs(LinSysSol(iPoint, 0)) / max(nodes->GetSolution(iPoint, 0), EPS);
     su2double e_old = nodes->GetSolution(iPoint, nVar - 1);
     su2double e_new = e_old + LinSysSol(iPoint, nVar - 1);
-    for (unsigned short jVar = 1; jVar <= nDim; jVar++) {
-      e_old -= 0.5 * pow(nodes->GetSolution(iPoint, jVar), 2);
-      e_new -= 0.5 * pow(nodes->GetSolution(iPoint, jVar) + LinSysSol(iPoint, jVar), 2);
+    /*--- rho*e = rho*E - |rho*u|^2 / (2*rho), with the old and the proposed new density. ---*/
+    /*--- Materialize CoDi expressions: GetSolution returns temporary active scalars. ---*/
+    const su2double rho_old = max(nodes->GetSolution(iPoint, 0), EPS);
+    const su2double rho_new = max(rho_old + LinSysSol(iPoint, 0), EPS);
+    for (auto jVar = 1u; jVar <= nDim; jVar++) {
+      e_old -= 0.5 * pow(nodes->GetSolution(iPoint, jVar), 2) / rho_old;
+      e_new -= 0.5 * pow(nodes->GetSolution(iPoint, jVar) + LinSysSol(iPoint, jVar), 2) / rho_new;
     }
     ratio = fmax(ratio, fabs(e_new - e_old) / max(e_old, EPS));
 
@@ -4345,7 +4349,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    * Institution: Computational and Theoretical Fluid Dynamics (CTFD),
    *            CSIR - National Aerospace Laboratories, Bangalore
    *            Academy of Scientific and Innovative Research, Ghaziabad
-   * \version 8.5.0 "Harrier"
+   * \version 8.6.0 "Harrier"
    * First release date : September 26 2023
    * modified on:
    *
