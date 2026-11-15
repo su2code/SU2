@@ -38,6 +38,14 @@
 class CNSSolver final : public CEulerSolver {
 private:
 
+  /*!
+   * \brief Derivatives of the temperature w.r.t. density and total energy per volume, from the secondary variables.
+   * \param[in] iPoint - Point index.
+   * \param[out] dTdrho - Derivative at constant momentum and total energy per volume.
+   * \param[out] dTdrhoE - Derivative at constant density and momentum.
+   */
+  void WallTemperatureDerivatives(unsigned long iPoint, su2double& dTdrho, su2double& dTdrhoE) const;
+
   vector<su2double> Surface_Buffet_Metric;  /*!< \brief Integrated separation sensor for each monitoring surface. */
   vector<su2double> Buffet_Metric;          /*!< \brief Integrated separation sensor for each boundary. */
   vector<vector<su2double> > Buffet_Sensor; /*!< \brief Separation sensor for each boundary and vertex. */

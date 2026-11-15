@@ -1,6 +1,6 @@
 /*!
  * \file CFluidCantera.hpp
- * \brief  Defines the multicomponent incompressible Ideal Gas model for reacting flows.
+ * \brief  Defines the multicomponent Ideal Gas model for reacting flows.
  * \author T. Economon, Cristopher Morales Ubal
  * \version 8.6.0 "Harrier"
  *
@@ -42,7 +42,7 @@ class Solution;
 
 /*!
  * \class CFluidCantera
- * \brief Child class for defining reacting incompressible ideal gas mixture model.
+ * \brief Child class for defining reacting ideal gas mixture model, for the incompressible and compressible solvers.
  * \author: T. Economon, Cristopher Morales Ubal
  */
 class CFluidCantera final : public CFluidModel {
@@ -58,6 +58,7 @@ class CFluidCantera final : public CFluidModel {
   const bool Combustion;                  /*!< \brief Flag for problems involving combustion.*/
   const su2double Chemistry_Min_Temperature; /*!< \brief Temperature below which the chemistry is skipped. */
   const bool Correction_Velocity;            /*!< \brief The diffusive species fluxes are corrected to sum to zero. */
+  const bool Turbulent_Conductivity;         /*!< \brief The conductivity includes the turbulent part (incompressible). */
 
   su2double Heat_Release{0.0};                 /*!< \brief heat release due to combustion */
   bool temperatureIterationFailed{false};                     /*!< \brief The last temperature-from-enthalpy iteration did not converge. */
@@ -98,6 +99,11 @@ class CFluidCantera final : public CFluidModel {
   void SetThermoState(double val_temperature);
 
   /*!
+   * \brief Copy the thermodynamic properties and their derivatives at frozen composition from the Cantera state.
+   */
+  void ReadThermoState();
+
+  /*!
    * \brief Evaluate viscosity and conductivity of the current state when they are out of date.
    */
   void UpdateTransport() const;
@@ -128,6 +134,7 @@ class CFluidCantera final : public CFluidModel {
    */
   inline su2double GetThermalConductivity() override {
     UpdateTransport();
+    if (!Turbulent_Conductivity) return laminarConductivity;
     return laminarConductivity + Mu_Turb * Cp / Prandtl_Turb_Number;
   }
 
@@ -199,5 +206,46 @@ class CFluidCantera final : public CFluidModel {
   inline void SetTemperatureGuess(su2double val_temperature) override {
     temperatureGuess = SU2_TYPE::GetValue(val_temperature);
   }
+
+  /*!
+   * \brief Set the mixture composition used by the state evaluations without scalar arguments.
+   * \param[in] val_scalars - Scalar mass fractions.
+   */
+  void SetComposition(const su2double* val_scalars) override;
+
+  /*!
+   * \brief Set the state from density and internal energy by Newton iteration on temperature.
+   */
+  void SetTDState_rhoe(su2double rho, su2double e) override;
+
+  /*!
+   * \brief Set the state from pressure and temperature.
+   */
+  void SetTDState_PT(su2double P, su2double T) override;
+
+  /*!
+   * \brief Set the state from pressure and density.
+   */
+  void SetTDState_Prho(su2double P, su2double rho) override;
+
+  /*!
+   * \brief Set the state from pressure and density.
+   */
+  inline void SetEnergy_Prho(su2double P, su2double rho) override { SetTDState_Prho(P, rho); }
+
+  /*!
+   * \brief Set the state from density and temperature.
+   */
+  void SetTDState_rhoT(su2double rho, su2double T) override;
+
+  /*!
+   * \brief Set the state from enthalpy and entropy, with the ideal gas pressure dependence of the entropy.
+   */
+  void SetTDState_hs(su2double h, su2double s) override;
+
+  /*!
+   * \brief Set the state from pressure and entropy.
+   */
+  void SetTDState_Ps(su2double P, su2double s) override;
 #endif
 };

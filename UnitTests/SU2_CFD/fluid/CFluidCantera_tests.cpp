@@ -167,4 +167,82 @@ TEST_CASE("Fluid_Cantera_SourceJacobian", "[Reacting_flow]") {
   fluid.ComputeChemicalSourceTerm();
   CHECK(fluid.GetChemicalSourceTerm(2) != 0.0);
 }
+TEST_CASE("Fluid_Cantera_Compressible", "[Multicomponent_flow]") {
+  /*--- State evaluations of the compressible solver, which set the composition separately. ---*/
+
+  SU2_COMPONENT val_software = SU2_COMPONENT::SU2_CFD;
+  CConfig config("src/SU2/UnitTests/SU2_CFD/fluid/multicomponent_cantera.cfg", val_software, true);
+  CFluidCantera fluid(config.GetPressure_Thermodynamic(), &config);
+
+  const su2double* scalar = config.GetSpecies_Init();
+  const su2double pressure = 2.0e5, temperature = 1500.0;
+  fluid.SetComposition(scalar);
+  fluid.SetTDState_PT(pressure, temperature);
+  const su2double density = fluid.GetDensity();
+  const su2double energy = fluid.GetStaticEnergy();
+  CHECK(fluid.GetEnthalpy() == Approx(energy + pressure / density));
+
+  /*--- At the operating pressure the state equals the one of the incompressible solver. ---*/
+
+  fluid.SetTDState_T(temperature, scalar);
+  const su2double density_operating = fluid.GetDensity();
+  fluid.SetTDState_PT(config.GetPressure_Thermodynamic(), temperature);
+  CHECK(fluid.GetDensity() == Approx(density_operating));
+
+  /*--- Round trips through the density-energy and pressure-density states. ---*/
+
+  fluid.SetTDState_rhoe(density, energy);
+  CHECK(fluid.GetTemperatureIterationFailed() == false);
+  CHECK(fluid.GetTemperature() == Approx(temperature).margin(1e-4));
+  CHECK(fluid.GetPressure() == Approx(pressure));
+
+  fluid.SetTDState_Prho(pressure, density);
+  CHECK(fluid.GetTemperature() == Approx(temperature));
+  CHECK(fluid.GetStaticEnergy() == Approx(energy));
+
+  fluid.SetTDState_rhoT(density, temperature);
+  CHECK(fluid.GetPressure() == Approx(pressure));
+
+  /*--- Round trips through the entropy-based states of the Riemann boundary condition. ---*/
+
+  const su2double entropy = fluid.GetEntropy();
+  const su2double enthalpy = fluid.GetEnthalpy();
+  fluid.SetTDState_hs(enthalpy, entropy);
+  CHECK(fluid.GetTemperatureIterationFailed() == false);
+  CHECK(fluid.GetTemperature() == Approx(temperature).margin(1e-4));
+  CHECK(fluid.GetPressure() == Approx(pressure));
+
+  fluid.SetTDState_Ps(pressure, entropy);
+  CHECK(fluid.GetTemperature() == Approx(temperature));
+
+  /*--- Derivatives at frozen composition against central differences of the density-energy state. ---*/
+
+  fluid.SetTDState_rhoe(density, energy);
+  const su2double dPdrho_e = fluid.GetdPdrho_e();
+  const su2double dPde_rho = fluid.GetdPde_rho();
+  const su2double dTde_rho = fluid.GetdTde_rho();
+  const su2double soundSpeed2 = fluid.GetSoundSpeed2();
+
+  const su2double drho = 1e-4 * density, de = 1e-4 * fabs(energy) + 100.0;
+  fluid.SetTDState_rhoe(density + drho, energy);
+  const su2double P_rho_plus = fluid.GetPressure();
+  fluid.SetTDState_rhoe(density - drho, energy);
+  const su2double P_rho_minus = fluid.GetPressure();
+  fluid.SetTDState_rhoe(density, energy + de);
+  const su2double P_e_plus = fluid.GetPressure(), T_e_plus = fluid.GetTemperature();
+  fluid.SetTDState_rhoe(density, energy - de);
+  const su2double P_e_minus = fluid.GetPressure(), T_e_minus = fluid.GetTemperature();
+
+  CHECK(dPdrho_e == Approx((P_rho_plus - P_rho_minus) / (2 * drho)).epsilon(1e-5));
+  CHECK(dPde_rho == Approx((P_e_plus - P_e_minus) / (2 * de)).epsilon(1e-5));
+  CHECK(dTde_rho == Approx((T_e_plus - T_e_minus) / (2 * de)).epsilon(1e-5));
+  CHECK(soundSpeed2 == Approx(dPdrho_e + pressure / (density * density) * dPde_rho));
+
+  /*--- The state follows the composition: moving H2 into N2 increases the density. ---*/
+
+  const su2double leaner[2] = {0.5 * scalar[0], scalar[1]};
+  fluid.SetComposition(leaner);
+  fluid.SetTDState_PT(pressure, temperature);
+  CHECK(fluid.GetDensity() > density);
+}
 #endif

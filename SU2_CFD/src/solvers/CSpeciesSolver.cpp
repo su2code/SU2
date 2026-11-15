@@ -327,8 +327,9 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   fluid_model->SetMassDiffusivityModel(config);
 
   /*--- The flow solver evaluates the Cantera mass diffusivities together with the enthalpy diffusion
-   *    (CIncNSSolver::ComputeEnthalpyDiffusionTerms) and stores them in its variables. ---*/
+   *    (CFVMFlowSolverBase::ComputeEnthalpyDiffusionTerms) and stores them in its variables. ---*/
   const bool diffusivity_from_flow = (config->GetKind_FluidModel() == FLUID_CANTERA) && config->GetEnergy_Equation();
+  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
   const CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Set the laminar mass Diffusivity and chemical source term for the species solver. ---*/
@@ -347,7 +348,12 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
       temperature = config->GetSpark_Temperature();
     }
     const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
-    fluid_model->SetTDState_T(temperature, scalar);
+    if (compressible) {
+      fluid_model->SetComposition(scalar);
+      fluid_model->SetTDState_rhoT(flowNodes->GetDensity(iPoint), temperature);
+    } else {
+      fluid_model->SetTDState_T(temperature, scalar);
+    }
 
     if (chemistry) {
       fluid_model->ComputeChemicalSourceTerm();

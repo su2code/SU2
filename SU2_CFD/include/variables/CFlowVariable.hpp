@@ -54,6 +54,7 @@ class CFlowVariable : public CVariable {
    * ---*/
   MatrixType Vorticity; /*!< \brief Vorticity of the flow field. */
   VectorType StrainMag; /*!< \brief Magnitude of rate of strain tensor. */
+  MatrixType MassDiffusivity; /*!< \brief (nPoint, nSpecies+1) laminar mass diffusivities, evaluated by the fluid model (Cantera). */
 
   /*!
    * \brief Constructor of the class.
@@ -84,6 +85,23 @@ class CFlowVariable : public CVariable {
     }
     NonPhysicalEdgeCounter[iEdge] = std::max<int8_t>(0, NonPhysicalEdgeCounter[iEdge] - 1);
     return static_cast<T>(NonPhysicalEdgeCounter[iEdge] > 0);
+  }
+
+  /*!
+   * \brief Store the laminar mass diffusivity of a species, which the species solver reads.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_diffusivity - Mass diffusivity.
+   * \param[in] val_ivar - Species index, the remainder species included.
+   */
+  inline void SetMassDiffusivity(unsigned long iPoint, su2double val_diffusivity, unsigned short val_ivar) {
+    MassDiffusivity(iPoint, val_ivar) = val_diffusivity;
+  }
+
+  /*!
+   * \brief Get the laminar mass diffusivity of a species stored by the flow solver.
+   */
+  inline su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const override {
+    return MassDiffusivity(iPoint, val_ivar);
   }
 
   /*!
