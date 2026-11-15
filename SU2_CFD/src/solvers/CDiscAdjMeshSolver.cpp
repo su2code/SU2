@@ -33,6 +33,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
 
   nVar = geometry->GetnDim();
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   /*-- Store some information about direct solver ---*/
   this->direct_solver = direct_solver;

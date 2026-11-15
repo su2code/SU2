@@ -1,0 +1,1 @@
+from .resolver import CustomSensorRegistry
