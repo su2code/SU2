@@ -2152,7 +2152,7 @@ void CConfig::SetConfig_Options() {
    * on stagnation. 0 disables it, as MG_STARTUP_STAGNATION= 0 does. DEFAULT: 5 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_STAGNATION_ITER", MGOptions.MG_Startup_Stagnation_Iter, 5);
   /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i).
-   * If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
+   * If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.5 \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
   /*!\brief MG_LINEAR_SOLVER_ITER\n DESCRIPTION: Maximum linear solver iterations on coarse MG levels. Entry i applies to level i+1;
    * the last value is repeated, and the cap never exceeds LINEAR_SOLVER_ITER. DEFAULT: 3 \ingroup Config*/
@@ -5142,7 +5142,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         MGOptions.MG_CflScaling[i] = (i < nMG_CflScaling_p) ? MG_CflScaling_p[i] : MG_CflScaling_p[nMG_CflScaling_p - 1];
     } else {
       for (unsigned short i = 0; i < nMGLevels; ++i)
-        MGOptions.MG_CflScaling[i] = 0.25;
+        MGOptions.MG_CflScaling[i] = 0.5;
     }
 
     /*--- Linear solver iteration cap per level; level 0 always uses LINEAR_SOLVER_ITER. ---*/
