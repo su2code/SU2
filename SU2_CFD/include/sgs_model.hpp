@@ -784,4 +784,47 @@ public:
                                    su2double &dMuTdy,
                                    su2double &dMuTdz) override;
 };
+
+class CDynamicSmagorinskyModel : public CSGSModel {
+  public:
+    su2double filter_ratio; /*!< \brief Multiplier to get filter width from grid length scale. */
+    su2double Cs2_clip_max; /*!< \brief Maximum value of the clipped Cs^2. */
+
+    /*!
+     * \brief Constructor of the class.
+     */
+    CDynamicSmagorinskyModel(void);
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CDynamicSmagorinskyModel(void) override;
+
+    /*!
+     * \brief Compute eddy viscosity for 2D (not implemented).
+     */
+    su2double ComputeEddyViscosity_2D(const su2double rho,
+                                      const su2double dudx,
+                                      const su2double dudy,
+                                      const su2double dvdx,
+                                      const su2double dvdy,
+                                      const su2double lenScale,
+                                      const su2double distToWall) override;
+
+    /*!
+     * \brief Compute eddy viscosity for 3D using Germano-Lilly dynamic procedure.
+     */
+    su2double ComputeEddyViscosity_3D(const su2double rho,
+                                      const su2double dudx,
+                                      const su2double dudy,
+                                      const su2double dudz,
+                                      const su2double dvdx,
+                                      const su2double dvdy,
+                                      const su2double dvdz,
+                                      const su2double dwdx,
+                                      const su2double dwdy,
+                                      const su2double dwdz,
+                                      const su2double lenScale,
+                                      const su2double distToWall) override;
+};
 #include "sgs_model.inl"
