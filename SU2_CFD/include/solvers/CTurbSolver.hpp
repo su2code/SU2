@@ -2,7 +2,7 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,6 +55,12 @@ public:
    * \param[in] flow_solver - Flow solver the boundary ghost states mirror.
    */
   CTurbSolver(CGeometry* geometry, CConfig *config, const CSolver* flow_solver, bool conservative);
+
+  /*!
+   * \brief The turbulence (and transition) variables span orders of magnitude and have units, so their limiters
+   *        use an epsilon relative to the free-stream values.
+   */
+  inline const su2double* GetLimiterReference() const override { return Solution_Inf; }
 
 
   /*!

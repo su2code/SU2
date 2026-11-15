@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1171,6 +1171,20 @@ public:
    * \return Value of the mass diffusivity.
    */
   inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Value of the chemical source term.
+   */
+  inline virtual su2double GetChemicalSourceTerm(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Value of the heat release due to combustion.
+   */
+  inline virtual su2double GetHeatRelease(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.

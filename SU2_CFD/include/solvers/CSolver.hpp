@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -221,6 +221,23 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CSolver(void);
+
+  /*!
+   * \brief Whether the artificial ignition spark is active at the current iteration.
+   * \param[in] config - Definition of the particular problem.
+   */
+  static bool SparkActive(const CConfig* config) {
+    return config->GetFlameletParsedOptions().SparkActive(config->GetIgnitionIter());
+  }
+
+  /*!
+   * \brief Whether a point lies inside the artificial ignition spark region.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] coord - Coordinates of the point.
+   */
+  bool InSpark(const CConfig* config, const su2double* coord) const {
+    return config->GetFlameletParsedOptions().InSpark(nDim, coord);
+  }
 
   /*!
    * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
@@ -582,6 +599,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSolution_Limiter(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Reference value of each variable for the limiters of SetSolution_Limiter, which then use an epsilon
+   *        relative to max(|solution|, |reference|) (see computeLimiters_impl). Null: absolute epsilon.
+   */
+  inline virtual const su2double* GetLimiterReference() const { return nullptr; }
 
   /*!
    * \brief A virtual member.

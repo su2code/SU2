@@ -1,7 +1,7 @@
 /*!
  * \file periodic_limiters.cpp
  * \brief Tests for periodic limiter storage and reconstruction helpers.
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

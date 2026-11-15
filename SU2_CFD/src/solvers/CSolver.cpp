@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2495,7 +2495,8 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
   auto& limiter = base_nodes->GetLimiter();
 
   computeLimiters(kindLimiter, this, MPI_QUANTITIES::SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2,
-                  *geometry, *config, 0, nVar, umusclKappa, solution, gradient, solMin, solMax, limiter);
+                  *geometry, *config, 0, nVar, umusclKappa, solution, gradient, solMin, solMax, limiter,
+                  GetLimiterReference());
 }
 
 void CSolver::GaussElimination(su2double** A, su2double* rhs, unsigned short nVar) {
