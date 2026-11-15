@@ -938,19 +938,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       }
     }
 
-    if (output.type == OperationType::FUNCTION) {
-      auto Functor = [&](unsigned long i) {
-        /*--- Functions only reference other history outputs. ---*/
-        return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
-      };
-      SetHistoryOutputValue(output.name, output.Eval(Functor));
-      continue;
-    }
-
-    if (output.type == OperationType::PROBE) {
-      /*--- Probe evaluation will be done after all outputs are processed, with batched AllReduce. ---*/
-      continue;
-    }
+    /*--- Probes and functions are evaluated after the surface integrals, probes with a batched AllReduce. ---*/
+    if (output.type == OperationType::FUNCTION || output.type == OperationType::PROBE) continue;
 
     /*--- Surface integral of the expression. ---*/
 
@@ -1019,6 +1008,13 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       if (output.skip || output.type != OperationType::PROBE) continue;
       SetHistoryOutputValue(output.name, probeValuesGlobal[iProbe++]);
     }
+  }
+
+  /*--- Functions in the order of definition, so they see the current values of all other outputs. ---*/
+  for (auto& output : customOutputs) {
+    if (output.skip || output.type != OperationType::FUNCTION) continue;
+    auto Functor = [&](unsigned long i) { return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE]; };
+    SetHistoryOutputValue(output.name, output.Eval(Functor));
   }
 }
 
