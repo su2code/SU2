@@ -369,6 +369,10 @@ class CSysMatrix {
     std::atomic<uint64_t> steps{0};
     LevelProgress() = default;
     LevelProgress(const LevelProgress& other) : steps(other.steps.load()) {}
+    LevelProgress& operator=(const LevelProgress& other) {
+      steps.store(other.steps.load());
+      return *this;
+    }
   };
 
   /*!< \brief Steps each thread must see completed by every other thread, per (step, thread, other thread),

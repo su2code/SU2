@@ -870,7 +870,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
       cout << "  MG level " << iLevel << " CV closure: " << nBadGlobal << " CVs with a face normal sum above 1e-6 of the "
            << "face area, worst " << worstGlobal << "\n";
     }
-    if ((worst == worstGlobal) && (worst > 1e-6)) {
+    if ((worst >= worstGlobal) && (worst > 1e-6)) {
       cout << "  MG level " << iLevel << " worst closure on rank " << rank << ", global point "
            << grid->nodes->GetGlobalIndex(worstPoint) << ", volume " << grid->nodes->GetVolume(worstPoint) << ", "
            << grid->nodes->GetnPoint(worstPoint) << " neighbors, x =";

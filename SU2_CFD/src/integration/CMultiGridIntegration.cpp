@@ -30,6 +30,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include "../../include/variables/CEulerVariable.hpp"
 
@@ -1398,7 +1399,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
       }
       SU2_MPI::Allreduce(&local[0], &global[0], 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&local[1], &global[1], 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      if ((local[0] == global[0]) && (global[0] > peakShare * global[1])) {
+      if ((local[0] >= global[0]) && (global[0] > peakShare * global[1])) {
         std::cout << "Corr-peak level " << iMesh << ": rank " << SU2_MPI::GetRank() << ", global point "
                   << geometry->nodes->GetGlobalIndex(peakPoint) << ", " << 100 * global[0] / global[1]
                   << "% of the correction norm, volume " << geometry->nodes->GetVolume(peakPoint) << ", "
@@ -1569,7 +1570,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CSolver
 
     /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
     for (auto iVar = 0u; iVar < nVar; iVar++)
-      if (Residual_Fine[iVar] != Residual_Fine[iVar]) Residual_Fine[iVar] = 0.0;
+      if (std::isnan(SU2_TYPE::GetValue(Residual_Fine[iVar]))) Residual_Fine[iVar] = 0.0;
 
     su2double relax = factor;
     if ((iMesh < correctionWeight.size()) && !correctionWeight[iMesh].empty()) relax *= correctionWeight[iMesh][Point_Fine];

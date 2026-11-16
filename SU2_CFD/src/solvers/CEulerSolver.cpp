@@ -360,14 +360,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
         su2double wallNormal[MAXNDIM] = {0.0};
         unitNormal(iWall, wallVertex, wallNormal);
 
-        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-          const auto kindBC = config->GetMarker_All_KindBC(iMarker);
-          if (config->GetViscous_Wall(iMarker) || (kindBC == SEND_RECEIVE) || (kindBC == PERIODIC_BOUNDARY) ||
+        for (unsigned short jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++) {
+          const auto kindBC = config->GetMarker_All_KindBC(jMarker);
+          if (config->GetViscous_Wall(jMarker) || (kindBC == SEND_RECEIVE) || (kindBC == PERIODIC_BOUNDARY) ||
               (kindBC == INTERNAL_BOUNDARY) || (kindBC == NEARFIELD_BOUNDARY) || (kindBC == FLUID_INTERFACE)) continue;
-          const auto iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
+          const auto iVertex = geometry->nodes->GetVertex(iPoint, jMarker);
           if (iVertex < 0) continue;
           su2double normal[MAXNDIM] = {0.0};
-          unitNormal(iMarker, iVertex, normal);
+          unitNormal(jMarker, iVertex, normal);
           if (fabs(GeometryToolbox::DotProduct(nDim, wallNormal, normal)) > minAlignment) wallEnds = true;
         }
       }
@@ -381,10 +381,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "First-order reconstruction at " << nFlaggedGlobal << " points where a no-slip wall ends or has a sharp edge." << endl;
 
     /*--- A halo may lack one of the markers its owner has, so it takes the owner's flag. ---*/
-    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) || (config->GetMarker_All_SendRecv(iMarker) <= 0))
+    for (unsigned short markerS = 0; markerS < config->GetnMarker_All(); markerS++) {
+      if ((config->GetMarker_All_KindBC(markerS) != SEND_RECEIVE) || (config->GetMarker_All_SendRecv(markerS) <= 0))
         continue;
-      const auto markerS = iMarker, markerR = static_cast<unsigned short>(iMarker + 1);
+      const auto markerR = static_cast<unsigned short>(markerS + 1);
       const int sendTo = config->GetMarker_All_SendRecv(markerS) - 1;
       const int receiveFrom = abs(config->GetMarker_All_SendRecv(markerR)) - 1;
       vector<unsigned short> bufSend(geometry->nVertex[markerS]), bufRecv(geometry->nVertex[markerR]);
