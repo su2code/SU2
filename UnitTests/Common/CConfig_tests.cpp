@@ -143,3 +143,19 @@ TEST_CASE("Streamwise periodic CHT support", "[.StreamwisePeriodicSupportCHT]") 
                             "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)\nMARKER_CHT_INTERFACE= (z_plus)\n");
   CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
 }
+
+TEST_CASE("HLLC and AUSM SLAU Jacobian options are independent", "[Config][HLLCOptions]") {
+  for (const auto accurate : {false, true}) {
+    for (const auto exactHLLC : {false, true}) {
+      std::stringstream options(base_options + "USE_ACCURATE_FLUX_JACOBIANS= " + (accurate ? "YES" : "NO") +
+                                "\nUSE_EXACT_HLLC_JACOBIANS= " + (exactHLLC ? "YES" : "NO") + "\n");
+      CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+      CHECK(config.GetUse_Accurate_Jacobians() == accurate);
+      CHECK(config.GetUse_Exact_HLLC_Jacobians() == exactHLLC);
+    }
+  }
+  std::stringstream options(base_options);
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+  CHECK_FALSE(config.GetUse_Accurate_Jacobians());
+  CHECK_FALSE(config.GetUse_Exact_HLLC_Jacobians());
+}
