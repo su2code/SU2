@@ -1759,10 +1759,6 @@ public:
   bool GetCFL_Adapt(void) const { return CFL_Adapt; }
 
   /*!
-   * \brief Whether the adaptive CFL follows the nonlinear residual trend instead of the linear solve.
-   */
-
-  /*!
    * \brief Get the outlier mitigation parameters.
    */
   const unsigned long* GetOutlierMitigationParam() const { return outlierMitigationParam; }

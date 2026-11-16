@@ -1930,7 +1930,6 @@ void CConfig::SetConfig_Options() {
   addULongArrayOption("OUTLIER_MITIGATION_PARAM", 4, true, outlierMitigationParam);
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
-  /* DESCRIPTION: Adapt the CFL on the finest-grid nonlinear residuals instead of the linear solve, with a cut on divergence. */
   /* !\brief CFL_ADAPT_PARAM
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max)[, acceptable linear residual][, starting iteration]).
    * Parameters in square brackets are optional, parameter "starting iteration" only valid with parameter "acceptable linear residual".
@@ -4905,6 +4904,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (RampMUSCL && !(MUSCL_Flow || MUSCL_Turb || MUSCL_Species || MUSCL_Heat)) {
     if (rank == MASTER_NODE) cout << "WARNING: RAMP_MUSCL is ignored because no MUSCL reconstruction is active." << endl;
     RampMUSCL = false;
+  }
+
+  if (MUSCL_FirstOrderWallEnds && ((Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) || GetNEMOProblem())) {
+    SU2_MPI::Error("MUSCL_FIRST_ORDER_WALL_ENDS is only implemented for the compressible flow solver.", CURRENT_FUNCTION);
   }
 
   if(RampMUSCL && !DiscreteAdjoint){

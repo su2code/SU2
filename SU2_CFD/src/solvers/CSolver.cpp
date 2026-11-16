@@ -2112,7 +2112,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
                 if (d0 * d1 < 0.0) nChanges++;
               }
             }
-            if ((nChanges + 1 >= flipWindow - 1) && (amplitude > flipAmplitude)) nAlternating++;
+            if ((size_t(nChanges) + 1 >= flipWindow - 1) && (amplitude > flipAmplitude)) nAlternating++;
             progress += (ResFlow_History[nHist - 1 - flipWindow][iVar] - ResFlow_History.back()[iVar]) / logRes.size();
           }
           flip = (nAlternating * 4 >= logRes.size() * 3) && (progress < flipProgress);

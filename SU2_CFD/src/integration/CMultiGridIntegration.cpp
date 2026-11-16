@@ -1188,8 +1188,6 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
     return useSolution ? nodes->GetSolution(iPoint) : nodes->GetSolution_Old(iPoint);
   };
 
-  /*--- Every thread of this rank takes this branch together, and the loops below would all be
-   *    empty anyway. It also keeps the sizing test off a container that was never resized. ---*/
   /*--- The coarse grid does not change, so each level is reported once. ---*/
   auto reportIllConditioned = [&]() {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -1207,6 +1205,7 @@ void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGe
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   };
 
+  /*--- All threads of this rank take this branch together; the sizing test below needs a sized container. ---*/
   if (nPointDomain == 0) {
     reportIllConditioned();
     return;
@@ -1510,7 +1509,7 @@ void CMultiGridIntegration::ComputeCorrectionWeights(CGeometry** geometry, const
   for (auto iPoint = 0ul; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++)
     wallEnd[iPoint] = flowNodes->SkipMGCorrection(iPoint);
 
-  constexpr auto FAR = std::numeric_limits<unsigned long>::max();
+  constexpr auto UNREACHED = std::numeric_limits<unsigned long>::max();
   vector<unsigned long> hops, front, next;
 
   for (unsigned short iMesh = 0; iMesh < nLevels; iMesh++) {
@@ -1518,7 +1517,7 @@ void CMultiGridIntegration::ComputeCorrectionWeights(CGeometry** geometry, const
     const auto* coarse = geometry[iMesh + 1];
 
     vector<char> coarseWallEnd(coarse->GetnPoint(), 0);
-    hops.assign(coarse->GetnPoint(), FAR);
+    hops.assign(coarse->GetnPoint(), UNREACHED);
     front.clear();
     for (auto iCoarse = 0ul; iCoarse < coarse->GetnPointDomain(); iCoarse++)
       for (auto iChild = 0u; iChild < coarse->nodes->GetnChildren_CV(iCoarse); iChild++)
@@ -1533,7 +1532,7 @@ void CMultiGridIntegration::ComputeCorrectionWeights(CGeometry** geometry, const
       next.clear();
       for (auto iCoarse : front)
         for (auto jCoarse : coarse->nodes->GetPoints(iCoarse))
-          if (hops[jCoarse] == FAR) {
+          if (hops[jCoarse] == UNREACHED) {
             hops[jCoarse] = d;
             next.push_back(jCoarse);
           }
@@ -1543,7 +1542,7 @@ void CMultiGridIntegration::ComputeCorrectionWeights(CGeometry** geometry, const
     auto& weight = correctionWeight[iMesh];
     weight.assign(fine->GetnPoint(), 1.0);
     for (auto iCoarse = 0ul; iCoarse < coarse->GetnPointDomain(); iCoarse++) {
-      if (hops[iCoarse] == FAR) continue;
+      if (hops[iCoarse] == UNREACHED) continue;
       for (auto iChild = 0u; iChild < coarse->nodes->GetnChildren_CV(iCoarse); iChild++)
         weight[coarse->nodes->GetChildren_CV(iCoarse, iChild)] = passivedouble(hops[iCoarse]) / passivedouble(nBlend);
     }

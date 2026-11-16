@@ -952,7 +952,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
     geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
 
-    closureReport(geometry[iMGlevel], geometry[iMGlevel-1], iMGlevel);
+    if (config->GetMGOptions().MG_Smooth_Output) closureReport(geometry[iMGlevel], geometry[iMGlevel-1], iMGlevel);
 
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 

@@ -31,11 +31,10 @@
 #include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
-#include <sched.h>
-
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <thread>
 #include <type_traits>
 #include <vector>
 
@@ -1156,7 +1155,7 @@ void CSysMatrix<ScalarType>::LevelSweep(bool forward, const F& row_func) const {
       if (wait[jThread] == 0) continue;
       const uint64_t target = base + wait[jThread];
       for (unsigned spin = 0; level_progress[jThread].steps.load(std::memory_order_acquire) < target; ++spin) {
-        if (spin > 4096) sched_yield();
+        if (spin > 4096) std::this_thread::yield();
       }
     }
 
