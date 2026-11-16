@@ -30,14 +30,15 @@
 TEST_CASE("SST relaxation limits thermal energy when k dominates", "[SST][UnderRelaxation]") {
   UnitQuadTestCase test;
   test.config_options =
-      "SOLVER= RANS\nMACH_NUMBER= 0.5\nREYNOLDS_NUMBER= 1e6\nKIND_TURB_MODEL= SST\nMESH_FORMAT= RECTANGLE\nMESH_BOX_SIZE= 5,5,5\n"
+      "SOLVER= RANS\nMACH_NUMBER= 0.5\nREYNOLDS_NUMBER= 1e6\nKIND_TURB_MODEL= SST\n"
+      "MESH_FORMAT= RECTANGLE\nMESH_BOX_SIZE= 5,5,5\n"
       "MARKER_HEATFLUX= (x_minus,0,x_plus,0,y_minus,0,y_plus,0)\n"
       "TIME_DISCRE_FLOW= EULER_IMPLICIT\nMAX_UPDATE_FLOW= 0.2\n";
   std::stringstream options(test.config_options);
   test.config = std::make_unique<CConfig>(options, SU2_COMPONENT::SU2_CFD, false);
   test.InitGeometry();
-  test.solver = CSolverFactory::CreateSolverContainer(test.config->GetKind_Solver(), test.config.get(),
-                                                      test.geometry.get(), 0);
+  test.solver =
+      CSolverFactory::CreateSolverContainer(test.config->GetKind_Solver(), test.config.get(), test.geometry.get(), 0);
   auto* flow = static_cast<CEulerSolver*>(test.solver[FLOW_SOL]);
   auto* nodes = flow->GetNodes();
   auto* turb = test.solver[TURB_SOL]->GetNodes();
@@ -75,14 +76,15 @@ TEST_CASE("SST relaxation limits thermal energy when k dominates", "[SST][UnderR
 TEST_CASE("JST matrix fourth-order k dissipation does not create pressure waves", "[SST][JST]") {
   UnitQuadTestCase test;
   test.config_options =
-      "SOLVER= RANS\nMACH_NUMBER= 0.5\nREYNOLDS_NUMBER= 1e6\nKIND_TURB_MODEL= SST\nMESH_FORMAT= RECTANGLE\nMESH_BOX_SIZE= 5,5,5\n"
+      "SOLVER= RANS\nMACH_NUMBER= 0.5\nREYNOLDS_NUMBER= 1e6\nKIND_TURB_MODEL= SST\n"
+      "MESH_FORMAT= RECTANGLE\nMESH_BOX_SIZE= 5,5,5\n"
       "MARKER_HEATFLUX= (x_minus,0,x_plus,0,y_minus,0,y_plus,0)\n"
       "CONV_NUM_METHOD_FLOW= JST_MAT\nENTROPY_FIX_COEFF= 0\n";
   std::stringstream options(test.config_options);
   test.config = std::make_unique<CConfig>(options, SU2_COMPONENT::SU2_CFD, false);
   test.InitGeometry();
-  test.solver = CSolverFactory::CreateSolverContainer(test.config->GetKind_Solver(), test.config.get(),
-                                                      test.geometry.get(), 0);
+  test.solver =
+      CSolverFactory::CreateSolverContainer(test.config->GetKind_Solver(), test.config.get(), test.geometry.get(), 0);
   auto* flow = static_cast<CEulerSolver*>(test.solver[FLOW_SOL]);
   auto& nodes = *static_cast<CEulerVariable*>(flow->GetNodes());
   const CVariable* turb = test.solver[TURB_SOL]->GetNodes();
