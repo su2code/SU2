@@ -80,7 +80,7 @@ CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, c
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-  useAccurateJacobian = config->GetUse_Exact_HLLC_Jacobians();
+  useExactJacobian = config->GetUse_Exact_HLLC_Jacobians();
 
   Gamma = config->GetGamma();
 
@@ -291,11 +291,11 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Jacobians for the wave speeds held fixed (in the frame of the face). p* = rho_j (u_j - sR)(u_j - sM) + p_j
    = rho_i (u_i - sL)(u_i - sM) + p_i, so its derivative contains rho_j (sR - u_j) dsM/dU (or rho_i (sL - u_i) dsM/dU).
-   By default the density of the other state is kept, as in the previous implementation (an inexact transcription
-   of the reference, see #2198). USE_EXACT_HLLC_JACOBIANS= YES gives the exact derivative. ---*/
+   By default the derivative of p* uses the density of the opposite state (approximate).
+   USE_EXACT_HLLC_JACOBIANS= YES gives the derivative for fixed wave speeds. ---*/
 
-  const su2double rhoPStar_R = useAccurateJacobian ? Density_j : Density_i;
-  const su2double rhoPStar_L = useAccurateJacobian ? Density_i : Density_j;
+  const su2double rhoPStar_R = useExactJacobian ? Density_j : Density_i;
+  const su2double rhoPStar_L = useExactJacobian ? Density_i : Density_j;
 
   if (sM > 0.0) {
 
@@ -595,7 +595,7 @@ CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned sho
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-  useAccurateJacobian = config->GetUse_Exact_HLLC_Jacobians();
+  useExactJacobian = config->GetUse_Exact_HLLC_Jacobians();
 
   Gamma = config->GetGamma();
 
@@ -683,7 +683,6 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
     ShiftToFaceFrame(nDim, ProjInterfaceVel, UnitNormal, Velocity_i, Enthalpy_i);
     ShiftToFaceFrame(nDim, ProjInterfaceVel, UnitNormal, Velocity_j, Enthalpy_j);
   }
-
 
   sq_vel_i = 0.0;
   sq_vel_j = 0.0;
@@ -834,11 +833,11 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
   /*--- Jacobians for the wave speeds held fixed (in the frame of the face). p* = rho_j (u_j - sR)(u_j - sM) + p_j
    = rho_i (u_i - sL)(u_i - sM) + p_i, so its derivative contains rho_j (sR - u_j) dsM/dU (or rho_i (sL - u_i) dsM/dU).
-   By default the density of the other state is kept, as in the previous implementation (an inexact transcription
-   of the reference, see #2198). USE_EXACT_HLLC_JACOBIANS= YES gives the exact derivative. ---*/
+   By default the derivative of p* uses the density of the opposite state (approximate).
+   USE_EXACT_HLLC_JACOBIANS= YES gives the derivative for fixed wave speeds. ---*/
 
-  const su2double rhoPStar_R = useAccurateJacobian ? Density_j : Density_i;
-  const su2double rhoPStar_L = useAccurateJacobian ? Density_i : Density_j;
+  const su2double rhoPStar_R = useExactJacobian ? Density_j : Density_i;
+  const su2double rhoPStar_L = useExactJacobian ? Density_i : Density_j;
 
   if (sM > 0.0) {
 
