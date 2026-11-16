@@ -1994,11 +1994,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       bool neg_pres_or_rho_j = nonPositive(Primitive_j[prim_idx.Pressure()]) || nonPositive(Primitive_j[prim_idx.Density()]);
 
       if (!neg_pres_or_rho_i && !neg_pres_or_rho_j) {
-
         /*--- Recompute the reconstructed quantities in a thermodynamically consistent way.
          With SST the total enthalpy contains k, taken from the cells (as the vectorized reconstruction does). ---*/
 
-        if (!ideal_gas || low_mach_corr) {
+        if (!ideal_gas || low_mach_corr || tkeInEnergy) {
           ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i, tke_i);
           ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j, tke_j);
         }
@@ -2451,12 +2450,11 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
     const su2double Pressure_i = nodes->GetPressure(iPoint);
 
     /*--- Initialize. ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
+    if (nodes->GetUndivided_Laplacian().cols() > nVar) nodes->SetUnd_Lapl(iPoint, nVar, 0.0);
 
     /*--- Loop over the neighbors of point i. ---*/
     for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-
       bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
       /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
@@ -2468,7 +2466,9 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
         nodes->AddUnd_Lapl(iPoint, iVar, nodes->GetSolution(jPoint,iVar)-nodes->GetSolution(iPoint,iVar));
 
       su2double Pressure_j = nodes->GetPressure(jPoint);
-      nodes->AddUnd_Lapl(iPoint, nVar-1, Pressure_j-Pressure_i);
+      nodes->AddUnd_Lapl(iPoint, nVar - 1, Pressure_j - Pressure_i);
+      if (nodes->GetUndivided_Laplacian().cols() > nVar)
+        nodes->AddUnd_Lapl(iPoint, nVar, nodes->GetRhoTke(jPoint) - nodes->GetRhoTke(iPoint));
     }
   }
   END_SU2_OMP_FOR
@@ -2595,7 +2595,7 @@ void CEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CCon
   PrepareImplicitIteration_impl(precond, geometry, config);
 }
 
-void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
+void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config, CSolver** solver_container) {
   SU2_ZONE_SCOPED
 
   /*--- Loop over the solution update given by relaxing the linear system for this
@@ -2616,6 +2616,11 @@ void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
     for (auto jVar = 1u; jVar <= nDim; jVar++) {
       e_old -= 0.5 * pow(nodes->GetSolution(iPoint, jVar), 2) / rho_old;
       e_new -= 0.5 * pow(nodes->GetSolution(iPoint, jVar) + LinSysSol(iPoint, jVar), 2) / rho_new;
+    }
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+      const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+      e_old -= rho_old * tke;
+      e_new -= rho_new * tke;
     }
     ratio = fmax(ratio, fabs(e_new - e_old) / max(e_old, EPS));
 
@@ -2785,25 +2790,24 @@ void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint
   soundspeed = nodes->GetSoundSpeed(iPoint);
   sq_vel = nodes->GetVelocity2(iPoint);
 
-  /*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
-  preconditioner[0][0] = 0.5*sq_vel;
-  preconditioner[0][nVar-1] = 1.0;
-  for (iDim = 0; iDim < nDim; iDim ++)
-    preconditioner[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
+  const su2double tke = config->GetKind_Turb_Model() == TURB_MODEL::SST ? nodes->GetRhoTke(iPoint) / rho : 0.0;
 
-  for (iDim = 0; iDim < nDim; iDim ++) {
-    preconditioner[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
-    preconditioner[iDim+1][nVar-1] = U_i[iDim+1]/rho;
-    for (jDim = 0; jDim < nDim; jDim ++) {
-      preconditioner[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
+  /*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
+  preconditioner[0][0] = 0.5 * sq_vel - tke;
+  preconditioner[0][nVar - 1] = 1.0;
+  for (iDim = 0; iDim < nDim; iDim++) preconditioner[0][1 + iDim] = -1.0 * U_i[iDim + 1] / rho;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    preconditioner[iDim + 1][0] = (0.5 * sq_vel - tke) * U_i[iDim + 1] / rho;
+    preconditioner[iDim + 1][nVar - 1] = U_i[iDim + 1] / rho;
+    for (jDim = 0; jDim < nDim; jDim++) {
+      preconditioner[iDim + 1][1 + jDim] = -1.0 * U_i[jDim + 1] / rho * U_i[iDim + 1] / rho;
     }
   }
 
-  preconditioner[nVar-1][0] = 0.5*sq_vel*enthalpy;
-  preconditioner[nVar-1][nVar-1] = enthalpy;
-  for (iDim = 0; iDim < nDim; iDim ++)
-    preconditioner[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
-
+  preconditioner[nVar - 1][0] = (0.5 * sq_vel - tke) * enthalpy;
+  preconditioner[nVar - 1][nVar - 1] = enthalpy;
+  for (iDim = 0; iDim < nDim; iDim++) preconditioner[nVar - 1][1 + iDim] = -1.0 * U_i[iDim + 1] / rho * enthalpy;
 
   for (iVar = 0; iVar < nVar; iVar ++ ) {
     for (jVar = 0; jVar < nVar; jVar ++ ) {
@@ -7906,6 +7910,8 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
         const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
         conv_numerics->SetTurbKineticEnergy(tke, tke);
       }
+      if (config->GetKind_FluidModel() != STANDARD_AIR && config->GetKind_FluidModel() != IDEAL_GAS)
+        conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -7943,6 +7949,8 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
        /*--- Primitive variables, and gradient ---*/
 
        visc_numerics->SetPrimitive(V_domain, V_domain);
+       if (config->GetKind_FluidModel() != STANDARD_AIR && config->GetKind_FluidModel() != IDEAL_GAS)
+         visc_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
 
        /*--- Turbulent kinetic energy ---*/

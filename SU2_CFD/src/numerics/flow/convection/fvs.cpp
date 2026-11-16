@@ -145,7 +145,8 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   for (auto iVar = 0u; iVar < MAXNVAR; ++iVar) {
     Fc[iVar] = 0;
   }
-  auto UpdateFlux = [&](const auto* U, auto* Jacobian) {
+  auto UpdateFlux = [&](auto* U, auto* Jacobian, su2double deltaTke) {
+    U[nVar - 1] -= U[0] * deltaTke;
     for (auto iVar = 0u; iVar < nVar; ++iVar) {
       for (auto jVar = 0u; jVar < nVar; ++jVar) {
         su2double Proj_ModJac_Tensor_i = 0.0;
@@ -158,9 +159,14 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
         Fc[iVar] += Proj_ModJac_Tensor_i * Area * U[jVar];
         Jacobian[iVar][jVar] = Proj_ModJac_Tensor_i * Area;
       }
+      Jacobian[iVar][0] -= Jacobian[iVar][nVar - 1] * deltaTke;
+      if (iVar + 1 == nVar) {
+        Fc[iVar] += Lambda[0] * Area * U[0] * deltaTke;
+        Jacobian[iVar][0] += Lambda[0] * Area * deltaTke;
+      }
     }
   };
-  UpdateFlux(U_i, Jacobian_i);
+  UpdateFlux(U_i, Jacobian_i, turb_ke_i - tkest_i);
 
   /*--- Flow eigenvalues at j (Lambda-) ---*/
 
@@ -177,7 +183,7 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Projected flux (f-) ---*/
 
-  UpdateFlux(U_j, Jacobian_j);
+  UpdateFlux(U_j, Jacobian_j, turb_ke_j - tkest_j);
 
   AD::SetPreaccOut(Fc, nVar);
   AD::EndPreacc();

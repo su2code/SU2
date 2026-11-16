@@ -57,12 +57,16 @@ protected:
   /*!
    * \brief Constructor, store some constants and forward args to base.
    */
-  template<class... Ts>
-  CCenteredBase(const CConfig& config, Ts&... args) : Base(config, args...),
-    gamma(config.GetGamma()),
-    fixFactor(config.GetCent_Jac_Fix_Factor()),
-    dynamicGrid(config.GetDynamic_Grid()),
-    tkeVars(config.GetKind_Turb_Model() == TURB_MODEL::SST ? findTurbVars(args...) : nullptr) {
+  template <class... Ts>
+  CCenteredBase(const CConfig& config, Ts&... args)
+      : Base(config, args...),
+        gamma(config.GetGamma()),
+        fixFactor(config.GetCent_Jac_Fix_Factor()),
+        dynamicGrid(config.GetDynamic_Grid()),
+        tkeVars(config.GetKind_Turb_Model() == TURB_MODEL::SST ? findTurbVars(args...) : nullptr) {}
+
+  FORCEINLINE Double getTke(const Int& point) const {
+    return tkeVars ? gatherVariables(point, tkeVars->GetSolution()) : Double(0.0);
   }
 
   /*!
@@ -270,10 +274,10 @@ public:
     }
 
     if (implicit) {
-      const Double dissip_i = fixFactor * (eps2 + eps4*(ni+1)) * lambda;
-      const Double dissip_j = -fixFactor * (eps2 + eps4*(nj+1)) * lambda;
-      scalarDissipationJacobian(V.i, gamma, dissip_i, jac_i);
-      scalarDissipationJacobian(V.j, gamma, dissip_j, jac_j);
+      const Double dissip_i = fixFactor * (eps2 + eps4 * (ni + 1)) * lambda;
+      const Double dissip_j = -fixFactor * (eps2 + eps4 * (nj + 1)) * lambda;
+      scalarDissipationJacobian(V.i, gamma, dissip_i, jac_i, Base::getTke(iPoint));
+      scalarDissipationJacobian(V.j, gamma, dissip_j, jac_j, Base::getTke(jPoint));
     }
   }
 };
@@ -345,21 +349,9 @@ public:
 
     VectorDbl<nVar> scalarDissip;
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      scalarDissip(iVar) = eps2*diffU(iVar) - eps4*(lapl_i(iVar)-lapl_j(iVar));
+      scalarDissip(iVar) = eps2 * diffU(iVar) - eps4 * (lapl_i(iVar) - lapl_j(iVar));
     }
 
-    MatrixDbl<nVar> scalarJac;
-    if (implicit) {
-      scalarJac = Double(0.0);
-      Double factor = fixFactor * (eps2 + 0.5*eps4*(ni+nj+2));
-      scalarDissipationJacobian(avgV, gamma, factor, scalarJac);
-    }
-
-    /*--- Compute matrix dissipation terms. ---*/
-
-    const auto unitProjVel = dot(avgV.velocity(), unitNormal);
-
-    /*--- With SST the total energy contains k, averaged between the cells. ---*/
     Double tke_i = 0.0, tke_j = 0.0;
     if (tkeVars) {
       tke_i = gatherVariables(iPoint, tkeVars->GetSolution());
@@ -367,13 +359,26 @@ public:
     }
     const Double avgTke = 0.5 * (tke_i + tke_j);
 
-    /*--- Delta(rho k) = avg(rho) Delta k + avg(k) Delta rho. The part with Delta k is not a pressure jump: remove it
-     from the 2nd order dissipation before the projection and advect it with the contact wave. The 4th order term
-     keeps it (the Laplacian of k is not available). ---*/
-    const Double rhoDeltaTke = eps2 * avgV.density() * (tke_i - tke_j);
-    scalarDissip(nVar-1) -= rhoDeltaTke;
-    auto pMat = pMatrix(gamma, avgV.density(), avgV.velocity(),
-                        unitProjVel, avgV.speedSound(), unitNormal, avgTke);
+    MatrixDbl<nVar> scalarJac;
+    if (implicit) {
+      scalarJac = Double(0.0);
+      Double factor = fixFactor * (eps2 + 0.5 * eps4 * (ni + nj + 2));
+      scalarDissipationJacobian(avgV, gamma, factor, scalarJac, avgTke);
+    }
+
+    /*--- Compute matrix dissipation terms. ---*/
+
+    const auto unitProjVel = dot(avgV.velocity(), unitNormal);
+
+    // Remove changes in k before acoustic projection, including the fourth-order term.
+    Double rhoDeltaTke = eps2 * avgV.density() * (tke_i - tke_j);
+    if (tkeVars) {
+      const auto lapK_i = gatherVariables(iPoint, solution.GetUndivided_Laplacian(), nVar);
+      const auto lapK_j = gatherVariables(jPoint, solution.GetUndivided_Laplacian(), nVar);
+      rhoDeltaTke -= eps4 * (lapK_i - lapK_j - avgTke * (lapl_i(0) - lapl_j(0)));
+    }
+    scalarDissip(nVar - 1) -= rhoDeltaTke;
+    auto pMat = pMatrix(gamma, avgV.density(), avgV.velocity(), unitProjVel, avgV.speedSound(), unitNormal, avgTke);
 
     auto pMatInv = pMatrixInv(gamma, avgV.density(), avgV.velocity(),
                               unitProjVel, avgV.speedSound(), unitNormal, avgTke);
@@ -485,8 +490,8 @@ public:
     }
 
     if (implicit) {
-      scalarDissipationJacobian(V.i, gamma, fixFactor*dissip, jac_i);
-      scalarDissipationJacobian(V.j, gamma, -fixFactor*dissip, jac_j);
+      scalarDissipationJacobian(V.i, gamma, fixFactor * dissip, jac_i, Base::getTke(iPoint));
+      scalarDissipationJacobian(V.j, gamma, -fixFactor * dissip, jac_j, Base::getTke(jPoint));
     }
   }
 };
@@ -552,8 +557,8 @@ public:
     }
 
     if (implicit) {
-      scalarDissipationJacobian(V.i, gamma, fixFactor*dissip, jac_i);
-      scalarDissipationJacobian(V.j, gamma, -fixFactor*dissip, jac_j);
+      scalarDissipationJacobian(V.i, gamma, fixFactor * dissip, jac_i, Base::getTke(iPoint));
+      scalarDissipationJacobian(V.j, gamma, -fixFactor * dissip, jac_j, Base::getTke(jPoint));
     }
   }
 };

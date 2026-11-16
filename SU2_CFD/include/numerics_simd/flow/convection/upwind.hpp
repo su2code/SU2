@@ -121,10 +121,15 @@ public:
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
     /*--- Recompute density and enthalpy instead of reconstructing. ---*/
+    Double tke_i = 0.0, tke_j = 0.0;
+    if (tkeVars) {
+      tke_i = gatherVariables(iPoint, tkeVars->GetSolution());
+      tke_j = gatherVariables(jPoint, tkeVars->GetSolution());
+    }
     Double nonPhysical;
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
         iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, umusclRamp,
-        typeLimiter, V1st, vector_ij, solution, nonPhysical);
+        typeLimiter, V1st, vector_ij, solution, nonPhysical, tke_i, tke_j);
 
     /*--- Compute conservative variables. ---*/
 
