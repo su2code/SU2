@@ -2790,7 +2790,8 @@ void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint
   soundspeed = nodes->GetSoundSpeed(iPoint);
   sq_vel = nodes->GetVelocity2(iPoint);
 
-  const su2double tke = config->GetKind_Turb_Model() == TURB_MODEL::SST ? nodes->GetRhoTke(iPoint) / rho : 0.0;
+  const su2double tke =
+      config->GetKind_Turb_Model() == TURB_MODEL::SST ? su2double(nodes->GetRhoTke(iPoint) / rho) : su2double(0.0);
 
   /*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
   preconditioner[0][0] = 0.5 * sq_vel - tke;
