@@ -43,7 +43,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Cache Object Files
         uses: actions/cache@v4
@@ -82,7 +82,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download All Build Artifacts
         uses: actions/download-artifact@v5
