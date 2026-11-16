@@ -91,6 +91,42 @@ class CFluidModel {
    */
   static unique_ptr<CDiffusivityModel> MakeMassDiffusivityModel(const CConfig* config, unsigned short iSpecies);
 
+  /*!
+   * \brief Newton-Raphson iteration on temperature, shared by the models that invert the enthalpy iteratively.
+   * \note A step beyond a bound is clamped to it and the iteration continues, a second step beyond the bound
+   *       taken from the bound itself means that the solution is out of range.
+   * \param[in] temperatureStep - Callable returning the Newton step, (h_target - h(T)) / Cp(T), at a temperature.
+   * \param[in] minTemperature - Lower bound for the temperature.
+   * \param[in] maxTemperature - Upper bound for the temperature.
+   * \param[in,out] temperature - Start of the iteration on entry, last iterate on exit.
+   * \return True if the iteration converged inside the bounds.
+   */
+  template <class Scalar, class StepFunction>
+  static bool SolveTemperatureNewton(StepFunction&& temperatureStep, const Scalar& minTemperature,
+                                     const Scalar& maxTemperature, Scalar& temperature) {
+    /*--- Convergence criterion for temperature, high accuracy needed for restarts. ---*/
+    constexpr passivedouble tolerance = 1e-5;
+    constexpr int maxIterations = 20;
+
+    bool atBound = false;
+    for (int iter = 0; iter < maxIterations; ++iter) {
+      const Scalar delta = temperatureStep(temperature);
+      if (!std::isfinite(SU2_TYPE::GetValue(delta))) break;
+
+      const bool belowMin = temperature + delta < minTemperature;
+      if (belowMin || temperature + delta > maxTemperature) {
+        if (atBound) break;
+        temperature = belowMin ? minTemperature : maxTemperature;
+        atBound = true;
+        continue;
+      }
+      temperature += delta;
+      atBound = false;
+      if (fabs(delta) <= tolerance) return true;
+    }
+    return false;
+  }
+
  public:
   virtual ~CFluidModel() {}
 

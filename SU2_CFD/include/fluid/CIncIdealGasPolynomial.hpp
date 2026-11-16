@@ -28,6 +28,7 @@
 #pragma once
 
 #include <array>
+#include <limits>
 
 #include "CFluidModel.hpp"
 
@@ -107,50 +108,31 @@ class CIncIdealGasPolynomial final : public CFluidModel {
    */
   bool SolveTDState_h(su2double val_enthalpy, su2double val_temperature_guess,
                       const su2double* val_scalars = nullptr) override {
-    /*--- Convergence criterion for temperature, high accuracy needed for restarts. ---*/
-    constexpr passivedouble tolerance = 1e-5;
-    constexpr int maxIterations = 20;
-
     Enthalpy = val_enthalpy;
     /*--- The guess is passive, the converged temperature does not depend on it. ---*/
     su2double temperature = (val_temperature_guess > 0.0) ? SU2_TYPE::GetValue(val_temperature_guess)
                                                           : Std_Ref_Temp_ND;
     su2double Cp_iter = coeffs_[0];
-    bool converged = false;
-    bool atMinimum = false;
 
-    /*--- Compute temperature given enthalpy using Newton-Raphson. ---*/
-    for (int iter = 0; iter < maxIterations; ++iter) {
-      /*--- Evaluate Cp and the enthalpy from the coefficients at the current temperature. ---*/
+    /*--- Newton step from Cp and the enthalpy evaluated from the coefficients at a temperature. ---*/
+    auto temperatureStep = [&](const su2double& temp_iter) {
       Cp_iter = coeffs_[0];
-      su2double Enthalpy_iter = coeffs_[0] * (temperature - Std_Ref_Temp_ND);
+      su2double Enthalpy_iter = coeffs_[0] * (temp_iter - Std_Ref_Temp_ND);
       su2double t_i = 1.0;
       su2double tref_i = 1.0;
       for (int i = 1; i < N; ++i) {
-        t_i *= temperature;
+        t_i *= temp_iter;
         tref_i *= Std_Ref_Temp_ND;
         Cp_iter += coeffs_[i] * t_i;
-        Enthalpy_iter += coeffs_[i] * (t_i * temperature - tref_i * Std_Ref_Temp_ND) / (i + 1);
+        Enthalpy_iter += coeffs_[i] * (t_i * temp_iter - tref_i * Std_Ref_Temp_ND) / (i + 1);
       }
+      return su2double((Enthalpy - Enthalpy_iter) / Cp_iter);
+    };
 
-      const su2double delta = (Enthalpy - Enthalpy_iter) / Cp_iter;
-
-      /*--- An overshoot below the minimum temperature is clamped and the iteration continues. With a positive Cp
-       the enthalpy increases with temperature, so a step below the minimum taken from the minimum itself means
-       the solution is below it, stop and report failure. ---*/
-      if (temperature + delta < Temperature_Min) {
-        if (atMinimum) break;
-        temperature = Temperature_Min;
-        atMinimum = true;
-        continue;
-      }
-      temperature += delta;
-      atMinimum = false;
-      if (fabs(delta) <= tolerance) {
-        converged = true;
-        break;
-      }
-    }
+    /*--- Only the minimum temperature bounds the iteration. With a positive Cp the enthalpy increases with
+     temperature, so a step below the minimum taken from the minimum itself means the solution is below it. ---*/
+    const su2double Temperature_Max = std::numeric_limits<passivedouble>::max();
+    const bool converged = SolveTemperatureNewton(temperatureStep, Temperature_Min, Temperature_Max, temperature);
 
     Temperature = temperature;
     Cp = Cp_iter;

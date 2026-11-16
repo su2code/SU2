@@ -1509,9 +1509,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       if (multicomponent) {
         const su2double* scalar_i = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
         const su2double* scalar_j = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(jPoint);
-        const bool failed_i = ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i);
-        const bool failed_j = ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j);
-        temperature_failed = failed_i || failed_j;
+        const bool consistent_i = ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i);
+        const bool consistent_j = ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j);
+        temperature_failed = !(consistent_i && consistent_j);
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found,
@@ -1597,7 +1597,7 @@ bool CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, un
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
   primitive[prim_idx.Density()] = fluidModel->GetDensity();
 
-  return !converged;
+  return converged;
 }
 
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,

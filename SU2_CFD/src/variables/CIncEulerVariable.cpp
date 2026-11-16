@@ -99,7 +99,7 @@ bool CIncEulerVariable::SetThermodynamicState(unsigned long iPoint, CFluidModel*
 
   /*--- Set the value of the density ---*/
 
-  const auto check_dens = check_temp ? true : SetDensity(iPoint, FluidModel->GetDensity());
+  const auto check_dens = check_temp || SetDensity(iPoint, FluidModel->GetDensity());
 
   if (!(check_dens || check_temp || temperature_failed)) return true;
 
