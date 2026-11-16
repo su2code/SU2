@@ -363,14 +363,18 @@ class CPhysicalGeometry final : public CGeometry {
   vector<unsigned long> LinkAnisotropicLines(const vector<idx_t>& adjwgt, vector<char>& lineEdge) const;
 
   /*!
-   * \brief Moves each line to the partition that holds most of its points.
+   * \brief Moves each split line to the partition that holds most of its points and stays within the load tolerance.
    * \param[in] root - Line roots from LinkAnisotropicLines.
+   * \param[in] vwgt - Vertex weight of every local point.
+   * \param[in] maxImbalance - Largest partition load over the mean load.
    * \param[in,out] part - Partition of every local point.
    * \param[out] longestLine - Number of points of the longest line.
+   * \param[out] nSplit - Number of lines left split.
    * \return Number of points that changed partition, summed over all ranks.
    */
-  unsigned long KeepLinesTogether(const vector<unsigned long>& root, vector<idx_t>& part,
-                                  unsigned long& longestLine) const;
+  unsigned long KeepLinesTogether(const vector<unsigned long>& root, const vector<idx_t>& vwgt,
+                                  passivedouble maxImbalance, vector<idx_t>& part, unsigned long& longestLine,
+                                  unsigned long& nSplit) const;
 #endif
 
   /*!

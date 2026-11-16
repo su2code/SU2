@@ -7449,14 +7449,14 @@ vector<unsigned long> CPhysicalGeometry::LinkAnisotropicLines(const vector<idx_t
   return root;
 }
 
-unsigned long CPhysicalGeometry::KeepLinesTogether(const vector<unsigned long>& root, vector<idx_t>& part,
-                                                   unsigned long& longestLine) const {
+unsigned long CPhysicalGeometry::KeepLinesTogether(const vector<unsigned long>& root, const vector<idx_t>& vwgt,
+                                                   passivedouble maxImbalance, vector<idx_t>& part,
+                                                   unsigned long& longestLine, unsigned long& nSplit) const {
   CLinearPartitioner pointPartitioner(Global_nPointDomain, 0);
-  const unsigned long firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
 
-  /*--- The owner of each root counts in which partitions its line lies. ---*/
+  /*--- The owner of each root collects, per partition, the points and vertex weight of its line. ---*/
   vector<int> nSend(size, 0), nRecv(size), sendDisp(size + 1, 0), recvDisp(size + 1, 0);
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) nSend[pointPartitioner.GetRankContainingIndex(root[iPoint])] += 2;
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) nSend[pointPartitioner.GetRankContainingIndex(root[iPoint])] += 3;
   SU2_MPI::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, SU2_MPI::GetComm());
   for (int iRank = 0; iRank < size; iRank++) {
     sendDisp[iRank + 1] = sendDisp[iRank] + nSend[iRank];
@@ -7468,47 +7468,94 @@ unsigned long CPhysicalGeometry::KeepLinesTogether(const vector<unsigned long>& 
     auto& slot = next[pointPartitioner.GetRankContainingIndex(root[iPoint])];
     sendBuf[slot++] = root[iPoint];
     sendBuf[slot++] = static_cast<unsigned long>(part[iPoint]);
+    sendBuf[slot++] = static_cast<unsigned long>(vwgt[iPoint]);
   }
   SU2_MPI::Alltoallv(sendBuf.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvBuf.data(), nRecv.data(),
                      recvDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
-  map<unsigned long, map<unsigned long, unsigned long>> votes;
-  for (auto k = 0ul; k < recvBuf.size(); k += 2) votes[recvBuf[k]][recvBuf[k + 1]]++;
+  map<unsigned long, map<unsigned long, pair<unsigned long, unsigned long>>> lines;
+  for (auto k = 0ul; k < recvBuf.size(); k += 3) {
+    auto& share = lines[recvBuf[k]][recvBuf[k + 1]];
+    share.first++;
+    share.second += recvBuf[k + 2];
+  }
 
   unsigned long longest = 0;
-  for (const auto& line : votes) {
+  for (const auto& line : lines) {
     unsigned long length = 0;
-    for (const auto& vote : line.second) length += vote.second;
+    for (const auto& share : line.second) length += share.second.first;
     longest = max(longest, length);
   }
   SU2_MPI::Allreduce(&longest, &longestLine, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
 
-  vector<unsigned long> decision(nPoint);
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) decision[iPoint] = static_cast<unsigned long>(part[iPoint]);
-  for (const auto& line : votes) {
-    unsigned long best = 0, bestCount = 0;
-    for (const auto& vote : line.second) {
-      if (vote.second > bestCount) {
-        best = vote.first;
-        bestCount = vote.second;
-      }
+  /*--- Every rank gets the split lines, as root, number of partitions, then partition, points and
+   *    weight per partition. Ranks own consecutive roots, so the gathered list is in root order. ---*/
+  vector<unsigned long> mine;
+  for (const auto& line : lines) {
+    if (line.second.size() < 2) continue;
+    mine.push_back(line.first);
+    mine.push_back(line.second.size());
+    for (const auto& share : line.second) {
+      mine.push_back(share.first);
+      mine.push_back(share.second.first);
+      mine.push_back(share.second.second);
     }
-    decision[line.first - firstIndex] = best;
   }
+  const int nMine = mine.size();
+  vector<int> nAll(size), allDisp(size + 1, 0);
+  SU2_MPI::Allgather(&nMine, 1, MPI_INT, nAll.data(), 1, MPI_INT, SU2_MPI::GetComm());
+  for (int iRank = 0; iRank < size; iRank++) allDisp[iRank + 1] = allDisp[iRank] + nAll[iRank];
+  vector<unsigned long> all(allDisp[size]);
+  SU2_MPI::Allgatherv(mine.data(), nMine, MPI_UNSIGNED_LONG, all.data(), nAll.data(), allDisp.data(), MPI_UNSIGNED_LONG,
+                      SU2_MPI::GetComm());
 
-  /*--- Every point takes the partition of its line, unless that would leave a rank without points. ---*/
-  const auto chosen = FetchFromOwners(root, decision);
-  vector<unsigned long> count(size, 0), countGlobal(size);
-  for (const auto iPart : chosen) count[iPart]++;
-  SU2_MPI::Allreduce(count.data(), countGlobal.data(), size, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  if (*min_element(countGlobal.begin(), countGlobal.end()) == 0) return 0;
+  vector<unsigned long> load(size, 0), loadGlobal(size);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) load[part[iPoint]] += vwgt[iPoint];
+  SU2_MPI::Allreduce(load.data(), loadGlobal.data(), size, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  const passivedouble maxLoad =
+      maxImbalance * passivedouble(accumulate(loadGlobal.begin(), loadGlobal.end(), 0ul)) / size;
+
+  /*--- Each line goes to the partition holding most of it that stays within the load tolerance and
+   *    leaves no partition empty. All ranks take the same decisions in the same order. ---*/
+  unordered_map<unsigned long, unsigned long> target;
+  vector<std::array<unsigned long, 3>> shares;
+  nSplit = 0;
+  for (auto k = 0ul; k < all.size();) {
+    const auto lineRoot = all[k];
+    const auto nShares = all[k + 1];
+    k += 2;
+    shares.resize(nShares);
+    unsigned long weight = 0;
+    for (auto& share : shares) {
+      share = {all[k], all[k + 1], all[k + 2]};
+      weight += share[2];
+      k += 3;
+    }
+    sort(shares.begin(), shares.end(),
+         [](const auto& a, const auto& b) { return (a[1] > b[1]) || ((a[1] == b[1]) && (a[0] < b[0])); });
+
+    bool placed = false;
+    for (const auto& to : shares) {
+      if (passivedouble(loadGlobal[to[0]] + weight - to[2]) > maxLoad) continue;
+      bool empties = false;
+      for (const auto& from : shares) empties = empties || ((from[0] != to[0]) && (loadGlobal[from[0]] == from[2]));
+      if (empties) continue;
+
+      for (const auto& from : shares) loadGlobal[from[0]] -= from[2];
+      loadGlobal[to[0]] += weight;
+      target[lineRoot] = to[0];
+      placed = true;
+      break;
+    }
+    nSplit += !placed;
+  }
 
   unsigned long moved = 0, movedGlobal = 0;
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    if (static_cast<unsigned long>(part[iPoint]) != chosen[iPoint]) {
-      part[iPoint] = static_cast<idx_t>(chosen[iPoint]);
-      moved++;
-    }
+    const auto it = target.find(root[iPoint]);
+    if ((it == target.end()) || (static_cast<unsigned long>(part[iPoint]) == it->second)) continue;
+    part[iPoint] = static_cast<idx_t>(it->second);
+    moved++;
   }
   SU2_MPI::Allreduce(&moved, &movedGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   return movedGlobal;
@@ -7720,8 +7767,8 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
    *    fragments give tangled coarse control volumes. ---*/
 
   if (anisotropic) {
-    unsigned long longestLine = 0;
-    const auto moved = KeepLinesTogether(lineRoot, part, longestLine);
+    unsigned long longestLine = 0, nSplit = 0;
+    const auto moved = KeepLinesTogether(lineRoot, vwgt, ubvec, part, longestLine, nSplit);
     /*--- The imbalance is measured in the vertex weights ParMETIS balances. ---*/
     vector<unsigned long> load(size, 0), loadGlobal(size);
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) load[part[iPoint]] += vwgt[iPoint];
@@ -7730,7 +7777,9 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
     const auto sumLoad = accumulate(loadGlobal.begin(), loadGlobal.end(), 0ul);
     if (rank == MASTER_NODE) {
       cout << "Longest anisotropic line " << longestLine << " points, moved " << moved
-           << " points to keep lines on one rank, load imbalance " << double(maxLoad) * size / sumLoad << "." << endl;
+           << " points to keep lines on one rank, " << nSplit
+           << " lines left split by the load tolerance, load imbalance " << double(maxLoad) * size / sumLoad << "."
+           << endl;
     }
   }
 
