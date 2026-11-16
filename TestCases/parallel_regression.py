@@ -514,6 +514,22 @@ def main():
     turb_flatplate.test_vals = [-0.171203, 0.004017, 10.000000, -1.752822]
     test_list.append(turb_flatplate)
 
+    # FLAT PLATE, LINEAR MULTIGRID PROLONGATION, FIRST ORDER AT THE WALL END, ANISOTROPIC PARTITIONING
+    turb_flatplate_mg_linear           = TestCase('turb_flatplate_mg_linear')
+    turb_flatplate_mg_linear.cfg_dir   = "rans/flatplate"
+    turb_flatplate_mg_linear.cfg_file  = "turb_SA_flatplate_mg_linear.cfg"
+    turb_flatplate_mg_linear.test_iter = 20
+    turb_flatplate_mg_linear.test_vals = [-5.090006, -6.110316, -0.187162, 0.002996, 10.000000, -2.051853]
+    test_list.append(turb_flatplate_mg_linear)
+
+    # FLAT PLATE, SST, FULL MULTIGRID STARTUP, TURBULENCE SUB-ITERATIONS
+    turb_flatplate_sst_fullmg           = TestCase('turb_flatplate_sst_fullmg')
+    turb_flatplate_sst_fullmg.cfg_dir   = "rans/flatplate"
+    turb_flatplate_sst_fullmg.cfg_file  = "turb_SST_flatplate_fullmg.cfg"
+    turb_flatplate_sst_fullmg.test_iter = 20
+    turb_flatplate_sst_fullmg.test_vals = [-4.774031, -2.108909, 8.479256, -0.187135, 0.003170]
+    test_list.append(turb_flatplate_sst_fullmg)
+
     # Flat plate (compressible) with species inlet
     turb_flatplate_species           = TestCase('turb_flatplate_species')
     turb_flatplate_species.cfg_dir   = "rans/flatplate"

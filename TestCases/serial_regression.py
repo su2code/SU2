@@ -271,6 +271,22 @@ def main():
     turb_flatplate.test_vals = [-2.770068, -6.060857, -0.187454, 0.003164, 10.000000, -1.844116]
     test_list.append(turb_flatplate)
 
+    # FLAT PLATE, LINEAR MULTIGRID PROLONGATION, FIRST ORDER AT THE WALL END, ANISOTROPIC PARTITIONING
+    turb_flatplate_mg_linear           = TestCase('turb_flatplate_mg_linear')
+    turb_flatplate_mg_linear.cfg_dir   = "rans/flatplate"
+    turb_flatplate_mg_linear.cfg_file  = "turb_SA_flatplate_mg_linear.cfg"
+    turb_flatplate_mg_linear.test_iter = 20
+    turb_flatplate_mg_linear.test_vals = [-4.750399, -6.020779, -0.186911, 0.002849, 7.000000, -3.025969]
+    test_list.append(turb_flatplate_mg_linear)
+
+    # FLAT PLATE, SST, FULL MULTIGRID STARTUP, TURBULENCE SUB-ITERATIONS
+    turb_flatplate_sst_fullmg           = TestCase('turb_flatplate_sst_fullmg')
+    turb_flatplate_sst_fullmg.cfg_dir   = "rans/flatplate"
+    turb_flatplate_sst_fullmg.cfg_file  = "turb_SST_flatplate_fullmg.cfg"
+    turb_flatplate_sst_fullmg.test_iter = 20
+    turb_flatplate_sst_fullmg.test_vals = [-5.436484, -2.103105, 7.808961, -0.187073, 0.003117]
+    test_list.append(turb_flatplate_sst_fullmg)
+
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SST
     turb_wallfunction_flatplate_sst           = TestCase('turb_sst_wallfunction_flatplate')
     turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
