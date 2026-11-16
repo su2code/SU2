@@ -101,9 +101,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   }
 
   /*--- Compute gradient of the primitive variables. Coarse levels take the viscous flux from the edge
-   *    difference only, as their Jacobian does. ---*/
+   *    difference only, as their Jacobian does, except for the output call that feeds the turbulence
+   *    model on the active level of the full-multigrid startup. ---*/
 
-  if (iMesh != MESH_0) {
+  if ((iMesh != MESH_0) && !Output) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
       for (unsigned short iVar = 0; iVar < nPrimVarGrad; iVar++)
