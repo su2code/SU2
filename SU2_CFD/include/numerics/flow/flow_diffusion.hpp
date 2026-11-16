@@ -164,6 +164,18 @@ protected:
                        su2double val_dist_ij_2,
                        const unsigned short val_nPrimVar);
 
+  /*!
+   * \brief Distance for the Jacobian. With the corrected gradient it is |d|^2/|d.n|, which matches the normal
+   * derivative of the corrected gradient, bounded by 10|d| for edges nearly tangent to the face.
+   */
+  su2double JacobianDistance(su2double dist_ij_2, const su2double* edge_vector, const su2double* unit_normal) const {
+    const su2double dist_ij = sqrt(dist_ij_2);
+    if (!correct_gradient) return dist_ij;
+    su2double proj = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) proj += edge_vector[iDim] * unit_normal[iDim];
+    return dist_ij_2 / fmax(fabs(proj), 0.1 * dist_ij);
+  }
+
 public:
 
   /*!
