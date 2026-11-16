@@ -3,7 +3,7 @@
 ## \file preconfigure.py
 #  \brief An preconfigure script for setting up the build environment
 #  \author T. Albring and F. Poli
-#  \version 8.5.0 "Harrier"
+#  \version 8.6.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -73,6 +73,13 @@ def build_ninja():
             # Specify C++17
             env = os.environ.copy()
             env["CXXFLAGS"] = env.get("CXXFLAGS", "") + " -std=c++17"
+            # ninja is a build tool and must not be instrumented by sanitizers
+            for var in ("CFLAGS", "CXXFLAGS", "LDFLAGS"):
+                env[var] = " ".join(
+                    f
+                    for f in env.get(var, "").split()
+                    if not f.startswith("-fsanitize")
+                )
             subprocess.run(
                 ["python3", "configure.py", "--bootstrap"], cwd=ninjapath, env=env
             )

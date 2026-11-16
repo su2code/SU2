@@ -3,7 +3,7 @@
  * \brief Declaration of numerics classes for convective schemes for
  *        the pressure based solver, the implementation is in pressure_based.cpp.
  * \author T. Aalbers
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

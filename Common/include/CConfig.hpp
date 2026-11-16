@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -609,6 +609,7 @@ private:
   MUSCL_Kappa_Heat,        /*!< \brief Blending coefficient for U-MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_Kappa_AdjFlow,     /*!< \brief Blending coefficient for U-MUSCL scheme for the adj flow equations.*/
   MUSCL_Kappa_Species;     /*!< \brief Blending coefficient for U-MUSCL scheme for the species equations.*/
+  bool Use_Exact_HLLC_Jacobians; /*!< \brief Exact HLLC Jacobians with wave speeds held fixed. */
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
@@ -4868,6 +4869,15 @@ public:
    */
   bool GetMUSCL_Flow(void) const { return MUSCL_Flow; }
 
+  /*! \brief Whether the turbulence equations reconstruct. */
+  bool GetMUSCL_Turb(void) const { return MUSCL_Turb; }
+
+  /*! \brief Whether the species equations reconstruct. */
+  bool GetMUSCL_Species(void) const { return MUSCL_Species; }
+
+  /*! \brief Whether the heat equation reconstructs. */
+  bool GetMUSCL_Heat(void) const { return MUSCL_Heat; }
+
   /*!
    * \brief Get if edges at no-slip wall ends and sharp wall edges are reconstructed to first order.
    */
@@ -4899,6 +4909,9 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
+
+  /*!\brief Get whether to use exact HLLC Jacobians with wave speeds held fixed. */
+  bool GetUse_Exact_HLLC_Jacobians(void) const { return Use_Exact_HLLC_Jacobians; }
 
   /*!
    * \brief Get whether to "Use Accurate Jacobians" for Standard SA turbulence model.

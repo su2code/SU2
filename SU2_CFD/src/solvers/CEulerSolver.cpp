@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -4453,7 +4453,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    * Institution: Computational and Theoretical Fluid Dynamics (CTFD),
    *            CSIR - National Aerospace Laboratories, Bangalore
    *            Academy of Scientific and Innovative Research, Ghaziabad
-   * \version 8.5.0 "Harrier"
+   * \version 8.6.0 "Harrier"
    * First release date : September 26 2023
    * modified on:
    *
@@ -7874,6 +7874,8 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      if (config->GetKind_FluidModel() != STANDARD_AIR && config->GetKind_FluidModel() != IDEAL_GAS)
+        conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -7911,6 +7913,8 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
        /*--- Primitive variables, and gradient ---*/
 
        visc_numerics->SetPrimitive(V_domain, V_domain);
+       if (config->GetKind_FluidModel() != STANDARD_AIR && config->GetKind_FluidModel() != IDEAL_GAS)
+         visc_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
 
        /*--- Turbulent kinetic energy ---*/

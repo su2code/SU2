@@ -2,7 +2,7 @@
  * \file hllc.hpp
  * \brief Declaration of HLLC numerics classes, implemented in hllc.cpp.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,11 +34,13 @@
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
  * \author G. Gori, Politecnico di Milano
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  */
 class CUpwHLLC_Flow final : public CNumerics {
 private:
+  friend struct HLLCJacobianTestAccess;
   bool implicit, dynamic_grid;
+  bool useExactJacobian; /*!< \brief Jacobians computed exactly for fixed wave speeds (USE_EXACT_HLLC_JACOBIANS). */
   unsigned short iDim, jDim, iVar, jVar;
 
   su2double *IntermediateState;
@@ -55,6 +57,8 @@ private:
   su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
 
   su2double* Flux;        /*!< \brief The flux accross the face. */
+  bool fixedWaveSpeeds = false;     /*!< \brief Use fixed_sL, fixed_sR as wave speeds (verification of the Jacobians). */
+  su2double fixed_sL = 0.0, fixed_sR = 0.0;
   su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
@@ -86,11 +90,13 @@ public:
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
  * \author G. Gori, Politecnico di Milano
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  */
 class CUpwGeneralHLLC_Flow final : public CNumerics {
 private:
+  friend struct HLLCJacobianTestAccess;
   bool implicit, dynamic_grid;
+  bool useExactJacobian; /*!< \brief Jacobians computed exactly for fixed wave speeds (USE_EXACT_HLLC_JACOBIANS). */
   unsigned short iDim, jDim, iVar, jVar;
 
   su2double *IntermediateState;
@@ -108,6 +114,8 @@ private:
   su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
 
   su2double* Flux;        /*!< \brief The flux accross the face. */
+  bool fixedWaveSpeeds = false;     /*!< \brief Use fixed_sL, fixed_sR as wave speeds (verification of the Jacobians). */
+  su2double fixed_sL = 0.0, fixed_sR = 0.0;
   su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 

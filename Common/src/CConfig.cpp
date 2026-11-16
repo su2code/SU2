@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2213,6 +2213,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
   /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
+  /*!\brief USE_EXACT_HLLC_JACOBIANS \n DESCRIPTION: Exact HLLC Jacobians with wave speeds held fixed \ingroup Config*/
+  addBoolOption("USE_EXACT_HLLC_JACOBIANS", Use_Exact_HLLC_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
   addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Control numerical properties of the global Jacobian matrix using a multiplication factor for incompressible central schemes \ingroup Config*/
@@ -3610,7 +3612,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "\n";
     cout << "-------------------------------------------------------------------------\n";
     cout << "|    ___ _   _ ___                                                      |\n";
-    cout << "|   / __| | | |_  )   Release 8.5.0 \"Harrier\"                           |\n";
+    cout << "|   / __| | | |_  )   Release 8.6.0 \"Harrier\"                           |\n";
     cout << "|   \\__ \\ |_| |/ /                                                      |\n";
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n"; break;
