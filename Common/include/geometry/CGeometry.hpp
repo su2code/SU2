@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -238,6 +238,8 @@ class CGeometry {
     std::vector<unsigned long> colorOffsets;
 
     std::vector<uint8_t> lineletColor; /*!< \brief Coloring transfered to points, for visualization. */
+
+    bool computed = false; /*!< \brief Set once the (collective) computation is done, even if a rank has no linelets. */
   };
 
  protected:

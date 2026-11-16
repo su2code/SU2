@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.5.0 "Harrier"
+#  \version 8.6.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -188,7 +188,7 @@ def main():
     discadj_sliding_interface.cfg_dir   = "disc_adj_ffi/sliding_interface"
     discadj_sliding_interface.cfg_file  = "circles.cfg"
     discadj_sliding_interface.test_iter = 10
-    discadj_sliding_interface.test_vals = [10.000000, -4.395143, -4.419431]
+    discadj_sliding_interface.test_vals = [10.000000, -4.403519, -4.419431]
     test_list.append(discadj_sliding_interface)
 
     #######################################################

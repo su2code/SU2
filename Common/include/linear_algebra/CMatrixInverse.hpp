@@ -3,7 +3,7 @@
  * \brief Dense small-matrix inversion via Gauss-Jordan elimination, shared between the host
  *        (CSysMatrix::MatrixInverse) and device (CSysPreconditionerGPU.cu) implementations.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

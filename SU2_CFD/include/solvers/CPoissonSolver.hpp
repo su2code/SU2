@@ -2,7 +2,7 @@
  * \file CPoissonSolver.hpp
  * \brief Headers of the CPoissonSolver class
  * \author T. Aalbers
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \class CPoissonSolver
  * \brief Main class for defining the finite-volume poisson equation solver.
  * \author T. Aalbers
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  */
 class CPoissonSolver final : public CScalarSolver<CPoissonVariable> {
 protected:
@@ -131,10 +131,16 @@ public:
                     unsigned long Iteration) override {}
 
   /*!
-   * \brief No dual time stepping as there is no time stepping at all.
+   * \brief Add the change of density in time to the mass balance (variable density only).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iRKStep,
-                            unsigned short iMesh, unsigned short RunTime_EqSystem) override {}
+                            unsigned short iMesh, unsigned short RunTime_EqSystem) override;
 
   /*!
    * \brief The pressure correction is reset to zero every iteration (see Preprocessing), so it

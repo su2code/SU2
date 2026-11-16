@@ -2,7 +2,7 @@
  * \file CSysSolve.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1087,6 +1087,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
       p.Initialize(nBlk, nBlkDomain, nVar, nullptr);
       v.Initialize(nBlk, nBlkDomain, nVar, nullptr);
       z.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+      if (config->GetComm_Level() == COMM_FULL) x_best.Initialize(nBlk, nBlkDomain, nVar, nullptr);
 
       bcg_ready = true;
     }
@@ -1135,6 +1136,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Initialization ---*/
 
   ScalarType alpha = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
+  ScalarType norm_best = norm_r;
   p = ScalarType(0.0);
   v = ScalarType(0.0);
   r_0 = r;
@@ -1195,6 +1197,10 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
       /*--- Check if solution has converged, else output the relative residual if necessary ---*/
 
       norm_r = r.norm();
+      if ((i == 0) || (norm_r < norm_best)) {
+        norm_best = norm_r;
+        x_best = x;
+      }
       if (norm_r < tol * norm0) break;
       if (((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0)) {
         SU2_OMP_MASTER
@@ -1202,6 +1208,14 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
         END_SU2_OMP_MASTER
       }
     }
+  }
+
+  /*--- BCGSTAB does not reduce the residual monotonically, return the best iterate.
+   * The initial guess is not a candidate, returning it would mean no update at all. ---*/
+
+  if ((config->GetComm_Level() == COMM_FULL) && (norm_r > norm_best)) {
+    x = x_best;
+    norm_r = norm_best;
   }
 
   /*--- Recalculate final residual (this should be optional) ---*/
