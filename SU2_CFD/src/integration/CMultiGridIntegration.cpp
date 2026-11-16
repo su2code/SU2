@@ -654,11 +654,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   unsigned short iRKLimit = config->GetnRKStep();
 
   /*--- Wall end weights for every level, once the hierarchy exists. ---*/
-  if ((iMesh == MESH_0) && correctionWeight.empty()) {
+  if ((iMesh == MESH_0) && !correctionWeightReady) {
     const auto* flowNodes = dynamic_cast<const CEulerVariable*>(solver_container_fine[FLOW_SOL]->GetNodes());
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    ComputeCorrectionWeights(geometry[iZone][iInst], flowNodes, config->GetnMGLevels());
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+    ComputeCorrectionWeights(geometry[iZone][iInst], flowNodes, config);
   }
 
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
@@ -1497,57 +1495,73 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 }
 
 void CMultiGridIntegration::ComputeCorrectionWeights(CGeometry** geometry, const CEulerVariable* flowNodes,
-                                                     unsigned short nLevels) {
+                                                     const CConfig* config) {
   /*--- Coarse CVs over which the correction fades in from a wall end. ---*/
   constexpr unsigned long nBlend = 4;
+  const auto nLevels = config->GetnMGLevels();
 
-  correctionWeight.assign(nLevels, {});
-  if (!flowNodes) return;
+  if (!flowNodes || !config->GetMUSCL_FirstOrderWallEnds()) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(correctionWeightReady = true;)
+    return;
+  }
 
   /*--- Points of each level holding a wall end, passed down from the finest grid. ---*/
-  vector<char> wallEnd(geometry[MESH_0]->GetnPoint(), 0);
-  for (auto iPoint = 0ul; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++)
-    wallEnd[iPoint] = flowNodes->SkipMGCorrection(iPoint);
+  vector<char> wallEnd;
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    correctionWeight.assign(nLevels, {});
+    wallEnd.assign(geometry[MESH_0]->GetnPoint(), 0);
+    for (auto iPoint = 0ul; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++)
+      wallEnd[iPoint] = flowNodes->SkipMGCorrection(iPoint);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  constexpr auto UNREACHED = std::numeric_limits<unsigned long>::max();
-  vector<unsigned long> hops, front, next;
+  auto hopsOf = [&](unsigned long iPoint) { return static_cast<unsigned long>(SU2_TYPE::Int(correctionHops(iPoint, 0))); };
+
+  /*--- The distance grows one layer per pass on every rank, and each pass hands the halos their
+   *    owner's value, so a front crosses partition interfaces as if there were none. ---*/
 
   for (unsigned short iMesh = 0; iMesh < nLevels; iMesh++) {
-    const auto* fine = geometry[iMesh];
-    const auto* coarse = geometry[iMesh + 1];
+    auto* coarse = geometry[iMesh + 1];
+    const auto nDomain = coarse->GetnPointDomain();
 
-    vector<char> coarseWallEnd(coarse->GetnPoint(), 0);
-    hops.assign(coarse->GetnPoint(), UNREACHED);
-    front.clear();
-    for (auto iCoarse = 0ul; iCoarse < coarse->GetnPointDomain(); iCoarse++)
-      for (auto iChild = 0u; iChild < coarse->nodes->GetnChildren_CV(iCoarse); iChild++)
-        if (wallEnd[coarse->nodes->GetChildren_CV(iCoarse, iChild)]) {
-          coarseWallEnd[iCoarse] = 1;
-          hops[iCoarse] = 0;
-          front.push_back(iCoarse);
-          break;
-        }
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      correctionHops.Initialize(coarse->GetnPoint(), nDomain, 1, su2double(nBlend));
+      for (auto iCoarse = 0ul; iCoarse < nDomain; iCoarse++)
+        for (auto iChild = 0u; iChild < coarse->nodes->GetnChildren_CV(iCoarse); iChild++)
+          if (wallEnd[coarse->nodes->GetChildren_CV(iCoarse, iChild)]) correctionHops(iCoarse, 0) = 0.0;
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-    for (unsigned long d = 1; (d < nBlend) && !front.empty(); d++) {
-      next.clear();
-      for (auto iCoarse : front)
-        for (auto jCoarse : coarse->nodes->GetPoints(iCoarse))
-          if (hops[jCoarse] == UNREACHED) {
-            hops[jCoarse] = d;
-            next.push_back(jCoarse);
+    for (unsigned long d = 0; d < nBlend; d++) {
+      if (d > 0) {
+        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+          for (auto iCoarse = 0ul; iCoarse < nDomain; iCoarse++) {
+            if (hopsOf(iCoarse) < d) continue;
+            for (auto jCoarse : coarse->nodes->GetPoints(iCoarse))
+              if (hopsOf(jCoarse) + 1 == d) correctionHops(iCoarse, 0) = d;
           }
-      front.swap(next);
+        }
+        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      }
+      CSysMatrixComms::Initiate(correctionHops, coarse, config);
+      CSysMatrixComms::Complete(correctionHops, coarse, config);
     }
 
-    auto& weight = correctionWeight[iMesh];
-    weight.assign(fine->GetnPoint(), 1.0);
-    for (auto iCoarse = 0ul; iCoarse < coarse->GetnPointDomain(); iCoarse++) {
-      if (hops[iCoarse] == UNREACHED) continue;
-      for (auto iChild = 0u; iChild < coarse->nodes->GetnChildren_CV(iCoarse); iChild++)
-        weight[coarse->nodes->GetChildren_CV(iCoarse, iChild)] = passivedouble(hops[iCoarse]) / passivedouble(nBlend);
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      auto& weight = correctionWeight[iMesh];
+      weight.assign(geometry[iMesh]->GetnPoint(), 1.0);
+      for (auto iCoarse = 0ul; iCoarse < nDomain; iCoarse++) {
+        const auto w = SU2_TYPE::GetValue(correctionHops(iCoarse, 0)) / nBlend;
+        for (auto iChild = 0u; iChild < coarse->nodes->GetnChildren_CV(iCoarse); iChild++)
+          weight[coarse->nodes->GetChildren_CV(iCoarse, iChild)] = w;
+      }
+      wallEnd.assign(coarse->GetnPoint(), 0);
+      for (auto iCoarse = 0ul; iCoarse < coarse->GetnPoint(); iCoarse++) wallEnd[iCoarse] = (hopsOf(iCoarse) == 0);
     }
-    wallEnd.swap(coarseWallEnd);
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
+
+  SU2_OMP_SAFE_GLOBAL_ACCESS(correctionWeightReady = true;)
 }
 
 void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CSolver *sol_flow, CGeometry *geo_fine,

@@ -435,14 +435,17 @@ private:
    *  Allocated on first use, only when MG_LINEAR_PROLONGATION is on. */
   vector<CVectorOfMatrix> prolongGradient;
   vector<vector<passivedouble>> correctionWeight; /*!< \brief Per level, weight of the correction near wall ends. */
+  bool correctionWeightReady = false;             /*!< \brief The weights have been computed. */
+  CSysVector<su2double> correctionHops;           /*!< \brief Coarse CVs from the nearest wall end, with halos. */
 
   /*!
    * \brief Weight each level's prolongated correction from zero where a wall ends to one a few coarse CVs away.
+   * Must be called by all threads.
    * \param[in] geometry - Geometry of all levels of this zone and instance.
    * \param[in] flowNodes - Flow variables of the finest grid, which flag the wall ends.
-   * \param[in] nLevels - Number of multigrid levels.
+   * \param[in] config - Definition of the particular problem.
    */
-  void ComputeCorrectionWeights(CGeometry** geometry, const CEulerVariable* flowNodes, unsigned short nLevels);
+  void ComputeCorrectionWeights(CGeometry** geometry, const CEulerVariable* flowNodes, const CConfig* config);
 
   /*! \brief Coarse cells per level whose gradient fit is too ill-conditioned and keep the constant
    *  operator, and whether that level has been reported. */
