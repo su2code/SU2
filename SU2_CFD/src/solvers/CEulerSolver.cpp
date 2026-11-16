@@ -7886,6 +7886,8 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
         const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
         conv_numerics->SetTurbKineticEnergy(tke, tke);
       }
+      if (config->GetKind_FluidModel() != STANDARD_AIR && config->GetKind_FluidModel() != IDEAL_GAS)
+        conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -7923,6 +7925,8 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
        /*--- Primitive variables, and gradient ---*/
 
        visc_numerics->SetPrimitive(V_domain, V_domain);
+       if (config->GetKind_FluidModel() != STANDARD_AIR && config->GetKind_FluidModel() != IDEAL_GAS)
+         visc_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
 
        /*--- Turbulent kinetic energy ---*/
