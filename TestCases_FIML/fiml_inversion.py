@@ -93,7 +93,11 @@ class Inversion:
         self.n_eval = 0
         self.direct_cfg = "inv_direct.cfg"
         self.adjoint_cfg = "inv_adjoint.cfg"
-        write_config(args.config, self.direct_cfg, {"MATH_PROBLEM": "DIRECT", "RESTART_SOL": "YES"})
+        # The residual alone can already be converged after a change of beta, so ComboObj must settle too.
+        write_config(args.config, self.direct_cfg, {
+            "MATH_PROBLEM": "DIRECT", "RESTART_SOL": "YES", "ITER": str(args.direct_iter),
+            "CONV_FIELD": "RMS_PRESSURE, COMBO", "CONV_STARTITER": "10",
+            "CONV_CAUCHY_ELEMS": "100", "CONV_CAUCHY_EPS": str(args.cauchy_eps)})
         adjoint = {"MATH_PROBLEM": "DISCRETE_ADJOINT", "RESTART_SOL": "NO", "ITER": str(args.adjoint_iter),
                    "CONV_FIELD": "RMS_ADJ_PRESSURE", "CONV_RESIDUAL_MINVAL": str(args.adjoint_tol),
                    "OUTPUT_FILES": "RESTART_ASCII", "CONV_FILENAME": "history_adjoint",
@@ -140,6 +144,9 @@ class Inversion:
 
         self.run(self.args.su2_cfd, self.direct_cfg, f"log_direct_{self.n_eval:03d}.txt")
         hist = last_history("history.csv")
+        if hist["Inner_Iter"] + 1 >= self.args.direct_iter:
+            print(f"eval {self.n_eval}: the direct solver did not converge in {self.args.direct_iter} iterations",
+                  flush=True)
         shutil.copy("history.csv", f"history_eval_{self.n_eval:03d}.csv")
         J = hist["ComboObj"]
         grad, adj_rms = self.run_adjoint()
@@ -166,6 +173,9 @@ def main():
     p.add_argument("--restart", default="restart_flow.csv", help="ASCII flow restart holding Beta_FIML")
     p.add_argument("--adjoint_restart", default="restart_adj_custom.csv")
     p.add_argument("--weights", default="nn_weights.dat")
+    p.add_argument("--direct_iter", type=int, default=3000)
+    p.add_argument("--cauchy_eps", type=float, default=1e-5,
+                   help="mean relative change of ComboObj over 100 iterations at which the direct solver stops")
     p.add_argument("--adjoint_iter", type=int, default=5000)
     p.add_argument("--adjoint_tol", type=float, default=-11)
     p.add_argument("--adjoint_cfl", type=float, help="fixed CFL of the adjoint, which does not adapt it")

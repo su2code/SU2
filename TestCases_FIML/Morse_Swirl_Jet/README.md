@@ -28,6 +28,7 @@ The files do not state the nozzle diameter. With U_exit = 34.46 m/s, Re = 56,000
 | `plot_profiles.py` | U/U_cl, V/U_cl, W/W_max against r/D at the stations, `morse_profiles.png` |
 | `plot_stresses.py` | u'v' and v'w' (Boussinesq, from the eddy viscosity) at the stations, `morse_stresses.png` |
 | `morse_target.py` | FIML objective: probes with the measured velocities as targets; writes `config_inversion.cfg`, `config_predict.cfg`, `morse_targets.csv` |
+| `plot_beta.py` | inverted beta and mu_t / mu_t,SA in the (x/D, r/D) plane with the probe positions, `morse_beta.png` |
 
 ## Running
 
@@ -124,18 +125,28 @@ measurements; a network then learns beta from local flow quantities. The steps a
            --adjoint_iter 300 --adjoint_cfl 100 --maxiter 15 \
            --fields Misfit_Ucl Misfit_U Misfit_W Beta_Reg
        cp restart_flow.csv restart_inverted.csv
-       python3 plot_centreline.py --data_dir <dir> --case SA=restart_baseline.csv --case inverted=restart_inverted.csv
 
-   `inversion_history.csv` holds J and its terms per evaluation, `beta_inverted.dat` the final beta. Run it in a copy
-   of the case directory: the driver overwrites `restart_flow.csv`.
+   `inversion_history.csv` holds J and its terms per evaluation, `beta_inverted.dat` the final beta, `restart_flow.csv`
+   the flow of the final beta. Run it in a copy of the case directory: the driver overwrites `restart_flow.csv`.
+   A direct run stops when rms[P] < -10 and the mean relative change of J over 100 iterations is below 1e-5
+   (`--cauchy_eps`), or after 3000 iterations (`--direct_iter`).
+
+   Figures, SA against the inversion:
+
+       python3 plot_beta.py --inverted restart_inverted.csv --baseline restart_baseline.csv --targets morse_targets.csv
+       python3 plot_centreline.py --data_dir <dir> --case SA=restart_baseline.csv --case inverted=restart_inverted.csv
+       python3 plot_profiles.py --data_dir <dir> --case SA=restart_baseline.csv --case inverted=restart_inverted.csv
+       python3 plot_stresses.py --data_dir <dir> --case SA=restart_baseline.csv --case inverted=restart_inverted.csv
 
 4. **Training.** One iteration from `restart_inverted.csv` writes the network inputs (`features.csv`); the network is
-   trained offline on beta and written to `nn_weights.dat`.
+   trained offline on beta and written to `nn_weights.dat`. Run it in the inversion directory, which holds
+   `config_inversion.cfg` and `restart_inverted.csv`.
 
        python3 ../S809_FIML_Inversion/step4_train.py -n 8 --inputs CHI,VISC_RATIO,STRAIN_VORT,Q_CRIT --shield NONE
 
    `--inputs` must equal `--inputs` of step 1. The other inputs need a wall: without one, PROD_DEST is infinite and
-   PROD_DEST_RATIO, BL_RATIO and FD are constant.
+   PROD_DEST_RATIO, BL_RATIO and FD are constant. Delete `features.csv` to recompute the inputs after a new
+   inversion. `--neurons`, `--hidden`, `--epochs` and `--lr` set the network and the training.
 
 5. **Prediction.** SA_FIML with beta from the network, from the baseline.
 
@@ -153,8 +164,38 @@ measurements; a network then learns beta from local flow quantities. The steps a
            --adjoint_iter 300 --adjoint_cfl 100 --maxiter 10 \
            --fields Misfit_Ucl Misfit_U Misfit_W Beta_Reg --log direct_history.csv
 
+### Results
+
+Field inversion from the beta of an earlier inversion (J = 1507), 15 L-BFGS-B iterations, 22 evaluations, 4 ranks,
+6 h with 300 adjoint iterations per evaluation:
+
+| | J | Misfit_Ucl | Misfit_U | Misfit_W | 0.05 BETA_REG |
+|---|---|---|---|---|---|
+| SA, beta = 1 | 2224 | 1036 | 987 | 201 | 0 |
+| inverted | 373.5 | 83 | 134 | 80 | 76 |
+
+Errors at the stations (`plot_centreline.py`):
+
+| | | x/D = 1 | 2 | 4 | 6 | 10 | 15 |
+|---|---|---|---|---|---|---|---|
+| SA | U_cl [%] | -1.8 | +6.9 | +38.4 | +38.6 | +16.8 | -0.7 |
+| | W_max [m/s] | +0.3 | +1.2 | +2.6 | +1.2 | | |
+| | r_1/2 [%] | -0.5 | -12.9 | -30.4 | -29.7 | -19.9 | |
+| inverted | U_cl [%] | -2.7 | -0.9 | +9.8 | +3.2 | -8.6 | -17.7 |
+| | W_max [m/s] | +0.2 | -2.0 | -0.5 | -0.0 | | |
+| | r_1/2 [%] | -0.6 | -6.1 | -13.4 | -7.6 | +0.3 | |
+
+- beta = 2 (the bound) in the shear layer of the nozzle, x/D < 2 and r/D = 0.5, and in a thin layer on the axis up
+  to x/D = 4; beta = 0.5 in the outer jet at r/D = 1 for 2 < x/D < 8. 12% of the points have |beta - 1| > 0.01.
+- The faster decay overshoots beyond x/D = 8, where the centreline probes weigh less than the profiles.
+- Network (4 inputs, 3 x 20 tanh, 400 epochs): RMS(beta_nn - beta) = 0.042, R^2 = 0.81 over all points; 0.13 and
+  0.85 over the 13,800 points with |beta - 1| > 0.05.
+
 ### Notes
 
+- After a change of beta the previous solution often already has rms[P] < -10, while J changes over hundreds of
+  iterations; a residual criterion alone stops the direct run too early. A large step (beta at its bound over a wide
+  region) needs up to 3000 iterations.
 - The adjoint at CFL 100 reaches its lowest rms[A_P] (-4.3) after 50 iterations and then rises slowly, -3.9 after
   300; rms[A_nu] keeps falling. Do not use `--warm_adjoint`: the driver stops when rms[A_P] ends above its first
   value, which a warm start near the minimum gives. 300 adjoint iterations take 7.5 min on 4 ranks.
