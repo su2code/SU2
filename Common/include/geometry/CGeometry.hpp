@@ -319,6 +319,9 @@ class CGeometry {
   PassiveRequest* reqP_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
   PassiveRequest* reqP_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
 
+  bool periodicPairIntersections{false};    /*!< Whether distinct periodic pairs intersect in this zone. */
+  vector<passivedouble> periodicEdgeWeight; /*!< Fraction of each edge stencil owned by this periodic copy. */
+
   /*--- Data structures for periodic communications. ---*/
 
   int maxCountPerPeriodicPoint{0}; /*!< \brief Maximum number of pieces of data sent per vertex in periodic comms. */
@@ -346,8 +349,6 @@ class CGeometry {
                                               a particular vertex to be received in periodic comms. */
   su2double* bufD_PeriodicRecv{nullptr};   /*!< \brief Data structure for su2double periodic receive. */
   su2double* bufD_PeriodicSend{nullptr};   /*!< \brief Data structure for su2double periodic send. */
-  unsigned short* bufS_PeriodicRecv{nullptr};  /*!< \brief Data structure for unsigned long periodic receive. */
-  unsigned short* bufS_PeriodicSend{nullptr};  /*!< \brief Data structure for unsigned long periodic send. */
   SU2_MPI::Request* req_PeriodicSend{nullptr}; /*!< \brief Data structure for periodic send requests. */
   SU2_MPI::Request* req_PeriodicRecv{nullptr}; /*!< \brief Data structure for periodic recv requests. */
 
@@ -518,6 +519,18 @@ class CGeometry {
    * vertex in periodic comms, e.g., nPrimvarGrad*nDim.
    */
   void AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint);
+
+  /*! \brief Rebuild after changing connectivity, periodic membership or transforms; not needed for coordinate motion.
+   */
+  void PreprocessPeriodicGeometry(const CConfig& config);
+
+  /*! \brief Zone-wide decision, identical on all MPI ranks, for intersecting periodic stencils. */
+  inline bool HasPeriodicPairIntersections() const { return periodicPairIntersections; }
+
+  /*! \brief Fraction of an edge stencil owned by this periodic copy. */
+  inline passivedouble GetPeriodicEdgeWeight(unsigned long iEdge) const {
+    return periodicEdgeWeight.empty() ? 1.0 : periodicEdgeWeight[iEdge];
+  }
 
   /*!
    * \brief Routine to launch non-blocking recvs only for all periodic communication with neighboring partitions.

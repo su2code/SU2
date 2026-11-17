@@ -2397,20 +2397,25 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
       nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+    for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+      const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+      const auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
 
       bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
       /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
       if (boundary_i && !boundary_j) continue;
 
+      const auto weight = geometry->HasPeriodicPairIntersections() ?
+                              geometry->GetPeriodicEdgeWeight(iEdge) : 1.0;
+
       /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        nodes->AddUnd_Lapl(iPoint, iVar, nodes->GetSolution(jPoint,iVar)-nodes->GetSolution(iPoint,iVar));
+        nodes->AddUnd_Lapl(iPoint, iVar, weight * (nodes->GetSolution(jPoint,iVar)-nodes->GetSolution(iPoint,iVar)));
 
       su2double Pressure_j = nodes->GetPressure(jPoint);
-      nodes->AddUnd_Lapl(iPoint, nVar-1, Pressure_j-Pressure_i);
+      nodes->AddUnd_Lapl(iPoint, nVar-1, weight * (Pressure_j-Pressure_i));
     }
   }
   END_SU2_OMP_FOR

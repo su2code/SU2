@@ -32,6 +32,32 @@
 
 namespace detail {
 
+/*! \brief Visit the upper triangle and the extra xz entry used by the 3D LS factorization. */
+template<size_t nDim, class Function>
+FORCEINLINE void forEachLeastSquaresNormalEntry(Function function) {
+  for (size_t iDim = 0; iDim < nDim; ++iDim)
+    for (size_t jDim = iDim; jDim < nDim; ++jDim)
+      function(iDim, jDim, iDim, jDim);
+  if (nDim == 3) function(2, 1, 0, 2);
+}
+
+/*! \brief Rotate the symmetric normal matrix and pack it in the gradient storage convention. */
+template<size_t nDim, class MatrixType>
+FORCEINLINE void rotateLeastSquaresNormalMatrix(size_t iPoint, const MatrixType& matrix,
+                                               const su2double (&rotation)[nDim][nDim], su2double* packed) {
+  su2double rotated[nDim][nDim] = {};
+  for (size_t iDim = 0; iDim < nDim; ++iDim)
+    for (size_t jDim = iDim; jDim < nDim; ++jDim)
+      for (size_t kDim = 0; kDim < nDim; ++kDim)
+        for (size_t lDim = 0; lDim < nDim; ++lDim)
+          rotated[iDim][jDim] += rotation[iDim][kDim] * matrix(iPoint, min(kDim,lDim), max(kDim,lDim)) *
+                                rotation[jDim][lDim];
+  std::fill_n(packed, nDim * nDim, su2double(0));
+  forEachLeastSquaresNormalEntry<nDim>([&](size_t iDim, size_t jDim, size_t row, size_t col) {
+    packed[iDim * nDim + jDim] = rotated[row][col];
+  });
+}
+
 /*!
  * \brief Prepare Smatrix for 2D.
  * \ingroup FvmAlgos
@@ -231,8 +257,9 @@ void computeGradientsLeastSquares(CSolver* solver,
         Rmatrix(iPoint, iDim, jDim) = 0.0;
 
 
-    for (auto jPoint : nodes->GetPoints(iPoint))
-    {
+    for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
+      const auto jPoint = nodes->GetPoint(iPoint, iNeigh);
+      const auto iEdge = nodes->GetEdge(iPoint, iNeigh);
       const auto coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
@@ -253,13 +280,12 @@ void computeGradientsLeastSquares(CSolver* solver,
       if (weight > 0.0)
       {
         weight = 1.0 / weight;
+        if (geometry.HasPeriodicPairIntersections())
+          weight *= geometry.GetPeriodicEdgeWeight(iEdge);
 
-        for (size_t iDim = 0; iDim < nDim; ++iDim)
-          for (size_t jDim = iDim; jDim < nDim; ++jDim)
-            Rmatrix(iPoint,iDim,jDim) += dist_ij[iDim]*dist_ij[jDim]*weight;
-
-        if (nDim == 3)
-          Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[nDim-1]*weight;
+        forEachLeastSquaresNormalEntry<nDim>([&](size_t iDim, size_t jDim, size_t row, size_t col) {
+          Rmatrix(iPoint,iDim,jDim) += dist_ij[row]*dist_ij[col]*weight;
+        });
 
         /*--- Entries of c:= transpose(A)*b ---*/
 
