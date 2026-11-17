@@ -1012,6 +1012,17 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
     Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
 
+    if (config->GetSSTParsedOptions().tmrBC) {
+      su2double Omega_Freestream = 10 * ModVel_FreeStream / config->GetLDomain();
+      Tke_FreeStream = Omega_Freestream*(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStream;
+    } else if (config->GetSSTParsedOptions().sust) {
+      Tke_FreeStream = config->GetSSTSust_TkeAmb(ModVel_FreeStream);
+    }
+
+    /*-- Compute the freestream energy. ---*/
+
+    if (tkeNeeded) Energy_FreeStream += Tke_FreeStream;
+
   }
   else {
 
@@ -1022,9 +1033,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   }
 
-  /*-- Compute the freestream energy. ---*/
-
-  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
+  /*-- Set the freestream energy. ---*/
+  config->SetEnergy_FreeStream(Energy_FreeStream);
 
   /*--- Compute non dimensional quantities. By definition,
      Lref is one because we have converted the grid to meters. ---*/
@@ -1089,15 +1099,29 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   config->SetSpecificHeatCp_FreeStreamND(SpecificHeat_Cp_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  config->SetTke_FreeStream(Tke_FreeStream);
-
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
-  config->SetOmega_FreeStream(Omega_FreeStream);
-
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
+
+  if (config->GetSSTParsedOptions().tmrBC) {
+    Omega_FreeStream = 10 * ModVel_FreeStream / config->GetLDomain();
+    Omega_FreeStreamND = 10 * ModVel_FreeStreamND / config->GetLDomain();  // the reference length is 1
+
+    Tke_FreeStream = Omega_FreeStream*(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStream;
+    Tke_FreeStreamND = Omega_FreeStreamND*(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStreamND;
+  } else if (config->GetSSTParsedOptions().sust) {
+    /*--- Ambient values of the sustaining terms, also used as free-stream values. ---*/
+    Omega_FreeStream = config->GetSSTSust_OmegaAmb(ModVel_FreeStream);
+    Omega_FreeStreamND = Omega_FreeStream / Omega_Ref;
+    Tke_FreeStream = config->GetSSTSust_TkeAmb(ModVel_FreeStream);
+    Tke_FreeStreamND = Tke_FreeStream / pow(Velocity_Ref, 2);
+  }
+
+  config->SetTke_FreeStream(Tke_FreeStream);
+  config->SetTke_FreeStreamND(Tke_FreeStreamND);
+
+  config->SetOmega_FreeStream(Omega_FreeStream);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   if (config->GetTurbulenceIntensity_FreeStream() *100 <= 1.3) {

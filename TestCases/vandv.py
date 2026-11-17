@@ -99,7 +99,7 @@ def main():
     dsma661_sa.cfg_dir    = "vandv/rans/dsma661"
     dsma661_sa.cfg_file   = "dsma661_sa_config.cfg"
     dsma661_sa.test_iter  = 5
-    dsma661_sa.test_vals  = [-11.247085, -8.242815, -8.952043, -5.904549, -10.737668, 0.155687, 0.024232]
+    dsma661_sa.test_vals  = [-11.240967, -8.243826, -8.958188, -5.895886, -10.737669, 0.155687, 0.024232]
     dsma661_sa.test_vals_aarch64 = [-11.293183, -8.241775, -9.083761, -6.011398, -10.737680, 0.155687, 0.024232]
     test_list.append(dsma661_sa)
 
