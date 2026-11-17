@@ -28,6 +28,7 @@
 
 #include "option_structure.hpp"
 #include "parallelization/mpi_structure.hpp"
+#include "toolboxes/geometry_toolbox.hpp"
 using namespace std;
 
 template <class Tenum, class TField>
@@ -1767,15 +1768,33 @@ class COptionPeriodic : public COptionBase {
       translation[i][1] = translation[i + nVals / 2][1] = getval(i, 9);
       translation[i][2] = translation[i + nVals / 2][2] = getval(i, 10);
 
-      /*--- Mirror the rotational angles and translation vector (rotational center does not need to move). ---*/
-      rot_angles[i + nVals / 2][0] *= -1;
-      rot_angles[i + nVals / 2][1] *= -1;
-      rot_angles[i + nVals / 2][2] *= -1;
-      translation[i + nVals / 2][0] *= -1;
-      translation[i + nVals / 2][1] *= -1;
-      translation[i + nVals / 2][2] *= -1;
-
       if (err) return badValue("periodic", name);
+
+      /*--- Invert x' = R (x - c) + c + t. Negating Euler angles in the
+       * same order is only correct for rotations about a single axis. ---*/
+      const auto donor = i + nVals / 2;
+      su2double rotation[3][3];
+      GeometryToolbox::RotationMatrix(rot_angles[i][0], rot_angles[i][1], rot_angles[i][2], rotation);
+      for (auto iDim = 0u; iDim < 3; ++iDim) {
+        rot_angles[donor][iDim] = -rot_angles[i][iDim];
+        translation[donor][iDim] = 0;
+        for (auto jDim = 0u; jDim < 3; ++jDim) translation[donor][iDim] -= rotation[jDim][iDim] * translation[i][jDim];
+      }
+
+      /*--- Keep single-axis angles unchanged, including their AD recording. ---*/
+      const auto nAngles = (rot_angles[i][0] != 0) + (rot_angles[i][1] != 0) + (rot_angles[i][2] != 0);
+      if (nAngles > 1) {
+        const auto cosPhi = sqrt(rotation[0][0] * rotation[0][0] + rotation[0][1] * rotation[0][1]);
+        rot_angles[donor][1] = atan2(-rotation[0][2], cosPhi);
+        if (cosPhi > 1e-12) {
+          rot_angles[donor][0] = atan2(rotation[1][2], rotation[2][2]);
+          rot_angles[donor][2] = atan2(rotation[0][1], rotation[0][0]);
+        } else {
+          /*--- At gimbal lock only the combined x/z rotation is determined. ---*/
+          rot_angles[donor][0] = atan2(-rotation[2][1], rotation[1][1]);
+          rot_angles[donor][2] = 0;
+        }
+      }
     }
 
     return "";
