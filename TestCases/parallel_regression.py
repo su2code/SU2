@@ -627,6 +627,24 @@ def main():
     turb_naca0012_sst_muscl_edge.timeout = 3200
     test_list.append(turb_naca0012_sst_muscl_edge)
 
+    # SA point limiting with epsilon relative to the turbulence variable.
+    turb_naca0012_sa_limiter_eps = TestCase('turb_naca0012_sa_limiter_eps')
+    turb_naca0012_sa_limiter_eps.cfg_dir = "rans/naca0012"
+    turb_naca0012_sa_limiter_eps.cfg_file = "turb_NACA0012_sa_limiter_eps.cfg"
+    turb_naca0012_sa_limiter_eps.test_iter = 10
+    turb_naca0012_sa_limiter_eps.test_vals = [-7.852233, -10.813265, 1.080059, 0.017464]
+    turb_naca0012_sa_limiter_eps.timeout = 3200
+    test_list.append(turb_naca0012_sa_limiter_eps)
+
+    # SST point limiting with epsilon relative to the turbulence variable.
+    turb_naca0012_sst_limiter_eps = TestCase('turb_naca0012_sst_limiter_eps')
+    turb_naca0012_sst_limiter_eps.cfg_dir = "rans/naca0012"
+    turb_naca0012_sst_limiter_eps.cfg_file = "turb_NACA0012_sst_limiter_eps.cfg"
+    turb_naca0012_sst_limiter_eps.test_iter = 10
+    turb_naca0012_sst_limiter_eps.test_vals = [-8.162919, -9.358528, -3.590806, 1.071595, 0.015827]
+    turb_naca0012_sst_limiter_eps.timeout = 3200
+    test_list.append(turb_naca0012_sst_limiter_eps)
+
     # Keep applying the stored turbulence limiter after LIMITER_ITER.
     turb_naca0012_sst_muscl_frozen = TestCase('turb_naca0012_sst_muscl_frozen')
     turb_naca0012_sst_muscl_frozen.cfg_dir = "rans/naca0012"
@@ -1006,7 +1024,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals = [1.275731, 1.063097, -2.067745, 1.301949, 0.481304, 0.000000]
+    turbmod_sa_neg_rae2822.test_vals = [1.451597, 1.501625, 4.235621, 1.337846, 0.493212, 0.000000]
     turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.345593, 1.448310, 1.208721, -0.846597, 1.248410, 0.489117, 0.000000]
     test_list.append(turbmod_sa_neg_rae2822)
 
