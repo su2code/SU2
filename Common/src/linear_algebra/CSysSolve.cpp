@@ -1137,7 +1137,6 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   ScalarType alpha = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
   ScalarType norm_best = norm_r;
-  if (config->GetComm_Level() == COMM_FULL) x_best = x;
   p = ScalarType(0.0);
   v = ScalarType(0.0);
   r_0 = r;
@@ -1198,7 +1197,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
       /*--- Check if solution has converged, else output the relative residual if necessary ---*/
 
       norm_r = r.norm();
-      if (norm_r < norm_best) {
+      if ((i == 0) || (norm_r < norm_best)) {
         norm_best = norm_r;
         x_best = x;
       }
@@ -1211,7 +1210,8 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
     }
   }
 
-  /*--- BCGSTAB does not reduce the residual monotonically, return the best iterate. ---*/
+  /*--- BCGSTAB does not reduce the residual monotonically, return the best iterate.
+   * The initial guess is not a candidate, returning it would mean no update at all. ---*/
 
   if ((config->GetComm_Level() == COMM_FULL) && (norm_r > norm_best)) {
     x = x_best;

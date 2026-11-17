@@ -117,3 +117,19 @@ TEST_CASE("Periodic affine transformation and its inverse", "[Config][Periodic]"
   INFO("Euler angles: " << angles);
   CHECK(error < 1e-12);
 }
+
+TEST_CASE("HLLC and AUSM SLAU Jacobian options are independent", "[Config][HLLCOptions]") {
+  for (const auto accurate : {false, true}) {
+    for (const auto exactHLLC : {false, true}) {
+      std::stringstream options(base_options + "USE_ACCURATE_FLUX_JACOBIANS= " + (accurate ? "YES" : "NO") +
+                                "\nUSE_EXACT_HLLC_JACOBIANS= " + (exactHLLC ? "YES" : "NO") + "\n");
+      CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+      CHECK(config.GetUse_Accurate_Jacobians() == accurate);
+      CHECK(config.GetUse_Exact_HLLC_Jacobians() == exactHLLC);
+    }
+  }
+  std::stringstream options(base_options);
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+  CHECK_FALSE(config.GetUse_Accurate_Jacobians());
+  CHECK_FALSE(config.GetUse_Exact_HLLC_Jacobians());
+}
