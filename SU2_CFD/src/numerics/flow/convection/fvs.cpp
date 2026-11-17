@@ -45,6 +45,8 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim + 4);
   AD::SetPreaccIn(V_j, nDim + 4);
+  AD::SetPreaccIn(turb_ke_i);  // SST: k in the total energy
+  AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Sensor_i, Sensor_j);
   AD::SetPreaccIn(Normal, nDim);
   if (dynamic_grid) {
@@ -71,8 +73,9 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   /*--- Recompute the speed of sound because it is not MUSCL-reconstructed. ---*/
   const su2double sqvel_i = GeometryToolbox::SquaredNorm(nDim, V_i + 1);
   const su2double sqvel_j = GeometryToolbox::SquaredNorm(nDim, V_j + 1);
-  const su2double c_i = sqrt(fmax((Gamma - 1) * (H_i - 0.5 * sqvel_i), EPS));
-  const su2double c_j = sqrt(fmax((Gamma - 1) * (H_j - 0.5 * sqvel_j), EPS));
+  /*--- With SST the total enthalpy contains k, which is not part of the speed of sound. ---*/
+  const su2double c_i = sqrt(fmax((Gamma - 1) * (H_i - 0.5 * sqvel_i - turb_ke_i), EPS));
+  const su2double c_j = sqrt(fmax((Gamma - 1) * (H_j - 0.5 * sqvel_j - turb_ke_j), EPS));
 
   /*--- Recompute conservatives ---*/
 
@@ -109,6 +112,8 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   }
   Vst_i[nDim + 4] = onemw * c_i + w * c_j;
   Vst_j[nDim + 4] = onemw * c_j + w * c_i;
+  const su2double tkest_i = onemw * turb_ke_i + w * turb_ke_j;
+  const su2double tkest_j = onemw * turb_ke_j + w * turb_ke_i;
 
   su2double Velst_i[MAXNDIM] = {}, Velst_j[MAXNDIM] = {};
   su2double ProjVelst_i{}, ProjVelst_j{};
@@ -132,15 +137,16 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   /*--- Compute projected P, invP, and Lambda ---*/
 
   su2double P_Tensor[MAXNVAR][MAXNVAR], invP_Tensor[MAXNVAR][MAXNVAR];
-  GetPMatrix(Vst_i[nDim + 2], Velst_i, Vst_i[nDim + 4], UnitNormal, P_Tensor);
-  GetPMatrix_inv(Vst_i[nDim + 2], Velst_i, Vst_i[nDim + 4], UnitNormal, invP_Tensor);
+  GetPMatrix(Vst_i[nDim + 2], Velst_i, Vst_i[nDim + 4], UnitNormal, P_Tensor, tkest_i);
+  GetPMatrix_inv(Vst_i[nDim + 2], Velst_i, Vst_i[nDim + 4], UnitNormal, invP_Tensor, tkest_i);
 
   /*--- Projected flux (f+) at i ---*/
 
   for (auto iVar = 0u; iVar < MAXNVAR; ++iVar) {
     Fc[iVar] = 0;
   }
-  auto UpdateFlux = [&](const auto* U, auto* Jacobian) {
+  auto UpdateFlux = [&](auto* U, auto* Jacobian, su2double deltaTke) {
+    U[nVar - 1] -= U[0] * deltaTke;
     for (auto iVar = 0u; iVar < nVar; ++iVar) {
       for (auto jVar = 0u; jVar < nVar; ++jVar) {
         su2double Proj_ModJac_Tensor_i = 0.0;
@@ -153,9 +159,14 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
         Fc[iVar] += Proj_ModJac_Tensor_i * Area * U[jVar];
         Jacobian[iVar][jVar] = Proj_ModJac_Tensor_i * Area;
       }
+      Jacobian[iVar][0] -= Jacobian[iVar][nVar - 1] * deltaTke;
+      if (iVar + 1 == nVar) {
+        Fc[iVar] += Lambda[0] * Area * U[0] * deltaTke;
+        Jacobian[iVar][0] += Lambda[0] * Area * deltaTke;
+      }
     }
   };
-  UpdateFlux(U_i, Jacobian_i);
+  UpdateFlux(U_i, Jacobian_i, turb_ke_i - tkest_i);
 
   /*--- Flow eigenvalues at j (Lambda-) ---*/
 
@@ -167,12 +178,12 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Compute projected P, invP, and Lambda ---*/
 
-  GetPMatrix(Vst_j[nDim + 2], Velst_j, Vst_j[nDim + 4], UnitNormal, P_Tensor);
-  GetPMatrix_inv(Vst_j[nDim + 2], Velst_j, Vst_j[nDim + 4], UnitNormal, invP_Tensor);
+  GetPMatrix(Vst_j[nDim + 2], Velst_j, Vst_j[nDim + 4], UnitNormal, P_Tensor, tkest_j);
+  GetPMatrix_inv(Vst_j[nDim + 2], Velst_j, Vst_j[nDim + 4], UnitNormal, invP_Tensor, tkest_j);
 
   /*--- Projected flux (f-) ---*/
 
-  UpdateFlux(U_j, Jacobian_j);
+  UpdateFlux(U_j, Jacobian_j, turb_ke_j - tkest_j);
 
   AD::SetPreaccOut(Fc, nVar);
   AD::EndPreacc();

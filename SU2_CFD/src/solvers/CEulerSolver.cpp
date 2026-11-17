@@ -65,6 +65,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  const bool tkeNeeded = (rans && config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   int Unst_RestartIter = 0;
   unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
@@ -246,6 +247,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   Density_Inf = config->GetDensity_FreeStreamND();
   Energy_Inf = config->GetEnergy_FreeStreamND();
   Mach_Inf = config->GetMach();
+  const su2double TKE_Inf = config->GetTke_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approximations ---*/
 
@@ -315,6 +317,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       Velocity2 += pow(nodes->GetSolution(iPoint,iDim+1)/Density,2);
 
     StaticEnergy= nodes->GetEnergy(iPoint) - 0.5*Velocity2;
+    if (tkeNeeded) StaticEnergy -= TKE_Inf;
 
     GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
     Pressure= GetFluidModel()->GetPressure();
@@ -1843,6 +1846,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
+  /*--- SST: the total enthalpy of the cells contains k. ---*/
+  const bool tkeInEnergy      = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const CVariable* turbNodes  = tkeInEnergy ? solver_container[TURB_SOL]->GetNodes() : nullptr;
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
   const su2double kappa       = config->GetMUSCL_Kappa_Flow();
@@ -1882,6 +1888,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     auto jPoint = geometry->edges->GetNode(iEdge,1);
 
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+
+    su2double tke_i = 0.0, tke_j = 0.0;
+    if (tkeInEnergy) {
+      tke_i = turbNodes->GetSolution(iPoint, 0);
+      tke_j = turbNodes->GetSolution(jPoint, 0);
+      numerics->SetTurbKineticEnergy(tke_i, tke_j);
+    }
 
     auto Coord_i = geometry->nodes->GetCoord(iPoint);
     auto Coord_j = geometry->nodes->GetCoord(jPoint);
@@ -1957,18 +1970,18 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       bool neg_pres_or_rho_j = nonPositive(Primitive_j[prim_idx.Pressure()]) || nonPositive(Primitive_j[prim_idx.Density()]);
 
       if (!neg_pres_or_rho_i && !neg_pres_or_rho_j) {
+        /*--- Recompute the reconstructed quantities in a thermodynamically consistent way.
+         With SST the total enthalpy contains k, taken from the cells (as the vectorized reconstruction does). ---*/
 
-        /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
-
-        if (!ideal_gas || low_mach_corr) {
-          ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
-          ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
+        if (!ideal_gas || low_mach_corr || tkeInEnergy) {
+          ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i, tke_i);
+          ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j, tke_j);
         }
 
         /*--- Low-Mach number correction. ---*/
 
         if (low_mach_corr) {
-          LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
+          LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j, tke_i, tke_j);
         }
 
         /*--- The correction changes the face states, check them again. ---*/
@@ -1988,7 +2001,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       su2double RoeEnthalpy = (R * Primitive_j[prim_idx.Enthalpy()] + Primitive_i[prim_idx.Enthalpy()]) / (R+1);
 
-      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      const su2double RoeTke = (R * tke_j + tke_i) / (R+1);  // SST: the total enthalpy contains k
+      /*--- Speed of sound of the Roe average and of each side (schemes such as HLLC use both). ---*/
+      auto negSoundSpeed2 = [&](const su2double* prim, su2double tke) {
+        const su2double vel2 = GeometryToolbox::SquaredNorm(nDim, &prim[prim_idx.Velocity()]);
+        return (Gamma-1)*(prim[prim_idx.Enthalpy()] - 0.5*vel2 - tke) < 0.0;
+      };
+      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0) ||
+                                   negSoundSpeed2(Primitive_i, tke_i) || negSoundSpeed2(Primitive_j, tke_j);
       bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
       bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
       counter_local += bad_recon;
@@ -2048,7 +2068,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
-                                                  su2double *primitive, su2double *secondary) {
+                                                  su2double *primitive, su2double *secondary, su2double tke) {
   SU2_ZONE_SCOPED
   const CEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
   const su2double density = primitive[prim_idx.Density()];
@@ -2058,7 +2078,7 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
   fluidModel->SetTDState_Prho(pressure, density);
 
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
-  primitive[prim_idx.Enthalpy()] = fluidModel->GetStaticEnergy() + pressure / density + 0.5*velocity2;
+  primitive[prim_idx.Enthalpy()] = fluidModel->GetStaticEnergy() + pressure / density + 0.5*velocity2 + tke;
   primitive[prim_idx.SoundSpeed()] = fluidModel->GetSoundSpeed();
   secondary[0] = fluidModel->GetdPdrho_e();
   secondary[1] = fluidModel->GetdPde_rho();
@@ -2066,7 +2086,8 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
 }
 
 void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned short nDim,
-                                              su2double *primitive_i, su2double *primitive_j) {
+                                              su2double *primitive_i, su2double *primitive_j,
+                                              su2double tke_i, su2double tke_j) {
   SU2_ZONE_SCOPED
   unsigned short iDim;
 
@@ -2097,10 +2118,10 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
   }
 
   fluidModel->SetEnergy_Prho(primitive_i[nDim+1], primitive_i[nDim+2]);
-  primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i;
+  primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i + tke_i;
 
   fluidModel->SetEnergy_Prho(primitive_j[nDim+1], primitive_j[nDim+2]);
-  primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j;
+  primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j + tke_j;
 
 }
 
@@ -2217,7 +2238,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
         /*--- Set turbulence kinetic energy ---*/
-        if (rans){
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
           CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
           numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0), turbNodes->GetSolution(iPoint,0));
         }
@@ -2405,12 +2426,11 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
     const su2double Pressure_i = nodes->GetPressure(iPoint);
 
     /*--- Initialize. ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
+    if (nodes->GetUndivided_Laplacian().cols() > nVar) nodes->SetUnd_Lapl(iPoint, nVar, 0.0);
 
     /*--- Loop over the neighbors of point i. ---*/
     for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-
       bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
       /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
@@ -2422,7 +2442,9 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
         nodes->AddUnd_Lapl(iPoint, iVar, nodes->GetSolution(jPoint,iVar)-nodes->GetSolution(iPoint,iVar));
 
       su2double Pressure_j = nodes->GetPressure(jPoint);
-      nodes->AddUnd_Lapl(iPoint, nVar-1, Pressure_j-Pressure_i);
+      nodes->AddUnd_Lapl(iPoint, nVar - 1, Pressure_j - Pressure_i);
+      if (nodes->GetUndivided_Laplacian().cols() > nVar)
+        nodes->AddUnd_Lapl(iPoint, nVar, nodes->GetRhoTke(jPoint) - nodes->GetRhoTke(iPoint));
     }
   }
   END_SU2_OMP_FOR
@@ -2549,7 +2571,7 @@ void CEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CCon
   PrepareImplicitIteration_impl(precond, geometry, config);
 }
 
-void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
+void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config, CSolver** solver_container) {
   SU2_ZONE_SCOPED
 
   /*--- Loop over the solution update given by relaxing the linear system for this
@@ -2570,6 +2592,11 @@ void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
     for (auto jVar = 1u; jVar <= nDim; jVar++) {
       e_old -= 0.5 * pow(nodes->GetSolution(iPoint, jVar), 2) / rho_old;
       e_new -= 0.5 * pow(nodes->GetSolution(iPoint, jVar) + LinSysSol(iPoint, jVar), 2) / rho_new;
+    }
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+      const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+      e_old -= rho_old * tke;
+      e_new -= rho_new * tke;
     }
     ratio = fmax(ratio, fabs(e_new - e_old) / max(e_old, EPS));
 
@@ -2739,25 +2766,25 @@ void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint
   soundspeed = nodes->GetSoundSpeed(iPoint);
   sq_vel = nodes->GetVelocity2(iPoint);
 
-  /*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
-  preconditioner[0][0] = 0.5*sq_vel;
-  preconditioner[0][nVar-1] = 1.0;
-  for (iDim = 0; iDim < nDim; iDim ++)
-    preconditioner[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
+  const su2double tke =
+      config->GetKind_Turb_Model() == TURB_MODEL::SST ? su2double(nodes->GetRhoTke(iPoint) / rho) : su2double(0.0);
 
-  for (iDim = 0; iDim < nDim; iDim ++) {
-    preconditioner[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
-    preconditioner[iDim+1][nVar-1] = U_i[iDim+1]/rho;
-    for (jDim = 0; jDim < nDim; jDim ++) {
-      preconditioner[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
+  /*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
+  preconditioner[0][0] = 0.5 * sq_vel - tke;
+  preconditioner[0][nVar - 1] = 1.0;
+  for (iDim = 0; iDim < nDim; iDim++) preconditioner[0][1 + iDim] = -1.0 * U_i[iDim + 1] / rho;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    preconditioner[iDim + 1][0] = (0.5 * sq_vel - tke) * U_i[iDim + 1] / rho;
+    preconditioner[iDim + 1][nVar - 1] = U_i[iDim + 1] / rho;
+    for (jDim = 0; jDim < nDim; jDim++) {
+      preconditioner[iDim + 1][1 + jDim] = -1.0 * U_i[jDim + 1] / rho * U_i[iDim + 1] / rho;
     }
   }
 
-  preconditioner[nVar-1][0] = 0.5*sq_vel*enthalpy;
-  preconditioner[nVar-1][nVar-1] = enthalpy;
-  for (iDim = 0; iDim < nDim; iDim ++)
-    preconditioner[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
-
+  preconditioner[nVar - 1][0] = (0.5 * sq_vel - tke) * enthalpy;
+  preconditioner[nVar - 1][nVar - 1] = enthalpy;
+  for (iDim = 0; iDim < nDim; iDim++) preconditioner[nVar - 1][1 + iDim] = -1.0 * U_i[iDim + 1] / rho * enthalpy;
 
   for (iVar = 0; iVar < nVar; iVar ++ ) {
     for (jVar = 0; jVar < nVar; jVar ++ ) {
@@ -5032,7 +5059,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   bool implicit       = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   bool viscous        = config->GetViscous();
-  bool tkeNeeded = config->GetKind_Turb_Model() == TURB_MODEL::SST;
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   auto *Normal = new su2double[nDim];
 
@@ -5182,7 +5211,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
+      /*--- k of the boundary node, not the free-stream value, which decays right away in the domain (#1851). ---*/
+      if (tkeNeeded) Energy += turbNodes->GetSolution(iPoint,0);
 
       /*--- Store new primitive state for computing the flux. ---*/
 
@@ -5198,6 +5228,16 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       /*--- Set various quantities in the numerics class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
+
+      /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+
+        const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+
+        conv_numerics->SetTurbKineticEnergy(tke, tke);
+
+      }
 
       if (dynamic_grid) {
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -5279,6 +5319,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
              tkeNeeded    = config->GetKind_Turb_Model() == TURB_MODEL::SST,
              ideal_gas    = config->GetKind_FluidModel() == STANDARD_AIR ||
                             config->GetKind_FluidModel() == IDEAL_GAS;
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   su2double **P_Tensor = new su2double*[nVar],
             **invP_Tensor = new su2double*[nVar];
@@ -5324,7 +5366,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Density_i = nodes->GetDensity(iPoint);
 
       const auto Energy_i = nodes->GetEnergy(iPoint);
-      const su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+      su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+      if (tkeNeeded) StaticEnergy_i -= turbNodes->GetSolution(iPoint, 0);
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -5378,7 +5421,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Density_e = GetFluidModel()->GetDensity();
         StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
         Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-        if (tkeNeeded) Energy_e += GetTke_Inf();
         break;
 
       case STATIC_SUPERSONIC_INFLOW_PT:
@@ -5404,7 +5446,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Density_e = GetFluidModel()->GetDensity();
         StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
         Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-        if (tkeNeeded) Energy_e += GetTke_Inf();
         break;
 
       case STATIC_SUPERSONIC_INFLOW_PD:
@@ -5431,7 +5472,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Density_e = GetFluidModel()->GetDensity();
         StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
         Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-        if (tkeNeeded) Energy_e += GetTke_Inf();
         break;
 
       case DENSITY_VELOCITY:
@@ -5447,7 +5487,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         for (auto iDim = 0u; iDim < nDim; iDim++)
           Velocity_e[iDim] = VelMag_e*Flow_Dir[iDim];
+        /*--- The total energy of the node already contains k, which is added below to every case. ---*/
         Energy_e = Energy_i;
+        if (tkeNeeded) Energy_e -= turbNodes->GetSolution(iPoint, 0);
         break;
 
       case STATIC_PRESSURE:
@@ -5471,11 +5513,18 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         break;
       }
 
+      /*--- k of the boundary node, not the free-stream value, which decays right away in the domain (#1851).
+       It is also removed from the static energy of the boundary state. ---*/
+      const su2double Tke_e = tkeNeeded ? turbNodes->GetSolution(iPoint, 0) : 0.0;
+      Energy_e += Tke_e;
+
       /*--- Compute P (matrix of right eigenvectors) ---*/
-      conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
+      conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor,
+                                Tke_e);
 
       /*--- Compute inverse P (matrix of left eigenvectors)---*/
-      conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+      conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal,
+                                    Tke_e);
 
       /*--- eigenvalues contribution due to grid motion ---*/
       su2double ProjVelocity_i = GeometryToolbox::DotProduct(nDim, Velocity_i, UnitNormal);
@@ -5524,7 +5573,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Velocity2_b = GeometryToolbox::SquaredNorm(nDim, Velocity_b);
 
       const su2double Energy_b = u_b[nVar-1]/Density_b;
-      const su2double StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
+      const su2double StaticEnergy_b = Energy_b - 0.5*Velocity2_b - Tke_e;
       GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
 
       /*--- Store number of Newton iterations at BC ---*/
@@ -5578,7 +5627,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         }
 
         /*--- Compute flux Jacobian in state b ---*/
-        conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
+        conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b, Tke_e);
 
         /*--- Jacobian contribution due to grid motion ---*/
         if (dynamic_grid){
@@ -5668,7 +5717,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
-        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        if (tkeNeeded)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -5724,6 +5773,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
   const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
                          config->GetKind_FluidModel() == IDEAL_GAS;
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
@@ -5797,6 +5848,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         Energy_i = nodes->GetEnergy(iPoint);
         StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+        if (tkeNeeded) StaticEnergy_i -= turbNodes->GetSolution(iPoint, 0);
 
         GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -5860,7 +5912,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             Density_e = GetFluidModel()->GetDensity();
             StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
             Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-            if (tkeNeeded) Energy_e += GetTke_Inf();
+            if (tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
           case MIXING_IN:
@@ -5895,7 +5947,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             Density_e = GetFluidModel()->GetDensity();
             StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
             Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-            // if (tkeNeeded) Energy_e += GetTke_Inf();
+            if (tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
 
@@ -5913,6 +5965,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
             }
             Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+            if (tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
           case STATIC_PRESSURE:
@@ -5930,6 +5983,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
             }
             Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+            if (tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
 
@@ -5947,6 +6001,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
             }
             Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+            if (tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
           default:
@@ -5955,10 +6010,13 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         }
 
         /*--- Compute P (matrix of right eigenvectors) ---*/
-        conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
+        const su2double Tke_i = tkeNeeded ? turbNodes->GetSolution(iPoint, 0) : 0.0;  // SST: k in the total energy
+        conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor,
+                                  Tke_i);
 
         /*--- Compute inverse P (matrix of left eigenvectors)---*/
-        conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+        conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal,
+                                      Tke_i);
 
         /*--- eigenvalues contribution due to grid motion ---*/
         if (dynamic_grid){
@@ -6022,7 +6080,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           Velocity2_b += Velocity_b[iDim]*Velocity_b[iDim];
         }
         Energy_b = u_b[nVar-1]/Density_b;
-        StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
+        StaticEnergy_b = Energy_b - 0.5*Velocity2_b - Tke_i;  // SST: k in the total energy
         GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
         Pressure_b = GetFluidModel()->GetPressure();
         Temperature_b = GetFluidModel()->GetTemperature();
@@ -6078,7 +6136,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           }
 
           /*--- Compute flux Jacobian in state b ---*/
-          conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
+          conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b, Tke_i);
 
           /*--- Jacobian contribution due to grid motion ---*/
           if (dynamic_grid)
@@ -6780,6 +6838,9 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
       Energy_i = nodes->GetEnergy(iPoint);
       StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+      /*--- SST: the total energy contains k. ---*/
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        StaticEnergy_i -= solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -7036,6 +7097,9 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       Energy_b = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_b;
       Temperature_b= GetFluidModel()->GetTemperature();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
+      /*--- SST: the boundary state carries the k of the node in its total enthalpy, as the interior one. ---*/
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        Enthalpy_b += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
 
       /*--- Primitive variables, using the derived quantities ---*/
       V_boundary[0] = Temperature_b;
@@ -7053,6 +7117,16 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       /*--- Set various quantities in the solver class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_boundary);
+
+      /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+
+        const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+
+        conv_numerics->SetTurbKineticEnergy(tke, tke);
+
+      }
       conv_numerics->SetSecondary(S_domain, S_boundary);
 
 
@@ -7276,6 +7350,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+        /*--- SST: the total enthalpy of the domain contains k, the imposed total enthalpy does not. ---*/
+        if (tkeNeeded) Energy -= solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
         Pressure    = V_domain[nDim+1];
         H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
         SoundSpeed2 = Gamma*Pressure/Density;
@@ -7346,7 +7422,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Using pressure, density, & velocity, compute the energy ---*/
 
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
 
         /*--- Primitive variables, using the derived quantities ---*/
 
@@ -7356,6 +7431,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         V_inlet[nDim+1] = Pressure;
         V_inlet[nDim+2] = Density;
         V_inlet[nDim+3] = Energy + Pressure/Density;
+
+        /*--- k of the boundary node, not the free-stream value, which decays right away in the domain (#1851). ---*/
+        if (tkeNeeded) V_inlet[nDim+3] += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
         break;
       }
@@ -7418,7 +7496,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Energy for the fictitious inlet state ---*/
 
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
-        if (tkeNeeded) Energy += GetTke_Inf();
 
         /*--- Primitive variables, using the derived quantities ---*/
         Temperature = Pressure / ( Gas_Constant * Density);
@@ -7428,6 +7505,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         V_inlet[nDim+1] = Pressure;
         V_inlet[nDim+2] = Density;
         V_inlet[nDim+3] = Energy + Pressure/Density;
+
+        /*--- k of the boundary node, not the free-stream value, which decays right away in the domain (#1851). ---*/
+        if (tkeNeeded) V_inlet[nDim+3] += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
         break;
       }
@@ -7439,6 +7519,16 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Set various quantities in the solver class ---*/
 
     conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+    /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+
+      const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+
+      conv_numerics->SetTurbKineticEnergy(tke, tke);
+
+    }
 
     if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
@@ -7476,6 +7566,9 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   auto *Normal = new su2double[nDim];
 
@@ -7558,7 +7651,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += turbNodes->GetSolution(iPoint,0);
 
         /*--- Conservative variables, using the derived quantities ---*/
         V_outlet[0] = Pressure / ( Gas_Constant * Density);
@@ -7572,6 +7665,11 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+        const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+        conv_numerics->SetTurbKineticEnergy(tke, tke);
+      }
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
@@ -7669,13 +7767,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     /*--- Compute the energy from the specified state. ---*/
 
     const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
-    su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
-    if (tkeNeeded) {
-      const su2double* Turb_Properties = config->GetInlet_TurbVal(Marker_Tag);
-      const su2double Intensity = Turb_Properties[0];
-      const su2double Tke = 3.0 / 2.0 * (Velocity2 * pow(Intensity, 2));
-      Energy += Tke;
-    }
+    const su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
 
     /*--- Primitive variables, using the derived quantities. ---*/
 
@@ -7686,6 +7778,9 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     V_inlet[prim_idx.Enthalpy()] = Energy + Pressure / Density;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       V_inlet[iDim+prim_idx.Velocity()] = Velocity[iDim];
+
+    /*--- k of the boundary node, not the free-stream value, which decays right away in the domain (#1851). ---*/
+    if (tkeNeeded) V_inlet[prim_idx.Enthalpy()] += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
     /*--- Current solution at this boundary node. ---*/
 
@@ -7701,6 +7796,11 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     conv_numerics->SetNormal(Normal);
     conv_numerics->SetPrimitive(V_domain, V_inlet);
+    /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+      const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+      conv_numerics->SetTurbKineticEnergy(tke, tke);
+    }
 
     if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -7782,6 +7882,11 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+        const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+        conv_numerics->SetTurbKineticEnergy(tke, tke);
+      }
       if (config->GetKind_FluidModel() != STANDARD_AIR && config->GetKind_FluidModel() != IDEAL_GAS)
         conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
@@ -8002,7 +8107,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       }
 
       Energy = Inflow_Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
+      if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
 
       /*--- Conservative variables, using the derived quantities ---*/
 
@@ -8018,6 +8123,11 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_inflow);
+      /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+        const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+        conv_numerics->SetTurbKineticEnergy(tke, tke);
+      }
 
       /*--- Set grid movement ---*/
 
@@ -8167,6 +8277,8 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
       Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+      /*--- SST: the total enthalpy of the domain contains k, the imposed total enthalpy does not. ---*/
+      if (tkeNeeded) Energy -= solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
       Pressure    = V_domain[nDim+1];
       H_Exhaust   = (Gamma*Gas_Constant/Gamma_Minus_One)*Exhaust_Temperature;
       SoundSpeed2 = Gamma*Pressure/Density;
@@ -8239,7 +8351,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         /*--- Using pressure, density, & velocity, compute the energy ---*/
 
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
 
         /*--- Primitive variables, using the derived quantities ---*/
 
@@ -8270,6 +8382,11 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_exhaust);
+      /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+        const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+        conv_numerics->SetTurbKineticEnergy(tke, tke);
+      }
 
       /*--- Set grid movement ---*/
 
@@ -8531,7 +8648,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
 
         /*--- Conservative variables, using the derived quantities ---*/
 
@@ -8543,6 +8660,11 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         V_inlet[nDim+3] = Energy + Pressure/Density;
         V_inlet[nDim+4] = SoundSpeed;
         conv_numerics->SetPrimitive(V_domain, V_inlet);
+        /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+          const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+          conv_numerics->SetTurbKineticEnergy(tke, tke);
+        }
 
       }
 
@@ -8618,6 +8740,8 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+        /*--- SST: the total enthalpy of the domain contains k, the imposed total enthalpy does not. ---*/
+        if (tkeNeeded) Energy -= solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
         Pressure    = V_domain[nDim+1];
         H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
         SoundSpeed2 = Gamma*Pressure/Density;
@@ -8686,7 +8810,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         /*--- Using pressure, density, & velocity, compute the energy ---*/
 
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
 
         /*--- Primitive variables, using the derived quantities ---*/
 
@@ -8698,6 +8822,11 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         V_outlet[nDim+3] = Energy + Pressure/Density;
         V_outlet[nDim+4] = sqrt(SoundSpeed2);
         conv_numerics->SetPrimitive(V_domain, V_outlet);
+        /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+          const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+          conv_numerics->SetTurbKineticEnergy(tke, tke);
+        }
 
       }
 
@@ -8934,7 +9063,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
 
         /*--- Conservative variables, using the derived quantities ---*/
 
@@ -8945,6 +9074,11 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
         V_inlet[nDim+3] = Energy + Pressure/Density;
         V_inlet[nDim+4] = SoundSpeed;
         conv_numerics->SetPrimitive(V_domain, V_inlet);
+        /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+          const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+          conv_numerics->SetTurbKineticEnergy(tke, tke);
+        }
       }
       else {
         /*--- Acoustic Riemann invariant extrapolation form the interior domain. ---*/
@@ -8982,7 +9116,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
         /*--- Computation of the enthalpy, total energy, temperature and speed of sound. ---*/
         H_out = H_in/Density_in + Fa/Density_out;
         Energy = H_out - Pressure_out/Density_out;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);  // node k, see #1851
         Temperature_out = (Energy-0.5*Velocity2/(pow(Density_out,2)))*(Gamma_Minus_One/Gas_Constant);
 
         SoS_out = sqrt(Gamma*Gas_Constant*Temperature_out);
@@ -8996,6 +9130,11 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
         V_outlet[nDim+3] = H_out;
         V_outlet[nDim+4] = SoS_out;
         conv_numerics->SetPrimitive(V_domain, V_outlet);
+        /*--- SST: both states contain the k of the node in their total enthalpy. ---*/
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+          const su2double tke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
+          conv_numerics->SetTurbKineticEnergy(tke, tke);
+        }
       }
 
       /*--- Grid Movement (NOT TESTED!)---*/

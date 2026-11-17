@@ -539,9 +539,9 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   /*--- R times partial derivatives of temp. ---*/
 
-  const su2double R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi;
-  const su2double R_dTdu1 = -phi*val_Mean_PrimVar[1];
-  const su2double R_dTdu2 = -phi*val_Mean_PrimVar[2];
+  const su2double R_dTdu0 = -Pressure / (Density * Density) + (0.5 * sqvel - Mean_turb_ke) * phi;
+  const su2double R_dTdu1 = -phi * val_Mean_PrimVar[1];
+  const su2double R_dTdu2 = -phi * val_Mean_PrimVar[2];
 
   const su2double heat_flux_factor = val_thermal_conductivity/val_heat_capacity_cp + val_eddy_viscosity/Prandtl_Turb;
   const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R

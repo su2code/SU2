@@ -990,7 +990,9 @@ public:
    * \param[in] iPoint - Point index.
    * \return Pointer to the undivided laplacian vector.
    */
-  inline su2double *GetUndivided_Laplacian(unsigned long iPoint) { return Undivided_Laplacian[iPoint]; }
+  virtual su2double GetRhoTke(unsigned long iPoint) const { return 0.0; }
+
+  inline su2double* GetUndivided_Laplacian(unsigned long iPoint) { return Undivided_Laplacian[iPoint]; }
 
   /*!
    * \brief Get the undivided laplacian of the solution.

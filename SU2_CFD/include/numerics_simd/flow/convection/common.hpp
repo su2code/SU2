@@ -60,7 +60,9 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
                                                       const VariableType& solution,
-                                                      Double& nonPhysical) {
+                                                      Double& nonPhysical,
+                                                      const Double& tke_i = Double(0.0),
+                                                      const Double& tke_j = Double(0.0)) {
   static_assert(ReconVarType::nVar <= PrimVarType::nVar);
 
   const auto& gradients = solution.GetGradient_Reconstruction();
@@ -101,7 +103,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
     /*--- Test the sign of the Roe-averaged speed of sound. ---*/
     const Double R = sqrt(abs(V.j.density() / V.i.density()));
     /*--- Delay dividing by R+1 until comparing enthalpy and velocity magnitude. ---*/
-    const Double enthalpy = R*V.j.enthalpy() + V.i.enthalpy();
+    const Double enthalpy = R*(V.j.enthalpy() - tke_j) + V.i.enthalpy() - tke_i;
     Double v_squared = 0.0;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
       v_squared += pow(R*V.j.velocity(iDim) + V.i.velocity(iDim), 2);
@@ -134,9 +136,11 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
  */
 template<size_t nDim, class RandomAccessIterator>
 FORCEINLINE MatrixDbl<nDim+2> pMatrix(const Double& gamma, const Double& density, const RandomAccessIterator& velocity,
-                                      const Double& projVel, const Double& speedSound, const VectorDbl<nDim>& normal) {
+                                      const Double& projVel, const Double& speedSound, const VectorDbl<nDim>& normal,
+                                      const Double& tke = Double(0.0)) {
   MatrixDbl<nDim+2> pMat;
-  const Double vel2 = 0.5*squaredNorm<nDim>(velocity);
+  /*--- With SST the total energy contains k (tke). ---*/
+  const Double vel2 = 0.5*squaredNorm<nDim>(velocity) + tke;
 
   if (nDim == 2) {
     pMat(0,0) = 1.0;
@@ -197,11 +201,13 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(const Double& gamma, const Double& density
 template<size_t nDim, class RandomAccessIterator>
 FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(const Double& gamma, const Double& density,
                                          const RandomAccessIterator& velocity, const Double& projVel,
-                                         const Double& speedSound, const VectorDbl<nDim>& normal) {
+                                         const Double& speedSound, const VectorDbl<nDim>& normal,
+                                         const Double& tke = Double(0.0)) {
   MatrixDbl<nDim+2> pMatInv;
 
   const Double c2 = pow(speedSound,2);
-  const Double vel2 = 0.5*squaredNorm<nDim>(velocity);
+  /*--- With SST the total energy contains k (tke), dp/drho = (gamma-1) (|u|^2/2 - k). ---*/
+  const Double vel2 = 0.5*squaredNorm<nDim>(velocity) - tke;
   const Double oneOnRho = 1 / density;
 
   if (nDim == 2) {
@@ -274,18 +280,29 @@ FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const PrimVarType& V,
 }
 
 /*!
+ * \brief Turbulence variables among the constructor arguments of a scheme (nullptr if there are none).
+ */
+inline const CVariable* findTurbVars() { return nullptr; }
+template<class T, class... Ts>
+const CVariable* findTurbVars(T& first, Ts&... rest) {
+  if constexpr (std::is_convertible<T, const CVariable*>::value) return first;
+  else return findTurbVars(rest...);
+}
+
+/*!
  * \brief Jacobian of the convective flux (compressible flow, ideal gas).
+ * \note With SST the total energy contains k (tke), which is held fixed.
  */
 template<size_t nDim, class RandomAccessIterator>
 FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(const Double& gamma, RandomAccessIterator velocity,
                                               const Double& energy, const VectorDbl<nDim>& normal,
-                                              const Double& scale) {
+                                              const Double& scale, const Double& tke = Double(0.0)) {
   MatrixDbl<nDim+2> jac;
 
   Double projVel = dot(velocity, normal);
   Double gamma_m_1 = gamma-1;
-  Double phi = 0.5*gamma_m_1*squaredNorm<nDim>(velocity);
-  Double a1 = gamma*energy - phi;
+  Double phi = gamma_m_1*(0.5*squaredNorm<nDim>(velocity) - tke);  // dp/drho, k held fixed
+  Double a1 = gamma*energy - gamma_m_1*(0.5*squaredNorm<nDim>(velocity) + tke);  // total enthalpy
 
   jac(0,0) = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -385,21 +402,20 @@ FORCEINLINE Double correctedSpectralRadius(const Int& iPoint,
 /*!
  * \brief Update of a flux Jacobian due to a scalar dissipation term.
  */
-template<class VariableType, size_t nVar>
-FORCEINLINE void scalarDissipationJacobian(const VariableType& V,
-                                           const Double& gamma,
-                                           Double dissipConst,
-                                           MatrixDbl<nVar>& jac) {
+template <class VariableType, size_t nVar>
+FORCEINLINE void scalarDissipationJacobian(const VariableType& V, const Double& gamma, Double dissipConst,
+                                           MatrixDbl<nVar>& jac, const Double& tke = Double(0.0)) {
   /*--- Diagonal entries. ---*/
-  for (size_t iVar = 0; iVar < nVar-1; ++iVar) {
-    jac(iVar,iVar) += dissipConst;
+  for (size_t iVar = 0; iVar < nVar - 1; ++iVar) {
+    jac(iVar, iVar) += dissipConst;
   }
-  jac(nVar-1,nVar-1) += dissipConst * gamma;
+  jac(nVar - 1, nVar - 1) += dissipConst * gamma;
+  jac(nVar - 1, 0) -= dissipConst * (gamma - 1.0) * tke;
 
   /*--- N-1 columns of last row. ---*/
-  dissipConst *= gamma-1.0;
+  dissipConst *= gamma - 1.0;
   for (size_t iDim = 0; iDim < VariableType::nDim; ++iDim) {
-    jac(nVar-1,iDim+1) -= dissipConst * V.velocity(iDim);
-    jac(nVar-1,0) += dissipConst * pow(V.velocity(iDim), 2);
+    jac(nVar - 1, iDim + 1) -= dissipConst * V.velocity(iDim);
+    jac(nVar - 1, 0) += 0.5 * dissipConst * pow(V.velocity(iDim), 2);
   }
 }
