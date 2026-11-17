@@ -158,12 +158,13 @@ void CMultiGridIntegration::SetCoarseGridCFL(CGeometry ****geometry, CSolver ***
 
     mg_ramp_mesh0_active = FullMG_Mesh0Ramping(config[iZone], FinestMesh, FullMG);
 
-    /*--- Coarse targets are derived from the level-0 CFL via MG_CFL_SCALING. ---*/
+    /*--- The active level takes the level-0 CFL, the levels below it are scaled via MG_CFL_SCALING. ---*/
     passivedouble cfl_base = mesh0_ramp_window ? passivedouble{0.0} : SU2_TYPE::GetValue(sol_f->GetAvg_CFL_Local());
     if (cfl_base < EPS)
       cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
 
     const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
+    const unsigned short activeLevel = FullMG ? FinestMesh : MESH_0;
 
     passivedouble CFL_target[MAX_MG_LEVELS+1];
     passivedouble CFL_scale[MAX_MG_LEVELS+1];
@@ -176,7 +177,7 @@ void CMultiGridIntegration::SetCoarseGridCFL(CGeometry ****geometry, CSolver ***
       const passivedouble scale =
           max(passivedouble{1e-6}, min(passivedouble{1.0}, SU2_TYPE::GetValue(cflScaling[iScale])));
       CFL_scale[lvl] = scale;
-      CFL_target[lvl] = CFL_target[lvl-1] * scale;
+      CFL_target[lvl] = (lvl <= activeLevel) ? cfl_base : CFL_target[lvl-1] * scale;
     }
 
     /*--- Ramp from the CFL the level below handed over at. The coarsest level has none and starts
