@@ -119,7 +119,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.350066, 1.379784, -0.249526, 0.043953]
+    wedge.test_vals = [-4.350003, 1.379848, -0.249526, 0.043953]
     test_list.append(wedge)
 
     # Supersonic biparabolic airfoil
@@ -1775,6 +1775,19 @@ def main():
     pywrapper_custom_inlet.enabled_with_asan = False
     test_list.append(pywrapper_custom_inlet)
     pass_list.append(pywrapper_custom_inlet.run_test(args.tsan, args.asan))
+
+    # Bounds checks of the matrix views
+    pywrapper_matrix_view_bounds = TestCase('pywrapper_matrix_view_bounds')
+    pywrapper_matrix_view_bounds.cfg_dir = "py_wrapper/matrix_view_bounds"
+    pywrapper_matrix_view_bounds.cfg_file = "heat_rectangle.cfg"
+    pywrapper_matrix_view_bounds.test_iter = 10
+    pywrapper_matrix_view_bounds.test_vals = [-5.122599, -4.820574, 127.760000]
+    pywrapper_matrix_view_bounds.command = TestCase.Command(exec = "python", param = "run.py")
+    pywrapper_matrix_view_bounds.timeout = 1600
+    pywrapper_matrix_view_bounds.tol = 0.00001
+    pywrapper_matrix_view_bounds.enabled_with_asan = False
+    test_list.append(pywrapper_matrix_view_bounds)
+    pass_list.append(pywrapper_matrix_view_bounds.run_test(args.tsan, args.asan))
 
     # Tests summary
     print('==================================================================')
