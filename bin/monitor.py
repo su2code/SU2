@@ -287,15 +287,15 @@ class MatplotlibFigure(QWidget):
         self.lastkey = key
 
         names = self.reader.names
-        shown = [l for l in range(min(len(listonoff), len(names))) if listonoff[l]]
+        shown = [i for i in range(min(len(listonoff), len(names))) if listonoff[i]]
         ax = self.figure.axes[0] if self.figure.axes else self.figure.add_subplot(111)
 
-        rebuild = self.visible != [names[l] for l in shown]
+        rebuild = self.visible != [names[i] for i in shown]
         if rebuild:
-            self.visible = [names[l] for l in shown]
+            self.visible = [names[i] for i in shown]
             ax.clear()
             ax.set_ylabel(self.ylabel)
-            self.lines = [ax.plot([], [], label=names[l])[0] for l in shown]
+            self.lines = [ax.plot([], [], label=names[i])[0] for i in shown]
 
         ax.set_xlabel(
             "time iterations" if byTime and self.reader.hasTime() else "iterations"
@@ -305,10 +305,10 @@ class MatplotlibFigure(QWidget):
         x = (
             self.reader.times if byTime and self.reader.hasTime() else self.reader.iters
         )[rows]
-        for line, l in zip(self.lines, shown):
-            y = self.reader.buf[rows, l]
-            if normalize and n > 1 and abs(self.reader.buf[1, l]) > 1e-6:
-                y = 1 + y - self.reader.buf[1, l]
+        for line, i in zip(self.lines, shown):
+            y = self.reader.buf[rows, i]
+            if normalize and n > 1 and abs(self.reader.buf[1, i]) > 1e-6:
+                y = 1 + y - self.reader.buf[1, i]
             line.set_data(x, y)
 
         ax.set_autoscaley_on(True)
