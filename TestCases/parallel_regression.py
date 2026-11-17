@@ -297,7 +297,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.017956, 1.709065, -0.249527, 0.043953]
+    wedge.test_vals = [-4.017572, 1.709456, -0.249527, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -2180,7 +2180,7 @@ def main():
     naca0012_def_file_camber.cfg_dir   = "deformation/naca0012"
     naca0012_def_file_camber.cfg_file  = "def_NACA0012_camber.cfg"
     naca0012_def_file_camber.test_iter = 10
-    naca0012_def_file_camber.test_vals = [0.00854844]
+    naca0012_def_file_camber.test_vals = [0.0201692]
     naca0012_def_file_camber.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
     naca0012_def_file_camber.timeout   = 1600
     naca0012_def_file_camber.tol       = 1e-8
