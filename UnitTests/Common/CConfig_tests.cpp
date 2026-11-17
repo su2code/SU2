@@ -88,6 +88,20 @@ TEST_CASE("INIT_OPTION_INC defaults", "[Config]") {
   CHECK(GetInitOptionInc(ideal_gas_options + "INIT_OPTION_INC= DENSITY_INIT\n") == INIT_OPTION_INC::DENSITY_INIT);
 }
 
+TEST_CASE("Supported multigrid levels are retained", "[Config][MultigridLimits]") {
+  for (const auto levels : {0, 10}) {
+    std::stringstream options(base_options + "MGLEVEL= " + std::to_string(levels) + "\n");
+    CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+    CHECK(config.GetnMGLevels() == levels);
+  }
+}
+
+TEST_CASE("Excessive multigrid levels are rejected", "[.MultigridLimitError]") {
+  std::stringstream options(base_options + "MGLEVEL= 11\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+  FAIL("An unsupported multigrid hierarchy was accepted.");
+}
+
 TEST_CASE("HLLC and AUSM SLAU Jacobian options are independent", "[Config][HLLCOptions]") {
   for (const auto accurate : {false, true}) {
     for (const auto exactHLLC : {false, true}) {
