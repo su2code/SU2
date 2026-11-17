@@ -103,7 +103,15 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   PreprocessLookUp(config);
 
   if (rank == MASTER_NODE) {
-    cout << "Preferential diffusion: " << (preferential_diffusion ? "Enabled" : "Disabled") << endl;
+    if (preferential_diffusion) {
+      const auto method = flamelet_options.pd_method;
+      const char* method_str = (method == FLAMELET_PD_METHOD::BETA_CORRECTION) ? "BETA_CORRECTION"
+                             : (method == FLAMELET_PD_METHOD::SOURCE_TERM)     ? "SOURCE_TERM"
+                                                                                : "COMBINED";
+      cout << "Preferential diffusion: Enabled (" << method_str << ")" << endl;
+    } else {
+      cout << "Preferential diffusion: Disabled" << endl;
+    }
   }
 }
 
@@ -212,19 +220,61 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
       varnames_LookUp[iLookup] = flamelet_options.lookup_names[iLookup];
   }
 
-  /*--- Preferential diffusion scalars ---*/
-  varnames_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
-  val_vars_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
+  /*--- Preferential diffusion scalars: only the terms required by the active PD method are looked up.
+   *
+   *    BETA_CORRECTION: [Beta_ProgVar, Beta_Enth_Thermal, Beta_Enth, Beta_MixFrac]
+   *
+   *    SOURCE_TERM (model B2 of Schepers & van Oijen, C&F 280 (2025) 114332), layout:
+   *      [0, n_CV)                : S_PV, S_h, (S_Z)     — Eq. (16) closure sources of the
+   *                                 NON-major species only, volumetric (rho-weighted) units:
+   *                                 [kg/(m^3 s)] for PV and Z, [W/m^3] for h.
+   *      [n_CV, n_CV+3)           : Y-H2, Y-H2O, Y-H     — major species mass fractions [-].
+   *      [n_CV+3, n_CV+3+3*n_CV)  : D_{cv}_{sp}          — molecular flux coefficients
+   *                                 D_{phi_k,i} = c_{phi_k,i} (rho*D_i - lambda/cp) of Eq. (14),
+   *                                 cv in {PV, h, Z} (CV order), sp in {H2, H2O, H};
+   *                                 units [kg/(m s)] for PV/Z rows, [W/m] for the h row
+   *                                 (c_{h,i} = h_i(T) is folded in at generation time).
+   *      [n_CV+3+3*n_CV, ...)     : DT_PV, DT_h, (DT_Z)  — combined Soret coefficients
+   *                                 DT_{phi_k} = sum_sp c_{phi_k,sp} DT_sp, with DT_sp the
+   *                                 Cantera thermal-diffusion coefficient [kg/(m s)] (species
+   *                                 flux j_sp = -(rho D_sp grad Y_sp + DT_sp/T grad T)); units
+   *                                 [kg/(m s)] for PV/Z, [W/m] for h. The 1/T factor is NOT
+   *                                 tabulated; it is applied at runtime with the local CFD T.
+   *    The runtime flux applied in CSpeciesFlameletSolver::Viscous_Residual is
+   *      J_{phi_k} = - sum_sp D_{cv}_{sp} grad(Y_sp) - (DT_{cv}/T) grad(T),
+   *    entering the transport equation as -div(J). ---*/
+  const auto pd_method = flamelet_options.pd_method;
+  const bool use_beta = (pd_method != FLAMELET_PD_METHOD::SOURCE_TERM);
+  const bool use_src  = (pd_method != FLAMELET_PD_METHOD::BETA_CORRECTION);
+  const unsigned n_beta_vars = use_beta ? FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS : 0u;
+  n_pd_major_species = use_src ? flamelet_options.n_pd_major_species : 0u;
+  const unsigned n_majors    = n_pd_major_species;
+  const unsigned n_src_vars  = use_src ? (n_control_vars + n_majors + (n_majors + 1) * n_control_vars) : 0u;
+  const unsigned n_pd_terms  = n_beta_vars + n_src_vars;
+  varnames_PD.resize(n_pd_terms);
+  val_vars_PD.resize(n_pd_terms, 0.0);
 
-  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = "Beta_ProgVar";
-  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = "Beta_Enth_Thermal";
-  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = "Beta_Enth";
-  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = "Beta_MixFrac";
+  if (use_beta) {
+    varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR]      = "Beta_ProgVar";
+    varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL]  = "Beta_Enth_Thermal";
+    varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH]         = "Beta_Enth";
+    varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC]      = "Beta_MixFrac";
+  }
 
-  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = beta_progvar;
-  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = beta_enth_thermal;
-  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = beta_enth;
-  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = beta_mixfrac;
+  if (use_src) {
+    const auto* major_names = flamelet_options.pd_major_species_names;
+    const auto* cv_names = flamelet_options.controlling_variable_names;
+
+    for (auto iCV = 0u; iCV < n_control_vars; iCV++)
+      varnames_PD[n_beta_vars + iCV] = "Res_" + cv_names[iCV];
+
+    unsigned idx = n_beta_vars + n_control_vars;
+    for (auto iSp = 0u; iSp < n_majors; iSp++) varnames_PD[idx++] = "Y-" + major_names[iSp];
+    for (auto iCV = 0u; iCV < n_control_vars; iCV++)
+      for (auto iSp = 0u; iSp < n_majors; iSp++)
+        varnames_PD[idx++] = "D_" + cv_names[iCV] + "_" + major_names[iSp];
+    for (auto iCV = 0u; iCV < n_control_vars; iCV++) varnames_PD[idx++] = "DT_" + cv_names[iCV];
+  }
 
   preferential_diffusion = flamelet_options.preferential_diffusion;
 
@@ -267,7 +317,18 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
       LUT_idx_LookUp.push_back(LUT_idx);
     }
     if (preferential_diffusion) {
-      for (auto iVar = 0u; iVar < varnames_PD.size(); iVar++) {
+      /*--- Check all preferential diffusion variables in one pass, so that a manifold missing
+       several of the required columns (e.g. the Eq. (14) flux coefficients of the SOURCE_TERM
+       method) reports the complete list instead of aborting on the first one. ---*/
+      std::string missing_vars;
+      for (const auto& name : varnames_PD)
+        if (!look_up_table->CheckForVariables({name})) missing_vars += "\n  " + name;
+      if (!missing_vars.empty())
+        SU2_MPI::Error("The manifold is missing the following variables required by the active "
+                       "PREFERENTIAL_DIFFUSION_METHOD (see CFluidFlamelet::PreprocessLookUp for "
+                       "their definitions and units):" + missing_vars, CURRENT_FUNCTION);
+
+      for (auto iVar=0u; iVar < varnames_PD.size(); iVar++) {
         LUT_idx_PD.push_back(look_up_table->GetIndexOfVar(varnames_PD[iVar]));
       }
     }
@@ -341,4 +402,45 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   for (auto iVar = 0u; iVar < output_refs.size(); iVar++) AD::SetPreaccOut(output_refs[iVar]);
   AD::EndPreacc();
   return extrapolation;
+}
+
+void CFluidFlamelet::GetTableCVBounds(su2double& cv1_min, su2double& cv1_max,
+                                      su2double& cv2_min, su2double& cv2_max,
+                                      su2double& cv3_min, su2double& cv3_max) const {
+  if (look_up_table == nullptr) {
+    cv1_min = cv2_min = cv3_min = 0.0;
+    cv1_max = cv2_max = cv3_max = 1.0;
+    return;
+  }
+  auto lx0 = look_up_table->GetTableLimitsX(0);
+  cv1_min = *lx0.first;  cv1_max = *lx0.second;
+  auto ly0 = look_up_table->GetTableLimitsY(0);
+  cv2_min = *ly0.first;  cv2_max = *ly0.second;
+  for (unsigned long l = 1; l < look_up_table->GetNTableLevels(); ++l) {
+    auto lx = look_up_table->GetTableLimitsX(l);
+    if (*lx.first  < cv1_min) cv1_min = *lx.first;
+    if (*lx.second > cv1_max) cv1_max = *lx.second;
+    auto ly = look_up_table->GetTableLimitsY(l);
+    if (*ly.first  < cv2_min) cv2_min = *ly.first;
+    if (*ly.second > cv2_max) cv2_max = *ly.second;
+  }
+  auto lz = look_up_table->GetTableLimitsZ();
+  cv3_min = lz.first;
+  cv3_max = lz.second;
+}
+
+void CFluidFlamelet::ResetHullMissDistance() {
+  if (look_up_table) look_up_table->ResetHullMissDistance();
+}
+
+su2double CFluidFlamelet::GetHullMissCV1Dev() const {
+  return look_up_table ? look_up_table->GetHullMissCV1Dev() : 0.0;
+}
+
+su2double CFluidFlamelet::GetHullMissCV2Dev() const {
+  return look_up_table ? look_up_table->GetHullMissCV2Dev() : 0.0;
+}
+
+su2double CFluidFlamelet::GetDistanceToNearestZLevel(su2double val_CV3) const {
+  return look_up_table ? look_up_table->GetDistanceToNearestZLevel(val_CV3) : 0.0;
 }

@@ -51,6 +51,15 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   void BoundaryFlux(CGeometry* geometry, CSolver** solver_container, CConfig* config, const ScalarFluxOptions& opt,
                     unsigned short val_marker);
 
+  /*!
+   * \brief Update what depends on the species solution just read from a restart file, on all grid
+   *        levels, and release the restart data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishLoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config);
+
  public:
   /*!
    * \brief Constructor of the class.

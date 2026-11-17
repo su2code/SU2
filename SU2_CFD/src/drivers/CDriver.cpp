@@ -1187,6 +1187,16 @@ void CDriver::RestartSolver(CSolver ***solver, CGeometry **geometry,
     }
   }
 
+  /*--- Start a new simulation from the fields of an existing restart file. ---*/
+
+  if (!restart && !restart_flow && !adjoint &&
+      (config->GetFlameletParsedOptions().ignition_method == FLAMELET_INIT_TYPE::RESTART_FILE)) {
+    auto sol = solver[MESH_0][SPECIES_SOL];
+    SU2_OMP_PARALLEL_(if(sol->GetHasHybridParallel()))
+    sol->LoadFlameInitFile(geometry, solver, config);
+    END_SU2_OMP_PARALLEL
+  }
+
   /*--- Restart adjoint solvers. ---*/
 
   if (restart) {

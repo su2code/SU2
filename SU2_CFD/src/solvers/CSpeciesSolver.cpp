@@ -271,6 +271,12 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   }  // end safe global access, pre and postprocessing are thread-safe.
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
+  FinishLoadRestart(geometry, solver, config);
+}
+
+void CSpeciesSolver::FinishLoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config) {
+  SU2_ZONE_SCOPED
+
   /*--- MPI solution and compute the eddy viscosity ---*/
 
   solver[MESH_0][SPECIES_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);

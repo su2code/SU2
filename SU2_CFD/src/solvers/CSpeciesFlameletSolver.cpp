@@ -81,7 +81,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short iMesh, unsigned short iRKStep,
                                            unsigned short RunTime_EqSystem, bool Output) {
   SU2_ZONE_SCOPED
-  unsigned long n_not_in_domain_global = 0;
+  unsigned long n_not_in_domain_local = 0, n_not_in_domain_global = 0;
+  unsigned long n_miss_pv = 0, n_miss_enth = 0, n_miss_mf = 0, n_miss_hull = 0;
   vector<su2double> scalars_vector(nVar);
   
   const bool ignition = SparkActive(config);
@@ -112,6 +113,14 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   /* Flame thickness correction factors */
   su2double F{1.0}, F_source{1.0};
 
+  /*--- Pre-fetch CV bounds for verbose miss classification (read-only, safe for all threads). ---*/
+  const bool verbose_misses = flamelet_config_options.verbose_misses;
+  const bool has_mf = (flamelet_config_options.n_control_vars == 3);
+  su2double cv1_min = 0, cv1_max = 1, cv2_min = 0, cv2_max = 1, cv3_min = 0, cv3_max = 1;
+  if (verbose_misses)
+    static_cast<CFluidFlamelet*>(solver_container[FLOW_SOL]->GetFluidModel())
+        ->GetTableCVBounds(cv1_min, cv1_max, cv2_min, cv2_max, cv3_min, cv3_max);
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
     CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
@@ -124,6 +133,9 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     }
 
     for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
+
+    /*--- Reset hull-miss distance accumulator for this point before any table lookups. ---*/
+    fluid_model_local->ResetHullMissDistance();
 
     /*--- Only apply thickened flame correction factor to sources for steady problems. ---*/
     unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector, F_source);
@@ -143,6 +155,19 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     nodes->SetTableMisses(i_point, misses);
     SU2_OMP_ATOMIC
     n_not_in_domain_local += misses;
+    if (verbose_misses && misses != 0) {
+      const su2double C = scalars_vector[FLAMELET_SCALAR_VARIABLES::I_PROGVAR];
+      const su2double h = scalars_vector[FLAMELET_SCALAR_VARIABLES::I_ENTH];
+      if (has_mf && (scalars_vector[FLAMELET_SCALAR_VARIABLES::I_MIXFRAC] < cv3_min ||
+                     scalars_vector[FLAMELET_SCALAR_VARIABLES::I_MIXFRAC] > cv3_max))
+        n_miss_mf++;
+      else if (C < cv1_min || C > cv1_max)
+        n_miss_pv++;
+      else if (h < cv2_min || h > cv2_max)
+        n_miss_enth++;
+      else
+        n_miss_hull++;
+    }
     /*--- Obtain passive look-up scalars. ---*/
     SetScalarLookUps(fluid_model_local, i_point, scalars_vector);
 
@@ -158,6 +183,17 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     if (flamelet_config_options.preferential_diffusion)
       SetPreferentialDiffusionScalars(fluid_model_local, i_point, scalars_vector);
 
+    /*--- Store signed CV deviations (query minus nearest hull node) at the worst-miss Z level. ---*/
+    nodes->SetHullMissDevCV1(i_point, fluid_model_local->GetHullMissCV1Dev());
+    nodes->SetHullMissDevCV2(i_point, fluid_model_local->GetHullMissCV2Dev());
+
+    /*--- Store distance to nearest table Z level (zero for 2D tables). ---*/
+    if (has_mf) {
+      const su2double z_dist = static_cast<CFluidFlamelet*>(fluid_model_local)
+                                   ->GetDistanceToNearestZLevel(scalars_vector[I_MIXFRAC]);
+      nodes->SetZLevelDist(i_point, z_dist);
+    }
+
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
   END_SU2_OMP_FOR
@@ -168,18 +204,61 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       if ((rank == MASTER_NODE) && (n_not_in_domain_global > 0))
         cout << "Number of points outside manifold domain: " << n_not_in_domain_global << endl;)
 
-  /*--- Compute preferential diffusion scalar gradients. ---*/
-  if (flamelet_config_options.preferential_diffusion) {
-    switch (config->GetKind_Gradient_Method()) {
-      case GREEN_GAUSS:
-        SetAuxVar_Gradient_GG(geometry, config);
-        break;
-      case WEIGHTED_LEAST_SQUARES:
-        SetAuxVar_Gradient_LS(geometry, config);
-        break;
-      default:
-        break;
+  if (verbose_misses) {
+    unsigned long miss_cats[4] = {n_miss_pv, n_miss_enth, n_miss_mf, n_miss_hull};
+    unsigned long miss_cats_global[4] = {};
+    SU2_MPI::Reduce(miss_cats, miss_cats_global, 4, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+    if ((rank == MASTER_NODE) && (n_not_in_domain_global > 0))
+      cout << "  Progress variable: " << miss_cats_global[0]
+           << " | Total Enthalpy: "   << miss_cats_global[1]
+           << " | Mixture Fraction: " << miss_cats_global[2]
+           << " | Hull: "             << miss_cats_global[3] << endl;
+  }
+
+  /*--- Compute auxiliary-variable gradients: β scalars for the BETA_CORRECTION method, the major
+   species mass fractions (PREFERENTIAL_DIFFUSION_MAJOR_SPECIES) for the SOURCE_TERM method. These
+   gradients ARE the multi-dimensional grad(Y_i) of Eq. (14) — the whole point of tabulating the
+   coefficients per species rather than pre-contracting them against the 1D flamelet gradients — so
+   they must exist for every gradient method. LEAST_SQUARES used to fall through the switch, leaving
+   the auxiliary gradients at zero and silently disabling preferential diffusion altogether; it is
+   routed to the least-squares path instead. The companion grad(T) of Eq. (14) is the flow solver's
+   primitive temperature gradient, which is always available for a viscous run. ---*/
+  /*--- Zero the Eq. (14) thermal (Soret) coefficients on viscous walls, matching the reference
+   implementation. The justification is manifold support, not impermeability: the tabulated Soret
+   coefficients come from freely propagating and burner-stabilized flamelets, none of which has a
+   quench layer, so applying them against the steepest temperature gradient in the domain uses the
+   manifold outside the states it was built from. Note that this does NOT remove a flux through the
+   wall face -- Viscous_Residual visits interior edges only, so the wall face never carries an
+   Eq. (14) flux. What it changes is the near-wall INTERIOR edges, because the scalar numerics
+   averages the two nodal coefficients. The molecular coefficients are deliberately left alone:
+   they act on the major species gradients, which the wall boundary condition already controls.
+   This is a modelling choice with a measurable consequence -- on the burner case it moves the wall
+   heat flux by up to 1.2% and the wall temperature by 0.4 K, decaying to nothing within 0.5 mm. ---*/
+  if (flamelet_config_options.preferential_diffusion &&
+      flamelet_config_options.pd_method == FLAMELET_PD_METHOD::SOURCE_TERM) {
+    auto* wall_nodes = static_cast<CSpeciesFlameletVariable*>(nodes);
+    const auto n_CV_wall = flamelet_config_options.n_control_vars;
+    const auto i_thermal = FlameletPDThermalTerm(flamelet_config_options.n_pd_major_species);
+
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+      /*--- Viscous walls only. GetSolid_Wall would also match EULER_WALL, a slip boundary with no
+       quench layer and so nothing to suppress. ---*/
+      if (!config->GetViscous_Wall(iMarker)) continue;
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+      for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        const auto iPoint_wall = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (auto iCV = 0u; iCV < n_CV_wall; iCV++)
+          wall_nodes->SetPDFluxCoeff(iPoint_wall, iCV, i_thermal, 0.0);
+      }
+      END_SU2_OMP_FOR
     }
+  }
+
+  if (flamelet_config_options.preferential_diffusion) {
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
+      SetAuxVar_Gradient_GG(geometry, config);
+    else
+      SetAuxVar_Gradient_LS(geometry, config);
   }
   /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
@@ -192,8 +271,12 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
   bool flame_front_ignition = (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::FLAME_FRONT);
 
+  /*--- The driver has already set this solution through LoadFlameInitFile. ---*/
+  const bool from_file = (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::RESTART_FILE);
+
   /*--- Also allow flame ignition when restarting. ---*/
-  if (((!restart) && ExtIter == 0) || (restart && (flamelet_config_options.ignition_method != FLAMELET_INIT_TYPE::NONE))) {
+  if (!from_file &&
+      (((!restart) && ExtIter == 0) || (restart && (flamelet_config_options.ignition_method != FLAMELET_INIT_TYPE::NONE)))) {
     if (rank == MASTER_NODE) {
       cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;
     }
@@ -354,6 +437,141 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
   /*--- All the unsteady initialization ---*/
   PushSolutionBackInTime(ExtIter, restart, solver_container, geometry, config);
+}
+
+void CSpeciesFlameletSolver::LoadFlameInitFile(CGeometry** geometry, CSolver*** solver, CConfig* config) {
+  SU2_ZONE_SCOPED
+
+  const auto& filename = flamelet_config_options.flame_init_filename;
+
+  /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    if (rank == MASTER_NODE) {
+      cout << "Initializing the solution from the restart file " << filename << endl;
+    }
+
+    if (config->GetRead_Binary_Restart()) {
+      Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+    } else {
+      Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
+    }
+
+    /*--- Fields are found by name instead of by position, which depends on the setup that wrote the file
+     * (turbulence model, ...). The readers leave the point index as the first field, which is not part of
+     * the data, and only some of them quote the names. ---*/
+    const auto findField = [&](const string& name) {
+      for (auto iField = 1ul; iField < fields.size(); iField++) {
+        auto field = fields[iField];
+        field.erase(remove(field.begin(), field.end(), '"'), field.end());
+        if (field == name) return static_cast<long>(iField) - 1;
+      }
+      return -1l;
+    };
+
+    struct FieldTarget {
+      CVariable* targetNodes;
+      unsigned short iVar;
+      unsigned long field;
+    };
+    vector<FieldTarget> targets;
+
+    const auto addRequired = [&](CVariable* targetNodes, unsigned short iVar, const string& name) {
+      const auto field = findField(name);
+      if (field < 0) {
+        SU2_MPI::Error(string("The field ") + name + string(" is not in the restart file ") + filename +
+                       string(", which is required by FLAME_INIT_METHOD= RESTART_FILE."), CURRENT_FUNCTION);
+      }
+      targets.push_back({targetNodes, iVar, static_cast<unsigned long>(field)});
+    };
+
+    /*--- The file may come from a setup without these models, or with others. Their
+     * variables are then left at the freestream values set by the solver constructors. ---*/
+    const auto addOptional = [&](CSolver* modelSolver, const vector<string>& names) {
+      for (auto iVar = 0u; iVar < modelSolver->GetnVar(); iVar++) {
+        const auto field = findField(names[iVar]);
+        if (field >= 0) {
+          targets.push_back({modelSolver->GetNodes(), static_cast<unsigned short>(iVar), static_cast<unsigned long>(field)});
+        } else if (rank == MASTER_NODE) {
+          cout << "WARNING: The field " << names[iVar] << " is not in the restart file, it keeps its freestream value." << endl;
+        }
+      }
+    };
+
+    /*--- The flow solution also has a place for the energy equation, which the flamelet model does not solve. ---*/
+    auto* flowNodes = solver[MESH_0][FLOW_SOL]->GetNodes();
+    addRequired(flowNodes, 0, "Pressure");
+    const string velocity[] = {"Velocity_x", "Velocity_y", "Velocity_z"};
+    for (auto iDim = 0u; iDim < nDim; iDim++) addRequired(flowNodes, iDim + 1, velocity[iDim]);
+
+    for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+      addRequired(nodes, iCV, flamelet_config_options.controlling_variable_names[iCV]);
+    }
+    for (auto iAux = 0u; iAux < flamelet_config_options.n_user_scalars; iAux++) {
+      addRequired(nodes, flamelet_config_options.n_control_vars + iAux, flamelet_config_options.user_scalar_names[iAux]);
+    }
+
+    switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+      case TURB_FAMILY::SA:
+        addOptional(solver[MESH_0][TURB_SOL], {"Nu_Tilde", "StochVar_x", "StochVar_y", "StochVar_z"});
+        break;
+      case TURB_FAMILY::KW:
+        addOptional(solver[MESH_0][TURB_SOL], {"Turb_Kin_Energy", "Omega"});
+        break;
+      case TURB_FAMILY::NONE:
+        break;
+    }
+    if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+      addOptional(solver[MESH_0][TRANS_SOL], {"LM_gamma", "LM_Re_t"});
+    }
+
+    /*--- Load data from the restart into correct containers. ---*/
+
+    unsigned long counter = 0;
+    for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
+
+      const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+      if (iPoint_Local > -1) {
+        const auto* pointData = &Restart_Data[counter * Restart_Vars[1]];
+
+        for (const auto& target : targets) {
+          target.targetNodes->SetSolution(iPoint_Local, target.iVar, pointData[target.field]);
+        }
+
+        counter++;
+      }
+    }
+
+    /*--- Detect a wrong solution file ---*/
+
+    if (counter != nPointDomain) {
+      SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                         string("It could be empty lines at the end of the file."),
+                     CURRENT_FUNCTION);
+    }
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  /*--- Transfer the solutions of the other solvers to the halos and the coarse grids,
+   * the species solver then updates what depends on all of them on all grids. ---*/
+
+  for (const auto iSol : {FLOW_SOL, TURB_SOL, TRANS_SOL}) {
+    if (solver[MESH_0][iSol] == nullptr) continue;
+
+    solver[MESH_0][iSol]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+    solver[MESH_0][iSol]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+
+    for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
+      MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][iSol]->GetNodes()->GetSolution(),
+                           *geometry[iMesh], solver[iMesh][iSol]->GetNodes()->GetSolution());
+      solver[iMesh][iSol]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+      solver[iMesh][iSol]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+    }
+  }
+
+  FinishLoadRestart(geometry, solver, config);
 }
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {
@@ -688,14 +906,107 @@ unsigned long CSpeciesFlameletSolver::SetPreferentialDiffusionScalars(CFluidMode
                                                                       unsigned long iPoint,
                                                                       const vector<su2double>& scalars) {
   SU2_ZONE_SCOPED
-  /*--- Retrieve the preferential diffusion scalar values from the manifold. ---*/
+  /*--- Retrieve preferential diffusion scalars from the manifold.
+   *    BETA_CORRECTION: [Beta_ProgVar, Beta_Enth_Thermal, Beta_Enth, Beta_MixFrac]
+   *    SOURCE_TERM:     [Res_<cv>] + [Y-<major species>] + Eq. (14) flux coefficients;
+   *    the full layout is documented in CFluidFlamelet::PreprocessLookUp and must stay in
+   *    sync with the sizing below. ---*/
+  const auto pd_method = flamelet_config_options.pd_method;
+  const bool use_beta = (pd_method != FLAMELET_PD_METHOD::SOURCE_TERM);
+  const bool use_src  = (pd_method != FLAMELET_PD_METHOD::BETA_CORRECTION);
+  const auto n_CV = flamelet_config_options.n_control_vars;
+  const unsigned n_majors = flamelet_config_options.n_pd_major_species;
+  const unsigned n_beta_vars = use_beta ? FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS : 0u;
+  const unsigned n_pd_terms  = n_beta_vars + (use_src ? (n_CV + n_majors + (n_majors + 1) * n_CV) : 0u);
+  vector<su2double> pref_diff_scalar(n_pd_terms);
+  unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::PREFDIF, pref_diff_scalar);
 
-  vector<su2double> beta_scalar(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
-  unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::PREFDIF, beta_scalar);
+  auto* flamelet_nodes = static_cast<CSpeciesFlameletVariable*>(nodes);
 
-  for (auto i_beta = 0u; i_beta < FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS; i_beta++) {
-    nodes->SetAuxVar(iPoint, i_beta, beta_scalar[i_beta]);
+  /*--- Off the manifold the lookup only returns an extrapolation, so a node that has been on the
+   manifold keeps the last valid values of everything set below: the aux vars, the flux coefficients
+   and the closure source, which is still applied. Nodes with no valid values yet are handled below.
+
+   Note that this freezes the coefficients. At states driven off the manifold, e.g. wall-quenched
+   burnt gas at an isothermal wall, whose correct enthalpy h(T_wall) lies below the tabulated h-range,
+   a frozen Soret coefficient against the quench-layer temperature gradient can keep pumping the state
+   further off-hull (over-burnt PV, runaway h excursion).
+
+   The kept values do not depend on the current solution and were not recorded on the current AD tape,
+   so they are stored back as passive values for the tape to stay consistent. ---*/
+  if (misses > 0 && flamelet_nodes->GetPDValuesValid(iPoint)) {
+    for (auto iAux = 0u; iAux < nodes->GetnAuxVar(); iAux++) {
+      nodes->SetAuxVar(iPoint, iAux, SU2_TYPE::GetValue(nodes->GetAuxVar(iPoint, iAux)));
+    }
+    if (use_src) {
+      for (auto iCV = 0u; iCV < n_CV; iCV++) {
+        for (auto iTerm = 0u; iTerm <= n_majors; iTerm++) {
+          const passivedouble coeff = SU2_TYPE::GetValue(flamelet_nodes->GetPDFluxCoeff(iPoint, iCV, iTerm));
+          flamelet_nodes->SetPDFluxCoeff(iPoint, iCV, iTerm, coeff);
+        }
+        const passivedouble src_pd = SU2_TYPE::GetValue(flamelet_nodes->GetScalarSourcesPD(iPoint)[iCV]);
+        flamelet_nodes->SetScalarSourcePD(iPoint, iCV, src_pd);
+        nodes->SetScalarSource(iPoint, iCV, nodes->GetScalarSources(iPoint)[iCV] + src_pd);
+      }
+    }
+    return misses;
   }
+
+  /*--- Store beta scalars as aux vars; their gradients are needed for the viscous residual. ---*/
+  if (use_beta) {
+    for (auto i_beta = 0u; i_beta < FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS; i_beta++)
+      nodes->SetAuxVar(iPoint, i_beta, pref_diff_scalar[i_beta]);
+  }
+
+  /*--- Major species mass fractions (stored as aux vars, gradients needed for the Eq. (14)
+   fluxes) and the flux coefficients. The runtime fluxes vanish naturally in composition-uniform
+   regions, so no flame-zone gating is required.
+
+   The flux coefficients are only meaningful ON the manifold: outside the hull the lookup
+   extrapolates (nearest-neighbor). A node that gets here off the manifold has no valid values to
+   keep, so its coefficients are zero and it falls back to the baseline (unity-Lewis) diffusion. The
+   deferred-correction stabilization is built from the same coefficients and vanishes there
+   consistently. ---*/
+  if (use_src) {
+    auto* fn_pd = static_cast<CSpeciesFlameletVariable*>(nodes);
+    unsigned idx = n_beta_vars + n_CV;
+    for (auto iSp = 0u; iSp < n_majors; iSp++) nodes->SetAuxVar(iPoint, iSp, pref_diff_scalar[idx++]);
+    const su2double coeff_scale = (misses == 0) ? 1.0 : 0.0;
+    for (auto iCV = 0u; iCV < n_CV; iCV++)
+      for (auto iSp = 0u; iSp < n_majors; iSp++)
+        fn_pd->SetPDFluxCoeff(iPoint, iCV, iSp, coeff_scale * pref_diff_scalar[idx++]);
+    for (auto iCV = 0u; iCV < n_CV; iCV++)
+      fn_pd->SetPDFluxCoeff(iPoint, iCV, n_majors, coeff_scale * pref_diff_scalar[idx++]);
+  }
+
+  /*--- Accumulate PD closure source terms (Eq. 16, Schepers & van Oijen 2025) into scalar sources.
+   *    Also cache the raw values in source_pd for visualization.
+   *    If the PREFDIF lookup itself misses on a node with no valid values to keep, the returned values
+   *    are extrapolated outside the manifold and physically meaningless — skip the accumulation to avoid
+   *    driving the solution further off-manifold (see also the THERM lookup misses tracked by
+   *    SetScalarSources).
+   *
+   *    Manifold validity is the ONLY gate. An earlier version additionally required chemical
+   *    activity (chem_src_pv > 0), on the reasoning that the manifold carries flamelet-gradient
+   *    structure at every state while the bulk unburnt and burnt regions of the CFD are
+   *    gradient-free. That test did not do what it claimed: SetScalarSources clips the progress
+   *    variable source with fmax(0, .), so the condition only fails where the TABULATED source was
+   *    negative -- a burnt-edge state that occurs inside the flame, not in the bulk. Measured on a
+   *    converged solution it closed at 320 nodes, every one of them in the preheat zone at
+   *    304-567 K, and stayed open across all 21k gradient-free bulk nodes: the exact inverse of its
+   *    stated purpose, and a one-cell discontinuity in the source field where it did close. The
+   *    preheat zone is also where the preferential diffusion flux divergence is largest for
+   *    hydrogen, so the test suppressed the model precisely where it matters most. ---*/
+  if (use_src && misses == 0) {
+    for (auto iCV = 0u; iCV < n_CV; ++iCV) {
+      const su2double src_pd = pref_diff_scalar[n_beta_vars + iCV];
+      flamelet_nodes->SetScalarSourcePD(iPoint, iCV, src_pd);
+      nodes->SetScalarSource(iPoint, iCV, nodes->GetScalarSources(iPoint)[iCV] + src_pd);
+    }
+  }
+
+  if (misses == 0) flamelet_nodes->SetPDValuesValid(iPoint);
+
   return misses;
 }
 
@@ -747,6 +1058,11 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
   *val_enth = enth_iter;
 
   if (counter >= counter_limit) {
+    /*--- MASTER_NODE only: this is reached per point, so an unguarded write would be emitted by
+     every rank for every failing node. ---*/
+    if (rank == MASTER_NODE)
+      cout << " !!! GetEnthFromTemp: Newton iteration did not converge in " << counter_limit
+           << " iterations, delta_temp_iter = " << delta_temp_iter << endl;
     exit_code = 1;
   }
 
@@ -755,17 +1071,26 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 
 su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalar_solution, const su2double T_ignition) {
   SU2_ZONE_SCOPED
-  su2double scalars[MAXNVAR], delta = 1e-3;
+  su2double scalars[MAXNVAR], delta = 1e-6;
   for (auto iVar = 0u; iVar < nVar; iVar++) scalars[iVar] = scalar_solution[iVar];
-  bool outside = false;
+  bool outside = false, hit_t_ignition = false;
   scalars[I_PROGVAR] += delta;
   while (!outside) {
     /*--- Note that 300.0 is a dummy temperature here and not used. ---*/
     fluid_model->SetTDState_T(300.0, scalars);
-    if ((fluid_model->GetExtrapolation() == 1) || fluid_model->GetTemperature() > T_ignition) outside = true;
+    if (fluid_model->GetExtrapolation() == 1) {
+      outside = true;
+    } else if (fluid_model->GetTemperature() > T_ignition) {
+      outside = true;
+      hit_t_ignition = true;
+    }
     scalars[I_PROGVAR] += delta;
   }
-  su2double pv_burnt = scalars[I_PROGVAR] - delta;
+  /*--- When the loop exits via extrapolation the last valid PV is two deltas back
+   *    (the loop increments once after setting outside=true).  When it exits via
+   *    the ignition-temperature threshold that state is physically valid and used directly. ---*/
+  su2double pv_burnt = scalars[I_PROGVAR] - (hit_t_ignition ? delta : 2 * delta);
+
   if (rank == MASTER_NODE) {
     cout << "Burnt progress variable determined from flamelet table: " << pv_burnt << endl;
     cout << "Burnt temperature from flamelet table: " << fluid_model->GetTemperature() << endl;
