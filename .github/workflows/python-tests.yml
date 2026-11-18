@@ -2,7 +2,7 @@ name: Python Tests
 on:
   pull_request:
     paths:
-      - "bin/monitor.py"
+      - "SU2_PY/monitor.py"
       - "SU2_PY/tests/**"
       - ".github/workflows/python-tests.yml"
 
