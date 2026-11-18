@@ -78,16 +78,6 @@ string CDriver::GetSurfaceFileName() const { return config_container[selected_zo
 /* Functions related to the management of markers                             */
 ////////////////////////////////////////////////////////////////////////////////
 
-void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
-                                    passivedouble pos_z) {
-  CSolver* solver = solver_container[selected_zone][INST_0][MESH_0][RAD_SOL];
-
-  config_container[selected_zone]->SetHeatSource_Rot_Z(alpha);
-  config_container[selected_zone]->SetHeatSource_Center(pos_x, pos_y, pos_z);
-
-  solver->SetVolumetricHeatSource(geometry_container[selected_zone][INST_0][MESH_0], config_container[selected_zone]);
-}
-
 void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
   const su2double alpha_rad = alpha * PI_NUMBER / 180.0;
 

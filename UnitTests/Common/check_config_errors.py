@@ -6,8 +6,8 @@ import subprocess
 
 # Each hidden test tag, with the text its error message has to contain.
 CASES = (
-    ("HeatSourceHeatEquation", "HEAT_SOURCE= YES requires a RADIATION_MODEL"),
-    ("HeatSourceIncompressible", "HEAT_SOURCE= YES requires a RADIATION_MODEL"),
+    ("HeatSourceRemoved", "HEAT_SOURCE options were removed"),
+    ("HeatSourceRemovedRadiation", "HEAT_SOURCE options were removed"),
 )
 
 

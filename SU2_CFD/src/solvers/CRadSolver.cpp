@@ -43,23 +43,6 @@ CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
 }
 
-void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
-  SU2_ZONE_SCOPED
-
-  const su2double alpha = config->GetHeatSource_Rot_Z() * PI_NUMBER/180.0;
-  const su2double *OC = config->GetHeatSource_Center();
-  const su2double *Axes = config->GetHeatSource_Axes();
-
-  // Reset the boolean for all points
-  nodes->ResetVol_HeatSource();
-  // Loop over all points and determine whether they are inside
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    const auto *OP = geometry->nodes->GetCoord(iPoint);
-    if (GeometryToolbox::PointInEllipsoid(nDim, OP, OC, Axes, alpha)) nodes->SetVol_HeatSource(iPoint);
-  }
-
-}
-
 void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
   SU2_ZONE_SCOPED
 
