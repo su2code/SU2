@@ -81,3 +81,7 @@ install_data(['../bin/monitor.py'],
 install_data(['../bin/SU2_MON'],
              install_dir: join_paths(get_option('bindir')),
              install_mode: 'rwxr-xr-x')
+
+install_data(['../bin/SU2_LIVE'],
+             install_dir: join_paths(get_option('bindir')),
+             install_mode: 'rwxr-xr-x')
