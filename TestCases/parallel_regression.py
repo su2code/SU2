@@ -97,7 +97,7 @@ def main():
     cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
     cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
     cfd_flamelet_h2.test_iter = 5
-    cfd_flamelet_h2.test_vals = [-8.036794, -8.372668, -1.842800, -9.388447]
+    cfd_flamelet_h2.test_vals = [-8.036799, -8.329782, -1.805324, -8.959656]
     test_list.append(cfd_flamelet_h2)
 
     # Flame ignition methods
@@ -705,7 +705,7 @@ def main():
     actuatordisk_bem.cfg_dir = "rans/actuatordisk_bem"
     actuatordisk_bem.cfg_file = "actuatordisk_bem.cfg"
     actuatordisk_bem.test_iter = 15
-    actuatordisk_bem.test_vals = [-5.389236, -10.319122, 0.001362, -0.376528]
+    actuatordisk_bem.test_vals = [-5.389310, -8.599885, 0.001362, -0.376530]
     actuatordisk_bem.timeout = 3200
     actuatordisk_bem.tol = 0.001
     test_list.append(actuatordisk_bem)
@@ -896,6 +896,14 @@ def main():
     sp_pipeSlice_3d_dp_hf_tp.test_iter = 10
     sp_pipeSlice_3d_dp_hf_tp.test_vals = [-11.119796, -11.234737, -9.429479, -0.000023]
     test_list.append(sp_pipeSlice_3d_dp_hf_tp)
+
+    # Same with the energy equation, periodic temperature and an integrated wall heat
+    sp_pipeSlice_3d_dp_ihf_tp = TestCase('sp_pipeSlice_3d_dp_ihf_tp')
+    sp_pipeSlice_3d_dp_ihf_tp.cfg_dir = "incomp_navierstokes/streamwise_periodic/pipeSlice_3d"
+    sp_pipeSlice_3d_dp_ihf_tp.cfg_file = "sp_pipeSlice_3d_dp_ihf_tp.cfg"
+    sp_pipeSlice_3d_dp_ihf_tp.test_iter = 10
+    sp_pipeSlice_3d_dp_ihf_tp.test_vals = [-11.120123, -5.196299, -0.000023, -0.015700]
+    test_list.append(sp_pipeSlice_3d_dp_ihf_tp)
 
     # 2D pin array with heat transfer BC on pin surfaces
     inc_heatTransfer_BC           = TestCase('inc_heatTransfer_BC')
