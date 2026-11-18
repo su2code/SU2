@@ -1,0 +1,1022 @@
+#!/usr/bin/env python3
+
+## \file SU2_LIVE
+#  \brief Live residual plots and convergence diagnosis in the terminal.
+#  \author Syphonicc
+#  \version 8.6.0 "Harrier"
+#
+# SU2 Project Website: https://su2code.github.io
+#
+# The SU2 Project is maintained by the SU2 Foundation
+# (http://su2foundation.org)
+#
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+
+"""Live residual plots for SU2 runs, drawn in the terminal.
+
+Reads the history file while the solver writes it, plots the residuals with
+braille characters and classifies the run as converging (with a rate and an
+estimate of the iterations left), stalled, frozen, in a limit cycle or
+diverging. Uses only the Python standard library, so it works over SSH and on
+machines without a display.
+
+    SU2_LIVE inv_channel.cfg              run SU2_CFD and plot live
+    SU2_LIVE -f history.csv               follow an existing history file
+    SU2_LIVE -f history.csv -o Rho,RhoE   plot only some residuals
+    SU2_LIVE -l -f history.csv            list the residual columns
+"""
+
+from __future__ import annotations
+
+import argparse
+import math
+import os
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import time
+from dataclasses import dataclass
+
+# ---------------------------------------------------------------- terminal
+
+RESET = "\033[0m"
+DIM = "\033[2m"
+
+# ANSI colours cycled through for successive series.
+COLORS = [
+    "\033[38;5;51m",  # cyan
+    "\033[38;5;214m",  # orange
+    "\033[38;5;46m",  # green
+    "\033[38;5;177m",  # violet
+    "\033[38;5;203m",  # red
+    "\033[38;5;227m",  # yellow
+]
+
+ALT_ON = "\033[?1049h\033[?25l"
+ALT_OFF = "\033[?25h\033[?1049l"
+HOME = "\033[H"
+CLEAR_EOL = "\033[K"
+
+# ------------------------------------------------------------ history file
+
+RESIDUAL_PREFIXES = ("rms[", "max[", "bgs[")
+COUNTERS = ("Inner_Iter", "Time_Iter", "Outer_Iter")
+
+
+class History:
+    """Incrementally reads an SU2 history file, keeping only the residuals.
+
+    The header is quoted and space padded, and which columns exist depends on
+    the solver, so the residual columns are discovered from the header rather
+    than assumed. Single zone runs write rms[...] (and max[...] if requested),
+    the multizone summary file writes bgs[...][zone].
+    """
+
+    def __init__(self, path: str):
+        self.path = path
+        self.pos = 0
+        self.leftover = ""
+        self.header: list[str] | None = None
+        self.keep: list[tuple[int, str]] = []
+        self.iters: list[int] = []
+        self.cols: dict[str, list[float]] = {}
+        self.iter_index = 2  # Inner_Iter, corrected once a header is seen
+        self.iter_name = "Inner_Iter"
+        self.candidates: dict[str, int] = {}
+        self.alt: dict[str, list[int]] = {}
+        self._x_checked = False
+
+    @staticmethod
+    def _split_header(line: str) -> list[str]:
+        # Tecplot headers written by older versions put the names on the same
+        # line as "VARIABLES =".
+        line = re.sub(r"^\s*VARIABLES\s*=\s*", "", line)
+        return [c.strip().strip('"').strip() for c in line.split(",")]
+
+    @staticmethod
+    def _is_header(line: str) -> bool:
+        return '"' in line and any(key in line for key in RESIDUAL_PREFIXES + COUNTERS)
+
+    def _adopt_header(self, fields: list[str]) -> None:
+        self.header = fields
+        self.keep = [
+            (i, name)
+            for i, name in enumerate(fields)
+            if name.startswith(RESIDUAL_PREFIXES)
+        ]
+        for _, name in self.keep:
+            self.cols.setdefault(name, [])
+        # Inner_Iter restarts every physical time step and stays at zero in
+        # multizone runs, so it is not always a usable x axis. Start with it
+        # and switch once enough rows show whether it is monotonic.
+        self.candidates = {
+            name: fields.index(name) for name in COUNTERS if name in fields
+        }
+        for cand in COUNTERS:
+            if cand in self.candidates:
+                self.iter_index = self.candidates[cand]
+                self.iter_name = cand
+                break
+        self._x_checked = False
+
+    def poll(self) -> int:
+        """Read any new rows. Returns how many were added."""
+        try:
+            size = os.path.getsize(self.path)
+        except OSError:
+            return 0
+
+        if size < self.pos:  # file replaced or truncated
+            self.reset()
+
+        try:
+            with open(self.path, "r") as f:
+                f.seek(self.pos)
+                chunk = f.read()
+                self.pos = f.tell()
+        except OSError:
+            return 0
+
+        if not chunk:
+            return 0
+
+        lines = (self.leftover + chunk).split("\n")
+        self.leftover = lines.pop()  # possibly partial trailing line
+
+        added = 0
+        for line in lines:
+            if not line.strip():
+                continue
+            if self._is_header(line):
+                self._adopt_header(self._split_header(line))
+                continue
+            if self.header is None:
+                continue
+            if self._append_row(line):
+                added += 1
+        if added:
+            self._maybe_switch_axis()
+        return added
+
+    def _append_row(self, line: str) -> bool:
+        parts = [p.strip() for p in line.split(",")]
+        try:
+            it = int(float(parts[self.iter_index]))
+        except (IndexError, ValueError):
+            return False
+        values = {}
+        for idx, name in self.keep:
+            try:
+                values[name] = float(parts[idx])
+            except (IndexError, ValueError):
+                return False
+        self.iters.append(len(self.iters) if self.iter_name == "row" else it)
+        # Track the other counter columns until we know the axis is sound,
+        # so a switch does not need to reread the file.
+        if not self._x_checked:
+            for name, idx in self.candidates.items():
+                try:
+                    self.alt.setdefault(name, []).append(int(float(parts[idx])))
+                except (IndexError, ValueError):
+                    pass
+        for name, v in values.items():
+            self.cols[name].append(v)
+        return True
+
+    def _maybe_switch_axis(self) -> None:
+        """Swap to a monotonic counter if the current one repeats.
+
+        Steady single zone runs increment Inner_Iter throughout. Unsteady runs
+        reset it each time step and multizone runs keep it at zero, so switch
+        to Time_Iter or Outer_Iter, or to the row number if neither is better.
+        """
+        if self._x_checked or len(self.iters) < 30:
+            return
+        self._x_checked = True
+        if (
+            all(b >= a for a, b in zip(self.iters, self.iters[1:]))
+            and len(set(self.iters)) > 1
+        ):
+            self.alt.clear()
+            return
+        # Rebuild the axis from data already held rather than rereading the
+        # file: the read position has moved on and resetting would drop
+        # everything collected so far.
+        for name in ("Time_Iter", "Outer_Iter"):
+            col = self.alt.get(name)
+            if name != self.iter_name and col and len(set(col)) > 1:
+                if all(b >= a for a, b in zip(col, col[1:])):
+                    self.iter_name = name
+                    self.iter_index = self.candidates[name]
+                    self.iters[:] = col
+                    self.alt.clear()
+                    return
+        self.iter_name = "row"
+        self.iters[:] = list(range(len(self.iters)))
+        self.alt.clear()
+
+    def reset(self) -> None:
+        self.pos = 0
+        self.leftover = ""
+        self.header = None
+        self.keep = []
+        self.iters.clear()
+        self.cols.clear()
+        self.alt.clear()
+        self._x_checked = False
+
+    @staticmethod
+    def short(name: str) -> str:
+        """rms[RhoU] -> RhoU, bgs[T][1] -> T[1], max[RhoU] stays as is."""
+        if name.startswith("rms["):
+            return name[4:-1]
+        if name.startswith("bgs["):
+            return name[4:].replace("]", "", 1)
+        return name
+
+    @property
+    def residuals(self) -> list[tuple[str, list[float]]]:
+        return [(self.short(name), ys) for name, ys in self.cols.items() if ys]
+
+    def available(self) -> list[str]:
+        """Short names of every plottable column seen so far."""
+        return [self.short(n) for n in self.cols]
+
+    def select(self, wanted: list[str] | None):
+        """Filter series by short name, case insensitively.
+
+        Unknown names are ignored rather than raising, because a column may
+        simply not have appeared yet when the run is just starting.
+        """
+        series = self.residuals
+        if not wanted:
+            return series
+        keys = [w.strip().lower() for w in wanted if w.strip()]
+        chosen = [(lab, ys) for lab, ys in series if lab.lower() in keys]
+        order = {k: i for i, k in enumerate(keys)}
+        chosen.sort(key=lambda p: order.get(p[0].lower(), 99))
+        return chosen or series
+
+    def window(self, n: int | None, wanted: list[str] | None = None):
+        """Series and x values, optionally filtered and limited to n samples."""
+        series = self.select(wanted)
+        if not n or n <= 0 or n >= len(self.iters):
+            return series, self.iters
+        return ([(lab, ys[-n:]) for lab, ys in series], self.iters[-n:])
+
+
+# ------------------------------------------------------------------ config
+
+
+def read_option(cfg_path: str, option: str, default=None):
+    """Pull a single option value out of an SU2 config file."""
+    pattern = re.compile(rf"^\s*{re.escape(option)}\s*=\s*(.+?)\s*$")
+    value = default
+    try:
+        with open(cfg_path) as f:
+            for line in f:
+                if line.lstrip().startswith("%"):
+                    continue
+                m = pattern.match(line)
+                if m:
+                    value = m.group(1).split("%")[0].strip()
+    except OSError:
+        pass
+    return value
+
+
+def _yes(value) -> bool:
+    return str(value).strip().upper() in ("YES", "TRUE")
+
+
+def history_path(cfg_path: str, workdir: str | None = None) -> str:
+    """Where SU2 will write the history file for a config.
+
+    Follows CConfig::GetHistory_FileName and CMultizoneOutput: the multizone
+    summary file is named after the config file, the single zone file after
+    CONV_FILENAME with the restart iteration appended for unsteady restarts,
+    and the extension depends on TABULAR_FORMAT.
+    """
+    workdir = workdir or os.path.dirname(os.path.abspath(cfg_path)) or "."
+    tecplot = str(read_option(cfg_path, "TABULAR_FORMAT", "CSV")).upper() == "TECPLOT"
+    ext = ".dat" if tecplot else ".csv"
+
+    multizone = str(
+        read_option(cfg_path, "SOLVER", "")
+    ).upper() == "MULTIPHYSICS" or _yes(read_option(cfg_path, "MULTIZONE", "NO"))
+    if multizone:
+        return os.path.join(workdir, os.path.basename(cfg_path).split(".")[0] + ext)
+
+    name = read_option(cfg_path, "CONV_FILENAME", "history")
+    for old in (".dat", ".csv"):
+        if name.endswith(old):
+            name = name[: -len(old)]
+    if _yes(read_option(cfg_path, "TIME_DOMAIN", "NO")) and _yes(
+        read_option(cfg_path, "RESTART_SOL", "NO")
+    ):
+        try:
+            restart_iter = int(read_option(cfg_path, "RESTART_ITER", "1"))
+        except ValueError:
+            restart_iter = 1
+        name += f"_{restart_iter:05d}"
+    return os.path.join(workdir, name + ext)
+
+
+def convergence_target(cfg_path: str):
+    raw = read_option(cfg_path, "CONV_RESIDUAL_MINVAL")
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+# ---------------------------------------------------------------- analysis
+
+CONVERGING = "converging"
+STALLED = "stalled"
+DIVERGING = "diverging"
+CYCLING = "limit cycle"
+FROZEN = "frozen"
+UNKNOWN = "too early"
+
+STATUS_COLOR = {
+    CONVERGING: "\033[38;5;46m",
+    STALLED: "\033[38;5;214m",
+    DIVERGING: "\033[38;5;203m",
+    CYCLING: "\033[38;5;214m",
+    FROZEN: "\033[38;5;203m",
+    UNKNOWN: DIM,
+}
+
+
+@dataclass
+class Diagnosis:
+    status: str
+    rate: float  # decades per 1000 iterations (negative = improving)
+    eta: int | None  # iterations to target, None if not applicable
+    note: str = ""
+
+    @property
+    def color(self) -> str:
+        return STATUS_COLOR.get(self.status, "")
+
+
+def slope(xs, ys) -> float:
+    """Least squares slope of ys against xs."""
+    n = len(xs)
+    if n < 2:
+        return 0.0
+    mx = sum(xs) / n
+    my = sum(ys) / n
+    num = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    den = sum((x - mx) ** 2 for x in xs)
+    return num / den if den else 0.0
+
+
+def crossings(ys, level, band) -> int:
+    """How often ys swings from above level + band to below level - band.
+
+    The band gives hysteresis, so iteration to iteration noise around the mean
+    of a steadily decreasing residual is not counted as an oscillation.
+    """
+    count, side = 0, 0
+    for y in ys:
+        if y > level + band:
+            s = 1
+        elif y < level - band:
+            s = -1
+        else:
+            continue
+        if side and s != side:
+            count += 1
+        side = s
+    return count
+
+
+def analyse(iters, values, target=None, window=None) -> Diagnosis:
+    """Classify the recent behaviour of one residual series."""
+    n = len(values)
+
+    # A blown up run writes nan into the history file and float("nan")
+    # parses happily, so check for non-finite samples before anything else.
+    if n and not math.isfinite(values[-1]):
+        return Diagnosis(DIVERGING, 0.0, None, "residual is not finite (nan or inf)")
+
+    clean = [(x, y) for x, y in zip(iters, values) if math.isfinite(y)]
+    if len(clean) < 20:
+        return Diagnosis(UNKNOWN, 0.0, None)
+    if len(clean) < n:
+        # finite now but nan earlier: report on what can still be read
+        iters = [x for x, _ in clean]
+        values = [y for _, y in clean]
+        n = len(values)
+
+    window = window or max(20, min(n // 3, 2000))
+    xs = list(iters[-window:])
+    ys = values[-window:]
+
+    # If the counter repeats (unsteady or multizone runs), a fit against it is
+    # meaningless, so fall back to the position in the series.
+    if len(set(xs)) < 2 or any(b < a for a, b in zip(xs, xs[1:])):
+        xs = list(range(len(ys)))
+
+    span = max(ys) - min(ys)
+
+    # Identical to floating point precision: the solution has stopped moving.
+    if span < 1e-9:
+        return Diagnosis(
+            FROZEN, 0.0, None, f"residual identical over {len(ys)} iterations"
+        )
+
+    m = slope(xs, ys) * 1000.0  # decades per 1000 iterations
+
+    # An oscillation crosses its own mean repeatedly while the endpoints stay
+    # at a similar level. Check that before trusting the sign of the slope:
+    # a window landing on one limb of a cycle looks like a clean trend.
+    mean_level = sum(ys) / len(ys)
+    # With the hysteresis band a trend crosses its mean once, so two
+    # crossings with the endpoints back at the same level is already a cycle.
+    net = abs(ys[-1] - ys[0])
+    swings = crossings(ys, mean_level, 0.1 * span)
+    if span > 0.15 and (
+        (swings >= 4 and net < span * 0.6) or (swings >= 2 and net < span * 0.3)
+    ):
+        return Diagnosis(
+            CYCLING, m, None, f"oscillating +/-{span / 2:.2f} about {mean_level:.2f}"
+        )
+
+    # A slow oscillation can fill the whole window with one limb. Compare
+    # against the longer history: if the residual keeps crossing its mean or
+    # has made no net progress over a wide band, it is cycling.
+    if n >= window * 2:
+        long_ys = values[-window * 3 :]
+        long_span = max(long_ys) - min(long_ys)
+        long_net = abs(long_ys[-1] - long_ys[0])
+        level = sum(long_ys) / len(long_ys)
+        long_cross = crossings(long_ys, level, 0.1 * long_span)
+        if long_span > 0.3 and (long_cross >= 2 or long_net < long_span * 0.35):
+            return Diagnosis(
+                CYCLING,
+                m,
+                None,
+                f"oscillating +/-{long_span / 2:.2f} about {level:.2f}",
+            )
+
+    if m > 0.01:
+        return Diagnosis(DIVERGING, m, None, "residual increasing")
+
+    if abs(m) < 0.005:
+        return Diagnosis(STALLED, m, None, "no significant progress")
+
+    eta = None
+    if target is not None and m < 0:
+        remaining = values[-1] - target
+        if remaining > 0:
+            eta = int(remaining / (-m) * 1000.0)
+
+    return Diagnosis(CONVERGING, m, eta)
+
+
+def summary_line(diag: Diagnosis, target=None) -> str:
+    """One line of status printed under the plot."""
+    bits = [f"{diag.color}{diag.status}{RESET}"]
+    if diag.rate:
+        bits.append(f"{diag.rate:+.3f} dec/1k")
+    if diag.eta is not None:
+        bits.append(f"~{diag.eta:,} iters to {target:g}")
+    if diag.note:
+        bits.append(f"{DIM}{diag.note}{RESET}")
+    return "  ".join(bits)
+
+
+def fmt_eta_seconds(iters_left: int, seconds_per_iter: float) -> str:
+    if not seconds_per_iter or iters_left <= 0:
+        return ""
+    total = iters_left * seconds_per_iter
+    if total < 90:
+        return f"~{total:.0f}s"
+    if total < 5400:
+        return f"~{total / 60:.0f}m"
+    return f"~{total / 3600:.1f}h"
+
+
+# ------------------------------------------------------------------ canvas
+
+# A terminal cell holds one braille glyph, a 4x2 grid of dots, so a canvas of
+# W x H characters gives 2W x 4H addressable points.
+BRAILLE = [
+    [0x01, 0x08],
+    [0x02, 0x10],
+    [0x04, 0x20],
+    [0x40, 0x80],
+]
+BRAILLE_BASE = 0x2800
+
+
+class Canvas:
+    """A braille drawing surface of `width` x `height` terminal cells."""
+
+    def __init__(self, width: int, height: int):
+        self.width = max(1, width)
+        self.height = max(1, height)
+        self.dots_w = self.width * 2
+        self.dots_h = self.height * 4
+        # each cell holds [dot bitmask, index of last series to touch it]
+        self.cells = [[[0, -1] for _ in range(self.width)] for _ in range(self.height)]
+
+    def set(self, dx: int, dy: int, series: int = 0) -> None:
+        if not (0 <= dx < self.dots_w and 0 <= dy < self.dots_h):
+            return
+        cy, cx = dy // 4, dx // 2
+        self.cells[cy][cx][0] |= BRAILLE[dy % 4][dx % 2]
+        self.cells[cy][cx][1] = series
+
+    def vline(self, dx: int, dy0: int, dy1: int, series: int = 0) -> None:
+        """Vertical run of dots, used to join consecutive samples."""
+        if dy0 > dy1:
+            dy0, dy1 = dy1, dy0
+        for dy in range(dy0, dy1 + 1):
+            self.set(dx, dy, series)
+
+    def rows(self) -> list[list[tuple[str, int]]]:
+        return [
+            [(chr(BRAILLE_BASE + mask) if mask else " ", si) for mask, si in row]
+            for row in self.cells
+        ]
+
+
+def nice_bounds(lo: float, hi: float, pad_frac: float = 0.05):
+    """Pad a range slightly and guard against a zero-width span."""
+    if not math.isfinite(lo) or not math.isfinite(hi):
+        return 0.0, 1.0
+    if hi - lo < 1e-12:
+        hi = lo + 1.0
+    pad = (hi - lo) * pad_frac
+    return lo - pad, hi + pad
+
+
+def plot_series(series, width, height, ylim=None):
+    """Draw named y-series sharing an implicit x index onto a canvas."""
+    canvas = Canvas(width, height)
+
+    finite = [v for _, ys in series for v in ys if math.isfinite(v)]
+    if not finite:
+        return canvas, 0.0, 1.0
+
+    ymin, ymax = ylim if ylim is not None else nice_bounds(min(finite), max(finite))
+    span = ymax - ymin or 1.0
+
+    for si, (_, ys) in enumerate(series):
+        n = len(ys)
+        if n == 0:
+            continue
+        prev = None
+        for dx in range(canvas.dots_w):
+            y = ys[int(round(dx * (n - 1) / max(canvas.dots_w - 1, 1)))]
+            if not math.isfinite(y):
+                prev = None
+                continue
+            dy = int(round((1.0 - (y - ymin) / span) * (canvas.dots_h - 1)))
+            dy = max(0, min(canvas.dots_h - 1, dy))
+            if prev is not None and abs(dy - prev) > 1:
+                canvas.vline(dx, prev, dy, si)
+            else:
+                canvas.set(dx, dy, si)
+            prev = dy
+
+    return canvas, ymin, ymax
+
+
+def frame(series, x_values, width, height, title="", ylim=None, annotations=()):
+    """Compose a full plot into a list of printable lines."""
+    canvas, ymin, ymax = plot_series(series, width, height, ylim)
+    labw = 9
+    lines = []
+
+    if title:
+        lines.append(f"{DIM}{title}{RESET}")
+
+    rows = canvas.rows()
+    mid = len(rows) // 2
+    for i, row in enumerate(rows):
+        if i == 0:
+            lab = f"{ymax:8.2f} "
+        elif i == len(rows) - 1:
+            lab = f"{ymin:8.2f} "
+        elif i == mid:
+            lab = f"{(ymin + ymax) / 2:8.2f} "
+        else:
+            lab = " " * labw
+        body = "".join(
+            (COLORS[si % len(COLORS)] + ch + RESET) if si >= 0 else ch for ch, si in row
+        )
+        lines.append(f"{DIM}{lab}{RESET}│{body}")
+
+    lines.append(" " * labw + "└" + "─" * canvas.width)
+
+    lo = x_values[0] if x_values else 0
+    hi = x_values[-1] if x_values else 0
+    axis = str(lo)
+    axis += " " * max(1, canvas.width - len(axis) - len(str(hi))) + str(hi)
+    lines.append(" " * (labw + 1) + f"{DIM}{axis[:canvas.width]}{RESET}")
+
+    legend = "  ".join(
+        f"{COLORS[i % len(COLORS)]}█{RESET} {lab} {ys[-1]:+.3f}"
+        for i, (lab, ys) in enumerate(series)
+        if ys
+    )
+    lines.append(" " * (labw + 1) + legend)
+
+    for note in annotations:
+        lines.append(" " * (labw + 1) + note)
+
+    return lines
+
+
+# ------------------------------------------------------------------- views
+
+
+class Screen:
+    """In place terminal output.
+
+    Inline mode draws where the cursor is and redraws by moving back up over
+    the previous frame, so everything above stays in the scrollback. Full
+    screen mode uses the alternate screen and restores the terminal on exit.
+    """
+
+    def __init__(self, inline=True):
+        self.inline = inline
+        self.active = False
+        self.prev_lines = 0
+        self.prev_size = None
+
+    def __enter__(self):
+        sys.stdout.write("\033[?25l" if self.inline else ALT_ON)
+        sys.stdout.flush()
+        self.active = True
+        return self
+
+    def __exit__(self, *exc):
+        if self.active:
+            sys.stdout.write("\033[?25h" if self.inline else ALT_OFF)
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+            self.active = False
+        return False
+
+    def draw(self, lines):
+        size = shutil.get_terminal_size((100, 30))
+
+        if not self.inline:
+            if size != self.prev_size:
+                sys.stdout.write("\033[2J")
+                self.prev_size = size
+            out = [HOME] + [line + CLEAR_EOL + "\n" for line in lines[: size.lines]]
+            sys.stdout.write("".join(out))
+            sys.stdout.flush()
+            return
+
+        lines = lines[: max(1, size.lines - 1)]
+        out = []
+        if self.prev_lines:
+            out.append(f"\033[{self.prev_lines}A")
+        out.append("\r")
+        for line in lines:
+            out.append(line + CLEAR_EOL + "\n")
+        # If this frame is shorter than the last, wipe the leftover rows.
+        extra = self.prev_lines - len(lines)
+        if extra > 0:
+            out.append((CLEAR_EOL + "\n") * extra)
+            out.append(f"\033[{extra}A")
+        sys.stdout.write("".join(out))
+        sys.stdout.flush()
+        self.prev_lines = len(lines)
+
+
+class Pace:
+    """Solver speed measured from rows that arrive while monitoring.
+
+    Attaching to an existing history file must not charge its old rows to the
+    time since attach, so the count starts at whatever was already there.
+    """
+
+    def __init__(self):
+        self.t0 = None
+        self.n0 = None
+        self.last_n = 0
+
+    def update(self, n_rows: int) -> None:
+        if self.n0 is None:
+            self.n0 = n_rows
+            self.t0 = time.time()
+        self.last_n = n_rows
+
+    def per_iter(self):
+        if self.t0 is None:
+            return None
+        new_rows = self.last_n - self.n0
+        elapsed = time.time() - self.t0
+        if new_rows < 5 or elapsed < 1.0:
+            return None
+        return elapsed / new_rows
+
+
+def build_frame(
+    hist, title, target, tail, window, pace, size, max_height=None, only=None
+):
+    series, xs = hist.window(window, only)
+    if not series:
+        return [f"{DIM}{title}{RESET}", "", "  waiting for output..."]
+
+    width = max(20, min(size.columns - 12, 200))
+    height = max(5, min(size.lines - 6 - len(tail), max_height or 26))
+
+    diag = analyse(xs, series[0][1], target)
+    line = summary_line(diag, target)
+
+    per_iter = pace.per_iter() if pace else None
+    if per_iter:
+        bits = [f"{1 / per_iter:.0f} it/s"]
+        if diag.eta:
+            eta_t = fmt_eta_seconds(diag.eta, per_iter)
+            if eta_t:
+                bits.append(eta_t)
+        line = f"{line}   {DIM}{'   '.join(bits)}{RESET}"
+
+    head = f"{title}    iter {hist.iters[-1]:,}"
+    if target is not None:
+        head += f"    target {target:g}"
+
+    lines = frame(series, xs, width, height, head, annotations=[line])
+    if tail:
+        lines.append("")
+        lines.extend(f"{DIM}{t[: size.columns - 1]}{RESET}" for t in tail)
+    return lines
+
+
+def report(hist, path, target, only=None):
+    """Static summary printed after the live view is torn down."""
+    if not hist.iters:
+        print(f"no residual data read from {path}")
+        return
+    print(
+        f"{len(hist.iters):,} rows from {os.path.basename(path)}, last iteration {hist.iters[-1]:,}"
+    )
+    series = hist.select(only)
+    for label, ys in series:
+        print(f"  {label:<10} {ys[-1]:>12.6f}   min {min(ys):>12.6f}")
+    if series:
+        print()
+        print("  " + summary_line(analyse(hist.iters, series[0][1], target), target))
+
+
+def run_follow(path, interval, window, target, inline=True, height=None, only=None):
+    hist = History(path)
+    pace = Pace()
+    max_height = height or (14 if inline else 26)
+    with Screen(inline=inline) as screen:
+        try:
+            last = 0.0
+            while True:
+                hist.poll()
+                pace.update(len(hist.iters))
+                now = time.time()
+                if now - last >= interval:
+                    size = shutil.get_terminal_size((100, 30))
+                    screen.draw(
+                        build_frame(
+                            hist,
+                            os.path.basename(path),
+                            target,
+                            [],
+                            window,
+                            pace,
+                            size,
+                            max_height,
+                            only,
+                        )
+                    )
+                    last = now
+                time.sleep(min(interval / 3, 0.15))
+        except KeyboardInterrupt:
+            pass
+    report(hist, path, target, only)
+
+
+def run_wrap(
+    exe, cfg, interval, window, tail_lines, inline=True, height=None, only=None
+):
+    workdir = os.path.dirname(os.path.abspath(cfg)) or "."
+    hist_file = history_path(cfg, workdir)
+    target = convergence_target(cfg)
+
+    # Move any previous history aside so only this run is plotted.
+    if os.path.exists(hist_file):
+        try:
+            os.replace(hist_file, hist_file + ".prev")
+        except OSError:
+            pass
+
+    proc = subprocess.Popen(
+        exe + [os.path.basename(cfg)],
+        cwd=workdir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+
+    hist = History(hist_file)
+    tail: list[str] = []
+    pace = Pace()
+    max_height = height or (14 if inline else 26)
+    title = os.path.basename(cfg)
+
+    with Screen(inline=inline) as screen:
+        try:
+            last = 0.0
+            for line in proc.stdout:
+                line = line.rstrip("\n")
+                if line.strip():
+                    tail.append(line)
+                    if tail_lines and len(tail) > tail_lines:
+                        del tail[:-tail_lines]
+                hist.poll()
+                pace.update(len(hist.iters))
+                now = time.time()
+                if now - last >= interval:
+                    size = shutil.get_terminal_size((100, 30))
+                    shown = tail[-tail_lines:] if tail_lines else []
+                    screen.draw(
+                        build_frame(
+                            hist,
+                            title,
+                            target,
+                            shown,
+                            window,
+                            pace,
+                            size,
+                            max_height,
+                            only,
+                        )
+                    )
+                    last = now
+            proc.wait()
+        except KeyboardInterrupt:
+            proc.send_signal(signal.SIGINT)
+            proc.wait()
+
+    hist.poll()
+    report(hist, hist_file, target, only)
+    return proc.returncode
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        prog="SU2_LIVE",
+        description="Live residual plots and convergence diagnosis for SU2 runs, in the terminal.",
+    )
+    ap.add_argument("config", nargs="?", help="SU2 config to run and monitor")
+    ap.add_argument(
+        "--file", "-f", help="follow an existing history file instead of running"
+    )
+    ap.add_argument(
+        "--exec",
+        "-e",
+        dest="exe",
+        default="SU2_CFD",
+        help='solver command (default: SU2_CFD), e.g. "mpirun -n 4 SU2_CFD"',
+    )
+    ap.add_argument(
+        "--interval",
+        "-i",
+        type=float,
+        default=0.25,
+        help="seconds between redraws (default: 0.25)",
+    )
+    ap.add_argument(
+        "--window",
+        "-w",
+        type=int,
+        default=0,
+        help="plot only the last N iterations (default: all)",
+    )
+    ap.add_argument(
+        "--tail",
+        "-t",
+        type=int,
+        default=5,
+        help="lines of solver output to show (default: 5)",
+    )
+    ap.add_argument(
+        "--target",
+        type=float,
+        default=None,
+        help="convergence target, overrides CONV_RESIDUAL_MINVAL",
+    )
+
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--inline",
+        dest="inline",
+        action="store_true",
+        default=True,
+        help="draw in place, keeping scrollback (default)",
+    )
+    mode.add_argument(
+        "--fullscreen",
+        "-F",
+        dest="inline",
+        action="store_false",
+        help="take over the terminal, restoring it on exit",
+    )
+    ap.add_argument(
+        "--height",
+        "-H",
+        type=int,
+        default=None,
+        help="plot height in rows (default: 14 inline, 26 full)",
+    )
+    ap.add_argument(
+        "--only",
+        "-o",
+        default=None,
+        help="comma separated residuals to plot, e.g. Rho,RhoE. Use --list to see what a run offers",
+    )
+    ap.add_argument(
+        "--list",
+        "-l",
+        action="store_true",
+        help="list the residual columns in a history file and exit",
+    )
+    args = ap.parse_args(argv)
+
+    only = args.only.split(",") if args.only else None
+
+    if args.list:
+        path = args.file or (history_path(args.config) if args.config else None)
+        if not path or not os.path.exists(path):
+            print("give --file, or a config whose history file exists", file=sys.stderr)
+            return 1
+        hist = History(path)
+        hist.poll()
+        cols = hist.available()
+        if not cols:
+            print(f"no residual columns found in {path}")
+            return 1
+        print(f"{path}:")
+        for c in cols:
+            print(f"  {c}")
+        return 0
+
+    if args.file:
+        run_follow(
+            args.file,
+            args.interval,
+            args.window,
+            args.target,
+            args.inline,
+            args.height,
+            only,
+        )
+        return 0
+
+    if not args.config:
+        ap.error("give a config to run, or --file to follow a history file")
+    if not os.path.exists(args.config):
+        print(f"no such config: {args.config}", file=sys.stderr)
+        return 1
+    exe = args.exe.split()
+    if shutil.which(exe[0]) is None:
+        print(f"{exe[0]} not found on PATH", file=sys.stderr)
+        return 1
+
+    return run_wrap(
+        exe,
+        args.config,
+        args.interval,
+        args.window,
+        args.tail,
+        args.inline,
+        args.height,
+        only,
+    )
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - "bin/monitor.py"
+      - "bin/SU2_LIVE"
       - "SU2_PY/tests/**"
       - ".github/workflows/python-tests.yml"
 
@@ -20,3 +21,5 @@ jobs:
         run: pip install numpy pandas matplotlib
       - name: Run monitor tests
         run: python3 SU2_PY/tests/test_monitor.py
+      - name: Run SU2_LIVE tests
+        run: python3 SU2_PY/tests/test_live.py
