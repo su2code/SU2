@@ -81,3 +81,12 @@ cfd_interface.update_moving_frame()
 cfd_interface.run_solver()
 cfd_interface.save_forces()
 
+
+# TEMPORARY: print the CI forces file and fail, so the test log shows it. Remove after the reference update.
+if cfd_interface.myid == 0:
+    import sys
+    print('BEGIN_FORCES_0_CSV')
+    print(open('forces_0.csv').read(), end='')
+    print('END_FORCES_0_CSV')
+    sys.stdout.flush()
+    sys.exit(1)
