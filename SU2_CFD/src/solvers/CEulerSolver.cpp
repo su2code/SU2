@@ -131,9 +131,26 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
-  // Indexed by the configuration-file marker list, which is the same on every rank (Marker_All is not).
-  OutletBackflowClamped.assign(config->GetnMarker_CfgFile(), 0);
-  OutletBackflowClampedGlobal.assign(config->GetnMarker_CfgFile(), 0);
+  /*--- Backflow at static-pressure outlets: harmonic balance counts as time-domain (no sonic fallback). Events are
+   * monitored only when they can occur, decided from the configuration so that all ranks agree. Counters are
+   * indexed by the configuration-file marker list, which is the same on every rank (Marker_All is not). ---*/
+  outletBackflowFallback = !config->GetTime_Domain() && config->GetTime_Marching() != TIME_MARCHING::HARMONIC_BALANCE;
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_CfgFile(); iMarker++) {
+    const auto tag = config->GetMarker_CfgFile_TagBound(iMarker);
+    const auto kind = config->GetMarker_CfgFile_KindBC(tag);
+    const bool staticPressureOutlet =
+        kind == OUTLET_FLOW || (kind == RIEMANN_BOUNDARY && (config->GetKind_Data_Riemann(tag) == STATIC_PRESSURE ||
+                                                             config->GetKind_Data_Riemann(tag) == RADIAL_EQUILIBRIUM));
+    if (!staticPressureOutlet) continue;
+    const bool hasReservoir = config->GetOutletBackflowSpec(tag) != nullptr;
+    outletBackflowMonitor |= hasReservoir || outletBackflowFallback;
+  }
+  if (outletBackflowMonitor) {
+    OutletBackflowEvents.assign(N_OUTLET_BACKFLOW_EVENTS * config->GetnMarker_CfgFile(), 0);
+    OutletBackflowEventsGlobal = OutletBackflowEvents;
+    OutletBackflowLastWarning.assign(OutletBackflowEvents.size(), 0);
+    OutletBackflowLastActive.assign(OutletBackflowEvents.size(), 0);
+  }
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 
@@ -5263,17 +5280,22 @@ CEulerSolver::OutletBackflowData CEulerSolver::GetOutletBackflowData(const CConf
                                                                     unsigned short val_marker) const {
   OutletBackflowData data;
   const auto& tag = config->GetMarker_All_TagBound(val_marker);
-  if (!config->GetOutletBackflow(tag)) return data;
-  data.reservoir = true;
-  data.totalPressure = config->GetOutletBackflowPtotal(tag) / config->GetPressure_Ref();
-  data.totalTemperature = config->GetOutletBackflowTtotal(tag) / config->GetTemperature_Ref();
-  const auto* direction = config->GetOutletBackflowFlowDir(tag);
-  for (auto iDim = 0u; iDim < nDim; iDim++) data.direction[iDim] = direction[iDim];
-  data.interiorTangential = config->GetOutletBackflowType(tag) == OUTLET_BACKFLOW_TYPE::INTERIOR_TANGENTIAL;
+  data.markerCfg = config->GetMarker_CfgFile_TagBound(tag);
+  const auto* spec = config->GetOutletBackflowSpec(tag);
+  if (spec == nullptr) return data;
+  data.hasReservoir = true;
+  data.totalPressure = spec->totalPressure / config->GetPressure_Ref();
+  data.totalTemperature = spec->totalTemperature / config->GetTemperature_Ref();
+  for (auto iDim = 0u; iDim < nDim; iDim++) data.direction[iDim] = spec->direction[iDim];
+  data.interiorTangential = spec->type == OUTLET_BACKFLOW_TYPE::INTERIOR_TANGENTIAL;
+  // A positive total pressure gives the same reservoir state at every vertex: compute it once per call.
+  if (data.totalPressure > 0)
+    data.totalStateValid =
+        GetFluidModel()->ComputeReservoirTotalState(data.totalPressure, data.totalTemperature, data.totalState);
   return data;
 }
 
-bool CEulerSolver::ComputeStaticPressureOutletState(const CConfig* config, const OutletBackflowData& backflow,
+void CEulerSolver::ComputeStaticPressureOutletState(const CConfig* config, const OutletBackflowData& backflow,
                                                     const string& Marker_Tag, const su2double* interior,
                                                     const su2double* unitNormal, su2double gridNormal,
                                                     su2double pressure, su2double tke, su2double idealGamma,
@@ -5281,12 +5303,16 @@ bool CEulerSolver::ComputeStaticPressureOutletState(const CConfig* config, const
   auto* fluid = GetFluidModel();
   auto status = fluid->ComputePressureOutletState(nDim, interior, unitNormal, gridNormal, pressure, boundary, tke,
                                                   idealGamma);
-  bool reservoir = false, clamped = false;
-  if (backflow.reservoir && status != CFluidModel::PressureOutletStatus::InvalidState) {
-    // Inward flow relative to the grid comes from the reservoir; outflow keeps the pressure-outlet state.
-    reservoir = status == CFluidModel::PressureOutletStatus::Backflow ||
-                GeometryToolbox::DotProduct(nDim, boundary + 1, unitNormal) / boundary[0] < gridNormal;
-    // A zero total pressure means the imposed (local) static pressure where the inflow has no normal velocity.
+  // Counts each fallback on the finest grid; fallbacks are rare, so the atomic update costs little.
+  auto count = [&](OUTLET_BACKFLOW_EVENT event) {
+    if (MGLevel != MESH_0 || !outletBackflowMonitor) return;
+    SU2_OMP_ATOMIC
+    OutletBackflowEvents[N_OUTLET_BACKFLOW_EVENTS * backflow.markerCfg + event]++;
+  };
+  // Inward flow relative to the grid comes from the reservoir; outflow keeps the pressure-outlet state.
+  if (backflow.hasReservoir && status != CFluidModel::PressureOutletStatus::InvalidState &&
+      (status == CFluidModel::PressureOutletStatus::Backflow ||
+       GeometryToolbox::DotProduct(nDim, boundary + 1, unitNormal) / boundary[0] < gridNormal)) {
     // With INTERIOR_TANGENTIAL the inflow keeps the interior tangential velocity (lab frame).
     su2double tangential[MAXNDIM] = {0.0};
     if (backflow.interiorTangential) {
@@ -5294,66 +5320,87 @@ bool CEulerSolver::ComputeStaticPressureOutletState(const CConfig* config, const
       for (auto iDim = 0u; iDim < nDim; iDim++)
         tangential[iDim] = interior[iDim + 1] / interior[0] - normalVelocity * unitNormal[iDim];
     }
-    if (reservoir)
-      status = fluid->ComputeReservoirInflowState(
-          nDim, interior, unitNormal, gridNormal, backflow.totalPressure, backflow.totalTemperature,
-          backflow.interiorTangential ? nullptr : backflow.direction, boundary, tke, idealGamma,
-          backflow.interiorTangential ? tangential : nullptr, pressure);
-  } else if (status == CFluidModel::PressureOutletStatus::Backflow && !config->GetTime_Domain()) {
+    CFluidModel::OutletReservoir reservoir;
+    reservoir.totalPressure = backflow.totalPressure;
+    reservoir.totalTemperature = backflow.totalTemperature;
+    reservoir.restPressure = pressure;
+    reservoir.direction = backflow.interiorTangential ? nullptr : backflow.direction;
+    reservoir.tangentialVelocity = backflow.interiorTangential ? tangential : nullptr;
+    reservoir.totalState = backflow.totalStateValid ? &backflow.totalState : nullptr;
+    // The reservoir state is written to boundary only when it is valid; otherwise fall back to the treatment
+    // without data (the pressure-outlet state is still in boundary) and count the event.
+    if (fluid->ComputeReservoirInflowState(nDim, interior, unitNormal, gridNormal, reservoir, boundary, tke,
+                                           idealGamma) == CFluidModel::PressureOutletStatus::Valid)
+      return;
+    count(RESERVOIR_FAILED);
+  }
+  if (status == CFluidModel::PressureOutletStatus::Backflow && outletBackflowFallback) {
     // Steady runs: limit fully incoming backflow to sonic inflow; the solution must not converge with it.
     status = fluid->ComputeSonicBackflowState(nDim, interior, unitNormal, gridNormal, pressure, boundary, tke,
                                               idealGamma);
-    clamped = true;
+    count(SONIC_LIMIT);
   }
   if (status != CFluidModel::PressureOutletStatus::Valid) {
     // MPI error reporting uses shared state; only one OpenMP thread may enter it.
     SU2_OMP_CRITICAL
     {
-      if (status == CFluidModel::PressureOutletStatus::Backflow)
+      if (status == CFluidModel::PressureOutletStatus::Backflow && backflow.hasReservoir)
+        SU2_MPI::Error("Unable to construct the backflow inflow state from MARKER_OUTLET_BACKFLOW on marker " +
+                       Marker_Tag + ", and the backflow enters through every characteristic. Check the total "
+                       "conditions, the flow direction and the EOS validity range.", CURRENT_FUNCTION);
+      else if (status == CFluidModel::PressureOutletStatus::Backflow)
         SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics "
                        "incoming on marker " + Marker_Tag + ". Give its reservoir with MARKER_OUTLET_BACKFLOW.",
-                       CURRENT_FUNCTION);
-      else if (reservoir)
-        SU2_MPI::Error("Unable to construct the backflow inflow state from MARKER_OUTLET_BACKFLOW on marker " +
-                       Marker_Tag + ". Check the total conditions, the flow direction and the EOS validity range.",
                        CURRENT_FUNCTION);
       else
         SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
                        ". Check the prescribed pressure and the EOS validity range.", CURRENT_FUNCTION);
     } END_SU2_OMP_CRITICAL
   }
-  return clamped;
 }
 
-unsigned long CEulerSolver::MonitorOutletBackflowClamp(const CConfig* config) {
-  /*--- Sum the clamped vertices of the last residual evaluations over ranks and report changes per marker. ---*/
-  const auto nMarkerCfg = OutletBackflowClamped.size();
-  vector<unsigned long> global(nMarkerCfg, 0);
-  SU2_MPI::Allreduce(OutletBackflowClamped.data(), global.data(), nMarkerCfg, MPI_UNSIGNED_LONG, MPI_SUM,
+void CEulerSolver::MonitorOutletBackflow(const CConfig* config) {
+  if (!outletBackflowMonitor) return;
+  /*--- Sum the events of the residual evaluations since the last call over ranks. Warn when an event starts (at
+   * most once every 100 inner iterations per marker), and once when it has been absent for 10 iterations. ---*/
+  const auto nEntries = OutletBackflowEvents.size();
+  vector<unsigned long> global(nEntries, 0);
+  SU2_MPI::Allreduce(OutletBackflowEvents.data(), global.data(), nEntries, MPI_UNSIGNED_LONG, MPI_SUM,
                      SU2_MPI::GetComm());
-  unsigned long total = 0;
-  for (auto iMarker = 0u; iMarker < nMarkerCfg; iMarker++) {
-    const auto tag = config->GetMarker_CfgFile_TagBound(iMarker);
-    if (rank == MASTER_NODE && global[iMarker] > 0 && OutletBackflowClampedGlobal[iMarker] == 0) {
-      cout << "\nWarning: backflow enters through every characteristic at " << global[iMarker]
-           << " vertices of static-pressure outlet " << tag << " (inner iteration " << config->GetInnerIter()
-           << ").\nWithout MARKER_OUTLET_BACKFLOW data it is limited to sonic inflow. The run stops with an error"
-              " if this is still active at the end.\n" << endl;
+  const unsigned long iter = config->GetInnerIter() + 1;  // Zero below means "never".
+  for (auto entry = 0u; entry < nEntries; entry++) {
+    const auto tag = config->GetMarker_CfgFile_TagBound(entry / N_OUTLET_BACKFLOW_EVENTS);
+    const bool sonic = entry % N_OUTLET_BACKFLOW_EVENTS == SONIC_LIMIT;
+    auto& lastWarning = OutletBackflowLastWarning[entry];
+    auto& lastActive = OutletBackflowLastActive[entry];
+    if (global[entry] > 0) {
+      if (OutletBackflowEventsGlobal[entry] == 0 && (lastWarning == 0 || iter >= lastWarning + 100)) {
+        lastWarning = iter;
+        if (rank == MASTER_NODE) {
+          cout << "\nWarning: static-pressure outlet " << tag << ", inner iteration " << iter - 1 << ": ";
+          if (sonic)
+            cout << "backflow enters through every characteristic at " << global[entry] << " vertex evaluations.\n"
+                 << "Without MARKER_OUTLET_BACKFLOW data it is limited to sonic inflow. The run stops with an error "
+                    "if this is still active at the end.\n" << endl;
+          else
+            cout << "the MARKER_OUTLET_BACKFLOW inflow state could not be built at " << global[entry]
+                 << " vertex evaluations;\nthe treatment without backflow data is used there.\n" << endl;
+        }
+      }
+      lastActive = iter;
+    } else if (lastActive > 0 && iter == lastActive + 10 && rank == MASTER_NODE) {
+      cout << "\nStatic-pressure outlet " << tag << ": no " << (sonic ? "sonic backflow limit" : "backflow fallback")
+           << " in the last 10 inner iterations (iteration " << iter - 1 << ").\n" << endl;
     }
-    if (rank == MASTER_NODE && global[iMarker] == 0 && OutletBackflowClampedGlobal[iMarker] > 0) {
-      cout << "\nThe sonic backflow limit is no longer active at static-pressure outlet " << tag
-           << " (inner iteration " << config->GetInnerIter() << ").\n" << endl;
-    }
-    total += global[iMarker];
   }
-  OutletBackflowClampedGlobal = std::move(global);
-  std::fill(OutletBackflowClamped.begin(), OutletBackflowClamped.end(), 0ul);
-  return total;
+  OutletBackflowEventsGlobal = std::move(global);
+  std::fill(OutletBackflowEvents.begin(), OutletBackflowEvents.end(), 0ul);
 }
 
 unsigned long CEulerSolver::GetOutletBackflowClamped() const {
   unsigned long total = 0;
-  for (const auto count : OutletBackflowClampedGlobal) total += count;
+  for (auto entry = 0u; entry < OutletBackflowEventsGlobal.size(); entry += N_OUTLET_BACKFLOW_EVENTS)
+    total += OutletBackflowEventsGlobal[entry + SONIC_LIMIT];
   return total;
 }
 
@@ -5377,9 +5424,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     invP_Tensor[iVar] = new su2double[nVar];
   }
 
-  // Static-pressure outlets may use reservoir data for backflow; count sonic backflow fallbacks per thread.
+  // Backflow data of a static-pressure outlet (reservoir, if any).
   const auto backflow = GetOutletBackflowData(config, val_marker);
-  unsigned long nClamped = 0;
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -5619,9 +5665,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
       if (pressureOutflow) {
-        const bool clamped = ComputeStaticPressureOutletState(config, backflow, Marker_Tag, u_i, UnitNormal, gridNormal,
-                                                              Pressure_e, tke_i, ideal_gas ? Gamma : su2double(0.0), u_b);
-        if (clamped && MGLevel == MESH_0) nClamped++;
+        ComputeStaticPressureOutletState(config, backflow, Marker_Tag, u_i, UnitNormal, gridNormal, Pressure_e, tke_i,
+                                         ideal_gas ? Gamma : su2double(0.0), u_b);
       }
 
       /*--- Compute the thermodynamic state in u_b ---*/
@@ -5816,11 +5861,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   }
   END_SU2_OMP_FOR
 
-  if (nClamped > 0) {
-    const auto iMarker = config->GetMarker_CfgFile_TagBound(Marker_Tag);
-    SU2_OMP_ATOMIC
-    OutletBackflowClamped[iMarker] += nClamped;
-  }
 
   for(auto iVar=0u; iVar<nVar; iVar++) {
     delete [] P_Tensor[iVar];
@@ -5891,9 +5931,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
     Jacobian_i[iVar] = new su2double[nVar];
   }
 
-  // Static-pressure outlets may use reservoir data for backflow; count sonic backflow fallbacks per thread.
+  // Backflow data of a static-pressure outlet (reservoir, if any).
   const auto backflow = GetOutletBackflowData(config, val_marker);
-  unsigned long nClamped = 0;
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
@@ -6116,9 +6155,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         if (pressureOutflow) {
           // Apply each span's pressure to the local state; using a span average here would discard local waves.
           const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
-          const bool clamped = ComputeStaticPressureOutletState(config, backflow, Marker_Tag, u_i, UnitNormal, gridNormal,
-                                                                Pressure_e, tke_i, ideal_gas ? Gamma : su2double(0.0), u_b);
-          if (clamped && MGLevel == MESH_0) nClamped++;
+          ComputeStaticPressureOutletState(config, backflow, Marker_Tag, u_i, UnitNormal, gridNormal, Pressure_e,
+                                           tke_i, ideal_gas ? Gamma : su2double(0.0), u_b);
         } else {
           /*--- Compute the characteristic jumps ---*/
           for (iVar = 0; iVar < nVar; iVar++) {
@@ -6323,11 +6361,6 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
     END_SU2_OMP_FOR
   }
 
-  if (nClamped > 0) {
-    const auto iMarker = config->GetMarker_CfgFile_TagBound(Marker_Tag);
-    SU2_OMP_ATOMIC
-    OutletBackflowClamped[iMarker] += nClamped;
-  }
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
@@ -7596,9 +7629,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const bool tkeNeeded = config->GetKind_Turb_Model() == TURB_MODEL::SST;
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  // Reservoir data for backflow, if any; sonic backflow fallbacks are counted per thread.
+  // Backflow data of a static-pressure outlet (reservoir, if any).
   const auto backflow = GetOutletBackflowData(config, val_marker);
-  unsigned long nClamped = 0;
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; ++iVertex) {
@@ -7622,9 +7654,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     const auto* interior = nodes->GetSolution(iPoint);
     su2double boundary[MAXNVAR] = {};
     // Ordinary compressible outlets use the ideal-gas path; real-gas pressure outlets use BC_Riemann.
-    const bool clamped = ComputeStaticPressureOutletState(config, backflow, Marker_Tag, interior, UnitNormal, gridNormal,
-                                                          pressure, tke, Gamma, boundary);
-    if (clamped && MGLevel == MESH_0) nClamped++;
+    ComputeStaticPressureOutletState(config, backflow, Marker_Tag, interior, UnitNormal, gridNormal, pressure, tke,
+                                     Gamma, boundary);
 
     const su2double density = boundary[0], energy = boundary[nVar - 1] / density;
     const auto* V_domain = nodes->GetPrimitive(iPoint);
@@ -7684,11 +7715,6 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   }
   END_SU2_OMP_FOR
 
-  if (nClamped > 0) {
-    const auto iMarker = config->GetMarker_CfgFile_TagBound(Marker_Tag);
-    SU2_OMP_ATOMIC
-    OutletBackflowClamped[iMarker] += nClamped;
-  }
 }
 
 void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,

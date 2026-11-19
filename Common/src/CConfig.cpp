@@ -6019,14 +6019,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         CURRENT_FUNCTION);
 
   /*--- Backflow reservoirs complete static-pressure outlets of the compressible (ideal or real gas) solver. ---*/
+  if (nMarker_Outlet_Backflow > 0 && (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE || GetNEMOProblem() || GetFEMSolver()))
+    SU2_MPI::Error("MARKER_OUTLET_BACKFLOW is only available for the compressible Euler, Navier-Stokes and RANS "
+                   "solvers.", CURRENT_FUNCTION);
   if (nOutlet_Backflow_Types != 0 && nOutlet_Backflow_Types != nMarker_Outlet_Backflow)
     SU2_MPI::Error("OUTLET_BACKFLOW_TYPE needs one entry (DIRECTION or INTERIOR_TANGENTIAL) per MARKER_OUTLET_BACKFLOW "
                    "marker.", CURRENT_FUNCTION);
+  OutletBackflowSpecs.clear();
   for (auto iMarker = 0u; iMarker < nMarker_Outlet_Backflow; iMarker++) {
     const auto& tag = Marker_Outlet_Backflow[iMarker];
-    if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE || GetNEMOProblem() || GetFEMSolver())
-      SU2_MPI::Error("MARKER_OUTLET_BACKFLOW is only available for the compressible Euler, Navier-Stokes and RANS "
-                     "solvers.", CURRENT_FUNCTION);
+    for (auto jMarker = 0u; jMarker < iMarker; jMarker++)
+      if (Marker_Outlet_Backflow[jMarker] == tag)
+        SU2_MPI::Error("MARKER_OUTLET_BACKFLOW lists marker " + tag + " twice.", CURRENT_FUNCTION);
     bool pressureOutlet = false;
     for (auto jMarker = 0u; jMarker < nMarker_Outlet; jMarker++) pressureOutlet |= Marker_Outlet[jMarker] == tag;
     for (auto jMarker = 0u; jMarker < nMarker_Riemann; jMarker++)
@@ -6035,15 +6039,20 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (!pressureOutlet)
       SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " must be a MARKER_OUTLET, or a MARKER_RIEMANN with "
                      "STATIC_PRESSURE or RADIAL_EQUILIBRIUM.", CURRENT_FUNCTION);
-    if (nOutlet_Backflow_Types != 0 && Kind_Outlet_Backflow[iMarker] == OUTLET_BACKFLOW_TYPE::INTERIOR_TANGENTIAL &&
-        (OutletBackflow_FlowDir[iMarker][0] != 0.0 || OutletBackflow_FlowDir[iMarker][1] != 0.0 ||
-         OutletBackflow_FlowDir[iMarker][2] != 0.0))
+    OutletBackflowSpec spec;
+    spec.totalTemperature = OutletBackflow_Ttotal[iMarker];
+    spec.totalPressure = OutletBackflow_Ptotal[iMarker];
+    spec.direction = OutletBackflow_FlowDir[iMarker];
+    if (nOutlet_Backflow_Types != 0) spec.type = Kind_Outlet_Backflow[iMarker];
+    if (spec.type == OUTLET_BACKFLOW_TYPE::INTERIOR_TANGENTIAL &&
+        (spec.direction[0] != 0.0 || spec.direction[1] != 0.0 || spec.direction[2] != 0.0))
       SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " uses OUTLET_BACKFLOW_TYPE= INTERIOR_TANGENTIAL, which "
                      "needs a zero flow direction (the inflow is normal, plus the interior tangential velocity).",
                      CURRENT_FUNCTION);
-    if (!(OutletBackflow_Ttotal[iMarker] > 0.0) || !(OutletBackflow_Ptotal[iMarker] >= 0.0))
+    if (!(spec.totalTemperature > 0.0) || !(spec.totalPressure >= 0.0))
       SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " needs a positive total temperature and a positive "
                      "(or zero: imposed outlet pressure) total pressure.", CURRENT_FUNCTION);
+    OutletBackflowSpecs.push_back(spec);
   }
 
   /*--- Checks for additional species transport. ---*/
@@ -9742,39 +9751,10 @@ void CConfig::SetInletPtotal(su2double val_pressure, const string& val_marker) {
       Inlet_Ptotal[iMarker_Inlet] = val_pressure;
 }
 
-bool CConfig::GetOutletBackflow(const string& val_marker) const {
-  for (auto iMarker = 0u; iMarker < nMarker_Outlet_Backflow; iMarker++)
-    if (Marker_Outlet_Backflow[iMarker] == val_marker) return true;
-  return false;
-}
-
-su2double CConfig::GetOutletBackflowTtotal(const string& val_marker) const {
-  unsigned short iMarker;
-  for (iMarker = 0; iMarker < nMarker_Outlet_Backflow; iMarker++)
-    if (Marker_Outlet_Backflow[iMarker] == val_marker) break;
-  return OutletBackflow_Ttotal[iMarker];
-}
-
-su2double CConfig::GetOutletBackflowPtotal(const string& val_marker) const {
-  unsigned short iMarker;
-  for (iMarker = 0; iMarker < nMarker_Outlet_Backflow; iMarker++)
-    if (Marker_Outlet_Backflow[iMarker] == val_marker) break;
-  return OutletBackflow_Ptotal[iMarker];
-}
-
-const su2double* CConfig::GetOutletBackflowFlowDir(const string& val_marker) const {
-  unsigned short iMarker;
-  for (iMarker = 0; iMarker < nMarker_Outlet_Backflow; iMarker++)
-    if (Marker_Outlet_Backflow[iMarker] == val_marker) break;
-  return OutletBackflow_FlowDir[iMarker];
-}
-
-OUTLET_BACKFLOW_TYPE CConfig::GetOutletBackflowType(const string& val_marker) const {
-  if (nOutlet_Backflow_Types == 0) return OUTLET_BACKFLOW_TYPE::DIRECTION;
-  unsigned short iMarker;
-  for (iMarker = 0; iMarker < nMarker_Outlet_Backflow; iMarker++)
-    if (Marker_Outlet_Backflow[iMarker] == val_marker) break;
-  return Kind_Outlet_Backflow[iMarker];
+const OutletBackflowSpec* CConfig::GetOutletBackflowSpec(const string& val_marker) const {
+  for (auto iMarker = 0u; iMarker < OutletBackflowSpecs.size(); iMarker++)
+    if (Marker_Outlet_Backflow[iMarker] == val_marker) return &OutletBackflowSpecs[iMarker];
+  return nullptr;
 }
 
 const su2double* CConfig::GetInletFlowDir(const string& val_marker) const {

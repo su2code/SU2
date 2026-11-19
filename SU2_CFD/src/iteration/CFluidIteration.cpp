@@ -27,6 +27,7 @@
 
 #include "../../include/iteration/CFluidIteration.hpp"
 #include "../../include/output/COutput.hpp"
+#include "../../include/solvers/CEulerSolver.hpp"
 
 void CFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
@@ -259,8 +260,9 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   if (config[val_iZone]->GetMUSCLRamp())
     UpdateRamps(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::MUSCL);
 
-  /*--- Report static-pressure outlets whose backflow is limited to sonic inflow (counts the last iteration). ---*/
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->MonitorOutletBackflowClamp(config[val_iZone]);
+  /*--- Report backflow events at static-pressure outlets in the residual evaluations of this iteration. ---*/
+  if (auto* flow = dynamic_cast<CEulerSolver*>(solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]))
+    flow->MonitorOutletBackflow(config[val_iZone]);
 
   /*--- During Full-MG startup FinestMesh > 0: read residuals from the active (coarse) level. ---*/
   const unsigned short finestMesh = config[val_iZone]->GetFinestMesh();

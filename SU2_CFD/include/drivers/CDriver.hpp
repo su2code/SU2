@@ -424,6 +424,12 @@ class CDriver : public CDriverBase {
   virtual void StartSolver() {}
 
   /*!
+   * \brief Stop with an error if a run ends while backflow at a static-pressure outlet is limited to sonic inflow.
+   * \note Called at the end of StartSolver; scripts that drive the iterations themselves must call it too.
+   */
+  void CheckOutletBackflowAtEnd() const;
+
+  /*!
    * \brief Deallocation routine
    */
   void Finalize() override;

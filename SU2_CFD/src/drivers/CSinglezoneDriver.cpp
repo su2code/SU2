@@ -101,16 +101,7 @@ void CSinglezoneDriver::StartSolver() {
 
   }
 
-  /*--- A steady solution must not end while backflow at a static-pressure outlet is limited to sonic inflow. ---*/
-  const auto* flow = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-  if (!driver_config->GetTime_Domain() && !config_container[ZONE_0]->GetDiscrete_Adjoint() && flow != nullptr &&
-      flow->GetOutletBackflowClamped() > 0) {
-    SU2_MPI::Error("The steady run ended while backflow at a static-pressure outlet was still limited to sonic "
-                   "inflow at " + std::to_string(flow->GetOutletBackflowClamped()) + " vertices. This is not a "
-                   "solution of the outlet condition: give the outlet a reservoir with MARKER_OUTLET_BACKFLOW, or "
-                   "reach a state without backflow (e.g. lower or adaptive CFL).", CURRENT_FUNCTION);
-  }
-
+  CheckOutletBackflowAtEnd();
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {

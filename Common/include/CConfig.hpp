@@ -55,6 +55,16 @@
 using namespace std;
 
 /*!
+ * \brief Backflow reservoir of a static-pressure outlet (MARKER_OUTLET_BACKFLOW and OUTLET_BACKFLOW_TYPE).
+ */
+struct OutletBackflowSpec {
+  su2double totalTemperature = 0.0;     /*!< \brief Dimensional total temperature. */
+  su2double totalPressure = 0.0;        /*!< \brief Dimensional total pressure; zero means the imposed pressure. */
+  const su2double* direction = nullptr; /*!< \brief Three components; zero means the inward normal. */
+  OUTLET_BACKFLOW_TYPE type = OUTLET_BACKFLOW_TYPE::DIRECTION; /*!< \brief Velocity of the inflow. */
+};
+
+/*!
  * \class CConfig
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
@@ -305,6 +315,7 @@ private:
   su2double *OutletBackflow_Ttotal;          /*!< \brief Reservoir total temperature for outlet backflow. */
   su2double *OutletBackflow_Ptotal;          /*!< \brief Reservoir total pressure for outlet backflow. */
   su2double **OutletBackflow_FlowDir;        /*!< \brief Backflow direction for outlets (zero: boundary normal). */
+  vector<OutletBackflowSpec> OutletBackflowSpecs; /*!< \brief Checked reservoir data per MARKER_OUTLET_BACKFLOW entry. */
   WALL_SPECIES_TYPE **Kind_Wall_Species;        /*!< \brief Species boundary condition type for wall boundaries (FLUX or VALUE) per species. */
   su2double **Wall_SpeciesVal;               /*!< \brief Specified species flux or value for wall boundaries per species. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
@@ -7520,39 +7531,11 @@ public:
   su2double GetOutlet_Pressure(const string& val_index) const;
 
   /*!
-   * \brief Check if a static-pressure outlet has backflow reservoir data (MARKER_OUTLET_BACKFLOW).
+   * \brief Get the backflow reservoir of a static-pressure outlet.
    * \param[in] val_marker - Marker tag.
-   * \return True if reservoir data is given for this marker.
+   * \return Reservoir data, or nullptr if the marker has none.
    */
-  bool GetOutletBackflow(const string& val_marker) const;
-
-  /*!
-   * \brief Get the reservoir total temperature for backflow at a static-pressure outlet.
-   * \param[in] val_marker - Marker tag, which must have backflow data.
-   * \return Dimensional total temperature.
-   */
-  su2double GetOutletBackflowTtotal(const string& val_marker) const;
-
-  /*!
-   * \brief Get the reservoir total pressure for backflow at a static-pressure outlet.
-   * \param[in] val_marker - Marker tag, which must have backflow data.
-   * \return Dimensional total pressure; zero means the imposed static outlet pressure.
-   */
-  su2double GetOutletBackflowPtotal(const string& val_marker) const;
-
-  /*!
-   * \brief Get the backflow direction at a static-pressure outlet; a zero vector means the inward boundary normal.
-   * \param[in] val_marker - Marker tag, which must have backflow data.
-   * \return Direction vector (3 components, not necessarily normalized).
-   */
-  const su2double* GetOutletBackflowFlowDir(const string& val_marker) const;
-
-  /*!
-   * \brief Get the backflow velocity type of a static-pressure outlet (OUTLET_BACKFLOW_TYPE, default DIRECTION).
-   * \param[in] val_marker - Marker tag, which must have backflow data.
-   * \return Backflow velocity type.
-   */
-  OUTLET_BACKFLOW_TYPE GetOutletBackflowType(const string& val_marker) const;
+  const OutletBackflowSpec* GetOutletBackflowSpec(const string& val_marker) const;
 
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.

@@ -33,6 +33,7 @@
 #include "../../../Common/include/geometry/CMultiGridGeometry.hpp"
 
 #include "../../include/solvers/CSolverFactory.hpp"
+#include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 
 #include "../../include/output/COutputFactory.hpp"
@@ -2881,6 +2882,20 @@ CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MP
 
 CFluidDriver::~CFluidDriver() = default;
 
+void CDriver::CheckOutletBackflowAtEnd() const {
+  /*--- The counts were summed over ranks at the last monitor call, so all ranks take the same decision. ---*/
+  unsigned long limited = 0;
+  for (auto iZone = 0u; iZone < nZone; iZone++)
+    for (auto iInst = 0u; iInst < nInst[iZone]; iInst++)
+      if (const auto* flow = dynamic_cast<const CEulerSolver*>(solver_container[iZone][iInst][MESH_0][FLOW_SOL]))
+        limited += flow->GetOutletBackflowClamped();
+  if (limited > 0)
+    SU2_MPI::Error("The steady run ended while backflow at a static-pressure outlet was still limited to sonic "
+                   "inflow at " + std::to_string(limited) + " vertex evaluations. This is not a solution of the "
+                   "outlet condition: give the outlet a reservoir with MARKER_OUTLET_BACKFLOW, or reach a state "
+                   "without backflow (e.g. lower or adaptive CFL).", CURRENT_FUNCTION);
+}
+
 void CFluidDriver::StartSolver(){
   SU2_ZONE_SCOPED
 
@@ -2931,6 +2946,8 @@ void CFluidDriver::StartSolver(){
     Iter++;
 
   }
+
+  CheckOutletBackflowAtEnd();
 }
 
 

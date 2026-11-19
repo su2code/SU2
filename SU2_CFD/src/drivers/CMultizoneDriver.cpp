@@ -211,6 +211,7 @@ void CMultizoneDriver::StartSolver() {
 
   }
 
+  CheckOutletBackflowAtEnd();
 }
 
 void CMultizoneDriver::Preprocess(unsigned long TimeIter) {

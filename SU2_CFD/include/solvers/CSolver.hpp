@@ -376,18 +376,6 @@ public:
   inline virtual CFluidModel* GetFluidModel(void) const { return nullptr;}
 
   /*!
-   * \brief Sum the static-pressure outlet vertices limited to sonic backflow over ranks, report changes, and reset.
-   * \param[in] config - Definition of the particular problem.
-   * \return Number of limited vertices in the residual evaluations since the last call.
-   */
-  inline virtual unsigned long MonitorOutletBackflowClamp(const CConfig* config) { return 0; }
-
-  /*!
-   * \brief Number of static-pressure outlet vertices limited to sonic backflow at the last monitor call.
-   */
-  inline virtual unsigned long GetOutletBackflowClamped() const { return 0; }
-
-  /*!
    * \brief Get number of linear solver iterations.
    * \return Number of linear solver iterations.
    */
