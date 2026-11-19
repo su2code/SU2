@@ -18,7 +18,7 @@ for module in (
 ):
     sys.modules.setdefault(module, unittest.mock.MagicMock())
 
-MODULE_PATH = Path(__file__).parents[2] / "bin" / "monitor.py"
+MODULE_PATH = Path(__file__).parents[1] / "monitor.py"
 SPEC = importlib.util.spec_from_file_location("su2_monitor", MODULE_PATH)
 MONITOR = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MONITOR)
