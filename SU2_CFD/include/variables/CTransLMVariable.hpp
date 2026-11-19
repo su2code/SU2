@@ -40,6 +40,9 @@ class CTransLMVariable final : public CTurbVariable {
 protected:
   VectorType Intermittency_Eff;
   VectorType Intermittency_Sep;
+  
+  std::vector<TransitionLMData> TransitionData;
+  MatrixType WallNormal;
 
 public:
   /*!
@@ -80,4 +83,8 @@ public:
    */
   inline su2double GetIntermittencySep(unsigned long iPoint) const override { return Intermittency_Sep(iPoint); }
 
+  TransitionLMData* GetTransitionData(unsigned long iPoint) override { return &TransitionData[iPoint]; }
+  const TransitionLMData* GetTransitionData(unsigned long iPoint) const override { return &TransitionData[iPoint]; }
+  su2double* GetTransitionWallNormal(unsigned long iPoint) override { return WallNormal[iPoint]; }
+  const su2double* GetTransitionWallNormal(unsigned long iPoint) const override { return WallNormal[iPoint]; }
 };
