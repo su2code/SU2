@@ -242,18 +242,17 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   } catch (const CanteraError& error) {
     SU2_MPI::Error(string("Cantera error in SetTDState_T: ") + error.what(), CURRENT_FUNCTION);
   }
-  temperatureIterationFailed = false;
 }
 
 void CFluidCantera::SetTDState_h(const su2double val_enthalpy, const su2double* val_scalars) {
-  /*--- Temperature tolerance in [K], high accuracy needed for restarts. ---*/
-  constexpr double tolerance = 1e-5;
-  constexpr int maxIterations = 20;
+  SolveTDState_h(val_enthalpy, 0.0, val_scalars);
+}
 
+bool CFluidCantera::SolveTDState_h(const su2double val_enthalpy, const su2double val_temperature_guess,
+                                   const su2double* val_scalars) {
   SetMassFractions(val_scalars);
   const double enthalpy = SU2_TYPE::GetValue(val_enthalpy);
-  double temperature = temperatureGuess;
-  temperatureGuess = 0.0;
+  double temperature = SU2_TYPE::GetValue(val_temperature_guess);
   bool converged = false;
 
   try {
@@ -267,25 +266,16 @@ void CFluidCantera::SetTDState_h(const su2double val_enthalpy, const su2double* 
     temperature = std::clamp(temperature, minTemperature, maxTemperature);
 
     /*--- Newton-Raphson on temperature, kept inside the temperature bounds. ---*/
-    for (int iter = 0; iter < maxIterations; iter++) {
-      sol->thermo()->setState_TP(temperature, SU2_TYPE::GetValue(Pressure_Thermodynamic));
-      const double delta = (enthalpy - sol->thermo()->enthalpy_mass()) / sol->thermo()->cp_mass();
-      if (!std::isfinite(delta)) break;
-
-      const double next = std::clamp(temperature + delta, minTemperature, maxTemperature);
-      const bool inRange = (next == temperature + delta);
-      temperature = next;
-      if (!inRange) break;
-      if (std::abs(delta) <= tolerance) {
-        converged = true;
-        break;
-      }
-    }
+    auto temperatureStep = [&](const double temp_iter) {
+      sol->thermo()->setState_TP(temp_iter, SU2_TYPE::GetValue(Pressure_Thermodynamic));
+      return (enthalpy - sol->thermo()->enthalpy_mass()) / sol->thermo()->cp_mass();
+    };
+    converged = SolveTemperatureNewton(temperatureStep, minTemperature, maxTemperature, temperature);
     SetThermoState(temperature);
   } catch (const CanteraError& error) {
-    SU2_MPI::Error(string("Cantera error in SetTDState_h: ") + error.what(), CURRENT_FUNCTION);
+    SU2_MPI::Error(string("Cantera error in SolveTDState_h: ") + error.what(), CURRENT_FUNCTION);
   }
-  temperatureIterationFailed = !converged;
+  return converged;
 }
 
 #else

@@ -78,6 +78,16 @@ public:
   using BoolVectorType = C2DContainer<unsigned long, bool, StorageType::ColumnMajor, 64, DynamicSize, 1>;
   BoolVectorType strongBC;    /*!< \brief Flag for boundary conditions to indicate if a strong BC has been applied, currently only used to keep track of farfield.  */
 
+  /*!
+   * \brief Set the pressure, temperature and density of a point from its solution. If the temperature cannot be
+   *        found or the state is not physical, the solution is reverted to the old one.
+   * \param[in] iPoint - Point index.
+   * \param[in] FluidModel - Fluid model.
+   * \param[in] scalar - Scalar mass fractions, nullptr if there are none.
+   * \return False if the solution was reverted.
+   */
+  bool SetThermodynamicState(unsigned long iPoint, CFluidModel* FluidModel, const su2double* scalar);
+
  public:
   /*!
    * \brief Constructor of the class.

@@ -101,8 +101,9 @@ protected:
    *          state at time n (also after restart).
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
+   * \return Number of points (of this thread) where the state at a past time level could not be evaluated.
    */
-  void RecomputeDensity_time_n(CSolver **solver_container, const CConfig *config);
+  unsigned long RecomputeDensity_time_n(CSolver **solver_container, const CConfig *config);
 
   /*!
    * \brief Update the Beta parameter for the incompressible preconditioner.
@@ -246,7 +247,7 @@ public:
    * \param[in] nDim - Number of physical dimensions.
    * \param[in] scalar - scalar variable.
    * \param[in,out] primitive - Primitive variables.
-   * \return Whether the evaluation of the fluid state failed.
+   * \return True if the extrapolated state is consistent, false if the evaluation of the fluid state failed.
    */
   static bool ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, const su2double* scalar,
                                              su2double* primitive);
