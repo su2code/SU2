@@ -189,8 +189,9 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
     if (config->GetMarker_All_TagBound(marker) != outlet) continue;
     const auto spans = test.geometry->GetnSpanWiseSections(OUTFLOW);
     auto target = [&](unsigned short span) { return ratio * p * (radial ? .98 + .02 * span : 1.); };
-    // Check the expected states first, so that a failure reports the inputs instead of stopping in the solver.
-    for (auto span = 0u; span < spans; ++span)
+    // With backflow data, check the expected states first, so that a failure reports the inputs instead of stopping
+    // in the solver. (Without data the hidden cases must reach the solver's own error.)
+    for (auto span = 0u; span < (reservoir ? spans : 0u); ++span)
       for (auto vertex = 0ul; vertex < test.geometry->GetnVertexSpan(marker, span); ++vertex) {
         su2double unit[3], boundary[5];
         test.geometry->turbovertex[marker][span][vertex]->GetNormal(unit);
