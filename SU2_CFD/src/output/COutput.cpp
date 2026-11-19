@@ -289,6 +289,8 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
 
   if (rank == MASTER_NODE && !noWriting) {
 
+    WriteAdditionalFiles(config);
+
     if (WriteHistoryFileOutput(config)) SetHistoryFileOutput(config);
 
     if (WriteScreenHeader(config)) SetScreenHeader(config);

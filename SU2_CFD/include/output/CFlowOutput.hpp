@@ -365,6 +365,22 @@ protected:
   void SetFixedCLScreenOutput(const CConfig *config);
 
   /*!
+   * \brief Update fixed-CL restart metadata independently of screen/history frequency.
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  void WriteAdditionalFiles(const CConfig *config) override;
+
+  /*! \brief Whether the fixed-CL driver has changed the angle of attack. */
+  bool FixedCLChangedAoA() const {
+    return fabs(GetHistoryFieldValue("CL_DRIVER_COMMAND")) > EPS;
+  }
+
+  /*! \brief Whether the fixed-CL driver has restored the exact pre-FD angle of attack. */
+  bool FixedCLRestoredAoA() const {
+    return GetHistoryFieldValue("AOA") == GetHistoryFieldValue("PREV_AOA");
+  }
+
+  /*!
    * \brief Compute the ratio of the stochastic energy backscatter to the turbulent energy dissipation.
    * \param iPoint - Index of the point.
    * \param config - Definition of the particular problem.
