@@ -88,7 +88,9 @@ TEST_CASE("Reservoir backflow keeps the reservoir state and the interior acousti
                                                      direction, out, 0, kind == 0 ? 1.4 : 0) == Status::Valid);
             const auto b = Evaluate(*gas, dim, out);
             // Reservoir total enthalpy and entropy.
-            CHECK(Value(b.enthalpy + .5 * b.speed * b.speed) == Approx(Value(totalEnthalpy)).epsilon(1e-9));
+            // The reference uses SetTDState_PT directly; the van der Waals (p,T) inversion is only accurate to ~1e-6.
+            CHECK(Value(b.enthalpy + .5 * b.speed * b.speed) ==
+                  Approx(Value(totalEnthalpy)).epsilon(kind == 2 ? 1e-6 : 1e-9));
             CHECK(Value(b.entropy) == Approx(Value(totalEntropy)).margin(1e-5));
             // Velocity along the given direction (the inward normal for a zero direction).
             su2double unit[3] = {-1, 0, 0};
@@ -191,7 +193,7 @@ TEST_CASE("Reservoir backflow rejects a direction that leaves the domain", "[Pre
   CHECK(gas.ComputeReservoirInflowState(2, rest, normal, 0, -1, 300, nullptr, out, 0, 1.4) == Status::InvalidState);
 }
 
-TEST_CASE("Sonic backflow fallback keeps interior entropy, tangential velocity and the imposed pressure",
+TEST_CASE("Backflow fallback keeps interior entropy, tangential velocity and the imposed pressure",
           "[Pressure-outlet][Outlet-backflow]") {
   for (auto dim : {2u, 3u})
     for (auto kind : {0u, 1u, 2u}) {
@@ -213,7 +215,12 @@ TEST_CASE("Sonic backflow fallback keeps interior entropy, tangential velocity a
           const auto b = Evaluate(*gas, dim, out);
           CHECK(Value(b.pressure) == Approx(Value(ratio * p)).epsilon(1e-7));
           CHECK(Value(b.entropy) == Approx(Value(s)).margin(1e-5));
-          CHECK(Value(b.velocity[0] - grid) == Approx(Value(-b.sound)).epsilon(1e-9));
+          // Inflow, never faster than sonic relative to the grid. For the ideal gas the interior invariant would
+          // give supersonic inflow here, so the sonic limit is active; dense gases can stay subsonic.
+          const su2double q = b.velocity[0] - grid;
+          CHECK(q < 0);
+          CHECK(Value(-q) <= Value(b.sound) * (1 + 1e-9));
+          if (kind == 0) CHECK(Value(q) == Approx(Value(-b.sound)).epsilon(1e-9));
           for (auto d = 1u; d < dim; ++d) CHECK(Value(b.velocity[d]) == Approx(Value(velocity[d])).epsilon(1e-12));
         }
     }

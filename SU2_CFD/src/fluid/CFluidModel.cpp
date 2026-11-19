@@ -466,13 +466,19 @@ CFluidModel::PressureOutletStatus CFluidModel::ComputeReservoirInflowState(
   if (!IsPressureOutletStateValid()) return PressureOutletStatus::InvalidState;
   // Real-gas (p,T) inversions stop at a loose tolerance from a history-dependent guess. Polish the density with
   // Newton steps at fixed temperature, from a passive guess, so the reservoir state is reproducible and its
-  // derivatives come only from the converged relation p(rho, T_t) = p_t.
+  // derivatives come only from the converged relation p(rho, T_t) = p_t. The slope is a passive central
+  // difference because not every EOS provides dT/drho at constant energy.
   su2double totalDensity = SU2_TYPE::GetValue(GetDensity());
-  for (auto iteration = 0u; iteration < 3; ++iteration) {
+  for (auto iteration = 0u; iteration < 4; ++iteration) {
+    const double rho = SU2_TYPE::GetValue(totalDensity), step = 1e-6 * rho;
+    const double temperature = SU2_TYPE::GetValue(totalTemperature);
+    SetTDState_rhoT(rho + step, temperature);
+    const double pressurePlus = SU2_TYPE::GetValue(GetPressure());
+    SetTDState_rhoT(rho - step, temperature);
+    const double slope = (pressurePlus - SU2_TYPE::GetValue(GetPressure())) / (2 * step);
     SetTDState_rhoT(totalDensity, totalTemperature);
-    const su2double dpdrho = GetdPdrho_e() - GetdPde_rho() * GetdTdrho_e() / GetdTde_rho();
-    if (!(dpdrho > 0) || !IsPressureOutletStateValid()) return PressureOutletStatus::InvalidState;
-    totalDensity -= (GetPressure() - totalPressure) / dpdrho;
+    if (!(slope > 0) || !IsPressureOutletStateValid()) return PressureOutletStatus::InvalidState;
+    totalDensity -= (GetPressure() - totalPressure) / slope;
   }
   SetTDState_rhoT(totalDensity, totalTemperature);
   if (!IsPressureOutletStateValid()) return PressureOutletStatus::InvalidState;
