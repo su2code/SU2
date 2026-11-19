@@ -75,12 +75,6 @@ class FrozenOutletTurbulence final : public CSolver {
   }
 };
 
-std::unique_ptr<CFluidModel> MakeTurboGas(unsigned short kind) {
-  if (kind == 0) return std::unique_ptr<CFluidModel>(new CIdealGas(1.4, 35.152));
-  if (kind == 1) return std::unique_ptr<CFluidModel>(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
-  return std::unique_ptr<CFluidModel>(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
-}
-
 void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, double ratio, bool moving, bool radial,
                          bool implicit = true, bool totalConditions = false, bool threaded = false,
                          double turbulentK = 0, bool reservoir = false, bool unsteady = false,
@@ -94,7 +88,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
   // Backflow reservoir 5% above the interior pressure at the interior temperature; zero direction = normal.
   su2double backflow[5] = {0, 1.05 * p, 0, 0, 0};
   {
-    auto probe = MakeTurboGas(kind);
+    auto probe = MakeOutletTestGas(kind);
     probe->SetTDState_Prho(p, rho);
     backflow[0] = probe->GetTemperature();
   }
@@ -150,7 +144,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
   auto* solver = new TurboOutletSolver(test.geometry.get(), config, ratio * p, radial);
   test.solver[FLOW_SOL] = solver;
   std::cout.rdbuf(test.orig_buf);
-  auto gas = MakeTurboGas(kind);
+  auto gas = MakeOutletTestGas(kind);
   if (turbulentK) {
     gas->SetLaminarViscosityModel(config);
     gas->SetThermalConductivityModel(config);

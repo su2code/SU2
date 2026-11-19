@@ -151,10 +151,7 @@ TEST_CASE("Characteristic pressure boundary reconstructs the captured startup st
 TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame", "[Pressure-outlet]") {
   for (auto dim : {2u, 3u}) {
     for (auto kind : {0u, 1u, 2u}) {
-      std::unique_ptr<CFluidModel> gas;
-      if (kind == 0) gas.reset(new CIdealGas(1.4, 35.152));
-      if (kind == 1) gas.reset(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
-      if (kind == 2) gas.reset(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
+      auto gas = MakeOutletTestGas(kind);
       const su2double p = 1500112, rho = 230, normal[3] = {1, 0, 0}, boost[3] = {20, -7, 3};
       gas->SetTDState_Prho(p, rho);
       const auto e = gas->GetStaticEnergy(), sound = gas->GetSoundSpeed(), entropy = gas->GetEntropy();

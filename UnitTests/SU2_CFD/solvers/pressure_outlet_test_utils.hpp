@@ -26,8 +26,32 @@
 
 #pragma once
 
+#include <memory>
 #include "../../../SU2_CFD/include/fluid/CFluidModel.hpp"
+#include "../../../SU2_CFD/include/fluid/CIdealGas.hpp"
+#include "../../../SU2_CFD/include/fluid/CPengRobinson.hpp"
+#include "../../../SU2_CFD/include/fluid/CVanDerWaalsGas.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+
+// Gases of the outlet tests: 0 ideal gas, 1 Peng-Robinson, 2 van der Waals (dense siloxane-like parameters).
+inline std::unique_ptr<CFluidModel> MakeOutletTestGas(unsigned short kind) {
+  if (kind == 0) return std::unique_ptr<CFluidModel>(new CIdealGas(1.4, 35.152));
+  if (kind == 1) return std::unique_ptr<CFluidModel>(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
+  return std::unique_ptr<CFluidModel>(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
+}
+
+// Reservoir options for CFluidModel::ComputeReservoirInflowState.
+inline CFluidModel::OutletReservoir MakeReservoir(su2double totalPressure, su2double totalTemperature,
+                                                  const su2double* direction, const su2double* tangential = nullptr,
+                                                  su2double restPressure = 0) {
+  CFluidModel::OutletReservoir reservoir;
+  reservoir.totalPressure = totalPressure;
+  reservoir.totalTemperature = totalTemperature;
+  reservoir.restPressure = restPressure;
+  reservoir.direction = direction;
+  reservoir.tangentialVelocity = tangential;
+  return reservoir;
+}
 
 // Independent primitive-variable wave decomposition for checking the implicit outlet projection.
 inline void OutgoingOutletIncrement(CFluidModel& gas, unsigned short dim, const su2double* state,
@@ -66,16 +90,17 @@ inline void OutgoingOutletIncrement(CFluidModel& gas, unsigned short dim, const 
                        rho * GeometryToolbox::DotProduct(dim, velocity, projectedVelocity);
 }
 
-// Boundary state that CEulerSolver's static-pressure outlets should use, assembled from the fluid-model maps.
-// reservoir = {T_total, P_total, direction_x, direction_y, direction_z}, or nullptr without MARKER_OUTLET_BACKFLOW;
-// a zero P_total means the imposed pressure where the inflow has no normal velocity. interiorTangential selects
-// OUTLET_BACKFLOW_TYPE= INTERIOR_TANGENTIAL (the inflow keeps the interior tangential velocity).
+// Tangential part of the interior velocity, for OUTLET_BACKFLOW_TYPE= INTERIOR_TANGENTIAL.
 inline void InteriorTangentialVelocity(unsigned short dim, const su2double* state, const su2double* normal,
                                        su2double* tangential) {
   const su2double normalVelocity = GeometryToolbox::DotProduct(dim, state + 1, normal) / state[0];
   for (auto d = 0u; d < dim; ++d) tangential[d] = state[d + 1] / state[0] - normalVelocity * normal[d];
 }
 
+// Boundary state that CEulerSolver's static-pressure outlets should use, assembled from the fluid-model maps.
+// reservoir = {T_total, P_total, direction_x, direction_y, direction_z}, or nullptr without MARKER_OUTLET_BACKFLOW;
+// a zero P_total means the imposed pressure where the inflow has no normal velocity. interiorTangential selects
+// OUTLET_BACKFLOW_TYPE= INTERIOR_TANGENTIAL. If the reservoir state fails, the treatment without data is used.
 inline CFluidModel::PressureOutletStatus ExpectedOutletState(CFluidModel& gas, unsigned short dim,
                                                              const su2double* state, const su2double* normal,
                                                              su2double gridNormal, su2double pressure,
@@ -89,11 +114,14 @@ inline CFluidModel::PressureOutletStatus ExpectedOutletState(CFluidModel& gas, u
         GeometryToolbox::DotProduct(dim, boundary + 1, normal) / boundary[0] < gridNormal) {
       su2double tangential[3] = {};
       InteriorTangentialVelocity(dim, state, normal, tangential);
-      status = gas.ComputeReservoirInflowState(dim, state, normal, gridNormal, reservoir[1], reservoir[0],
-                                               interiorTangential ? nullptr : reservoir + 2, boundary, turbulentK,
-                                               gamma, interiorTangential ? tangential : nullptr, pressure);
+      const auto options = MakeReservoir(reservoir[1], reservoir[0], interiorTangential ? nullptr : reservoir + 2,
+                                         interiorTangential ? tangential : nullptr, pressure);
+      if (gas.ComputeReservoirInflowState(dim, state, normal, gridNormal, options, boundary, turbulentK, gamma) ==
+          CFluidModel::PressureOutletStatus::Valid)
+        return CFluidModel::PressureOutletStatus::Valid;
     }
-  } else if (status == CFluidModel::PressureOutletStatus::Backflow && steady) {
+  }
+  if (status == CFluidModel::PressureOutletStatus::Backflow && steady) {
     status = gas.ComputeSonicBackflowState(dim, state, normal, gridNormal, pressure, boundary, turbulentK, gamma);
   }
   return status;

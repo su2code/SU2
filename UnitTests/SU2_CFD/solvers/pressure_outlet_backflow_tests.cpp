@@ -38,12 +38,6 @@
 namespace {
 using Status = CFluidModel::PressureOutletStatus;
 
-std::unique_ptr<CFluidModel> MakeGas(unsigned short kind) {
-  if (kind == 0) return std::unique_ptr<CFluidModel>(new CIdealGas(1.4, 35.152));
-  if (kind == 1) return std::unique_ptr<CFluidModel>(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
-  return std::unique_ptr<CFluidModel>(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
-}
-
 // Thermodynamic state of a conservative boundary state: pressure, entropy, enthalpy, sound speed.
 struct BoundaryState {
   su2double pressure, entropy, enthalpy, sound, speed, velocity[3] = {};
@@ -67,7 +61,7 @@ TEST_CASE("Reservoir backflow keeps the reservoir state and the interior acousti
           "[Pressure-outlet][Outlet-backflow]") {
   for (auto dim : {2u, 3u})
     for (auto kind : {0u, 1u, 2u}) {
-      auto gas = MakeGas(kind);
+      auto gas = MakeOutletTestGas(kind);
       const su2double p = 1500112, rho = 230, normal[3] = {1, 0, 0};
       gas->SetTDState_Prho(p, rho);
       const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
@@ -85,8 +79,9 @@ TEST_CASE("Reservoir backflow keeps the reservoir state and the interior acousti
             su2double velocity[3] = {mach * a + grid, 5, -2}, state[5] = {rho}, out[5];
             for (auto d = 0u; d < dim; ++d) state[d + 1] = rho * velocity[d];
             state[dim + 1] = rho * (e + .5 * GeometryToolbox::SquaredNorm(dim, velocity));
-            REQUIRE(gas->ComputeReservoirInflowState(dim, state, normal, grid, totalPressure, totalTemperature,
-                                                     direction, out, 0, kind == 0 ? 1.4 : 0) == Status::Valid);
+            REQUIRE(gas->ComputeReservoirInflowState(dim, state, normal, grid,
+                                                     MakeReservoir(totalPressure, totalTemperature, direction), out, 0,
+                                                     kind == 0 ? 1.4 : 0) == Status::Valid);
             const auto b = Evaluate(*gas, dim, out);
             // Reservoir total enthalpy and entropy.
             // The reference uses SetTDState_PT directly; the van der Waals (p,T) inversion is only accurate to ~1e-6.
@@ -118,7 +113,7 @@ TEST_CASE("Reservoir backflow keeps the reservoir state and the interior acousti
 
 TEST_CASE("Reservoir backflow is limited to the sonic state of the reservoir", "[Pressure-outlet][Outlet-backflow]") {
   for (auto kind : {0u, 1u, 2u}) {
-    auto gas = MakeGas(kind);
+    auto gas = MakeOutletTestGas(kind);
     const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
     gas->SetTDState_Prho(p, rho);
     const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
@@ -130,7 +125,7 @@ TEST_CASE("Reservoir backflow is limited to the sonic state of the reservoir", "
       if (kind != 0 && mach == -.95) continue;
       const su2double state[4] = {rho, rho * mach * a, rho * 5, rho * (e + .5 * (mach * mach * a * a + 25))};
       su2double out[4];
-      REQUIRE(gas->ComputeReservoirInflowState(2, state, normal, 0, ratio * p, T, nullptr, out, 0,
+      REQUIRE(gas->ComputeReservoirInflowState(2, state, normal, 0, MakeReservoir(ratio * p, T, nullptr), out, 0,
                                                kind == 0 ? 1.4 : 0) == Status::Valid);
       const auto b = Evaluate(*gas, 2, out);
       CHECK(Value(b.speed) == Approx(Value(b.sound)).epsilon(1e-8));
@@ -151,15 +146,15 @@ TEST_CASE("Reservoir backflow is limited to the sonic state of the reservoir", "
 
 TEST_CASE("Reservoir backflow stops when the interior wave cannot draw flow in", "[Pressure-outlet][Outlet-backflow]") {
   for (auto kind : {0u, 1u, 2u}) {
-    auto gas = MakeGas(kind);
+    auto gas = MakeOutletTestGas(kind);
     const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
     gas->SetTDState_Prho(p, rho);
     const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
     // The reservoir pressure is 10% below the interior, so the weak reverse flow would turn outward.
     const su2double state[4] = {rho, rho * -.02 * a, 0, rho * (e + .5 * .0004 * a * a)};
     su2double out[4];
-    REQUIRE(gas->ComputeReservoirInflowState(2, state, normal, 0, .9 * p, T, nullptr, out, 0, kind == 0 ? 1.4 : 0) ==
-            Status::Valid);
+    REQUIRE(gas->ComputeReservoirInflowState(2, state, normal, 0, MakeReservoir(.9 * p, T, nullptr), out, 0,
+                                             kind == 0 ? 1.4 : 0) == Status::Valid);
     const auto b = Evaluate(*gas, 2, out);
     CHECK(Value(b.speed) == 0);
     CHECK(Value(b.pressure) == Approx(Value(.9 * p)).epsilon(1e-8));
@@ -169,15 +164,15 @@ TEST_CASE("Reservoir backflow stops when the interior wave cannot draw flow in",
 
 TEST_CASE("Reservoir backflow keeps frozen SST energy out of the EOS", "[Pressure-outlet][Outlet-backflow]") {
   for (auto kind : {0u, 1u}) {
-    auto gas = MakeGas(kind);
+    auto gas = MakeOutletTestGas(kind);
     const su2double p = 1500112, rho = 230, normal[3] = {0, 0, 1}, k = 17.5;
     gas->SetTDState_Prho(p, rho);
     const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
     su2double state[5] = {rho, 0, 0, -.2 * rho * a, rho * (e + .02 * a * a)}, plain[5], withK[5];
-    REQUIRE(gas->ComputeReservoirInflowState(3, state, normal, 0, 1.05 * p, T, nullptr, plain, 0,
+    REQUIRE(gas->ComputeReservoirInflowState(3, state, normal, 0, MakeReservoir(1.05 * p, T, nullptr), plain, 0,
                                              kind == 0 ? 1.4 : 0) == Status::Valid);
     state[4] += rho * k;
-    REQUIRE(gas->ComputeReservoirInflowState(3, state, normal, 0, 1.05 * p, T, nullptr, withK, k,
+    REQUIRE(gas->ComputeReservoirInflowState(3, state, normal, 0, MakeReservoir(1.05 * p, T, nullptr), withK, k,
                                              kind == 0 ? 1.4 : 0) == Status::Valid);
     for (auto v = 0u; v < 4; ++v) CHECK(Value(withK[v]) == Approx(Value(plain[v])).epsilon(1e-9).margin(1e-9));
     CHECK(Value(withK[4]) == Approx(Value(plain[4] + k * plain[0])).epsilon(1e-9));
@@ -189,16 +184,17 @@ TEST_CASE("Reservoir backflow rejects a direction that leaves the domain", "[Pre
   const su2double normal[2] = {1, 0}, outward[3] = {1, .2, 0};
   const su2double state[4] = {1.2, -30 * 1.2, 0, 1e5 / .4 + .5 * 1.2 * 900}, rest[4] = {1.2, 0, 0, 1e5 / .4};
   su2double out[4];
-  CHECK(gas.ComputeReservoirInflowState(2, state, normal, 0, 1.01e5, 300, outward, out, 0, 1.4) ==
+  CHECK(gas.ComputeReservoirInflowState(2, state, normal, 0, MakeReservoir(1.01e5, 300, outward), out, 0, 1.4) ==
         Status::InvalidState);
-  CHECK(gas.ComputeReservoirInflowState(2, rest, normal, 0, -1, 300, nullptr, out, 0, 1.4) == Status::InvalidState);
+  CHECK(gas.ComputeReservoirInflowState(2, rest, normal, 0, MakeReservoir(-1, 300, nullptr), out, 0, 1.4) ==
+        Status::InvalidState);
 }
 
 TEST_CASE("Backflow fallback keeps interior entropy, tangential velocity and the imposed pressure",
           "[Pressure-outlet][Outlet-backflow]") {
   for (auto dim : {2u, 3u})
     for (auto kind : {0u, 1u, 2u}) {
-      auto gas = MakeGas(kind);
+      auto gas = MakeOutletTestGas(kind);
       const su2double p = 1500112, rho = 230, normal[3] = {1, 0, 0};
       gas->SetTDState_Prho(p, rho);
       const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), s = gas->GetEntropy();
@@ -234,7 +230,7 @@ TEST_CASE("Backflow fallback is continuous with subsonic backflow", "[Pressure-o
   for (auto kind : {0u, 1u, 2u})
     for (const auto ratio : {1.05, .95}) {
       CAPTURE(kind, ratio);
-      auto gas = MakeGas(kind);
+      auto gas = MakeOutletTestGas(kind);
       const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
       gas->SetTDState_Prho(p, rho);
       const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), target = ratio * p;
@@ -271,7 +267,7 @@ TEST_CASE("Outlet pressure and normal velocity are continuous at flow reversal f
   // density, temperature and tangential velocity jump, as across a contact discontinuity.
   for (auto kind : {0u, 1u, 2u}) {
     CAPTURE(kind);
-    auto gas = MakeGas(kind);
+    auto gas = MakeOutletTestGas(kind);
     const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
     gas->SetTDState_Prho(p, rho);
     const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
@@ -293,7 +289,7 @@ TEST_CASE("Reservoir backflow with the interior tangential velocity keeps total 
           "[Pressure-outlet][Outlet-backflow]") {
   for (auto dim : {2u, 3u})
     for (auto kind : {0u, 1u, 2u}) {
-      auto gas = MakeGas(kind);
+      auto gas = MakeOutletTestGas(kind);
       const su2double p = 1500112, rho = 230, normal[3] = {1, 0, 0};
       gas->SetTDState_Prho(p, rho);
       const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
@@ -308,8 +304,9 @@ TEST_CASE("Reservoir backflow with the interior tangential velocity keeps total 
           for (auto d = 0u; d < dim; ++d) state[d + 1] = rho * velocity[d];
           state[dim + 1] = rho * (e + .5 * GeometryToolbox::SquaredNorm(dim, velocity));
           InteriorTangentialVelocity(dim, state, normal, tangential);
-          REQUIRE(gas->ComputeReservoirInflowState(dim, state, normal, 0, totalPressure, T, nullptr, out, 0,
-                                                   kind == 0 ? 1.4 : 0, tangential) == Status::Valid);
+          REQUIRE(gas->ComputeReservoirInflowState(dim, state, normal, 0,
+                                                   MakeReservoir(totalPressure, T, nullptr, tangential), out, 0,
+                                                   kind == 0 ? 1.4 : 0) == Status::Valid);
           const auto b = Evaluate(*gas, dim, out);
           // The van der Waals (p,T) reference is accurate only to about 1e-6.
           CHECK(Value(b.enthalpy + .5 * b.speed * b.speed) ==
@@ -333,7 +330,7 @@ TEST_CASE("Interior tangential backflow is continuous at flow reversal for a zer
   // pressure and the whole velocity are continuous at the reversal; only density and temperature jump.
   for (auto kind : {0u, 1u, 2u}) {
     CAPTURE(kind);
-    auto gas = MakeGas(kind);
+    auto gas = MakeOutletTestGas(kind);
     const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
     gas->SetTDState_Prho(p, rho);
     const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
@@ -355,17 +352,40 @@ TEST_CASE("Interior tangential backflow is continuous at flow reversal for a zer
 TEST_CASE("Interior tangential backflow limits the normal speed to sonic", "[Pressure-outlet][Outlet-backflow]") {
   for (auto kind : {0u, 1u, 2u}) {
     CAPTURE(kind);
-    auto gas = MakeGas(kind);
+    auto gas = MakeOutletTestGas(kind);
     const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
     gas->SetTDState_Prho(p, rho);
     const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
     const su2double state[4] = {rho, -1.3 * rho * a, .3 * rho * a, rho * (e + .5 * (1.69 + .09) * a * a)};
     su2double out[4], tangential[2];
     InteriorTangentialVelocity(2, state, normal, tangential);
-    REQUIRE(gas->ComputeReservoirInflowState(2, state, normal, 0, 1.05 * p, T, nullptr, out, 0, kind == 0 ? 1.4 : 0,
-                                             tangential) == Status::Valid);
+    REQUIRE(gas->ComputeReservoirInflowState(2, state, normal, 0, MakeReservoir(1.05 * p, T, nullptr, tangential), out,
+                                             0, kind == 0 ? 1.4 : 0) == Status::Valid);
     const auto b = Evaluate(*gas, 2, out);
     CHECK(Value(-b.velocity[0]) == Approx(Value(b.sound)).epsilon(1e-8));
     CHECK(Value(b.velocity[1]) == Approx(Value(.3 * a)).epsilon(1e-10));
   }
+}
+
+TEST_CASE("Reservoir backflow limits the normal speed relative to the grid to sonic",
+          "[Pressure-outlet][Outlet-backflow]") {
+  const su2double oblique[2] = {-.8, .6};
+  for (auto kind : {0u, 1u, 2u})
+    for (const su2double grid : {0., 20., -20.})
+      for (const auto* direction : {static_cast<const su2double*>(nullptr), oblique}) {
+        CAPTURE(kind, grid, direction != nullptr);
+        auto gas = MakeOutletTestGas(kind);
+        const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
+        gas->SetTDState_Prho(p, rho);
+        const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
+        // The interior flow enters through every characteristic, so the sonic state of the reservoir applies.
+        const su2double u = -1.3 * a + grid;
+        const su2double state[4] = {rho, rho * u, 0, rho * (e + .5 * u * u)};
+        su2double out[4];
+        REQUIRE(gas->ComputeReservoirInflowState(2, state, normal, grid, MakeReservoir(1.05 * p, T, direction), out, 0,
+                                                 kind == 0 ? 1.4 : 0) == Status::Valid);
+        const auto b = Evaluate(*gas, 2, out);
+        CHECK(Value(b.velocity[0] - grid) == Approx(Value(-b.sound)).epsilon(1e-8));
+        if (direction != nullptr) CHECK(Value(b.velocity[1] / b.velocity[0]) == Approx(-.75).epsilon(1e-10));
+      }
 }

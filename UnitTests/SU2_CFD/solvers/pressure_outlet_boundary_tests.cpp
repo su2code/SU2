@@ -145,17 +145,14 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
     if (normalMach > -1) reference(state, expected);
     // Backflow states come from the fluid-model maps, which pressure_outlet_backflow_tests.cpp checks.
     const su2double outward[3] = {1, 0, 0};
-    if (reservoir && (normalMach <= -1 || expected[1] / expected[0] < grid[0])) {
-      su2double tangential[3] = {};
-      InteriorTangentialVelocity(dim, state, outward, tangential);
-      REQUIRE(gas.ComputeReservoirInflowState(dim, state, outward, grid[0], tangentialMode ? 0. : totalPressure, 300,
-                                              nullptr, expected, turbulentK, 1.4, tangentialMode ? tangential : nullptr,
-                                              pressureRatio * p) == CFluidModel::PressureOutletStatus::Valid);
-    }
+    const su2double reservoirData[5] = {300, tangentialMode ? 0. : totalPressure, 0, 0, 0};
+    const bool steady = backflow != Backflow::Unsteady && backflow != Backflow::UnsteadyReservoir;
     const bool limited = backflow == Backflow::None && normalMach <= -1;
-    if (limited)
-      REQUIRE(gas.ComputeSonicBackflowState(dim, state, outward, grid[0], pressureRatio * p, expected, turbulentK,
-                                            1.4) == CFluidModel::PressureOutletStatus::Valid);
+    // (Unsteady backflow without data is a hidden error case: the solver must stop with its own message.)
+    if ((normalMach <= -1 && (reservoir || steady)) || (reservoir && expected[1] / expected[0] < grid[0]))
+      REQUIRE(ExpectedOutletState(gas, dim, state, outward, grid[0], pressureRatio * p, expected, turbulentK, 1.4,
+                                  reservoir ? reservoirData : nullptr, steady,
+                                  tangentialMode) == CFluidModel::PressureOutletStatus::Valid);
     unsigned long domainVertices = 0;
     for (auto vertex = 0ul; vertex < test.geometry->nVertex[marker]; ++vertex) {
       const auto point = test.geometry->vertex[marker][vertex]->GetNode();
@@ -178,8 +175,11 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
     // Steady runs count the vertices limited to sonic backflow; the monitor call also resets the count.
     std::ostringstream quiet;
     std::cout.rdbuf(quiet.rdbuf());
-    const auto counted = solver->MonitorOutletBackflowClamp(test.config.get());
-    const auto recounted = solver->MonitorOutletBackflowClamp(test.config.get());
+    auto* euler = static_cast<CEulerSolver*>(solver);
+    euler->MonitorOutletBackflow(test.config.get());
+    const auto counted = euler->GetOutletBackflowClamped();
+    euler->MonitorOutletBackflow(test.config.get());
+    const auto recounted = euler->GetOutletBackflowClamped();
     std::cout.rdbuf(test.orig_buf);
     CHECK(counted == (limited ? domainVertices : 0));
     CHECK(recounted == 0);

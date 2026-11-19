@@ -28,6 +28,7 @@
 #include <tuple>
 #include <utility>
 #include "catch.hpp"
+#include "pressure_outlet_test_utils.hpp"
 #include "../../../SU2_CFD/include/fluid/CFluidModel.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../SU2_CFD/include/fluid/CIdealGas.hpp"
@@ -37,10 +38,7 @@
 TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressure-outlet-AD]") {
   // Check the analytic ideal-gas path and integrated Peng-Robinson/van der Waals paths with the same inputs.
   for (auto kind : {0u, 1u, 2u}) {
-    std::unique_ptr<CFluidModel> gas;
-    if (kind == 0) gas.reset(new CIdealGas(1.4, 35.152));
-    if (kind == 1) gas.reset(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
-    if (kind == 2) gas.reset(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
+    auto gas = MakeOutletTestGas(kind);
     const double rho = 230, p = 1500112;
     gas->SetTDState_Prho(p, rho);
     const double e = SU2_TYPE::GetValue(gas->GetStaticEnergy()), a = SU2_TYPE::GetValue(gas->GetSoundSpeed());
@@ -143,10 +141,7 @@ void CheckMapDerivatives(const Map& evaluate, const double* values, const double
 
 TEST_CASE("Outlet backflow state derivatives match finite differences", "[Pressure-outlet-AD]") {
   for (auto kind : {0u, 1u, 2u}) {
-    std::unique_ptr<CFluidModel> gas;
-    if (kind == 0) gas.reset(new CIdealGas(1.4, 35.152));
-    if (kind == 1) gas.reset(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
-    if (kind == 2) gas.reset(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
+    auto gas = MakeOutletTestGas(kind);
     const double rho = 230, p = 1500112;
     gas->SetTDState_Prho(p, rho);
     const double e = SU2_TYPE::GetValue(gas->GetStaticEnergy()), a = SU2_TYPE::GetValue(gas->GetSoundSpeed());
@@ -155,8 +150,8 @@ TEST_CASE("Outlet backflow state derivatives match finite differences", "[Pressu
     // Inputs: four conservative variables, then reservoir total pressure (or imposed pressure) and grid speed.
     const double scale[6] = {rho, rho * a, rho * a, rho * a * a, p, a};
     auto reservoir = [&](su2double* input, su2double* output) {
-      return gas->ComputeReservoirInflowState(2, input, normal, input[5], input[4], temperature, nullptr, output, 0,
-                                              gamma);
+      return gas->ComputeReservoirInflowState(2, input, normal, input[5], MakeReservoir(input[4], temperature, nullptr),
+                                              output, 0, gamma);
     };
     auto sonic = [&](su2double* input, su2double* output) {
       return gas->ComputeSonicBackflowState(2, input, normal, input[5], input[4], output, 0, gamma);
@@ -175,8 +170,10 @@ TEST_CASE("Outlet backflow state derivatives match finite differences", "[Pressu
     // is the imposed pressure that the reservoir has at zero normal velocity.
     auto tangentialReservoir = [&](su2double* input, su2double* output, bool zeroTotal) {
       const su2double tangential[2] = {0, input[2] / input[0]};
-      return gas->ComputeReservoirInflowState(2, input, normal, input[5], zeroTotal ? su2double(0) : input[4],
-                                              temperature, nullptr, output, 0, gamma, tangential, input[4]);
+      return gas->ComputeReservoirInflowState(
+          2, input, normal, input[5],
+          MakeReservoir(zeroTotal ? su2double(0) : input[4], temperature, nullptr, tangential, input[4]), output, 0,
+          gamma);
     };
     for (const auto zeroTotal : {false, true})
       for (const auto mach : {-.3, -.05}) {
