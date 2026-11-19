@@ -206,6 +206,7 @@ private:
   nSpecies_per_Wall,              /*!< \brief Number of species defined per wall markers. */
   nMarker_Inlet_Turb,             /*!< \brief Number of inlet turbulent markers. */
   nTurb_Properties,               /*!< \brief Number of turbulent properties per inlet markers. */
+  nMarker_Outlet_Backflow,        /*!< \brief Number of static-pressure outlets with backflow reservoir data. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
   nMarker_Giles,                  /*!< \brief Number of Giles flow markers. */
   nRelaxFactor_Giles,             /*!< \brief Number of relaxation factors for Giles markers. */
@@ -262,6 +263,7 @@ private:
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
   *Marker_Wall_Species,           /*!< \brief Wall species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
+  *Marker_Outlet_Backflow,        /*!< \brief Static-pressure outlets with backflow reservoir data. */
   *Marker_Riemann,                /*!< \brief Riemann markers. */
   *Marker_Giles,                  /*!< \brief Giles markers. */
   *Marker_Shroud,                 /*!< \brief Shroud markers. */
@@ -300,6 +302,9 @@ private:
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
+  su2double *OutletBackflow_Ttotal;          /*!< \brief Reservoir total temperature for outlet backflow. */
+  su2double *OutletBackflow_Ptotal;          /*!< \brief Reservoir total pressure for outlet backflow. */
+  su2double **OutletBackflow_FlowDir;        /*!< \brief Backflow direction for outlets (zero: boundary normal). */
   WALL_SPECIES_TYPE **Kind_Wall_Species;        /*!< \brief Species boundary condition type for wall boundaries (FLUX or VALUE) per species. */
   su2double **Wall_SpeciesVal;               /*!< \brief Specified species flux or value for wall boundaries per species. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
@@ -7511,6 +7516,34 @@ public:
    * \return The outlet pressure.
    */
   su2double GetOutlet_Pressure(const string& val_index) const;
+
+  /*!
+   * \brief Check if a static-pressure outlet has backflow reservoir data (MARKER_OUTLET_BACKFLOW).
+   * \param[in] val_marker - Marker tag.
+   * \return True if reservoir data is given for this marker.
+   */
+  bool GetOutletBackflow(const string& val_marker) const;
+
+  /*!
+   * \brief Get the reservoir total temperature for backflow at a static-pressure outlet.
+   * \param[in] val_marker - Marker tag, which must have backflow data.
+   * \return Dimensional total temperature.
+   */
+  su2double GetOutletBackflowTtotal(const string& val_marker) const;
+
+  /*!
+   * \brief Get the reservoir total pressure for backflow at a static-pressure outlet.
+   * \param[in] val_marker - Marker tag, which must have backflow data.
+   * \return Dimensional total pressure.
+   */
+  su2double GetOutletBackflowPtotal(const string& val_marker) const;
+
+  /*!
+   * \brief Get the backflow direction at a static-pressure outlet; a zero vector means the inward boundary normal.
+   * \param[in] val_marker - Marker tag, which must have backflow data.
+   * \return Direction vector (3 components, not necessarily normalized).
+   */
+  const su2double* GetOutletBackflowFlowDir(const string& val_marker) const;
 
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.

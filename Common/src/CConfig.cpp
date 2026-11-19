@@ -941,6 +941,8 @@ void CConfig::SetPointersNull() {
   Marker_Euler                = nullptr;    Marker_FarField             = nullptr;    Marker_Custom              = nullptr;
   Marker_SymWall              = nullptr;    Marker_PerBound             = nullptr;
   Marker_PerDonor             = nullptr;    Marker_NearFieldBound       = nullptr;    Marker_Inlet_Turb          = nullptr;
+  Marker_Outlet_Backflow      = nullptr;    OutletBackflow_Ttotal       = nullptr;    OutletBackflow_Ptotal      = nullptr;
+  OutletBackflow_FlowDir      = nullptr;
   Marker_Deform_Mesh          = nullptr;    Marker_Deform_Mesh_Sym_Plane= nullptr;    Marker_Deform_Mesh_Internal= nullptr;
   Marker_Fluid_Load           = nullptr;
   Marker_Inlet                = nullptr;    Marker_Outlet               = nullptr;    Marker_Inlet_Species       = nullptr;
@@ -1808,6 +1810,13 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_OUTLET  \n DESCRIPTION: Outlet boundary marker(s)\n
    Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
+  /*!\brief MARKER_OUTLET_BACKFLOW \n DESCRIPTION: Reservoir for backflow at static-pressure outlets (MARKER_OUTLET,
+   * or MARKER_RIEMANN with STATIC_PRESSURE or RADIAL_EQUILIBRIUM). Where the flow enters, the outlet acts as a
+   * total-condition inlet from this reservoir, limited to sonic inflow.
+   * \n Format: ( outlet marker, total temperature, total pressure, flow_direction_x, flow_direction_y,
+   * flow_direction_z, ... ) where a zero flow direction means the inward boundary normal. \ingroup Config*/
+  addInletOption("MARKER_OUTLET_BACKFLOW", nMarker_Outlet_Backflow, Marker_Outlet_Backflow, OutletBackflow_Ttotal,
+                 OutletBackflow_Ptotal, OutletBackflow_FlowDir);
   /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of outlet types for incompressible flows. List length must match number of inlet markers. Options: PRESSURE_OUTLET, MASS_FLOW_OUTLET. \ingroup Config*/
   addEnumListOption("INC_OUTLET_TYPE", nInc_Outlet, Kind_Inc_Outlet, Inc_Outlet_Map);
   /*!\brief MARKER_ISOTHERMAL DESCRIPTION: Isothermal wall boundary marker(s)\n
@@ -6003,6 +6012,25 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         "to be equal to 1 : ratio turbulent to laminar viscosity",
         CURRENT_FUNCTION);
 
+  /*--- Backflow reservoirs complete static-pressure outlets of the compressible (ideal or real gas) solver. ---*/
+  for (auto iMarker = 0u; iMarker < nMarker_Outlet_Backflow; iMarker++) {
+    const auto& tag = Marker_Outlet_Backflow[iMarker];
+    if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE || GetNEMOProblem() || GetFEMSolver())
+      SU2_MPI::Error("MARKER_OUTLET_BACKFLOW is only available for the compressible Euler, Navier-Stokes and RANS "
+                     "solvers.", CURRENT_FUNCTION);
+    bool pressureOutlet = false;
+    for (auto jMarker = 0u; jMarker < nMarker_Outlet; jMarker++) pressureOutlet |= Marker_Outlet[jMarker] == tag;
+    for (auto jMarker = 0u; jMarker < nMarker_Riemann; jMarker++)
+      pressureOutlet |= Marker_Riemann[jMarker] == tag && (Kind_Data_Riemann[jMarker] == STATIC_PRESSURE ||
+                                                           Kind_Data_Riemann[jMarker] == RADIAL_EQUILIBRIUM);
+    if (!pressureOutlet)
+      SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " must be a MARKER_OUTLET, or a MARKER_RIEMANN with "
+                     "STATIC_PRESSURE or RADIAL_EQUILIBRIUM.", CURRENT_FUNCTION);
+    if (!(OutletBackflow_Ttotal[iMarker] > 0.0) || !(OutletBackflow_Ptotal[iMarker] > 0.0))
+      SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " needs a positive total temperature and pressure.",
+                     CURRENT_FUNCTION);
+  }
+
   /*--- Checks for additional species transport. ---*/
   if ((Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) || (Kind_Species_Model == SPECIES_MODEL::FLAMELET)) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
@@ -9697,6 +9725,33 @@ void CConfig::SetInletPtotal(su2double val_pressure, const string& val_marker) {
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker)
       Inlet_Ptotal[iMarker_Inlet] = val_pressure;
+}
+
+bool CConfig::GetOutletBackflow(const string& val_marker) const {
+  for (auto iMarker = 0u; iMarker < nMarker_Outlet_Backflow; iMarker++)
+    if (Marker_Outlet_Backflow[iMarker] == val_marker) return true;
+  return false;
+}
+
+su2double CConfig::GetOutletBackflowTtotal(const string& val_marker) const {
+  unsigned short iMarker;
+  for (iMarker = 0; iMarker < nMarker_Outlet_Backflow; iMarker++)
+    if (Marker_Outlet_Backflow[iMarker] == val_marker) break;
+  return OutletBackflow_Ttotal[iMarker];
+}
+
+su2double CConfig::GetOutletBackflowPtotal(const string& val_marker) const {
+  unsigned short iMarker;
+  for (iMarker = 0; iMarker < nMarker_Outlet_Backflow; iMarker++)
+    if (Marker_Outlet_Backflow[iMarker] == val_marker) break;
+  return OutletBackflow_Ptotal[iMarker];
+}
+
+const su2double* CConfig::GetOutletBackflowFlowDir(const string& val_marker) const {
+  unsigned short iMarker;
+  for (iMarker = 0; iMarker < nMarker_Outlet_Backflow; iMarker++)
+    if (Marker_Outlet_Backflow[iMarker] == val_marker) break;
+  return OutletBackflow_FlowDir[iMarker];
 }
 
 const su2double* CConfig::GetInletFlowDir(const string& val_marker) const {
