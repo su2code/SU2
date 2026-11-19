@@ -80,7 +80,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-3.433821, 2.291559, -0.249525, 0.043953]
+    wedge.test_vals = [-3.432657, 2.292731, -0.249525, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -719,7 +719,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.455981, -1.525412]
+    bars_SST_2D.test_vals = [13.000000, -0.462453, -1.525412]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 

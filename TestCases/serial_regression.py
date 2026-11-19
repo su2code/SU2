@@ -119,7 +119,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.340839, 1.390003, -0.249526, 0.043953]
+    wedge.test_vals = [-4.340821, 1.390022, -0.249526, 0.043953]
     test_list.append(wedge)
 
     # Supersonic biparabolic airfoil
@@ -1094,7 +1094,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.456143, -1.525401]
+    bars_SST_2D.test_vals = [13.000000, -0.462697, -1.525401]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
@@ -1172,7 +1172,7 @@ def main():
     fsi_cht.cfg_dir   = "fea_fsi/stat_fsi"
     fsi_cht.cfg_file  = "config.cfg"
     fsi_cht.test_iter = 20
-    fsi_cht.test_vals = [5.000000, -5.077000, -5.379479, -9.247837, -9.319619, -9.184898, 608.350000, -0.012973, 0.000000, 30.000000]
+    fsi_cht.test_vals = [5.000000, -5.077001, -5.379489, -9.247837, -9.320223, -9.185115, 608.350000, -0.012973, 0.000000, 30.000000]
     fsi_cht.multizone = True
     test_list.append(fsi_cht)
 

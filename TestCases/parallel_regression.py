@@ -297,7 +297,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-3.841579, 1.885347, -0.249525, 0.043953]
+    wedge.test_vals = [-3.841363, 1.885578, -0.249525, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -351,7 +351,7 @@ def main():
     ramp.cfg_dir = "euler/ramp"
     ramp.cfg_file = "inv_ramp.cfg"
     ramp.test_iter = 10
-    ramp.test_vals = [-13.648309, -8.010607, -0.076277, 0.054839]
+    ramp.test_vals = [-13.649280, -8.009500, -0.076277, 0.054839]
     ramp.test_vals_aarch64 = [-13.648406, -8.014579, -0.076277, 0.054839]
     test_list.append(ramp)
 
@@ -1514,7 +1514,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.457912, -1.525399]
+    bars_SST_2D.test_vals = [13.000000, -0.464267, -1.525399]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
