@@ -1961,7 +1961,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     if (iMesh == MESH_0) {
       MGFactor[iMesh] = 1.0;
     } else {
-      const su2double CFLRatio = config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
+      const su2double CFLRatio = max(su2double(1e-6), min(su2double(1.0), config->GetMGOptions().MG_CflScaling[iMesh-1]));
       MGFactor[iMesh] = MGFactor[iMesh-1]*CFLRatio;
     }
 
@@ -2108,12 +2108,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         CFLFactor = CFLFactorIncrease;
       }
 
-      /* Check if we are hitting the min or max and adjust. */
+      /* Check if we are hitting the min or max and adjust, the limits scale with the level. */
 
-      if (CFL*CFLFactor <= CFLMin) {
+      if (CFL*CFLFactor <= CFLMin*MGFactor[iMesh]) {
         CFL       = CFLMin;
         CFLFactor = MGFactor[iMesh];
-      } else if (CFL*CFLFactor >= CFLMax) {
+      } else if (CFL*CFLFactor >= CFLMax*MGFactor[iMesh]) {
         CFL       = CFLMax;
         CFLFactor = MGFactor[iMesh];
       }
@@ -2173,9 +2173,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config, bool force) {
   SU2_ZONE_SCOPED
 
-  /*--- On coarse levels the reduction is skipped for performance, unless MG_Smooth_EarlyExit
-   *    needs it or the caller asks for it. ---*/
-  if (!force && geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit) return;
+  /*--- On coarse levels the reduction is skipped for performance, unless MG_Smooth_EarlyExit or
+   *    MG_Smooth_Output needs it, or the caller asks for it. ---*/
+  if (!force && geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit &&
+      !config->GetMGOptions().MG_Smooth_Output) return;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 

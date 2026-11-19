@@ -501,7 +501,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
         }
       }
     } else {
-      const su2double dist_ij = sqrt(dist_ij_2);
+      const su2double dist_ij = JacobianDistance(dist_ij_2, Edge_Vector, UnitNormal);
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitNormal);
 
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Cp, Mean_Thermal_Conductivity, Mean_Eddy_Viscosity, dist_ij, UnitNormal);
@@ -1019,7 +1019,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
         }
       }
     } else {
-      const su2double dist_ij = sqrt(dist_ij_2);
+      const su2double dist_ij = JacobianDistance(dist_ij_2, Edge_Vector, UnitNormal);
 
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitNormal);
 

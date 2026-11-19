@@ -28,7 +28,11 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include <algorithm>
+#include <cmath>
+#include <limits>
+#include "../../include/variables/CEulerVariable.hpp"
 
 
 namespace {
@@ -72,7 +76,9 @@ void CMultiGridIntegration::adaptDampingFactors(CConfig* config, passivedouble c
     applyGlobalTrend(config->GetDamp_Correc_Prolong(), crossCycleRatio));
 }
 
-CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
+CMultiGridIntegration::CMultiGridIntegration() : CIntegration() {
+  prolongGradient.resize(MAX_MG_LEVELS + 1);
+}
 
 void CMultiGridIntegration::MonitorFullMG_Startup(const vector<pair<string, passivedouble> >& convFields,
                                                  const CConfig *config) {
@@ -101,14 +107,15 @@ void CMultiGridIntegration::MonitorFullMG_Startup(const vector<pair<string, pass
       mg_startup_promote_reason = MGStartupPromote::CONVERGENCE;
   }
 
-  /*--- Ratio of successive residuals, so a difference in log10. One slow iteration
-   *    is not stagnation, and a field still coming down means the level is not stalled. ---*/
+  /*--- Ratio of successive residuals, so a difference in log10. One slow iteration is not
+   *    stagnation, and a field still coming down or growing means the level is not stalled. ---*/
 
   const passivedouble stall_tol = SU2_TYPE::GetValue(mgOpts.MG_Startup_Stagnation);
   if (stall_tol > 0.0 && !mg_startup_conv_prev.empty()) {
+    const passivedouble band = fabs(log10(stall_tol));
     bool stalled = true;
     for (auto iField = 0ul; iField < nFields; iField++)
-      stalled = stalled && (convFields[iField].second - mg_startup_conv_prev[iField] >= log10(stall_tol));
+      stalled = stalled && (fabs(convFields[iField].second - mg_startup_conv_prev[iField]) <= band);
 
     if (stalled)
       mg_startup_stall_count++;
@@ -151,12 +158,13 @@ void CMultiGridIntegration::SetCoarseGridCFL(CGeometry ****geometry, CSolver ***
 
     mg_ramp_mesh0_active = FullMG_Mesh0Ramping(config[iZone], FinestMesh, FullMG);
 
-    /*--- Coarse targets are derived from the level-0 CFL via MG_CFL_SCALING. ---*/
+    /*--- The active level takes the level-0 CFL, the levels below it are scaled via MG_CFL_SCALING. ---*/
     passivedouble cfl_base = mesh0_ramp_window ? passivedouble{0.0} : SU2_TYPE::GetValue(sol_f->GetAvg_CFL_Local());
     if (cfl_base < EPS)
       cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
 
     const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
+    const unsigned short activeLevel = FullMG ? FinestMesh : MESH_0;
 
     passivedouble CFL_target[MAX_MG_LEVELS+1];
     passivedouble CFL_scale[MAX_MG_LEVELS+1];
@@ -169,7 +177,7 @@ void CMultiGridIntegration::SetCoarseGridCFL(CGeometry ****geometry, CSolver ***
       const passivedouble scale =
           max(passivedouble{1e-6}, min(passivedouble{1.0}, SU2_TYPE::GetValue(cflScaling[iScale])));
       CFL_scale[lvl] = scale;
-      CFL_target[lvl] = CFL_target[lvl-1] * scale;
+      CFL_target[lvl] = (lvl <= activeLevel) ? cfl_base : CFL_target[lvl-1] * scale;
     }
 
     /*--- Ramp from the CFL the level below handed over at. The coarsest level has none and starts
@@ -324,6 +332,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
     if (config[iZone]->GetInnerIter() < mg_ramp_level_start_iter)
       mg_ramp_level_start_iter = config[iZone]->GetInnerIter();
+
+    for (unsigned short i = 0; i <= nMGLevels; ++i)
+      mg_work_weight[i] = passivedouble(geometry[iZone][iInst][i]->GetGlobal_nPointDomain()) /
+                          passivedouble(geometry[iZone][iInst][MESH_0]->GetGlobal_nPointDomain());
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -343,7 +355,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             solver_container[iZone][iInst][FinestMesh][Solver_Position],
                             geometry[iZone][iInst][FinestMesh-1],
                             geometry[iZone][iInst][FinestMesh],
-                            config[iZone]);
+                            config[iZone], FinestMesh);
 
     /*--- The scalar equations only restrict downward, so hand the new level their solution too,
      *    otherwise they restart from their initial condition at every promotion. ---*/
@@ -357,7 +369,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       SetProlongated_ScalarSolution(scalar_fine, scalar_coarse,
                                     geometry[iZone][iInst][FinestMesh-1],
                                     geometry[iZone][iInst][FinestMesh],
-                                    config[iZone], Scalar_Position == TURB_SOL);
+                                    config[iZone], Scalar_Position == TURB_SOL, FinestMesh);
     }
 
     /*--- Report the promotion before the startup state is reset below. ---*/
@@ -411,6 +423,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
       /*--- The EMA is measured on a different grid after a promotion. ---*/
       mg_fine_rms_ema = 0.0;
+      mg_prev_cycle_defect = 0.0;
       config[iZone]->SetDamp_Res_Restric(mg_damp_restric_initial);
       config[iZone]->SetDamp_Correc_Prolong(mg_damp_prolong_initial);
 
@@ -437,7 +450,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Perform the Full Approximation Scheme multigrid ---*/
 
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
-                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
+                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst, false);
 
   if (!fmg_warmup && !fmg_mesh0_ramp)
     SetCoarseGridCFL(geometry, solver_container, config, RunTime_EqSystem, iZone, iInst, FinestMesh, FullMG,
@@ -446,9 +459,19 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Coarse-level residuals are per-rank partial sums; reduce once so the promotion criterion
    *    agrees on every rank. The smoothing early exit already reduces when it is on. ---*/
 
-  if (fmg_warmup && !config[iZone]->GetMGOptions().MG_Smooth_EarlyExit) {
+  if (fmg_warmup && !config[iZone]->GetMGOptions().MG_Smooth_EarlyExit &&
+      !config[iZone]->GetMGOptions().MG_Smooth_Output) {
     solver_container[iZone][iInst][FinestMesh][Solver_Position]->SetResidual_RMS(
         geometry[iZone][iInst][FinestMesh], config[iZone], true);
+  }
+
+  /*--- The scalar solvers run on the active startup level and need its vorticity and strain rate. ---*/
+
+  if (fmg_warmup) {
+    solver_container[iZone][iInst][FinestMesh][Solver_Position]->Preprocessing(geometry[iZone][iInst][FinestMesh],
+                                                                               solver_container[iZone][iInst][FinestMesh],
+                                                                               config[iZone], FinestMesh, NO_RK_ITER,
+                                                                               RunTime_EqSystem, true);
   }
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
@@ -537,6 +560,26 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       table << "-";
 
       /*--- Corr.-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
+      /*--- Linear solver iterations and final relative residual of each smoothing step. ---*/
+      auto linRows = [&](const char* name, const std::vector<LinSolInfo>* info, unsigned short nLev) {
+        std::vector<std::string> its(nMGLevels + 1, "-"), res(nMGLevels + 1, "-");
+        for (unsigned short i = 0; i < nLev; ++i) {
+          std::ostringstream si, sr;
+          sr << std::scientific << std::setprecision(1);
+          for (std::size_t k = 0; k < info[i].size(); ++k) {
+            si << (k ? "," : "") << info[i][k].iters;
+            sr << (k ? "," : "") << info[i][k].res;
+          }
+          if (!info[i].empty()) { its[i] = si.str(); res[i] = sr.str(); }
+        }
+        table << std::string(name) + " its";
+        for (const auto& str : its) table << str;
+        table << std::string(name) + " res";
+        for (const auto& str : res) table << str;
+      };
+      linRows("Pre-lin", lastPreLinSol, nMGLevels + 1);
+      linRows("Post-lin", lastPostLinSol, nMGLevels);
+
       table << "Corr-smooth";
       for (unsigned short i = 0; i < nMGLevels; ++i)
         table << cellStr(lastCorrecSmoothIters[i], mgOptsZone.MG_CorrecSmooth[i],
@@ -561,8 +604,18 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       cout << std::fixed << std::setprecision(4)
             << "Damping [restrict | prolong] : " << config[iZone]->GetDamp_Res_Restric()
             << " | " << config[iZone]->GetDamp_Correc_Prolong()
-            << "  cross-cycle: " << std::setprecision(3) << last_crossCycleRatio << "\n"
-            << std::defaultfloat << std::setprecision(6);
+            << "  cross-cycle: " << std::setprecision(3) << last_crossCycleRatio << "\n";
+
+      /*--- Defect ratios of the finest level: over its pre-smoothing, and from there to the start of
+       *    this cycle, which spans the coarse-grid correction and the scalar solvers. ---*/
+      if (FinestMesh < nMGLevels) {
+        const passivedouble d0 = lastPreSmoothRMS[FinestMesh][0], d1 = lastPreSmoothRMS[FinestMesh][1];
+        cout << "Gain [smoothing | correction] : " << ((d0 > 0.0) ? d1 / d0 : 0.0) << " | "
+             << ((mg_prev_cycle_defect > 0.0) ? d0 / mg_prev_cycle_defect : 0.0);
+        mg_prev_cycle_defect = d1;
+      }
+      cout << "  work [residual | linear] : " << std::setprecision(1) << mg_work_residual << " | " << mg_work_linear;
+      cout << "\n" << std::defaultfloat << std::setprecision(6);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
@@ -580,13 +633,15 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                                             unsigned short RecursiveParam,
                                             unsigned short RunTime_EqSystem,
                                             unsigned short iZone,
-                                            unsigned short iInst) {
+                                            unsigned short iInst,
+                                            bool residualReady) {
   SU2_ZONE_SCOPED
 
   CConfig* config = config_container[iZone];
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
 
   /*--- Shorter names to refer to fine grid entities. ---*/
 
@@ -599,14 +654,20 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
   unsigned short iRKLimit = config->GetnRKStep();
 
+  /*--- Wall end weights for every level, once the hierarchy exists. ---*/
+  if ((iMesh == MESH_0) && !correctionWeightReady) {
+    const auto* flowNodes = dynamic_cast<const CEulerVariable*>(solver_container_fine[FLOW_SOL]->GetNodes());
+    ComputeCorrectionWeights(geometry[iZone][iInst], flowNodes, config);
+  }
+
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
 
   PreSmoothing(RunTime_EqSystem, geometry, solver_container, config_container, solver_fine, numerics_fine,
-               geometry_fine, solver_container_fine, config, iMesh, iZone, iRKLimit);
+               geometry_fine, solver_container_fine, config, iMesh, iZone, iRKLimit, residualReady);
 
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
 
-  if ( iMesh < config->GetnMGLevels() ) {
+  if (iMesh < config->GetnMGLevels()) {
 
     /*--- Shorter names to refer to coarse grid entities. ---*/
 
@@ -615,7 +676,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     CSolver* solver_coarse = solver_container_coarse[Solver_Position];
     CNumerics** numerics_coarse = numerics_container[iZone][iInst][iMesh+1][Solver_Position];
 
-    /*--- Temporarily disable implicit integration, for what follows we do not need the Jacobian. ---*/
+    /*--- Temporarily disable implicit integration, the fine residual needs no Jacobian. ---*/
 
     if (implicit) {
       SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_EXPLICIT);)
@@ -627,29 +688,49 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem);
 
-    /*--- LinSysRes = R(u_N) here, before tau is added by SetResidual_Term. ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      lastPreSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver_fine);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
     SetResidual_Term(geometry_fine, solver_fine);
 
-    /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
+    const auto& mgOpts = config->GetMGOptions();
+
+    /*--- Defect left by the pre-smoothing, forcing term included. ---*/
+    if (mgOpts.MG_Smooth_Output) {
+      const su2double defect = sqrt(solver_fine->LinSysRes.squaredNorm() / geometry_fine->GetGlobal_nPointDomain());
+      SU2_OMP_SAFE_GLOBAL_ACCESS(lastPreSmoothRMS[iMesh][1] = SU2_TYPE::GetValue(defect);)
+    }
+
+    /*--- The coarse residual is also the first coarse pre-smoothing step, so it gets its Jacobian. ---*/
+    const bool coarseReady = (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (mgOpts.MG_PreSmooth[iMesh+1] > 0);
+
+    if (implicit && coarseReady) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_IMPLICIT);)
+    }
+
+    /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$, whose boundary conditions also act on the restricted defect. ---*/
 
     SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
+    SetRestricted_Residual(solver_fine, solver_coarse, geometry_coarse, config);
+
     solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
+
+    if (coarseReady) {
+      solver_coarse->Set_OldSolution();
+      if (classical_rk4) solver_coarse->Set_NewSolution();
+      solver_coarse->SetTime_Step(geometry_coarse, solver_container_coarse, config, iMesh+1, config->GetTimeIter());
+    }
 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
-    SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
+    SetForcing_Term(solver_coarse, geometry_coarse);
+
+    /*--- The coarse evaluation is counted with the pre-smoothing step that reuses it. ---*/
+    SU2_OMP_SAFE_GLOBAL_ACCESS(mg_work_residual += mg_work_weight[iMesh] + (coarseReady ? 0.0 : mg_work_weight[iMesh+1]);)
 
     /*--- Restore the time integration settings. ---*/
 
-    if (implicit) {
+    if (implicit && !coarseReady) {
       SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_IMPLICIT);)
     }
 
@@ -664,18 +745,18 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         nextRecurseParam = 0;
 
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
-                      iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
+                      iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst, coarseReady && (imu == 0));
     }
 
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +
           Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
 
-    GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
+    GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config,
+                              iMesh+1);
 
-    const auto& mgOpts = config->GetMGOptions();
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, mgOpts.MG_CorrecSmooth[iMesh], mgOpts.MG_Smooth_Coeff, config, iMesh);
 
-    SetProlongated_Correction(solver_fine, geometry_fine, config, iMesh);
+    SetProlongated_Correction(solver_fine, solver_container_fine[FLOW_SOL], geometry_fine, config, iMesh);
 
     /*--- Solution post-smoothing in the prolongated grid. ---*/
 
@@ -728,12 +809,14 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                                          CConfig *config,
                                          unsigned short iMesh,
                                          unsigned short iZone,
-                                         unsigned short iRKLimit) {
+                                         unsigned short iRKLimit,
+                                         bool residualReady) {
   SU2_ZONE_SCOPED
 
   const auto& mgOpts = config->GetMGOptions();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
-  const unsigned short nPreSmooth = mgOpts.MG_PreSmooth[iMesh];
+  /*--- The coarsest level is smoothed at least once. ---*/
+  const unsigned short nPreSmooth = max<unsigned short>(mgOpts.MG_PreSmooth[iMesh], (iMesh == config->GetnMGLevels()) ? 1 : 0);
   const unsigned long timeIter = config->GetTimeIter();
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
   const bool need_per_step_rms = early_exit || mgOpts.MG_Smooth_Output;
@@ -743,30 +826,41 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                                  ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
 
   /*--- Reset the shared early-exit flag (master only). ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false; lastPreLinSol[iMesh].clear();)
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
 
     /*--- Time and space integration ---*/
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
 
-      /*--- Send-Receive boundary conditions, and preprocessing ---*/
-      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+      if (!residualReady || (iPreSmooth > 0) || (iRKStep > 0)) {
 
-      if (iRKStep == 0) {
+        /*--- Send-Receive boundary conditions, and preprocessing ---*/
+        solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
 
-        /*--- Set the old solution ---*/
-        solver_fine->Set_OldSolution();
+        if (iRKStep == 0) {
 
-        if (classical_rk4) solver_fine->Set_NewSolution();
-        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, timeIter);
-        Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, timeIter, iZone);
+          /*--- Set the old solution ---*/
+          solver_fine->Set_OldSolution();
+
+          if (classical_rk4) solver_fine->Set_NewSolution();
+          solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, timeIter);
+          Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, timeIter, iZone);
+        }
+
+        /*--- Space integration ---*/
+        Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
       }
-
-      /*--- Space integration ---*/
-      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        if (mgOpts.MG_Smooth_Output)
+          lastPreLinSol[iMesh].push_back({solver_fine->GetIterLinSolver(),
+                                        SU2_TYPE::GetValue(solver_fine->GetResLinSolver())});
+        AddWork(config, iMesh, solver_fine->GetIterLinSolver());
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
       /*--- At iRKStep==0 LinSysRes = R(u_k). ---*/
       if (iRKStep == 0 && need_initial_rms) {
@@ -819,7 +913,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
                                  ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
 
   /*--- Reset the shared early-exit flag (master only). ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false; lastPostLinSol[iMesh].clear();)
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
@@ -840,6 +934,14 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        if (mgOpts.MG_Smooth_Output)
+          lastPostLinSol[iMesh].push_back({solver_fine->GetIterLinSolver(),
+                                         SU2_TYPE::GetValue(solver_fine->GetResLinSolver())});
+        AddWork(config, iMesh, solver_fine->GetIterLinSolver());
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
       /*--- At iRKStep==0 LinSysRes = R(u_k) ---*/
       if (iRKStep == 0 && need_per_step_rms) {
@@ -873,7 +975,8 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
 
 void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                                                      CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+                                                      CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config,
+                                                      unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -941,17 +1044,327 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   /*--- Interpolate the coarse-grid correction onto the fine
    *    grid and store in LinSysRes. ---*/
 
-  /*--- Halos too: the correction smoother reads them before its first exchange. ---*/
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
-  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
+  if (!config->GetMGOptions().MG_Linear_Prolongation) {
+
+    /*--- Halos too: the correction smoother reads them before its first exchange. ---*/
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
+    for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
+      const auto* Correction = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
+      for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+        sol_fine->LinSysRes.SetBlock(Point_Fine, Correction);
+      }
+    }
+    END_SU2_OMP_FOR
+
+    return;
+  }
+
+  /*--- The coarse coordinate is the volume-weighted centroid of the children, so the
+   *    reconstruction below averages back to the coarse correction exactly. ---*/
+
+  ComputeProlongationGradient(sol_coarse, geo_coarse, geo_fine, config, iMesh, false);
+
+  const unsigned short nDim = geo_coarse->GetnDim();
+  const auto& gradient = prolongGradient[iMesh];
+
+  /*--- A halo agglomerate holds a partial child list, so only owners write, and the
+   *    exchange below fills the fine halos the correction smoother reads. ---*/
+
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+
     const auto* Correction = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
+    const auto* Coord_Coarse = geo_coarse->nodes->GetCoord(Point_Coarse);
+
     for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
       const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      sol_fine->LinSysRes.SetBlock(Point_Fine, Correction);
+
+      su2double Distance[MAXNDIM] = {0.0};
+      GeometryToolbox::Distance(nDim, geo_fine->nodes->GetCoord(Point_Fine), Coord_Coarse, Distance);
+
+      su2double Solution[MAXNVAR] = {0.0};
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        Solution[iVar] = Correction[iVar];
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Solution[iVar] += gradient(Point_Coarse, iVar, iDim) * Distance[iDim];
+      }
+      sol_fine->LinSysRes.SetBlock(Point_Fine, Solution);
     }
   }
   END_SU2_OMP_FOR
 
+  SU2_OMP_BARRIER
+  CSysMatrixComms::Initiate(sol_fine->LinSysRes, geo_fine, config);
+  CSysMatrixComms::Complete(sol_fine->LinSysRes, geo_fine, config);
+
+}
+
+/*--- Largest condition number of the stencil directions for which the prolongation gradient is fitted. ---*/
+static constexpr passivedouble PROLONG_MAX_CONDITION = 1e3;
+
+/*--- Stencil aspect ratio up to which the fitted gradient is used in full, and from which the cell
+ *    keeps the constant operator. In between the gradient fades out with the logarithm of the ratio. ---*/
+static constexpr passivedouble PROLONG_FULL_ASPECT = 10.0;
+static constexpr passivedouble PROLONG_MAX_ASPECT = 100.0;
+
+namespace {
+/*--- Condition number of a symmetric 2x2 or 3x3 matrix, infinite if it is not positive definite. ---*/
+passivedouble FitConditionNumber(unsigned short nDim, const su2double A[3][3]) {
+  constexpr passivedouble big = 1e300;
+  passivedouble lmin, lmax;
+  if (nDim == 2) {
+    const passivedouble a = SU2_TYPE::GetValue(A[0][0]), b = SU2_TYPE::GetValue(A[0][1]), d = SU2_TYPE::GetValue(A[1][1]);
+    const passivedouble mean = 0.5 * (a + d), radius = sqrt(0.25 * (a - d) * (a - d) + b * b);
+    lmin = mean - radius;
+    lmax = mean + radius;
+  } else {
+    passivedouble M[3][3];
+    for (auto i = 0u; i < 3; ++i)
+      for (auto j = 0u; j < 3; ++j) M[i][j] = SU2_TYPE::GetValue(A[i][j]);
+    const passivedouble q = (M[0][0] + M[1][1] + M[2][2]) / 3.0;
+    const passivedouble p1 = M[0][1] * M[0][1] + M[0][2] * M[0][2] + M[1][2] * M[1][2];
+    const passivedouble p2 = pow(M[0][0] - q, 2) + pow(M[1][1] - q, 2) + pow(M[2][2] - q, 2) + 2.0 * p1;
+    const passivedouble p = sqrt(p2 / 6.0);
+    if (p <= 0.0) return (q > 0.0) ? 1.0 : big;
+    passivedouble B[3][3];
+    for (auto i = 0u; i < 3; ++i)
+      for (auto j = 0u; j < 3; ++j) B[i][j] = (M[i][j] - ((i == j) ? q : 0.0)) / p;
+    const passivedouble detB = B[0][0] * (B[1][1] * B[2][2] - B[1][2] * B[2][1]) -
+                               B[0][1] * (B[1][0] * B[2][2] - B[1][2] * B[2][0]) +
+                               B[0][2] * (B[1][0] * B[2][1] - B[1][1] * B[2][0]);
+    const passivedouble phi = acos(max(-1.0, min(1.0, 0.5 * detB))) / 3.0;
+    lmax = q + 2.0 * p * cos(phi);
+    lmin = q + 2.0 * p * cos(phi + 2.0 * M_PI / 3.0);
+  }
+  return (lmin > 0.0) ? lmax / lmin : big;
+}
+
+/*--- Inverse of a symmetric positive definite matrix by Cholesky factorization, which stays accurate
+ *    for the strong anisotropy of a boundary layer stencil. False if a pivot vanishes. ---*/
+bool CholeskyInverse(unsigned short n, const su2double A[3][3], su2double inv[3][3]) {
+  su2double L[3][3] = {{0.0}};
+  for (auto i = 0u; i < n; ++i) {
+    for (auto j = 0u; j <= i; ++j) {
+      su2double sum = A[i][j];
+      for (auto k = 0u; k < j; ++k) sum -= L[i][k] * L[j][k];
+      if (i == j) {
+        if (sum <= 1e-14 * A[i][i]) return false;
+        L[i][i] = sqrt(sum);
+      } else {
+        L[i][j] = sum / L[j][j];
+      }
+    }
+  }
+  for (auto c = 0u; c < n; ++c) {
+    su2double y[3] = {0.0}, x[3] = {0.0};
+    for (auto i = 0u; i < n; ++i) {
+      su2double sum = (i == c) ? 1.0 : 0.0;
+      for (auto k = 0u; k < i; ++k) sum -= L[i][k] * y[k];
+      y[i] = sum / L[i][i];
+    }
+    for (int i = n - 1; i >= 0; --i) {
+      su2double sum = y[i];
+      for (auto k = i + 1u; k < n; ++k) sum -= L[k][i] * x[k];
+      x[i] = sum / L[i][i];
+    }
+    for (auto i = 0u; i < n; ++i) inv[i][c] = x[i];
+  }
+  return true;
+}
+}  // namespace
+
+void CMultiGridIntegration::ComputeProlongationGradient(CSolver *sol_coarse, CGeometry *geo_coarse,
+                                                        CGeometry *geo_fine, const CConfig *config,
+                                                        unsigned short iMesh, bool useSolution) {
+  SU2_ZONE_SCOPED
+
+  const unsigned short nVar = sol_coarse->GetnVar();
+  const unsigned short nDim = geo_coarse->GetnDim();
+  const auto nPointDomain = geo_coarse->GetnPointDomain();
+  auto* nodes = sol_coarse->GetNodes();
+  auto Field = [&](unsigned long iPoint) {
+    return useSolution ? nodes->GetSolution(iPoint) : nodes->GetSolution_Old(iPoint);
+  };
+
+  /*--- The coarse grid does not change, so each level is reported once. ---*/
+  auto reportIllConditioned = [&]() {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      if (!prolongReported[iMesh]) {
+        prolongReported[iMesh] = true;
+        unsigned long local[2] = {prolongIllConditioned[iMesh], nPointDomain}, global[2] = {0, 0};
+        SU2_MPI::Allreduce(local, global, 2, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+        if ((global[0] > 0) && (SU2_MPI::GetRank() == MASTER_NODE))
+          cout << "MG level " << iMesh << ": linear prolongation keeps the constant operator in " << global[0]
+               << " of " << global[1] << " coarse cells (stencil direction condition number above "
+               << PROLONG_MAX_CONDITION << " or aspect ratio above " << PROLONG_MAX_ASPECT << ")." << endl;
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  };
+
+  /*--- All threads of this rank take this branch together; the sizing test below needs a sized container. ---*/
+  if (nPointDomain == 0) {
+    reportIllConditioned();
+    return;
+  }
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  { prolongIllConditioned[iMesh] = 0; }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    auto& grad = prolongGradient[iMesh];
+    if ((grad.length() != nPointDomain) || (grad.rows() != nVar) || (grad.cols() != nDim))
+      grad.resize(nPointDomain, nVar, nDim, 0.0);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  auto& gradient = prolongGradient[iMesh];
+
+  /*--- Inverse-distance-squared weights give every neighbour's directional difference the same
+   *    weight, so the fit does not depend on how far apart the neighbours are. ---*/
+
+  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain, omp_get_num_threads()))
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      for (auto iDim = 0u; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) = 0.0;
+
+    const auto* Coord_i = geo_coarse->nodes->GetCoord(iPoint);
+    const auto* Correction_i = Field(iPoint);
+
+    /*--- The extent matrix measures the stencil's stretching, the fit matrix is the weighted normal matrix. ---*/
+    su2double extentMat[MAXNDIM][MAXNDIM] = {{0.0}}, fitMat[MAXNDIM][MAXNDIM] = {{0.0}};
+    su2double rhs[MAXNVAR][MAXNDIM] = {{0.0}};
+
+    for (auto jPoint : geo_coarse->nodes->GetPoints(iPoint)) {
+
+      su2double Distance[MAXNDIM] = {0.0};
+      GeometryToolbox::Distance(nDim, geo_coarse->nodes->GetCoord(jPoint), Coord_i, Distance);
+      const su2double dist2 = GeometryToolbox::SquaredNorm(nDim, Distance);
+      if (dist2 <= 0.0) continue;
+
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        for (auto jDim = 0u; jDim < nDim; jDim++) {
+          extentMat[iDim][jDim] += Distance[iDim]*Distance[jDim];
+          fitMat[iDim][jDim] += Distance[iDim]*Distance[jDim]/dist2;
+        }
+
+      const auto* Correction_j = Field(jPoint);
+
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double delta = Correction_j[iVar] - Correction_i[iVar];
+        for (auto iDim = 0u; iDim < nDim; iDim++) rhs[iVar][iDim] += Distance[iDim]*delta/dist2;
+      }
+    }
+
+    /*--- Neighbours that do not span every direction leave a slope undefined. A stencil much longer in
+     *    one direction than another, from cell stretching, weakens the gradient or removes it. In both
+     *    cases the cell falls back to the constant operator. ---*/
+    su2double fitInv[MAXNDIM][MAXNDIM] = {{0.0}};
+    const passivedouble aspect = sqrt(FitConditionNumber(nDim, extentMat));
+    const passivedouble weight =
+        (aspect <= PROLONG_FULL_ASPECT)
+            ? 1.0
+            : max(0.0, log(PROLONG_MAX_ASPECT / aspect) / log(PROLONG_MAX_ASPECT / PROLONG_FULL_ASPECT));
+    if ((FitConditionNumber(nDim, fitMat) > PROLONG_MAX_CONDITION) || (weight <= 0.0) ||
+        !CholeskyInverse(nDim, fitMat, fitInv)) {
+      SU2_OMP_ATOMIC
+      prolongIllConditioned[iMesh]++;
+      continue;
+    }
+
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        su2double value = 0.0;
+        for (auto jDim = 0u; jDim < nDim; jDim++) value += fitInv[iDim][jDim]*rhs[iVar][jDim];
+        gradient(iPoint, iVar, iDim) = weight * value;
+      }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- The children of a wall agglomerate are all wall nodes, so their velocity correction is
+   *    the constrained one the caller already imposed and only its gradient has to go. The
+   *    remaining variables carry no wall condition and reconstruct along the surface. ---*/
+
+  const short iVel = nodes->GetVelocityIndex();
+
+  if (iVel >= 0) {
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      const auto kindBC = config->GetMarker_All_KindBC(iMarker);
+      if (!config->GetViscous_Wall(iMarker) && (kindBC != EULER_WALL) && (kindBC != SYMMETRY_PLANE)) continue;
+
+      SU2_OMP_FOR_STAT(32)
+      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        const auto iPoint = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+        if (iPoint >= nPointDomain) continue;
+        for (auto iVar = iVel; iVar < min<short>(iVel + nDim, nVar); iVar++)
+          for (auto iDim = 0u; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) = 0.0;
+      }
+      END_SU2_OMP_FOR
+    }
+  }
+
+  /*--- Barth-Jespersen limiter over the children. One factor per variable scales the whole
+   *    gradient, which is what keeps the children averaging back to the coarse value. ---*/
+
+  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain, omp_get_num_threads()))
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+    const auto* Coord_i = geo_coarse->nodes->GetCoord(iPoint);
+    const auto* Correction_i = Field(iPoint);
+
+    su2double Correction_Min[MAXNVAR], Correction_Max[MAXNVAR];
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      Correction_Min[iVar] = Correction_i[iVar];
+      Correction_Max[iVar] = Correction_i[iVar];
+    }
+
+    for (auto jPoint : geo_coarse->nodes->GetPoints(iPoint)) {
+      const auto* Correction_j = Field(jPoint);
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        Correction_Min[iVar] = min(Correction_Min[iVar], Correction_j[iVar]);
+        Correction_Max[iVar] = max(Correction_Max[iVar], Correction_j[iVar]);
+      }
+    }
+
+    su2double limiter[MAXNVAR];
+    for (auto iVar = 0u; iVar < nVar; iVar++) limiter[iVar] = 1.0;
+
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(iPoint); iChildren++) {
+
+      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(iPoint, iChildren);
+
+      su2double Distance[MAXNDIM] = {0.0};
+      GeometryToolbox::Distance(nDim, geo_fine->nodes->GetCoord(Point_Fine), Coord_i, Distance);
+
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+
+        su2double delta = 0.0;
+        for (auto iDim = 0u; iDim < nDim; iDim++) delta += gradient(iPoint, iVar, iDim)*Distance[iDim];
+
+        /*--- Scaled with the correction so the cut-off tracks its magnitude. ---*/
+        const su2double tol = EPS*max(fabs(Correction_Max[iVar]), fabs(Correction_Min[iVar])) + EPS*EPS;
+
+        if (delta > tol)
+          limiter[iVar] = min(limiter[iVar], (Correction_Max[iVar] - Correction_i[iVar])/delta);
+        else if (delta < -tol)
+          limiter[iVar] = min(limiter[iVar], (Correction_Min[iVar] - Correction_i[iVar])/delta);
+      }
+    }
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      const su2double factor = max(su2double(0.0), min(su2double(1.0), limiter[iVar]));
+      for (auto iDim = 0u; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) *= factor;
+    }
+  }
+  END_SU2_OMP_FOR
+
+  reportIllConditioned();
 }
 
 void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
@@ -963,6 +1376,47 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   if (val_nSmooth == 0) return;
 
   const unsigned short nVar = solver->GetnVar();
+
+  if (config->GetMGOptions().MG_Smooth_Output) {
+    const su2double res = sqrt(solver->LinSysRes.squaredNorm() / (nVar * geometry->GetGlobal_nPointDomain()));
+    SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][0] = SU2_TYPE::GetValue(res);)
+
+    /*--- Report a single point that carries a large share of the correction norm. ---*/
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      constexpr passivedouble peakShare = 0.2;
+      passivedouble local[2] = {0.0, 0.0}, global[2];
+      unsigned long peakPoint = 0;
+      for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); iPoint++) {
+        passivedouble sq = 0.0;
+        for (auto iVar = 0u; iVar < nVar; iVar++) sq += pow(SU2_TYPE::GetValue(solver->LinSysRes(iPoint, iVar)), 2);
+        local[1] += sq;
+        if (sq > local[0]) {
+          local[0] = sq;
+          peakPoint = iPoint;
+        }
+      }
+      SU2_MPI::Allreduce(&local[0], &global[0], 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&local[1], &global[1], 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      if ((local[0] >= global[0]) && (global[0] > peakShare * global[1])) {
+        std::cout << "Corr-peak level " << iMesh << ": rank " << SU2_MPI::GetRank() << ", global point "
+                  << geometry->nodes->GetGlobalIndex(peakPoint) << ", " << 100 * global[0] / global[1]
+                  << "% of the correction norm, volume " << geometry->nodes->GetVolume(peakPoint) << ", "
+                  << geometry->nodes->GetnPoint(peakPoint) << " neighbors, parent CV "
+                  << geometry->nodes->GetParent_CV(peakPoint) << ", x =";
+        for (auto iDim = 0u; iDim < geometry->GetnDim(); iDim++)
+          std::cout << " " << geometry->nodes->GetCoord(peakPoint, iDim);
+        std::cout << ", correction =";
+        for (auto iVar = 0u; iVar < nVar; iVar++) std::cout << " " << solver->LinSysRes(peakPoint, iVar);
+        std::cout << "\n  neighbor volumes (h = halo):";
+        for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(peakPoint); iNeigh++) {
+          const auto jPoint = geometry->nodes->GetPoint(peakPoint, iNeigh);
+          std::cout << " " << geometry->nodes->GetVolume(jPoint) << (geometry->nodes->GetDomain(jPoint) ? "" : "h");
+        }
+        std::cout << std::endl;
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -1041,7 +1495,77 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   }
 }
 
-void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine,
+void CMultiGridIntegration::ComputeCorrectionWeights(CGeometry** geometry, const CEulerVariable* flowNodes,
+                                                     const CConfig* config) {
+  /*--- Coarse CVs over which the correction fades in from a wall end. ---*/
+  constexpr unsigned long nBlend = 4;
+  const auto nLevels = config->GetnMGLevels();
+
+  if (!flowNodes || !config->GetMUSCL_FirstOrderWallEnds()) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(correctionWeightReady = true;)
+    return;
+  }
+
+  /*--- Points of each level holding a wall end, passed down from the finest grid. ---*/
+  vector<char> wallEnd;
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    correctionWeight.assign(nLevels, {});
+    wallEnd.assign(geometry[MESH_0]->GetnPoint(), 0);
+    for (auto iPoint = 0ul; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++)
+      wallEnd[iPoint] = flowNodes->SkipMGCorrection(iPoint);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  auto hopsOf = [&](unsigned long iPoint) { return static_cast<unsigned long>(SU2_TYPE::Int(correctionHops(iPoint, 0))); };
+
+  /*--- The distance grows one layer per pass on every rank, and each pass hands the halos their
+   *    owner's value, so a front crosses partition interfaces as if there were none. ---*/
+
+  for (unsigned short iMesh = 0; iMesh < nLevels; iMesh++) {
+    auto* coarse = geometry[iMesh + 1];
+    const auto nDomain = coarse->GetnPointDomain();
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      correctionHops.Initialize(coarse->GetnPoint(), nDomain, 1, su2double(nBlend));
+      for (auto iCoarse = 0ul; iCoarse < nDomain; iCoarse++)
+        for (auto iChild = 0u; iChild < coarse->nodes->GetnChildren_CV(iCoarse); iChild++)
+          if (wallEnd[coarse->nodes->GetChildren_CV(iCoarse, iChild)]) correctionHops(iCoarse, 0) = 0.0;
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+    for (unsigned long d = 0; d < nBlend; d++) {
+      if (d > 0) {
+        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+          for (auto iCoarse = 0ul; iCoarse < nDomain; iCoarse++) {
+            if (hopsOf(iCoarse) < d) continue;
+            for (auto jCoarse : coarse->nodes->GetPoints(iCoarse))
+              if (hopsOf(jCoarse) + 1 == d) correctionHops(iCoarse, 0) = d;
+          }
+        }
+        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      }
+      CSysMatrixComms::Initiate(correctionHops, coarse, config);
+      CSysMatrixComms::Complete(correctionHops, coarse, config);
+    }
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      auto& weight = correctionWeight[iMesh];
+      weight.assign(geometry[iMesh]->GetnPoint(), 1.0);
+      for (auto iCoarse = 0ul; iCoarse < nDomain; iCoarse++) {
+        const auto w = SU2_TYPE::GetValue(correctionHops(iCoarse, 0)) / nBlend;
+        for (auto iChild = 0u; iChild < coarse->nodes->GetnChildren_CV(iCoarse); iChild++)
+          weight[coarse->nodes->GetChildren_CV(iCoarse, iChild)] = w;
+      }
+      wallEnd.assign(coarse->GetnPoint(), 0);
+      for (auto iCoarse = 0ul; iCoarse < coarse->GetnPoint(); iCoarse++) wallEnd[iCoarse] = (hopsOf(iCoarse) == 0);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
+  SU2_OMP_SAFE_GLOBAL_ACCESS(correctionWeightReady = true;)
+}
+
+void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CSolver *sol_flow, CGeometry *geo_fine,
                                                       CConfig *config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
@@ -1049,20 +1573,23 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
   /*--- Use the adaptive damping factor uniformly across all prolongation levels. ---*/
   const su2double factor = config->GetDamp_Correc_Prolong();
+  const auto* flowNodes = sol_flow ? dynamic_cast<const CEulerVariable*>(sol_flow->GetNodes()) : nullptr;
+  const bool skipHere = flowNodes && (sol_fine == sol_flow);
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
+    if (skipHere && flowNodes->SkipMGCorrection(Point_Fine)) continue;
     auto* Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
     auto* Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
-      if (Residual_Fine[iVar] != Residual_Fine[iVar])
-        Residual_Fine[iVar] = 0.0;
 
-      su2double correction = factor * Residual_Fine[iVar];
+    /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      if (std::isnan(SU2_TYPE::GetValue(Residual_Fine[iVar]))) Residual_Fine[iVar] = 0.0;
 
-      Solution_Fine[iVar] += correction;
-    }
+    su2double relax = factor;
+    if ((iMesh < correctionWeight.size()) && !correctionWeight[iMesh].empty()) relax *= correctionWeight[iMesh][Point_Fine];
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) Solution_Fine[iVar] += relax * Residual_Fine[iVar];
   }
   END_SU2_OMP_FOR
 
@@ -1073,24 +1600,55 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
 }
 
+void CMultiGridIntegration::InterpolateSolutionToChildren(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
+                                                          CGeometry *geo_coarse, CConfig *config,
+                                                          unsigned short iMesh) {
+  SU2_ZONE_SCOPED
+
+  const unsigned short nVar = sol_coarse->GetnVar();
+  const unsigned short nDim = geo_coarse->GetnDim();
+  const bool linear = config->GetMGOptions().MG_Linear_Prolongation;
+
+  if (linear) ComputeProlongationGradient(sol_coarse, geo_coarse, geo_fine, config, iMesh, true);
+
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+    const auto* Solution_Coarse = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+    const auto* Coord_Coarse = geo_coarse->nodes->GetCoord(Point_Coarse);
+
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+
+      if (!linear) {
+        sol_fine->GetNodes()->SetSolution(Point_Fine, Solution_Coarse);
+        continue;
+      }
+
+      su2double Distance[MAXNDIM] = {0.0};
+      GeometryToolbox::Distance(nDim, geo_fine->nodes->GetCoord(Point_Fine), Coord_Coarse, Distance);
+
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        su2double value = Solution_Coarse[iVar];
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          value += prolongGradient[iMesh](Point_Coarse, iVar, iDim) * Distance[iDim];
+        sol_fine->GetNodes()->SetSolution(Point_Fine, iVar, value);
+      }
+    }
+  }
+  END_SU2_OMP_FOR
+}
+
 void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config,
+                                                    unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool grid_movement = config->GetGrid_Movement();
 
-  /*--- Constant injection: every fine child of a coarse CV takes its parent's value. ---*/
+  /*--- Constant injection, or the limited linear reconstruction when MG_Linear_Prolongation is set. ---*/
 
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-    const auto* Solution_Coarse = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
-    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      sol_fine->GetNodes()->SetSolution(Point_Fine, Solution_Coarse);
-    }
-  }
-  END_SU2_OMP_FOR
+  InterpolateSolutionToChildren(sol_fine, sol_coarse, geo_fine, geo_coarse, config, iMesh);
 
   /*--- The injected values do not satisfy the fine-grid wall conditions on their own. ---*/
 
@@ -1140,26 +1698,28 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
 
 void CMultiGridIntegration::SetProlongated_ScalarSolution(CSolver *sol_fine, CSolver *sol_coarse,
                                                           CGeometry *geo_fine, CGeometry *geo_coarse,
-                                                          CConfig *config, bool eddy_viscosity) {
+                                                          CConfig *config, bool eddy_viscosity,
+                                                          unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
-  /*--- Constant injection: every fine child of a coarse CV takes its parent's value. ---*/
+  /*--- Constant injection, or the limited linear reconstruction when MG_Linear_Prolongation is set. ---*/
 
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+  InterpolateSolutionToChildren(sol_fine, sol_coarse, geo_fine, geo_coarse, config, iMesh);
 
-    const auto* Solution_Coarse = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
-    const su2double muT_Coarse = eddy_viscosity ? sol_coarse->GetNodes()->GetmuT(Point_Coarse) : su2double(0.0);
+  /*--- The eddy viscosity is injected as a constant. ---*/
 
-    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      sol_fine->GetNodes()->SetSolution(Point_Fine, Solution_Coarse);
-      if (eddy_viscosity) sol_fine->GetNodes()->SetmuT(Point_Fine, muT_Coarse);
+  if (eddy_viscosity) {
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+    for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+      const su2double muT_Coarse = sol_coarse->GetNodes()->GetmuT(Point_Coarse);
+      for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++)
+        sol_fine->GetNodes()->SetmuT(geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren), muT_Coarse);
     }
+    END_SU2_OMP_FOR
   }
-  END_SU2_OMP_FOR
 
-  /*--- The eddy viscosity is zero on a no-slip wall, the injected value is not. ---*/
+  /*--- On a no-slip wall the eddy viscosity is zero, and the turbulence variables take the value
+   *    of their wall parent, which holds the wall condition instead of an extrapolation. ---*/
 
   if (eddy_viscosity) {
     for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1168,6 +1728,8 @@ void CMultiGridIntegration::SetProlongated_ScalarSolution(CSolver *sol_fine, CSo
       SU2_OMP_FOR_STAT(32)
       for (auto iVertex = 0ul; iVertex < geo_fine->nVertex[iMarker]; iVertex++) {
         const auto Point_Fine = geo_fine->vertex[iMarker][iVertex]->GetNode();
+        const auto Point_Coarse = geo_fine->nodes->GetParent_CV(Point_Fine);
+        sol_fine->GetNodes()->SetSolution(Point_Fine, sol_coarse->GetNodes()->GetSolution(Point_Coarse));
         sol_fine->GetNodes()->SetmuT(Point_Fine, 0.0);
       }
       END_SU2_OMP_FOR
@@ -1182,8 +1744,8 @@ void CMultiGridIntegration::SetProlongated_ScalarSolution(CSolver *sol_fine, CSo
 
 }
 
-void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                                            CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
+void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_coarse,
+                                                   CConfig *config) {
   SU2_ZONE_SCOPED
 
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -1220,6 +1782,11 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
       END_SU2_OMP_FOR
     }
   }
+
+}
+
+void CMultiGridIntegration::SetForcing_Term(CSolver *sol_coarse, CGeometry *geo_coarse) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {

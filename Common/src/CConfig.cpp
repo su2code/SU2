@@ -1947,6 +1947,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
+  /* DESCRIPTION: Number of turbulence iterations per flow iteration. */
+  addUnsignedShortOption("TURB_SUBITER", Turb_SubIter, 1);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /*!\brief CFL_REDUCTION_SPECIES \n DESCRIPTION: Reduction factor of the CFL coefficient in the species problem \n DEFAULT: 1.0 */
@@ -2109,11 +2111,11 @@ void CConfig::SetConfig_Options() {
   addUShortListOption("MG_POST_SMOOTH", nMG_PostSmooth_p, MG_PostSmooth_p);
   /*!\brief MG_CORRECTION_SMOOTH\n DESCRIPTION: Jacobi implicit smoothing of the correction \ingroup Config*/
   addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth_p, MG_CorrecSmooth_p);
-  /*!\brief MG_DAMP_RESTRICTION\n DESCRIPTION: Damping factor for the residual restriction. DEFAULT: 0.75 \ingroup Config*/
+  /*!\brief MG_DAMP_RESTRICTION\n DESCRIPTION: Damping factor for the residual restriction. DEFAULT: 0.5 \ingroup Config*/
   addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.5);
-  /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT 0.75 \ingroup Config*/
+  /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT: 0.5 \ingroup Config*/
   addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.5);
-  /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing when RMS drops below threshold. DEFAULT: NO \ingroup Config*/
+  /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing when RMS drops below threshold. DEFAULT: YES \ingroup Config*/
   addBoolOption("MG_SMOOTH_EARLY_EXIT", MGOptions.MG_Smooth_EarlyExit, true);
   /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: Early exit smoothing when current_rms drops below threshold * initial_rms. DEFAULT: 0.9 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MGOptions.MG_Smooth_Res_Threshold, 0.9);
@@ -2130,6 +2132,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Pave the coarse grid with advancing fronts raised from boundaries
    * that carry a stretched layer normal to themselves. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
+  /*!\brief MG_LINEAR_PROLONGATION\n DESCRIPTION: Prolong the multigrid correction with a limited least-squares
+   * gradient over the coarse control volume instead of injecting the parent value into every child. Coarse CVs on
+   * walls and symmetry planes keep the constant operator. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_LINEAR_PROLONGATION", MGOptions.MG_Linear_Prolongation, false);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Max number of iterations spent on each mesh during the Full
    * Multigrid (FMG) startup phase. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
@@ -2138,15 +2144,19 @@ void CConfig::SetConfig_Options() {
    * DEFAULT: -2 \ingroup Config*/
   addDoubleOption("MG_STARTUP_CONVERGENCE", MGOptions.MG_Startup_Convergence, -2.0);
   /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio
-   * between successive iterations exceeds this value for MG_STARTUP_STAGNATION_ITER consecutive iterations, promote to
-   * the next finer level without waiting out MG_STARTUP_ITER. 0 disables it. DEFAULT: 0.99 \ingroup Config*/
+   * between successive iterations stays between this value and its inverse for MG_STARTUP_STAGNATION_ITER consecutive
+   * iterations, promote to the next finer level without waiting out MG_STARTUP_ITER. 0 disables it.
+   * DEFAULT: 0.99 \ingroup Config*/
   addDoubleOption("MG_STARTUP_STAGNATION", MGOptions.MG_Startup_Stagnation, 0.99);
   /*!\brief MG_STARTUP_STAGNATION_ITER\n DESCRIPTION: Consecutive stalled iterations required before Full-MG promotes
    * on stagnation. 0 disables it, as MG_STARTUP_STAGNATION= 0 does. DEFAULT: 5 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_STAGNATION_ITER", MGOptions.MG_Startup_Stagnation_Iter, 5);
   /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i).
-   * If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
+   * If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.5 \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
+  /*!\brief MG_LINEAR_SOLVER_ITER\n DESCRIPTION: Maximum linear solver iterations on coarse MG levels. Entry i applies to level i+1;
+   * the last value is repeated, and the cap never exceeds LINEAR_SOLVER_ITER. DEFAULT: 3 \ingroup Config*/
+  addUShortListOption("MG_LINEAR_SOLVER_ITER", nMG_LinSolIter_p, MG_LinSolIter_p);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
   /*--- Options related to the spatial discretization ---*/
@@ -2177,6 +2187,10 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
+  /*!\brief MUSCL_FIRST_ORDER_WALL_ENDS \n DESCRIPTION: Reconstruct the flow to first order on the edges of points
+   * where a no-slip wall ends on a boundary continuing its surface, or has a sharp edge such as a trailing edge, and
+   * skip the multigrid correction of the flow there \ingroup Config*/
+  addBoolOption("MUSCL_FIRST_ORDER_WALL_ENDS", MUSCL_FirstOrderWallEnds, false);
   /*!\brief MUSCL_KAPPA_FLOW \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
   addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
   /*!\brief RAMP_MUSCL \n DESCRIPTION: Enable ramping of the MUSCL scheme from 1st to 2nd order using specified method*/
@@ -3117,6 +3131,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: ParMETIS load balancing weight for edges (equiv. to neighbors) */
   addLongOption("PARMETIS_EDGE_WEIGHT", ParMETIS_edgeWgt, 1);
+
+  /* DESCRIPTION: Weight ParMETIS graph edges by cell anisotropy and keep anisotropic lines on one rank */
+  addBoolOption("PARMETIS_ANISOTROPY_WEIGHT", ParMETIS_anisotropyWgt, false);
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
@@ -4885,6 +4902,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  if (RampMUSCL && !(MUSCL_Flow || MUSCL_Turb || MUSCL_Species || MUSCL_Heat)) {
+    if (rank == MASTER_NODE) cout << "WARNING: RAMP_MUSCL is ignored because no MUSCL reconstruction is active." << endl;
+    RampMUSCL = false;
+  }
+
+  if (MUSCL_FirstOrderWallEnds && ((Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) || GetNEMOProblem())) {
+    SU2_MPI::Error("MUSCL_FIRST_ORDER_WALL_ENDS is only implemented for the compressible flow solver.", CURRENT_FUNCTION);
+  }
+
   if(RampMUSCL && !DiscreteAdjoint){
     if (RampMUSCLParam.RampMUSCLPower <= 0.0) SU2_MPI::Error("RAMP_MUSCL_POWER cannot be less than or equal to zero!", CURRENT_FUNCTION);
     rampMUSCLValue = 0.0;
@@ -5087,6 +5113,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   Kappa_2nd_AdjFlow = jst_adj_coeff[0];
   Kappa_4th_AdjFlow = jst_adj_coeff[1];
 
+  /*--- The multigrid integration carries per-level arrays of this size. ---*/
+
+  if (nMGLevels > MAX_MGLEVELS) {
+    SU2_MPI::Error("MGLEVEL is larger than the supported maximum of " + std::to_string(MAX_MGLEVELS) + ".",
+                   CURRENT_FUNCTION);
+  }
+
   /*--- Fill MG smooth vectors to size nMGLevels+1.
    Use parsed values (truncating or extending by repeat) or defaults if not set. ---*/
 
@@ -5115,7 +5148,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         MGOptions.MG_CflScaling[i] = (i < nMG_CflScaling_p) ? MG_CflScaling_p[i] : MG_CflScaling_p[nMG_CflScaling_p - 1];
     } else {
       for (unsigned short i = 0; i < nMGLevels; ++i)
-        MGOptions.MG_CflScaling[i] = 0.25;
+        MGOptions.MG_CflScaling[i] = 0.5;
+    }
+
+    /*--- Linear solver iteration cap per level; level 0 always uses LINEAR_SOLVER_ITER. ---*/
+    MGOptions.MG_LinSolIter.assign(nMGLevels + 1, Linear_Solver_Iter);
+    for (unsigned short i = 1; i <= nMGLevels; ++i) {
+      const unsigned long cap = (nMG_LinSolIter_p != 0) ? MG_LinSolIter_p[min<unsigned short>(i - 1, nMG_LinSolIter_p - 1)] : 3;
+      MGOptions.MG_LinSolIter[i] = min<unsigned long>(cap, Linear_Solver_Iter);
     }
   }
 

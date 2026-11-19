@@ -107,6 +107,8 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   }
 
   OutlierMitigation.resize(nPoint) = 0;
+  FirstOrderReconstruction.resize(nPoint) = 0;
+  SkipMGCorrection.resize(nPoint) = 0;
 }
 
 bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

@@ -1404,8 +1404,8 @@ bool CSysSolve<ScalarType>::SetupInnerSolver(unsigned short kind_solver, const C
 
 template <class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, const CSysVector<su2double>& LinSysRes,
-                                           CSysVector<su2double>& LinSysSol, CGeometry* geometry,
-                                           const CConfig* config) {
+                                           CSysVector<su2double>& LinSysSol, CGeometry* geometry, const CConfig* config,
+                                           unsigned long maxIter) {
   SU2_ZONE_SCOPED
   /*---
    A word about the templated types. It is assumed that the residual and solution vectors are always of su2doubles,
@@ -1458,7 +1458,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
     default: {
       KindSolver = config->GetKind_Linear_Solver();
       KindPrecond = config->GetKind_Linear_Solver_Prec();
-      MaxIter = config->GetLinear_Solver_Iter();
+      MaxIter = (maxIter != 0) ? maxIter : config->GetLinear_Solver_Iter();
       SolverTol = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
       ScreenOutput = false;
       break;

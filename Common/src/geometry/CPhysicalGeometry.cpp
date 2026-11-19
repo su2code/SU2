@@ -2426,9 +2426,9 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig* config, CGeometry* geometry
 
   unsigned long Local_Nodes[N_POINTS_HEXAHEDRON];
 
-  vector<vector<unsigned long> > Line_List;
-  vector<vector<unsigned long> > BoundTria_List;
-  vector<vector<unsigned long> > BoundQuad_List;
+  vector<vector<unsigned long>> Line_List;
+  vector<vector<unsigned long>> BoundTria_List;
+  vector<vector<unsigned long>> BoundQuad_List;
 
   vector<unsigned long> Marker_Local;
 
@@ -2967,14 +2967,14 @@ void CPhysicalGeometry::SetSendReceive(const CConfig* config) {
   unsigned short iNode, jNode;
   vector<unsigned long>::iterator it;
 
-  vector<vector<unsigned long> >
+  vector<vector<unsigned long>>
       SendTransfLocal; /*!< \brief Vector to store the type of transformation for this send point. */
-  vector<vector<unsigned long> >
+  vector<vector<unsigned long>>
       ReceivedTransfLocal; /*!< \brief Vector to store the type of transformation for this received point. */
-  vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point
-                                                     index of the node that must me sended. */
-  vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the
-                                                         point index of the node that must me sended. */
+  vector<vector<unsigned long>> SendDomainLocal;     /*!< \brief SendDomain[from domain][to domain] and return the point
+                                                        index of the node that must me sended. */
+  vector<vector<unsigned long>> ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the
+                                                        point index of the node that must me sended. */
 
   unordered_map<unsigned long, unsigned long>::const_iterator MI;
 
@@ -4426,7 +4426,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
 }
 
 void CPhysicalGeometry::SetPoint_Connectivity() {
-  vector<vector<unsigned long> > points(nPoint);
+  vector<vector<unsigned long>> points(nPoint);
 
   SU2_OMP_PARALLEL {
     unsigned short Node_Neighbor, iNode, iNeighbor;
@@ -4434,7 +4434,7 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
 
     /*--- Loop over all the elements ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      vector<vector<long> > elems(nPoint);
+      vector<vector<long>> elems(nPoint);
 
       for (iElem = 0; iElem < nElem; iElem++) {
         /*--- Loop over all the nodes of an element ---*/
@@ -7361,6 +7361,324 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
   Tecplot_File.close();
 }
 
+#if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
+vector<unsigned long> CPhysicalGeometry::FetchFromOwners(const vector<unsigned long>& wanted,
+                                                         const vector<unsigned long>& localValue) const {
+  CLinearPartitioner pointPartitioner(Global_nPointDomain, 0);
+  const unsigned long firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
+
+  vector<int> nSend(size, 0), nRecv(size), sendDisp(size + 1, 0), recvDisp(size + 1, 0);
+  for (const auto iGlobal : wanted) nSend[pointPartitioner.GetRankContainingIndex(iGlobal)]++;
+  SU2_MPI::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, SU2_MPI::GetComm());
+  for (int iRank = 0; iRank < size; iRank++) {
+    sendDisp[iRank + 1] = sendDisp[iRank] + nSend[iRank];
+    recvDisp[iRank + 1] = recvDisp[iRank] + nRecv[iRank];
+  }
+
+  vector<unsigned long> sendIndex(sendDisp[size]), slotOf(wanted.size()), recvIndex(recvDisp[size]);
+  vector<int> next(sendDisp.begin(), sendDisp.end() - 1);
+  for (auto k = 0ul; k < wanted.size(); k++) {
+    const auto slot = next[pointPartitioner.GetRankContainingIndex(wanted[k])]++;
+    sendIndex[slot] = wanted[k];
+    slotOf[k] = slot;
+  }
+  SU2_MPI::Alltoallv(sendIndex.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvIndex.data(), nRecv.data(),
+                     recvDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+  vector<unsigned long> reply(recvIndex.size()), answer(sendIndex.size()), result(wanted.size());
+  for (auto k = 0ul; k < recvIndex.size(); k++) reply[k] = localValue[recvIndex[k] - firstIndex];
+  SU2_MPI::Alltoallv(reply.data(), nRecv.data(), recvDisp.data(), MPI_UNSIGNED_LONG, answer.data(), nSend.data(),
+                     sendDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+  for (auto k = 0ul; k < wanted.size(); k++) result[k] = answer[slotOf[k]];
+  return result;
+}
+
+vector<unsigned long> CPhysicalGeometry::LinkAnisotropicLines(const vector<idx_t>& adjwgt,
+                                                              vector<char>& lineEdge) const {
+  /*--- An edge at least this many times shorter than its element can join its points into a line. ---*/
+  constexpr idx_t LINE_WEIGHT = 4;
+
+  const unsigned long firstIndex = CLinearPartitioner(Global_nPointDomain, 0).GetFirstIndexOnRank(rank);
+  const vector<unsigned long> neighbor(adjacency.begin(), adjacency.end());
+
+  vector<unsigned long> strongest(nPoint, 0);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+    for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; k++)
+      strongest[iPoint] = max(strongest[iPoint], static_cast<unsigned long>(adjwgt[k]));
+  const auto neighborStrongest = FetchFromOwners(neighbor, strongest);
+
+  /*--- An edge joins a line if it is the strongest at one end, or nearly so at both. Equal or
+   *    slowly varying spacing then keeps a line whole instead of splitting it where weights tie. ---*/
+  lineEdge.assign(adjacency.size(), 0);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; k++) {
+      const auto w = static_cast<unsigned long>(adjwgt[k]);
+      if (w < static_cast<unsigned long>(LINE_WEIGHT)) continue;
+      const bool strongestAtEnd = (w == strongest[iPoint]) || (w == neighborStrongest[k]);
+      const bool strongAtBoth = (2 * w >= strongest[iPoint]) && (2 * w >= neighborStrongest[k]);
+      lineEdge[k] = strongestAtEnd || strongAtBoth;
+    }
+  }
+
+  /*--- Each line is named by its lowest global index, found by propagating labels along the line
+   *    edges and pointer jumping. ---*/
+  vector<unsigned long> root(nPoint);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) root[iPoint] = firstIndex + iPoint;
+  for (;;) {
+    unsigned long changed = 0, changedGlobal = 0;
+    const auto neighborRoot = FetchFromOwners(neighbor, root);
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; k++) {
+        if (lineEdge[k] && (neighborRoot[k] < root[iPoint])) {
+          root[iPoint] = neighborRoot[k];
+          changed++;
+        }
+      }
+    }
+    const auto rootOfRoot = FetchFromOwners(root, root);
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      if (rootOfRoot[iPoint] < root[iPoint]) {
+        root[iPoint] = rootOfRoot[iPoint];
+        changed++;
+      }
+    }
+    SU2_MPI::Allreduce(&changed, &changedGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+    if (changedGlobal == 0) break;
+  }
+  return root;
+}
+
+unsigned long CPhysicalGeometry::KeepLinesTogether(const vector<unsigned long>& root, const vector<idx_t>& vwgt,
+                                                   passivedouble maxImbalance, vector<idx_t>& part,
+                                                   unsigned long& longestLine, unsigned long& nSplit) const {
+  CLinearPartitioner pointPartitioner(Global_nPointDomain, 0);
+
+  /*--- The owner of each root collects, per partition, the points and vertex weight of its line. ---*/
+  vector<int> nSend(size, 0), nRecv(size), sendDisp(size + 1, 0), recvDisp(size + 1, 0);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) nSend[pointPartitioner.GetRankContainingIndex(root[iPoint])] += 3;
+  SU2_MPI::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, SU2_MPI::GetComm());
+  for (int iRank = 0; iRank < size; iRank++) {
+    sendDisp[iRank + 1] = sendDisp[iRank] + nSend[iRank];
+    recvDisp[iRank + 1] = recvDisp[iRank] + nRecv[iRank];
+  }
+  vector<unsigned long> sendBuf(sendDisp[size]), recvBuf(recvDisp[size]);
+  vector<int> next(sendDisp.begin(), sendDisp.end() - 1);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    auto& slot = next[pointPartitioner.GetRankContainingIndex(root[iPoint])];
+    sendBuf[slot++] = root[iPoint];
+    sendBuf[slot++] = static_cast<unsigned long>(part[iPoint]);
+    sendBuf[slot++] = static_cast<unsigned long>(vwgt[iPoint]);
+  }
+  SU2_MPI::Alltoallv(sendBuf.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvBuf.data(), nRecv.data(),
+                     recvDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+  map<unsigned long, map<unsigned long, pair<unsigned long, unsigned long>>> lines;
+  for (auto k = 0ul; k < recvBuf.size(); k += 3) {
+    auto& share = lines[recvBuf[k]][recvBuf[k + 1]];
+    share.first++;
+    share.second += recvBuf[k + 2];
+  }
+
+  unsigned long longest = 0;
+  for (const auto& line : lines) {
+    unsigned long length = 0;
+    for (const auto& share : line.second) length += share.second.first;
+    longest = max(longest, length);
+  }
+  SU2_MPI::Allreduce(&longest, &longestLine, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+
+  /*--- Every rank gets the split lines, as root, number of partitions, then partition, points and
+   *    weight per partition. Ranks own consecutive roots, so the gathered list is in root order. ---*/
+  vector<unsigned long> mine;
+  for (const auto& line : lines) {
+    if (line.second.size() < 2) continue;
+    mine.push_back(line.first);
+    mine.push_back(line.second.size());
+    for (const auto& share : line.second) {
+      mine.push_back(share.first);
+      mine.push_back(share.second.first);
+      mine.push_back(share.second.second);
+    }
+  }
+  const int nMine = mine.size();
+  vector<int> nAll(size), allDisp(size + 1, 0);
+  SU2_MPI::Allgather(&nMine, 1, MPI_INT, nAll.data(), 1, MPI_INT, SU2_MPI::GetComm());
+  for (int iRank = 0; iRank < size; iRank++) allDisp[iRank + 1] = allDisp[iRank] + nAll[iRank];
+  vector<unsigned long> all(allDisp[size]);
+  SU2_MPI::Allgatherv(mine.data(), nMine, MPI_UNSIGNED_LONG, all.data(), nAll.data(), allDisp.data(), MPI_UNSIGNED_LONG,
+                      SU2_MPI::GetComm());
+
+  vector<unsigned long> load(size, 0), loadGlobal(size);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) load[part[iPoint]] += vwgt[iPoint];
+  SU2_MPI::Allreduce(load.data(), loadGlobal.data(), size, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  const passivedouble maxLoad =
+      maxImbalance * passivedouble(accumulate(loadGlobal.begin(), loadGlobal.end(), 0ul)) / size;
+
+  /*--- Each line goes to the partition holding most of it that stays within the load tolerance and
+   *    leaves no partition empty. All ranks take the same decisions in the same order. ---*/
+  unordered_map<unsigned long, unsigned long> target;
+  vector<std::array<unsigned long, 3>> shares;
+  nSplit = 0;
+  for (auto k = 0ul; k < all.size();) {
+    const auto lineRoot = all[k];
+    const auto nShares = all[k + 1];
+    k += 2;
+    shares.resize(nShares);
+    unsigned long weight = 0;
+    for (auto& share : shares) {
+      share = {all[k], all[k + 1], all[k + 2]};
+      weight += share[2];
+      k += 3;
+    }
+    sort(shares.begin(), shares.end(),
+         [](const auto& a, const auto& b) { return (a[1] > b[1]) || ((a[1] == b[1]) && (a[0] < b[0])); });
+
+    bool placed = false;
+    for (const auto& to : shares) {
+      if (passivedouble(loadGlobal[to[0]] + weight - to[2]) > maxLoad) continue;
+      bool empties = false;
+      for (const auto& from : shares) empties = empties || ((from[0] != to[0]) && (loadGlobal[from[0]] == from[2]));
+      if (empties) continue;
+
+      for (const auto& from : shares) loadGlobal[from[0]] -= from[2];
+      loadGlobal[to[0]] += weight;
+      target[lineRoot] = to[0];
+      placed = true;
+      break;
+    }
+    nSplit += !placed;
+  }
+
+  unsigned long moved = 0, movedGlobal = 0;
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    const auto it = target.find(root[iPoint]);
+    if ((it == target.end()) || (static_cast<unsigned long>(part[iPoint]) == it->second)) continue;
+    part[iPoint] = static_cast<idx_t>(it->second);
+    moved++;
+  }
+  SU2_MPI::Allreduce(&moved, &movedGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  return movedGlobal;
+}
+
+/*!
+ * \brief Compute graph edge weights that encode mesh anisotropy for partitioning.
+ *
+ * The routine builds edge weights from geometric information of neighboring points.
+ * Since element connectivity can reference points owned by other MPI ranks, it first
+ * exchanges the remote coordinates that are required locally. The resulting weights are
+ * scaled/clamped to the user-provided \p maxWeight and returned in graph-edge order.
+ *
+ * \param[in] maxWeight Upper bound used when converting anisotropy metrics to integer
+ *                      partitioning weights.
+ * \return Edge weights suitable for graph partitioning (one value per graph edge entry).
+ */
+vector<idx_t> CPhysicalGeometry::ComputeAnisotropyEdgeWeights(long maxWeight) const {
+  /*--- Build local/global point-index helpers used throughout communication. ---*/
+  CLinearPartitioner pointPartitioner(Global_nPointDomain, 0);
+  const unsigned long firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
+  const auto isLocal = [&](unsigned long iGlobal) {
+    return (iGlobal >= firstIndex) && (iGlobal - firstIndex < nPoint);
+  };
+
+  /*--- Identify remote element nodes whose coordinates must be requested. ---*/
+  vector<vector<unsigned long>> request(size);
+  for (auto iElem = 0ul; iElem < nElem; iElem++) {
+    for (auto iNode = 0u; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      const auto iGlobal = elem[iElem]->GetNode(iNode);
+      if (!isLocal(iGlobal)) request[pointPartitioner.GetRankContainingIndex(iGlobal)].push_back(iGlobal);
+    }
+  }
+
+  /*--- Exchange request sizes (after deduplication) to prepare all-to-all transfers. ---*/
+  vector<int> nSend(size), nRecv(size), sendDisp(size + 1, 0), recvDisp(size + 1, 0);
+  for (int iRank = 0; iRank < size; iRank++) {
+    auto& list = request[iRank];
+    sort(list.begin(), list.end());
+    list.erase(unique(list.begin(), list.end()), list.end());
+    nSend[iRank] = static_cast<int>(list.size());
+  }
+  SU2_MPI::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, SU2_MPI::GetComm());
+
+  for (int iRank = 0; iRank < size; iRank++) {
+    sendDisp[iRank + 1] = sendDisp[iRank] + nSend[iRank];
+    recvDisp[iRank + 1] = recvDisp[iRank] + nRecv[iRank];
+  }
+
+  vector<unsigned long> sendIndex, recvIndex(recvDisp[size]);
+  sendIndex.reserve(sendDisp[size]);
+  for (const auto& list : request) sendIndex.insert(sendIndex.end(), list.begin(), list.end());
+
+  SU2_MPI::Alltoallv(sendIndex.data(), nSend.data(), sendDisp.data(), MPI_UNSIGNED_LONG, recvIndex.data(), nRecv.data(),
+                     recvDisp.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+  vector<passivedouble> replyCoord(recvIndex.size() * nDim), remoteCoord(sendIndex.size() * nDim);
+  for (auto i = 0ul; i < recvIndex.size(); i++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      replyCoord[i * nDim + iDim] = SU2_TYPE::GetValue(nodes->GetCoord(recvIndex[i] - firstIndex, iDim));
+
+  for (int iRank = 0; iRank < size; iRank++) {
+    nSend[iRank] *= nDim;
+    nRecv[iRank] *= nDim;
+    sendDisp[iRank] *= nDim;
+    recvDisp[iRank] *= nDim;
+  }
+  SU2_MPI::Alltoallv(replyCoord.data(), nRecv.data(), recvDisp.data(), MPI_DOUBLE, remoteCoord.data(), nSend.data(),
+                     sendDisp.data(), MPI_DOUBLE, SU2_MPI::GetComm());
+
+  unordered_map<unsigned long, unsigned long> remoteSlot;
+  for (auto i = 0ul; i < sendIndex.size(); i++) remoteSlot[sendIndex[i]] = i;
+
+  auto getCoord = [&](unsigned long iGlobal, unsigned short iDim) -> passivedouble {
+    if (isLocal(iGlobal)) return SU2_TYPE::GetValue(nodes->GetCoord(iGlobal - firstIndex, iDim));
+    return remoteCoord[remoteSlot.at(iGlobal) * nDim + iDim];
+  };
+
+  /*--- Weight is the longest node distance of the element over the edge length, maximized over elements. ---*/
+
+  vector<idx_t> weight(adjacency.size(), 1);
+
+  for (auto iElem = 0ul; iElem < nElem; iElem++) {
+    const auto nNodes = elem[iElem]->GetnNodes();
+    passivedouble coord[N_POINTS_HEXAHEDRON][MAXNDIM] = {};
+    for (auto iNode = 0u; iNode < nNodes; iNode++)
+      for (auto iDim = 0u; iDim < nDim; iDim++) coord[iNode][iDim] = getCoord(elem[iElem]->GetNode(iNode), iDim);
+
+    auto distance2 = [&](unsigned short a, unsigned short b) {
+      passivedouble d2 = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++) d2 += pow(coord[a][iDim] - coord[b][iDim], 2);
+      return d2;
+    };
+
+    passivedouble maxDist2 = 0.0;
+    for (auto a = 0u; a < nNodes; a++)
+      for (auto b = a + 1; b < nNodes; b++) maxDist2 = max(maxDist2, distance2(a, b));
+
+    for (auto a = 0u; a < nNodes; a++) {
+      const auto iGlobal = elem[iElem]->GetNode(a);
+      if (!isLocal(iGlobal)) continue;
+      const auto iLocal = iGlobal - firstIndex;
+      const auto begin = adjacency.begin() + xadj[iLocal];
+      const auto end = adjacency.begin() + xadj[iLocal + 1];
+
+      for (auto b = 0u; b < nNodes; b++) {
+        const auto d2 = distance2(a, b);
+        if ((b == a) || (d2 <= 0.0)) continue;
+
+        const auto jGlobal = static_cast<idx_t>(elem[iElem]->GetNode(b));
+        const auto it = lower_bound(begin, end, jGlobal);
+        if ((it == end) || (*it != jGlobal)) continue;
+
+        const auto ratio = static_cast<idx_t>(sqrt(maxDist2 / d2));
+        auto& w = weight[it - adjacency.begin()];
+        w = max(w, min<idx_t>(maxWeight, max<idx_t>(1, ratio)));
+      }
+    }
+  }
+  return weight;
+}
+#endif
+
 void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
   /*--- We need to have parallel support with MPI and have the ParMETIS
    library compiled and linked for parallel graph partitioning. ---*/
@@ -7412,6 +7730,23 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
     vwgt[iPoint] = wp + we * (xadj[iPoint + 1] - xadj[iPoint]);
   }
 
+  /*--- Keep partition boundaries off the short edges of anisotropic cells. The edges that chain
+   *    points into wall-normal lines get the largest weight, so the graph coarsening merges each
+   *    line before it balances. The cap keeps the total edge weight within the range of idx_t. ---*/
+
+  const bool anisotropic = config->GetParMETIS_AnisotropyWeight();
+  vector<idx_t> adjwgt;
+  vector<unsigned long> lineRoot;
+  if (anisotropic) {
+    constexpr long maxWeight = (sizeof(idx_t) >= 8) ? 1000000 : 1000;
+    adjwgt = ComputeAnisotropyEdgeWeights(maxWeight);
+    vector<char> lineEdge;
+    lineRoot = LinkAnisotropicLines(adjwgt, lineEdge);
+    for (auto k = 0ul; k < adjwgt.size(); k++)
+      if (lineEdge[k]) adjwgt[k] = maxWeight;
+    wgtflag = 3;
+  }
+
   /*--- Create some structures that ParMETIS needs to output the partitioning. ---*/
 
   idx_t edgecut;
@@ -7420,12 +7755,32 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
   /*--- Calling ParMETIS ---*/
 
   if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-  auto err =
-      ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(), nullptr, &wgtflag, &numflag,
-                           &ncon, &nparts, tpwgts.data(), &ubvec, options, &edgecut, part.data(), &comm);
+  const int err = ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(),
+                                       anisotropic ? adjwgt.data() : nullptr, &wgtflag, &numflag, &ncon, &nparts,
+                                       tpwgts.data(), &ubvec, options, &edgecut, part.data(), &comm);
   if (err != METIS_OK) SU2_MPI::Error("Partitioning failed.", CURRENT_FUNCTION);
   if (rank == MASTER_NODE) {
-    cout << " graph partitioning complete (" << edgecut << " edge cuts)." << endl;
+    cout << " graph partitioning complete (" << edgecut << (anisotropic ? " weighted" : "") << " edge cuts)." << endl;
+  }
+
+  /*--- A line split between ranks loses its strongest couplings in the preconditioner, and its
+   *    fragments give tangled coarse control volumes. ---*/
+
+  if (anisotropic) {
+    unsigned long longestLine = 0, nSplit = 0;
+    const auto moved = KeepLinesTogether(lineRoot, vwgt, ubvec, part, longestLine, nSplit);
+    /*--- The imbalance is measured in the vertex weights ParMETIS balances. ---*/
+    vector<unsigned long> load(size, 0), loadGlobal(size);
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) load[part[iPoint]] += vwgt[iPoint];
+    SU2_MPI::Allreduce(load.data(), loadGlobal.data(), size, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    const auto maxLoad = *max_element(loadGlobal.begin(), loadGlobal.end());
+    const auto sumLoad = accumulate(loadGlobal.begin(), loadGlobal.end(), 0ul);
+    if (rank == MASTER_NODE) {
+      cout << "Longest anisotropic line " << longestLine << " points, moved " << moved
+           << " points to keep lines on one rank, " << nSplit
+           << " lines left split by the load tolerance, load imbalance " << double(maxLoad) * size / sumLoad << "."
+           << endl;
+    }
   }
 
   /*--- Store the results of the partitioning (note that this is local

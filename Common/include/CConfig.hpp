@@ -601,7 +601,8 @@ private:
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  MUSCL_Species;           /*!< \brief MUSCL scheme for the species equations.*/
+  MUSCL_Species,           /*!< \brief MUSCL scheme for the species equations.*/
+  MUSCL_FirstOrderWallEnds; /*!< \brief First-order reconstruction at no-slip wall ends and sharp wall edges.*/
   su2double MUSCL_Kappa,   /*!< \brief Blending coefficient for U-MUSCL scheme (for the runtime eq. system). */
   MUSCL_Kappa_Flow,        /*!< \brief Blending coefficient for U-MUSCL scheme for the flow equations.*/
   MUSCL_Kappa_Turb,        /*!< \brief Blending coefficient for U-MUSCL scheme for the turbulence equations.*/
@@ -1118,6 +1119,7 @@ private:
   su2double ParMETIS_tolerance;     /*!< \brief Load balancing tolerance for ParMETIS. */
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
+  bool ParMETIS_anisotropyWgt;      /*!< \brief Weight graph edges by cell anisotropy and keep anisotropic lines on one rank. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
   DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
@@ -1149,6 +1151,7 @@ private:
   bool RelFrame_SlidingPlane;       /*!< \brief option for relative frame slidingplane */
   bool RampMotionFrame;             /*!< \brief option for ramping up or down the motion Frame values */
   bool RampOutlet;                  /*!< \brief option for ramping up or down the outlet values */
+  unsigned short Turb_SubIter; /*!< \brief Turbulence iterations per flow iteration. */
   bool RampMUSCL;
   bool RampRotatingFrame;           /*!< \brief option for ramping up or down the motion Frame values */
   bool RampTranslationFrame;        /*!< \brief option for ramping up or down the outlet values */
@@ -1178,6 +1181,8 @@ private:
   unsigned short *MG_PreSmooth_p{nullptr}, *MG_PostSmooth_p{nullptr}, *MG_CorrecSmooth_p{nullptr};
   unsigned short nMG_CflScaling_p{0};
   su2double *MG_CflScaling_p{nullptr};
+  unsigned short nMG_LinSolIter_p{0};
+  unsigned short *MG_LinSolIter_p{nullptr};
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -4870,6 +4875,11 @@ public:
   bool GetMUSCL_Heat(void) const { return MUSCL_Heat; }
 
   /*!
+   * \brief Get if edges at no-slip wall ends and sharp wall edges are reconstructed to first order.
+   */
+  bool GetMUSCL_FirstOrderWallEnds(void) const { return MUSCL_FirstOrderWallEnds; }
+
+  /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \return MUSCL scheme.
    */
@@ -7491,6 +7501,11 @@ public:
    * \return Value of the CFL reduction in turbulence problems.
    */
   su2double GetCFLRedCoeff_Turb(void) const { return CFLRedCoeff_Turb; }
+
+  /*!
+   * \brief Get the number of turbulence iterations per flow iteration.
+   */
+  unsigned short GetTurb_SubIter(void) const { return Turb_SubIter; }
 
   /*!
    * \brief Value of the CFL reduction in species problems.
@@ -10346,6 +10361,11 @@ public:
    * \brief Get the ParMETIS load balancing weight for edges
    */
   long GetParMETIS_EdgeWeight() const { return ParMETIS_edgeWgt; }
+
+  /*!
+   * \brief Whether ParMETIS weights graph edges by cell anisotropy and partitions with coordinates.
+   */
+  bool GetParMETIS_AnisotropyWeight() const { return ParMETIS_anisotropyWgt; }
 
   /*!
    * \brief Find the marker index (if any) that is part of a given interface pair.
