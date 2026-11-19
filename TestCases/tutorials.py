@@ -287,7 +287,7 @@ def main():
     tutorial_turb_oneram6.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_ONERAM6"
     tutorial_turb_oneram6.cfg_file   = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter  = 0
-    tutorial_turb_oneram6.test_vals = [-4.564441, -11.534937, 0.250153, 0.080951]
+    tutorial_turb_oneram6.test_vals = [-4.564441, -11.534950, 0.250157, 0.080950]
     test_list.append(tutorial_turb_oneram6)
 
     # NICFD Nozzle
@@ -324,7 +324,7 @@ def main():
     propeller_var_load.cfg_dir   = "../Tutorials/compressible_flow/ActuatorDisk_VariableLoad"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.831998, -4.534991, -0.000323, 0.171494]
+    propeller_var_load.test_vals = [-1.831988, -4.534991, -0.000323, 0.171494]
     propeller_var_load.timeout   = 3200
     test_list.append(propeller_var_load)
 
@@ -344,7 +344,7 @@ def main():
     tutorial_design_turb_rae2822.cfg_dir    = "../Tutorials/design/Turbulent_2D_Constrained_RAE2822"
     tutorial_design_turb_rae2822.cfg_file   = "turb_SA_RAE2822.cfg"
     tutorial_design_turb_rae2822.test_iter  = 0
-    tutorial_design_turb_rae2822.test_vals = [-1.700114, -4.941830, 0.161066, 0.170510]
+    tutorial_design_turb_rae2822.test_vals = [-1.700114, -4.941829, 0.161099, 0.170507]
     tutorial_design_turb_rae2822.no_restart = True
     test_list.append(tutorial_design_turb_rae2822)
 

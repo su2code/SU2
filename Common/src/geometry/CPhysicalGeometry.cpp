@@ -6985,6 +6985,14 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   END_SU2_OMP_FOR
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeModifiedSymmetryNormals(config);)
+
+  /*--- Face groups of the boundary points: topology and values on ALLOCATE, values from the current coordinates on
+   * every update (e.g. inside the geometry recordings of the discrete adjoint). ---*/
+  if (action == ALLOCATE) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeBoundaryFaceGroups(config);)
+  } else {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(UpdateBoundaryFaceGroups(config);)
+  }
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {

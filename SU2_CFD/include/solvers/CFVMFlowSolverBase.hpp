@@ -411,6 +411,22 @@ class CFVMFlowSolverBase : public CSolver {
   void LoadRestart_impl(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter, bool update_geo,
                         su2double* RestartSolution = nullptr, unsigned short nVar_Restart = 0);
 
+  template <class SoundSpeedFunc>
+  FORCEINLINE su2double GroupedBoundaryLambda(const SoundSpeedFunc& soundSpeed, CGeometry* geometry,
+                                               unsigned short iMarker, unsigned long iVertex, unsigned long iPoint,
+                                               su2double* areaSquared = nullptr) const {
+    const su2double sound = soundSpeed(*nodes, iPoint);
+    su2double lambda = 0.0;
+    for (size_t iGroup = 0; iGroup < geometry->GetnVertexGroups(iMarker, iVertex); ++iGroup) {
+      su2double normal[MAXNDIM] = {}, area = 0.0, distance = 0.0;
+      unsigned long neighbor = 0;
+      geometry->GetVertexGroup(iMarker, iVertex, iGroup, normal, area, neighbor, distance);
+      lambda += (fabs(nodes->GetProjVel(iPoint, normal)) + sound) * area;
+      if (areaSquared) *areaSquared += geometry->GetVertexGroupArea(iMarker, iVertex, iGroup) * area;
+    }
+    return lambda;
+  }
+
   /*!
    * \brief Generic implementation to compute the time step based on CFL and conv/visc eigenvalues.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -514,6 +530,19 @@ class CFVMFlowSolverBase : public CSolver {
           auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+          /*--- Where face groups are stored (CGeometry::ComputeBoundaryFaceGroups; static grids) the vertex normal
+           * can be the nearly cancelling sum of the group normals: the faces of the vertex contribute
+           * sum_k (|u.n_k| + c) a_k, a_k the vertex's share of group k, and to the viscous term
+           * lambdaVisc sum_k A_k a_k, A_k the area of group k (one boundary face set per group: summed over the markers
+           * of the point this is lambdaVisc sum_q A_q^2). One group and one marker: the terms below. ---*/
+          if (geometry->HasVertexGroups(iMarker, iVertex)) {
+            su2double Area2 = 0.0;
+            const auto Lambda = GroupedBoundaryLambda(soundSpeed, geometry, iMarker, iVertex, iPoint, &Area2);
+            nodes->AddMax_Lambda_Inv(iPoint, Lambda);
+            if (viscous) nodes->AddMax_Lambda_Visc(iPoint, lambdaVisc(*nodes, iPoint) * Area2);
+            continue;
+          }
 
           auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           auto Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
@@ -727,6 +756,13 @@ class CFVMFlowSolverBase : public CSolver {
           auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+          /*--- Where face groups are stored: sum_k (|u.n_k| + c) a_k, as in SetTime_Step_impl. ---*/
+          if (geometry->HasVertexGroups(iMarker, iVertex)) {
+            const auto Lambda = GroupedBoundaryLambda(soundSpeed, geometry, iMarker, iVertex, iPoint);
+            nodes->AddLambda(iPoint, Lambda);
+            continue;
+          }
 
           auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           su2double Area = GeometryToolbox::Norm(nDim, Normal);
