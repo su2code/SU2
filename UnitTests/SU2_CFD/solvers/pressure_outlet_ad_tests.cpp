@@ -24,6 +24,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <memory>
+#include <tuple>
+#include <utility>
 #include "catch.hpp"
 #include "../../../SU2_CFD/include/fluid/CFluidModel.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
@@ -92,5 +95,87 @@ TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressu
           }
         }
       }
+  }
+}
+
+namespace {
+// Compare the derivative of every output with central finite differences of the complete map, one input at a time.
+template <class Map>
+void CheckMapDerivatives(const Map& evaluate, const double* values, const double* scale) {
+  for (auto column = 0u; column < 6; ++column) {
+    const double delta = 2e-5 * fmax(fabs(values[column]), scale[column]);
+    su2double plus[6], minus[6], fp[4], fm[4];
+    for (auto k = 0u; k < 6; ++k) plus[k] = minus[k] = values[k];
+    plus[column] += delta;
+    minus[column] -= delta;
+    REQUIRE(evaluate(plus, fp) == CFluidModel::PressureOutletStatus::Valid);
+    REQUIRE(evaluate(minus, fm) == CFluidModel::PressureOutletStatus::Valid);
+    for (auto row = 0u; row < 4; ++row) {
+      const double expected = SU2_TYPE::GetValue((fp[row] - fm[row]) / (2 * delta));
+      su2double input[6], output[4];
+      for (auto k = 0u; k < 6; ++k) input[k] = values[k];
+#ifdef CODI_REVERSE_TYPE
+      AD::Reset();
+      AD::StartRecording();
+      AD::RegisterInput(input[column]);
+#else
+      SU2_TYPE::SetDerivative(input[column], 1);
+#endif
+      REQUIRE(evaluate(input, output) == CFluidModel::PressureOutletStatus::Valid);
+#ifdef CODI_REVERSE_TYPE
+      AD::RegisterOutput(output[row]);
+      AD::StopRecording();
+      SU2_TYPE::SetDerivative(output[row], 1);
+      AD::ComputeAdjoint();
+      const double derivative = SU2_TYPE::GetDerivative(input[column]);
+      AD::Reset();
+#else
+      const double derivative = SU2_TYPE::GetDerivative(output[row]);
+#endif
+      INFO("row=" << row << " column=" << column);
+      // The margin also covers the finite-difference noise of the adaptive EOS integration (about 1e-10 relative).
+      const double noise = 1e-9 * fmax(fabs(SU2_TYPE::GetValue(fp[row])), fabs(SU2_TYPE::GetValue(fm[row]))) / delta;
+      CHECK(derivative == Approx(expected).epsilon(3e-4).margin(2e-4 + noise));
+    }
+  }
+}
+}  // namespace
+
+TEST_CASE("Outlet backflow state derivatives match finite differences", "[Pressure-outlet-AD]") {
+  for (auto kind : {0u, 1u, 2u}) {
+    std::unique_ptr<CFluidModel> gas;
+    if (kind == 0) gas.reset(new CIdealGas(1.4, 35.152));
+    if (kind == 1) gas.reset(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
+    if (kind == 2) gas.reset(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
+    const double rho = 230, p = 1500112;
+    gas->SetTDState_Prho(p, rho);
+    const double e = SU2_TYPE::GetValue(gas->GetStaticEnergy()), a = SU2_TYPE::GetValue(gas->GetSoundSpeed());
+    const su2double temperature = SU2_TYPE::GetValue(gas->GetTemperature()), normal[2] = {1, 0};
+    const double gamma = kind == 0 ? 1.4 : 0;
+    // Inputs: four conservative variables, then reservoir total pressure (or imposed pressure) and grid speed.
+    const double scale[6] = {rho, rho * a, rho * a, rho * a * a, p, a};
+    auto reservoir = [&](su2double* input, su2double* output) {
+      return gas->ComputeReservoirInflowState(2, input, normal, input[5], input[4], temperature, nullptr, output, 0,
+                                              gamma);
+    };
+    auto sonic = [&](su2double* input, su2double* output) {
+      return gas->ComputeSonicBackflowState(2, input, normal, input[5], input[4], output, 0, gamma);
+    };
+    // Subsonic reservoir inflow (the root carries the derivatives), the sonic reservoir limit and the reservoir at
+    // rest (both independent of the interior), then the sonic fallback without data.
+    // Each case gives the normal Mach number relative to the grid, the pressure ratio and the grid speed.
+    for (const auto& [mach, ratio, grid] :
+         {std::tuple<double, double, double>{-.3, 1.05, -20}, {-.05, 1.05, -20}, {-1.3, 1.05, -20}, {-.02, .9, 0}}) {
+      CAPTURE(kind, mach, ratio, grid);
+      const double u = mach * a + grid;
+      const double values[6] = {rho, rho * u, rho * 5, rho * (e + .5 * (u * u + 25)), ratio * p, grid};
+      CheckMapDerivatives(reservoir, values, scale);
+    }
+    for (const auto ratio : {.95, 1.1}) {
+      CAPTURE(kind, ratio);
+      const double grid = 20, u = -1.4 * a + grid;
+      const double values[6] = {rho, rho * u, rho * 5, rho * (e + .5 * (u * u + 25)), ratio * p, grid};
+      CheckMapDerivatives(sonic, values, scale);
+    }
   }
 }

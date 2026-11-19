@@ -75,14 +75,27 @@ class FrozenOutletTurbulence final : public CSolver {
   }
 };
 
+std::unique_ptr<CFluidModel> MakeTurboGas(unsigned short kind) {
+  if (kind == 0) return std::unique_ptr<CFluidModel>(new CIdealGas(1.4, 35.152));
+  if (kind == 1) return std::unique_ptr<CFluidModel>(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
+  return std::unique_ptr<CFluidModel>(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
+}
+
 void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, double ratio, bool moving, bool radial,
                          bool implicit = true, bool totalConditions = false, bool threaded = false,
-                         double turbulentK = 0) {
-  CAPTURE(dim, kind, mach, ratio, moving, radial, implicit, totalConditions, threaded, turbulentK);
+                         double turbulentK = 0, bool reservoir = false, bool unsteady = false) {
+  CAPTURE(dim, kind, mach, ratio, moving, radial, implicit, totalConditions, threaded, turbulentK, reservoir, unsteady);
   // Axial turbo normals point along x in the 2D fixture and z in the 3D fixture.
   const unsigned short normalDim = dim == 2 ? 0 : 2;
   const std::string inlet = dim == 2 ? "x_minus" : "z_minus", outlet = dim == 2 ? "x_plus" : "z_plus";
   const double p = 1500112, rho = 230;
+  // Backflow reservoir 5% above the interior pressure at the interior temperature; zero direction = normal.
+  su2double backflow[5] = {0, 1.05 * p, 0, 0, 0};
+  {
+    auto probe = MakeTurboGas(kind);
+    probe->SetTDState_Prho(p, rho);
+    backflow[0] = probe->GetTemperature();
+  }
   UnitQuadTestCase test;
   std::ostringstream options;
   options
@@ -107,6 +120,10 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
                           : "STATIC_PRESSURE")
       << ',' << ratio * p << (totalConditions ? ",600,1,0,0)\n" : ",0,0,0,0)\n");
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 20,-7,30\n";
+  if (reservoir)
+    options << "MARKER_OUTLET_BACKFLOW= (" << outlet << ',' << SU2_TYPE::GetValue(backflow[0]) << ','
+            << SU2_TYPE::GetValue(backflow[1]) << ",0,0,0)\n";
+  if (unsteady) options << "TIME_DOMAIN= YES\nTIME_MARCHING= DUAL_TIME_STEPPING-2ND_ORDER\nTIME_STEP= 1e-5\n";
   if (dim == 3) options << "MARKER_PERIODIC= (y_minus,y_plus,0,0,0,0,0,0,0,1,0)\n";
   if (turbulentK)
     options << "KIND_TURB_MODEL= SST\nINIT_OPTION= TD_CONDITIONS\nREYNOLDS_NUMBER= 1E6\n"
@@ -128,10 +145,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
   auto* solver = new TurboOutletSolver(test.geometry.get(), config, ratio * p, radial);
   test.solver[FLOW_SOL] = solver;
   std::cout.rdbuf(test.orig_buf);
-  std::unique_ptr<CFluidModel> gas;
-  if (kind == 0) gas.reset(new CIdealGas(1.4, 35.152));
-  if (kind == 1) gas.reset(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
-  if (kind == 2) gas.reset(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
+  auto gas = MakeTurboGas(kind);
   if (turbulentK) {
     gas->SetLaminarViscosityModel(config);
     gas->SetThermalConductivityModel(config);
@@ -186,9 +200,9 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
         turbo->GetNormal(unit);
         for (auto d = 0u; d < dim; ++d) normal[d] = -normal[d];
         su2double boundary[5];
-        REQUIRE(gas->ComputePressureOutletState(dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit),
-                                                target(span), boundary, turbulentK,
-                                                kind == 0 ? 1.4 : 0) == CFluidModel::PressureOutletStatus::Valid);
+        REQUIRE(ExpectedOutletState(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), target(span),
+                                    boundary, turbulentK, kind == 0 ? 1.4 : 0, reservoir ? backflow : nullptr,
+                                    !unsteady) == CFluidModel::PressureOutletStatus::Valid);
         auto flux = [&](const su2double* boundary, su2double* result) {
           su2double v[3];
           for (auto d = 0u; d < dim; ++d) v[d] = boundary[d + 1] / boundary[0];
@@ -273,8 +287,26 @@ TEST_CASE("TurboRiemann pressure outlet rejects nonpositive pressure", "[.][Turb
   TurboPressureOutlet(2, 1, .3, 0, false, false);
 }
 
-TEST_CASE("TurboRiemann radial pressure outlet requires data for backflow", "[.][Turbo-backflow]") {
-  TurboPressureOutlet(3, 1, -1.4, .95, true, true);
+TEST_CASE("TurboRiemann radial pressure outlet requires data for unsteady backflow", "[.][Turbo-backflow]") {
+  TurboPressureOutlet(3, 1, -1.4, .95, true, true, true, false, false, 0, false, true);
+}
+
+TEST_CASE("TurboRiemann pressure outlets limit steady backflow without data", "[Pressure-outlet][Turbo-outlet]") {
+  for (auto dim : {2u, 3u})
+    for (auto kind : {0u, 1u})
+      for (const auto radial : {false, true}) TurboPressureOutlet(dim, kind, -1.4, .95, true, radial);
+}
+
+TEST_CASE("TurboRiemann pressure outlets take backflow from the reservoir", "[Pressure-outlet][Outlet-backflow]") {
+  for (auto dim : {2u, 3u})
+    for (auto kind : {0u, 1u, 2u})
+      for (const auto radial : {false, true})
+        for (const auto mach : {-1.4, -.3, .3})
+          for (const auto unsteady : {false, true})
+            TurboPressureOutlet(dim, kind, mach, .95, false, radial, true, false, false, 0, true, unsteady);
+  // Moving grid and frozen SST energy.
+  TurboPressureOutlet(3, 1, -.3, .95, true, true, true, false, false, 13, true);
+  TurboPressureOutlet(2, 0, -.3, .95, true, false, true, false, false, 0, true);
 }
 
 TEST_CASE("TurboRiemann real-gas radial startup remains admissible", "[Pressure-outlet][Turbo-radial-startup]") {

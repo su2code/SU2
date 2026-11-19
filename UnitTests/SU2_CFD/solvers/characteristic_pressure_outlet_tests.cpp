@@ -35,7 +35,12 @@
 #include "../../../SU2_CFD/include/fluid/CDataDrivenFluid.hpp"
 
 namespace {
-void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
+// Reservoir for MARKER_OUTLET_BACKFLOW: total temperature, total pressure and a zero (normal) direction.
+const su2double kReservoir[5] = {600, 1550000, 0, 0, 0};
+
+void CharacteristicPressureFixture(su2double pressure, bool backflow = false, bool reservoir = false,
+                                   bool unsteady = false) {
+  CAPTURE(pressure, backflow, reservoir, unsteady);
   UnitQuadTestCase test;
   std::ostringstream options;
   options << "SOLVER= EULER\nMESH_FORMAT= RECTANGLE\nMESH_BOX_SIZE= 5,129,5\n"
@@ -47,6 +52,8 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
           << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 20,0,0\n"
           << "MARKER_EULER= (x_minus,y_minus,y_plus)\nMARKER_MONITORING= (x_minus)\n"
           << "MARKER_RIEMANN= (x_plus,STATIC_PRESSURE," << pressure << ",0,0,0,0)\n";
+  if (reservoir) options << "MARKER_OUTLET_BACKFLOW= (x_plus," << kReservoir[0] << ',' << kReservoir[1] << ",0,0,0)\n";
+  if (unsteady) options << "TIME_DOMAIN= YES\nTIME_MARCHING= DUAL_TIME_STEPPING-2ND_ORDER\nTIME_STEP= 1e-5\n";
   test.config_options = options.str();
   test.InitConfig();
   test.InitGeometry();
@@ -92,8 +99,9 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
       for (auto d = 0u; d < 2; ++d) unit[d] = (normal[d] = -normal[d]) / area;
       // BC_Riemann uses the physical boundary flux, including transport by the moving grid.
       su2double boundary[4];
-      REQUIRE(gas.ComputePressureOutletState(2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure,
-                                             boundary) == CFluidModel::PressureOutletStatus::Valid);
+      REQUIRE(ExpectedOutletState(gas, 2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure, boundary,
+                                  0, 0, reservoir ? kReservoir : nullptr,
+                                  !unsteady) == CFluidModel::PressureOutletStatus::Valid);
       auto flux = [&](const su2double* boundary, su2double* output) {
         su2double velocity[2];
         for (auto d = 0u; d < 2; ++d) velocity[d] = boundary[d + 1] / boundary[0];
@@ -232,8 +240,20 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
 TEST_CASE("Characteristic pressure boundary rejects nonpositive pressure", "[.][Boundary-invalid-pressure]") {
   CharacteristicPressureFixture(0);
 }
-TEST_CASE("Characteristic pressure boundary requires data for backflow", "[.][Boundary-backflow]") {
+TEST_CASE("Characteristic pressure boundary requires data for unsteady backflow", "[.][Boundary-backflow]") {
+  CharacteristicPressureFixture(1400000, true, false, true);
+}
+
+TEST_CASE("Characteristic pressure boundary limits steady backflow without data", "[Pressure-outlet]") {
   CharacteristicPressureFixture(1400000, true);
+}
+
+TEST_CASE("Characteristic pressure boundary takes backflow from the reservoir", "[Pressure-outlet][Outlet-backflow]") {
+  for (const auto unsteady : {false, true}) {
+    CharacteristicPressureFixture(1400000, true, true, unsteady);
+    // Outflow is unaffected by the reservoir data.
+    CharacteristicPressureFixture(1400000, false, true, unsteady);
+  }
 }
 
 #ifdef HAVE_MLPCPP

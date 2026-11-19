@@ -65,3 +65,23 @@ inline void OutgoingOutletIncrement(CFluidModel& gas, unsigned short dim, const 
   increment[dim + 1] = energy * projectedRho + rho * (projectedP - dpdrho * projectedRho) / dpde +
                        rho * GeometryToolbox::DotProduct(dim, velocity, projectedVelocity);
 }
+
+// Boundary state that CEulerSolver's static-pressure outlets should use, assembled from the fluid-model maps.
+// reservoir = {T_total, P_total, direction_x, direction_y, direction_z}, or nullptr without MARKER_OUTLET_BACKFLOW.
+inline CFluidModel::PressureOutletStatus ExpectedOutletState(CFluidModel& gas, unsigned short dim,
+                                                             const su2double* state, const su2double* normal,
+                                                             su2double gridNormal, su2double pressure,
+                                                             su2double* boundary, su2double turbulentK, su2double gamma,
+                                                             const su2double* reservoir, bool steady) {
+  auto status = gas.ComputePressureOutletState(dim, state, normal, gridNormal, pressure, boundary, turbulentK, gamma);
+  if (reservoir != nullptr && status != CFluidModel::PressureOutletStatus::InvalidState) {
+    // Inward flow relative to the grid comes from the reservoir.
+    if (status == CFluidModel::PressureOutletStatus::Backflow ||
+        GeometryToolbox::DotProduct(dim, boundary + 1, normal) / boundary[0] < gridNormal)
+      status = gas.ComputeReservoirInflowState(dim, state, normal, gridNormal, reservoir[1], reservoir[0],
+                                               reservoir + 2, boundary, turbulentK, gamma);
+  } else if (status == CFluidModel::PressureOutletStatus::Backflow && steady) {
+    status = gas.ComputeSonicBackflowState(dim, state, normal, gridNormal, pressure, boundary, turbulentK, gamma);
+  }
+  return status;
+}

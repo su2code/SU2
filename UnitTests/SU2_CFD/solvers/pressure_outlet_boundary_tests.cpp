@@ -52,8 +52,12 @@ class OutletStateProbe final : public CNumerics {
   }
 };
 
+// Backflow modes: with or without MARKER_OUTLET_BACKFLOW reservoir data, in steady or unsteady runs.
+enum class Backflow { None, Reservoir, Unsteady, UnsteadyReservoir };
+
 void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bool moving, bool threaded = false,
-                 double turbulentK = 0) {
+                 double turbulentK = 0, Backflow backflow = Backflow::None) {
+  CAPTURE(dim, normalMach, pressureRatio, moving, threaded, turbulentK, static_cast<int>(backflow));
   UnitQuadTestCase test;
   std::ostringstream options;
   options << "SOLVER= " << (turbulentK ? "RANS" : "EULER") << "\nMESH_FORMAT= " << (dim == 2 ? "RECTANGLE" : "BOX")
@@ -64,6 +68,10 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
           << "MARKER_EULER= (x_minus,y_minus,y_plus" << (dim == 3 ? ",z_minus,z_plus" : "")
           << ")\nMARKER_MONITORING= (x_minus)\nMARKER_OUTLET= (x_plus," << pressureRatio * 100000 << ")\n";
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 500,240,0\n";
+  const bool reservoir = backflow == Backflow::Reservoir || backflow == Backflow::UnsteadyReservoir;
+  if (reservoir) options << "MARKER_OUTLET_BACKFLOW= (x_plus, 300, 101000, 0, 0, 0)\n";
+  if (backflow == Backflow::Unsteady || backflow == Backflow::UnsteadyReservoir)
+    options << "TIME_DOMAIN= YES\nTIME_MARCHING= DUAL_TIME_STEPPING-2ND_ORDER\nTIME_STEP= 1e-5\n";
   if (turbulentK)
     options << "KIND_TURB_MODEL= SST\nINIT_OPTION= TD_CONDITIONS\nREYNOLDS_NUMBER= 1E6\n"
                "VISCOSITY_MODEL= CONSTANT_VISCOSITY\nCONDUCTIVITY_MODEL= CONSTANT_CONDUCTIVITY\n";
@@ -124,11 +132,22 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
       out[dim + 1] =
           out[0] * (boundarySound * boundarySound / .56 + .5 * GeometryToolbox::SquaredNorm(dim, v) + turbulentK);
     };
-    su2double expected[5];
-    reference(state, expected);
+    su2double expected[5] = {};
+    if (normalMach > -1) reference(state, expected);
+    // Backflow states come from the fluid-model maps, which pressure_outlet_backflow_tests.cpp checks.
+    const su2double outward[3] = {1, 0, 0};
+    if (reservoir && (normalMach <= -1 || expected[1] / expected[0] < grid[0]))
+      REQUIRE(gas.ComputeReservoirInflowState(dim, state, outward, grid[0], 101000, 300, nullptr, expected, turbulentK,
+                                              1.4) == CFluidModel::PressureOutletStatus::Valid);
+    const bool limited = backflow == Backflow::None && normalMach <= -1;
+    if (limited)
+      REQUIRE(gas.ComputeSonicBackflowState(dim, state, outward, grid[0], pressureRatio * p, expected, turbulentK,
+                                            1.4) == CFluidModel::PressureOutletStatus::Valid);
+    unsigned long domainVertices = 0;
     for (auto vertex = 0ul; vertex < test.geometry->nVertex[marker]; ++vertex) {
       const auto point = test.geometry->vertex[marker][vertex]->GetNode();
       if (!test.geometry->nodes->GetDomain(point)) continue;
+      ++domainVertices;
       for (auto row = 0u; row < dim + 2; ++row) {
         CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, row)) ==
               Approx(SU2_TYPE::GetValue(expected[row])).epsilon(1e-8).margin(1e-8));
@@ -143,6 +162,15 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
         }
       }
     }
+    // Steady runs count the vertices limited to sonic backflow; the monitor call also resets the count.
+    std::ostringstream quiet;
+    std::cout.rdbuf(quiet.rdbuf());
+    const auto counted = solver->MonitorOutletBackflowClamp(test.config.get());
+    const auto recounted = solver->MonitorOutletBackflowClamp(test.config.get());
+    std::cout.rdbuf(test.orig_buf);
+    CHECK(counted == (limited ? domainVertices : 0));
+    CHECK(recounted == 0);
+    if (limited) CHECK(quiet.str().find("limited to sonic inflow") != std::string::npos);
   }
 }
 }  // namespace
@@ -158,8 +186,28 @@ TEST_CASE("Ordinary pressure outlet uses relative normal characteristics and an 
 TEST_CASE("Ordinary pressure outlet rejects nonpositive pressure", "[.][Ordinary-invalid-pressure]") {
   IdealOutlet(2, .3, 0, false);
 }
-TEST_CASE("Ordinary pressure outlet requires data for backflow", "[.][Ordinary-backflow]") {
-  IdealOutlet(2, -1.4, .95, false);
+TEST_CASE("Ordinary pressure outlet requires data for unsteady backflow", "[.][Ordinary-backflow]") {
+  IdealOutlet(2, -1.4, .95, false, false, 0, Backflow::Unsteady);
+}
+
+TEST_CASE("Ordinary pressure outlet limits steady backflow without data to sonic inflow", "[Pressure-outlet]") {
+  for (auto dim : {2u, 3u})
+    for (const auto moving : {false, true}) IdealOutlet(dim, -1.4, .95, moving);
+}
+
+TEST_CASE("Ordinary pressure outlet takes backflow from the MARKER_OUTLET_BACKFLOW reservoir",
+          "[Pressure-outlet][Outlet-backflow]") {
+  for (auto dim : {2u, 3u})
+    for (const auto moving : {false, true})
+      for (const auto normalMach : {-1.4, -.3, 0., .3})
+        for (const auto ratio : {1., .95, 1.02})
+          IdealOutlet(dim, normalMach, ratio, moving, false, 0, Backflow::Reservoir);
+  IdealOutlet(3, -.3, 1.02, true, false, 1500, Backflow::Reservoir);
+}
+
+TEST_CASE("Unsteady outlet with a reservoir accepts backflow", "[Pressure-outlet][Outlet-backflow]") {
+  IdealOutlet(2, -1.4, .95, false, false, 0, Backflow::UnsteadyReservoir);
+  IdealOutlet(2, -.3, 1.02, false, false, 0, Backflow::UnsteadyReservoir);
 }
 
 TEST_CASE("Pressure outlet reconstruction is thread local", "[Pressure-outlet]") {
