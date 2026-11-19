@@ -5276,8 +5276,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-CEulerSolver::OutletBackflowData CEulerSolver::GetOutletBackflowData(const CConfig* config,
-                                                                    unsigned short val_marker) const {
+CEulerSolver::OutletBackflowData CEulerSolver::GetOutletBackflowData(const CConfig* config, unsigned short val_marker,
+                                                                    su2double idealGamma) const {
   OutletBackflowData data;
   const auto& tag = config->GetMarker_All_TagBound(val_marker);
   data.markerCfg = config->GetMarker_CfgFile_TagBound(tag);
@@ -5291,7 +5291,8 @@ CEulerSolver::OutletBackflowData CEulerSolver::GetOutletBackflowData(const CConf
   // A positive total pressure gives the same reservoir state at every vertex: compute it once per call.
   if (data.totalPressure > 0)
     data.totalStateValid =
-        GetFluidModel()->ComputeReservoirTotalState(data.totalPressure, data.totalTemperature, data.totalState);
+        GetFluidModel()->ComputeReservoirTotalState(data.totalPressure, data.totalTemperature, idealGamma,
+                                                    data.totalState);
   return data;
 }
 
@@ -5425,7 +5426,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   }
 
   // Backflow data of a static-pressure outlet (reservoir, if any).
-  const auto backflow = GetOutletBackflowData(config, val_marker);
+  const auto backflow = GetOutletBackflowData(config, val_marker, ideal_gas ? Gamma : su2double(0.0));
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -5932,7 +5933,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   }
 
   // Backflow data of a static-pressure outlet (reservoir, if any).
-  const auto backflow = GetOutletBackflowData(config, val_marker);
+  const auto backflow = GetOutletBackflowData(config, val_marker, ideal_gas ? Gamma : su2double(0.0));
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
@@ -7630,7 +7631,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   const bool tkeNeeded = config->GetKind_Turb_Model() == TURB_MODEL::SST;
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   // Backflow data of a static-pressure outlet (reservoir, if any).
-  const auto backflow = GetOutletBackflowData(config, val_marker);
+  const auto backflow = GetOutletBackflowData(config, val_marker, Gamma);
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; ++iVertex) {

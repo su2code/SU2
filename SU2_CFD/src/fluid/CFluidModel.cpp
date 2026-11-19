@@ -443,8 +443,13 @@ CFluidModel::PressureOutletStatus CFluidModel::ComputeReservoirInflowState(
 
   // Search on passive copies so that only the final correction is recorded by automatic differentiation.
   const auto passive = PassiveCopy(data);
-  su2double sonicPressure;
-  if (!FindReservoirSonicPressure(passive, sonicPressure)) return PressureOutletStatus::InvalidState;
+  // Reuse the sonic pressure of a precomputed reservoir for normal inflow on a static grid.
+  const bool uniformSonic = reservoir.totalState != nullptr && reservoir.totalState->sonicPressure > 0 &&
+                            reservoir.totalPressure > 0 && reservoir.tangentialVelocity == nullptr &&
+                            passive.gridNormal == 0 && fabs(passive.directionNormal + 1) < 1e-12;
+  su2double sonicPressure =
+      uniformSonic ? su2double(SU2_TYPE::GetValue(reservoir.totalState->sonicPressure)) : su2double(0.0);
+  if (!uniformSonic && !FindReservoirSonicPressure(passive, sonicPressure)) return PressureOutletStatus::InvalidState;
 
   // Classify: root between the sonic and the total pressure, sonic limit, or no inflow from the reservoir.
   enum class Kind { Root, Sonic, Rest } kind = Kind::Root;
@@ -644,13 +649,19 @@ CFluidModel::ReservoirInflow CFluidModel::PassiveCopy(const ReservoirInflow& dat
   return passive;
 }
 
-bool CFluidModel::ComputeReservoirTotalState(su2double totalPressure, su2double totalTemperature,
+bool CFluidModel::ComputeReservoirTotalState(su2double totalPressure, su2double totalTemperature, su2double idealGamma,
                                              ReservoirTotalState& state) {
   ReservoirInflow data;
   if (!SetReservoirTotalState(totalPressure, totalTemperature, data)) return false;
   state.pressure = data.totalPressure;
   state.density = data.totalDensity;
   state.energy = data.totalEnergy;
+  // The sonic pressure for inflow normal to a static boundary is the same at every vertex of the marker.
+  data.idealGamma = idealGamma > 1 ? idealGamma : su2double(0.0);
+  data.directionNormal = -1;
+  data.gridNormal = 0;
+  su2double sonicPressure;
+  state.sonicPressure = FindReservoirSonicPressure(PassiveCopy(data), sonicPressure) ? sonicPressure : su2double(0.0);
   return true;
 }
 

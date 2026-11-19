@@ -116,9 +116,9 @@ class CFluidModel {
                                                 su2double targetPressure, su2double* boundary,
                                                 su2double turbulentK = 0, su2double idealGamma = 0);
 
-  /*! \brief Total state (pressure, density, thermal energy) of a backflow reservoir; can be computed once. */
+  /*! \brief Total state of a backflow reservoir, and its sonic pressure for normal inflow on a static grid. */
   struct ReservoirTotalState {
-    su2double pressure = 0, density = 0, energy = 0;
+    su2double pressure = 0, density = 0, energy = 0, sonicPressure = 0;
   };
 
   /*! \brief Reservoir that feeds backflow into a static-pressure outlet (MARKER_OUTLET_BACKFLOW). */
@@ -153,9 +153,11 @@ class CFluidModel {
 
   /*!
    * \brief Total state of a reservoir from its total pressure and temperature, to pass in OutletReservoir.
+   * \param[in] idealGamma - Constant ideal-gas gamma; zero selects general EOS evaluation.
    * \return False if the EOS state is not valid.
    */
-  bool ComputeReservoirTotalState(su2double totalPressure, su2double totalTemperature, ReservoirTotalState& state);
+  bool ComputeReservoirTotalState(su2double totalPressure, su2double totalTemperature, su2double idealGamma,
+                                  ReservoirTotalState& state);
 
   /*!
    * \brief Steady fallback for backflow with all characteristics incoming when no reservoir data is given.

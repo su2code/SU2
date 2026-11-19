@@ -193,9 +193,11 @@ protected:
    * \brief Read the backflow data of a marker, and the reservoir total state when it is uniform.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Marker index.
+   * \param[in] idealGamma - Ideal-gas gamma, or zero for a general EOS.
    * \return Nondimensional backflow data.
    */
-  OutletBackflowData GetOutletBackflowData(const CConfig* config, unsigned short val_marker) const;
+  OutletBackflowData GetOutletBackflowData(const CConfig* config, unsigned short val_marker,
+                                           su2double idealGamma) const;
 
   /*!
    * \brief Boundary state of a static-pressure outlet (ordinary, Riemann or TurboRiemann).
