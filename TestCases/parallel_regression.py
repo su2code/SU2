@@ -478,6 +478,14 @@ def main():
     periodic2d_no_limiter_backflow.test_vals = [-3.178064, -0.502146, -0.623184, 2.298707, -1.037448, -1263.000000]
     test_list.append(periodic2d_no_limiter_backflow)
 
+    # Backflow that keeps the interior swirl (OUTLET_BACKFLOW_TYPE= INTERIOR_TANGENTIAL) at the ordinary outlet.
+    periodic2d_no_limiter_backflow_tangential = TestCase('periodic2d_no_limiter_backflow_tangential')
+    periodic2d_no_limiter_backflow_tangential.cfg_dir = "navierstokes/periodic2D"
+    periodic2d_no_limiter_backflow_tangential.cfg_file = "no_limiter_backflow_tangential.cfg"
+    periodic2d_no_limiter_backflow_tangential.test_iter = 100
+    periodic2d_no_limiter_backflow_tangential.test_vals = [-3.089724, -0.504999, -0.643322, 2.385841, -1.049095, -1083.000000]
+    test_list.append(periodic2d_no_limiter_backflow_tangential)
+
     # 2D rotational periodic sector with multigrid
     periodic2d_multigrid = TestCase('periodic2d_multigrid')
     periodic2d_multigrid.cfg_dir = "navierstokes/periodic2D"
