@@ -644,6 +644,8 @@ private:
   INLET_TYPE Kind_Inlet;
   INLET_TYPE *Kind_Inc_Inlet;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
+  OUTLET_BACKFLOW_TYPE *Kind_Outlet_Backflow; /*!< \brief Backflow velocity type per MARKER_OUTLET_BACKFLOW entry. */
+  unsigned short nOutlet_Backflow_Types;      /*!< \brief Number of OUTLET_BACKFLOW_TYPE entries. */
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
@@ -7544,6 +7546,13 @@ public:
    * \return Direction vector (3 components, not necessarily normalized).
    */
   const su2double* GetOutletBackflowFlowDir(const string& val_marker) const;
+
+  /*!
+   * \brief Get the backflow velocity type of a static-pressure outlet (OUTLET_BACKFLOW_TYPE, default DIRECTION).
+   * \param[in] val_marker - Marker tag, which must have backflow data.
+   * \return Backflow velocity type.
+   */
+  OUTLET_BACKFLOW_TYPE GetOutletBackflowType(const string& val_marker) const;
 
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.

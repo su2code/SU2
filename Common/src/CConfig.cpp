@@ -1058,6 +1058,7 @@ void CConfig::SetPointersNull() {
 
   Kind_Inc_Inlet = nullptr;
   Kind_Inc_Outlet = nullptr;
+  Kind_Outlet_Backflow = nullptr;
 
   Kind_ObjFunc   = nullptr;
 
@@ -1818,6 +1819,10 @@ void CConfig::SetConfig_Options() {
    * means the static pressure imposed at the outlet (a plenum at rest). \ingroup Config*/
   addInletOption("MARKER_OUTLET_BACKFLOW", nMarker_Outlet_Backflow, Marker_Outlet_Backflow, OutletBackflow_Ttotal,
                  OutletBackflow_Ptotal, OutletBackflow_FlowDir);
+  /*!\brief OUTLET_BACKFLOW_TYPE \n DESCRIPTION: Velocity of the backflow, one entry per MARKER_OUTLET_BACKFLOW marker.
+   * DIRECTION (default): along the given direction. INTERIOR_TANGENTIAL: along the inward normal, plus the interior
+   * tangential velocity (the given direction must be zero). \ingroup Config*/
+  addEnumListOption("OUTLET_BACKFLOW_TYPE", nOutlet_Backflow_Types, Kind_Outlet_Backflow, OutletBackflow_Map);
   /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of outlet types for incompressible flows. List length must match number of inlet markers. Options: PRESSURE_OUTLET, MASS_FLOW_OUTLET. \ingroup Config*/
   addEnumListOption("INC_OUTLET_TYPE", nInc_Outlet, Kind_Inc_Outlet, Inc_Outlet_Map);
   /*!\brief MARKER_ISOTHERMAL DESCRIPTION: Isothermal wall boundary marker(s)\n
@@ -6014,6 +6019,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         CURRENT_FUNCTION);
 
   /*--- Backflow reservoirs complete static-pressure outlets of the compressible (ideal or real gas) solver. ---*/
+  if (nOutlet_Backflow_Types != 0 && nOutlet_Backflow_Types != nMarker_Outlet_Backflow)
+    SU2_MPI::Error("OUTLET_BACKFLOW_TYPE needs one entry (DIRECTION or INTERIOR_TANGENTIAL) per MARKER_OUTLET_BACKFLOW "
+                   "marker.", CURRENT_FUNCTION);
   for (auto iMarker = 0u; iMarker < nMarker_Outlet_Backflow; iMarker++) {
     const auto& tag = Marker_Outlet_Backflow[iMarker];
     if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE || GetNEMOProblem() || GetFEMSolver())
@@ -6027,6 +6035,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (!pressureOutlet)
       SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " must be a MARKER_OUTLET, or a MARKER_RIEMANN with "
                      "STATIC_PRESSURE or RADIAL_EQUILIBRIUM.", CURRENT_FUNCTION);
+    if (nOutlet_Backflow_Types != 0 && Kind_Outlet_Backflow[iMarker] == OUTLET_BACKFLOW_TYPE::INTERIOR_TANGENTIAL &&
+        (OutletBackflow_FlowDir[iMarker][0] != 0.0 || OutletBackflow_FlowDir[iMarker][1] != 0.0 ||
+         OutletBackflow_FlowDir[iMarker][2] != 0.0))
+      SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " uses OUTLET_BACKFLOW_TYPE= INTERIOR_TANGENTIAL, which "
+                     "needs a zero flow direction (the inflow is normal, plus the interior tangential velocity).",
+                     CURRENT_FUNCTION);
     if (!(OutletBackflow_Ttotal[iMarker] > 0.0) || !(OutletBackflow_Ptotal[iMarker] >= 0.0))
       SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " needs a positive total temperature and a positive "
                      "(or zero: imposed outlet pressure) total pressure.", CURRENT_FUNCTION);
@@ -9753,6 +9767,14 @@ const su2double* CConfig::GetOutletBackflowFlowDir(const string& val_marker) con
   for (iMarker = 0; iMarker < nMarker_Outlet_Backflow; iMarker++)
     if (Marker_Outlet_Backflow[iMarker] == val_marker) break;
   return OutletBackflow_FlowDir[iMarker];
+}
+
+OUTLET_BACKFLOW_TYPE CConfig::GetOutletBackflowType(const string& val_marker) const {
+  if (nOutlet_Backflow_Types == 0) return OUTLET_BACKFLOW_TYPE::DIRECTION;
+  unsigned short iMarker;
+  for (iMarker = 0; iMarker < nMarker_Outlet_Backflow; iMarker++)
+    if (Marker_Outlet_Backflow[iMarker] == val_marker) break;
+  return Kind_Outlet_Backflow[iMarker];
 }
 
 const su2double* CConfig::GetInletFlowDir(const string& val_marker) const {

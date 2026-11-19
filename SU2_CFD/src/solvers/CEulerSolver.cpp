@@ -5269,6 +5269,7 @@ CEulerSolver::OutletBackflowData CEulerSolver::GetOutletBackflowData(const CConf
   data.totalTemperature = config->GetOutletBackflowTtotal(tag) / config->GetTemperature_Ref();
   const auto* direction = config->GetOutletBackflowFlowDir(tag);
   for (auto iDim = 0u; iDim < nDim; iDim++) data.direction[iDim] = direction[iDim];
+  data.interiorTangential = config->GetOutletBackflowType(tag) == OUTLET_BACKFLOW_TYPE::INTERIOR_TANGENTIAL;
   return data;
 }
 
@@ -5285,12 +5286,19 @@ bool CEulerSolver::ComputeStaticPressureOutletState(const CConfig* config, const
     // Inward flow relative to the grid comes from the reservoir; outflow keeps the pressure-outlet state.
     reservoir = status == CFluidModel::PressureOutletStatus::Backflow ||
                 GeometryToolbox::DotProduct(nDim, boundary + 1, unitNormal) / boundary[0] < gridNormal;
-    // A zero total pressure stands for a plenum at rest at the imposed (local) static pressure.
-    const su2double totalPressure = backflow.totalPressure > 0 ? backflow.totalPressure : pressure;
+    // A zero total pressure means the imposed (local) static pressure where the inflow has no normal velocity.
+    // With INTERIOR_TANGENTIAL the inflow keeps the interior tangential velocity (lab frame).
+    su2double tangential[MAXNDIM] = {0.0};
+    if (backflow.interiorTangential) {
+      const su2double normalVelocity = GeometryToolbox::DotProduct(nDim, interior + 1, unitNormal) / interior[0];
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        tangential[iDim] = interior[iDim + 1] / interior[0] - normalVelocity * unitNormal[iDim];
+    }
     if (reservoir)
-      status = fluid->ComputeReservoirInflowState(nDim, interior, unitNormal, gridNormal, totalPressure,
-                                                  backflow.totalTemperature, backflow.direction, boundary, tke,
-                                                  idealGamma);
+      status = fluid->ComputeReservoirInflowState(
+          nDim, interior, unitNormal, gridNormal, backflow.totalPressure, backflow.totalTemperature,
+          backflow.interiorTangential ? nullptr : backflow.direction, boundary, tke, idealGamma,
+          backflow.interiorTangential ? tangential : nullptr, pressure);
   } else if (status == CFluidModel::PressureOutletStatus::Backflow && !config->GetTime_Domain()) {
     // Steady runs: limit fully incoming backflow to sonic inflow; the solution must not converge with it.
     status = fluid->ComputeSonicBackflowState(nDim, interior, unitNormal, gridNormal, pressure, boundary, tke,

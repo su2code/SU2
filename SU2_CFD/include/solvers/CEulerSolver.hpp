@@ -139,6 +139,7 @@ protected:
    */
   struct OutletBackflowData {
     bool reservoir = false;
+    bool interiorTangential = false; /*!< \brief Inflow keeps the interior tangential velocity. */
     su2double totalPressure = 0.0, totalTemperature = 0.0, direction[MAXNDIM] = {0.0};
   };
 

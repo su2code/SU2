@@ -426,13 +426,26 @@ bool CFluidModel::IsPressureOutletStateValid() const {
 CFluidModel::PressureOutletStatus CFluidModel::ComputeReservoirInflowState(
     unsigned short nDim, const su2double* interior, const su2double* normal, su2double gridNormal,
     su2double totalPressure, su2double totalTemperature, const su2double* flowDirection, su2double* boundary,
-    su2double turbulentK, su2double idealGamma) {
+    su2double turbulentK, su2double idealGamma, const su2double* tangentialVelocity, su2double restPressure) {
   for (auto v = 0u; v < nDim + 2; ++v)
     if (!std::isfinite(SU2_TYPE::GetValue(interior[v]))) return PressureOutletStatus::InvalidState;
   const auto rho = interior[0];
-  if (!(rho > 0) || !(totalPressure > 0) || !(totalTemperature > 0) ||
-      !std::isfinite(SU2_TYPE::GetValue(totalPressure + totalTemperature)))
+  if (!(rho > 0) || !(totalPressure > 0 || restPressure > 0) || !(totalTemperature > 0) ||
+      !std::isfinite(SU2_TYPE::GetValue(totalPressure + totalTemperature + restPressure)))
     return PressureOutletStatus::InvalidState;
+
+  // Tangential velocity carried into the inflow (its normal component is removed); the inflow is then normal.
+  su2double tangential[3] = {};
+  if (tangentialVelocity != nullptr) {
+    for (auto d = 0u; d < nDim; ++d) tangential[d] = tangentialVelocity[d];
+    const su2double normalPart = GeometryToolbox::DotProduct(nDim, tangential, normal);
+    for (auto d = 0u; d < nDim; ++d) tangential[d] -= normalPart * normal[d];
+    if (flowDirection != nullptr && GeometryToolbox::Norm(nDim, flowDirection) > 0)
+      return PressureOutletStatus::InvalidState;
+  }
+  // Guard the square root at zero so that automatic differentiation does not produce 0 * infinity.
+  const su2double tangentialSpeed2 = GeometryToolbox::SquaredNorm(nDim, tangential);
+  const su2double tangentialSpeed = tangentialSpeed2 > 0 ? su2double(sqrt(tangentialSpeed2)) : su2double(0.0);
 
   // A zero direction means inflow along the inward normal.
   su2double direction[3] = {};
@@ -462,37 +475,27 @@ CFluidModel::PressureOutletStatus CFluidModel::ComputeReservoirInflowState(
   data.sound = sqrt(GetSoundSpeed2());
   data.normalVelocity = GeometryToolbox::DotProduct(nDim, velocity, normal) - gridNormal;
 
-  SetTDState_PT(totalPressure, totalTemperature);
-  if (!IsPressureOutletStateValid()) return PressureOutletStatus::InvalidState;
-  // Real-gas (p,T) inversions stop at a loose tolerance from a history-dependent guess. Polish the density with
-  // Newton steps at fixed temperature, from a passive guess, so the reservoir state is reproducible and its
-  // derivatives come only from the converged relation p(rho, T_t) = p_t. The slope is a passive central
-  // difference because not every EOS provides dT/drho at constant energy.
-  su2double totalDensity = SU2_TYPE::GetValue(GetDensity());
-  for (auto iteration = 0u; iteration < 4; ++iteration) {
-    const double rho = SU2_TYPE::GetValue(totalDensity), step = 1e-6 * rho;
-    const double temperature = SU2_TYPE::GetValue(totalTemperature);
-    SetTDState_rhoT(rho + step, temperature);
-    const double pressurePlus = SU2_TYPE::GetValue(GetPressure());
-    SetTDState_rhoT(rho - step, temperature);
-    const double slope = (pressurePlus - SU2_TYPE::GetValue(GetPressure())) / (2 * step);
-    SetTDState_rhoT(totalDensity, totalTemperature);
-    if (!(slope > 0) || !IsPressureOutletStateValid()) return PressureOutletStatus::InvalidState;
-    totalDensity -= (GetPressure() - totalPressure) / slope;
+  // Total state of the reservoir. A zero total pressure means that the reservoir has the rest pressure where the
+  // inflow has no normal velocity, i.e. at the tangential speed (a plenum at rest when there is no tangential
+  // velocity).
+  if (totalPressure > 0 ? !SetReservoirTotalState(totalPressure, totalTemperature, data)
+                        : !FindReservoirTotalPressure(restPressure, totalTemperature, tangentialSpeed, data))
+    return PressureOutletStatus::InvalidState;
+  if (tangentialSpeed > 0) {
+    // The normal motion sees the reservoir expanded to the tangential speed: same entropy, and the total enthalpy
+    // reduced by the tangential kinetic energy, which is added back to the boundary state at the end.
+    su2double pressure, density, energy, speed, sound;
+    if (!FindReservoirSpeedPressure(data, tangentialSpeed, pressure) ||
+        !EvaluateReservoirState(data, pressure, density, energy, speed, sound))
+      return PressureOutletStatus::InvalidState;
+    data.totalPressure = pressure;
+    data.totalDensity = density;
+    data.totalEnergy = energy;
+    data.totalEnthalpy = energy + pressure / density;
   }
-  SetTDState_rhoT(totalDensity, totalTemperature);
-  if (!IsPressureOutletStateValid()) return PressureOutletStatus::InvalidState;
-  data.totalPressure = GetPressure();
-  data.totalDensity = GetDensity();
-  data.totalEnergy = GetStaticEnergy();
-  data.totalEnthalpy = data.totalEnergy + data.totalPressure / data.totalDensity;
 
   // Search on passive copies so that only the final correction is recorded by automatic differentiation.
-  ReservoirInflow passive = data;
-  for (auto* value : {&passive.totalPressure, &passive.totalEnthalpy, &passive.totalEnergy, &passive.totalDensity,
-                      &passive.idealGamma, &passive.density, &passive.energy, &passive.normalVelocity,
-                      &passive.pressure, &passive.sound, &passive.directionNormal, &passive.gridNormal})
-    *value = SU2_TYPE::GetValue(*value);
+  const auto passive = PassiveCopy(data);
 
   su2double sonicPressure;
   if (!FindReservoirSonicPressure(passive, sonicPressure)) return PressureOutletStatus::InvalidState;
@@ -588,9 +591,124 @@ CFluidModel::PressureOutletStatus CFluidModel::ComputeReservoirInflowState(
   SetTDState_rhoe(density, energy);
   if (!IsPressureOutletStateValid()) return PressureOutletStatus::InvalidState;
   boundary[0] = density;
-  for (auto d = 0u; d < nDim; ++d) boundary[d + 1] = density * speed * direction[d];
-  boundary[nDim + 1] = density * (energy + .5 * speed * speed + turbulentK);
+  for (auto d = 0u; d < nDim; ++d) boundary[d + 1] = density * (speed * direction[d] + tangential[d]);
+  boundary[nDim + 1] = density * (energy + .5 * (speed * speed + tangentialSpeed2) + turbulentK);
   return PressureOutletStatus::Valid;
+}
+
+CFluidModel::ReservoirInflow CFluidModel::PassiveCopy(const ReservoirInflow& data) {
+  ReservoirInflow passive = data;
+  for (auto* value : {&passive.totalPressure, &passive.totalEnthalpy, &passive.totalEnergy, &passive.totalDensity,
+                      &passive.idealGamma, &passive.density, &passive.energy, &passive.normalVelocity,
+                      &passive.pressure, &passive.sound, &passive.directionNormal, &passive.gridNormal})
+    *value = SU2_TYPE::GetValue(*value);
+  return passive;
+}
+
+bool CFluidModel::SetReservoirTotalState(su2double totalPressure, su2double totalTemperature, ReservoirInflow& data) {
+  SetTDState_PT(totalPressure, totalTemperature);
+  if (!IsPressureOutletStateValid()) return false;
+  // Real-gas (p,T) inversions stop at a loose tolerance from a history-dependent guess. Polish the density with
+  // Newton steps at fixed temperature, from a passive guess, so the reservoir state is reproducible and its
+  // derivatives come only from the converged relation p(rho, T_t) = p_t. The slope is a passive central
+  // difference because not every EOS provides dT/drho at constant energy.
+  su2double totalDensity = SU2_TYPE::GetValue(GetDensity());
+  for (auto iteration = 0u; iteration < 4; ++iteration) {
+    const double rho = SU2_TYPE::GetValue(totalDensity), step = 1e-6 * rho;
+    const double temperature = SU2_TYPE::GetValue(totalTemperature);
+    SetTDState_rhoT(rho + step, temperature);
+    const double pressurePlus = SU2_TYPE::GetValue(GetPressure());
+    SetTDState_rhoT(rho - step, temperature);
+    const double slope = (pressurePlus - SU2_TYPE::GetValue(GetPressure())) / (2 * step);
+    SetTDState_rhoT(totalDensity, totalTemperature);
+    if (!(slope > 0) || !IsPressureOutletStateValid()) return false;
+    totalDensity -= (GetPressure() - totalPressure) / slope;
+  }
+  SetTDState_rhoT(totalDensity, totalTemperature);
+  if (!IsPressureOutletStateValid()) return false;
+  data.totalPressure = GetPressure();
+  data.totalDensity = GetDensity();
+  data.totalEnergy = GetStaticEnergy();
+  data.totalEnthalpy = data.totalEnergy + data.totalPressure / data.totalDensity;
+  return true;
+}
+
+bool CFluidModel::FindReservoirSpeedPressure(const ReservoirInflow& data, su2double speed, su2double& pressure) {
+  if (!(speed > 0)) {
+    pressure = data.totalPressure;
+    return true;
+  }
+  if (data.idealGamma > 1) {
+    const su2double gamma = data.idealGamma, enthalpy = data.totalEnthalpy - .5 * speed * speed;
+    if (!(enthalpy > 0)) return false;
+    pressure = data.totalPressure * pow(enthalpy / data.totalEnthalpy, gamma / (gamma - 1));
+    return true;
+  }
+  // Newton in log pressure on V(p)^2 = speed^2 along the reservoir isentrope, with d(V^2)/d(log p) = -2 p / rho.
+  const auto passive = PassiveCopy(data);
+  const su2double target = SU2_TYPE::GetValue(speed * speed);
+  su2double density, energy, velocity, sound;
+  su2double x = log(passive.totalPressure) - .5 * target * passive.totalDensity / passive.totalPressure;
+  bool converged = false;
+  for (auto iteration = 0u; iteration < 50 && !converged; ++iteration) {
+    const su2double p = exp(x);
+    if (!EvaluateReservoirState(passive, p, density, energy, velocity, sound)) return false;
+    const su2double step = (velocity * velocity - target) * density / (2 * p);
+    x += fmax(su2double(-.5), fmin(su2double(.5), step));
+    converged = fabs(step) < 1e-13;
+  }
+  if (!converged) return false;
+  // One Newton correction with active inputs carries the derivatives of the root.
+  const su2double p = SU2_TYPE::GetValue(exp(x));
+  if (!EvaluateReservoirState(data, p, density, energy, velocity, sound)) return false;
+  const double slope = -2 * SU2_TYPE::GetValue(p / density);
+  pressure = p * exp(-(velocity * velocity - speed * speed) / slope);
+  return true;
+}
+
+bool CFluidModel::FindReservoirTotalPressure(su2double restPressure, su2double totalTemperature, su2double speed,
+                                             ReservoirInflow& data) {
+  if (!SetReservoirTotalState(restPressure, totalTemperature, data)) return false;
+  if (!(speed > 0)) return true;
+  if (data.idealGamma > 1) {
+    // Ideal gas: the total enthalpy depends on the total temperature only.
+    const su2double gamma = data.idealGamma, ratio = 1 - .5 * speed * speed / data.totalEnthalpy;
+    if (!(ratio > 0)) return false;
+    return SetReservoirTotalState(restPressure * pow(ratio, -gamma / (gamma - 1)), totalTemperature, data);
+  }
+  // Secant iterations in log total pressure on log p(speed) - log restPressure, with passive values.
+  const double target = log(SU2_TYPE::GetValue(restPressure));
+  const su2double passiveSpeed = SU2_TYPE::GetValue(speed), passiveTemperature = SU2_TYPE::GetValue(totalTemperature);
+  auto residual = [&](double y, double& value) {
+    ReservoirInflow trial = data;
+    su2double pressure;
+    if (!SetReservoirTotalState(exp(y), passiveTemperature, trial) ||
+        !FindReservoirSpeedPressure(PassiveCopy(trial), passiveSpeed, pressure))
+      return false;
+    value = log(SU2_TYPE::GetValue(pressure)) - target;
+    return true;
+  };
+  double y0 = target, y1, r0, r1;
+  if (!residual(y0, r0)) return false;
+  y1 = y0 - r0;  // The residual grows about one-to-one with the log total pressure.
+  if (!residual(y1, r1)) return false;
+  for (auto iteration = 0u; iteration < 50 && fabs(y1 - y0) > 1e-13 && r1 != r0; ++iteration) {
+    const double y2 = y1 - r1 * (y1 - y0) / (r1 - r0);
+    y0 = y1;
+    r0 = r1;
+    y1 = y2;
+    if (!residual(y1, r1)) return false;
+  }
+  double rPlus;
+  if (fabs(r1) > 1e-9 || !residual(y1 + 1e-5, rPlus)) return false;
+  const double slope = (rPlus - r1) / 1e-5;
+  if (!(slope > 0)) return false;
+  // One Newton correction with active inputs carries the derivatives of the root.
+  su2double pressure;
+  if (!SetReservoirTotalState(exp(y1), totalTemperature, data) || !FindReservoirSpeedPressure(data, speed, pressure))
+    return false;
+  const su2double y = y1 - (log(pressure) - log(restPressure)) / slope;
+  return SetReservoirTotalState(exp(y), totalTemperature, data);
 }
 
 bool CFluidModel::EvaluateReservoirState(const ReservoirInflow& data, su2double pressure, su2double& density,

@@ -130,13 +130,20 @@ class CFluidModel {
    * \param[out] boundary - Conservative boundary state; use only when the result is Valid.
    * \param[in] turbulentK - Frozen SST specific turbulent kinetic energy.
    * \param[in] idealGamma - Constant ideal-gas gamma; zero selects general EOS evaluation.
+   * \param[in] tangentialVelocity - Optional velocity added to the inflow (its normal part is ignored); requires a
+   *            null or zero flowDirection. The reservoir keeps its total enthalpy and entropy: the normal motion sees
+   *            the reservoir expanded to this speed, and the sonic limit applies to the normal speed.
+   * \param[in] restPressure - Used when totalPressure is zero: the reservoir is such that its static pressure at
+   *            zero normal velocity (i.e. at the tangential speed) is restPressure.
    * \return Valid or InvalidState (invalid input or EOS failure).
    */
   PressureOutletStatus ComputeReservoirInflowState(unsigned short nDim, const su2double* interior,
                                                    const su2double* normal, su2double gridNormal,
                                                    su2double totalPressure, su2double totalTemperature,
                                                    const su2double* flowDirection, su2double* boundary,
-                                                   su2double turbulentK = 0, su2double idealGamma = 0);
+                                                   su2double turbulentK = 0, su2double idealGamma = 0,
+                                                   const su2double* tangentialVelocity = nullptr,
+                                                   su2double restPressure = 0);
 
   /*!
    * \brief Steady fallback for backflow with all characteristics incoming when no reservoir data is given.
@@ -544,4 +551,17 @@ class CFluidModel {
 
   /*! \brief Find the reservoir pressure at which the expanded flow is sonic. */
   bool FindReservoirSonicPressure(const ReservoirInflow& data, su2double& pressure);
+
+  /*! \brief Copy of the reservoir data without automatic-differentiation dependencies. */
+  static ReservoirInflow PassiveCopy(const ReservoirInflow& data);
+
+  /*! \brief Set the reservoir total state (density, energy, enthalpy) from total pressure and temperature. */
+  bool SetReservoirTotalState(su2double totalPressure, su2double totalTemperature, ReservoirInflow& data);
+
+  /*! \brief Find the pressure on the reservoir isentrope where the flow has a given speed. */
+  bool FindReservoirSpeedPressure(const ReservoirInflow& data, su2double speed, su2double& pressure);
+
+  /*! \brief Set the reservoir whose pressure at a given speed is restPressure, for a given total temperature. */
+  bool FindReservoirTotalPressure(su2double restPressure, su2double totalTemperature, su2double speed,
+                                  ReservoirInflow& data);
 };
