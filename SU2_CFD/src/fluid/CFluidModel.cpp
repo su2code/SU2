@@ -650,12 +650,15 @@ bool CFluidModel::FindReservoirSpeedPressure(const ReservoirInflow& data, su2dou
   su2double density, energy, velocity, sound;
   su2double x = log(passive.totalPressure) - .5 * target * passive.totalDensity / passive.totalPressure;
   bool converged = false;
+  su2double previousStep = 1;
   for (auto iteration = 0u; iteration < 50 && !converged; ++iteration) {
     const su2double p = exp(x);
     if (!EvaluateReservoirState(passive, p, density, energy, velocity, sound)) return false;
     const su2double step = (velocity * velocity - target) * density / (2 * p);
     x += fmax(su2double(-.5), fmin(su2double(.5), step));
-    converged = fabs(step) < 1e-13;
+    // Stop at round-off, or where the steps stop shrinking at the accuracy of the EOS integration.
+    converged = fabs(step) < 1e-13 || (fabs(step) < 1e-8 && fabs(step) > .5 * previousStep);
+    previousStep = fabs(step);
   }
   if (!converged) return false;
   // One Newton correction with active inputs carries the derivatives of the root.
