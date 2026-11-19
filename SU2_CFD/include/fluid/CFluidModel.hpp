@@ -116,34 +116,46 @@ class CFluidModel {
                                                 su2double targetPressure, su2double* boundary,
                                                 su2double turbulentK = 0, su2double idealGamma = 0);
 
+  /*! \brief Total state (pressure, density, thermal energy) of a backflow reservoir; can be computed once. */
+  struct ReservoirTotalState {
+    su2double pressure = 0, density = 0, energy = 0;
+  };
+
+  /*! \brief Reservoir that feeds backflow into a static-pressure outlet (MARKER_OUTLET_BACKFLOW). */
+  struct OutletReservoir {
+    su2double totalPressure = 0;    /*!< \brief Total pressure; zero means that restPressure applies. */
+    su2double totalTemperature = 0; /*!< \brief Total temperature. */
+    su2double restPressure = 0;     /*!< \brief With zero totalPressure: static pressure at zero normal velocity. */
+    const su2double* direction = nullptr;            /*!< \brief Inflow direction; nullptr or zero: inward normal. */
+    const su2double* tangentialVelocity = nullptr;   /*!< \brief Added to a normal inflow (needs no direction). */
+    const ReservoirTotalState* totalState = nullptr; /*!< \brief Precomputed state for a positive totalPressure. */
+  };
+
   /*!
    * \brief Inflow state of a static-pressure outlet whose backflow comes from a reservoir at rest.
-   * The state has the reservoir total enthalpy and entropy and meets the interior outgoing acoustic
-   * invariant; it is limited to the sonic state of the reservoir. Overwrites the thermodynamic scratch state.
+   * The state has the reservoir total enthalpy and entropy and meets the interior outgoing acoustic invariant. Its
+   * normal speed relative to the grid is at most sonic. With a tangential velocity, the normal motion sees the
+   * reservoir expanded to that speed. Overwrites the thermodynamic scratch state.
    * \param[in] nDim - Spatial dimension (2 or 3).
    * \param[in] interior - Conservative state [rho, rho*u_1, ..., rho*u_nDim, rho*E].
    * \param[in] normal - Outward unit normal.
    * \param[in] gridNormal - Grid velocity dotted with normal.
-   * \param[in] totalPressure - Reservoir total pressure, in the interior state's units.
-   * \param[in] totalTemperature - Reservoir total temperature, in the interior state's units.
-   * \param[in] flowDirection - Inflow direction (any length, pointing into the domain); nullptr or zero uses -normal.
+   * \param[in] reservoir - Reservoir data, in the interior state's units.
    * \param[out] boundary - Conservative boundary state; use only when the result is Valid.
    * \param[in] turbulentK - Frozen SST specific turbulent kinetic energy.
    * \param[in] idealGamma - Constant ideal-gas gamma; zero selects general EOS evaluation.
-   * \param[in] tangentialVelocity - Optional velocity added to the inflow (its normal part is ignored); requires a
-   *            null or zero flowDirection. The reservoir keeps its total enthalpy and entropy: the normal motion sees
-   *            the reservoir expanded to this speed, and the sonic limit applies to the normal speed.
-   * \param[in] restPressure - Used when totalPressure is zero: the reservoir is such that its static pressure at
-   *            zero normal velocity (i.e. at the tangential speed) is restPressure.
    * \return Valid or InvalidState (invalid input or EOS failure).
    */
   PressureOutletStatus ComputeReservoirInflowState(unsigned short nDim, const su2double* interior,
                                                    const su2double* normal, su2double gridNormal,
-                                                   su2double totalPressure, su2double totalTemperature,
-                                                   const su2double* flowDirection, su2double* boundary,
-                                                   su2double turbulentK = 0, su2double idealGamma = 0,
-                                                   const su2double* tangentialVelocity = nullptr,
-                                                   su2double restPressure = 0);
+                                                   const OutletReservoir& reservoir, su2double* boundary,
+                                                   su2double turbulentK = 0, su2double idealGamma = 0);
+
+  /*!
+   * \brief Total state of a reservoir from its total pressure and temperature, to pass in OutletReservoir.
+   * \return False if the EOS state is not valid.
+   */
+  bool ComputeReservoirTotalState(su2double totalPressure, su2double totalTemperature, ReservoirTotalState& state);
 
   /*!
    * \brief Steady fallback for backflow with all characteristics incoming when no reservoir data is given.
@@ -549,8 +561,30 @@ class CFluidModel {
   bool EvaluateInteriorInvariantSpeed(const ReservoirInflow& data, su2double pressure, su2double& speed,
                                       su2double& slope);
 
-  /*! \brief Find the reservoir pressure at which the expanded flow is sonic. */
+  /*! \brief Find the reservoir pressure at which the normal inflow relative to the grid is sonic. */
   bool FindReservoirSonicPressure(const ReservoirInflow& data, su2double& pressure);
+
+  /*! \brief Set velocity, thermal energy, relative normal velocity and the EOS state of an outlet's interior. */
+  bool SetPressureOutletInterior(unsigned short nDim, const su2double* interior, const su2double* normal,
+                                 su2double gridNormal, su2double turbulentK, su2double* velocity, su2double& energy,
+                                 su2double& normalVelocity);
+
+  /*! \brief Fill the interior and reservoir data, the inflow direction and the tangential velocity. */
+  bool BuildReservoirInflow(unsigned short nDim, const su2double* interior, const su2double* normal,
+                            su2double gridNormal, const OutletReservoir& reservoir, su2double turbulentK,
+                            su2double idealGamma, ReservoirInflow& data, su2double* direction, su2double* tangential);
+
+  /*! \brief Solve for the subsonic inflow pressure between the sonic and the total pressure. */
+  bool SolveReservoirInflowRoot(const ReservoirInflow& data, const ReservoirInflow& passive, su2double lower,
+                                su2double upper, su2double residualLower, su2double residualUpper, su2double& density,
+                                su2double& energy, su2double& speed);
+
+  /*! \brief Reservoir state with sonic normal inflow relative to the grid. */
+  bool ReservoirSonicState(const ReservoirInflow& data, const ReservoirInflow& passive, su2double sonicPressure,
+                           su2double& density, su2double& energy, su2double& speed);
+
+  /*! \brief Squared speed minus the squared speed at which the normal inflow relative to the grid is sonic. */
+  static su2double SonicInflowExcess(const ReservoirInflow& data, su2double speed, su2double sound);
 
   /*! \brief Copy of the reservoir data without automatic-differentiation dependencies. */
   static ReservoirInflow PassiveCopy(const ReservoirInflow& data);
