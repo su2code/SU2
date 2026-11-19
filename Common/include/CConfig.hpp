@@ -7534,7 +7534,7 @@ public:
   /*!
    * \brief Get the reservoir total pressure for backflow at a static-pressure outlet.
    * \param[in] val_marker - Marker tag, which must have backflow data.
-   * \return Dimensional total pressure.
+   * \return Dimensional total pressure; zero means the imposed static outlet pressure.
    */
   su2double GetOutletBackflowPtotal(const string& val_marker) const;
 

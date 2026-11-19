@@ -135,6 +135,7 @@ protected:
 
   /*!
    * \brief Reservoir data for backflow at a static-pressure outlet (MARKER_OUTLET_BACKFLOW), nondimensional.
+   * A zero total pressure means the static pressure imposed at each vertex.
    */
   struct OutletBackflowData {
     bool reservoir = false;

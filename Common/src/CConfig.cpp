@@ -1814,7 +1814,8 @@ void CConfig::SetConfig_Options() {
    * or MARKER_RIEMANN with STATIC_PRESSURE or RADIAL_EQUILIBRIUM). Where the flow enters, the outlet acts as a
    * total-condition inlet from this reservoir, limited to sonic inflow.
    * \n Format: ( outlet marker, total temperature, total pressure, flow_direction_x, flow_direction_y,
-   * flow_direction_z, ... ) where a zero flow direction means the inward boundary normal. \ingroup Config*/
+   * flow_direction_z, ... ) where a zero flow direction means the inward boundary normal and a zero total pressure
+   * means the static pressure imposed at the outlet (a plenum at rest). \ingroup Config*/
   addInletOption("MARKER_OUTLET_BACKFLOW", nMarker_Outlet_Backflow, Marker_Outlet_Backflow, OutletBackflow_Ttotal,
                  OutletBackflow_Ptotal, OutletBackflow_FlowDir);
   /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of outlet types for incompressible flows. List length must match number of inlet markers. Options: PRESSURE_OUTLET, MASS_FLOW_OUTLET. \ingroup Config*/
@@ -6026,9 +6027,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (!pressureOutlet)
       SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " must be a MARKER_OUTLET, or a MARKER_RIEMANN with "
                      "STATIC_PRESSURE or RADIAL_EQUILIBRIUM.", CURRENT_FUNCTION);
-    if (!(OutletBackflow_Ttotal[iMarker] > 0.0) || !(OutletBackflow_Ptotal[iMarker] > 0.0))
-      SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " needs a positive total temperature and pressure.",
-                     CURRENT_FUNCTION);
+    if (!(OutletBackflow_Ttotal[iMarker] > 0.0) || !(OutletBackflow_Ptotal[iMarker] >= 0.0))
+      SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " needs a positive total temperature and a positive "
+                     "(or zero: imposed outlet pressure) total pressure.", CURRENT_FUNCTION);
   }
 
   /*--- Checks for additional species transport. ---*/

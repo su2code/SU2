@@ -33,6 +33,7 @@
 #include "../../../SU2_CFD/include/fluid/CPengRobinson.hpp"
 #include "../../../SU2_CFD/include/fluid/CVanDerWaalsGas.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "pressure_outlet_test_utils.hpp"
 
 namespace {
 using Status = CFluidModel::PressureOutletStatus;
@@ -261,4 +262,29 @@ TEST_CASE("Backflow fallback is continuous with subsonic backflow", "[Pressure-o
       for (auto k = 0u; k < 4; ++k)
         CHECK(Value(fallback[k]) == Approx(Value(subsonic[k])).epsilon(1e-6).margin(1e-6 * Value(rho * a)));
     }
+}
+
+TEST_CASE("Outlet pressure and normal velocity are continuous at flow reversal for a plenum at the outlet pressure",
+          "[Pressure-outlet][Outlet-backflow]") {
+  // With the reservoir total pressure equal to the imposed static pressure, the boundary pressure and normal velocity
+  // (hence the physical flux) are continuous where the outlet state switches between outflow and reservoir inflow;
+  // density, temperature and tangential velocity jump, as across a contact discontinuity.
+  for (auto kind : {0u, 1u, 2u}) {
+    CAPTURE(kind);
+    auto gas = MakeGas(kind);
+    const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
+    gas->SetTDState_Prho(p, rho);
+    const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
+    const su2double reservoir[5] = {T, 0, 0, 0, 0};
+    for (const auto mach : {1e-7, -1e-7}) {
+      CAPTURE(mach);
+      const su2double state[4] = {rho, rho * mach * a, rho * 40, rho * (e + .5 * (mach * mach * a * a + 1600))};
+      su2double out[4];
+      REQUIRE(ExpectedOutletState(*gas, 2, state, normal, 0, p, out, 0, kind == 0 ? 1.4 : 0, reservoir, true) ==
+              Status::Valid);
+      const auto b = Evaluate(*gas, 2, out);
+      CHECK(Value(b.pressure) == Approx(Value(p)).epsilon(1e-6));
+      CHECK(fabs(Value(b.velocity[0])) < 1e-5 * Value(a));
+    }
+  }
 }

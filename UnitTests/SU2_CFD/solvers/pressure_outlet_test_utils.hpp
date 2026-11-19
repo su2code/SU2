@@ -78,8 +78,10 @@ inline CFluidModel::PressureOutletStatus ExpectedOutletState(CFluidModel& gas, u
     // Inward flow relative to the grid comes from the reservoir.
     if (status == CFluidModel::PressureOutletStatus::Backflow ||
         GeometryToolbox::DotProduct(dim, boundary + 1, normal) / boundary[0] < gridNormal)
-      status = gas.ComputeReservoirInflowState(dim, state, normal, gridNormal, reservoir[1], reservoir[0],
-                                               reservoir + 2, boundary, turbulentK, gamma);
+      // A zero total pressure means the imposed static pressure.
+      status =
+          gas.ComputeReservoirInflowState(dim, state, normal, gridNormal, reservoir[1] > 0 ? reservoir[1] : pressure,
+                                          reservoir[0], reservoir + 2, boundary, turbulentK, gamma);
   } else if (status == CFluidModel::PressureOutletStatus::Backflow && steady) {
     status = gas.ComputeSonicBackflowState(dim, state, normal, gridNormal, pressure, boundary, turbulentK, gamma);
   }

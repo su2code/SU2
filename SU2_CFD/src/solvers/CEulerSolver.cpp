@@ -5285,8 +5285,10 @@ bool CEulerSolver::ComputeStaticPressureOutletState(const CConfig* config, const
     // Inward flow relative to the grid comes from the reservoir; outflow keeps the pressure-outlet state.
     reservoir = status == CFluidModel::PressureOutletStatus::Backflow ||
                 GeometryToolbox::DotProduct(nDim, boundary + 1, unitNormal) / boundary[0] < gridNormal;
+    // A zero total pressure stands for a plenum at rest at the imposed (local) static pressure.
+    const su2double totalPressure = backflow.totalPressure > 0 ? backflow.totalPressure : pressure;
     if (reservoir)
-      status = fluid->ComputeReservoirInflowState(nDim, interior, unitNormal, gridNormal, backflow.totalPressure,
+      status = fluid->ComputeReservoirInflowState(nDim, interior, unitNormal, gridNormal, totalPressure,
                                                   backflow.totalTemperature, backflow.direction, boundary, tke,
                                                   idealGamma);
   } else if (status == CFluidModel::PressureOutletStatus::Backflow && !config->GetTime_Domain()) {
