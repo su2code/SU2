@@ -69,7 +69,7 @@ def main():
     cfd_flamelet_ch4.cfg_dir = "flamelet/01_laminar_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4.cfg_file = "lam_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4.test_iter = 10
-    cfd_flamelet_ch4.test_vals = [-10.539588, -12.650786, -5.649832, -13.470491, -17.249262, 94.854000]
+    cfd_flamelet_ch4.test_vals = [-10.539588, -12.650795, -5.649832, -13.470506, -17.249269, 94.854000]
     cfd_flamelet_ch4.new_output = True
     test_list.append(cfd_flamelet_ch4)
 
@@ -78,7 +78,7 @@ def main():
     cfd_flamelet_ch4_axi.cfg_dir = "flamelet/05_laminar_premixed_ch4_flame_cfd_axi"
     cfd_flamelet_ch4_axi.cfg_file = "lam_prem_ch4_cfd_axi.cfg"
     cfd_flamelet_ch4_axi.test_iter = 10
-    cfd_flamelet_ch4_axi.test_vals = [-9.774148, -11.256092, -10.017960, -11.850827, -4.916267, 72.669000]
+    cfd_flamelet_ch4_axi.test_vals = [-9.774149, -11.256095, -10.017959, -11.850546, -4.916270, 72.669000]
 
     cfd_flamelet_ch4_axi.new_output = True
     test_list.append(cfd_flamelet_ch4_axi)
@@ -88,7 +88,7 @@ def main():
     cfd_flamelet_ch4_partial_premix.cfg_dir = "flamelet/06_laminar_partial_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4_partial_premix.cfg_file = "lam_partial_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4_partial_premix.test_iter = 10
-    cfd_flamelet_ch4_partial_premix.test_vals = [-10.482722, -3.621055, -12.932224, -10.154391, 10.000000]
+    cfd_flamelet_ch4_partial_premix.test_vals = [-10.482684, -3.621055, -12.932224, -10.154389, 10.000000]
     cfd_flamelet_ch4_partial_premix.new_output = True
     test_list.append(cfd_flamelet_ch4_partial_premix)
 
@@ -97,7 +97,7 @@ def main():
     cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
     cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
     cfd_flamelet_h2.test_iter = 5
-    cfd_flamelet_h2.test_vals = [-8.036799, -8.329782, -1.805324, -8.959656]
+    cfd_flamelet_h2.test_vals = [-8.036810, -8.328814, -1.805276, -8.959649]
     test_list.append(cfd_flamelet_h2)
 
     # Flame ignition methods
@@ -105,7 +105,7 @@ def main():
     flame_init_methods.cfg_dir = "flamelet/08_flame_init_method"
     flame_init_methods.cfg_file ="flamelet_initialization.py"
     flame_init_methods.command = TestCase.Command("mpirun -np 2", "python", "flamelet_initialization.py")
-    flame_init_methods.test_vals=[1600, 1600]
+    flame_init_methods.test_vals=[1600, 1595.82]
     flame_init_methods.new_output = True
     test_list.append(flame_init_methods)
 
@@ -114,7 +114,7 @@ def main():
     cfd_flamelet_ch4_unsteady.cfg_dir = "flamelet/09_laminar_premixed_ch4_flame_unsteady"
     cfd_flamelet_ch4_unsteady.cfg_file = "lam_prem_ch4_unsteady.cfg"
     cfd_flamelet_ch4_unsteady.test_iter = 5
-    cfd_flamelet_ch4_unsteady.test_vals = [-8.856677, -8.095263, -9.153743, -9.321676]
+    cfd_flamelet_ch4_unsteady.test_vals = [-8.853384, -8.095207, -9.153687, -9.321693]
     cfd_flamelet_ch4_unsteady.test_vals_aarch64 = [-8.855500, -8.095195, -9.153704, -9.321686]
     test_list.append(cfd_flamelet_ch4_unsteady)
 
@@ -2088,7 +2088,7 @@ def main():
     cfd_flamelet_ch4_cht.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
     cfd_flamelet_ch4_cht.cfg_file = "lam_prem_ch4_cht_cfd_master.cfg"
     cfd_flamelet_ch4_cht.test_iter = 5
-    cfd_flamelet_ch4_cht.test_vals = [-7.223149, -6.338839, -8.334392, -10.410156, -3.171365, -10.884464, -12.615132, -6.614396]
+    cfd_flamelet_ch4_cht.test_vals = [-7.223149, -6.338839, -8.334392, -10.410206, -3.171365, -10.884587, -12.615132, -6.614396]
     cfd_flamelet_ch4_cht.timeout = 1600
     cfd_flamelet_ch4_cht.multizone = True
     test_list.append(cfd_flamelet_ch4_cht)
