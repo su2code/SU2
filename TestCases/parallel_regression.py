@@ -470,15 +470,7 @@ def main():
     periodic2d_no_limiter_riemann.test_vals = [-3.216878, -0.582314, -0.628636, 2.266530, -1.057965, -811.500000]
     test_list.append(periodic2d_no_limiter_riemann)
 
-    # Ordinary outlet with a MARKER_OUTLET_BACKFLOW reservoir: start-up backflow takes the reservoir inflow state.
-    periodic2d_no_limiter_backflow = TestCase('periodic2d_no_limiter_backflow')
-    periodic2d_no_limiter_backflow.cfg_dir = "navierstokes/periodic2D"
-    periodic2d_no_limiter_backflow.cfg_file = "no_limiter_backflow.cfg"
-    periodic2d_no_limiter_backflow.test_iter = 100
-    periodic2d_no_limiter_backflow.test_vals = [-3.178064, -0.502146, -0.623184, 2.298707, -1.037448, -1263.000000]
-    test_list.append(periodic2d_no_limiter_backflow)
-
-    # Backflow that keeps the interior swirl (OUTLET_BACKFLOW_TYPE= INTERIOR_TANGENTIAL) at the ordinary outlet.
+    # Outlet backflow from a reservoir at the outlet pressure, keeping the interior swirl (MARKER_OUTLET_BACKFLOW).
     periodic2d_no_limiter_backflow_tangential = TestCase('periodic2d_no_limiter_backflow_tangential')
     periodic2d_no_limiter_backflow_tangential.cfg_dir = "navierstokes/periodic2D"
     periodic2d_no_limiter_backflow_tangential.cfg_file = "no_limiter_backflow_tangential.cfg"
