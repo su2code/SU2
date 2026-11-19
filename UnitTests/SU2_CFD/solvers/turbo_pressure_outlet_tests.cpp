@@ -83,8 +83,10 @@ std::unique_ptr<CFluidModel> MakeTurboGas(unsigned short kind) {
 
 void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, double ratio, bool moving, bool radial,
                          bool implicit = true, bool totalConditions = false, bool threaded = false,
-                         double turbulentK = 0, bool reservoir = false, bool unsteady = false) {
-  CAPTURE(dim, kind, mach, ratio, moving, radial, implicit, totalConditions, threaded, turbulentK, reservoir, unsteady);
+                         double turbulentK = 0, bool reservoir = false, bool unsteady = false,
+                         bool zeroTotalPressure = false, bool interiorTangential = false) {
+  CAPTURE(dim, kind, mach, ratio, moving, radial, implicit, totalConditions, threaded, turbulentK, reservoir, unsteady,
+          zeroTotalPressure, interiorTangential);
   // Axial turbo normals point along x in the 2D fixture and z in the 3D fixture.
   const unsigned short normalDim = dim == 2 ? 0 : 2;
   const std::string inlet = dim == 2 ? "x_minus" : "z_minus", outlet = dim == 2 ? "x_plus" : "z_plus";
@@ -122,7 +124,10 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 20,-7,30\n";
   if (reservoir)
     options << "MARKER_OUTLET_BACKFLOW= (" << outlet << ',' << SU2_TYPE::GetValue(backflow[0]) << ','
-            << SU2_TYPE::GetValue(backflow[1]) << ",0,0,0)\n";
+            << (zeroTotalPressure ? 0. : SU2_TYPE::GetValue(backflow[1])) << ",0,0,0)\n";
+  if (reservoir && interiorTangential) options << "OUTLET_BACKFLOW_TYPE= (INTERIOR_TANGENTIAL)\n";
+  // A zero total pressure means the local (span) pressure at zero normal velocity.
+  if (zeroTotalPressure) backflow[1] = 0;
   if (unsteady) options << "TIME_DOMAIN= YES\nTIME_MARCHING= DUAL_TIME_STEPPING-2ND_ORDER\nTIME_STEP= 1e-5\n";
   if (dim == 3) options << "MARKER_PERIODIC= (y_minus,y_plus,0,0,0,0,0,0,0,1,0)\n";
   if (turbulentK)
@@ -202,7 +207,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
         su2double boundary[5];
         REQUIRE(ExpectedOutletState(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), target(span),
                                     boundary, turbulentK, kind == 0 ? 1.4 : 0, reservoir ? backflow : nullptr,
-                                    !unsteady) == CFluidModel::PressureOutletStatus::Valid);
+                                    !unsteady, interiorTangential) == CFluidModel::PressureOutletStatus::Valid);
         auto flux = [&](const su2double* boundary, su2double* result) {
           su2double v[3];
           for (auto d = 0u; d < dim; ++d) v[d] = boundary[d + 1] / boundary[0];
@@ -306,6 +311,14 @@ TEST_CASE("TurboRiemann pressure outlets take backflow from the reservoir", "[Pr
             TurboPressureOutlet(dim, kind, mach, .95, false, radial, true, false, false, 0, true, unsteady);
   // Moving grid and frozen SST energy.
   TurboPressureOutlet(3, 1, -.3, .95, true, true, true, false, false, 13, true);
+}
+
+TEST_CASE("Radial-equilibrium outlets use the span pressure for a zero backflow total pressure",
+          "[Pressure-outlet][Outlet-backflow]") {
+  for (auto kind : {0u, 1u, 2u})
+    for (const auto mach : {-1.4, -.3, .3})
+      for (const auto tangential : {false, true})
+        TurboPressureOutlet(3, kind, mach, .95, true, true, true, false, false, 0, true, false, true, tangential);
   TurboPressureOutlet(2, 0, -.3, .95, true, false, true, false, false, 0, true);
 }
 

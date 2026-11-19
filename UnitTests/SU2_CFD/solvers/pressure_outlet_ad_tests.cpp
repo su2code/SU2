@@ -171,6 +171,21 @@ TEST_CASE("Outlet backflow state derivatives match finite differences", "[Pressu
       const double values[6] = {rho, rho * u, rho * 5, rho * (e + .5 * (u * u + 25)), ratio * p, grid};
       CheckMapDerivatives(reservoir, values, scale);
     }
+    // Inflow with the interior tangential velocity: explicit total pressure, and zero total pressure, where input[4]
+    // is the imposed pressure that the reservoir has at zero normal velocity.
+    auto tangentialReservoir = [&](su2double* input, su2double* output, bool zeroTotal) {
+      const su2double tangential[2] = {0, input[2] / input[0]};
+      return gas->ComputeReservoirInflowState(2, input, normal, input[5], zeroTotal ? su2double(0) : input[4],
+                                              temperature, nullptr, output, 0, gamma, tangential, input[4]);
+    };
+    for (const auto zeroTotal : {false, true})
+      for (const auto mach : {-.3, -.05}) {
+        CAPTURE(kind, zeroTotal, mach);
+        const double grid = -20, u = mach * a + grid, ratio = zeroTotal ? 1. : 1.05;
+        const double values[6] = {rho, rho * u, rho * .3 * a, rho * (e + .5 * (u * u + .09 * a * a)), ratio * p, grid};
+        CheckMapDerivatives([&](su2double* in, su2double* out) { return tangentialReservoir(in, out, zeroTotal); },
+                            values, scale);
+      }
     for (const auto ratio : {.95, 1.1}) {
       CAPTURE(kind, ratio);
       const double grid = 20, u = -1.4 * a + grid;

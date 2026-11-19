@@ -67,21 +67,32 @@ inline void OutgoingOutletIncrement(CFluidModel& gas, unsigned short dim, const 
 }
 
 // Boundary state that CEulerSolver's static-pressure outlets should use, assembled from the fluid-model maps.
-// reservoir = {T_total, P_total, direction_x, direction_y, direction_z}, or nullptr without MARKER_OUTLET_BACKFLOW.
+// reservoir = {T_total, P_total, direction_x, direction_y, direction_z}, or nullptr without MARKER_OUTLET_BACKFLOW;
+// a zero P_total means the imposed pressure where the inflow has no normal velocity. interiorTangential selects
+// OUTLET_BACKFLOW_TYPE= INTERIOR_TANGENTIAL (the inflow keeps the interior tangential velocity).
+inline void InteriorTangentialVelocity(unsigned short dim, const su2double* state, const su2double* normal,
+                                       su2double* tangential) {
+  const su2double normalVelocity = GeometryToolbox::DotProduct(dim, state + 1, normal) / state[0];
+  for (auto d = 0u; d < dim; ++d) tangential[d] = state[d + 1] / state[0] - normalVelocity * normal[d];
+}
+
 inline CFluidModel::PressureOutletStatus ExpectedOutletState(CFluidModel& gas, unsigned short dim,
                                                              const su2double* state, const su2double* normal,
                                                              su2double gridNormal, su2double pressure,
                                                              su2double* boundary, su2double turbulentK, su2double gamma,
-                                                             const su2double* reservoir, bool steady) {
+                                                             const su2double* reservoir, bool steady,
+                                                             bool interiorTangential = false) {
   auto status = gas.ComputePressureOutletState(dim, state, normal, gridNormal, pressure, boundary, turbulentK, gamma);
   if (reservoir != nullptr && status != CFluidModel::PressureOutletStatus::InvalidState) {
     // Inward flow relative to the grid comes from the reservoir.
     if (status == CFluidModel::PressureOutletStatus::Backflow ||
-        GeometryToolbox::DotProduct(dim, boundary + 1, normal) / boundary[0] < gridNormal)
-      // A zero total pressure means the imposed static pressure.
-      status =
-          gas.ComputeReservoirInflowState(dim, state, normal, gridNormal, reservoir[1] > 0 ? reservoir[1] : pressure,
-                                          reservoir[0], reservoir + 2, boundary, turbulentK, gamma);
+        GeometryToolbox::DotProduct(dim, boundary + 1, normal) / boundary[0] < gridNormal) {
+      su2double tangential[3] = {};
+      InteriorTangentialVelocity(dim, state, normal, tangential);
+      status = gas.ComputeReservoirInflowState(dim, state, normal, gridNormal, reservoir[1], reservoir[0],
+                                               interiorTangential ? nullptr : reservoir + 2, boundary, turbulentK,
+                                               gamma, interiorTangential ? tangential : nullptr, pressure);
+    }
   } else if (status == CFluidModel::PressureOutletStatus::Backflow && steady) {
     status = gas.ComputeSonicBackflowState(dim, state, normal, gridNormal, pressure, boundary, turbulentK, gamma);
   }

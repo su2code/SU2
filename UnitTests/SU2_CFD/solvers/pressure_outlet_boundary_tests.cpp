@@ -53,7 +53,7 @@ class OutletStateProbe final : public CNumerics {
 };
 
 // Backflow modes: with or without MARKER_OUTLET_BACKFLOW reservoir data, in steady or unsteady runs.
-enum class Backflow { None, Reservoir, Unsteady, UnsteadyReservoir, ReservoirAtOutletPressure };
+enum class Backflow { None, Reservoir, Unsteady, UnsteadyReservoir, ReservoirAtOutletPressure, ReservoirTangential };
 
 void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bool moving, bool threaded = false,
                  double turbulentK = 0, Backflow backflow = Backflow::None) {
@@ -69,12 +69,16 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
           << ")\nMARKER_MONITORING= (x_minus)\nMARKER_OUTLET= (x_plus," << pressureRatio * 100000 << ")\n";
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 500,240,0\n";
   const bool reservoir = backflow == Backflow::Reservoir || backflow == Backflow::UnsteadyReservoir ||
-                         backflow == Backflow::ReservoirAtOutletPressure;
+                         backflow == Backflow::ReservoirAtOutletPressure || backflow == Backflow::ReservoirTangential;
+  // The tangential mode uses a zero total pressure: the imposed pressure at zero normal velocity.
+  const bool tangentialMode = backflow == Backflow::ReservoirTangential;
   // A zero total pressure stands for the imposed outlet pressure.
   const double totalPressure = backflow == Backflow::ReservoirAtOutletPressure ? pressureRatio * 100000 : 101000;
   if (reservoir)
     options << "MARKER_OUTLET_BACKFLOW= (x_plus, 300, "
-            << (backflow == Backflow::ReservoirAtOutletPressure ? 0. : totalPressure) << ", 0, 0, 0)\n";
+            << (backflow == Backflow::ReservoirAtOutletPressure || tangentialMode ? 0. : totalPressure)
+            << ", 0, 0, 0)\n";
+  if (tangentialMode) options << "OUTLET_BACKFLOW_TYPE= (INTERIOR_TANGENTIAL)\n";
   if (backflow == Backflow::Unsteady || backflow == Backflow::UnsteadyReservoir)
     options << "TIME_DOMAIN= YES\nTIME_MARCHING= DUAL_TIME_STEPPING-2ND_ORDER\nTIME_STEP= 1e-5\n";
   if (turbulentK)
@@ -141,9 +145,13 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
     if (normalMach > -1) reference(state, expected);
     // Backflow states come from the fluid-model maps, which pressure_outlet_backflow_tests.cpp checks.
     const su2double outward[3] = {1, 0, 0};
-    if (reservoir && (normalMach <= -1 || expected[1] / expected[0] < grid[0]))
-      REQUIRE(gas.ComputeReservoirInflowState(dim, state, outward, grid[0], totalPressure, 300, nullptr, expected,
-                                              turbulentK, 1.4) == CFluidModel::PressureOutletStatus::Valid);
+    if (reservoir && (normalMach <= -1 || expected[1] / expected[0] < grid[0])) {
+      su2double tangential[3] = {};
+      InteriorTangentialVelocity(dim, state, outward, tangential);
+      REQUIRE(gas.ComputeReservoirInflowState(dim, state, outward, grid[0], tangentialMode ? 0. : totalPressure, 300,
+                                              nullptr, expected, turbulentK, 1.4, tangentialMode ? tangential : nullptr,
+                                              pressureRatio * p) == CFluidModel::PressureOutletStatus::Valid);
+    }
     const bool limited = backflow == Backflow::None && normalMach <= -1;
     if (limited)
       REQUIRE(gas.ComputeSonicBackflowState(dim, state, outward, grid[0], pressureRatio * p, expected, turbulentK,
@@ -214,6 +222,15 @@ TEST_CASE("A zero backflow total pressure means the imposed outlet pressure", "[
   for (const auto normalMach : {-1.4, -.3, 0.})
     for (const auto ratio : {.95, 1.02})
       IdealOutlet(2, normalMach, ratio, false, false, 0, Backflow::ReservoirAtOutletPressure);
+}
+
+TEST_CASE("Ordinary outlet backflow can keep the interior tangential velocity", "[Pressure-outlet][Outlet-backflow]") {
+  for (auto dim : {2u, 3u})
+    for (const auto moving : {false, true})
+      for (const auto normalMach : {-1.4, -.3, 0., .3})
+        for (const auto ratio : {.95, 1.02})
+          IdealOutlet(dim, normalMach, ratio, moving, false, 0, Backflow::ReservoirTangential);
+  IdealOutlet(3, -.3, 1.02, true, false, 1500, Backflow::ReservoirTangential);
 }
 
 TEST_CASE("Unsteady outlet with a reservoir accepts backflow", "[Pressure-outlet][Outlet-backflow]") {
