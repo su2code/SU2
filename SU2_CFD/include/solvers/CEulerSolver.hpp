@@ -130,6 +130,50 @@ protected:
   su2activematrix AveragePressure;
   su2activematrix OldAveragePressure;
   su2activematrix RadialEquilibriumPressure;
+
+  /*--- Static-pressure outlet backflow ---*/
+
+  /*!
+   * \brief Reservoir data for backflow at a static-pressure outlet (MARKER_OUTLET_BACKFLOW), nondimensional.
+   */
+  struct OutletBackflowData {
+    bool reservoir = false;
+    su2double totalPressure = 0.0, totalTemperature = 0.0, direction[MAXNDIM] = {0.0};
+  };
+
+  vector<unsigned long> OutletBackflowClamped;       /*!< \brief Local outlet vertices limited to sonic backflow,
+                                                          indexed by the configuration-file marker list. */
+  vector<unsigned long> OutletBackflowClampedGlobal; /*!< \brief Same, summed over ranks at the last monitor call. */
+
+  /*!
+   * \brief Read the backflow reservoir data of a marker, if any.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Marker index.
+   * \return Nondimensional reservoir data; reservoir is false without MARKER_OUTLET_BACKFLOW.
+   */
+  OutletBackflowData GetOutletBackflowData(const CConfig* config, unsigned short val_marker) const;
+
+  /*!
+   * \brief Boundary state of a static-pressure outlet (ordinary, Riemann or TurboRiemann).
+   * \details Outflow follows CFluidModel::ComputePressureOutletState. With reservoir data, inward flow takes the
+   * reservoir inflow state. Without it, subsonic backflow keeps the pressure-outlet closure; backflow through every
+   * characteristic is limited to sonic inflow in steady runs and is an error in unsteady runs.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] backflow - Reservoir data of this marker.
+   * \param[in] Marker_Tag - Marker name for error messages.
+   * \param[in] interior - Interior conservative state.
+   * \param[in] unitNormal - Outward unit normal.
+   * \param[in] gridNormal - Grid velocity along the normal.
+   * \param[in] pressure - Imposed static pressure (nondimensional).
+   * \param[in] tke - Frozen SST turbulent kinetic energy.
+   * \param[in] idealGamma - Ideal-gas gamma, or zero for a general EOS.
+   * \param[out] boundary - Conservative boundary state.
+   * \return True if the sonic backflow limit was used.
+   */
+  bool ComputeStaticPressureOutletState(const CConfig* config, const OutletBackflowData& backflow,
+                                        const string& Marker_Tag, const su2double* interior,
+                                        const su2double* unitNormal, su2double gridNormal, su2double pressure,
+                                        su2double tke, su2double idealGamma, su2double* boundary);
   su2activematrix AverageDensity;
   su2activematrix OldAverageDensity;
   su2activematrix AverageNu;
@@ -365,6 +409,18 @@ public:
    * \return Value of the pressure at the infinity.
    */
   inline CFluidModel* GetFluidModel(void) const final { return FluidModel[omp_get_thread_num()]; }
+
+  /*!
+   * \brief Sum the static-pressure outlet vertices limited to sonic backflow over ranks, report changes, and reset.
+   * \param[in] config - Definition of the particular problem.
+   * \return Number of limited vertices in the residual evaluations since the last call.
+   */
+  unsigned long MonitorOutletBackflowClamp(const CConfig* config) override;
+
+  /*!
+   * \brief Number of static-pressure outlet vertices limited to sonic backflow at the last monitor call.
+   */
+  unsigned long GetOutletBackflowClamped() const override;
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
