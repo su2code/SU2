@@ -301,7 +301,7 @@ void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
 
 }
 
-void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
+void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config, CSolver** solver_container){
   SU2_ZONE_SCOPED
 
   const unsigned short kind_roe_dissipation = config->GetKind_RoeLowDiss();
@@ -319,7 +319,12 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
 
       const su2double delta = geometry->nodes->GetMaxLength(iPoint);
       assert(delta > 0 && "Delta must be initialized and non-negative");
-      nodes->SetRoe_Dissipation_NTS(iPoint, delta, config->GetConst_DES());
+      su2double cDES = config->GetConst_DES();
+      if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES && config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+        const auto f1 = solver_container[TURB_SOL]->GetNodes()->GetF1blending(iPoint);
+        cDES = 0.78 * f1 + 0.61 * (1.0 - f1);
+      }
+      nodes->SetRoe_Dissipation_NTS(iPoint, delta, cDES);
     }
   }
   END_SU2_OMP_FOR

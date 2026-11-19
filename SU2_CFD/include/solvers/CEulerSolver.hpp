@@ -307,7 +307,7 @@ protected:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetRoe_Dissipation(CGeometry *geometry, CConfig *config) { }
+  inline virtual void SetRoe_Dissipation(CGeometry *geometry, CConfig *config, CSolver** solver_container) { }
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.

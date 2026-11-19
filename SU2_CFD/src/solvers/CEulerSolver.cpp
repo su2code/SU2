@@ -1676,7 +1676,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   /*--- Roe Low Dissipation Sensor ---*/
 
   if (roe_low_dissipation) {
-    SetRoe_Dissipation(geometry, config);
+    SetRoe_Dissipation(geometry, config, solver_container);
     if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
       SetUpwind_Ducros_Sensor(geometry, config);
     }
