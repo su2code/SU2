@@ -117,6 +117,48 @@ class CFluidModel {
                                                 su2double turbulentK = 0, su2double idealGamma = 0);
 
   /*!
+   * \brief Inflow state of a static-pressure outlet whose backflow comes from a reservoir at rest.
+   * The state has the reservoir total enthalpy and entropy and meets the interior outgoing acoustic
+   * invariant; it is limited to the sonic state of the reservoir. Overwrites the thermodynamic scratch state.
+   * \param[in] nDim - Spatial dimension (2 or 3).
+   * \param[in] interior - Conservative state [rho, rho*u_1, ..., rho*u_nDim, rho*E].
+   * \param[in] normal - Outward unit normal.
+   * \param[in] gridNormal - Grid velocity dotted with normal.
+   * \param[in] totalPressure - Reservoir total pressure, in the interior state's units.
+   * \param[in] totalTemperature - Reservoir total temperature, in the interior state's units.
+   * \param[in] flowDirection - Inflow direction (any length, pointing into the domain); nullptr or zero uses -normal.
+   * \param[out] boundary - Conservative boundary state; use only when the result is Valid.
+   * \param[in] turbulentK - Frozen SST specific turbulent kinetic energy.
+   * \param[in] idealGamma - Constant ideal-gas gamma; zero selects general EOS evaluation.
+   * \return Valid or InvalidState (invalid input or EOS failure).
+   */
+  PressureOutletStatus ComputeReservoirInflowState(unsigned short nDim, const su2double* interior,
+                                                   const su2double* normal, su2double gridNormal,
+                                                   su2double totalPressure, su2double totalTemperature,
+                                                   const su2double* flowDirection, su2double* boundary,
+                                                   su2double turbulentK = 0, su2double idealGamma = 0);
+
+  /*!
+   * \brief Steady fallback for backflow with all characteristics incoming when no reservoir data is given.
+   * Follows the interior outgoing invariant to the imposed pressure, like subsonic backflow; if that state would be
+   * supersonic inflow, keeps the imposed pressure, interior entropy and tangential velocity and sets the inward
+   * normal velocity relative to the grid to the sound speed. Overwrites the thermodynamic scratch state.
+   * \param[in] nDim - Spatial dimension (2 or 3).
+   * \param[in] interior - Conservative state [rho, rho*u_1, ..., rho*u_nDim, rho*E].
+   * \param[in] normal - Outward unit normal.
+   * \param[in] gridNormal - Grid velocity dotted with normal.
+   * \param[in] targetPressure - Positive static pressure, in the interior state's units.
+   * \param[out] boundary - Conservative boundary state; use only when the result is Valid.
+   * \param[in] turbulentK - Frozen SST specific turbulent kinetic energy.
+   * \param[in] idealGamma - Constant ideal-gas gamma; zero selects general EOS integration.
+   * \return Valid or InvalidState.
+   */
+  PressureOutletStatus ComputeSonicBackflowState(unsigned short nDim, const su2double* interior,
+                                                 const su2double* normal, su2double gridNormal,
+                                                 su2double targetPressure, su2double* boundary,
+                                                 su2double turbulentK = 0, su2double idealGamma = 0);
+
+  /*!
    * \brief Get fluid pressure.
    */
   su2double GetPressure() const { return Pressure; }
@@ -466,8 +508,9 @@ class CFluidModel {
   PressureOutletStatus ComputeIdealGasPressureOutletState(su2double targetPressure, su2double idealGamma,
                                                         PressureOutletState& state);
 
-  /*! \brief Integrate the general EOS isentrope up to the requested pressure or the sonic point. */
-  PressureOutletStatus IntegratePressureOutletIsentrope(su2double targetPressure, PressureOutletState& state);
+  /*! \brief Integrate the general EOS isentrope up to the requested pressure or, with sonicStop, the sonic point. */
+  PressureOutletStatus IntegratePressureOutletIsentrope(su2double targetPressure, PressureOutletState& state,
+                                                        bool sonicStop = true);
 
   /*! \brief Locate the sonic crossing and retain its sensitivity to the interior state. */
   bool FindPressureOutletSonicState(su2double& logPressure, PressureOutletState& state, su2double step,
@@ -483,4 +526,22 @@ class CFluidModel {
 
   /*! \brief Check the current EOS pressure, temperature and sound speed before using them. */
   bool IsPressureOutletStateValid() const;
+
+  /*! \brief Reservoir data and the interior acoustic invariant used by the backflow inflow state. */
+  struct ReservoirInflow {
+    su2double totalPressure, totalEnthalpy, totalEnergy, totalDensity, idealGamma;
+    su2double density, energy, normalVelocity, pressure, sound;  // Interior state and its relative normal speed.
+    su2double directionNormal, gridNormal;                       // Inflow direction and grid speed along normal.
+  };
+
+  /*! \brief Static state of the reservoir at a pressure: density, thermal energy, speed and sound speed. */
+  bool EvaluateReservoirState(const ReservoirInflow& data, su2double pressure, su2double& density, su2double& energy,
+                              su2double& speed, su2double& sound);
+
+  /*! \brief Speed along the inflow direction implied by the interior outgoing invariant at a pressure. */
+  bool EvaluateInteriorInvariantSpeed(const ReservoirInflow& data, su2double pressure, su2double& speed,
+                                      su2double& slope);
+
+  /*! \brief Find the reservoir pressure at which the expanded flow is sonic. */
+  bool FindReservoirSonicPressure(const ReservoirInflow& data, su2double& pressure);
 };
