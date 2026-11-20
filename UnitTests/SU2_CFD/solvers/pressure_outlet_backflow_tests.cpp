@@ -389,3 +389,30 @@ TEST_CASE("Reservoir backflow limits the normal speed relative to the grid to so
         if (direction != nullptr) CHECK(Value(b.velocity[1] / b.velocity[0]) == Approx(-.75).epsilon(1e-10));
       }
 }
+
+TEST_CASE("Reservoir backflow takes the rest state when the grid outruns sound", "[Pressure-outlet][Outlet-backflow]") {
+  const su2double oblique[2] = {-.8, .6};
+  for (auto kind : {0u, 1u, 2u})
+    for (const su2double gridFactor : {1.2, 3.})
+      for (const auto* direction : {static_cast<const su2double*>(nullptr), oblique}) {
+        CAPTURE(kind, gridFactor, direction != nullptr);
+        auto gas = MakeOutletTestGas(kind);
+        const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
+        gas->SetTDState_Prho(p, rho);
+        const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), T = gas->GetTemperature();
+        gas->SetTDState_PT(1.05 * p, T);
+        // The boundary moves outward faster than sound in the reservoir at rest, so no sonic inflow exists.
+        const su2double grid = gridFactor * gas->GetSoundSpeed();
+        for (const su2double mach : {-1.3, -.3}) {
+          const su2double u = mach * a + grid;
+          const su2double state[4] = {rho, rho * u, 0, rho * (e + .5 * u * u)};
+          su2double out[4];
+          REQUIRE(gas->ComputeReservoirInflowState(2, state, normal, grid, MakeReservoir(1.05 * p, T, direction), out,
+                                                   0, kind == 0 ? 1.4 : 0) == Status::Valid);
+          const auto b = Evaluate(*gas, 2, out);
+          CHECK(Value(b.speed) == 0);
+          CHECK(Value(b.pressure) == Approx(Value(1.05 * p)).epsilon(1e-8));
+          CHECK(Value(gas->GetTemperature()) == Approx(Value(T)).epsilon(1e-6));
+        }
+      }
+}

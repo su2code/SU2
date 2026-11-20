@@ -426,8 +426,9 @@ bool CFluidModel::SetPressureOutletInterior(unsigned short nDim, const su2double
  * ComputePressureOutletState. Inflow cannot be faster than sound relative to the grid in the normal direction (as
  * outflow in ComputePressureOutletState), so a state that would be, or interior flow that already enters through
  * every characteristic, takes the reservoir state whose normal speed relative to the grid is sonic. If the
- * interior invariant cannot drive flow in even at the reservoir total pressure, the boundary takes the reservoir
- * state at zero inflow speed.
+ * interior invariant cannot drive flow in even at the reservoir total pressure, or the grid moves outward faster
+ * than sound in the reservoir at rest (no sonic inflow exists), the boundary takes the reservoir state at zero
+ * inflow speed.
  *
  * The pressure is found by a safeguarded Newton search on passive values. One Newton correction with active
  * values then gives the derivative of the root with respect to the inputs (implicit function theorem).
@@ -454,7 +455,11 @@ CFluidModel::PressureOutletStatus CFluidModel::ComputeReservoirInflowState(
   // Classify: root between the sonic and the total pressure, sonic limit, or no inflow from the reservoir.
   enum class Kind { Root, Sonic, Rest } kind = Kind::Root;
   su2double residualLower = 0, residualUpper = 0, slope, density, energy, speed, sound;
-  if (passive.normalVelocity <= -passive.sound) {
+  if (!(sonicPressure < passive.totalPressure)) {
+    // The grid outruns sound in the reservoir: even the reservoir at rest enters faster than sound relative to the
+    // grid, so the sonic limit has reached zero inflow speed.
+    kind = Kind::Rest;
+  } else if (passive.normalVelocity <= -passive.sound) {
     // The outgoing invariant also enters the domain: no interior information remains.
     kind = Kind::Sonic;
   } else {
@@ -832,6 +837,11 @@ bool CFluidModel::FindReservoirSonicPressure(const ReservoirInflow& data, su2dou
     // Ideal gas: with V = (a - g) / (-n.d), V^2 = 2 (h_t - h) and a^2 = (gamma - 1) h, the sonic sound speed solves
     // A a^2 + B a + C = 0 with A = 1/(n.d)^2 + 2/(gamma-1), B = -2 g/(n.d)^2, C = g^2/(n.d)^2 - 2 h_t.
     const su2double gamma = data.idealGamma, inverse2 = 1 / (data.directionNormal * data.directionNormal);
+    // A grid that outruns sound in the reservoir at rest leaves no sonic inflow: the limit is the rest state.
+    if (data.gridNormal > 0 && data.gridNormal * data.gridNormal >= (gamma - 1) * data.totalEnthalpy) {
+      pressure = data.totalPressure;
+      return true;
+    }
     const su2double A = inverse2 + 2 / (gamma - 1), B = -2 * data.gridNormal * inverse2;
     const su2double C = data.gridNormal * data.gridNormal * inverse2 - 2 * data.totalEnthalpy;
     const su2double sound = (-B + sqrt(B * B - 4 * A * C)) / (2 * A);
@@ -848,7 +858,13 @@ bool CFluidModel::FindReservoirSonicPressure(const ReservoirInflow& data, su2dou
     return true;
   };
   su2double upper = log(data.totalPressure), lower = upper, valueUpper, valueLower = -1;
-  if (!excess(upper, valueUpper) || !(valueUpper < 0)) return false;
+  if (!excess(upper, valueUpper)) return false;
+  if (valueUpper >= 0) {
+    // The grid outruns sound in the reservoir at rest: no sonic inflow exists and the limit is the rest state.
+    pressure = data.totalPressure;
+    return true;
+  }
+  if (!(valueUpper < 0)) return false;
   for (auto step = 0u; step < 60 && valueLower <= 0; ++step) {
     if (step > 0) {
       upper = lower;
