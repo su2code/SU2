@@ -1202,9 +1202,6 @@ private:
   su2double *top_optim_filter_radius;  /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
   ENUM_PROJECTION_FUNCTION top_optim_proj_type;  /*!< \brief The projection function used in topology optimization. */
   su2double top_optim_proj_param;      /*!< \brief The value of the parameter for the projection function. */
-  bool HeatSource;                     /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
-  su2double ValHeatSource;             /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
-  su2double Heat_Source_Rot_Z;         /*!< \brief Rotation of the volumetric heat source on the Z axis. */
   RADIATION_MODEL Kind_Radiation;      /*!< \brief Kind of radiation model used. */
   P1_INIT Kind_P1_Init;                /*!< \brief Kind of initialization used in the P1 model. */
   su2double Absorption_Coeff,          /*!< \brief Absorption coefficient of the medium (radiation). */
@@ -1237,9 +1234,7 @@ private:
   extrarelfac[2],        /*!< \brief extra relaxation factor for Giles BC in the COption class. */
   sineload_coeff[3],     /*!< \brief values for a sine load. */
   body_force[3],         /*!< \brief body force vector for the COption class. */
-  nacelle_location[5],   /*!< \brief Location of the nacelle. */
-  hs_axes[3],            /*!< \brief principal axes (x, y, z) of the ellipsoid containing the heat source. */
-  hs_center[3];          /*!< \brief position of the center of the heat source. */
+  nacelle_location[5];   /*!< \brief Location of the nacelle. */
 
   UPWIND Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
@@ -6731,52 +6726,6 @@ public:
    * \return Massflow for body force computation.
    */
   su2double GetStreamwise_Periodic_TargetMassFlow(void) const { return Streamwise_Periodic_TargetMassFlow; }
-
-  /*!
-   * \brief Get information about the volumetric heat source.
-   * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
-   */
-  inline bool GetHeatSource(void) const { return HeatSource; }
-
-  /*!
-   * \brief Get information about the volumetric heat source.
-   * \return Value of the volumetric heat source
-   */
-  inline su2double GetHeatSource_Val(void) const {return ValHeatSource;}
-
-  /*!
-   * \brief Get the rotation angle of the volumetric heat source in axis Z.
-   * \return Rotation (Z) of the volumetric heat source
-   */
-  inline su2double GetHeatSource_Rot_Z(void) const {return Heat_Source_Rot_Z;}
-
-  /*!
-   * \brief Set the rotation angle of the volumetric heat source in axis Z.
-   * \param[in] val_rot - Rotation (Z) of the volumetric heat source
-   */
-  inline void SetHeatSource_Rot_Z(su2double val_rot) {Heat_Source_Rot_Z = val_rot;}
-
-  /*!
-   * \brief Get the position of the center of the volumetric heat source.
-   * \return Pointer to the center of the ellipsoid that introduces a volumetric heat source.
-   */
-  inline const su2double* GetHeatSource_Center(void) const {return hs_center;}
-
-  /*!
-   * \brief Set the position of the center of the volumetric heat source.
-   * \param[in] x_cent = X position of the center of the volumetric heat source.
-   * \param[in] y_cent = Y position of the center of the volumetric heat source.
-   * \param[in] z_cent = Z position of the center of the volumetric heat source.
-   */
-  inline void SetHeatSource_Center(su2double x_cent, su2double y_cent, su2double z_cent) {
-    hs_center[0] = x_cent; hs_center[1] = y_cent; hs_center[2] = z_cent;
-  }
-
-  /*!
-   * \brief Get the radius of the ellipsoid that introduces a volumetric heat source.
-   * \return Pointer to the radii (x, y, z) of the ellipsoid that introduces a volumetric heat source.
-   */
-  inline const su2double* GetHeatSource_Axes(void) const {return hs_axes;}
 
   /*!
    * \brief Get information about the rotational frame.

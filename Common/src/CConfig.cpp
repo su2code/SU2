@@ -2920,19 +2920,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Scattering coefficient */
   addDoubleOption("SCATTERING_COEFF", Scattering_Coeff, 0.0);
 
-  /* DESCRIPTION: Apply a volumetric heat source as a source term (NO, YES) in the form of an ellipsoid*/
-  addBoolOption("HEAT_SOURCE", HeatSource, false);
-  /* DESCRIPTION: Value of the volumetric heat source */
-  addDoubleOption("HEAT_SOURCE_VAL", ValHeatSource, 0.0);
-  /* DESCRIPTION: Rotation of the volumetric heat source respect to Z axis */
-  addDoubleOption("HEAT_SOURCE_ROTATION_Z", Heat_Source_Rot_Z, 0.0);
-  /* DESCRIPTION: Position of heat source center (Heat_Source_Center_X, Heat_Source_Center_Y, Heat_Source_Center_Z) */
-  hs_center[0] = 0.0; hs_center[1] = 0.0; hs_center[2] = 0.0;
-  addDoubleArrayOption("HEAT_SOURCE_CENTER", 3, false, hs_center);
-  /* DESCRIPTION: Vector of heat source radii (Heat_Source_Axes_A, Heat_Source_Axes_B, Heat_Source_Axes_C) */
-  hs_axes[0] = 1.0; hs_axes[1] = 1.0; hs_axes[2] = 1.0;
-  addDoubleArrayOption("HEAT_SOURCE_AXES", 3, false, hs_axes);
-
   /*!\brief MARKER_EMISSIVITY DESCRIPTION: Wall emissivity of the marker for radiation purposes \n
    * Format: ( marker, emissivity of the marker, ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_EMISSIVITY", nMarker_Emissivity, Marker_Emissivity, Wall_Emissivity);
@@ -3387,6 +3374,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("INC_INLET_USENORMAL is deprecated. Use INLET_USE_NORMAL instead (compatible with all solvers).\n\n");
           else if (!option_name.compare("DATADRIVEN_INITIAL_ENERGY") || !option_name.compare("DATADRIVEN_INITIAL_DENSITY"))
             newString.append("DATADRIVEN_INITIAL_ENERGY and DATADRIVEN_INITIAL_DENSITY are deprecated, there are no replacements.\n\n");
+          else if (option_name.rfind("HEAT_SOURCE", 0) == 0)
+            newString.append("HEAT_SOURCE options were removed. Use PYTHON_CUSTOM_SOURCE to apply a volumetric heat source with the python wrapper, see TestCases/py_wrapper/custom_heat_source_steady.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
