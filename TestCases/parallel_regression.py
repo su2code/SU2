@@ -478,6 +478,14 @@ def main():
     periodic2d_no_limiter_backflow_tangential.test_vals = [-3.089724, -0.504999, -0.643322, 2.385841, -1.049095, -1083.000000]
     test_list.append(periodic2d_no_limiter_backflow_tangential)
 
+    # TurboRiemann outlet of a laminar radial diffuser with steady backflow next to the walls (MARKER_OUTLET_BACKFLOW).
+    turbo_diffuser_backflow = TestCase('turbo_diffuser_backflow')
+    turbo_diffuser_backflow.cfg_dir = "navierstokes/periodic2D"
+    turbo_diffuser_backflow.cfg_file = "turbo_diffuser_backflow.cfg"
+    turbo_diffuser_backflow.test_iter = 100
+    turbo_diffuser_backflow.test_vals = [-4.158665, -1.605187, -1.784185, 1.316208, -1.024145, -583.380000]
+    test_list.append(turbo_diffuser_backflow)
+
     # 2D rotational periodic sector with multigrid
     periodic2d_multigrid = TestCase('periodic2d_multigrid')
     periodic2d_multigrid.cfg_dir = "navierstokes/periodic2D"
