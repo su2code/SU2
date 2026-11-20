@@ -31,7 +31,7 @@
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 #include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
-#include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
+#include "../../../../Common/include/interface_interpolation/CInterpolator.hpp"
 #include <unordered_set>
 
 CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
