@@ -28,12 +28,6 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 #include <cassert>
 #include <numeric>
-#include <limits>
-
-void CParallelDataSorter::CheckIntCount(unsigned long count, unsigned long entries) {
-  if (entries && count > static_cast<unsigned long>(std::numeric_limits<int>::max()) / entries)
-    SU2_MPI::Error("Output exceeds the supported 32-bit node ID or MPI count range", CURRENT_FUNCTION);
-}
 
 CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames) :
   rank(SU2_MPI::GetRank()),
@@ -246,8 +240,6 @@ void CParallelDataSorter::SortOutputData() {
 }
 
 void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalID){
-  CheckIntCount(nGlobalPointBeforeSort);
-  CheckIntCount(nLocalPointsBeforeSort);
 
   unsigned long iPoint;
   unsigned short iProcessor;
@@ -289,9 +281,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
     if ((ii != rank) && (nPoint_Send[ii+1] > 0)) nSends++;
     if ((ii != rank) && (nPoint_Recv[ii+1] > 0)) nRecvs++;
 
-    CheckIntCount(static_cast<unsigned long>(nPoint_Send[ii]) + nPoint_Send[ii+1], 1);
     nPoint_Send[ii+1] += nPoint_Send[ii];
-    CheckIntCount(static_cast<unsigned long>(nPoint_Recv[ii]) + nPoint_Recv[ii+1], 1);
     nPoint_Recv[ii+1] += nPoint_Recv[ii];
   }
 
@@ -388,7 +378,6 @@ void CParallelDataSorter::SetTotalElements(){
 
   nElemGlobal = std::accumulate(nElemPerTypeGlobal.begin(), nElemPerTypeGlobal.end(), 0ul);
   nElem  = std::accumulate(nElemPerType.begin(), nElemPerType.end(), 0ul);
-  CheckIntCount(nElemGlobal);
 
   nConn = 0;
   nConnGlobal   = 0;

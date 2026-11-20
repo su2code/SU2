@@ -2,7 +2,7 @@
  * \file CParaviewPVTUFileWriter.hpp
  * \brief Headers of the Paraview parallel XML file writer (.pvtu and one .vtu piece per rank).
  * \author A. Rausa
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,25 +51,23 @@ class CParaviewPVTUFileWriter final : public CFileWriter {
   bool doublePrecision;
 
   /*!
-   * \brief Points of the piece of this rank: those used by its elements, wherever they belong.
-   */
-  vector<passivedouble> pieceData;    /*!< \brief Fields of the points of the piece, field by field. */
-  vector<unsigned long> usedPoints;   /*!< \brief Global indices of the points of the piece, sorted. */
-
-  /*!
    * \brief Collect the points used by the elements of this rank and get their data from the ranks that own
    *        them, so that the piece of this rank is self-contained.
-   * \returns The number of points of the piece.
+   * \param[out] usedPoints - Global indices of the points of the piece, sorted.
+   * \param[out] pieceData - Fields of the points of the piece, field by field.
    */
-  unsigned long CollectExternalPoints();
+  void CollectExternalPoints(vector<unsigned long>& usedPoints, vector<passivedouble>& pieceData) const;
 
   /*!
    * \brief Write the piece of this rank.
    * \param[in] val_filename - Name of the piece file.
-   * \param[in] nPointsPiece - Number of points of the piece.
+   * \param[in] usedPoints - Global indices of the points of the piece, sorted.
+   * \param[in] pieceData - Fields of the points of the piece, field by field.
    * \param[in] connInt64 - Write the connectivity and offsets as Int64 instead of Int32.
+   * \returns True if the piece was written and closed without errors.
    */
-  bool WritePiece(const string& val_filename, unsigned long nPointsPiece, bool connInt64);
+  bool WritePiece(const string& val_filename, const vector<unsigned long>& usedPoints,
+                  const vector<passivedouble>& pieceData, bool connInt64);
 
   /*!
    * \brief Write the .pvtu file that lists the pieces, only the master node writes it.

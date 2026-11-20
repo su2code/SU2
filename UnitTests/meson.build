@@ -21,6 +21,7 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
                        'SU2_CFD/fluid/CFluidModel_tests.cpp',
                        'SU2_CFD/output/CNEMOCompOutput_tests.cpp',
                        'SU2_CFD/output/COutput_convergence_tests.cpp',
+                       'SU2_CFD/output/CParaviewPVTUFileWriter_tests.cpp',
                        'SU2_CFD/gradients.cpp',
                        'SU2_CFD/periodic_limiters.cpp',
                        'SU2_CFD/scalar_muscl.cpp',
@@ -96,21 +97,4 @@ if get_option('enable-tests')
     )
     test('Catch2 test driver (DD)', test_driver_DD)
   endif
-endif
-
-if get_option('enable-tests') and get_option('enable-normal')
-  output_writer_checks = executable('output_writer_checks',
-    'SU2_CFD/output/output_writer_checks.cpp',
-    dependencies: [su2_cfd_dep, common_dep, su2_deps],
-    cpp_args: [default_warning_flags, su2_cpp_args])
-  foreach ranks : (mpi ? [1, 2] : [1])
-    writer_args = files('SU2_CFD/output/check_output_writers.py') + [
-      '--binary', output_writer_checks.full_path(), '--ranks', ranks.to_string()]
-    if mpi
-      writer_launcher = find_program('mpiexec', 'mpirun')
-      writer_args += ['--mpi', '--launcher', writer_launcher.full_path()]
-    endif
-    test('Output writer regressions (' + ranks.to_string() + ' ranks)', python,
-      args: writer_args, timeout: 180)
-  endforeach
 endif

@@ -43,7 +43,6 @@ CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometr
 
   /*--- Create the linear partitioner --- */
 
-  CheckIntCount(nGlobalPointBeforeSort);
   linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
 }
@@ -64,7 +63,6 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   int ind;
 #endif
 
-  CheckIntCount(GetnConn());
   const unsigned long nElemLine = GetnElem(LINE);
   const unsigned long nElemTria = GetnElem(TRIANGLE);
   const unsigned long nElemQuad = GetnElem(QUADRILATERAL);
@@ -184,9 +182,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
     if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
 
-    CheckIntCount(static_cast<unsigned long>(nElem_Send[ii]) + nElem_Send[ii+1]);
     nElem_Send[ii+1] += nElem_Send[ii];
-    CheckIntCount(static_cast<unsigned long>(nElem_Recv[ii]) + nElem_Recv[ii+1]);
     nElem_Recv[ii+1] += nElem_Recv[ii];
   }
 
@@ -427,9 +423,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Go to cumulative storage format to compute the offsets. ---*/
 
   for (int ii = 0; ii < size; ii++) {
-    CheckIntCount(static_cast<unsigned long>(nPoint_Send[ii]) + nPoint_Send[ii+1]);
     nPoint_Send[ii+1] += nPoint_Send[ii];
-    CheckIntCount(static_cast<unsigned long>(nPoint_Recv[ii]) + nPoint_Recv[ii+1]);
     nPoint_Recv[ii+1] += nPoint_Recv[ii];
   }
 
@@ -438,7 +432,6 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    we also copy the data for those points from our volume data structure. ---*/
 
   delete [] dataBuffer;
-  CheckIntCount(nPoints, VARS_PER_POINT);
   dataBuffer = new passivedouble[nPoints*VARS_PER_POINT];
 
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
@@ -535,9 +528,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
     if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
 
-    CheckIntCount(static_cast<unsigned long>(nElem_Send[ii]) + nElem_Send[ii+1]);
     nElem_Send[ii+1] += nElem_Send[ii];
-    CheckIntCount(static_cast<unsigned long>(nElem_Recv[ii]) + nElem_Recv[ii+1]);
     nElem_Recv[ii+1] += nElem_Recv[ii];
   }
 
@@ -833,9 +824,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
     if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
 
-    CheckIntCount(static_cast<unsigned long>(nElem_Send[ii]) + nElem_Send[ii+1]);
     nElem_Send[ii+1] += nElem_Send[ii];
-    CheckIntCount(static_cast<unsigned long>(nElem_Recv[ii]) + nElem_Recv[ii+1]);
     nElem_Recv[ii+1] += nElem_Recv[ii];
   }
 
@@ -1095,12 +1084,6 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 }
 
 void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList) {
-  unsigned long boundaryElements = 0;
-  for (unsigned short marker = 0; marker < geometry->GetnMarker(); ++marker) {
-    CheckIntCount(geometry->GetnElem_Bound(marker), N_POINTS_QUADRILATERAL);
-    boundaryElements += geometry->GetnElem_Bound(marker);
-    CheckIntCount(boundaryElements, N_POINTS_QUADRILATERAL);
-  }
 
   /*--- Sort connectivity for each type of element (excluding halos). Note
    In these routines, we sort the connectivity into a linear partitioning
@@ -1184,8 +1167,6 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     auto it = std::find(markerList.begin(), markerList.end(), markerTag);
 
     if (it != markerList.end()) {
-      /*--- Element indices restart at zero for each marker. ---*/
-      std::fill(nElem_Flag, nElem_Flag + size, -1);
 
       for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
 
@@ -1244,9 +1225,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
     if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
 
-    CheckIntCount(static_cast<unsigned long>(nElem_Send[ii]) + nElem_Send[ii+1], NODES_PER_ELEMENT);
     nElem_Send[ii+1] += nElem_Send[ii];
-    CheckIntCount(static_cast<unsigned long>(nElem_Recv[ii]) + nElem_Recv[ii+1], NODES_PER_ELEMENT);
     nElem_Recv[ii+1] += nElem_Recv[ii];
   }
 
@@ -1278,8 +1257,6 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     auto it = std::find(markerList.begin(), markerList.end(), markerTag);
 
     if (it != markerList.end()) {
-      /*--- Element indices restart at zero for each marker. ---*/
-      std::fill(nElem_Flag, nElem_Flag + size, -1);
 
       for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
 

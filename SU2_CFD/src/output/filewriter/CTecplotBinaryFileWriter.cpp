@@ -56,7 +56,7 @@ void CTecplotBinaryFileWriter::WriteData(string val_filename){
 
   /*--- Set a timer for the binary file writing. ---*/
 
-  startTime = WallTime();
+  startTime = SU2_MPI::Wtime();
 
 #ifdef HAVE_TECIO
 
@@ -594,7 +594,7 @@ void CTecplotBinaryFileWriter::WriteData(string val_filename){
 
   /*--- Compute and store the write time. ---*/
 
-  stopTime = WallTime();
+  stopTime = SU2_MPI::Wtime();
 
   usedTime = stopTime-startTime;
 
@@ -602,7 +602,7 @@ void CTecplotBinaryFileWriter::WriteData(string val_filename){
 
   /*--- Compute and store the bandwidth ---*/
 
-  UpdateBandwidth(SU2_TYPE::GetValue(usedTime));
+  bandwidth = fileSize/(1.0e6)/usedTime;
 }
 
 

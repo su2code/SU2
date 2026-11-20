@@ -122,9 +122,6 @@ protected:
   void PrepareSendBuffers(std::vector<unsigned long>& globalID);
 
 public:
-  /*! Reject unsupported counts before narrowing IDs or multiplying int MPI counts. */
-  static void CheckIntCount(unsigned long count, unsigned long entries = 1);
-
 
   /*!
    * \brief Constructor

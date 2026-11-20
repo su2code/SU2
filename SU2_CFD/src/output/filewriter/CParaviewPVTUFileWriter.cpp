@@ -2,7 +2,7 @@
  * \file CParaviewPVTUFileWriter.cpp
  * \brief Filewriter class for the Paraview parallel XML format (.pvtu and one .vtu piece per rank).
  * \author A. Rausa
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,7 @@
 #include "../../../include/output/filewriter/CParaviewPVTUFileWriter.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <limits>
 #include <numeric>
@@ -118,7 +119,7 @@ void CParaviewPVTUFileWriter::WriteData(string val_filename) {
     SU2_MPI::Error("The Paraview parallel writer is only implemented for little endian machines.", CURRENT_FUNCTION);
   }
 
-  startTime = WallTime();
+  startTime = SU2_MPI::Wtime();
 
   /*--- The pieces are written into a folder next to the .pvtu file, one file per rank. ---*/
 
@@ -140,7 +141,9 @@ void CParaviewPVTUFileWriter::WriteData(string val_filename) {
 
   /*--- Make the data of this rank self-contained and write its piece. ---*/
 
-  const auto nPointsPiece = CollectExternalPoints();
+  vector<unsigned long> usedPoints;
+  vector<passivedouble> pieceData;
+  CollectExternalPoints(usedPoints, pieceData);
 
   /*--- All pieces must declare the same types, so the connectivity type is that of the largest piece. ---*/
 
@@ -148,7 +151,8 @@ void CParaviewPVTUFileWriter::WriteData(string val_filename) {
   SU2_MPI::Allreduce(&localConn, &maxConn, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
   const bool connInt64 = maxConn > static_cast<unsigned long>(std::numeric_limits<int32_t>::max());
 
-  int failed = !WritePiece(folderName + "/" + baseName + "_" + to_string(rank) + ".vtu", nPointsPiece, connInt64);
+  int failed = !WritePiece(folderName + "/" + baseName + "_" + to_string(rank) + ".vtu", usedPoints, pieceData,
+                           connInt64);
   int anyFailed = 0;
   SU2_MPI::Allreduce(&failed, &anyFailed, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
   if (anyFailed) SU2_MPI::Error("Unable to write or close a PVTU piece for " + val_filename, CURRENT_FUNCTION);
@@ -159,17 +163,21 @@ void CParaviewPVTUFileWriter::WriteData(string val_filename) {
   SU2_MPI::Allreduce(&failed, &anyFailed, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
   if (anyFailed) SU2_MPI::Error("Unable to write or close PVTU index " + val_filename + fileExt, CURRENT_FUNCTION);
 
-  stopTime = WallTime();
-  usedTime = stopTime - startTime;
+  /*--- Total size of the files and longest write time over the ranks. ---*/
 
+  stopTime = SU2_MPI::Wtime();
   passivedouble localBytes = SU2_TYPE::GetValue(fileSize), totalBytes = 0;
+  passivedouble localTime = SU2_TYPE::GetValue(stopTime - startTime), maxTime = 0;
   SelectMPIWrapper<passivedouble>::W::Allreduce(&localBytes, &totalBytes, 1, MPI_DOUBLE, MPI_SUM,
-                                             SU2_MPI::GetComm());
+                                                SU2_MPI::GetComm());
+  SelectMPIWrapper<passivedouble>::W::Allreduce(&localTime, &maxTime, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
   fileSize = totalBytes;
-  UpdateBandwidth(SU2_TYPE::GetValue(usedTime));
+  usedTime = maxTime;
+  bandwidth = maxTime > 0 ? totalBytes / (1.0e6 * maxTime) : 0.0;
 }
 
-unsigned long CParaviewPVTUFileWriter::CollectExternalPoints() {
+void CParaviewPVTUFileWriter::CollectExternalPoints(vector<unsigned long>& usedPoints,
+                                                    vector<passivedouble>& pieceData) const {
   const auto nFields = dataSorter->GetFieldNames().size();
   const auto firstPoint = dataSorter->GetnPointCumulative(rank);
 
@@ -201,9 +209,12 @@ unsigned long CParaviewPVTUFileWriter::CollectExternalPoints() {
 
   SU2_MPI::Alltoall(nRequest.data(), 1, MPI_INT, nAnswer.data(), 1, MPI_INT, SU2_MPI::GetComm());
 
+  /*--- The requests of this rank are at most its number of points, but other ranks can ask it for more. ---*/
+
+  if (accumulate(nAnswer.begin(), nAnswer.end(), 0ul) > static_cast<unsigned long>(std::numeric_limits<int>::max()))
+    SU2_MPI::Error("Too many points requested from one rank by the Paraview parallel output.", CURRENT_FUNCTION);
+
   for (int i = 0; i < size; i++) {
-    CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(requestOffset[i]) + nRequest[i]);
-    CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(answerOffset[i]) + nAnswer[i]);
     requestOffset[i + 1] = requestOffset[i] + nRequest[i];
     answerOffset[i + 1] = answerOffset[i] + nAnswer[i];
   }
@@ -230,11 +241,11 @@ unsigned long CParaviewPVTUFileWriter::CollectExternalPoints() {
                                                   nPointsPiece ? pieceData.data() + iField * nPointsPiece : nullptr, nRequest.data(),
                                                   requestOffset.data(), MPI_DOUBLE, SU2_MPI::GetComm());
   }
-
-  return usedPoints.size();
 }
 
-bool CParaviewPVTUFileWriter::WritePiece(const string& val_filename, unsigned long nPointsPiece, bool connInt64) {
+bool CParaviewPVTUFileWriter::WritePiece(const string& val_filename, const vector<unsigned long>& usedPoints,
+                                         const vector<passivedouble>& pieceData, bool connInt64) {
+  const auto nPointsPiece = usedPoints.size();
   const auto& fieldNames = dataSorter->GetFieldNames();
   const auto nDim = dataSorter->GetnDim();
 

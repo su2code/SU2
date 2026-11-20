@@ -46,7 +46,7 @@ void CCGNSFileWriter::WriteData(string val_filename) {
   val_filename.append(fileExt);
 
   /*--- Set a timer for the file writing. ---*/
-  startTime = WallTime();
+  startTime = SU2_MPI::Wtime();
 
   /*--- Names of all the nodes, before the file is opened: a duplicate name would stop the run with the file open. ---*/
   PrepareNames();
@@ -75,10 +75,10 @@ void CCGNSFileWriter::WriteData(string val_filename) {
 #endif
 
   /*--- Compute and store the write time and the bandwidth. ---*/
-  stopTime = WallTime();
+  stopTime = SU2_MPI::Wtime();
   usedTime = stopTime - startTime;
   fileSize = DetermineFilesize(val_filename);
-  UpdateBandwidth(SU2_TYPE::GetValue(usedTime));
+  bandwidth = fileSize / (1.0e6) / usedTime;
 
 #endif
 }
