@@ -72,6 +72,11 @@ class CAdjFlowOutput : public COutput {
   void LoadHistoryDataAdjScalar(const CConfig* config, const CSolver* const* solver);
 
   /*!
+   * \brief Write nn_weights_grad.dat when the FIML network weights are the design variables.
+   */
+  void WriteAdditionalFiles(CConfig* config, CGeometry* geometry, CSolver** solver_container) override;
+
+  /*!
    * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.

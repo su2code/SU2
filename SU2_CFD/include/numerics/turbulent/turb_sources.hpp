@@ -219,6 +219,9 @@ class CSourceBase_TurbSA : public CNumerics {
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
     AD::SetPreaccIn(stochSource, 3);
+    AD::SetPreaccIn(beta_fiml);
+    sa_production = 0.0;
+    sa_destruction = 0.0;
 
     /*--- Common auxiliary variables and constants of the model. ---*/
     CSAVariables var;
@@ -343,6 +346,16 @@ class CSourceBase_TurbSA : public CNumerics {
       if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().stochSourceNu)
         AddStochSource(config, var, Production);
 
+      /*--- FIML: Apply beta_fiml correction to production term and its Jacobian. ---*/
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+        sa_production = Production;
+        sa_destruction = Destruction;
+        su2double production_unscaled = 0.0, d_production = 0.0;
+        SourceTerms::ComputeProduction(ScalarVar_i[0], var, production_unscaled, d_production);
+        Production *= beta_fiml;
+        Jacobian_i[0][0] += (beta_fiml - 1.0) * d_production;
+      }
+
       Residual[0] = (Production - Destruction) * Volume;
 
       if (axisymmetric) ResidualAxisymmetricDiffusion(var.sigma);
@@ -359,6 +372,7 @@ class CSourceBase_TurbSA : public CNumerics {
     }
 
     AD::SetPreaccOut(Residual, 4);
+    AD::SetPreaccOut(sa_production, sa_destruction);
     AD::EndPreacc();
 
     return ResidualType<>(Residual, Jacobian_i, nullptr);
@@ -577,6 +591,10 @@ struct Neg {
 
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
                                 su2double& jacobian) {
+    if (nue > 0.0) {
+      Bsl::ComputeProduction(nue, var, production, jacobian);
+      return;
+    }
     const su2double dP_dnu = var.intermittency * var.cb1 * (1.0 - var.ct3) * var.Prod;
     production = dP_dnu * nue;
     jacobian += dP_dnu;

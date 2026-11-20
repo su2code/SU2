@@ -158,6 +158,10 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config) {
   AddHistoryOutput("SENS_PRESS", "Sens_Press", ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the far-field pressure.", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field temperature.
   AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the far-field temperature.", HistoryFieldType::COEFFICIENT);
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    /// DESCRIPTION: L2 norm of the objective gradient with respect to beta or the network weights.
+    AddHistoryOutput("SENS_FIML", "Sens_FIML", ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "L2 norm of the objective gradient with respect to beta or the network weights.", HistoryFieldType::COEFFICIENT);
+  }
   /// END_GROUP
 
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
@@ -214,6 +218,9 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   SetHistoryOutputValue("SENS_MACH", adjflow_solver->GetTotal_Sens_Mach());
   SetHistoryOutputValue("SENS_PRESS", adjflow_solver->GetTotal_Sens_Press());
   SetHistoryOutputValue("SENS_TEMP", adjflow_solver->GetTotal_Sens_Temp());
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    SetHistoryOutputValue("SENS_FIML", solver[TURB_SOL]->ComputeFIMLSensitivityNorm(config));
+  }
 
   SetHistoryOutputValue("LINSOL_ITER", adjflow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(adjflow_solver->GetResLinSolver()));
@@ -278,6 +285,11 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config) {
     AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SENSITIVITY", "z-component of the sensitivity vector");
   /// DESCRIPTION: Sensitivity in normal direction.
   AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction");
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    /// DESCRIPTION: Derivative with respect to the FIML correction at every point.
+    AddVolumeOutput("SENSITIVITY_BETA_FIML", "Sensitivity_Beta_FIML", "SENSITIVITY",
+                    "Derivative of the objective function with respect to beta_fiml");
+  }
   /// END_GROUP
 
 }
@@ -317,6 +329,10 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 1));
   if (nDim == 3)
     SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 2));
+
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    SetVolumeOutputValue("SENSITIVITY_BETA_FIML", iPoint, solver[TURB_SOL]->GetNodes()->GetBetaFimlGrad(iPoint));
+  }
 
   LoadVolumeDataAdjScalar(config, solver, iPoint);
 }

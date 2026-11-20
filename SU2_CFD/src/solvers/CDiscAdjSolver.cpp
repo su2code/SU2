@@ -331,6 +331,13 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
+  /*--- FIML field inversion: beta at every point is a design variable. ---*/
+
+  if (KindDirect_Solver == RUNTIME_TURB_SYS && config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    if (config->GetKind_Train_NN() == NN_TRAIN_METHOD::NONE) direct_solver->GetNodes()->RegisterBetaFiml(reset);
+    if (config->GetKind_Train_NN() == NN_TRAIN_METHOD::WEIGHTS) direct_solver->RegisterNNWeights(reset);
+  }
+
   /*--- Here it is possible to register other variables as input that influence the flow solution
    * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
    * extracted in the ExtractAdjointVariables routine. ---*/
@@ -495,6 +502,11 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     /*--- Store it in the Total_Sens_Temp container so it's accessible without the need of a new method ---*/
     Total_Sens_Temp = Total_Sens_Temp_Rad;
 
+  }
+
+  if (KindDirect_Solver == RUNTIME_TURB_SYS && config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    if (config->GetKind_Train_NN() == NN_TRAIN_METHOD::NONE) direct_solver->GetNodes()->ExtractBetaFimlAdjoint();
+    if (config->GetKind_Train_NN() == NN_TRAIN_METHOD::WEIGHTS) direct_solver->ExtractNNWeightAdjoints();
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/

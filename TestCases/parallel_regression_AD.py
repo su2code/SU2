@@ -141,6 +141,22 @@ def main():
     discadj_incomp_turb_NACA0012_sst.test_vals_aarch64 = [-4.294502, -3.069650, -7.086569, 0.000000, -1.151213]
     test_list.append(discadj_incomp_turb_NACA0012_sst)
 
+    # Adjoint Incompressible Turbulent NACA 0012 SA FIML, derivative with respect to beta at every point
+    discadj_incomp_turb_NACA0012_fiml_beta           = TestCase('discadj_incomp_turb_NACA0012_fiml_beta')
+    discadj_incomp_turb_NACA0012_fiml_beta.cfg_dir   = "disc_adj_incomp_rans/naca0012"
+    discadj_incomp_turb_NACA0012_fiml_beta.cfg_file  = "turb_naca0012_fiml_beta.cfg"
+    discadj_incomp_turb_NACA0012_fiml_beta.test_iter = 10
+    discadj_incomp_turb_NACA0012_fiml_beta.test_vals = [1.195725, 3.110685, 0.245190]
+    test_list.append(discadj_incomp_turb_NACA0012_fiml_beta)
+
+    # Adjoint Incompressible Turbulent NACA 0012 SA FIML, derivative with respect to the network weights
+    discadj_incomp_turb_NACA0012_fiml_weights           = TestCase('discadj_incomp_turb_NACA0012_fiml_weights')
+    discadj_incomp_turb_NACA0012_fiml_weights.cfg_dir   = "disc_adj_incomp_rans/naca0012"
+    discadj_incomp_turb_NACA0012_fiml_weights.cfg_file  = "turb_naca0012_fiml_weights.cfg"
+    discadj_incomp_turb_NACA0012_fiml_weights.test_iter = 10
+    discadj_incomp_turb_NACA0012_fiml_weights.test_vals = [-0.800142, 1.116878, 0.218850]
+    test_list.append(discadj_incomp_turb_NACA0012_fiml_weights)
+
     ####################################################################
     ###  Disc. Adj. Axisymmetric RANS                                ###
     ####################################################################

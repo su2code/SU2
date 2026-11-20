@@ -1217,6 +1217,30 @@ void CConfig::SetConfig_Options() {
   /*!\brief HROUGHNESS \n DESCRIPTION: Value of RMS roughness for transition model \n DEFAULT: 1E-6 \ingroup Config*/
   addDoubleOption("HROUGHNESS", hRoughness, 1e-6);
 
+  /* --- FIML Options --- */
+  /*!\brief TRAIN_NN \n DESCRIPTION: Enable neural network training for FIML \n Options: NO, YES \n DEFAULT: NO \ingroup Config*/
+  addBoolOption("TRAIN_NN", Train_NN, false);
+  /*!\brief KIND_TRAIN_NN \n DESCRIPTION: Neural network training method \n Options: see \link NN_Train_Method_Map \endlink \n DEFAULT: WEIGHTS \ingroup Config*/
+  addEnumOption("KIND_TRAIN_NN", Kind_Train_NN, NN_Train_Method_Map, NN_TRAIN_METHOD::WEIGHTS);
+  /*!\brief N_NEURONS \n DESCRIPTION: Number of neurons per hidden layer \n DEFAULT: 20 \ingroup Config*/
+  addUnsignedShortOption("N_NEURONS", N_Neurons, 20);
+  /*!\brief N_HIDDEN_LAYERS \n DESCRIPTION: Number of hidden layers in neural network \n DEFAULT: 3 \ingroup Config*/
+  addUnsignedShortOption("N_HIDDEN_LAYERS", N_Hidden_Layers, 3);
+  /*!\brief ITER_START_NN \n DESCRIPTION: Iteration to start using neural network \n DEFAULT: 1000 \ingroup Config*/
+  addUnsignedLongOption("ITER_START_NN", Iter_Start_NN, 1000);
+  /*!\brief NUM_EPOCH \n DESCRIPTION: Number of epochs for backpropagation training \n DEFAULT: 1 \ingroup Config*/
+  addUnsignedShortOption("NUM_EPOCH", Num_Epoch, 1);
+  /*!\brief LEARNING_RATE \n DESCRIPTION: Learning rate for backpropagation \n DEFAULT: 0.01 \ingroup Config*/
+  addDoubleOption("LEARNING_RATE", Learning_Rate, 0.01);
+  /*!\brief BETA_TARGET_FILE \n DESCRIPTION: File containing beta target values for NN training \n DEFAULT: beta_target.dat \ingroup Config*/
+  addStringOption("BETA_TARGET_FILE", Beta_Target_FileName, string("beta_target.dat"));
+  /*!\brief FIML_INPUTS \n DESCRIPTION: Inputs of the FIML network, in order \n Options: see \link FIML_Input_Map \endlink \n DEFAULT: (PROD_DEST, CHI, DELTA, STRAIN_VORT) \ingroup Config*/
+  addEnumListOption("FIML_INPUTS", nFIML_Inputs, FIML_Inputs, FIML_Input_Map);
+  /*!\brief FIML_SHIELD \n DESCRIPTION: Regions where the FIML network is switched off \n Options: see \link FIML_Shield_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumOption("FIML_SHIELD", Kind_FIML_Shield, FIML_Shield_Map, FIML_SHIELD::NONE);
+  /*!\brief FIML_SHIELD_COEFF \n DESCRIPTION: Coefficient C of f_d = 1 - tanh((C r_d)^3) for FIML_SHIELD= FD; smaller values shield only the inner layer \n DEFAULT: 8 \ingroup Config*/
+  addDoubleOption("FIML_SHIELD_COEFF", FIML_Shield_Coeff, 8.0);
+
   /*!\brief KIND_SCALAR_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_SCALAR_MODEL", Kind_Species_Model, Species_Model_Map, SPECIES_MODEL::NONE);
 
@@ -3856,8 +3880,29 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model == TURB_MODEL::SST) {
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
-  } else if (Kind_Turb_Model == TURB_MODEL::SA) {
+  } else if (Kind_Turb_Model == TURB_MODEL::SA || Kind_Turb_Model == TURB_MODEL::SA_FIML) {
     saParsedOptions = ParseSAOptions(SA_Options, nSA_Options, rank);
+  }
+
+  if (Kind_Turb_Model == TURB_MODEL::SA_FIML) {
+    if (N_Hidden_Layers < 1 || N_Neurons < 1) {
+      SU2_MPI::Error("SA_FIML needs N_HIDDEN_LAYERS and N_NEURONS of at least 1.", CURRENT_FUNCTION);
+    }
+    if (DiscreteAdjoint && Kind_Train_NN == NN_TRAIN_METHOD::BACKPROP) {
+      SU2_MPI::Error("The discrete adjoint of SA_FIML needs KIND_TRAIN_NN= NONE (beta at every point) or "
+                     "WEIGHTS (network weights).", CURRENT_FUNCTION);
+    }
+  }
+
+  if (nFIML_Inputs == 0) {
+    FIML_Input_List = {FIML_INPUT::PROD_DEST, FIML_INPUT::CHI, FIML_INPUT::DELTA, FIML_INPUT::STRAIN_VORT};
+  } else {
+    FIML_Input_List.assign(FIML_Inputs, FIML_Inputs + nFIML_Inputs);
+  }
+  for (auto it = FIML_Input_List.begin(); it != FIML_Input_List.end(); ++it) {
+    if (std::find(it + 1, FIML_Input_List.end(), *it) != FIML_Input_List.end()) {
+      SU2_MPI::Error("FIML_INPUTS lists an input twice.", CURRENT_FUNCTION);
+    }
   }
 
   if (Kind_Solver == MAIN_SOLVER::INC_RANS && sstParsedOptions.compSarkar){
@@ -6824,6 +6869,24 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             if (saParsedOptions.bc) cout << "-BCM";
             cout << endl;
             break;
+          case TURB_MODEL::SA_FIML:
+            cout << "Spalart-Allmaras with FIML correction of the production";
+            if (Train_NN) {
+              cout << ", neural network (";
+              switch (Kind_Train_NN) {
+                case NN_TRAIN_METHOD::BACKPROP:
+                  cout << "backprop";
+                  break;
+                case NN_TRAIN_METHOD::WEIGHTS:
+                  cout << "direct weights";
+                  break;
+                default:
+                  break;
+              }
+              cout << ", " << N_Hidden_Layers << " layers, " << N_Neurons << " neurons)";
+            }
+            cout << endl;
+            break;
           case TURB_MODEL::SST:
             cout << "Menter's k-omega SST";
             if (sstParsedOptions.version == SST_OPTIONS::V1994) cout << "-1994";
@@ -6887,9 +6950,16 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
             case TURB_TRANS_CORRELATION::DEFAULT:
               switch (Kind_Turb_Model) {
-                case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
-                case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
-                case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
+                case TURB_MODEL::SA:
+                case TURB_MODEL::SA_FIML:
+                  cout << "Malan et al. (2009)" << endl;
+                  break;
+                case TURB_MODEL::SST:
+                  cout << "Menter and Langtry (2009)" << endl;
+                  break;
+                case TURB_MODEL::NONE:
+                  SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION);
+                  break;
               }
               break;
           }

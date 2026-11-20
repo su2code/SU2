@@ -1776,6 +1776,28 @@ public:
   inline virtual su2double GetIntermittencyEff(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the FIML correction factor of the SA production term.
+   * \return Value of beta_fiml, 1 for models without FIML.
+   */
+  inline virtual su2double GetBetaFiml(unsigned long iPoint) const { return 1.0; }
+
+  /*!
+   * \brief Get the derivative of the objective function with respect to beta_fiml.
+   */
+  inline virtual su2double GetBetaFimlGrad(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Register beta_fiml as AD input, or reset its AD index.
+   * \param[in] reset - Reset the index instead of registering.
+   */
+  inline virtual void RegisterBetaFiml(bool reset) {}
+
+  /*!
+   * \brief Store the adjoint of beta_fiml as its gradient.
+   */
+  inline virtual void ExtractBetaFimlAdjoint() {}
+
+  /*!
    * \brief Set the effective intermittency (gamma_eff).
    * \param[in] Value of the effective intermittency (gamma_eff).
    */

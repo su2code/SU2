@@ -341,6 +341,8 @@ void CDiscAdjFluidIteration::IterateDiscAdj(CGeometry**** geometry, CSolver*****
   }
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solvers0[ADJTURB_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
+
+    solvers0[ADJTURB_SOL]->ExtractAdjoint_Variables(geometry0, config[iZone]);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     solvers0[ADJSPECIES_SOL]->ExtractAdjoint_Solution(geometry0, config[iZone], CrossTerm);
@@ -430,6 +432,8 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 
     if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
       solvers0[ADJTURB_SOL]->RegisterSolution(geometry0, config[iZone]);
+
+      solvers0[ADJTURB_SOL]->RegisterVariables(geometry0, config[iZone]);
     }
     if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
       solvers0[ADJSPECIES_SOL]->RegisterSolution(geometry0, config[iZone]);

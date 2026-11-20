@@ -791,6 +791,22 @@ private:
   unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
   unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
+
+  /* FIML configuration variables */
+  bool Train_NN;                      /*!< \brief Flag to activate neural network training. */
+  NN_TRAIN_METHOD Kind_Train_NN;      /*!< \brief Neural network training method (NONE, BACKPROP, WEIGHTS). */
+  unsigned short N_Neurons;           /*!< \brief Number of neurons in each hidden layer. */
+  unsigned short N_Hidden_Layers;     /*!< \brief Number of hidden layers in neural network. */
+  unsigned long Iter_Start_NN;        /*!< \brief Iteration to start using neural network. */
+  unsigned short Num_Epoch;           /*!< \brief Number of epochs for backpropagation training. */
+  su2double Learning_Rate;            /*!< \brief Learning rate for backpropagation. */
+  string Beta_Target_FileName;        /*!< \brief File containing beta target values for NN training. */
+  FIML_INPUT *FIML_Inputs;            /*!< \brief Network inputs as given in FIML_INPUTS. */
+  unsigned short nFIML_Inputs;        /*!< \brief Number of entries in FIML_INPUTS. */
+  vector<FIML_INPUT> FIML_Input_List; /*!< \brief Network inputs, in order, with the default applied. */
+  FIML_SHIELD Kind_FIML_Shield;       /*!< \brief Regions where the network is switched off. */
+  su2double FIML_Shield_Coeff;        /*!< \brief Coefficient C of f_d = 1 - tanh((C r_d)^3) for FIML_SHIELD= FD. */
+
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -4790,6 +4806,69 @@ public:
    * \return Kind of the transition correlation.
    */
   TURB_TRANS_CORRELATION GetKind_Trans_Correlation(void) const { return Kind_Trans_Correlation; }
+
+  /*!
+   * \brief Get flag for neural network training.
+   * \return True if neural network training is active.
+   */
+  bool GetTrain_NN(void) const { return Train_NN; }
+
+  /*!
+   * \brief Get the neural network training method.
+   * \return Neural network training method (NONE, BACKPROP, WEIGHTS).
+   */
+  NN_TRAIN_METHOD GetKind_Train_NN(void) const { return Kind_Train_NN; }
+
+  /*!
+   * \brief Get number of neurons per hidden layer.
+   * \return Number of neurons.
+   */
+  unsigned short GetN_Neurons(void) const { return N_Neurons; }
+
+  /*!
+   * \brief Get number of hidden layers.
+   * \return Number of hidden layers.
+   */
+  unsigned short GetN_Hidden_Layers(void) const { return N_Hidden_Layers; }
+
+  /*!
+   * \brief Get iteration to start neural network.
+   * \return Iteration number.
+   */
+  unsigned long GetIter_Start_NN(void) const { return Iter_Start_NN; }
+
+  /*!
+   * \brief Get number of training epochs.
+   * \return Number of epochs.
+   */
+  unsigned short GetNum_Epoch(void) const { return Num_Epoch; }
+
+  /*!
+   * \brief Get learning rate for backpropagation.
+   * \return Learning rate.
+   */
+  su2double GetLearning_Rate(void) const { return Learning_Rate; }
+
+  /*!
+   * \brief Get beta target filename for NN training.
+   * \return Beta target file name.
+   */
+  string GetBeta_Target_FileName(void) const { return Beta_Target_FileName; }
+
+  /*!
+   * \brief Get the inputs of the FIML network, in order.
+   */
+  const vector<FIML_INPUT>& GetFIML_Inputs(void) const { return FIML_Input_List; }
+
+  /*!
+   * \brief Get the regions where the FIML network is switched off.
+   */
+  FIML_SHIELD GetKind_FIML_Shield(void) const { return Kind_FIML_Shield; }
+
+  /*!
+   * \brief Get the coefficient C of f_d = 1 - tanh((C r_d)^3) for FIML_SHIELD= FD.
+   */
+  su2double GetFIML_Shield_Coeff(void) const { return FIML_Shield_Coeff; }
 
   /*!
    * \brief Get RMS roughness for Transtion model from config

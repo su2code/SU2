@@ -371,3 +371,9 @@ void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolve
   }
 
 }
+
+void CAdjFlowOutput::WriteAdditionalFiles(CConfig* config, CGeometry*, CSolver** solver_container) {
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML && config->GetKind_Train_NN() == NN_TRAIN_METHOD::WEIGHTS) {
+    solver_container[TURB_SOL]->WriteNNWeightGradients("nn_weights_grad.dat");
+  }
+}

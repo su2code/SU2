@@ -194,6 +194,11 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddAerodynamicCoefficients(config);
 
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    AddHistoryOutput("BETA_REG", "Beta_Reg", ScreenOutputFormat::SCIENTIFIC, "FIML",
+                     "Sum of (beta - 1)^2 of the FIML correction", HistoryFieldType::COEFFICIENT);
+  }
+
   if (config->GetViscous()) {
     AddHistoryOutput("BUFFET", "Buffet", ScreenOutputFormat::SCIENTIFIC, "AERO_COEFF", "Buffet sensor", HistoryFieldType::COEFFICIENT);
   }

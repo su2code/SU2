@@ -149,6 +149,8 @@ protected:
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
   su2activematrix PeriodicProj;  /*!< \brief Min/max reconstruction increments at periodic receive points (for limiters). */
   std::unordered_map<unsigned long, size_t> PeriodicProjIndex;  /*!< \brief Local point to compact projection row. */
+  vector<long> PeriodicMaster;  /*!< \brief Local master point of each passive periodic point on this rank, or -1. */
+  vector<unsigned short> PeriodicMasterMarker;  /*!< \brief Periodic marker of each passive point, gives its rotation. */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
@@ -325,6 +327,25 @@ public:
                              const CConfig *config,
                              unsigned short val_periodic_index,
                              unsigned short commType);
+
+  /*!
+   * \brief Move the off-diagonal Jacobian blocks of passive periodic points to their masters, rotated.
+   * \note Call before the PERIODIC_RESIDUAL comms. Only masters on the same rank and blocks in the sparsity pattern are coupled.
+   */
+  void CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Map each passive periodic point to its master on the same rank (built once).
+   */
+  void SetPeriodicMaster(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Whether two points are periodic images of each other on this rank.
+   */
+  inline bool ArePeriodicImages(unsigned long iPoint, unsigned long jPoint) const {
+    if (PeriodicMaster.empty()) return false;
+    return PeriodicMaster[iPoint] == static_cast<long>(jPoint) || PeriodicMaster[jPoint] == static_cast<long>(iPoint);
+  }
 
   /*!
    * \brief Set number of linear solver iterations.
@@ -842,6 +863,41 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    */
   inline virtual void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) {};
+
+  /*!
+   * \brief Sum of (beta - 1)^2 over all domain points of the FIML correction.
+   * \param[in] config - Definition of the particular problem.
+   * \return Global value of the regularization term, 0 without FIML.
+   */
+  inline virtual su2double ComputeFIMLRegularization(const CConfig *config) const { return 0.0; }
+
+  /*!
+   * \brief Unscaled values of all FIML inputs at a point, in the order of FIML_INPUT.
+   */
+  inline virtual void GetFIMLInputs(unsigned long iPoint, const CGeometry* geometry,
+                                    const CSolver* const* solver_container, su2double* values) const {}
+
+  /*!
+   * \brief Register the FIML neural network weights as AD inputs, or reset their AD indices.
+   */
+  inline virtual void RegisterNNWeights(bool reset) {}
+
+  /*!
+   * \brief Store the adjoints of the FIML neural network weights.
+   */
+  inline virtual void ExtractNNWeightAdjoints() {}
+
+  /*!
+   * \brief Write the objective gradient with respect to the FIML neural network weights.
+   */
+  inline virtual void WriteNNWeightGradients(const string& filename) const {}
+
+  /*!
+   * \brief L2 norm of the objective gradient with respect to the FIML design variables.
+   * \param[in] config - Definition of the particular problem.
+   * \return Norm of dJ/dbeta (KIND_TRAIN_NN= NONE) or dJ/dw (WEIGHTS), 0 without FIML.
+   */
+  inline virtual su2double ComputeFIMLSensitivityNorm(const CConfig *config) const { return 0.0; }
 
   /*!
    * \brief A virtual member.

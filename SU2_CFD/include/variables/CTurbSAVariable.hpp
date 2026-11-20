@@ -47,6 +47,13 @@ private:
   VectorType Vortex_Tilting;
   VectorType besselIntegral;
 
+  /* FIML variables */
+  VectorType beta_fiml;          /*!< \brief FIML correction factor at each point. */
+  VectorType beta_fiml_grad;     /*!< \brief Derivative of the objective function with respect to beta_fiml. */
+  VectorType beta_fiml_train;    /*!< \brief Target beta for neural network training (FIML-Embedded). */
+  VectorType sa_production;      /*!< \brief SA production per unit volume before the FIML correction. */
+  VectorType sa_destruction;     /*!< \brief SA destruction per unit volume. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -161,5 +168,84 @@ public:
    * \return Value of the integral.
    */
   inline su2double GetBesselIntegral(unsigned long iPoint) const override { return besselIntegral(iPoint); }
+
+  /*!
+   * \brief Get the FIML correction factor beta_fiml.
+   * \param[in] iPoint - Point index.
+   * \return Value of beta_fiml.
+   */
+  inline su2double GetBetaFiml(unsigned long iPoint) const override { return beta_fiml(iPoint); }
+
+  /*!
+   * \brief Set the FIML correction factor beta_fiml.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_beta_fiml - Value of beta_fiml.
+   */
+  inline void SetBetaFiml(unsigned long iPoint, su2double val_beta_fiml) { beta_fiml(iPoint) = val_beta_fiml; }
+
+  /*!
+   * \brief Get the FIML correction gradient.
+   * \param[in] iPoint - Point index.
+   * \return Value of beta_fiml gradient.
+   */
+  inline su2double GetBetaFimlGrad(unsigned long iPoint) const override { return beta_fiml_grad(iPoint); }
+
+  /*!
+   * \brief Set the FIML correction gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_beta_fiml_grad - Value of beta_fiml gradient.
+   */
+  inline void SetBetaFimlGrad(unsigned long iPoint, su2double val_beta_fiml_grad) { beta_fiml_grad(iPoint) = val_beta_fiml_grad; }
+
+  /*!
+   * \brief Get the FIML training target.
+   * \param[in] iPoint - Point index.
+   * \return Value of beta_fiml training target.
+   */
+  inline su2double GetBetaFimlTrain(unsigned long iPoint) const { return beta_fiml_train(iPoint); }
+
+  /*!
+   * \brief Set the FIML training target.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_beta_fiml_train - Value of beta_fiml training target.
+   */
+  inline void SetBetaFimlTrain(unsigned long iPoint, su2double val_beta_fiml_train) { beta_fiml_train(iPoint) = val_beta_fiml_train; }
+
+  /*!
+   * \brief Store the SA production and destruction per unit volume, used as FIML features.
+   */
+  inline void SetSASourceTerms(unsigned long iPoint, su2double production, su2double destruction) {
+    sa_production(iPoint) = production;
+    sa_destruction(iPoint) = destruction;
+  }
+
+  /*!
+   * \brief Get the SA production per unit volume before the FIML correction.
+   */
+  inline su2double GetSAProduction(unsigned long iPoint) const { return sa_production(iPoint); }
+
+  /*!
+   * \brief Get the SA destruction per unit volume.
+   */
+  inline su2double GetSADestruction(unsigned long iPoint) const { return sa_destruction(iPoint); }
+
+  /*!
+   * \brief Register beta_fiml as AD input, or reset its AD index.
+   * \param[in] reset - Reset the index instead of registering.
+   */
+  void RegisterBetaFiml(bool reset) override {
+    for (unsigned long iPoint = 0; iPoint < beta_fiml.size(); iPoint++) {
+      if (reset) AD::ResetInput(beta_fiml(iPoint));
+      else AD::RegisterInput(beta_fiml(iPoint));
+    }
+  }
+
+  /*!
+   * \brief Store the adjoint of beta_fiml as its gradient.
+   */
+  void ExtractBetaFimlAdjoint() override {
+    for (unsigned long iPoint = 0; iPoint < beta_fiml.size(); iPoint++)
+      beta_fiml_grad(iPoint) = SU2_TYPE::GetDerivative(beta_fiml(iPoint));
+  }
 
 };

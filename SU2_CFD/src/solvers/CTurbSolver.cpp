@@ -160,6 +160,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
                      CURRENT_FUNCTION);
     }
 
+    LoadRestartAuxiliaryFields(geometry[MESH_0], config);
+
   }  // end safe global access, pre and postprocessing are thread-safe.
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 

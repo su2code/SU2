@@ -37,6 +37,7 @@ struct CPrimitiveIndices;
 class CFlowOutput : public CFVMOutput{
 protected:
   unsigned long lastInnerIter;
+  vector<vector<bool>> cpTargetSet; /*!< \brief Wall vertices with a target Cp, per marker. */
 
   /*!
    * \brief Constructor of the class
@@ -222,6 +223,7 @@ protected:
 
   /*!
    * \brief Set CP inverse design output field values (and also into the solver).
+   *        Only vertices listed in the target file contribute.
    * \param[in,out] solver - The container holding all solution data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

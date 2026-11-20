@@ -36,6 +36,7 @@
 #include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
+#include "../../include/fiml/FIMLInputs.hpp"
 #include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 
@@ -938,19 +939,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       }
     }
 
-    if (output.type == OperationType::FUNCTION) {
-      auto Functor = [&](unsigned long i) {
-        /*--- Functions only reference other history outputs. ---*/
-        return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
-      };
-      SetHistoryOutputValue(output.name, output.Eval(Functor));
-      continue;
-    }
-
-    if (output.type == OperationType::PROBE) {
-      /*--- Probe evaluation will be done after all outputs are processed, with batched AllReduce. ---*/
-      continue;
-    }
+    /*--- Probes and functions are evaluated after the surface integrals, probes with a batched AllReduce. ---*/
+    if (output.type == OperationType::FUNCTION || output.type == OperationType::PROBE) continue;
 
     /*--- Surface integral of the expression. ---*/
 
@@ -1019,6 +1009,13 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       if (output.skip || output.type != OperationType::PROBE) continue;
       SetHistoryOutputValue(output.name, probeValuesGlobal[iProbe++]);
     }
+  }
+
+  /*--- Functions in the order of definition, so they see the current values of all other outputs. ---*/
+  for (auto& output : customOutputs) {
+    if (output.skip || output.type != OperationType::FUNCTION) continue;
+    auto Functor = [&](unsigned long i) { return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE]; };
+    SetHistoryOutputValue(output.name, output.Eval(Functor));
   }
 }
 
@@ -1252,6 +1249,9 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
     case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[TURB_SOL]->GetRes_Max(0)));
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+        SetHistoryOutputValue("BETA_REG", solver[TURB_SOL]->ComputeFIMLRegularization(config));
+      }
       if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
         SetHistoryOutputValue("RMS_STOCH_VAR-X", log10(solver[TURB_SOL]->GetRes_RMS(1)));
         SetHistoryOutputValue("RMS_STOCH_VAR-Y", log10(solver[TURB_SOL]->GetRes_RMS(2)));
@@ -1610,6 +1610,19 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
 
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    AddVolumeOutput("BETA_FIML", "Beta_FIML", "FIML", "FIML correction factor of the SA production term");
+    for (const auto& input : FIML::Catalogue()) {
+      AddVolumeOutput(string("FIML_") + input.name, input.field, "FIML_INPUTS", input.description);
+    }
+
+    /*--- beta is part of the restart, so its group is always written. ---*/
+    if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), "FIML") == requestedVolumeFields.end()) {
+      requestedVolumeFields.emplace_back("FIML");
+      nRequestedVolumeFields++;
+    }
+  }
+
   // Hybrid RANS-LES
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
@@ -1701,6 +1714,15 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
   if (config->GetSAParsedOptions().bc) {
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetIntermittencyEff(iPoint));
+  }
+
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    SetVolumeOutputValue("BETA_FIML", iPoint, Node_Turb->GetBetaFiml(iPoint));
+    su2double values[FIML::N_INPUTS];
+    solver[TURB_SOL]->GetFIMLInputs(iPoint, geometry, solver, values);
+    for (const auto& input : FIML::Catalogue()) {
+      SetVolumeOutputValue(string("FIML_") + input.name, iPoint, values[static_cast<unsigned short>(input.kind)]);
+    }
   }
 
   switch (config->GetKind_Trans_Model()) {
@@ -2009,7 +2031,11 @@ void CFlowOutput::SetCpInverseDesign(CSolver *solver, const CGeometry *geometry,
     return;
   }
 
-  if ((config->GetInnerIter() == 0) || config->GetDiscrete_Adjoint()) {
+  if ((config->GetInnerIter() == 0) || config->GetDiscrete_Adjoint() || cpTargetSet.empty()) {
+    cpTargetSet.resize(geometry->GetnMarker());
+    for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); ++iMarker)
+      cpTargetSet[iMarker].assign(geometry->GetnVertex(iMarker), false);
+
     string text_line;
     getline(Surface_file, text_line);
 
@@ -2037,6 +2063,7 @@ void CFlowOutput::SetCpInverseDesign(CSolver *solver, const CGeometry *geometry,
 
           if (iVertex >= 0) {
             solver->SetCPressureTarget(iMarker, iVertex, PressureCoeff);
+            cpTargetSet[iMarker][iVertex] = true;
             set = true;
           }
         }
@@ -2058,7 +2085,7 @@ void CFlowOutput::SetCpInverseDesign(CSolver *solver, const CGeometry *geometry,
       for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (!geometry->nodes->GetDomain(iPoint)) continue;
+        if (!geometry->nodes->GetDomain(iPoint) || !cpTargetSet[iMarker][iVertex]) continue;
 
         const auto Cp = solver->GetCPressure(iMarker, iVertex);
         const auto CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
@@ -2834,6 +2861,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         case TURB_MODEL::SA:
           /// TODO: add the submodels here
           file << "Spalart Allmaras\n";
+          break;
+        case TURB_MODEL::SA_FIML:
+          file << "Spalart Allmaras with FIML correction\n";
           break;
         case TURB_MODEL::SST:
           /// TODO: add the submodels here

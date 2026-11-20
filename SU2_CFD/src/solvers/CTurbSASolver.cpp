@@ -33,6 +33,8 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/random_toolbox.hpp"
+#include <fstream>
+#include <random>
 
 
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver* flow_solver, unsigned short iMesh,
@@ -202,6 +204,24 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver
   /*--- Add the solver name. ---*/
   SolverName = "SA";
 
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+    nn_inputs = config->GetFIML_Inputs();
+    n_inputs = nn_inputs.size();
+    for (unsigned short i = 0; i < FIML::N_INPUTS; i++) {
+      box_cox_lambda[i] = 1.0;
+      feature_mean[i] = 0.0;
+      feature_std[i] = 1.0;
+    }
+    nn_scaling_set = none_of(nn_inputs.begin(), nn_inputs.end(), [](FIML_INPUT input) {
+      return FIML::Definition(input).transform == FIML::TRANSFORM::BOX_COX;
+    });
+    if (config->GetKind_Train_NN() != NN_TRAIN_METHOD::NONE) InitializeNeuralNetwork(config);
+    shield = config->GetKind_FIML_Shield();
+    shield_coeff = config->GetFIML_Shield_Coeff();
+    SetReferenceWallShearStress(config);
+    nn_filtered.resize(nPointDomain) = 0;
+  }
+
 }
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -252,6 +272,57 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
       if (maxIter > 0) SmoothLangevinSourceTerms(config, geometry);
     }
 
+  }
+
+  /*--- FIML: Compute Box-Cox scaling once, then forward propagate neural network.
+   * The features use source terms stored by Source_Residual, so the network starts at iteration 1 or later.
+   * The discrete adjoint records the network in every iteration. ---*/
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML && config->GetKind_Train_NN() != NN_TRAIN_METHOD::NONE &&
+      iMesh == MESH_0) {
+    const bool adjoint = config->GetDiscrete_Adjoint();
+    const bool nn_active = adjoint || config->GetInnerIter() >= max<unsigned long>(config->GetIter_Start_NN(), 1);
+    const unsigned short num_epoch = config->GetNum_Epoch();
+    const bool train = nn_active && !adjoint && config->GetTrain_NN() &&
+                       config->GetKind_Train_NN() == NN_TRAIN_METHOD::BACKPROP && epoch_counter < num_epoch;
+
+    if (nn_active) {
+      /*--- Scaling, targets, training and file output are serial; the forward pass is shared by the threads. ---*/
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        if (!nn_scaling_set) {
+          if (adjoint) SU2_MPI::Error("The adjoint of the neural network needs nn_weights.dat.", CURRENT_FUNCTION);
+          if (rank == MASTER_NODE) cout << "Computing scaling parameters for FIML..." << endl;
+          ComputeBoxCoxLambda(config, solver_container, geometry);
+          nn_scaling_set = true;
+        }
+        if (config->GetTrain_NN() && !targets_loaded) {
+          LoadBetaTargets(config, geometry);
+          targets_loaded = true;
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+      ForwardPropagate(geometry, solver_container);
+
+      /*--- One training epoch per solver iteration. ---*/
+      if (train) {
+        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+          const su2double loss = ComputeTrainingLoss();
+          if (rank == MASTER_NODE && (epoch_counter % 10 == 0 || epoch_counter + 1 == num_epoch)) {
+            cout << "FIML Training - Epoch " << epoch_counter << "/" << num_epoch << ", Loss: " << loss << endl;
+          }
+          BackwardPropagate(geometry, solver_container);
+          UpdateWeights(config->GetLearning_Rate());
+          epoch_counter++;
+        }
+        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+        ForwardPropagate(geometry, solver_container);
+
+        if (epoch_counter == num_epoch) {
+          SU2_OMP_SAFE_GLOBAL_ACCESS(SaveNeuralNetworkWeights("nn_weights.dat");)
+        }
+      }
+    }
   }
 
 }
@@ -391,6 +462,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition_BC = config->GetSAParsedOptions().bc;
+  const bool fiml = (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
@@ -422,6 +494,15 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
     numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
+
+    if (fiml) {
+      su2double beta = nodes->GetBetaFiml(iPoint);
+      if (shield == FIML_SHIELD::FD) {
+        const auto state = GetFIMLLocalState(iPoint, geometry, solver_container);
+        beta = 1.0 + (beta - 1.0) * FIML::ShieldFunction(state, shield_coeff);
+      }
+      numerics->SetBetaFiml(beta);
+    }
 
     /*--- Set volume ---*/
 
@@ -480,6 +561,11 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    if (fiml) {
+      su2staticcast_p<CTurbSAVariable*>(nodes)->SetSASourceTerms(iPoint, numerics->GetSAProduction(),
+                                                                  numerics->GetSADestruction());
+    }
 
     /*--- Store the intermittency ---*/
 
@@ -1557,6 +1643,538 @@ void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
       Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
     }
   }
+}
+
+namespace {
+/*--- Box-Cox transform of x (floored to stay positive). ---*/
+constexpr passivedouble BOX_COX_FLOOR = 1e-12;
+su2double BoxCox(su2double x, su2double lambda) {
+  x = max(x, su2double(BOX_COX_FLOOR));
+  if (fabs(lambda) < 1e-10) return log(x);
+  return (pow(x, lambda) - 1.0) / lambda;
+}
+}  // namespace
+
+void CTurbSASolver::InitializeNeuralNetwork(const CConfig* config) {
+
+  n_neurons = config->GetN_Neurons();
+  n_hidden_layers = config->GetN_Hidden_Layers();
+
+  weights.resize(n_hidden_layers + 1);
+  weight_gradients.resize(n_hidden_layers + 1);
+  for (unsigned short layer = 0; layer <= n_hidden_layers; layer++) {
+    const unsigned short n_from = (layer == 0) ? n_inputs : n_neurons;
+    const unsigned short n_to = (layer == n_hidden_layers) ? 1 : n_neurons;
+    weights[layer].resize(n_from + 1, n_to) = su2double(0.0);
+    weight_gradients[layer].resize(n_from + 1, n_to) = su2double(0.0);
+  }
+
+  /*--- Without saved weights: Xavier-uniform hidden layers, zero output layer, so beta starts at 1. ---*/
+  if (!LoadNeuralNetworkWeights("nn_weights.dat")) {
+    std::mt19937 gen(0);
+    for (unsigned short layer = 0; layer < n_hidden_layers; layer++) {
+      const unsigned long n_from = weights[layer].rows() - 1;
+      const passivedouble limit = sqrt(6.0 / (n_from + n_neurons));
+      std::uniform_real_distribution<passivedouble> dist(-limit, limit);
+      for (unsigned long i = 0; i < n_from; i++) {
+        for (unsigned long j = 0; j < weights[layer].cols(); j++) weights[layer](i, j) = dist(gen);
+      }
+    }
+  }
+}
+
+vector<vector<su2double>> CTurbSASolver::NetworkActivations() const {
+  vector<vector<su2double>> activations(weights.size() + 1);
+  for (unsigned long layer = 0; layer < weights.size(); layer++) activations[layer].assign(weights[layer].rows(), 1.0);
+  activations.back().assign(1, 0.0);
+  return activations;
+}
+
+void CTurbSASolver::EvaluateNetwork(const su2double* inputs, vector<vector<su2double>>& activations) const {
+  for (unsigned short i = 0; i < n_inputs; i++) activations[0][i] = inputs[i];
+
+  for (unsigned long layer = 0; layer < weights.size(); layer++) {
+    const auto& W = weights[layer];
+    for (unsigned long j = 0; j < W.cols(); j++) {
+      su2double sum = 0.0;
+      for (unsigned long i = 0; i < W.rows(); i++) sum += W(i, j) * activations[layer][i];
+      activations[layer + 1][j] = tanh(sum);
+    }
+  }
+}
+
+void CTurbSASolver::ForwardPropagate(const CGeometry* geometry, CSolver** solver_container) {
+
+  auto* turbNodes = su2staticcast_p<CTurbSAVariable*>(nodes);
+
+  /*--- Activations of one point, private to each thread. ---*/
+  auto activations = NetworkActivations();
+  su2double features[FIML::N_INPUTS];
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    const auto state = GetFIMLLocalState(iPoint, geometry, solver_container);
+    nn_filtered[iPoint] = FilterShield(state);
+    if (nn_filtered[iPoint]) {
+      turbNodes->SetBetaFiml(iPoint, 1.0);
+      continue;
+    }
+    ComputeNNInputFeatures(state, features);
+    ScaleNNInputs(features);
+    EvaluateNetwork(features, activations);
+    turbNodes->SetBetaFiml(iPoint, 1.0 + activations.back()[0]);
+  }
+  END_SU2_OMP_FOR
+}
+
+FIML::LocalState CTurbSASolver::GetFIMLLocalState(unsigned long iPoint, const CGeometry* geometry,
+                                                  const CSolver* const* solver_container) const {
+
+  const auto* turbNodes = su2staticcast_p<const CTurbSAVariable*>(nodes);
+  const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+  /*--- The source terms come from the previous evaluation, so they are passive for the adjoint. ---*/
+  FIML::LocalState state;
+  state.nu_tilde = nodes->GetSolution(iPoint, 0);
+  state.density = flowNodes->GetDensity(iPoint);
+  state.mu_lam = flowNodes->GetLaminarViscosity(iPoint);
+  state.mu_turb = flowNodes->GetEddyViscosity(iPoint);
+  state.strain = flowNodes->GetStrainMag(iPoint);
+  state.vorticity = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
+  state.wall_dist = geometry->nodes->GetWall_Distance(iPoint);
+  state.production = SU2_TYPE::GetValue(turbNodes->GetSAProduction(iPoint));
+  state.destruction = SU2_TYPE::GetValue(turbNodes->GetSADestruction(iPoint));
+  state.tau_wall_ref = tau_wall_ref;
+  return state;
+}
+
+void CTurbSASolver::ComputeNNInputFeatures(const FIML::LocalState& state, su2double* features) const {
+  for (unsigned short i = 0; i < n_inputs; i++) features[i] = FIML::Evaluate(nn_inputs[i], state);
+}
+
+void CTurbSASolver::SetReferenceWallShearStress(const CConfig* config) {
+  const su2double rho = config->GetDensity_FreeStreamND();
+  const su2double u2 = GeometryToolbox::SquaredNorm(nDim, config->GetVelocity_FreeStreamND());
+  const su2double re_x = rho * sqrt(u2) * 0.5 * config->GetRefLength() / config->GetViscosity_FreeStreamND();
+  tau_wall_ref = 0.027 * pow(re_x, -1.0 / 7.0) * rho * u2;
+}
+
+void CTurbSASolver::ScaleNNInputs(su2double* features) const {
+
+  for (unsigned short i = 0; i < n_inputs; i++) {
+    if (FIML::Definition(nn_inputs[i]).transform != FIML::TRANSFORM::BOX_COX) continue;
+    const su2double y = BoxCox(features[i], box_cox_lambda[i]);
+    features[i] = (y - feature_mean[i]) / feature_std[i];
+  }
+}
+
+bool CTurbSASolver::FilterShield(const FIML::LocalState& state) const {
+  return shield == FIML_SHIELD::LEGACY && (FIML::Evaluate(FIML_INPUT::DELTA, state) < 0.25 ||
+                                           FIML::Evaluate(FIML_INPUT::STRAIN_VORT, state) > 2.0);
+}
+
+void CTurbSASolver::ComputeBoxCoxLambda(const CConfig* config, CSolver** solver_container, CGeometry* geometry) {
+
+  /*--- Profile log-likelihood on a lambda grid, from global sums of y, y^2 and log(x), for the Box-Cox inputs. ---*/
+  constexpr unsigned short n_lambda = 81;
+  constexpr passivedouble lambda_min = -2.0, lambda_max = 2.0;
+  const auto lambda_grid = [&](unsigned short k) { return lambda_min + k * (lambda_max - lambda_min) / (n_lambda - 1); };
+
+  /*--- Per feature: sum(log x), then sum(y) and sum(y^2) for each lambda. ---*/
+  const unsigned long stride = 1 + 2 * n_lambda;
+  vector<su2double> local(n_inputs * stride + 1, 0.0), global(n_inputs * stride + 1, 0.0);
+  su2double features[FIML::N_INPUTS];
+  const auto box_cox = [&](unsigned short feat) {
+    return FIML::Definition(nn_inputs[feat]).transform == FIML::TRANSFORM::BOX_COX;
+  };
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    const auto state = GetFIMLLocalState(iPoint, geometry, solver_container);
+    if (FilterShield(state)) continue;
+    ComputeNNInputFeatures(state, features);
+
+    for (unsigned short feat = 0; feat < n_inputs; feat++) {
+      if (!box_cox(feat)) continue;
+      su2double* sums = &local[feat * stride];
+      const su2double x = max(features[feat], su2double(BOX_COX_FLOOR));
+      sums[0] += log(x);
+      for (unsigned short k = 0; k < n_lambda; k++) {
+        const su2double y = BoxCox(features[feat], lambda_grid(k));
+        sums[1 + 2 * k] += y;
+        sums[2 + 2 * k] += y * y;
+      }
+    }
+    local.back() += 1.0;
+  }
+
+  SU2_MPI::Allreduce(local.data(), global.data(), local.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  const su2double n = max(global.back(), su2double(1.0));
+
+  for (unsigned short feat = 0; feat < n_inputs; feat++) {
+    if (!box_cox(feat)) continue;
+    const su2double* sums = &global[feat * stride];
+    su2double best_ll = -numeric_limits<passivedouble>::max();
+
+    for (unsigned short k = 0; k < n_lambda; k++) {
+      const su2double mean = sums[1 + 2 * k] / n;
+      const su2double var = max(sums[2 + 2 * k] / n - mean * mean, su2double(1e-300));
+      const su2double ll = -0.5 * n * log(var) + (lambda_grid(k) - 1.0) * sums[0];
+
+      if (ll > best_ll) {
+        best_ll = ll;
+        box_cox_lambda[feat] = lambda_grid(k);
+        feature_mean[feat] = mean;
+        feature_std[feat] = max(sqrt(var), su2double(1e-12));
+      }
+    }
+  }
+
+  if (rank == MASTER_NODE) {
+    cout << "FIML input scaling over " << n << " of " << geometry->GetGlobal_nPointDomain()
+         << " points (lambda, mean, std):\n";
+    for (unsigned short feat = 0; feat < n_inputs; feat++) {
+      if (!box_cox(feat)) continue;
+      cout << "  " << FIML::Definition(nn_inputs[feat]).name << ": " << box_cox_lambda[feat] << ", "
+           << feature_mean[feat] << ", " << feature_std[feat] << "\n";
+    }
+    cout << flush;
+  }
+}
+
+su2double CTurbSASolver::ComputeFIMLRegularization(const CConfig* config) const {
+  if (config->GetKind_Turb_Model() != TURB_MODEL::SA_FIML) return 0.0;
+
+  su2double local = 0.0;
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    const su2double diff = nodes->GetBetaFiml(iPoint) - 1.0;
+    local += diff * diff;
+  }
+  su2double global = 0.0;
+  SU2_MPI::Allreduce(&local, &global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return global;
+}
+
+void CTurbSASolver::LoadRestartAuxiliaryFields(const CGeometry* geometry, const CConfig* config) {
+  if (config->GetKind_Turb_Model() != TURB_MODEL::SA_FIML) return;
+  auto* turbNodes = su2staticcast_p<CTurbSAVariable*>(nodes);
+
+  /*--- ASCII restart headers quote the field names, binary ones do not. ---*/
+  unsigned long iField = 1;
+  for (; iField < fields.size(); iField++) {
+    if (fields[iField] == "Beta_FIML" || fields[iField] == "\"Beta_FIML\"") break;
+  }
+  if (iField == fields.size()) {
+    if (rank == MASTER_NODE) cout << "The restart file has no Beta_FIML, beta starts at 1." << endl;
+    return;
+  }
+
+  unsigned long counter = 0;
+  for (auto iPoint_Global = 0ul; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
+    const auto iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+    if (iPoint_Local > -1) {
+      turbNodes->SetBetaFiml(iPoint_Local, Restart_Data[counter * Restart_Vars[1] + iField - 1]);
+      counter++;
+    }
+  }
+
+  if (rank == MASTER_NODE) cout << "Loaded Beta_FIML from the restart file." << endl;
+}
+
+void CTurbSASolver::LoadBetaTargets(const CConfig* config, CGeometry* geometry) {
+
+  auto* turbNodes = su2staticcast_p<CTurbSAVariable*>(nodes);
+  const string target_file = config->GetBeta_Target_FileName();
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) turbNodes->SetBetaFimlTrain(iPoint, 1.0);
+
+  ifstream beta_file(target_file);
+  if (!beta_file.is_open()) {
+    if (rank == MASTER_NODE) {
+      cout << "Warning: Beta target file '" << target_file << "' not found, the targets are 1." << endl;
+    }
+    return;
+  }
+  if (rank == MASTER_NODE) cout << "Loading beta targets from: " << target_file << endl;
+
+  /*--- One value per line, ordered by global point index. ---*/
+  vector<passivedouble> beta_vals;
+  passivedouble beta_val;
+  while (beta_file >> beta_val) beta_vals.push_back(beta_val);
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    const auto iGlobal = geometry->nodes->GetGlobalIndex(iPoint);
+    if (iGlobal < beta_vals.size()) turbNodes->SetBetaFimlTrain(iPoint, beta_vals[iGlobal]);
+  }
+
+  if (rank == MASTER_NODE) {
+    if (beta_vals.size() != geometry->GetGlobal_nPointDomain())
+      cout << "Warning: " << beta_vals.size() << " beta targets for " << geometry->GetGlobal_nPointDomain()
+           << " points; missing targets are set to 1." << endl;
+    cout << "Loaded " << beta_vals.size() << " beta target values." << endl;
+  }
+}
+
+su2double CTurbSASolver::ComputeTrainingLoss() const {
+
+  const auto* turbNodes = su2staticcast_p<const CTurbSAVariable*>(nodes);
+  su2double local[2] = {0.0, 0.0}, global[2] = {0.0, 0.0};
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (nn_filtered[iPoint]) continue;
+    const su2double diff = turbNodes->GetBetaFiml(iPoint) - turbNodes->GetBetaFimlTrain(iPoint);
+    local[0] += diff * diff;
+    local[1] += 1.0;
+  }
+  SU2_MPI::Allreduce(local, global, 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return 0.5 * global[0] / max(global[1], su2double(1.0));
+}
+
+void CTurbSASolver::BackwardPropagate(const CGeometry* geometry, CSolver** solver_container) {
+
+  const auto* turbNodes = su2staticcast_p<const CTurbSAVariable*>(nodes);
+  const auto n_layers = weights.size();
+
+  for (auto& gradient : weight_gradients) gradient = su2double(0.0);
+
+  auto activations = NetworkActivations();
+  vector<vector<su2double>> deltas(n_layers);
+  for (unsigned long layer = 0; layer < n_layers; layer++) deltas[layer].resize(weights[layer].cols());
+  su2double features[FIML::N_INPUTS];
+  su2double local_count = 0.0;
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (nn_filtered[iPoint]) continue;
+
+    ComputeNNInputFeatures(GetFIMLLocalState(iPoint, geometry, solver_container), features);
+    ScaleNNInputs(features);
+    EvaluateNetwork(features, activations);
+    local_count += 1.0;
+
+    /*--- Loss 0.5 (beta - target)^2 with beta = 1 + tanh(output), back through the tanh layers. ---*/
+    const su2double output = activations.back()[0];
+    deltas.back()[0] = (output + 1.0 - turbNodes->GetBetaFimlTrain(iPoint)) * (1.0 - output * output);
+
+    for (int layer = static_cast<int>(n_layers) - 2; layer >= 0; layer--) {
+      const auto& W = weights[layer + 1];
+      for (unsigned long j = 0; j < deltas[layer].size(); j++) {
+        su2double sum = 0.0;
+        for (unsigned long k = 0; k < W.cols(); k++) sum += deltas[layer + 1][k] * W(j, k);
+        const su2double a = activations[layer + 1][j];
+        deltas[layer][j] = sum * (1.0 - a * a);
+      }
+    }
+
+    ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+      weight_gradients[layer](i, j) += deltas[layer][j] * activations[layer][i];
+    });
+  }
+
+  /*--- Average over the points of all ranks, so the step size does not depend on the mesh size. ---*/
+  vector<su2double> local, global;
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    local.push_back(weight_gradients[layer](i, j));
+  });
+  local.push_back(local_count);
+  global.resize(local.size());
+  SU2_MPI::Allreduce(local.data(), global.data(), local.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+  const su2double inv_count = 1.0 / max(global.back(), su2double(1.0));
+  unsigned long k = 0;
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    weight_gradients[layer](i, j) = global[k++] * inv_count;
+  });
+}
+
+void CTurbSASolver::UpdateWeights(su2double learning_rate) {
+
+  /*--- Adam with the default moment decay rates. ---*/
+  constexpr passivedouble beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
+  if (adam_m.empty()) {
+    unsigned long n = 0;
+    ForEachWeight([&](unsigned long, unsigned long, unsigned long) { n++; });
+    adam_m.assign(n, 0.0);
+    adam_v.assign(n, 0.0);
+  }
+  adam_step++;
+  const su2double corr1 = 1.0 - pow(beta1, adam_step), corr2 = 1.0 - pow(beta2, adam_step);
+
+  unsigned long k = 0;
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    const su2double g = weight_gradients[layer](i, j);
+    adam_m[k] = beta1 * adam_m[k] + (1.0 - beta1) * g;
+    adam_v[k] = beta2 * adam_v[k] + (1.0 - beta2) * g * g;
+    weights[layer](i, j) -= learning_rate * (adam_m[k] / corr1) / (sqrt(adam_v[k] / corr2) + eps);
+    k++;
+  });
+}
+
+void CTurbSASolver::GetFIMLInputs(unsigned long iPoint, const CGeometry* geometry,
+                                  const CSolver* const* solver_container, su2double* values) const {
+  const auto state = GetFIMLLocalState(iPoint, geometry, solver_container);
+  for (const auto& input : FIML::Catalogue()) {
+    values[static_cast<unsigned short>(input.kind)] = FIML::Evaluate(input.kind, state);
+  }
+}
+
+void CTurbSASolver::RegisterNNWeights(bool reset) {
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    if (reset) AD::ResetInput(weights[layer](i, j));
+    else AD::RegisterInput(weights[layer](i, j));
+  });
+}
+
+void CTurbSASolver::ExtractNNWeightAdjoints() {
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    weight_gradients[layer](i, j) = SU2_TYPE::GetDerivative(weights[layer](i, j));
+  });
+}
+
+vector<passivedouble> CTurbSASolver::GlobalNNWeightGradients() const {
+
+  vector<passivedouble> local, global;
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    local.push_back(SU2_TYPE::GetValue(weight_gradients[layer](i, j)));
+  });
+  global.resize(local.size());
+  using CPassiveMPI = SelectMPIWrapper<passivedouble>::W;
+  CPassiveMPI::Allreduce(local.data(), global.data(), local.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return global;
+}
+
+void CTurbSASolver::WriteNNWeightGradients(const string& filename) const {
+
+  const auto global = GlobalNNWeightGradients();
+
+  if (rank != MASTER_NODE) return;
+  ofstream file(filename);
+  file.precision(15);
+  for (const auto g : global) file << g << "\n";
+}
+
+su2double CTurbSASolver::ComputeFIMLSensitivityNorm(const CConfig* config) const {
+
+  passivedouble sum = 0.0;
+  if (config->GetKind_Train_NN() == NN_TRAIN_METHOD::WEIGHTS) {
+    for (const auto g : GlobalNNWeightGradients()) sum += g * g;
+    return sqrt(sum);
+  }
+
+  passivedouble local = 0.0;
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    const passivedouble g = SU2_TYPE::GetValue(nodes->GetBetaFimlGrad(iPoint));
+    local += g * g;
+  }
+  using CPassiveMPI = SelectMPIWrapper<passivedouble>::W;
+  CPassiveMPI::Allreduce(&local, &sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return sqrt(sum);
+}
+
+void CTurbSASolver::SaveNeuralNetworkWeights(const string& filename) const {
+
+  if (rank != MASTER_NODE) return;
+
+  ofstream weight_file(filename);
+  if (!weight_file.is_open()) {
+    cout << "Warning: Could not open file '" << filename << "' for writing." << endl;
+    return;
+  }
+  weight_file.precision(15);
+
+  /*--- Network size, input names, the means, stds and Box-Cox lambdas of the inputs, then one weight per line. ---*/
+  weight_file << n_inputs << " Inputs," << n_hidden_layers << " Hidden Layers," << n_neurons << " Hidden Nodes\n";
+  weight_file << "Inputs:";
+  for (const auto input : nn_inputs) weight_file << " " << FIML::Definition(input).name;
+  weight_file << "\n";
+  for (const auto* vals : {feature_mean, feature_std, box_cox_lambda}) {
+    for (unsigned short i = 0; i < n_inputs; i++) weight_file << vals[i] << " ";
+  }
+  weight_file << "\n";
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    weight_file << weights[layer](i, j) << "\n";
+  });
+
+  cout << "Saved neural network weights to: " << filename << endl;
+}
+
+bool CTurbSASolver::LoadNeuralNetworkWeights(const string& filename) {
+
+  ifstream weight_file(filename);
+  if (!weight_file.is_open()) {
+    if (rank == MASTER_NODE) {
+      cout << "No saved neural network weights found at: " << filename << endl;
+      cout << "Starting with random hidden weights and zero output weights (beta = 1)." << endl;
+    }
+    return false;
+  }
+
+  /*--- The header must describe the network of the configuration. ---*/
+  string header_line;
+  getline(weight_file, header_line);
+  unsigned short file_inputs = 0, file_layers = 0, file_neurons = 0;
+  if (sscanf(header_line.c_str(), "%hu Inputs,%hu Hidden Layers,%hu Hidden Nodes", &file_inputs, &file_layers,
+             &file_neurons) != 3) {
+    SU2_MPI::Error("First line of " + filename + " must read '<n> Inputs,<n> Hidden Layers,<n> Hidden Nodes'.",
+                   CURRENT_FUNCTION);
+  }
+  if (file_inputs != n_inputs || file_layers != n_hidden_layers || file_neurons != n_neurons) {
+    SU2_MPI::Error(filename + " holds a network with " + to_string(file_inputs) + " inputs, " +
+                   to_string(file_layers) + " hidden layers and " + to_string(file_neurons) +
+                   " neurons; the configuration has " + to_string(n_inputs) + ", " + to_string(n_hidden_layers) +
+                   " (N_HIDDEN_LAYERS) and " + to_string(n_neurons) + " (N_NEURONS).",
+                   CURRENT_FUNCTION);
+  }
+  if (rank == MASTER_NODE) cout << "Loading neural network weights from: " << filename << endl;
+
+  /*--- Input names; files without them hold the four inputs that came first. ---*/
+  string line;
+  getline(weight_file, line);
+  vector<string> file_names;
+  if (line.compare(0, 7, "Inputs:") == 0) {
+    istringstream names(line.substr(7));
+    for (string name; names >> name;) file_names.push_back(name);
+    getline(weight_file, line);
+  } else {
+    file_names = {"PROD_DEST", "CHI", "DELTA", "STRAIN_VORT"};
+  }
+  string config_names, file_list;
+  for (const auto input : nn_inputs) config_names += string(" ") + FIML::Definition(input).name;
+  for (const auto& name : file_names) file_list += " " + name;
+  if (config_names != file_list) {
+    SU2_MPI::Error(filename + " was trained on the inputs" + file_list + "; FIML_INPUTS lists" + config_names + ".",
+                   CURRENT_FUNCTION);
+  }
+
+  /*--- Means, stds and Box-Cox lambdas of the inputs. ---*/
+  istringstream scaling_stream(line);
+  for (auto* vals : {feature_mean, feature_std, box_cox_lambda}) {
+    for (unsigned short i = 0; i < n_inputs; i++) scaling_stream >> vals[i];
+  }
+  if (scaling_stream.fail()) {
+    SU2_MPI::Error("The scaling line of " + filename + " must hold " + to_string(n_inputs) + " means, " +
+                   to_string(n_inputs) + " stds and " + to_string(n_inputs) + " Box-Cox lambdas.",
+                   CURRENT_FUNCTION);
+  }
+  nn_scaling_set = true;
+
+  /*--- The file must hold exactly one value per weight. ---*/
+  unsigned long n_expected = 0, n_read = 0;
+  passivedouble value;
+  ForEachWeight([&](unsigned long layer, unsigned long i, unsigned long j) {
+    n_expected++;
+    if (weight_file >> value) {
+      weights[layer](i, j) = value;
+      n_read++;
+    }
+  });
+  if (n_read != n_expected || (weight_file >> value)) {
+    SU2_MPI::Error(filename + " must hold " + to_string(n_expected) + " weights after the scaling line.",
+                   CURRENT_FUNCTION);
+  }
+
+  if (rank == MASTER_NODE) cout << "Loaded " << n_read << " weights." << endl;
+
+  return true;
 }
 
 void CTurbSASolver::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) {
