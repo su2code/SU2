@@ -1,5 +1,5 @@
 """Read native VTK output independently and exercise failure/size guards."""
-import argparse, json, os, re, struct, subprocess, tempfile
+import argparse, os, re, struct, subprocess, tempfile
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
