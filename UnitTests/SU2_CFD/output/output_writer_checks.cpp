@@ -38,11 +38,16 @@ class Fixture final : public CParallelDataSorter {
     auto** conn = dim == 3 ? &Conn_Hexa_Par : &Conn_Quad_Par;
     *conn = new int[nPoints];
     for (unsigned long p = 0; p < nPoints; ++p) (*conn)[p] = rank * nPoints + p + 1;
-    nElem = empty ? 0 : 1; nElemGlobal = nElem * size;
-    nConn = nPoints; nConnGlobal = nPointsGlobal;
+    nElem = empty ? 0 : 1;
+    nElemGlobal = nElem * size;
+    nConn = nPoints;
+    nConnGlobal = nPointsGlobal;
     nElemPerType[TypeMap.at(type)] = nElem;
     nElemPerTypeGlobal[TypeMap.at(type)] = nElemGlobal;
-    for (int r = 0; r <= size; ++r) { nElem_Cum[r] = r * nElem; nElemConn_Cum[r] = r * nConn; }
+    for (int r = 0; r <= size; ++r) {
+      nElem_Cum[r] = r * nElem;
+      nElemConn_Cum[r] = r * nConn;
+    }
     connectivitySorted = true;
   }
   static std::vector<std::string> Names(unsigned short dim, const std::vector<std::string>& selected) {
@@ -57,11 +62,11 @@ class Fixture final : public CParallelDataSorter {
 class AccountingWriter final : public CFileWriter {
  public:
   AccountingWriter() : CFileWriter(".bin") {}
-  using CFileWriter::OpenMPIFile;
   using CFileWriter::CloseMPIFile;
-  using CFileWriter::WriteMPIString;
+  using CFileWriter::OpenMPIFile;
   using CFileWriter::WriteMPIBinaryData;
   using CFileWriter::WriteMPIBinaryDataAll;
+  using CFileWriter::WriteMPIString;
 };
 
 int main(int argc, char** argv) {
@@ -69,14 +74,18 @@ int main(int argc, char** argv) {
   const int rank = SU2_MPI::GetRank(), size = SU2_MPI::GetSize();
   const std::string mode = argc > 1 ? argv[1] : "normal";
   if (mode == "limit-node" || mode == "limit-product") {
-    if (mode == "limit-node") CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(INT_MAX) + 1);
-    else CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(INT_MAX) / 8 + 1, 8);
+    if (mode == "limit-node")
+      CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(INT_MAX) + 1);
+    else
+      CParallelDataSorter::CheckIntCount(static_cast<unsigned long>(INT_MAX) / 8 + 1, 8);
     SU2_MPI::Finalize();
     return 0;
   }
   if (mode == "limit-restart") {
-    Fixture data(3, {"Density"}); data.OversizedRestart();
-    CSU2BinaryFileWriter writer(&data); writer.WriteData("oversized");
+    Fixture data(3, {"Density"});
+    data.OversizedRestart();
+    CSU2BinaryFileWriter writer(&data);
+    writer.WriteData("oversized");
     SU2_MPI::Finalize();
     return 0;
   }
@@ -87,7 +96,8 @@ int main(int argc, char** argv) {
     }
     SU2_MPI::Barrier(SU2_MPI::GetComm());
     Fixture data(3, {"Density"});
-    CParaviewPVTUFileWriter writer(&data, true); writer.WriteData("failed-pieces");
+    CParaviewPVTUFileWriter writer(&data, true);
+    writer.WriteData("failed-pieces");
     SU2_MPI::Finalize();
     return 0;
   }
@@ -123,29 +133,39 @@ int main(int argc, char** argv) {
   const auto seconds = SU2_TYPE::GetValue(accounting.GetUsedTime());
   require(std::abs(SU2_TYPE::GetValue(accounting.GetBandwidth()) - (5 + 3 * size) / (1e6 * seconds)) < 1e-12,
           "Incorrect writer bandwidth");
-  const std::vector<std::vector<std::string>> selections = {
-      {"Momentum_x"}, {"Momentum_y"}, {"Momentum_z"}, {"Momentum_x", "Momentum_z"},
-      {"Momentum_x", "Other_y", "Momentum_z"}, {"Flux_x_extra"},
-      {"Momentum_x", "Momentum_y", "Momentum_z", "Energy"}};
-  for (unsigned short dim : {2, 3}) for (size_t i = 0; i < selections.size(); ++i) {
-    auto selected = selections[i];
-    if (dim == 2 && i == selections.size() - 1) selected.erase(selected.begin() + 2);
-    Fixture data(dim, selected);
-    const auto prefix = "d" + std::to_string(dim) + "s" + std::to_string(i);
-    auto stats = [&](const CFileWriter& writer, const std::string& name, const std::string& extension) {
-      if (!rank) std::cout << "WRITER_BYTES " << name << extension << " " << SU2_TYPE::GetValue(writer.GetFilesize()) << "\n";
-    };
-    CParaviewXMLFileWriter xml(&data, true); xml.WriteData(prefix + "-xml");
-    stats(xml, prefix + "-xml", ".vtu");
-    CParaviewPVTUFileWriter pvtu(&data, true); pvtu.WriteData(prefix + "-pieces");
-    stats(pvtu, prefix + "-pieces", ".pvtu");
-    CParaviewFileWriter ascii(&data); ascii.WriteData(prefix + "-ascii");
-    stats(ascii, prefix + "-ascii", ".vtk");
-    CParaviewBinaryFileWriter binary(&data); binary.WriteData(prefix + "-binary");
-    stats(binary, prefix + "-binary", ".vtk");
-  }
+  const std::vector<std::vector<std::string>> selections = {{"Momentum_x"},
+                                                            {"Momentum_y"},
+                                                            {"Momentum_z"},
+                                                            {"Momentum_x", "Momentum_z"},
+                                                            {"Momentum_x", "Other_y", "Momentum_z"},
+                                                            {"Flux_x_extra"},
+                                                            {"Momentum_x", "Momentum_y", "Momentum_z", "Energy"}};
+  for (unsigned short dim : {2, 3})
+    for (size_t i = 0; i < selections.size(); ++i) {
+      auto selected = selections[i];
+      if (dim == 2 && i == selections.size() - 1) selected.erase(selected.begin() + 2);
+      Fixture data(dim, selected);
+      const auto prefix = "d" + std::to_string(dim) + "s" + std::to_string(i);
+      auto stats = [&](const CFileWriter& writer, const std::string& name, const std::string& extension) {
+        if (!rank)
+          std::cout << "WRITER_BYTES " << name << extension << " " << SU2_TYPE::GetValue(writer.GetFilesize()) << "\n";
+      };
+      CParaviewXMLFileWriter xml(&data, true);
+      xml.WriteData(prefix + "-xml");
+      stats(xml, prefix + "-xml", ".vtu");
+      CParaviewPVTUFileWriter pvtu(&data, true);
+      pvtu.WriteData(prefix + "-pieces");
+      stats(pvtu, prefix + "-pieces", ".pvtu");
+      CParaviewFileWriter ascii(&data);
+      ascii.WriteData(prefix + "-ascii");
+      stats(ascii, prefix + "-ascii", ".vtk");
+      CParaviewBinaryFileWriter binary(&data);
+      binary.WriteData(prefix + "-binary");
+      stats(binary, prefix + "-binary", ".vtk");
+    }
   Fixture empty(3, {"Momentum_y"}, true);
-  CParaviewPVTUFileWriter emptyWriter(&empty); emptyWriter.WriteData("empty");
+  CParaviewPVTUFileWriter emptyWriter(&empty);
+  emptyWriter.WriteData("empty");
   if (!rank) std::cout << "PASS: writer completion, accounting and field fixtures\n";
   SU2_MPI::Finalize();
 }
