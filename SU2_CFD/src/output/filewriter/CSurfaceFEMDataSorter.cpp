@@ -62,6 +62,7 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
 
   /*--- Create the linear partitioner --- */
 
+  CheckIntCount(nGlobalPointBeforeSort);
   linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
 }
@@ -411,6 +412,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
     /* Allocate the memory to store the connectivity if the size is
        larger than zero. */
+    CheckIntCount(nSubElem_Local, NODES_PER_ELEMENT);
     int *Conn_SubElem = nullptr;
     if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT]();
 

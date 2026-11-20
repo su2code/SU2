@@ -45,6 +45,7 @@ void CSU2BinaryFileWriter::WriteData(string val_filename){
   unsigned short nVar = fieldNames.size();
   unsigned long nParallel_Poin = dataSorter->GetnPoints();
   unsigned long nPoint_Global = dataSorter->GetnPointsGlobal();
+  CParallelDataSorter::CheckIntCount(nPoint_Global);
 
   char str_buf[CGNS_STRING_SIZE];
 
