@@ -220,16 +220,18 @@ void CIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config, CFl
 
 void CIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container) {
   // Computes the turboperformance per blade in zone iBlade
-  const auto nZone = config_container[ZONE_0]->GetnZone();
+  /*--- The stage inlet is the first blade row and the outlet the last, non-turbo zones come after them. ---*/
+  const auto nTurboZones = config_container[ZONE_0]->GetnTurboZones();
+  const auto lastTurboZone = nTurboZones - 1;
 
   if (rank == MASTER_NODE) {
-    auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, nZone);
+    auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, nTurboZones);
 
     auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
     auto InState = TurbomachineryBladePerformances[ZONE_0]->GetBladesPerformances().at(nSpan)->GetInletState();
-    nSpan = config_container[nZone-1]->GetnSpanWiseSections();
-    auto OutState =  TurbomachineryBladePerformances[nZone-1]->GetBladesPerformances().at(nSpan)->GetOutletState();
+    nSpan = config_container[lastTurboZone]->GetnSpanWiseSections();
+    auto OutState =  TurbomachineryBladePerformances[lastTurboZone]->GetBladesPerformances().at(nSpan)->GetOutletState();
     
-    TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
+    TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[lastTurboZone]);
   }
 }

@@ -239,9 +239,10 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
   /*--- Turbomachinery Specific Montior ---*/
   if (config[ZONE_0]->GetBoolTurbomachinery()){
-    if (val_iZone == config[ZONE_0]->GetnZone()-1) {
+    /*--- Stage performance is computed once all blade rows are updated, i.e. by the last turbo zone. ---*/
+    if (val_iZone == config[ZONE_0]->GetnTurboZones()-1) {
       ComputeTurboPerformance(solver, geometry, config);
-      auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, config[val_iZone]->GetnZone());
+      auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, config[val_iZone]->GetnTurboZones());
 
       output->SetHistoryOutput(geometry, solver, config, TurbomachineryStagePerformance, TurbomachineryBladePerformances,
             val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
