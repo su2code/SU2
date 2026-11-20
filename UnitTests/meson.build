@@ -26,6 +26,9 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
                        'SU2_CFD/scalar_muscl.cpp',
                        'SU2_CFD/scalar_limiter_eps.cpp',
                        'SU2_CFD/solvers/CNEMOEulerSolver_tests.cpp',
+                       'SU2_CFD/solvers/characteristic_pressure_outlet_tests.cpp',
+                       'SU2_CFD/solvers/pressure_outlet_boundary_tests.cpp',
+                       'SU2_CFD/solvers/turbo_pressure_outlet_tests.cpp',
                        'SU2_CFD/solvers/supersonic_outlet_tests.cpp',
                        'SU2_CFD/nemo_viscous_assembly.cpp',
                        'SU2_CFD/windowing.cpp',
@@ -35,6 +38,7 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
 
 # Reverse-mode (algorithmic differentiation) tests:
 su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp',
+                          'SU2_CFD/solvers/pressure_outlet_ad_tests.cpp',
                           'SU2_CFD/scalar_limiter_eps.cpp',
                           'SU2_CFD/solvers/under_relaxation_ad_tests.cpp',
                           'SU2_CFD/fluid/CFluidModel_tests_AD.cpp',
@@ -42,6 +46,7 @@ su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp',
 
 # Forward-mode (direct differentiation) tests:
 su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp',
+                          'SU2_CFD/solvers/pressure_outlet_ad_tests.cpp',
                           'SU2_CFD/scalar_limiter_eps.cpp',
                           'SU2_CFD/solvers/under_relaxation_ad_tests.cpp'])
 
@@ -63,6 +68,10 @@ if get_option('enable-tests')
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)
+    # Fatal boundary cases need separate processes; they cannot run inside the normal Catch suite.
+    test('Characteristic boundary admissibility', python,
+         args: files('SU2_CFD/solvers/check_characteristic_boundary_admissibility.py') + [test_driver.full_path()],
+         timeout: 180)
     test('Streamwise periodic support', python,
          args: files('Common/check_periodic_support.py') + [test_driver.full_path(), '--streamwise'],
          timeout: 150)
