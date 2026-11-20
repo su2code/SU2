@@ -42,11 +42,13 @@ class TurboOutletSolver final : public CEulerSolver {
  public:
   TurboOutletSolver(CGeometry* geometry, CConfig* config, double pressure, bool radial)
       : CEulerSolver(geometry, config, MESH_0, config->GetViscous()) {
-    const auto spans = config->GetnSpanWiseSections();
-    RadialEquilibriumPressure.resize(nMarker, spans);
+    RadialEquilibriumPressure.resize(nMarker, config->GetnSpanWiseSections());
     ExtAverageTurboVelocity.resize(nDim);
+    SetOutletPressure(pressure, radial);
+  }
+  void SetOutletPressure(double pressure, bool radial) {
     for (auto marker = 0u; marker < nMarker; ++marker)
-      for (auto span = 0u; span < spans; ++span)
+      for (auto span = 0u; span < RadialEquilibriumPressure.cols(); ++span)
         RadialEquilibriumPressure[marker][span] = pressure * (radial ? .98 + .02 * span : 1.);
   }
 };
@@ -75,16 +77,18 @@ class FrozenOutletTurbulence final : public CSolver {
   }
 };
 
-void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, double ratio, bool moving, bool radial,
-                         bool implicit = true, bool totalConditions = false, bool threaded = false,
-                         double turbulentK = 0, bool reservoir = false, bool unsteady = false,
-                         bool zeroTotalPressure = false, bool interiorTangential = false) {
-  CAPTURE(dim, kind, mach, ratio, moving, radial, implicit, totalConditions, threaded, turbulentK, reservoir, unsteady,
+// Build the mesh and solver once, then check every listed Mach number and outlet pressure ratio.
+void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializer_list<double> machs,
+                         std::initializer_list<double> ratios, bool moving, bool radial, bool implicit = true,
+                         bool totalConditions = false, bool threaded = false, double turbulentK = 0,
+                         bool reservoir = false, bool unsteady = false, bool zeroTotalPressure = false,
+                         bool interiorTangential = false) {
+  CAPTURE(dim, kind, moving, radial, implicit, totalConditions, threaded, turbulentK, reservoir, unsteady,
           zeroTotalPressure, interiorTangential);
   // Axial turbo normals point along x in the 2D fixture and z in the 3D fixture.
   const unsigned short normalDim = dim == 2 ? 0 : 2;
   const std::string inlet = dim == 2 ? "x_minus" : "z_minus", outlet = dim == 2 ? "x_plus" : "z_plus";
-  const double p = 1500112, rho = 230;
+  const double p = 1500112, rho = 230, firstRatio = *ratios.begin();
   // Backflow reservoir 5% above the interior pressure at the interior temperature; zero direction = normal.
   su2double backflow[5] = {0, 1.05 * p, 0, 0, 0};
   {
@@ -114,7 +118,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
       << (totalConditions ? "TOTAL_CONDITIONS_PT"
           : radial        ? "RADIAL_EQUILIBRIUM"
                           : "STATIC_PRESSURE")
-      << ',' << ratio * p << (totalConditions ? ",600,1,0,0)\n" : ",0,0,0,0)\n");
+      << ',' << firstRatio * p << (totalConditions ? ",600,1,0,0)\n" : ",0,0,0,0)\n");
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 20,-7,30\n";
   if (reservoir)
     options << "MARKER_OUTLET_BACKFLOW= (" << outlet << ',' << SU2_TYPE::GetValue(backflow[0]) << ','
@@ -141,7 +145,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
   for (auto flag : {INFLOW, OUTFLOW}) test.geometry->SetTurboVertex(config, 0, flag, true);
   config->SetnSpanMaxAllZones(config->GetnSpanWiseSections());
   test.solver = new CSolver*[MAX_SOLS]();
-  auto* solver = new TurboOutletSolver(test.geometry.get(), config, ratio * p, radial);
+  auto* solver = new TurboOutletSolver(test.geometry.get(), config, firstRatio * p, radial);
   test.solver[FLOW_SOL] = solver;
   std::cout.rdbuf(test.orig_buf);
   auto gas = MakeOutletTestGas(kind);
@@ -152,111 +156,124 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, double mach, d
   gas->SetTDState_Prho(p, rho);
   const su2double sound = gas->GetSoundSpeed(), e = gas->GetStaticEnergy();
   const su2double grid[3] = {moving ? 20. : 0., moving ? -7. : 0., moving ? 30. : 0.};
-  su2double state[5] = {rho}, velocity[3] = {3, -2, 1};
-  for (auto d = 0u; d < dim; ++d) {
-    velocity[d] = (d == normalDim ? mach * sound : velocity[d]) + grid[d];
-    state[d + 1] = rho * velocity[d];
-  }
-  state[dim + 1] = rho * (e + .5 * GeometryToolbox::SquaredNorm(dim, velocity) + turbulentK);
   std::unique_ptr<CSolver> turbulence;
   if (turbulentK) {
     turbulence.reset(new FrozenOutletTurbulence(test.geometry->GetnPoint(), config, turbulentK));
     test.solver[TURB_SOL] = turbulence.get();
   }
   auto* nodes = static_cast<CEulerVariable*>(solver->GetNodes());
-  for (auto point = 0ul; point < test.geometry->GetnPoint(); ++point) {
-    nodes->SetSolution(point, state);
-    if (turbulentK) {
-      auto* viscousNodes = static_cast<CNSVariable*>(nodes);
-      REQUIRE(viscousNodes->SetPrimVar(point, 0, turbulentK, gas.get()));
-      viscousNodes->SetSecondaryVar(point, gas.get());
-    } else {
-      REQUIRE(nodes->SetPrimVar(point, gas.get()));
-      nodes->SetSecondaryVar(point, gas.get());
-    }
-    if (moving) test.geometry->nodes->SetGridVel(point, grid);
-    for (auto k = 0u; k < dim + 2; ++k) solver->LinSysRes(point, k) = 0;
-    su2double zero[25] = {};
-    solver->Jacobian.SetBlock(point, point, zero);
-  }
-  for (auto marker = 0u; marker < config->GetnMarker_All(); ++marker) {
-    if (config->GetMarker_All_TagBound(marker) != outlet) continue;
-    const auto spans = test.geometry->GetnSpanWiseSections(OUTFLOW);
-    auto target = [&](unsigned short span) { return ratio * p * (radial ? .98 + .02 * span : 1.); };
-    // With backflow data, check the expected states first, so that a failure reports the inputs instead of stopping
-    // in the solver. (Without data the hidden cases must reach the solver's own error.)
-    for (auto span = 0u; span < (reservoir ? spans : 0u); ++span)
-      for (auto vertex = 0ul; vertex < test.geometry->GetnVertexSpan(marker, span); ++vertex) {
-        su2double unit[3], boundary[5];
-        test.geometry->turbovertex[marker][span][vertex]->GetNormal(unit);
-        CAPTURE(span, vertex);
-        REQUIRE(ExpectedOutletState(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), target(span),
-                                    boundary, turbulentK, kind == 0 ? 1.4 : 0, reservoir ? backflow : nullptr,
-                                    !unsteady, interiorTangential) == CFluidModel::PressureOutletStatus::Valid);
+  for (const auto ratio : ratios) {
+    // Only static and radial-equilibrium outlets read these pressures; total conditions keep the configured value.
+    config->SetPressureOut_BC(ratio * p / config->GetPressure_Ref());
+    solver->SetOutletPressure(ratio * p, radial);
+    for (const auto mach : machs) {
+      CAPTURE(mach, ratio);
+      su2double state[5] = {rho}, velocity[3] = {3, -2, 1};
+      for (auto d = 0u; d < dim; ++d) {
+        velocity[d] = (d == normalDim ? mach * sound : velocity[d]) + grid[d];
+        state[d + 1] = rho * velocity[d];
       }
-    SU2_OMP_PARALLEL {
-      CUpwGeneralHLLC_Flow numerics(dim, dim + 2, config);
-      ZeroOutletDiffusion diffusion(dim, config);
-      solver->BC_TurboRiemann(test.geometry.get(), test.solver, &numerics, &diffusion, config, marker);
-    }
-    CHECK(solver->GetFluidModel()->GetPressure() > 0);
-    CUpwGeneralHLLC_Flow numerics(dim, dim + 2, config);
-    for (auto span = 0u; span < spans; ++span)
-      for (auto vertex = 0ul; vertex < test.geometry->GetnVertexSpan(marker, span); ++vertex) {
-        const auto* turbo = test.geometry->turbovertex[marker][span][vertex];
-        const auto point = turbo->GetNode(), oldVertex = turbo->GetOldVertex();
-        su2double normal[3], unit[3];
-        test.geometry->vertex[marker][oldVertex]->GetNormal(normal);
-        turbo->GetNormal(unit);
-        for (auto d = 0u; d < dim; ++d) normal[d] = -normal[d];
-        su2double boundary[5];
-        REQUIRE(ExpectedOutletState(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), target(span),
-                                    boundary, turbulentK, kind == 0 ? 1.4 : 0, reservoir ? backflow : nullptr,
-                                    !unsteady, interiorTangential) == CFluidModel::PressureOutletStatus::Valid);
-        auto flux = [&](const su2double* boundary, su2double* result) {
-          su2double v[3];
-          for (auto d = 0u; d < dim; ++d) v[d] = boundary[d + 1] / boundary[0];
-          const su2double energy = boundary[dim + 1] / boundary[0];
-          gas->SetTDState_rhoe(boundary[0], energy - .5 * GeometryToolbox::SquaredNorm(dim, v) - turbulentK);
-          const su2double pressure = gas->GetPressure(), h = energy + pressure / boundary[0];
-          numerics.GetInviscidProjFlux(&boundary[0], v, &pressure, &h, normal, result);
-          // The moving-grid transport term occurs once, in both explicit and implicit boundary paths.
-          const su2double speed = GeometryToolbox::DotProduct(dim, grid, normal);
-          for (auto k = 0u; k < dim + 2; ++k) result[k] -= speed * boundary[k];
-        };
-        su2double expected[5];
-        flux(boundary, expected);
-        for (auto row = 0u; row < dim + 2; ++row) {
-          CHECK(std::isfinite(SU2_TYPE::GetValue(solver->LinSysRes(point, row))));
-          CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, row)) ==
-                Approx(SU2_TYPE::GetValue(expected[row])).epsilon(1e-8).margin(1e-7));
+      state[dim + 1] = rho * (e + .5 * GeometryToolbox::SquaredNorm(dim, velocity) + turbulentK);
+      for (auto point = 0ul; point < test.geometry->GetnPoint(); ++point) {
+        nodes->SetSolution(point, state);
+        if (turbulentK) {
+          auto* viscousNodes = static_cast<CNSVariable*>(nodes);
+          REQUIRE(viscousNodes->SetPrimVar(point, 0, turbulentK, gas.get()));
+          viscousNodes->SetSecondaryVar(point, gas.get());
+        } else {
+          REQUIRE(nodes->SetPrimVar(point, gas.get()));
+          nodes->SetSecondaryVar(point, gas.get());
         }
-        const auto* primitive = solver->GetCharacPrimVar(marker, oldVertex);
-        CHECK(SU2_TYPE::GetValue(primitive[0]) == Approx(SU2_TYPE::GetValue(gas->GetTemperature())).epsilon(1e-8));
-        CHECK(SU2_TYPE::GetValue(primitive[dim + 1]) == Approx(SU2_TYPE::GetValue(gas->GetPressure())).epsilon(1e-8));
-        CHECK(SU2_TYPE::GetValue(primitive[dim + 2]) == Approx(SU2_TYPE::GetValue(gas->GetDensity())).epsilon(1e-8));
-        CHECK(SU2_TYPE::GetValue(primitive[dim + 4]) == Approx(SU2_TYPE::GetValue(gas->GetSoundSpeed())).epsilon(1e-8));
-        if (mach == .3 && ratio > .1)
-          CHECK(SU2_TYPE::GetValue(primitive[dim + 1]) == Approx(target(span)).epsilon(1e-8));
-        if (!implicit) continue;
-        // The implicit matrix uses a frozen characteristic projection, with local span pressure and SST k.
-        for (auto column = 0u; column < dim + 2; ++column) {
-          su2double plus[5], minus[5], fp[5], fm[5], increment[5];
-          OutgoingOutletIncrement(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), turbulentK,
-                                  column, increment);
-          const double delta =
-              2e-5 * fmax(fabs(SU2_TYPE::GetValue(state[column])), column == 0 ? rho : rho * SU2_TYPE::GetValue(sound));
-          for (auto k = 0u; k < dim + 2; ++k) {
-            plus[k] = boundary[k] + delta * increment[k];
-            minus[k] = boundary[k] - delta * increment[k];
+        if (moving) test.geometry->nodes->SetGridVel(point, grid);
+        for (auto k = 0u; k < dim + 2; ++k) solver->LinSysRes(point, k) = 0;
+        su2double zero[25] = {};
+        solver->Jacobian.SetBlock(point, point, zero);
+      }
+      for (auto marker = 0u; marker < config->GetnMarker_All(); ++marker) {
+        if (config->GetMarker_All_TagBound(marker) != outlet) continue;
+        const auto spans = test.geometry->GetnSpanWiseSections(OUTFLOW);
+        auto target = [&](unsigned short span) { return ratio * p * (radial ? .98 + .02 * span : 1.); };
+        // With backflow data, check the expected states first, so that a failure reports the inputs instead of
+        // stopping in the solver. (Without data the hidden cases must reach the solver's own error.)
+        for (auto span = 0u; span < (reservoir ? spans : 0u); ++span)
+          for (auto vertex = 0ul; vertex < test.geometry->GetnVertexSpan(marker, span); ++vertex) {
+            su2double unit[3], boundary[5];
+            test.geometry->turbovertex[marker][span][vertex]->GetNormal(unit);
+            CAPTURE(span, vertex);
+            REQUIRE(ExpectedOutletState(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit),
+                                        target(span), boundary, turbulentK, kind == 0 ? 1.4 : 0,
+                                        reservoir ? backflow : nullptr, !unsteady,
+                                        interiorTangential) == CFluidModel::PressureOutletStatus::Valid);
           }
-          flux(plus, fp);
-          flux(minus, fm);
-          for (auto row = 0u; row < dim + 2; ++row)
-            CHECK(solver->Jacobian.GetBlock(point, point)[row * (dim + 2) + column] ==
-                  Approx(SU2_TYPE::GetValue((fp[row] - fm[row]) / (2 * delta))).epsilon(5e-4).margin(2e-5));
+        SU2_OMP_PARALLEL {
+          CUpwGeneralHLLC_Flow numerics(dim, dim + 2, config);
+          ZeroOutletDiffusion diffusion(dim, config);
+          solver->BC_TurboRiemann(test.geometry.get(), test.solver, &numerics, &diffusion, config, marker);
         }
+        CHECK(solver->GetFluidModel()->GetPressure() > 0);
+        CUpwGeneralHLLC_Flow numerics(dim, dim + 2, config);
+        for (auto span = 0u; span < spans; ++span)
+          for (auto vertex = 0ul; vertex < test.geometry->GetnVertexSpan(marker, span); ++vertex) {
+            const auto* turbo = test.geometry->turbovertex[marker][span][vertex];
+            const auto point = turbo->GetNode(), oldVertex = turbo->GetOldVertex();
+            su2double normal[3], unit[3];
+            test.geometry->vertex[marker][oldVertex]->GetNormal(normal);
+            turbo->GetNormal(unit);
+            for (auto d = 0u; d < dim; ++d) normal[d] = -normal[d];
+            su2double boundary[5];
+            REQUIRE(ExpectedOutletState(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit),
+                                        target(span), boundary, turbulentK, kind == 0 ? 1.4 : 0,
+                                        reservoir ? backflow : nullptr, !unsteady,
+                                        interiorTangential) == CFluidModel::PressureOutletStatus::Valid);
+            auto flux = [&](const su2double* boundary, su2double* result) {
+              su2double v[3];
+              for (auto d = 0u; d < dim; ++d) v[d] = boundary[d + 1] / boundary[0];
+              const su2double energy = boundary[dim + 1] / boundary[0];
+              gas->SetTDState_rhoe(boundary[0], energy - .5 * GeometryToolbox::SquaredNorm(dim, v) - turbulentK);
+              const su2double pressure = gas->GetPressure(), h = energy + pressure / boundary[0];
+              numerics.GetInviscidProjFlux(&boundary[0], v, &pressure, &h, normal, result);
+              // The moving-grid transport term occurs once, in both explicit and implicit boundary paths.
+              const su2double speed = GeometryToolbox::DotProduct(dim, grid, normal);
+              for (auto k = 0u; k < dim + 2; ++k) result[k] -= speed * boundary[k];
+            };
+            su2double expected[5];
+            flux(boundary, expected);
+            for (auto row = 0u; row < dim + 2; ++row) {
+              CHECK(std::isfinite(SU2_TYPE::GetValue(solver->LinSysRes(point, row))));
+              CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, row)) ==
+                    Approx(SU2_TYPE::GetValue(expected[row])).epsilon(1e-8).margin(1e-7));
+            }
+            const auto* primitive = solver->GetCharacPrimVar(marker, oldVertex);
+            CHECK(SU2_TYPE::GetValue(primitive[0]) == Approx(SU2_TYPE::GetValue(gas->GetTemperature())).epsilon(1e-8));
+            CHECK(SU2_TYPE::GetValue(primitive[dim + 1]) ==
+                  Approx(SU2_TYPE::GetValue(gas->GetPressure())).epsilon(1e-8));
+            CHECK(SU2_TYPE::GetValue(primitive[dim + 2]) ==
+                  Approx(SU2_TYPE::GetValue(gas->GetDensity())).epsilon(1e-8));
+            CHECK(SU2_TYPE::GetValue(primitive[dim + 4]) ==
+                  Approx(SU2_TYPE::GetValue(gas->GetSoundSpeed())).epsilon(1e-8));
+            if (mach == .3 && ratio > .1)
+              CHECK(SU2_TYPE::GetValue(primitive[dim + 1]) == Approx(target(span)).epsilon(1e-8));
+            if (!implicit) continue;
+            // The implicit matrix uses a frozen characteristic projection, with local span pressure and SST k.
+            for (auto column = 0u; column < dim + 2; ++column) {
+              su2double plus[5], minus[5], fp[5], fm[5], increment[5];
+              OutgoingOutletIncrement(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), turbulentK,
+                                      column, increment);
+              const double delta = 2e-5 * fmax(fabs(SU2_TYPE::GetValue(state[column])),
+                                               column == 0 ? rho : rho * SU2_TYPE::GetValue(sound));
+              for (auto k = 0u; k < dim + 2; ++k) {
+                plus[k] = boundary[k] + delta * increment[k];
+                minus[k] = boundary[k] - delta * increment[k];
+              }
+              flux(plus, fp);
+              flux(minus, fm);
+              for (auto row = 0u; row < dim + 2; ++row)
+                CHECK(solver->Jacobian.GetBlock(point, point)[row * (dim + 2) + column] ==
+                      Approx(SU2_TYPE::GetValue((fp[row] - fm[row]) / (2 * delta))).epsilon(5e-4).margin(2e-5));
+            }
+          }
       }
+    }
   }
 }
 }  // namespace
@@ -266,72 +283,69 @@ TEST_CASE("TurboRiemann pressure outlets preserve admissibility and the ALE flux
     for (auto kind : {0u, 1u, 2u})
       for (const auto radial : {false, true})
         for (const auto moving : {false, true})
-          for (const auto mach : {-.3, 0., .3, .99, 1.4})
-            for (const auto ratio : {.95, .0006666168959384})
-              TurboPressureOutlet(dim, kind, mach, ratio, moving, radial);
+          TurboPressureOutlet(dim, kind, {-.3, 0., .3, .99, 1.4}, {.95, .0006666168959384}, moving, radial);
 }
 
 TEST_CASE("Explicit TurboRiemann pressure outlet uses one grid flux correction", "[Pressure-outlet][Turbo-outlet]") {
-  TurboPressureOutlet(2, 0, 1.4, .95, true, false, false);
+  TurboPressureOutlet(2, 0, {1.4}, {.95}, true, false, false);
 }
 
 TEST_CASE("TurboRiemann real-gas startup pressure remains admissible", "[Pressure-outlet][Turbo-startup]") {
   // This ratio prescribes 1000 Pa from an interior pressure of 1500112 Pa.
-  TurboPressureOutlet(2, 1, .3, .0006666168959384, false, false);
+  TurboPressureOutlet(2, 1, {.3}, {.0006666168959384}, false, false);
 }
 
 TEST_CASE("Implicit TurboRiemann pressure outlet uses one grid flux correction", "[Pressure-outlet][Turbo-moving]") {
-  TurboPressureOutlet(2, 0, 1.4, .95, true, false);
+  TurboPressureOutlet(2, 0, {1.4}, {.95}, true, false);
 }
 
 TEST_CASE("TurboRiemann pressure reconstruction is thread local", "[Pressure-outlet][Turbo-outlet]") {
   // Use enough outlet vertices to enter the OpenMP work-sharing loop with separate EOS instances.
-  TurboPressureOutlet(2, 1, .3, .95, true, false, true, false, true);
+  TurboPressureOutlet(2, 1, {.3}, {.95}, true, false, true, false, true);
 }
 
 TEST_CASE("Other TurboRiemann modes retain one ALE correction", "[Pressure-outlet][Turbo-outlet]") {
-  for (const auto implicit : {false, true}) TurboPressureOutlet(2, 0, 1.4, .95, true, false, implicit, true);
+  for (const auto implicit : {false, true}) TurboPressureOutlet(2, 0, {1.4}, {.95}, true, false, implicit, true);
 }
 
 TEST_CASE("TurboRiemann pressure outlet rejects nonpositive pressure", "[.][Turbo-invalid-pressure]") {
-  TurboPressureOutlet(2, 1, .3, 0, false, false);
+  TurboPressureOutlet(2, 1, {.3}, {0}, false, false);
 }
 
 TEST_CASE("TurboRiemann radial pressure outlet requires data for unsteady backflow", "[.][Turbo-backflow]") {
-  TurboPressureOutlet(3, 1, -1.4, .95, true, true, true, false, false, 0, false, true);
+  TurboPressureOutlet(3, 1, {-1.4}, {.95}, true, true, true, false, false, 0, false, true);
 }
 
 TEST_CASE("TurboRiemann pressure outlets limit steady backflow without data", "[Pressure-outlet][Turbo-outlet]") {
   for (auto dim : {2u, 3u})
     for (auto kind : {0u, 1u})
-      for (const auto radial : {false, true}) TurboPressureOutlet(dim, kind, -1.4, .95, true, radial);
+      for (const auto radial : {false, true}) TurboPressureOutlet(dim, kind, {-1.4}, {.95}, true, radial);
 }
 
 TEST_CASE("TurboRiemann pressure outlets take backflow from the reservoir", "[Pressure-outlet][Outlet-backflow]") {
   for (auto dim : {2u, 3u})
     for (auto kind : {0u, 1u, 2u})
       for (const auto radial : {false, true})
-        for (const auto mach : {-1.4, -.3, .3})
-          for (const auto unsteady : {false, true})
-            TurboPressureOutlet(dim, kind, mach, .95, false, radial, true, false, false, 0, true, unsteady);
+        for (const auto unsteady : {false, true})
+          TurboPressureOutlet(dim, kind, {-1.4, -.3, .3}, {.95}, false, radial, true, false, false, 0, true, unsteady);
   // Moving grid and frozen SST energy.
-  TurboPressureOutlet(3, 1, -.3, .95, true, true, true, false, false, 13, true);
+  TurboPressureOutlet(3, 1, {-.3}, {.95}, true, true, true, false, false, 13, true);
 }
 
 TEST_CASE("Radial-equilibrium outlets use the span pressure for a zero backflow total pressure",
           "[Pressure-outlet][Outlet-backflow]") {
   for (auto kind : {0u, 1u, 2u})
-    for (const auto mach : {-1.4, -.3, .3})
-      for (const auto tangential : {false, true})
-        TurboPressureOutlet(3, kind, mach, .95, true, true, true, false, false, 0, true, false, true, tangential);
-  TurboPressureOutlet(2, 0, -.3, .95, true, false, true, false, false, 0, true);
+    for (const auto tangential : {false, true})
+      TurboPressureOutlet(3, kind, {-1.4, -.3, .3}, {.95}, true, true, true, false, false, 0, true, false, true,
+                          tangential);
+  TurboPressureOutlet(2, 0, {-.3}, {.95}, true, false, true, false, false, 0, true);
 }
 
 TEST_CASE("TurboRiemann real-gas radial startup remains admissible", "[Pressure-outlet][Turbo-radial-startup]") {
-  TurboPressureOutlet(3, 1, .3, .0006666168959384, false, true);
+  TurboPressureOutlet(3, 1, {.3}, {.0006666168959384}, false, true);
 }
 
 TEST_CASE("TurboRiemann pressure outlet separates frozen turbulence energy from the EOS",
           "[Pressure-outlet][Turbo-outlet]") {
-  for (auto kind : {0u, 1u}) TurboPressureOutlet(3, kind, .3, .95, true, true, true, false, false, 13);
+  for (auto kind : {0u, 1u}) TurboPressureOutlet(3, kind, {.3}, {.95}, true, true, true, false, false, 13);
 }
