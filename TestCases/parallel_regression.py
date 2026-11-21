@@ -910,7 +910,7 @@ def main():
     sp_pipeSlice_3d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pipeSlice_3d"
     sp_pipeSlice_3d_dp_hf_tp.cfg_file  = "sp_pipeSlice_3d_dp_hf_tp.cfg"
     sp_pipeSlice_3d_dp_hf_tp.test_iter = 10
-    sp_pipeSlice_3d_dp_hf_tp.test_vals = [-11.119796, -11.234737, -9.429479, -0.000023]
+    sp_pipeSlice_3d_dp_hf_tp.test_vals = [-13.241752, -13.260502, -10.953562, -0.000025]
     test_list.append(sp_pipeSlice_3d_dp_hf_tp)
 
     # Same with the energy equation, periodic temperature and an integrated wall heat
@@ -918,7 +918,7 @@ def main():
     sp_pipeSlice_3d_dp_ihf_tp.cfg_dir = "incomp_navierstokes/streamwise_periodic/pipeSlice_3d"
     sp_pipeSlice_3d_dp_ihf_tp.cfg_file = "sp_pipeSlice_3d_dp_ihf_tp.cfg"
     sp_pipeSlice_3d_dp_ihf_tp.test_iter = 10
-    sp_pipeSlice_3d_dp_ihf_tp.test_vals = [-11.120123, -5.196299, -0.000023, -0.015700]
+    sp_pipeSlice_3d_dp_ihf_tp.test_vals = [-12.253831, -5.369585, -0.000025, -0.015700]
     test_list.append(sp_pipeSlice_3d_dp_ihf_tp)
 
     # 2D pin array with heat transfer BC on pin surfaces
@@ -940,6 +940,14 @@ def main():
     inc_turb_naca0012.test_iter = 20
     inc_turb_naca0012.test_vals = [-4.758064, -10.974498, -0.000005, -0.028653, 3, -5.740545, 2, -5.036110]
     test_list.append(inc_turb_naca0012)
+
+    # Swirling jet on a one-cell wedge, rotational periodicity (Morse 1980)
+    inc_turb_morse_swirl_jet           = TestCase('inc_turb_morse_swirl_jet')
+    inc_turb_morse_swirl_jet.cfg_dir   = "incomp_rans/morse_swirl_jet"
+    inc_turb_morse_swirl_jet.cfg_file  = "morse_sa.cfg"
+    inc_turb_morse_swirl_jet.test_iter = 10
+    inc_turb_morse_swirl_jet.test_vals = [-10.569835, -8.376495, -9.323474, 12.000000, -4.059383, 71.328000]
+    test_list.append(inc_turb_morse_swirl_jet)
 
     # NACA0012, SST_SUST
     inc_turb_naca0012_sst_sust           = TestCase('inc_turb_naca0012_sst_sust')
