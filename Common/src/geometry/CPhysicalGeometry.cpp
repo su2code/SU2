@@ -7946,9 +7946,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
   if (config->GetRead_Binary_Restart()) {
     filename = config->GetFilename(filename, ".dat", nTimeIter - 1);
 
-    char str_buf[CGNS_STRING_SIZE], fname[100];
+    char str_buf[CGNS_STRING_SIZE];
     unsigned short iVar;
-    strcpy(fname, filename.c_str());
+    const char* fname = filename.c_str();
     int nRestart_Vars = SU2_RESTART_HEADER_SIZE, nFields;
     int* Restart_Vars = new int[SU2_RESTART_HEADER_SIZE];
     passivedouble* Restart_Data = nullptr;
@@ -8298,8 +8298,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     /*--- First, check that this is not a binary restart file. ---*/
 
-    char fname[100];
-    strcpy(fname, filename.c_str());
+    const char* fname = filename.c_str();
     int magic_number;
 
 #ifndef HAVE_MPI

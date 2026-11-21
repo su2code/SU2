@@ -104,8 +104,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
-    char fname[100];
-    strcpy(fname, filename.c_str());
+    const char* fname = filename.c_str();
     int nVar_Buf = SU2_RESTART_HEADER_SIZE;
     int var_buf[SU2_RESTART_HEADER_SIZE];
 
@@ -242,8 +241,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- First, check that this is not a binary restart file. ---*/
 
-    char fname[100];
-    strcpy(fname, filename.c_str());
+    const char* fname = filename.c_str();
     int magic_number;
 
 #ifndef HAVE_MPI
