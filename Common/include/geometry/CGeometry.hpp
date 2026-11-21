@@ -1976,7 +1976,8 @@ class CGeometry {
   virtual void SetWallDistance(su2double val) {}
 
   /*!
-   * \brief Compute the distances to the closest vertex on viscous walls over the entire domain
+   * \brief Compute the distances to the closest vertex on viscous walls over the entire domain.
+   * \note Without viscous walls, all points get a distance of 1e15.
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] geometry_container - Geometrical definition of the problem.
    */
