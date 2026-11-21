@@ -79,12 +79,23 @@ protected:
   }
 
   /*!
-   * \brief Pass the transport properties of two points of the solver to a viscous numerics object.
+   * \brief Pass the transport properties of two points to a viscous numerics object.
    * \param[in,out] numerics - Numerics object that receives the data.
-   * \param[in] iPoint - Index of point i.
-   * \param[in] jPoint - Index of point j.
+   * \param[in] nodes_i - Variable container of point i.
+   * \param[in] iPoint - Index of point i in its container.
+   * \param[in] nodes_j - Variable container of point j.
+   * \param[in] jPoint - Index of point j in its container.
    */
-  void SetNumericsTransportState(CNumerics *numerics, unsigned long iPoint, unsigned long jPoint);
+  static void SetNumericsTransportState(CNumerics* numerics, CNEMOEulerVariable* nodes_i, unsigned long iPoint,
+                                        CNEMOEulerVariable* nodes_j, unsigned long jPoint) {
+    numerics->SetDiffusionCoeff(nodes_i->GetDiffusionCoeff(iPoint), nodes_j->GetDiffusionCoeff(jPoint));
+    numerics->SetLaminarViscosity(nodes_i->GetLaminarViscosity(iPoint), nodes_j->GetLaminarViscosity(jPoint));
+    numerics->SetEddyViscosity(nodes_i->GetEddyViscosity(iPoint), nodes_j->GetEddyViscosity(jPoint));
+    numerics->SetThermalConductivity(nodes_i->GetThermalConductivity(iPoint),
+                                     nodes_j->GetThermalConductivity(jPoint));
+    numerics->SetThermalConductivity_ve(nodes_i->GetThermalConductivity_ve(iPoint),
+                                        nodes_j->GetThermalConductivity_ve(jPoint));
+  }
 
   /*!
    * \brief Compute the viscous flux between a boundary point and a prescribed boundary state,

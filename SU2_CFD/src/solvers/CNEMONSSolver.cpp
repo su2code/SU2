@@ -202,7 +202,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     SetNumericsThermoState(numerics, nodes, iPoint, nodes, jPoint);
 
     /*--- Transport properties ---*/
-    SetNumericsTransportState(numerics, iPoint, jPoint);
+    SetNumericsTransportState(numerics, nodes, iPoint, nodes, jPoint);
 
     /*--- Compute and update residual ---*/
     auto residual = numerics->ComputeResidual(config);
@@ -441,9 +441,12 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Weak enforcement of the wall temperature on both energy equations ---*/
     SetWallEnergyFlux_Weak(iPoint, Point_Normal, Twall, Twall, C, Area, dist_ij, Res_Visc);
 
+    /*--- Convective and viscous contributions to the residual at the wall ---*/
+    LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
     /*--- Calculate Jacobian for implicit time stepping ---*/
-    su2double Jacobian_i[MAXNVAR][MAXNVAR] = {{0.0}};
     if (implicit) {
+      su2double Jacobian_i[MAXNVAR][MAXNVAR] = {{0.0}};
 
       /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
       const auto dTdU   = nodes->GetdTdU(iPoint);
@@ -455,15 +458,10 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                               kve*theta/dist_ij*dTvedU[iVar])*Area;
         Jacobian_i[nSpecies+nDim+1][iVar] = - kve*theta/dist_ij*dTvedU[iVar]*Area;
       }
-    } // implicit
 
-    /*--- Convective and viscous contributions to the residual at the wall ---*/
-    LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-    /*--- Enforce the no-slip boundary condition in a strong way by
-     modifying the velocity-rows of the Jacobian (1 on the diagonal).
-     And add the contributions to the Jacobian due to energy. ---*/
-    if (implicit) {
+      /*--- Enforce the no-slip boundary condition in a strong way by
+       modifying the velocity-rows of the Jacobian (1 on the diagonal).
+       And add the contributions to the Jacobian due to energy. ---*/
       Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {

@@ -1335,29 +1335,6 @@ void CNEMOEulerSolver::SetReferenceValues(const CConfig& config) {
 
 }
 
-void CNEMOEulerSolver::SetNumericsTransportState(CNumerics *numerics, unsigned long iPoint, unsigned long jPoint) {
-
-  /*--- Species diffusion coefficients ---*/
-  numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
-                              nodes->GetDiffusionCoeff(jPoint));
-
-  /*--- Laminar viscosity ---*/
-  numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
-                                nodes->GetLaminarViscosity(jPoint));
-
-  /*--- Eddy viscosity ---*/
-  numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                             nodes->GetEddyViscosity(jPoint));
-
-  /*--- Thermal conductivity ---*/
-  numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
-                                   nodes->GetThermalConductivity(jPoint));
-
-  /*--- Vib-el. thermal conductivity ---*/
-  numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
-                                      nodes->GetThermalConductivity_ve(jPoint));
-}
-
 void CNEMOEulerSolver::AddViscousBoundaryResidual(CGeometry *geometry, CNumerics *visc_numerics, const CConfig *config,
                                                   unsigned long iPoint, unsigned long Point_Normal,
                                                   const su2double *Normal, CNEMOEulerVariable *nodes_bound,
@@ -1385,7 +1362,7 @@ void CNEMOEulerSolver::AddViscousBoundaryResidual(CGeometry *geometry, CNumerics
   SetNumericsThermoState(visc_numerics, nodes, iPoint, nodes_bound, iPoint_bound);
 
   /*--- Transport properties, the values of the boundary point are used for both states ---*/
-  SetNumericsTransportState(visc_numerics, iPoint, iPoint);
+  SetNumericsTransportState(visc_numerics, nodes, iPoint, nodes, iPoint);
 
   /*--- Compute and update residual ---*/
   auto residual = visc_numerics->ComputeResidual(config);
