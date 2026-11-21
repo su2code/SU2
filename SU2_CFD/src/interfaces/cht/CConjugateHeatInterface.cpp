@@ -32,6 +32,20 @@
 #include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 
+namespace {
+
+/*!
+ * \brief Whether the coupling transfers the donor conductance over distance and near-wall temperature.
+ */
+bool TransfersConductance(const CConfig* config) {
+  const auto kind = config->GetKind_CHT_Coupling();
+  return (kind == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
+         (kind == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX) ||
+         (kind == CHT_COUPLING::AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX);
+}
+
+}  // namespace
+
 CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst) :
   CInterface(val_nVar, val_nConst) {
 }
@@ -123,8 +137,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     heat_flux_density = thermal_diffusivity*dTdn;
 
 
-    if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-        (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+    if (TransfersConductance(donor_config)) {
 
       /*--- Apply contact resistance to solid-to-solid heat transfer boundary ---*/
       const su2double rho_cp_solid = donor_config->GetSpecific_Heat_Cp()*donor_config->GetMaterialDensity(0);
@@ -138,10 +151,9 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   Donor_Variable[0] = Twall*donor_config->GetTemperature_Ref();
   Donor_Variable[1] = heat_flux_density*donor_config->GetHeat_Flux_Ref();
 
-  /*--- We only need these for the Robin BC option ---*/
+  /*--- Only needed for the Robin heat flux and the averaged wall temperature ---*/
 
-  if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-      (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+  if (TransfersConductance(donor_config)) {
 
     Donor_Variable[2] = conductivity_over_dist;
     Donor_Variable[3] = Tnormal*donor_config->GetTemperature_Ref();
@@ -158,8 +170,7 @@ void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeom
   target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 1,
                                             target_config->GetRelaxation_Factor_CHT(), Target_Variable[1]);
 
-  if ((target_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-      (target_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+  if (TransfersConductance(target_config)) {
 
     target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 2,
                                               target_config->GetRelaxation_Factor_CHT(), Target_Variable[2]);
