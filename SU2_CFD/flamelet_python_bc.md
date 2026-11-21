@@ -2,7 +2,7 @@
 
 This document explains how to use the Python wrapper (`pysu2`) to set
 custom per-vertex boundary conditions for the flamelet (FGM) scalar transport
-solver, and how the setup differs between the two `FLAMELET_ENTHALPY_BC` modes.
+solver, and how the setup differs between the two `FLAME_ENTHALPY_BC` modes.
 
 ---
 
@@ -20,15 +20,15 @@ The flamelet solver transports `nVar` scalar variables. Their order is:
 Two modes control how the enthalpy boundary condition is derived at thermal
 walls (`MARKER_ISOTHERMAL`, `MARKER_HEATFLUX`):
 
-- **`FLOW_MARKERS`** — enthalpy is derived from the flow thermal field (wall
+- **`FLOW_MARKERS`** (default) — enthalpy is derived from the flow thermal field (wall
   temperature via `MARKER_ISOTHERMAL`, or wall heat flux via `MARKER_HEATFLUX`).
-- **`SPECIES_MARKERS`** (default) — enthalpy and all other scalars are taken
+- **`SPECIES_MARKERS`** — enthalpy and all other scalars are taken
   directly from `MARKER_WALL_SPECIES`, or from the Python wrapper when
   `MARKER_PYTHON_CUSTOM` is active.
 
 ---
 
-## Mode 1: `FLAMELET_ENTHALPY_BC = FLOW_MARKERS`
+## Mode 1: `FLAME_ENTHALPY_BC = FLOW_MARKERS` (default)
 
 ### How it works
 
@@ -57,7 +57,7 @@ driver.SetMarkerCustomNormalHeatFlux(iMarker, iVertex, q_wall)
 ### config.cfg
 
 ```cfg
-FLAMELET_ENTHALPY_BC = FLOW_MARKERS
+FLAME_ENTHALPY_BC = FLOW_MARKERS
 
 % Flow solver wall BC — sets KindBC and provides the fallback heat flux value
 % used when MARKER_PYTHON_CUSTOM is not active.
@@ -103,7 +103,7 @@ driver.Finalize()
 
 ---
 
-## Mode 2: `FLAMELET_ENTHALPY_BC = SPECIES_MARKERS` (default)
+## Mode 2: `FLAME_ENTHALPY_BC = SPECIES_MARKERS`
 
 ### How it works
 
@@ -129,7 +129,7 @@ Adjust the number of `BC_TYPE, value` pairs to match the actual number of
 scalar variables in your setup.
 
 ```cfg
-FLAMELET_ENTHALPY_BC = SPECIES_MARKERS
+FLAME_ENTHALPY_BC = SPECIES_MARKERS
 
 % Flow solver wall BC — still required to set KindBC.
 % The choice between MARKER_ISOTHERMAL and MARKER_HEATFLUX only affects
@@ -222,4 +222,4 @@ driver.Finalize()
   should receive `0.0` unless you intentionally want a non-zero flux there.
 - The `CHT` (conjugate heat transfer) path (`BC_ConjugateHeat_Interface`)
   always uses `BC_Isothermal_Wall_Generic` and is unaffected by
-  `FLAMELET_ENTHALPY_BC`. Python custom BCs are not applicable to CHT markers.
+  `FLAME_ENTHALPY_BC`. Python custom BCs are not applicable to CHT markers.
