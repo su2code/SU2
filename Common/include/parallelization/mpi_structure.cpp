@@ -187,7 +187,7 @@ void CBaseMPIWrapper<ScalarType>::CopyData(const void* sendbuf, void* recvbuf, i
 }
 
 template class CBaseMPIWrapper<su2double>;
-#if defined CODI_REVERSE_TYPE
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
 template class CBaseMPIWrapper<passivedouble>;
 #endif
 #if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
