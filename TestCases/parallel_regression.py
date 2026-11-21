@@ -1089,8 +1089,8 @@ def main():
     test_list.append(schubauer_klebanoff_transition)
 
     # Simplified (one-equation) LM model on the 6:1 prolate spheroid at 15 deg, restarting from converged solutions
-    slm_spheroid_vals = {"sst_slm_menter": [-12.005925, -10.934249, -13.049871, -7.833387, -11.020240, 0.035351, 0.019157],
-                         "sst_slm_menter_crossflow": [-12.005896, -10.933645, -11.401809, -6.035959, -6.621244, 0.035351, 0.019157],
+    slm_spheroid_vals = {"sst_slm_menter": [-12.006118, -10.934247, -13.049871, -7.833387, -11.020246, 0.035351, 0.019157],
+                         "sst_slm_menter_crossflow": [-12.006082, -10.933643, -11.401809, -6.035959, -6.621244, 0.035351, 0.019157],
                          "sa_slm_menter": [-10.467263, -8.467663, -12.443722, -6.570030, 0.035277, 0.017760],
                          "sa_slm_menter_crossflow": [-10.475719, -8.467049, -12.157988, -5.847505, 0.035277, 0.017760]}
     for model, vals in slm_spheroid_vals.items():

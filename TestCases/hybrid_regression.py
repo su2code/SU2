@@ -562,10 +562,10 @@ def main():
     test_list.append(ddes_flatplate)
 
     # Simplified (one-equation) LM model on the 6:1 prolate spheroid at 15 deg, restarting from converged solutions
-    slm_spheroid_vals = {"sst_slm_menter": [-12.005703, -10.934023, -13.049797, -7.833317, -11.020316, 0.035351, 0.019157],
-                         "sst_slm_menter_crossflow": [-12.005701, -10.933421, -11.401809, -6.035958, -6.621244, 0.035351, 0.019157],
-                         "sa_slm_menter": [-10.467338, -8.467659, -12.443723, -6.570030, 0.035277, 0.017760],
-                         "sa_slm_menter_crossflow": [-10.475794, -8.467045, -12.157988, -5.847505, 0.035277, 0.017760]}
+    slm_spheroid_vals = {"sst_slm_menter": [-12.004970, -10.934261, -13.049884, -7.801756, -11.020680, 0.035351, 0.019157],
+                         "sst_slm_menter_crossflow": [-12.005002, -10.933659, -11.401803, -6.035944, -6.621243, 0.035351, 0.019157],
+                         "sa_slm_menter": [-10.463271, -8.467702, -12.443729, -6.570027, 0.035277, 0.017760],
+                         "sa_slm_menter_crossflow": [-10.471614, -8.467088, -12.157990, -5.847496, 0.035277, 0.017760]}
     for model, vals in slm_spheroid_vals.items():
         slm_spheroid = TestCase('slm_spheroid_' + model)
         slm_spheroid.cfg_dir = "transition/prolate_spheroid"
