@@ -126,7 +126,7 @@ class C3DContainerDecorator {
 
  private:
   Storage m_storage;
-  Index m_innerSz;
+  Index m_innerSz = 0;
 
  public:
   C3DContainerDecorator() = default;
@@ -145,7 +145,7 @@ class C3DContainerDecorator {
    */
   Index size() const noexcept { return m_storage.size(); }
   Index length() const noexcept { return m_storage.rows(); }
-  Index rows() const noexcept { return m_storage.cols() / m_innerSz; }
+  Index rows() const noexcept { return m_innerSz ? m_storage.cols() / m_innerSz : 0; }
   Index cols() const noexcept { return m_innerSz; }
 
   /*!

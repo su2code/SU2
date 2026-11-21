@@ -444,11 +444,18 @@ class CDriverBase {
   }
 
   /*!
-   * \brief Get read/write view of the gradients of a solver variable in a point.
+   * \brief Get a read/write view of the gradient of the solution on all mesh nodes of a solver.
+   * Only solvers that store the gradient of their solution variables (e.g. turbulence, species, heat) provide it.
    */
   inline CPyWrapper3DMatrixView Gradient(unsigned short iSolver) {
     auto* solver = GetSolverAndCheckMarker(iSolver);
-    return CPyWrapper3DMatrixView(solver->GetNodes()->GetGradient(), "Gradient of " + solver->GetSolverName(), false);
+    auto& gradient = solver->GetNodes()->GetGradient();
+    if (gradient.cols() == 0) {
+      SU2_MPI::Error(
+          "The solver " + solver->GetSolverName() + " does not store the gradient of its solution variables.",
+          CURRENT_FUNCTION);
+    }
+    return CPyWrapper3DMatrixView(gradient, "Gradient of " + solver->GetSolverName(), false);
   }
 
   /*!
