@@ -444,7 +444,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     ompMasterAssignBarrier(Min_Delta_Time,1e30, Max_Delta_Time,0.0, Global_Delta_UnstTimeND,1e30);
 
-    /*--- Edges between a point and its own periodic image carry only the rotation of the state. ---*/
+    /*--- Edges between a point and its periodic image are left out, their states are tied. ---*/
     const bool skipImages = implicit_periodic;
     if (skipImages) SetPeriodicMaster(geometry, config);
 

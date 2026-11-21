@@ -216,7 +216,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [-7.597001, -6.994813, 0.012127, 13.596354, 0.000000]
+    poiseuille.test_vals = [-7.597002, -6.994814, 0.012154, 13.596296, 0]
     test_list.append(poiseuille)
 
     # 2D Poiseuille flow (inlet profile file)
@@ -936,7 +936,7 @@ def main():
     ls89_sa.cfg_dir   = "nicf/LS89"
     ls89_sa.cfg_file  = "turb_SA_PR.cfg"
     ls89_sa.test_iter = 20
-    ls89_sa.test_vals = [-5.047026, -13.385356, 0.179168, 0.421262]
+    ls89_sa.test_vals = [-5.041500, -13.379523, 0.179019, 0.420831]
     test_list.append(ls89_sa)
 
     # Rarefaction shock wave edge_VW
@@ -965,7 +965,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
-    Aachen_3D_restart.test_vals = [-7.690756, -8.480220, -6.040279, -6.426434, -5.831445, -4.598589, -5.536489, -5.307971, -3.830619, -5.244603, -5.766097, -3.635129, -2.215856, -2.900116, -0.583139]
+    Aachen_3D_restart.test_vals = [-7.689117, -8.476204, -6.036107, -6.427402, -5.831576, -4.599024, -5.530512, -5.305687, -3.821789, -5.243255, -5.754831, -3.631603, -2.213934, -2.895728, -0.578545]
     Aachen_3D_restart.enabled_with_asan = False
     test_list.append(Aachen_3D_restart)
 
@@ -974,7 +974,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-11.913929, -12.201923, -19.149798, -13.441884, -19.033169, -13.395061, 73286.000000, 73286.000000, 0.020056, 82.286000]
+    Jones_tc_restart.test_vals = [-11.905629, -12.211684, -19.212618, -13.507994, -19.069281, -13.439288, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -982,7 +982,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [1.177225, 1.602363, -2.962970, 2.540072, -2.535614, 3.008265, 106390.000000, 106390.000000, 5.735500, 64.426000]
+    axial_stage2D.test_vals = [1.167521, 1.598536, -2.928575, 2.573646, -2.527330, 3.016253, 106370.000000, 106370.000000, 5.726800, 64.383000]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -990,7 +990,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-4.391061, -2.520781, -2.103750, 1.703960, -1.488302, 3.226640, -471620.000000, 94.842000, -0.051820]
+    transonic_stator_restart.test_vals         = [-4.367784, -2.492912, -2.082414, 1.727491, -1.466974, 3.224730, -471620.000000, 94.839000, -0.052082]
     transonic_stator_restart.test_vals_aarch64 = [-4.367784, -2.492912, -2.082414, 1.727491, -1.466974, 3.224730, -471620.000000, 94.839000, -0.052082]
     test_list.append(transonic_stator_restart)
 
@@ -999,7 +999,7 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals = [-8.632926, -8.895296, -9.348618]
+    multi_interface.test_vals = [-8.634558, -8.895554, -9.348754]
     multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
@@ -1094,7 +1094,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.462739, -1.546996]
+    bars_SST_2D.test_vals = [13.000000, -0.462697, -1.541051]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 

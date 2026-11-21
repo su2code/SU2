@@ -149,8 +149,9 @@ protected:
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
   su2activematrix PeriodicProj;  /*!< \brief Min/max reconstruction increments at periodic receive points (for limiters). */
   std::unordered_map<unsigned long, size_t> PeriodicProjIndex;  /*!< \brief Local point to compact projection row. */
-  vector<long> PeriodicMaster;  /*!< \brief Local master point of each passive periodic point on this rank, or -1. */
+  vector<long> PeriodicMaster;  /*!< \brief Local master point of each coupled passive periodic point, or -1. */
   vector<unsigned short> PeriodicMasterMarker;  /*!< \brief Periodic marker of each passive point, gives its rotation. */
+  vector<unsigned long> PeriodicPassive;  /*!< \brief Coupled passive periodic points. */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
@@ -330,12 +331,13 @@ public:
 
   /*!
    * \brief Move the off-diagonal Jacobian blocks of passive periodic points to their masters, rotated.
-   * \note Call before the PERIODIC_RESIDUAL comms. Only masters on the same rank and blocks in the sparsity pattern are coupled.
+   * \note Call before the PERIODIC_RESIDUAL comms. A passive point is coupled if its master is on the same rank and
+   *       all its blocks fit in the sparsity pattern.
    */
   void CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Map each passive periodic point to its master on the same rank (built once).
+   * \brief Map each coupled passive periodic point to its master on the same rank (built once).
    */
   void SetPeriodicMaster(CGeometry *geometry, const CConfig *config);
 
