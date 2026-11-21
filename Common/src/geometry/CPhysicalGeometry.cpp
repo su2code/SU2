@@ -10252,6 +10252,7 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
   std::unique_ptr<CADTElemClass> WallADT(
       new CADTElemClass(nDim, surfaceCoor, surfaceConn, VTK_TypeElem, markerIDs, elemIDs, true));
 
+  WallADT->SetPeriodicWallSearch(config);
   return WallADT;
 }
 
