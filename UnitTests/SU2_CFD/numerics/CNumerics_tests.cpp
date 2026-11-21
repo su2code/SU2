@@ -247,7 +247,8 @@ TEST_CASE("NEMO corrected viscous residual returns distinct i and j Jacobians", 
 
 TEST_CASE("Vortex tilting uses a velocity-only gradient view", "[EDDES]") {
   std::stringstream options;
-  options << "SOLVER= RANS\nKIND_TURB_MODEL= SST\nREYNOLDS_NUMBER= 5\n";
+  options << "SOLVER= RANS\nKIND_TURB_MODEL= SST\nHYBRID_RANSLES= SST_EDDES\nTIME_DOMAIN= YES\n"
+             "TIME_MARCHING= DUAL_TIME_STEPPING-2ND_ORDER\nTIME_STEP= 0.001\nREYNOLDS_NUMBER= 5\n";
   CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
 
   for (unsigned short nDim : {2, 3}) {
