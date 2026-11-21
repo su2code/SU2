@@ -1167,6 +1167,8 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     auto it = std::find(markerList.begin(), markerList.end(), markerTag);
 
     if (it != markerList.end()) {
+      /*--- Element indices restart at zero for each marker. ---*/
+      std::fill(nElem_Flag, nElem_Flag + size, -1);
 
       for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
 
@@ -1257,6 +1259,8 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     auto it = std::find(markerList.begin(), markerList.end(), markerTag);
 
     if (it != markerList.end()) {
+      /*--- Element indices restart at zero for each marker. ---*/
+      std::fill(nElem_Flag, nElem_Flag + size, -1);
 
       for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
 
