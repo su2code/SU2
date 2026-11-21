@@ -64,10 +64,42 @@ class MonitorTests(unittest.TestCase):
         reader = self.reader(names + body)
         self.assertTrue(reader.hasTime())
         np.testing.assert_array_equal(reader.iters[: reader.n][:5], [0, 1, 2, 3, 0])
-        rows = reader.rowsFrom(1, byTime=True)
-        np.testing.assert_array_equal(reader.times[rows], [1, 2])
+        rows, x = reader.select(1, byTime=True)
+        np.testing.assert_array_equal(x, [1, 2])
         np.testing.assert_array_equal(reader.iters[rows], [3, 3])
         self.assertFalse(self.reader(CSV + row(0) + row(1)).hasTime())
+
+    def test_inner_iterations(self):
+        names = '"Time_Iter","Inner_Iter","rms[Rho]"\n'
+        body = "".join(
+            f"{t}, {i}, {-t - 0.1 * i}\n" for t in range(3) for i in range(4)
+        )
+        reader = self.reader(names + body)
+        self.assertTrue(reader.hasInnerRows())
+        rows, x = reader.select(0, inner=True)
+        np.testing.assert_array_equal(rows, np.arange(12))
+        np.testing.assert_array_equal(x, np.arange(12))
+        _, x = reader.select(-1, byTime=True, inner=True)
+        np.testing.assert_allclose(x[:5], [-0.75, -0.5, -0.25, 0, 0.25])
+        rows, x = reader.select(0)
+        np.testing.assert_array_equal(rows, [3, 7, 11])
+        np.testing.assert_array_equal(x, [3, 7, 11])
+
+    def test_first_time_step_has_inner_rows(self):
+        names = '"Time_Iter","Outer_Iter","Inner_Iter","rms[Rho]"\n'
+        reader = self.reader(names + "".join(f"1, 0, {i}, {-0.1 * i}\n" for i in range(5)))
+        self.assertTrue(reader.hasInnerRows())
+        self.assertFalse(reader.stepsAdvance())
+        np.testing.assert_array_equal(reader.select(0)[0], [4])
+        np.testing.assert_array_equal(reader.select(0, inner=True)[1], np.arange(5))
+
+    def test_time_steps_only_have_no_inner_rows(self):
+        names = '"Time_Iter","Inner_Iter","rms[Rho]"\n'
+        reader = self.reader(names + "0, 9, -1\n1, 4, -2\n2, 6, -3\n")
+        self.assertFalse(reader.hasInnerRows())
+        _, x = reader.select(0)
+        np.testing.assert_array_equal(x, [9, 14, 21])
+        self.assertFalse(self.reader(CSV + row(0) + row(1)).hasInnerRows())
 
     def test_steady_time_counter_does_not_advance(self):
         names = '"Time_Iter","Inner_Iter","rms[Rho]"\n'
@@ -80,7 +112,7 @@ class MonitorTests(unittest.TestCase):
     def test_first_row_kept_when_it_passes_the_filter(self):
         names = '"Time_Iter","Inner_Iter","rms[Rho]"\n'
         reader = self.reader(names + "100, 0, -1\n")
-        np.testing.assert_array_equal(reader.rowsFrom(100, byTime=True), [0])
+        np.testing.assert_array_equal(reader.select(100, byTime=True)[0], [0])
 
     def test_partial_zone_line_is_deferred(self):
         self.path.write_text(CSV + 'ZONE T="Conv')
@@ -102,8 +134,8 @@ class MonitorTests(unittest.TestCase):
     def test_sparse_iterations_and_start_filter(self):
         reader = self.reader(CSV + row(0) + row(10) + row(20) + row(30))
         np.testing.assert_array_equal(reader.iters[: reader.n], [0, 10, 20, 30])
-        rows = reader.rowsFrom(15)
-        np.testing.assert_array_equal(reader.iters[rows], [20, 30])
+        _, x = reader.select(15)
+        np.testing.assert_array_equal(x, [20, 30])
 
     def test_incremental_append_and_incomplete_line(self):
         reader = self.reader(CSV + row(0) + row(1))
