@@ -122,6 +122,12 @@ protected:
   void PrepareSendBuffers(std::vector<unsigned long>& globalID);
 
 public:
+  /*!
+   * \brief Stop with an error if count * entries does not fit in an int (node IDs and MPI counts are int).
+   * \param[in] count - Number of items.
+   * \param[in] entries - Number of int entries per item.
+   */
+  static void CheckIntCount(unsigned long count, unsigned long entries = 1);
 
   /*!
    * \brief Constructor

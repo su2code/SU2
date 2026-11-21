@@ -41,6 +41,18 @@ using namespace std;
 
 class CFileWriter{
 protected:
+  /*!
+   * \brief Wall-clock time in seconds, also without MPI and OpenMP (where SU2_MPI::Wtime measures CPU time).
+   */
+  static passivedouble WallTime();
+
+  passivedouble fileStartTime = 0.0; /*!< \brief Time when the file was opened, to time the whole write. */
+
+  /*!
+   * \brief Set the write time to the largest one over all ranks and compute the bandwidth with the file size.
+   * \param[in] elapsed - Write time of this rank.
+   */
+  void UpdateBandwidth(passivedouble elapsed);
 
   /*!
    * \brief The MPI rank
