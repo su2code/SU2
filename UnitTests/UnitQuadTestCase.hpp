@@ -61,6 +61,16 @@ struct UnitQuadTestCase {
    */
   void AddOption(const std::string& optionLine) { config_options += optionLine + "\n"; }
 
+  /*! \brief Replace one existing base option without repeating its key. */
+  void SetOption(const std::string& optionLine) {
+    const auto key = optionLine.substr(0, optionLine.find('=') + 1);
+    const auto start = config_options.find(key);
+    if (start == std::string::npos)
+      AddOption(optionLine);
+    else
+      config_options.replace(start, config_options.find('\n', start) - start, optionLine);
+  }
+
   /*!
    * \brief Initialize the config structure
    */
