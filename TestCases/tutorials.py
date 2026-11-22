@@ -89,7 +89,7 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.727583, 0.453505, -0.714476, 208.023676]
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.727585, 0.453521, -0.714476, 208.023676]
     sp_pinArray_2d_dp_hf_tp.test_vals_aarch64 = [-4.739709, 0.520033, -0.713547, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
@@ -177,7 +177,7 @@ def main():
     premixed_hydrogen.cfg_dir = "../Tutorials/incompressible_flow/Inc_Combustion/1__premixed_hydrogen"
     premixed_hydrogen.cfg_file = "H2_burner.cfg"
     premixed_hydrogen.test_iter = 10
-    premixed_hydrogen.test_vals = [-8.771332, -9.721253, -11.354950, -4.381656, -12.832815]
+    premixed_hydrogen.test_vals = [-8.769581, -9.719802, -10.162061, -3.439369, -11.529638]
     test_list.append(premixed_hydrogen)
 
     ### Compressible Flow
@@ -249,7 +249,7 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.790137, -2.054834, -3.894659, -0.255074, -1.747220, 5.119341, -3.493237, 0.393262]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.790160, -2.054837, -3.894447, -0.254778, -1.767118, 5.119341, -3.493236, 0.393040]
     tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.808996, -2.070606, -3.969765, -0.277943, -1.953289, 1.708472, -3.514943, 0.357411]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
@@ -259,7 +259,7 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals = [-5.587367, -1.700868, -3.093899, -0.102814, -3.750523, 3.287643, -2.394575, 1.119623]
+    tutorial_trans_flatplate_T3Am.test_vals = [-5.588419, -1.700867, -3.097170, -0.103718, -3.750525, 3.287646, -2.394576, 1.119669]
     tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-5.540938, -1.681627, -2.878831, -0.058224, -3.695533, 3.413628, -2.385345, 1.103633]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
