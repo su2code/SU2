@@ -310,26 +310,16 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
           if (geometry->nodes->GetDomain(iPoint)) {
             const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-            su2double FrictionVelocity = 0.0;
-            /*--- Formulation varies for 2D and 3D problems: in 3D the friction velocity is assumed to be sqrt(mu * |Omega|)
-            (provided by the reference paper https://doi.org/10.2514/6.1992-439), whereas in 2D we have to use the
-            standard definition sqrt(c_f / rho) since Omega = 0.  ---*/
-            if(nDim == 2){
-              su2double shearStress = 0.0;
-              for(auto iDim = 0u; iDim < nDim; iDim++) {
-                shearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, iDim), 2.0);
-              }
-              shearStress = sqrt(shearStress);
-
-              FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
-            } else {
-              su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
-              FrictionVelocity = sqrt(flowNodes->GetLaminarViscosity(iPoint)*VorticityMag);
-            }
+            /*--- Friction velocity u_tau = sqrt(tau_w / rho) = sqrt(nu |Omega|) at the wall, where the wall shear stress
+             is mu |Omega| (https://doi.org/10.2514/6.1992-439). The vorticity is also defined in 2D (z component). ---*/
+            const su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
+            const su2double kinematicViscosity =
+                flowNodes->GetLaminarViscosity(iPoint) / max(flowNodes->GetDensity(iPoint), 1e-20);
+            const su2double FrictionVelocity = sqrt(kinematicViscosity * VorticityMag);
 
             const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
             const su2double Derivative = nodes->GetSolution(jPoint, 0) / wall_dist;
-            const su2double turbulence_index = Derivative / (FrictionVelocity * 0.41);
+            const su2double turbulence_index = Derivative / max((FrictionVelocity * 0.41), 1e-20);
 
             nodes->SetTurbIndex(iPoint, turbulence_index);
 

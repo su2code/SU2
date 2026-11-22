@@ -32,7 +32,8 @@
 /*!
  * \class CScalarFlux_TransLM
  * \ingroup ViscDiscr
- * \brief Convection and diffusion of the Langtry-Menter transition model, conservative with a
+ * \brief Convection and diffusion of the Langtry-Menter transition model (nVar = 2) and of its simplified,
+ *        one-equation version (nVar = 1, intermittency only), conservative with a
  *        diagonal, i/j-symmetric diffusion matrix. The coefficients depend only on the flow's
  *        mu/mu_t, not on the transported gamma/Re_theta, so no coefficientJacobians override
  *        is needed.
@@ -67,12 +68,16 @@ class CScalarFlux_TransLM
 
     const Double diff_i_gamma = mu_i + muT_i;
     const Double diff_j_gamma = mu_j + muT_j;
-    const Double diff_i_ReThetaT = 2.0 * (mu_i + muT_i);
-    const Double diff_j_ReThetaT = 2.0 * (mu_j + muT_j);
 
     Vector<Double, nVar> D;
     D(0) = 0.5 * (diff_i_gamma + diff_j_gamma);
-    D(1) = 0.5 * (diff_i_ReThetaT + diff_j_ReThetaT);
+
+    /*--- The simplified (one-equation) model only transports the intermittency. ---*/
+    if constexpr (nVar > 1) {
+      const Double diff_i_ReThetaT = 2.0 * (mu_i + muT_i);
+      const Double diff_j_ReThetaT = 2.0 * (mu_j + muT_j);
+      D(1) = 0.5 * (diff_i_ReThetaT + diff_j_ReThetaT);
+    }
     return {D, D};
   }
 };

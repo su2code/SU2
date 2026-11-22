@@ -42,8 +42,12 @@ private:
 
   LM_ParsedOptions options;
   TURB_FAMILY TurbFamily;
+  bool isSepNeeded;
 
   TransLMCorrelations TransCorrelations;
+
+  /*! \brief Compute separation-induced and effective intermittency after the solution update. */
+  void SetSeparationIntermittency(CGeometry* geometry, CSolver** solver_container, const CConfig* config);
 
   /*!
    * \brief Resolve the compile-time parameters of CScalarFlux_TransLM and run one of this solver's
