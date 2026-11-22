@@ -1643,6 +1643,15 @@ def main():
     cht_compressible.multizone = True
     test_list.append(cht_compressible)
 
+    # CHT compressible, averaged-temperature Robin coupling
+    cht_compressible_avg_robin           = TestCase('cht_compressible_avg_robin')
+    cht_compressible_avg_robin.cfg_dir   = "coupled_cht/comp_2d"
+    cht_compressible_avg_robin.cfg_file  = "cht_2d_3cylinders_avg_robin.cfg"
+    cht_compressible_avg_robin.test_iter = 10
+    cht_compressible_avg_robin.test_vals = [-4.260662, -0.460814, -0.460814, -0.460814]
+    cht_compressible_avg_robin.multizone = True
+    test_list.append(cht_compressible_avg_robin)
+
     # 2D CHT case streamwise periodicity. Also test Multizone PerSurface screen output.
     sp_pinArray_cht_2d_dp_hf           = TestCase('sp_pinArray_cht_2d_dp_hf')
     sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
