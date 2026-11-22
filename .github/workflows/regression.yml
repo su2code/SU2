@@ -28,8 +28,10 @@ jobs:
 
     steps:
       - id: compute
+        env:
+          RUNNER_LABEL: ${{ inputs.runner || 'ubuntu-latest' }}
         run: |
-          if [[ "${{ inputs.runner || 'ubuntu-latest' }}" == *arm* ]]; then
+          if [[ "$RUNNER_LABEL" == *arm* ]]; then
             echo "flags=-Dcpu-arch=armv9-a+simd" >> $GITHUB_OUTPUT
             echo "werror=" >> $GITHUB_OUTPUT
           else
@@ -166,7 +168,9 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build
-        run: docker run --rm --cap-add SYS_PTRACE -v $(pwd):${{ github.workspace }} -w ${{ github.workspace }} ghcr.io/su2code/su2/build-su2-asan:261011-1107 -b ${{github.ref}} -f "${{matrix.flags}}"
+        env:
+          BUILD_FLAGS: ${{ matrix.flags }}
+        run: docker run --rm --cap-add SYS_PTRACE -v $(pwd):${{ github.workspace }} -w ${{ github.workspace }} ghcr.io/su2code/su2/build-su2-asan:261011-1107 -b "$GITHUB_REF" -f "$BUILD_FLAGS"
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
@@ -209,7 +213,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:261011-1107
         with:
           entrypoint: /bin/rm
-          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache
       - name: Download All artifacts
         uses: actions/download-artifact@v8
       - name: Uncompress and Move Binaries
@@ -240,7 +244,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:261011-1107
         with:
           entrypoint: /bin/rm
-          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache
   discadj_tape_tests:
     if: ${{ !contains(inputs.runner, 'arm') }}
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
@@ -258,7 +262,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:261011-1107
         with:
           entrypoint: /bin/rm
-          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache
       - name: Download All artifacts
         uses: actions/download-artifact@v8
       - name: Uncompress and Move Binaries
@@ -289,7 +293,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:261011-1107
         with:
           entrypoint: /bin/rm
-          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache
   thread_sanitizer_tests:
     if: ${{ !contains(inputs.runner, 'arm') }}
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
@@ -304,7 +308,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2-tsan:261011-1107
         with:
           entrypoint: /bin/rm
-          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache
       - name: Download All artifacts
         uses: actions/download-artifact@v8
       - name: Uncompress and Move Binaries
@@ -339,7 +343,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2-tsan:261011-1107
         with:
           entrypoint: /bin/rm
-          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache
   address_sanitizer_tests:
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Address Sanitizer Tests
@@ -353,7 +357,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2-asan:261011-1107
         with:
           entrypoint: /bin/rm
-          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache
       - name: Download All artifacts
         uses: actions/download-artifact@v8
       - name: Uncompress and Move Binaries
@@ -384,7 +388,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2-asan:261011-1107
         with:
           entrypoint: /bin/rm
-          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache
   unit_tests:
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Unit Tests
@@ -405,7 +409,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:261011-1107
         with:
           entrypoint: /bin/rm
-          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache
       - name: Download Base
         uses: actions/download-artifact@v8
         with:
@@ -444,7 +448,7 @@ jobs:
           find $BIN_FOLDER -type f -exec chmod a+x '{}' \;
           ls -lahR $BIN_FOLDER
           echo "cloning branch"
-          branch="${{github.ref}}"
+          branch="$GITHUB_REF"
           name="SU2"
           SRC_FOLDER="$PWD/src"
           mkdir -p $SRC_FOLDER
@@ -483,4 +487,4 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:261011-1107
         with:
           entrypoint: /bin/rm
-          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache
