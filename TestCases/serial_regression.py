@@ -123,9 +123,9 @@ def main():
     test_list.append(wedge)
 
     # Supersonic biparabolic airfoil
-    biparabolic           = TestCase('biparabolic')
-    biparabolic.cfg_dir   = "euler/biparabolic"
-    biparabolic.cfg_file  = "BIPARABOLIC.cfg"
+    biparabolic = TestCase('biparabolic')
+    biparabolic.cfg_dir = "euler/biparabolic"
+    biparabolic.cfg_file = "BIPARABOLIC.cfg"
     biparabolic.test_iter = 25
     biparabolic.test_vals = [-2.177974, 0.460848, 0.278048, 3.447020]
     test_list.append(biparabolic)
