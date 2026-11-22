@@ -4002,6 +4002,27 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (!MUSCL_AdjFlow || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = LIMITER::NONE;
   if (!MUSCL_AdjTurb || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = LIMITER::NONE;
 
+  /*--- The SHARP_EDGES and WALL_DISTANCE limiters are first order within a distance proportional to
+   * VENKAT_LIMITER_COEFF * ADJ_SHARP_LIMITER_COEFF, with a zero width they are first order everywhere.
+   * Only the limiters of the active equations are checked. ---*/
+  const bool turb = Kind_Turb_Model != TURB_MODEL::NONE;
+  const bool heat =
+      Weakly_Coupled_Heat || Kind_Solver == MAIN_SOLVER::HEAT_EQUATION || Kind_Solver == MAIN_SOLVER::DISC_ADJ_HEAT;
+  vector<LIMITER> activeLimiters = {Kind_SlopeLimit_Flow};
+  if (turb) activeLimiters.push_back(Kind_SlopeLimit_Turb);
+  if (Kind_Species_Model != SPECIES_MODEL::NONE) activeLimiters.push_back(Kind_SlopeLimit_Species);
+  if (heat) activeLimiters.push_back(Kind_SlopeLimit_Heat);
+  if (ContinuousAdjoint) activeLimiters.push_back(Kind_SlopeLimit_AdjFlow);
+  if (ContinuousAdjoint && turb) activeLimiters.push_back(Kind_SlopeLimit_AdjTurb);
+  for (const auto kind : activeLimiters) {
+    if ((kind == LIMITER::SHARP_EDGES || kind == LIMITER::WALL_DISTANCE) &&
+        !(Venkat_LimiterCoeff > 0.0 && AdjSharp_LimiterCoeff > 0.0)) {
+      SU2_MPI::Error("The SHARP_EDGES and WALL_DISTANCE slope limiters need VENKAT_LIMITER_COEFF > 0 and\n"
+                     "ADJ_SHARP_LIMITER_COEFF > 0 (they set the width of the region limited to first order).",
+                     CURRENT_FUNCTION);
+    }
+  }
+
   /*--- Set the default for thrust in ActDisk ---*/
 
   if ((Kind_ActDisk == NET_THRUST) || (Kind_ActDisk == BC_THRUST)
@@ -4706,6 +4727,36 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   Rotating_Frame = (Kind_GridMovement == ROTATING_FRAME);
 
+  /*--- The finite volume flow solvers apply these source terms with a single numerics object, which is built
+   for only one of them: combinations would apply one source several times and ignore the others. Only these
+   solvers (and their discrete adjoints) are checked: e.g. elasticity uses BODY_FORCE and GRAVITY_FORCE together. ---*/
+
+  if (GetFluidProblem() && !GetNEMOProblem()) {
+    const bool inc = (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE);
+    const int nSources = int(Body_Force) + int(Rotating_Frame) + int(Axisymmetric) + int(GravityForce && !inc) +
+                         int(inc && Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ) +
+                         int(inc && Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE);
+    if (nSources > 1) {
+      SU2_MPI::Error("Only one of BODY_FORCE, GRID_MOVEMENT= ROTATING_FRAME, AXISYMMETRIC, GRAVITY_FORCE (compressible), "
+                     "INC_DENSITY_MODEL= BOUSSINESQ and KIND_STREAMWISE_PERIODIC (incompressible) can be used at a time.",
+                     CURRENT_FUNCTION);
+    }
+  }
+
+  /*--- The second source object, for radiation, the energy correction of incompressible streamwise periodic flow
+   (without periodic temperature) or vorticity confinement, is also built for only one of them. ---*/
+
+  if (GetFluidProblem() && !GetNEMOProblem()) {
+    const bool inc = (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE);
+    const bool periodicOutlet = inc && Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE && Energy_Equation &&
+                                !Streamwise_Periodic_Temperature;
+    if (int(Radiation) + int(periodicOutlet) + int(VorticityConfinement) > 1) {
+      SU2_MPI::Error("Only one of RADIATION, the energy correction of KIND_STREAMWISE_PERIODIC (incompressible, "
+                     "STREAMWISE_PERIODIC_TEMPERATURE= NO) and VORTICITY_CONFINEMENT can be used at a time.",
+                     CURRENT_FUNCTION);
+    }
+  }
+
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each option, a value has been declared for each moving marker. ---*/
@@ -5064,6 +5115,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    *    derived from the cycle, or it stays on the coarsest level for the entire run. ---*/
 
   if (Restart || ((Kind_MGCycle == MG_CYCLE::FULL) && ContinuousAdjoint)) Kind_MGCycle = MG_CYCLE::V;
+
+  /*--- The multigrid arrays hold at most 10 coarse levels (CMultiGridIntegration::MAX_MG_LEVELS). ---*/
+  if (nMGLevels > 10) {
+    SU2_MPI::Error("MGLEVEL must be between 0 and 10; larger multigrid hierarchies are not supported.", CURRENT_FUNCTION);
+  }
 
   FinestMesh = MESH_0;
   if (Kind_MGCycle == MG_CYCLE::FULL) FinestMesh = nMGLevels;

@@ -27,9 +27,11 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
                        'SU2_CFD/scalar_muscl.cpp',
                        'SU2_CFD/scalar_limiter_eps.cpp',
                        'SU2_CFD/solvers/CNEMOEulerSolver_tests.cpp',
+                       'SU2_CFD/solvers/moving_wall_tests.cpp',
                        'SU2_CFD/solvers/supersonic_outlet_tests.cpp',
                        'SU2_CFD/nemo_viscous_assembly.cpp',
                        'SU2_CFD/windowing.cpp',
+                       'SU2_CFD/limiters.cpp',
                        'Common/toolboxes/random_toolbox_tests.cpp',
                        'Common/linear_algebra/quantization_tests.cpp',
                        'Common/linear_algebra/edge_residual_blocks_tests.cpp'])
@@ -64,6 +66,8 @@ if get_option('enable-tests')
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)
+    test('Multigrid configuration limits', python,
+         args: files('Common/check_multigrid_limits.py') + [test_driver.full_path()])
     test('Streamwise periodic support', python,
          args: files('Common/check_periodic_support.py') + [test_driver.full_path(), '--streamwise'],
          timeout: 150)
