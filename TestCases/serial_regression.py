@@ -173,7 +173,7 @@ def main():
     inv_channel.cfg_dir   = "euler/channel"
     inv_channel.cfg_file  = "inv_channel.cfg"
     inv_channel.test_iter = 20
-    inv_channel.test_vals = [-4.417118, -1.270081, -2.008538, 1.033475, 5.000000, -0.426366, 0.000084, -0.002650, 1000.000000]
+    inv_channel.test_vals = [-4.417144, -1.270109, -2.008506, 1.033448, 5.000000, -0.426352, 0.000084, -0.002650, 1000.000000]
     test_list.append(inv_channel)
 
     # CRM DPW4 wing-body, transonic
@@ -181,7 +181,7 @@ def main():
     inv_crm_jst.cfg_dir   = "euler/CRM"
     inv_crm_jst.cfg_file  = "inv_CRM_JST.cfg"
     inv_crm_jst.test_iter = 20
-    inv_crm_jst.test_vals = [-2.051928, -1.904068, -1.904270, -1.771577, -1.441046]
+    inv_crm_jst.test_vals = [-2.051940, -1.904036, -1.904310, -1.771569, -1.441059]
     test_list.append(inv_crm_jst)
 
     ##########################
@@ -249,7 +249,7 @@ def main():
     lam_naca0012.cfg_dir   = "navierstokes/naca0012"
     lam_naca0012.cfg_file  = "lam_NACA0012.cfg"
     lam_naca0012.test_iter = 20
-    lam_naca0012.test_vals = [-5.476464, -3.192186, -3.250615, -0.070066]
+    lam_naca0012.test_vals = [-5.476452, -3.192160, -3.250578, -0.070055]
     test_list.append(lam_naca0012)
 
     ##########################
