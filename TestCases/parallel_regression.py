@@ -210,6 +210,14 @@ def main():
     invwedge_ss_inlet.test_vals_aarch64 = [-1.081061, -1.605824, -18.246260, -18.575547, -18.519333, 2.235398, 1.855022, 5.278994, 0.837755]
     test_list.append(invwedge_ss_inlet)
 
+    # Inviscid single wedge, multigrid, implicit
+    invwedge_mg = TestCase('invwedge_mg')
+    invwedge_mg.cfg_dir = "nonequilibrium/invwedge"
+    invwedge_mg.cfg_file = "invwedge_mg.cfg"
+    invwedge_mg.test_iter = 10
+    invwedge_mg.test_vals = [-1.244127, -1.768890, -32.000000, -32.000000, -24.982809, 2.073686, 1.628242, 5.110438, 0.674006]
+    test_list.append(invwedge_mg)
+
     # Viscous single cone - axisymmetric
     visc_cone = TestCase('visc_cone')
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
@@ -234,6 +242,14 @@ def main():
     super_cat.test_iter = 10
     super_cat.test_vals = [-5.295467, -5.820230, -20.978814, -20.962672, -20.980407, 1.187897, -3.211231, -0.029845, 0.254812, 29030.000000]
     test_list.append(super_cat)
+
+    # Viscous single wedge - heat flux wall
+    heatflux_wall = TestCase('heatflux_wall')
+    heatflux_wall.cfg_dir = "nonequilibrium/visc_wedge"
+    heatflux_wall.cfg_file = "heatflux_wall.cfg"
+    heatflux_wall.test_iter = 10
+    heatflux_wall.test_vals = [-5.047176, -5.571938, -32.000000, -32.000000, -32.000000, 1.425740, -2.855459, -0.289500, 0.657285, -44846.000000]
+    test_list.append(heatflux_wall)
 
     # Viscous single wedge - partially catalytic walls
     partial_cat = TestCase('partial_cat')
