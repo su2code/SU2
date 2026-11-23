@@ -343,7 +343,23 @@ protected:
    */
   void SetReferenceValues(const CConfig& config) final;
 
-public:
+  /*!
+   * \brief Boundary state of a static-pressure outlet (see ComputePressureOutletState); stops with an error if the
+   *        state cannot be built.
+   * \param[in] markerTag - Marker name, for messages.
+   * \param[in] interior - Interior conservative state.
+   * \param[in] unitNormal - Outward unit normal.
+   * \param[in] gridNormal - Grid velocity along the normal.
+   * \param[in] pressure - Imposed static pressure (nondimensional).
+   * \param[in] tke - Turbulent kinetic energy contained in the total energy.
+   * \param[in] idealGas - Use the closed form of an ideal gas.
+   * \param[out] boundary - Conservative boundary state.
+   */
+  void BuildPressureOutletState(const string& markerTag, const su2double* interior, const su2double* unitNormal,
+                                su2double gridNormal, su2double pressure, su2double tke, bool idealGas,
+                                su2double* boundary);
+
+ public:
   CEulerSolver() = delete;
 
   /*!
@@ -476,6 +492,18 @@ public:
                                                          su2double gridNormal, su2double targetPressure,
                                                          su2double turbulentK, bool idealGas, su2double gamma,
                                                          su2double* boundary);
+
+  /*!
+   * \brief Projection onto the outgoing waves, I - sum over lambda_k < 0 of P(:,k) invP(k,:).
+   * \note Used by the characteristic outlets as the approximate derivative of the boundary state.
+   * \param[in] nVar - Number of variables.
+   * \param[in] P - Right eigenvectors (columns).
+   * \param[in] invP - Left eigenvectors (rows).
+   * \param[in] lambda - Wave speeds relative to the grid, in the order of the eigenvectors.
+   * \param[out] projection - Projection matrix.
+   */
+  static void OutgoingWaveProjection(unsigned short nVar, const su2double* const* P, const su2double* const* invP,
+                                     const su2double* lambda, su2double** projection);
 
   /*!
    * \brief Source term integration.

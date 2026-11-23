@@ -5480,6 +5480,39 @@ CEulerSolver::PressureOutletStatus CEulerSolver::ComputePressureOutletState(
   return OutletStatus::Valid;
 }
 
+void CEulerSolver::OutgoingWaveProjection(unsigned short nVar, const su2double* const* P, const su2double* const* invP,
+                                          const su2double* lambda, su2double** projection) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
+      projection[iVar][jVar] = iVar == jVar ? 1.0 : 0.0;
+      for (auto kVar = 0u; kVar < nVar; kVar++)
+        if (lambda[kVar] < 0) projection[iVar][jVar] -= P[iVar][kVar] * invP[kVar][jVar];
+    }
+  }
+}
+
+void CEulerSolver::BuildPressureOutletState(const string& markerTag, const su2double* interior,
+                                            const su2double* unitNormal, su2double gridNormal, su2double pressure,
+                                            su2double tke, bool idealGas, su2double* boundary) {
+  const auto status = ComputePressureOutletState(GetFluidModel(), nDim, interior, unitNormal, gridNormal, pressure, tke,
+                                                 idealGas, Gamma, boundary);
+  if (status == PressureOutletStatus::Valid) return;
+  /*--- MPI error reporting uses shared state; only one OpenMP thread may enter it. ---*/
+  SU2_OMP_CRITICAL {
+    if (status == PressureOutletStatus::Backflow)
+      SU2_MPI::Error(
+          "Static-pressure outflow requires an inflow state for backflow with all characteristics "
+          "incoming on marker " +
+              markerTag,
+          CURRENT_FUNCTION);
+    else
+      SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + markerTag +
+                         ". Check the prescribed pressure and the EOS validity range.",
+                     CURRENT_FUNCTION);
+  }
+  END_SU2_OMP_CRITICAL
+}
+
 void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                               CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker) {
@@ -5738,19 +5771,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
       if (pressureOutflow) {
-        const auto status = ComputePressureOutletState(GetFluidModel(), nDim, u_i, UnitNormal, gridNormal, Pressure_e,
-                                                       tke_i, ideal_gas, Gamma, u_b);
-        if (status != PressureOutletStatus::Valid) {
-          // MPI error reporting uses shared state; only one OpenMP thread may enter it.
-          SU2_OMP_CRITICAL
-          {
-            if (status == PressureOutletStatus::Backflow)
-              SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
-            else
-              SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
-                             ". Check the prescribed pressure and the EOS validity range.", CURRENT_FUNCTION);
-          } END_SU2_OMP_CRITICAL
-        }
+        BuildPressureOutletState(Marker_Tag, u_i, UnitNormal, gridNormal, Pressure_e, tke_i, ideal_gas, u_b);
       }
 
       /*--- Compute the thermodynamic state in u_b ---*/
@@ -5824,23 +5845,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         for (auto iVar = 0u; iVar < nVar; iVar++){
           Jacobian_b[iVar] = new su2double[nVar];
           Jacobian_i[iVar] = new su2double[nVar];
-          /*--- Initialize DubDu to unit matrix---*/
           DubDu[iVar] = new su2double[nVar];
-          for (auto jVar=0u; jVar < nVar; jVar++)
-            DubDu[iVar][jVar] = 0;
-
-          DubDu[iVar][iVar]=1;
         }
 
-        // Keep outgoing characteristic increments; freeze the wave basis in this approximate matrix.
-        for (auto iVar=0u; iVar<nVar; iVar++){
-          for (auto jVar=0u; jVar<nVar; jVar++){
-            for (auto kVar=0u; kVar<nVar; kVar++){
-              if (Lambda_i[kVar]<0)
-                DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
-            }
-          }
-        }
+        /*--- Only the outgoing waves change the boundary state; the eigenvectors are those of the interior. ---*/
+        OutgoingWaveProjection(nVar, P_Tensor, invP_Tensor, Lambda_i, DubDu);
 
         /*--- Compute flux Jacobian in state b ---*/
         conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
@@ -6235,19 +6244,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         if (pressureOutflow) {
           // Apply each span's pressure to the local state; using a span average here would discard local waves.
           const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
-          const auto status = ComputePressureOutletState(GetFluidModel(), nDim, u_i, UnitNormal, gridNormal, Pressure_e,
-                                                         tke_i, ideal_gas, Gamma, u_b);
-          if (status != PressureOutletStatus::Valid) {
-            // MPI error reporting uses shared state; only one OpenMP thread may enter it.
-            SU2_OMP_CRITICAL
-            {
-              if (status == PressureOutletStatus::Backflow)
-                SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
-              else
-                SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
-                               ". Check the prescribed pressure and the EOS validity range.", CURRENT_FUNCTION);
-            } END_SU2_OMP_CRITICAL
-          }
+          BuildPressureOutletState(Marker_Tag, u_i, UnitNormal, gridNormal, Pressure_e, tke_i, ideal_gas, u_b);
         } else {
           /*--- Compute the characteristic jumps ---*/
           for (iVar = 0; iVar < nVar; iVar++) {
@@ -6314,28 +6311,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             DubDu[iVar] = new su2double[nVar];
           }
 
-          /*--- Initialize DubDu to unit matrix---*/
-
-          for (iVar = 0; iVar < nVar; iVar++)
-          {
-            for (jVar = 0; jVar < nVar; jVar++)
-              DubDu[iVar][jVar]= 0;
-
-            DubDu[iVar][iVar]= 1;
-          }
-
-          // Keep outgoing characteristic increments; freeze the wave basis in this approximate matrix.
-          for (iVar=0; iVar<nVar; iVar++)
-          {
-            for (jVar=0; jVar<nVar; jVar++)
-            {
-              for (kVar=0; kVar<nVar; kVar++)
-              {
-                if (Lambda_i[kVar]<0)
-                  DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
-              }
-            }
-          }
+          /*--- Only the outgoing waves change the boundary state; the eigenvectors are those of the interior. ---*/
+          OutgoingWaveProjection(nVar, P_Tensor, invP_Tensor, Lambda_i, DubDu);
 
           /*--- Compute flux Jacobian in state b ---*/
           conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
@@ -7742,19 +7719,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     const auto* interior = nodes->GetSolution(iPoint);
     su2double boundary[MAXNVAR] = {};
     // Ordinary compressible outlets use the ideal-gas path; real-gas pressure outlets use BC_Riemann.
-    const auto status = ComputePressureOutletState(GetFluidModel(), nDim, interior, UnitNormal, gridNormal, pressure,
-                                                   tke, true, Gamma, boundary);
-    if (status != PressureOutletStatus::Valid) {
-      // MPI error reporting uses shared state; only one OpenMP thread may enter it.
-      SU2_OMP_CRITICAL
-      {
-        if (status == PressureOutletStatus::Backflow)
-          SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
-        else
-          SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
-                         ". Check the prescribed pressure and the EOS validity range.", CURRENT_FUNCTION);
-      } END_SU2_OMP_CRITICAL
-    }
+    BuildPressureOutletState(Marker_Tag, interior, UnitNormal, gridNormal, pressure, tke, true, boundary);
 
     const su2double density = boundary[0], energy = boundary[nVar - 1] / density;
     const auto* V_domain = nodes->GetPrimitive(iPoint);
@@ -7778,10 +7743,11 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     if (implicit) {
       su2double Pdata[MAXNVAR][MAXNVAR] = {}, Idata[MAXNVAR][MAXNVAR] = {};
       su2double projection[MAXNVAR][MAXNVAR] = {}, matrix[MAXNVAR][MAXNVAR] = {};
-      su2double *P[MAXNVAR], *Pinv[MAXNVAR], *rows[MAXNVAR];
+      su2double *P[MAXNVAR], *Pinv[MAXNVAR], *proj[MAXNVAR], *rows[MAXNVAR];
       for (auto row = 0u; row < nVar; ++row) {
         P[row] = Pdata[row];
         Pinv[row] = Idata[row];
+        proj[row] = projection[row];
         rows[row] = matrix[row];
       }
       const auto* velocity = V_domain + prim_idx.Velocity();
@@ -7793,17 +7759,11 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->GetPMatrix(&rho, velocity, &sound, &enthalpy, &chi, &kappa, UnitNormal, P);
       conv_numerics->GetPMatrix_inv(Pinv, &rho, velocity, &sound, &chi, &kappa, UnitNormal);
       const su2double q = GeometryToolbox::DotProduct(nDim, velocity, UnitNormal) - gridNormal;
-      // Exclude incoming waves from this approximate state derivative.
-      for (auto row = 0u; row < nVar; ++row)
-        for (auto col = 0u; col < nVar; ++col) {
-          projection[row][col] = row == col ? 1.0 : 0.0;
-          for (auto mode = 0u; mode < nVar; ++mode) {
-            su2double speed = q;
-            if (mode == nVar - 2) speed += sound;
-            if (mode == nVar - 1) speed -= sound;
-            if (speed < 0) projection[row][col] -= P[row][mode] * Pinv[mode][col];
-          }
-        }
+      su2double lambda[MAXNVAR];
+      for (auto iVar = 0u; iVar < nVar; ++iVar) lambda[iVar] = q;
+      lambda[nVar - 2] = q + sound;
+      lambda[nVar - 1] = q - sound;
+      OutgoingWaveProjection(nVar, P, Pinv, lambda, proj);
       for (auto row = 0u; row < nVar; ++row)
         for (auto col = 0u; col < nVar; ++col) {
           matrix[row][col] = residual.jacobian_i[row][col];
