@@ -1,6 +1,6 @@
 /*!
  * \file characteristic_pressure_outlet_tests.cpp
- * \brief Regression for characteristic pressure boundary admissibility.
+ * \brief Static-pressure state of the outlets and the BC_Riemann outlet.
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -26,115 +26,54 @@
 
 #include "catch.hpp"
 #include "pressure_outlet_test_utils.hpp"
-#include "../../UnitQuadTestCase.hpp"
 #include "../../../SU2_CFD/include/numerics/flow/convection/hllc.hpp"
-#include "../../../SU2_CFD/include/fluid/CFluidModel.hpp"
-#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
-#include "../../../SU2_CFD/include/fluid/CVanDerWaalsGas.hpp"
-#include "../../../SU2_CFD/include/fluid/CPengRobinson.hpp"
 #include "../../../SU2_CFD/include/fluid/CDataDrivenFluid.hpp"
 
 namespace {
-void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
+// BC_Riemann static-pressure outlet on a moving grid, at the start-up state of an MDM nozzle. A low back pressure
+// leaves the Peng-Robinson validity range under a linear characteristic jump, but not along the isentrope.
+void RiemannPressureOutlet(su2double pressure, bool backflow = false) {
   UnitQuadTestCase test;
   std::ostringstream options;
-  options << "SOLVER= EULER\nMESH_FORMAT= RECTANGLE\nMESH_BOX_SIZE= 5,129,5\n"
-          << "REF_DIMENSIONALIZATION= DIMENSIONAL\nMACH_NUMBER= 0.1\n"
-          << "FREESTREAM_OPTION= DENSITY_FS\nFREESTREAM_DENSITY= 230\nFREESTREAM_PRESSURE= 1500112\n"
-          << "FLUID_MODEL= PR_GAS\nGAMMA_VALUE= 1.0125\nGAS_CONSTANT= 35.152\n"
-          << "CRITICAL_PRESSURE= 1415200\nCRITICAL_TEMPERATURE= 564.1\nACENTRIC_FACTOR= 0.529\n"
-          << "CONV_NUM_METHOD_FLOW= HLLC\nTIME_DISCRE_FLOW= EULER_IMPLICIT\n"
-          << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 20,0,0\n"
-          << "MARKER_EULER= (x_minus,y_minus,y_plus)\nMARKER_MONITORING= (x_minus)\n"
-          << "MARKER_RIEMANN= (x_plus,STATIC_PRESSURE," << pressure << ",0,0,0,0)\n";
+  options << OutletTestOptions(2, 1, 0, true, "5,129,5")
+          << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 20,0,0\nMARKER_EULER= (x_minus,y_minus,y_plus)\n"
+          << "MARKER_MONITORING= (x_minus)\nMARKER_RIEMANN= (x_plus,STATIC_PRESSURE," << pressure << ",0,0,0,0)\n";
   test.config_options = options.str();
   test.InitConfig();
   test.InitGeometry();
   test.InitSolver();
   auto* solver = test.solver[FLOW_SOL];
-  auto* nodes = static_cast<CEulerVariable*>(solver->GetNodes());
-  CPengRobinson gas(1.0125, 35.152, 1415200, 564.1, 0.529);
-  // Start-up state of an MDM nozzle. A low back pressure leaves the Peng-Robinson validity range under a linear
-  // characteristic jump, but not along the isentrope.
+  auto gas = MakeOutletTestGas(1);
   su2double state[4] = {139.72158881490299, 11271.637336535776, -2338.5053086132339, 221781581.74179047};
   if (backflow) {
+    // Inflow faster than sound with the same thermal state.
     const auto oldVelocity = state[1] / state[0];
     state[1] = state[0] * -200;
-    // Change only normal velocity; adjust total energy to keep the original thermal state.
     state[3] += .5 * state[0] * (40000 - oldVelocity * oldVelocity);
   }
   const su2double grid[2] = {20, 0};
-  for (auto p = 0ul; p < test.geometry->GetnPoint(); ++p) {
-    nodes->SetSolution(p, state);
-    nodes->SetSolution_Old(p, state);
-    REQUIRE(nodes->SetPrimVar(p, &gas));
-    nodes->SetSecondaryVar(p, &gas);
-    test.geometry->nodes->SetGridVel(p, grid);
-    for (auto k = 0u; k < 4; ++k) solver->LinSysRes(p, k) = 0;
-    su2double zero[16] = {};
-    solver->Jacobian.SetBlock(p, p, zero);
+  SetOutletTestState(test, *gas, state, grid, 0);
+  const auto marker = OutletTestMarker(*test.config, "x_plus");
+  SU2_OMP_PARALLEL {
+    CUpwGeneralHLLC_Flow numerics(2, 4, test.config.get());
+    solver->BC_Riemann(test.geometry.get(), test.solver, &numerics, nullptr, test.config.get(), marker);
   }
   CUpwGeneralHLLC_Flow numerics(2, 4, test.config.get());
-  for (auto marker = 0u; marker < test.config->GetnMarker_All(); ++marker)
-    if (test.config->GetMarker_All_TagBound(marker) == "x_plus") SU2_OMP_PARALLEL {
-        CUpwGeneralHLLC_Flow threadNumerics(2, 4, test.config.get());
-        solver->BC_Riemann(test.geometry.get(), test.solver, &threadNumerics, nullptr, test.config.get(), marker);
-      }
-  for (auto p = 0ul; p < test.geometry->GetnPoint(); ++p)
-    for (auto k = 0u; k < 4; ++k) CHECK(std::isfinite(SU2_TYPE::GetValue(solver->LinSysRes(p, k))));
   unsigned long fallbacks = 0;
-  for (auto marker = 0u; marker < test.config->GetnMarker_All(); ++marker) {
-    if (test.config->GetMarker_All_TagBound(marker) != "x_plus") continue;
-    for (auto v = 0ul; v < test.geometry->nVertex[marker]; ++v) {
-      const auto point = test.geometry->vertex[marker][v]->GetNode();
-      if (!test.geometry->nodes->GetDomain(point)) continue;
-      su2double normal[2], unit[2];
-      test.geometry->vertex[marker][v]->GetNormal(normal);
-      const auto area = GeometryToolbox::Norm(2, normal);
-      for (auto d = 0u; d < 2; ++d) unit[d] = (normal[d] = -normal[d]) / area;
-      // BC_Riemann uses the physical boundary flux, including transport by the moving grid.
-      su2double boundary[4];
-      if (ExpectedSteadyOutletState(gas, 2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure, 0, false,
-                                    0, boundary))
-        ++fallbacks;
-      auto flux = [&](const su2double* boundary, su2double* output) {
-        su2double velocity[2];
-        for (auto d = 0u; d < 2; ++d) velocity[d] = boundary[d + 1] / boundary[0];
-        const auto energy = boundary[3] / boundary[0];
-        gas.SetTDState_rhoe(boundary[0], energy - .5 * GeometryToolbox::SquaredNorm(2, velocity));
-        const auto p = gas.GetPressure(), h = energy + p / boundary[0];
-        numerics.GetInviscidProjFlux(&boundary[0], velocity, &p, &h, normal, output);
-        const auto speed = GeometryToolbox::DotProduct(2, grid, normal);
-        for (auto k = 0u; k < 4; ++k) output[k] -= speed * boundary[k];
-      };
-      su2double reference[4];
-      flux(boundary, reference);
-      const auto* primitive = solver->GetCharacPrimVar(marker, v);
-      CHECK(SU2_TYPE::GetValue(primitive[0]) == Approx(SU2_TYPE::GetValue(gas.GetTemperature())).epsilon(1e-8));
-      CHECK(SU2_TYPE::GetValue(primitive[3]) == Approx(SU2_TYPE::GetValue(gas.GetPressure())).epsilon(1e-8));
-      CHECK(SU2_TYPE::GetValue(primitive[4]) == Approx(SU2_TYPE::GetValue(gas.GetDensity())).epsilon(1e-8));
-      CHECK(SU2_TYPE::GetValue(primitive[6]) == Approx(SU2_TYPE::GetValue(gas.GetSoundSpeed())).epsilon(1e-8));
-      for (auto k = 0u; k < 4; ++k)
-        CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, k)) ==
-              Approx(SU2_TYPE::GetValue(reference[k])).epsilon(1e-8));
-      for (auto column = 0u; column < 4; ++column) {
-        // Freeze the wave basis and differentiate the physical boundary flux along outgoing increments.
-        su2double plus[4], minus[4], fPlus[4], fMinus[4], increment[4];
-        OutgoingOutletIncrement(gas, 2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), 0, column, increment);
-        const auto delta = 2e-5 * fabs(state[column]);
-        for (auto k = 0u; k < 4; ++k) {
-          plus[k] = boundary[k] + delta * increment[k];
-          minus[k] = boundary[k] - delta * increment[k];
-        }
-        flux(plus, fPlus);
-        flux(minus, fMinus);
-        for (auto row = 0u; row < 4; ++row) {
-          const auto expected = SU2_TYPE::GetValue((fPlus[row] - fMinus[row]) / (2 * delta));
-          CHECK(solver->Jacobian.GetBlock(point, point)[row * 4 + column] ==
-                Approx(expected).epsilon(3e-4).margin(1e-5));
-        }
-      }
-    }
+  for (auto vertex = 0ul; vertex < test.geometry->nVertex[marker]; ++vertex) {
+    const auto point = test.geometry->vertex[marker][vertex]->GetNode();
+    if (!test.geometry->nodes->GetDomain(point)) continue;
+    su2double normal[2], unit[2], boundary[4], flux[4];
+    OutwardNormal(*test.geometry, marker, vertex, 2, normal, unit);
+    if (ExpectedSteadyOutletState(*gas, 2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure, 0, false,
+                                  0, boundary))
+      ++fallbacks;
+    PhysicalOutletFlux(*gas, numerics, 2, boundary, normal, grid, flux);
+    CheckOutletPrimitives(solver->GetCharacPrimVar(marker, vertex), *gas, 2);
+    for (auto k = 0u; k < 4; ++k)
+      CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, k)) == Approx(SU2_TYPE::GetValue(flux[k])).epsilon(1e-8));
+    CheckRiemannOutletJacobian(solver->Jacobian.GetBlock(point, point), *gas, numerics, 2, state, boundary, unit,
+                               normal, grid);
   }
   // Full backflow and an invalid pressure use the steady fallback states, which the monitor counts.
   CHECK((fallbacks > 0) == (backflow || pressure <= 0));
@@ -142,17 +81,19 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
 }
 }  // namespace
 
-TEST_CASE("Characteristic pressure boundary reconstructs the captured startup states", "[Pressure-outlet]") {
-  for (const auto pressure : {1400000., 100000., 1000.}) CharacteristicPressureFixture(pressure);
+TEST_CASE("Riemann pressure outlet follows the isentrope from the start-up state", "[Pressure-outlet]") {
+  for (const auto pressure : {1400000., 100000., 1000.}) RiemannPressureOutlet(pressure);
+}
+
+TEST_CASE("Riemann pressure outlet uses the steady fallback states", "[Pressure-outlet]") {
+  RiemannPressureOutlet(0);
+  RiemannPressureOutlet(1400000, true);
 }
 
 TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame", "[Pressure-outlet]") {
   for (auto dim : {2u, 3u}) {
     for (auto kind : {0u, 1u, 2u}) {
-      std::unique_ptr<CFluidModel> gas;
-      if (kind == 0) gas.reset(new CIdealGas(1.4, 35.152));
-      if (kind == 1) gas.reset(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
-      if (kind == 2) gas.reset(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
+      auto gas = MakeOutletTestGas(kind);
       const su2double p = 1500112, rho = 230, normal[3] = {1, 0, 0}, boost[3] = {20, -7, 3};
       gas->SetTDState_Prho(p, rho);
       const auto e = gas->GetStaticEnergy(), sound = gas->GetSoundSpeed(), entropy = gas->GetEntropy();
@@ -350,11 +291,6 @@ TEST_CASE("Sonic backflow fallback is continuous with subsonic reverse flow", "[
         CHECK(SU2_TYPE::GetValue(fallback[k]) ==
               Approx(SU2_TYPE::GetValue(subsonic[k])).epsilon(1e-6).margin(1e-6 * SU2_TYPE::GetValue(rho * a)));
     }
-}
-
-TEST_CASE("Characteristic pressure boundary uses the steady fallback states", "[Pressure-outlet]") {
-  CharacteristicPressureFixture(0);
-  CharacteristicPressureFixture(1400000, true);
 }
 
 #ifdef HAVE_MLPCPP
