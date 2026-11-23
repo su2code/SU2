@@ -1599,8 +1599,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Compute Gamma using domain state ---*/
-      Gamma = nodes->GetGamma(iPoint);
-      Gamma_Minus_One = Gamma - 1.0;
+      const su2double GammaDomain = nodes->GetGamma(iPoint);
+      const su2double GammaMinusOne = GammaDomain - 1.0;
 
       /*--- Retrieve the specified back pressure for this outlet. ---*/
       su2double P_Exit;
@@ -1651,16 +1651,16 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
          (T and Tve) and species concentraition are also assumed to be extrapolated.
          ---*/
 
-        const su2double Entropy = Pressure*pow(1.0/Density,Gamma);
-        const su2double Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+        const su2double Entropy = Pressure*pow(1.0/Density,GammaDomain);
+        const su2double Riemann = Vn + 2.0*SoundSpeed/GammaMinusOne;
 
         /*--- Compute the new fictious state at the outlet ---*/
         //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
         //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
-        Density    = pow(P_Exit/Entropy,1.0/Gamma);
+        Density    = pow(P_Exit/Entropy,1.0/GammaDomain);
         Pressure   = P_Exit;
-        SoundSpeed = sqrt(Gamma*P_Exit/Density);
-        const su2double Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+        SoundSpeed = sqrt(GammaDomain*P_Exit/Density);
+        const su2double Vn_Exit    = Riemann - 2.0*SoundSpeed/GammaMinusOne;
         Velocity2  = 0.0;
         for (auto iDim = 0ul; iDim < nDim; iDim++) {
           Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
