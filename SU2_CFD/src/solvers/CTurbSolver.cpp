@@ -320,13 +320,13 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(CSolver** solver_container,
 su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, unsigned long iPoint,
                                                     const su2double* vorticity, bool shielded,
                                                     ShearLayerWorkspace& workspace) const {
-  const su2double omega = GeometryToolbox::Norm(3, vorticity);
+  const su2double omega = GeometryToolbox::Norm(MAXNDIM, vorticity);
 
   /*--- Without vorticity its direction is undefined and Delta_omega vanishes, use the standard DES length-scale. ---*/
   if (omega < 1e-12) return geometry->nodes->GetMaxLength(iPoint);
 
-  su2double direction[3];
-  for (auto iDim = 0u; iDim < 3; iDim++) direction[iDim] = vorticity[iDim] / omega;
+  su2double direction[MAXNDIM];
+  for (auto iDim = 0u; iDim < MAXNDIM; iDim++) direction[iDim] = vorticity[iDim] / omega;
 
   /*--- Delta_omega = max_{n,m} |l_n - l_m| / sqrt(3), with l_n = n_omega x r_n and r_n the vertices of the control
    volume (Eq. 1). The control volume of a point is its median-dual cell, whose vertices are the midpoints of the edges
@@ -339,9 +339,9 @@ su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, u
 
   const auto coord_i = geometry->nodes->GetCoord(iPoint);
   auto addVertex = [&](const su2double* vertex) {
-    su2double relative[3] = {0.0, 0.0, 0.0};
+    su2double relative[MAXNDIM] = {0.0, 0.0, 0.0};
     for (auto iDim = 0u; iDim < nDim; iDim++) relative[iDim] = vertex[iDim] - coord_i[iDim];
-    array<su2double, 3> cross;
+    array<su2double, MAXNDIM> cross;
     GeometryToolbox::CrossProduct(direction, relative, cross.data());
     projected.push_back(cross);
   };
@@ -350,7 +350,7 @@ su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, u
 
   for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
     const auto coord_j = geometry->nodes->GetCoord(jPoint);
-    su2double midpoint[3] = {0.0, 0.0, 0.0};
+    su2double midpoint[MAXNDIM] = {0.0, 0.0, 0.0};
     for (auto iDim = 0u; iDim < nDim; iDim++) midpoint[iDim] = 0.5 * (coord_i[iDim] + coord_j[iDim]);
     addVertex(midpoint);
   }
@@ -364,7 +364,7 @@ su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, u
       bool containsPoint = false;
       array<unsigned long, N_POINTS_QUADRILATERAL> faceNodes;
       faceNodes.fill(numeric_limits<unsigned long>::max());
-      su2double centroid[3] = {0.0, 0.0, 0.0};
+      su2double centroid[MAXNDIM] = {0.0, 0.0, 0.0};
       for (auto iNode = 0u; iNode < nNodesFace; iNode++) {
         const auto jPoint = elem->GetNode(elem->GetFaces(iFace, iNode));
         containsPoint = containsPoint || (jPoint == iPoint);
@@ -390,7 +390,7 @@ su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, u
   for (auto n = 0ul; n < projected.size(); n++) {
     for (auto m = n + 1; m < projected.size(); m++) {
       su2double dist2 = 0.0;
-      for (auto iDim = 0u; iDim < 3; iDim++) dist2 += pow(projected[n][iDim] - projected[m][iDim], 2);
+      for (auto iDim = 0u; iDim < MAXNDIM; iDim++) dist2 += pow(projected[n][iDim] - projected[m][iDim], 2);
       if (dist2 > diameter2) {
         diameter2 = dist2;
         farthestN = n;
@@ -404,7 +404,7 @@ su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, u
   su2double deltaOmega = 0.0;
   if (farthestN != farthestM) {
     diameter2 = 0.0;
-    for (auto iDim = 0u; iDim < 3; iDim++)
+    for (auto iDim = 0u; iDim < MAXNDIM; iDim++)
       diameter2 += pow(projected[farthestN][iDim] - projected[farthestM][iDim], 2);
     deltaOmega = sqrt(diameter2 / 3.0);
   }

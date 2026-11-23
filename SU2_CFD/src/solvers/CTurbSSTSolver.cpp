@@ -1005,7 +1005,8 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         break;
       }
       case SST_SIDDES: {
-        /*--- Simplified IDDES without the elevating function, following Menter (ANSYS). ---*/
+        /*--- Simplified IDDES of Gritskevich et al. (Section 5 and Eq. 12): IDDES without the elevating
+         function f_e. ---*/
 
         // Constants
         const su2double C_w = 0.15;

@@ -47,7 +47,7 @@ protected:
    *        its capacity is reused and no memory is allocated per point.
    */
   struct ShearLayerWorkspace {
-    vector<array<su2double, 3>> projected;                      /*!< \brief Projected control volume vertices. */
+    vector<array<su2double, MAXNDIM>> projected;                /*!< \brief Projected control volume vertices. */
     vector<array<unsigned long, N_POINTS_QUADRILATERAL>> faces; /*!< \brief Sorted nodes of the visited faces. */
   };
 
