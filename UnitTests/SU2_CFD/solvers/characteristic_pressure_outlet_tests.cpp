@@ -54,7 +54,8 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
   auto* solver = test.solver[FLOW_SOL];
   auto* nodes = static_cast<CEulerVariable*>(solver->GetNodes());
   CPengRobinson gas(1.0125, 35.152, 1415200, 564.1, 0.529);
-  // Captured conservative startup state: low back pressure previously produced an invalid EOS state.
+  // Start-up state of an MDM nozzle. A low back pressure leaves the Peng-Robinson validity range under a linear
+  // characteristic jump, but not along the isentrope.
   su2double state[4] = {139.72158881490299, 11271.637336535776, -2338.5053086132339, 221781581.74179047};
   if (backflow) {
     const auto oldVelocity = state[1] / state[0];

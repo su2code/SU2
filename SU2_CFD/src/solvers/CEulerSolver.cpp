@@ -6094,7 +6094,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   bool viscous = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
-  // TurboRiemann reads MARKER_RIEMANN; a matching MARKER_GILES entry is not required or consulted.
+  /*--- TurboRiemann markers take their data from MARKER_RIEMANN. ---*/
   const auto dataKind = config->GetKind_Data_Riemann(Marker_Tag);
   const bool pressureOutflow = dataKind == STATIC_PRESSURE || dataKind == RADIAL_EQUILIBRIUM;
   const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
@@ -6338,7 +6338,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         u_i[nVar-1] = Energy_i*Density_i;
 
         if (pressureOutflow) {
-          // Apply each span's pressure to the local state; using a span average here would discard local waves.
+          /*--- Each vertex uses the pressure of its span. ---*/
           const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
           /*--- As for the other Riemann kinds, the SST turbulent kinetic energy is part of the EOS energy here. ---*/
           BuildPressureOutletState(config, val_marker, u_i, UnitNormal, gridNormal, Pressure_e, 0.0, ideal_gas, u_b);
@@ -6428,8 +6428,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             for (iDim = 0; iDim < nDim; iDim++)
               projVelocity +=  gridVel[iDim]*Normal[iDim];
             for (iVar = 0; iVar < nVar; iVar++){
-              // The moving-grid flux is F(U_b).N - (v_grid.N)*U_b; its derivative subtracts
-              // (v_grid.N)*I. The residual already contains this transport term once above.
+              /*--- d/dU of -(v_grid.N) U ---*/
               Jacobian_b[iVar][iVar] -= projVelocity;
             }
 
@@ -7816,12 +7815,12 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     su2double pressure = config->GetOutlet_Pressure(Marker_Tag);
     if (config->GetGravityForce()) pressure -= geometry->nodes->GetCoord(iPoint, nDim - 1) * STANDARD_GRAVITY;
     pressure /= config->GetPressure_Ref();
-    // The helper classifies flow in the grid's frame while keeping conservative energy in the lab frame.
+    /*--- The wave directions are relative to the grid. ---*/
     const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
     const su2double tke = tkeNeeded ? solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0) : su2double(0.0);
     const auto* interior = nodes->GetSolution(iPoint);
     su2double boundary[MAXNVAR] = {};
-    // Ordinary compressible outlets use the ideal-gas path; real-gas pressure outlets use BC_Riemann.
+    /*--- MARKER_OUTLET is limited to ideal gases (see CConfig); real gases use MARKER_RIEMANN. ---*/
     BuildPressureOutletState(config, val_marker, interior, UnitNormal, gridNormal, pressure, tke, true, boundary);
 
     const su2double density = boundary[0], energy = boundary[nVar - 1] / density;

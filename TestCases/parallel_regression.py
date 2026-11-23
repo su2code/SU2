@@ -462,7 +462,7 @@ def main():
     periodic2d_no_limiter.test_vals = [-3.217331, -0.583709, -0.629299, 2.265684, -1.057572, -810.150000]
     test_list.append(periodic2d_no_limiter)
 
-    # The fully coupled nonlinear boundary derivative used to diverge before iteration 100 at CFL 100.
+    # Same case with a Riemann static-pressure outlet
     periodic2d_no_limiter_riemann = TestCase('periodic2d_no_limiter_riemann')
     periodic2d_no_limiter_riemann.cfg_dir = "navierstokes/periodic2D"
     periodic2d_no_limiter_riemann.cfg_file = "no_limiter_riemann.cfg"
