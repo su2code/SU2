@@ -520,6 +520,11 @@ void CSpeciesFlameletSolver::ScalarVarianceResidual(CGeometry* geometry, CSolver
 
     LinSysRes(i_point, i_var) -= (production - decay * rho_var) * volume;
     if (implicit) Jacobian.AddVal2Diag(i_point, i_var, decay * volume);
+
+    /*--- A chemical sink is linearized as proportional to rho*var, which keeps the variance positive. ---*/
+    const su2double chemical_source = nodes->GetScalarSources(i_point)[i_var];
+    if (implicit && chemical_source < 0 && rho_var > 0)
+      Jacobian.AddVal2Diag(i_point, i_var, -chemical_source / rho_var * volume);
   }
   END_SU2_OMP_FOR
 }
