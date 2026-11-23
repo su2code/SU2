@@ -4200,6 +4200,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                    "supported yet with the SST hybrid RANS/LES models (HYBRID_RANSLES= SST_*).", CURRENT_FUNCTION);
   }
 
+  /*--- The transition models were calibrated for RANS. With a hybrid model the intermittency also scales the
+   turbulence destruction in the LES region, which is not validated. ---*/
+  if (Kind_HybridRANSLES != NO_HYBRIDRANSLES && Kind_Trans_Model != TURB_TRANS_MODEL::NONE && rank == MASTER_NODE) {
+    cout << "WARNING: The transition model (KIND_TRANS_MODEL) is not validated with hybrid RANS/LES models\n"
+            "(HYBRID_RANSLES). The intermittency also scales the turbulence destruction in the LES region." << endl;
+  }
+
   /*--- The SST hybrid models compute their length scale from the grid with the constant C_DES = 0.78 F1 + 0.61 (1 - F1)
    (Gritskevich et al. 2012), they do not use these options of the SA hybrid models. ---*/
   if (hybridSST) {
