@@ -320,7 +320,7 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(CSolver** solver_container,
 su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, unsigned long iPoint,
                                                     const su2double* vorticity, bool shielded,
                                                     ShearLayerWorkspace& workspace) const {
-  const su2double omega = GeometryToolbox::Norm(MAXNDIM, vorticity);
+  const su2double omega = GeometryToolbox::Norm(int(MAXNDIM), vorticity);
 
   /*--- Without vorticity its direction is undefined and Delta_omega vanishes, use the standard DES length-scale. ---*/
   if (omega < 1e-12) return geometry->nodes->GetMaxLength(iPoint);
