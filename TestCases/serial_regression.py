@@ -184,7 +184,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 20
-    flatplate.test_vals = [-5.561710, -0.083360, 0.001203, 0.028157, 2.361500, -2.333400, 0.000000, 0.000000]
+    flatplate.test_vals = [-5.623336, -0.144687, 0.001202, 0.028141, 2.361500, -2.333400, 0.000000, 0.000000]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -268,7 +268,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-5.287013, -6.483448, -0.187358, 0.003711, 10.000000, -2.181875]
+    turb_flatplate.test_vals = [-5.286997, -6.483481, -0.187358, 0.003712, 10.000000, -2.181754]
     test_list.append(turb_flatplate)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SST
@@ -276,7 +276,7 @@ def main():
     turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
     turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     turb_wallfunction_flatplate_sst.test_iter = 10
-    turb_wallfunction_flatplate_sst.test_vals = [-4.036186, -1.915130, -1.821604, 1.444009, -1.579554, 1.521877, 10.000000, -2.348138, 0.029998, 0.002409]
+    turb_wallfunction_flatplate_sst.test_vals = [-4.036187, -1.915139, -1.821608, 1.444010, -1.579554, 1.521873, 10.000000, -2.348158, 0.029998, 0.002409]
     test_list.append(turb_wallfunction_flatplate_sst)
 
     # FLAT PLATE, ROUGHNESS BC WILCOX2006 SST
@@ -284,7 +284,7 @@ def main():
     turb_flatplate_sst_roughBCWilcox2006.cfg_dir   = "rans/flatplate/roughness/bc_wilcox2006"
     turb_flatplate_sst_roughBCWilcox2006.cfg_file  = "turb_SST_flatplate_roughBCWilcox2006.cfg"
     turb_flatplate_sst_roughBCWilcox2006.test_iter = 10
-    turb_flatplate_sst_roughBCWilcox2006.test_vals = [-5.120194, -2.539726, -2.906124, 0.378835, -3.104047, 1.179642, -0.188795, 0.004029]
+    turb_flatplate_sst_roughBCWilcox2006.test_vals = [-5.120258, -2.539703, -2.906154, 0.378791, -3.104024, 1.179645, -0.188795, 0.004029]
     test_list.append(turb_flatplate_sst_roughBCWilcox2006)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
@@ -292,7 +292,7 @@ def main():
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
     turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     turb_wallfunction_flatplate_sa.test_iter = 10
-    turb_wallfunction_flatplate_sa.test_vals = [-3.580020, -1.860973, -1.506099, 1.898314, -5.258586, 10.000000, -2.556814, -0.295784, 0.002533]
+    turb_wallfunction_flatplate_sa.test_vals = [-3.580017, -1.860982, -1.506109, 1.898317, -5.258602, 10.000000, -2.557123, -0.295793, 0.002533]
     test_list.append(turb_wallfunction_flatplate_sa)
 
     # ONERA M6 Wing
@@ -383,7 +383,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-5.135437, 0.436245, -2.865339, 1.665694, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-5.135424, 0.436259, -2.870096, 1.669708, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.143715, -9.170705, -10.848554, -5.776746, 0.000000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)

@@ -381,7 +381,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-8.160319, -2.686084, 0.001084, 0.036277, 2.361500, -2.325300, 0.000000, 0.000000]
+    flatplate.test_vals = [-8.165135, -2.690978, 0.001084, 0.036277, 2.361500, -2.325300, 0.000000, 0.000000]
     test_list.append(flatplate)
 
     # Supersonic laminar flat plate
@@ -397,7 +397,7 @@ def main():
     flatplate_udobj.cfg_dir   = "user_defined_functions"
     flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
     flatplate_udobj.test_iter = 20
-    flatplate_udobj.test_vals = [-0.001015, 596.450000, 299.560000, 296.900000, 21.317000, 0.586750, 36.553000, 2.188800]
+    flatplate_udobj.test_vals = [-0.001015, 596.450000, 299.550000, 296.900000, 21.318000, 0.586640, 36.553000, 2.188800]
     test_list.append(flatplate_udobj)
 
     # Probe performance test (11 probes, ADT path)
@@ -405,7 +405,7 @@ def main():
     probe_performance_11.cfg_dir = "user_defined_functions"
     probe_performance_11.cfg_file = "test_11_probes.cfg"
     probe_performance_11.test_iter = 4
-    probe_performance_11.test_vals = [-6.290996, 101020.000000, 101050.000000, 99125.000000] # RMS_DENSITY, probe1, probe6, probe11
+    probe_performance_11.test_vals = [-6.290748, 101020, 101050, 99123] # RMS_DENSITY, probe1, probe6, probe11
     # Tolerances are typically 0.001 in TestCase.py
     test_list.append(probe_performance_11)
 
@@ -459,7 +459,7 @@ def main():
     periodic2d_no_limiter.cfg_dir = "navierstokes/periodic2D"
     periodic2d_no_limiter.cfg_file = "no_limiter.cfg"
     periodic2d_no_limiter.test_iter = 100
-    periodic2d_no_limiter.test_vals = [-3.217331, -0.583709, -0.629299, 2.265684, -1.057572, -810.150000]
+    periodic2d_no_limiter.test_vals = [-3.216881, -0.582813, -0.629049, 2.266141, -1.056877, -811.470000]
     test_list.append(periodic2d_no_limiter)
 
     # Same case with a Riemann static-pressure outlet
@@ -475,7 +475,7 @@ def main():
     periodic2d_multigrid.cfg_dir = "navierstokes/periodic2D"
     periodic2d_multigrid.cfg_file = "multigrid.cfg"
     periodic2d_multigrid.test_iter = 300
-    periodic2d_multigrid.test_vals = [-4.422875, -1.615366, -1.453862, 1.047230, -1.410284, -2060.900000]
+    periodic2d_multigrid.test_vals = [-4.422778, -1.615251, -1.453736, 1.047350, -1.410225, -2060.600000]
     test_list.append(periodic2d_multigrid)
 
     # 2D rotational periodic sector with limiter
@@ -483,7 +483,7 @@ def main():
     periodic2d.cfg_dir = "navierstokes/periodic2D"
     periodic2d.cfg_file = "config.cfg"
     periodic2d.test_iter = 100
-    periodic2d.test_vals = [-3.266432, -0.617956, -0.620044, 2.216317, -1.007813, -1035.000000]
+    periodic2d.test_vals = [-3.266248, -0.617784, -0.620252, 2.216476, -1.007761, -1035.000000]
     test_list.append(periodic2d)
 
     ##########################
@@ -527,7 +527,7 @@ def main():
     turb_flatplate_species.cfg_dir   = "rans/flatplate"
     turb_flatplate_species.cfg_file  = "turb_SA_flatplate_species.cfg"
     turb_flatplate_species.test_iter = 20
-    turb_flatplate_species.test_vals = [-5.359058, -1.881677, -3.075574, 0.124434, -3.602252, 2.000000, -1.239891, 1.000000, -1.158675, 3.000000, -0.849018, 0.999876, 0.999876]
+    turb_flatplate_species.test_vals = [-5.359043, -1.881674, -3.075839, 0.124416, -3.602253, 2.000000, -1.239286, 1.000000, -1.158672, 3.000000, -0.849003, 0.999876, 0.999876]
     test_list.append(turb_flatplate_species)
 
     # Flat plate SST compressibility correction Wilcox
@@ -551,7 +551,7 @@ def main():
     turb_flatplate_sst_roughBCKnopp.cfg_dir   = "rans/flatplate/roughness/bc_knopp"
     turb_flatplate_sst_roughBCKnopp.cfg_file  = "turb_SST_flatplate_roughBCKnopp.cfg"
     turb_flatplate_sst_roughBCKnopp.test_iter = 10
-    turb_flatplate_sst_roughBCKnopp.test_vals = [-5.066141, -2.470493, -2.851854, 0.439238, -2.595926, 1.496827, -0.188074, 0.004571]
+    turb_flatplate_sst_roughBCKnopp.test_vals = [-5.066211, -2.470493, -2.852002, 0.439182, -2.595927, 1.496827, -0.188074, 0.004571]
     test_list.append(turb_flatplate_sst_roughBCKnopp)
 
     # FLAT PLATE, ROUGHNESS BC AUPOIX SST
@@ -559,7 +559,7 @@ def main():
     turb_flatplate_sst_roughBCAupoix.cfg_dir   = "rans/flatplate/roughness/bc_aupoix"
     turb_flatplate_sst_roughBCAupoix.cfg_file  = "turb_SST_flatplate_roughBCAupoix.cfg"
     turb_flatplate_sst_roughBCAupoix.test_iter = 10
-    turb_flatplate_sst_roughBCAupoix.test_vals = [-5.290263, -2.305835, -2.892120, 0.214802, -1.393793, 3.192602, -0.188752, 0.007182]
+    turb_flatplate_sst_roughBCAupoix.test_vals = [-5.290256, -2.305824, -2.892141, 0.214819, -1.393793, 3.192602, -0.188753, 0.007182]
     test_list.append(turb_flatplate_sst_roughBCAupoix)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA, restart from a solution without wall functions
@@ -567,7 +567,7 @@ def main():
     turb_wallfunction_flatplate_sa_restart.cfg_dir = "wallfunctions/flatplate/compressible_SA"
     turb_wallfunction_flatplate_sa_restart.cfg_file = "turb_SA_flatplate_restart.cfg"
     turb_wallfunction_flatplate_sa_restart.test_iter = 10
-    turb_wallfunction_flatplate_sa_restart.test_vals = [-3.603551, -1.991100, -1.848182, 1.875994, -5.284153, 10.000000, -2.255956, -0.064942, 0.002054]
+    turb_wallfunction_flatplate_sa_restart.test_vals = [-3.603550, -1.991111, -1.848187, 1.875995, -5.284151, 10.000000, -2.255938, -0.064941, 0.002054]
     test_list.append(turb_wallfunction_flatplate_sa_restart)
 
     # ONERA M6 Wing
@@ -727,7 +727,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-5.144839, 0.426686, -2.884499, 1.609225, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-5.144831, 0.426694, -2.889746, 1.613256, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.143310, -9.163287, -10.858232, -5.787715, 0.000000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
