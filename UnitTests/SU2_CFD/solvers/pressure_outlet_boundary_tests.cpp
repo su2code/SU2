@@ -33,8 +33,9 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
                  double turbulentK = 0) {
   UnitQuadTestCase test;
   std::ostringstream options;
-  options << OutletTestOptions(dim, 0, turbulentK, true, threaded ? "5,17,17" : "5,5,5") << "MARKER_EULER= (x_minus,"
-          << "y_minus,y_plus" << (dim == 3 ? ",z_minus,z_plus" : "") << ")\nMARKER_MONITORING= (x_minus)\n"
+  options << std::setprecision(17) << OutletTestOptions(dim, 0, turbulentK, true, threaded ? "5,17,17" : "5,5,5")
+          << "MARKER_EULER= (x_minus," << "y_minus,y_plus" << (dim == 3 ? ",z_minus,z_plus" : "")
+          << ")\nMARKER_MONITORING= (x_minus)\n"
           << "MARKER_OUTLET= (x_plus," << pressureRatio * OUTLET_TEST_P << ")\n";
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 500,240,0\n";
   test.config_options = options.str();
