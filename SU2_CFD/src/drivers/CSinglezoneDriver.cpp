@@ -101,6 +101,7 @@ void CSinglezoneDriver::StartSolver() {
 
   }
 
+  CheckPressureOutletFallbacks();
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {

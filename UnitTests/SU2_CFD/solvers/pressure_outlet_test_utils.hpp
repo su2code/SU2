@@ -26,8 +26,21 @@
 
 #pragma once
 
-#include "../../../SU2_CFD/include/fluid/CFluidModel.hpp"
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include "../../../SU2_CFD/include/solvers/CEulerSolver.hpp"
+#include "../../../SU2_CFD/include/fluid/CIdealGas.hpp"
+#include "../../../SU2_CFD/include/fluid/CPengRobinson.hpp"
+#include "../../../SU2_CFD/include/fluid/CVanDerWaalsGas.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+
+// Gases of the outlet tests: 0 ideal (gamma 1.4), 1 Peng-Robinson and 2 van der Waals (siloxane MDM).
+inline std::unique_ptr<CFluidModel> MakeOutletTestGas(unsigned short kind) {
+  if (kind == 0) return std::unique_ptr<CFluidModel>(new CIdealGas(1.4, 35.152));
+  if (kind == 1) return std::unique_ptr<CFluidModel>(new CPengRobinson(1.0125, 35.152, 1415200, 564.1, .529));
+  return std::unique_ptr<CFluidModel>(new CVanDerWaalsGas(1.0125, 35.152, 1415200, 564.1));
+}
 
 // Independent primitive-variable wave decomposition for checking the implicit outlet projection.
 inline void OutgoingOutletIncrement(CFluidModel& gas, unsigned short dim, const su2double* state,
@@ -64,4 +77,32 @@ inline void OutgoingOutletIncrement(CFluidModel& gas, unsigned short dim, const 
   for (auto d = 0u; d < dim; ++d) increment[d + 1] = velocity[d] * projectedRho + rho * projectedVelocity[d];
   increment[dim + 1] = energy * projectedRho + rho * (projectedP - dpdrho * projectedRho) / dpde +
                        rho * GeometryToolbox::DotProduct(dim, velocity, projectedVelocity);
+}
+
+// Boundary state that the static-pressure outlets of a steady run use (CEulerSolver::BuildPressureOutletState):
+// the outlet state, the sonic backflow state for flow entering through every characteristic, or else the interior.
+// Returns true if a fallback was used.
+inline bool ExpectedSteadyOutletState(CFluidModel& gas, unsigned short dim, const su2double* state,
+                                      const su2double* normal, su2double gridNormal, su2double pressure,
+                                      su2double turbulentK, bool idealGas, su2double gamma, su2double* boundary) {
+  using Status = CEulerSolver::PressureOutletStatus;
+  auto status = CEulerSolver::ComputePressureOutletState(&gas, dim, state, normal, gridNormal, pressure, turbulentK,
+                                                         idealGas, gamma, boundary);
+  if (status == Status::Valid) return false;
+  if (status == Status::Backflow)
+    status = CEulerSolver::ComputeSonicBackflowState(&gas, dim, state, normal, gridNormal, pressure, turbulentK,
+                                                     idealGas, gamma, boundary);
+  if (status != Status::Valid)
+    for (auto k = 0u; k < dim + 2u; ++k) boundary[k] = state[k];
+  return true;
+}
+
+// Fallback count of the last boundary call: the monitor sums and resets it (its warnings are discarded here).
+inline unsigned long CountOutletFallbacks(CSolver* solver, const CConfig* config) {
+  std::ostringstream quiet;
+  auto* buffer = std::cout.rdbuf(quiet.rdbuf());
+  auto* euler = static_cast<CEulerSolver*>(solver);
+  euler->MonitorPressureOutletFallbacks(config);
+  std::cout.rdbuf(buffer);
+  return euler->GetPressureOutletFallbacks();
 }

@@ -124,11 +124,20 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
       out[dim + 1] =
           out[0] * (boundarySound * boundarySound / .56 + .5 * GeometryToolbox::SquaredNorm(dim, v) + turbulentK);
     };
+    // Full backflow and an invalid pressure use the steady fallback states.
     su2double expected[5];
-    reference(state, expected);
+    const su2double outward[3] = {1, 0, 0};
+    const bool fallback = normalMach <= -1 || pressureRatio <= 0;
+    if (fallback)
+      CHECK(ExpectedSteadyOutletState(gas, dim, state, outward, grid[0], pressureRatio * p, turbulentK, true, 1.4,
+                                      expected));
+    else
+      reference(state, expected);
+    unsigned long domainVertices = 0;
     for (auto vertex = 0ul; vertex < test.geometry->nVertex[marker]; ++vertex) {
       const auto point = test.geometry->vertex[marker][vertex]->GetNode();
       if (!test.geometry->nodes->GetDomain(point)) continue;
+      ++domainVertices;
       for (auto row = 0u; row < dim + 2; ++row) {
         CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, row)) ==
               Approx(SU2_TYPE::GetValue(expected[row])).epsilon(1e-8).margin(1e-8));
@@ -143,6 +152,7 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
         }
       }
     }
+    CHECK(CountOutletFallbacks(solver, test.config.get()) == (fallback ? domainVertices : 0));
   }
 }
 }  // namespace
@@ -155,11 +165,9 @@ TEST_CASE("Ordinary pressure outlet uses relative normal characteristics and an 
         for (const auto ratio : {1., .95, 1.02, .001}) IdealOutlet(dim, normalMach, ratio, moving);
 }
 
-TEST_CASE("Ordinary pressure outlet rejects nonpositive pressure", "[.][Ordinary-invalid-pressure]") {
+TEST_CASE("Ordinary pressure outlet uses the steady fallback states", "[Pressure-outlet]") {
   IdealOutlet(2, .3, 0, false);
-}
-TEST_CASE("Ordinary pressure outlet requires data for backflow", "[.][Ordinary-backflow]") {
-  IdealOutlet(2, -1.4, .95, false);
+  for (const auto ratio : {.95, 1.1}) IdealOutlet(2, -1.4, ratio, true);
 }
 
 TEST_CASE("Pressure outlet reconstruction is thread local", "[Pressure-outlet]") {

@@ -68,10 +68,6 @@ if get_option('enable-tests')
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)
-    # Fatal boundary cases need separate processes; they cannot run inside the normal Catch suite.
-    test('Characteristic boundary admissibility', python,
-         args: files('SU2_CFD/solvers/check_characteristic_boundary_admissibility.py') + [test_driver.full_path()],
-         timeout: 180)
     test('Streamwise periodic support', python,
          args: files('Common/check_periodic_support.py') + [test_driver.full_path(), '--streamwise'],
          timeout: 150)

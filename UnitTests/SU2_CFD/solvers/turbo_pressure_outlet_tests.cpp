@@ -186,6 +186,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializ
         }
         CHECK(solver->GetFluidModel()->GetPressure() > 0);
         CUpwGeneralHLLC_Flow numerics(dim, dim + 2, config);
+        unsigned long fallbacks = 0;
         for (auto span = 0u; span < spans; ++span)
           for (auto vertex = 0ul; vertex < test.geometry->GetnVertexSpan(marker, span); ++vertex) {
             const auto* turbo = test.geometry->turbovertex[marker][span][vertex];
@@ -195,9 +196,9 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializ
             turbo->GetNormal(unit);
             for (auto d = 0u; d < dim; ++d) normal[d] = -normal[d];
             su2double boundary[5];
-            REQUIRE(CEulerSolver::ComputePressureOutletState(
-                        gas.get(), dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), target(span), 0,
-                        kind == 0, 1.4, boundary) == CEulerSolver::PressureOutletStatus::Valid);
+            if (ExpectedSteadyOutletState(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit),
+                                          target(span), 0, kind == 0, 1.4, boundary))
+              ++fallbacks;
             auto flux = [&](const su2double* boundary, su2double* result) {
               su2double v[3];
               for (auto d = 0u; d < dim; ++d) v[d] = boundary[d + 1] / boundary[0];
@@ -246,6 +247,9 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializ
                       Approx(SU2_TYPE::GetValue((fp[row] - fm[row]) / (2 * delta))).epsilon(5e-4).margin(2e-5));
             }
           }
+        // Full backflow and an invalid pressure use the steady fallback states, which the monitor counts.
+        CHECK((fallbacks > 0) == (mach <= -1 || ratio <= 0));
+        CHECK(CountOutletFallbacks(solver, config) == fallbacks);
       }
     }
   }
@@ -282,11 +286,8 @@ TEST_CASE("Other TurboRiemann modes retain one ALE correction", "[Pressure-outle
   for (const auto implicit : {false, true}) TurboPressureOutlet(2, 0, {1.4}, {.95}, true, false, implicit, true);
 }
 
-TEST_CASE("TurboRiemann pressure outlet rejects nonpositive pressure", "[.][Turbo-invalid-pressure]") {
+TEST_CASE("TurboRiemann pressure outlets use the steady fallback states", "[Pressure-outlet][Turbo-outlet]") {
   TurboPressureOutlet(2, 1, {.3}, {0}, false, false);
-}
-
-TEST_CASE("TurboRiemann radial pressure outlet requires data for backflow", "[.][Turbo-backflow]") {
   TurboPressureOutlet(3, 1, {-1.4}, {.95}, true, true);
 }
 

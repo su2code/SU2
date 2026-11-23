@@ -81,6 +81,7 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
       }
   for (auto p = 0ul; p < test.geometry->GetnPoint(); ++p)
     for (auto k = 0u; k < 4; ++k) CHECK(std::isfinite(SU2_TYPE::GetValue(solver->LinSysRes(p, k))));
+  unsigned long fallbacks = 0;
   for (auto marker = 0u; marker < test.config->GetnMarker_All(); ++marker) {
     if (test.config->GetMarker_All_TagBound(marker) != "x_plus") continue;
     for (auto v = 0ul; v < test.geometry->nVertex[marker]; ++v) {
@@ -92,9 +93,9 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
       for (auto d = 0u; d < 2; ++d) unit[d] = (normal[d] = -normal[d]) / area;
       // BC_Riemann uses the physical boundary flux, including transport by the moving grid.
       su2double boundary[4];
-      REQUIRE(CEulerSolver::ComputePressureOutletState(&gas, 2, state, unit, GeometryToolbox::DotProduct(2, grid, unit),
-                                                       pressure, 0, false, 0,
-                                                       boundary) == CEulerSolver::PressureOutletStatus::Valid);
+      if (ExpectedSteadyOutletState(gas, 2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure, 0, false,
+                                    0, boundary))
+        ++fallbacks;
       auto flux = [&](const su2double* boundary, su2double* output) {
         su2double velocity[2];
         for (auto d = 0u; d < 2; ++d) velocity[d] = boundary[d + 1] / boundary[0];
@@ -134,6 +135,9 @@ void CharacteristicPressureFixture(su2double pressure, bool backflow = false) {
       }
     }
   }
+  // Full backflow and an invalid pressure use the steady fallback states, which the monitor counts.
+  CHECK((fallbacks > 0) == (backflow || pressure <= 0));
+  CHECK(CountOutletFallbacks(solver, test.config.get()) == fallbacks);
 }
 }  // namespace
 
@@ -230,11 +234,83 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
   }
 }
 
-// Hidden Catch cases terminate the process; the Python checker runs them separately to inspect the error.
-TEST_CASE("Characteristic pressure boundary rejects nonpositive pressure", "[.][Boundary-invalid-pressure]") {
-  CharacteristicPressureFixture(0);
+TEST_CASE("Sonic backflow fallback keeps the interior entropy, tangential velocity and imposed pressure",
+          "[Pressure-outlet]") {
+  using Status = CEulerSolver::PressureOutletStatus;
+  for (auto dim : {2u, 3u})
+    for (auto kind : {0u, 1u, 2u}) {
+      auto gas = MakeOutletTestGas(kind);
+      const su2double p = 1500112, rho = 230, normal[3] = {1, 0, 0};
+      gas->SetTDState_Prho(p, rho);
+      const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), s = gas->GetEntropy();
+      for (const su2double grid : {0., 20.})
+        for (const auto ratio : {.95, 1.1}) {
+          CAPTURE(dim, kind, grid, ratio);
+          su2double velocity[3] = {-1.4 * a + grid, 5, -2}, state[5] = {rho}, out[5], unused[5];
+          for (auto d = 0u; d < dim; ++d) state[d + 1] = rho * velocity[d];
+          state[dim + 1] = rho * (e + .5 * GeometryToolbox::SquaredNorm(dim, velocity));
+          REQUIRE(CEulerSolver::ComputePressureOutletState(gas.get(), dim, state, normal, grid, ratio * p, 0, kind == 0,
+                                                           1.4, unused) == Status::Backflow);
+          REQUIRE(CEulerSolver::ComputeSonicBackflowState(gas.get(), dim, state, normal, grid, ratio * p, 0, kind == 0,
+                                                          1.4, out) == Status::Valid);
+          su2double v[3] = {};
+          for (auto d = 0u; d < dim; ++d) v[d] = out[d + 1] / out[0];
+          gas->SetTDState_rhoe(out[0], out[dim + 1] / out[0] - .5 * GeometryToolbox::SquaredNorm(dim, v));
+          CHECK(SU2_TYPE::GetValue(gas->GetPressure()) == Approx(SU2_TYPE::GetValue(ratio * p)).epsilon(1e-7));
+          CHECK(SU2_TYPE::GetValue(gas->GetEntropy()) == Approx(SU2_TYPE::GetValue(s)).margin(1e-5));
+          // Inflow relative to the grid, never faster than sound. The ideal gas reaches the sonic limit here.
+          const su2double q = v[0] - grid, sound = gas->GetSoundSpeed();
+          CHECK(q < 0);
+          CHECK(SU2_TYPE::GetValue(-q) <= SU2_TYPE::GetValue(sound) * (1 + 1e-9));
+          if (kind == 0) CHECK(SU2_TYPE::GetValue(q) == Approx(SU2_TYPE::GetValue(-sound)).epsilon(1e-9));
+          for (auto d = 1u; d < dim; ++d)
+            CHECK(SU2_TYPE::GetValue(v[d]) == Approx(SU2_TYPE::GetValue(velocity[d])).epsilon(1e-12));
+        }
+    }
 }
-TEST_CASE("Characteristic pressure boundary requires data for backflow", "[.][Boundary-backflow]") {
+
+TEST_CASE("Sonic backflow fallback is continuous with subsonic reverse flow", "[Pressure-outlet]") {
+  // Bisect the interior normal speed where the outlet state switches from subsonic reverse flow to flow that enters
+  // through every characteristic; the fallback on one side must match the outlet state on the other side.
+  using Status = CEulerSolver::PressureOutletStatus;
+  for (auto kind : {0u, 1u, 2u})
+    for (const auto ratio : {1.05, .95}) {
+      CAPTURE(kind, ratio);
+      auto gas = MakeOutletTestGas(kind);
+      const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
+      gas->SetTDState_Prho(p, rho);
+      const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(), target = ratio * p;
+      auto interior = [&](double mach, su2double* u) {
+        u[0] = rho;
+        u[1] = rho * mach * a;
+        u[2] = rho * 3;
+        u[3] = rho * (e + .5 * (mach * mach * a * a + 9));
+      };
+      double lower = -1.5, upper = -.5;
+      su2double u[4], subsonic[4], fallback[4];
+      for (auto iteration = 0u; iteration < 50; ++iteration) {
+        const double middle = .5 * (lower + upper);
+        interior(middle, u);
+        if (CEulerSolver::ComputePressureOutletState(gas.get(), 2, u, normal, 0, target, 0, kind == 0, 1.4, subsonic) ==
+            Status::Backflow)
+          lower = middle;
+        else
+          upper = middle;
+      }
+      interior(upper, u);
+      REQUIRE(CEulerSolver::ComputePressureOutletState(gas.get(), 2, u, normal, 0, target, 0, kind == 0, 1.4,
+                                                       subsonic) == Status::Valid);
+      interior(lower, u);
+      REQUIRE(CEulerSolver::ComputeSonicBackflowState(gas.get(), 2, u, normal, 0, target, 0, kind == 0, 1.4,
+                                                      fallback) == Status::Valid);
+      for (auto k = 0u; k < 4; ++k)
+        CHECK(SU2_TYPE::GetValue(fallback[k]) ==
+              Approx(SU2_TYPE::GetValue(subsonic[k])).epsilon(1e-6).margin(1e-6 * SU2_TYPE::GetValue(rho * a)));
+    }
+}
+
+TEST_CASE("Characteristic pressure boundary uses the steady fallback states", "[Pressure-outlet]") {
+  CharacteristicPressureFixture(0);
   CharacteristicPressureFixture(1400000, true);
 }
 

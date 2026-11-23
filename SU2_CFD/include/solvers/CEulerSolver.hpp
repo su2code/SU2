@@ -164,6 +164,21 @@ protected:
 
   /*--- End of Turbomachinery Solver Variables ---*/
 
+  /*--- Fallback states of static-pressure outlets in steady runs ---*/
+
+  /*! \brief Kinds of fallback states, counted per configuration-file marker. */
+  enum OUTLET_FALLBACK : unsigned short {
+    OUTLET_SONIC_BACKFLOW = 0,
+    OUTLET_INTERIOR_STATE = 1,
+    N_OUTLET_FALLBACKS = 2
+  };
+
+  bool outletFallbacks = false;                    /*!< \brief Steady run: fallback states instead of errors. */
+  vector<unsigned long> OutletFallbackCount;       /*!< \brief Local vertex evaluations per marker and kind. */
+  vector<unsigned long> OutletFallbackCountGlobal; /*!< \brief Same, summed over ranks at the last monitor call. */
+  vector<unsigned long> OutletFallbackLastWarning; /*!< \brief Inner iteration + 1 of the last warning (0: none). */
+  vector<unsigned long> OutletFallbackLastActive;  /*!< \brief Inner iteration + 1 of the last fallback (0: none). */
+
   inline su2double GetTangGridVelIn(unsigned short val_blade, unsigned long val_span) {
     return TurboVelocityIn[val_blade][val_span][1] - RelTangVelocityIn[val_blade][val_span];
   }
@@ -344,9 +359,12 @@ protected:
   void SetReferenceValues(const CConfig& config) final;
 
   /*!
-   * \brief Boundary state of a static-pressure outlet (see ComputePressureOutletState); stops with an error if the
-   *        state cannot be built.
-   * \param[in] markerTag - Marker name, for messages.
+   * \brief Boundary state of a static-pressure outlet (see ComputePressureOutletState).
+   * \details If the state cannot be built, steady runs use a fallback and count it: the sonic backflow state
+   *          (ComputeSonicBackflowState) for flow that enters through every characteristic, otherwise the interior
+   *          state. Unsteady and harmonic-balance runs stop with an error instead.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Marker index.
    * \param[in] interior - Interior conservative state.
    * \param[in] unitNormal - Outward unit normal.
    * \param[in] gridNormal - Grid velocity along the normal.
@@ -355,9 +373,9 @@ protected:
    * \param[in] idealGas - Use the closed form of an ideal gas.
    * \param[out] boundary - Conservative boundary state.
    */
-  void BuildPressureOutletState(const string& markerTag, const su2double* interior, const su2double* unitNormal,
-                                su2double gridNormal, su2double pressure, su2double tke, bool idealGas,
-                                su2double* boundary);
+  void BuildPressureOutletState(const CConfig* config, unsigned short val_marker, const su2double* interior,
+                                const su2double* unitNormal, su2double gridNormal, su2double pressure, su2double tke,
+                                bool idealGas, su2double* boundary);
 
  public:
   CEulerSolver() = delete;
@@ -381,6 +399,18 @@ protected:
    * \return Value of the pressure at the infinity.
    */
   inline CFluidModel* GetFluidModel(void) const final { return FluidModel[omp_get_thread_num()]; }
+
+  /*!
+   * \brief Sum the fallback states of static-pressure outlets over ranks, warn when they start or stop, and reset.
+   * \note Call once per inner iteration, outside OpenMP parallel regions, on every rank.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void MonitorPressureOutletFallbacks(const CConfig* config);
+
+  /*!
+   * \brief Number of static-pressure outlet vertex evaluations that used a fallback state, at the last monitor call.
+   */
+  unsigned long GetPressureOutletFallbacks() const;
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
@@ -492,6 +522,21 @@ protected:
                                                          su2double gridNormal, su2double targetPressure,
                                                          su2double turbulentK, bool idealGas, su2double gamma,
                                                          su2double* boundary);
+
+  /*!
+   * \brief Fallback state of a static-pressure outlet when the flow enters through every characteristic (Backflow
+   *        from ComputePressureOutletState), used in steady runs.
+   * \details The interior outgoing acoustic invariant is followed to the imposed pressure, as for subsonic reverse
+   *          flow. If that gives supersonic inflow, the boundary keeps the imposed pressure and the interior entropy
+   * and tangential velocity, and the inward normal velocity relative to the grid is limited to the sound speed. The
+   * state is therefore continuous with subsonic reverse flow. Same parameters as ComputePressureOutletState. \return
+   * Valid or InvalidState.
+   */
+  static PressureOutletStatus ComputeSonicBackflowState(CFluidModel* fluidModel, unsigned short nDim,
+                                                        const su2double* interior, const su2double* normal,
+                                                        su2double gridNormal, su2double targetPressure,
+                                                        su2double turbulentK, bool idealGas, su2double gamma,
+                                                        su2double* boundary);
 
   /*!
    * \brief Projection onto the outgoing waves, I - sum over lambda_k < 0 of P(:,k) invP(k,:).
