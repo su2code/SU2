@@ -4336,18 +4336,19 @@ void CFlowOutput::AddMeshAdaptationOutputs(const CConfig* config) {
     return result;
   };
 
-  // Anisotropic metric tensor, sensor gradients/Hessians, and dual-cell volume
-  if(config->GetCompute_Metric()) {
+  // Adaptive metric tensor, sensor gradients/Hessians, and dual-cell volume
+  const auto& adapt = config->GetAdaptiveMetricParsedOptions();
+  if (adapt.compute) {
     // Sensor values (primitive and custom)
-    for (auto iSensor = 0u; iSensor < config->GetnMetric_Sensor(); iSensor++){
-      string sens_str = config->GetMetric_Sensor(iSensor);
+    for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++){
+      string sens_str = adapt.sensor_names[iSensor];
       string sens_title = ToTitleCase(sens_str);
       AddVolumeOutput("SENSOR_" + sens_str, "Sensor_" + sens_title, "SENSOR_VALUE", "Value of sensor " + sens_title);
     }
 
     // Gradients
-    for (auto iSensor = 0u; iSensor < config->GetnMetric_Sensor(); iSensor++){
-      string sens_str = config->GetMetric_Sensor(iSensor);
+    for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++){
+      string sens_str = adapt.sensor_names[iSensor];
       string sens_title = ToTitleCase(sens_str);
       // Common gradient vector components for both 2D and 3D
       AddVolumeOutput("GRADIENT_" + sens_str + "_X", "Gradient_" + sens_title + "_x", "SENSOR_GRADIENT", "x-component of the " + sens_title + " gradient");
@@ -4359,8 +4360,8 @@ void CFlowOutput::AddMeshAdaptationOutputs(const CConfig* config) {
     }
 
     // Hessians
-    for (auto iSensor = 0u; iSensor < config->GetnMetric_Sensor(); iSensor++){
-      string sens_str = config->GetMetric_Sensor(iSensor);
+    for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++){
+      string sens_str = adapt.sensor_names[iSensor];
       string sens_title = ToTitleCase(sens_str);
       // Common Hessian tensor components for both 2D and 3D
       AddVolumeOutput("HESSIAN_" + sens_str + "_XX", "Hessian_" + sens_title + "_xx", "SENSOR_HESSIAN", "x-x-component of the " + sens_title + " Hessian");
@@ -4376,14 +4377,14 @@ void CFlowOutput::AddMeshAdaptationOutputs(const CConfig* config) {
 
     // Metric tensor
     // Common metric tensor components for both 2D and 3D
-    AddVolumeOutput("METRIC_XX", "Metric_xx", "METRIC", "x-x-component of the metric");
-    AddVolumeOutput("METRIC_XY", "Metric_xy", "METRIC", "x-y-component of the metric");
-    AddVolumeOutput("METRIC_YY", "Metric_yy", "METRIC", "y-y-component of the metric");
+    AddVolumeOutput("ADAPTIVE_METRIC_XX", "AdaptiveMetric_xx", "ADAPTIVE_METRIC", "x-x-component of the adaptive metric");
+    AddVolumeOutput("ADAPTIVE_METRIC_XY", "AdaptiveMetric_xy", "ADAPTIVE_METRIC", "x-y-component of the adaptive metric");
+    AddVolumeOutput("ADAPTIVE_METRIC_YY", "AdaptiveMetric_yy", "ADAPTIVE_METRIC", "y-y-component of the adaptive metric");
     // Additional components for 3D
     if (nDim == 3) {
-      AddVolumeOutput("METRIC_XZ", "Metric_xz", "METRIC", "x-z-component of the metric");
-      AddVolumeOutput("METRIC_YZ", "Metric_yz", "METRIC", "y-z-component of the metric");
-      AddVolumeOutput("METRIC_ZZ", "Metric_zz", "METRIC", "z-z-component of the metric");
+      AddVolumeOutput("ADAPTIVE_METRIC_XZ", "AdaptiveMetric_xz", "ADAPTIVE_METRIC", "x-z-component of the adaptive metric");
+      AddVolumeOutput("ADAPTIVE_METRIC_YZ", "AdaptiveMetric_yz", "ADAPTIVE_METRIC", "y-z-component of the adaptive metric");
+      AddVolumeOutput("ADAPTIVE_METRIC_ZZ", "AdaptiveMetric_zz", "ADAPTIVE_METRIC", "z-z-component of the adaptive metric");
     }
 
     // Dual-cell volume
@@ -4397,8 +4398,8 @@ void CFlowOutput::LoadMeshAdaptationOutputs(const CConfig* config, const CSolver
 
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
   const auto* Node_Geo = geometry->nodes;
-  if(config->GetCompute_Metric()) {
-    const auto& sensors = solver[FLOW_SOL]->GetMetricSensors();
+  if (config->GetAdaptiveMetricParsedOptions().compute) {
+    const auto& sensors = solver[FLOW_SOL]->GetAdaptiveMetricSensors();
 
     // Sensor values (primitive and custom)
     for (auto iSensor = 0u; iSensor < sensors.size(); iSensor++) {
@@ -4435,15 +4436,15 @@ void CFlowOutput::LoadMeshAdaptationOutputs(const CConfig* config, const CSolver
 
     // Metric tensor
     // Common metric tensor components for both 2D and 3D
-    SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
-    SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));
-    SetVolumeOutputValue("METRIC_YY", iPoint, Node_Flow->GetMetric(iPoint, 2));
+    SetVolumeOutputValue("ADAPTIVE_METRIC_XX", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 0));
+    SetVolumeOutputValue("ADAPTIVE_METRIC_XY", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 1));
+    SetVolumeOutputValue("ADAPTIVE_METRIC_YY", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 2));
 
     // Additional components for 3D
     if (nDim == 3) {
-      SetVolumeOutputValue("METRIC_XZ", iPoint, Node_Flow->GetMetric(iPoint, 3));
-      SetVolumeOutputValue("METRIC_YZ", iPoint, Node_Flow->GetMetric(iPoint, 4));
-      SetVolumeOutputValue("METRIC_ZZ", iPoint, Node_Flow->GetMetric(iPoint, 5));
+      SetVolumeOutputValue("ADAPTIVE_METRIC_XZ", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 3));
+      SetVolumeOutputValue("ADAPTIVE_METRIC_YZ", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 4));
+      SetVolumeOutputValue("ADAPTIVE_METRIC_ZZ", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 5));
     }
 
     // Dual-cell volume

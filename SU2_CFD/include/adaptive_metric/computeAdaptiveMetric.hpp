@@ -1,6 +1,6 @@
 /*!
- * \file computeMetrics.hpp
- * \brief Generic implementation of the metric tensor computation.
+ * \file computeAdaptiveMetric.hpp
+ * \brief Generic implementation of the adaptive metric tensor computation.
  * \note This allows the same implementation to be used for goal-oriented
  *       or feature-based mesh adaptation.
  * \author B. Munguía
@@ -204,7 +204,8 @@ ScalarType integrateMetrics(CGeometry& geometry, const CConfig& config,
   const unsigned long nPointDomain = geometry.GetnPointDomain();
 
   /*--- Constants defining normalization ---*/
-  const ScalarType p = config.GetMetric_Norm();
+  const auto& adapt = config.GetAdaptiveMetricParsedOptions();
+  const ScalarType p = adapt.norm;
   const ScalarType normExp = p / (2.0 * p + nDim);
 
   ScalarType localIntegral = 0.0;
@@ -255,17 +256,18 @@ void normalizeMetrics(CGeometry& geometry, const CConfig& config,
   const unsigned long nPointDomain = geometry.GetnPointDomain();
 
   /*--- Constants defining normalization ---*/
-  const ScalarType p = config.GetMetric_Norm();
-  const ScalarType N = SU2_TYPE::GetValue(config.GetMetric_Complexity() * config.GetnAdapt_Time_Subinterval());
+  const auto& adapt = config.GetAdaptiveMetricParsedOptions();
+  const ScalarType p = adapt.norm;
+  const ScalarType N = static_cast<ScalarType>(adapt.complexity * adapt.n_time_subintervals);
   const ScalarType globalFactor = pow(N / integral, 2.0 / nDim);
   const ScalarType normExp = -1.0 / (2.0 * p + nDim);
 
   /*--- Size constraints ---*/
-  const ScalarType hmin = SU2_TYPE::GetValue(config.GetMetric_Hmin());
-  const ScalarType hmax = SU2_TYPE::GetValue(config.GetMetric_Hmax());
+  const ScalarType hmin = SU2_TYPE::GetValue(adapt.hmin);
+  const ScalarType hmax = SU2_TYPE::GetValue(adapt.hmax);
   const ScalarType eigmax = 1.0 / pow(hmin, 2.0);
   const ScalarType eigmin = 1.0 / pow(hmax, 2.0);
-  const ScalarType armax2 = pow(SU2_TYPE::GetValue(config.GetMetric_ARmax()), 2.0);
+  const ScalarType armax2 = pow(SU2_TYPE::GetValue(adapt.armax), 2.0);
 
   ScalarType A[nDim][nDim], EigVec[nDim][nDim], EigVal[nDim], work[nDim];
 

@@ -1,7 +1,7 @@
 from mpi4py import MPI
 
 import pysu2
-from SU2.metric import CustomSensorRegistry
+from SU2.adaptive_metric import CustomSensorRegistry
 
 comm = MPI.COMM_WORLD
 

@@ -33,7 +33,7 @@
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
-#include "../../include/metrics/computeMetrics.hpp"
+#include "../../include/adaptive_metric/computeAdaptiveMetric.hpp"
 #include "../../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
@@ -1538,15 +1538,15 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::SENSOR_ADAPT:
-      COUNT_PER_POINT  = GetnMetricSensor();
+      COUNT_PER_POINT  = GetnAdaptiveMetricSensor();
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::GRADIENT_ADAPT:
-      COUNT_PER_POINT  = GetnMetricSensor()*nDim;
+      COUNT_PER_POINT  = GetnAdaptiveMetricSensor()*nDim;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::HESSIAN:
-      COUNT_PER_POINT  = GetnMetricSensor()*nSymMat;
+      COUNT_PER_POINT  = GetnAdaptiveMetricSensor()*nSymMat;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     default:
@@ -1679,7 +1679,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
             bufDSend[buf_offset] = base_nodes->GetSensor(iPoint);
             break;
           case MPI_QUANTITIES::SENSOR_ADAPT:
-            for (iVar = 0; iVar < GetnMetricSensor(); iVar++)
+            for (iVar = 0; iVar < GetnAdaptiveMetricSensor(); iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSensor_Adapt(iPoint, iVar);
             break;
           case MPI_QUANTITIES::SOLUTION_GRADIENT:
@@ -1693,7 +1693,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
                 bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
             break;
           case MPI_QUANTITIES::HESSIAN:
-            for (iVar = 0; iVar < GetnMetricSensor(); iVar++)
+            for (iVar = 0; iVar < GetnAdaptiveMetricSensor(); iVar++)
               for (iMat = 0; iMat < nSymMat; iMat++) {
                 const auto buf_idx = buf_offset + static_cast<unsigned long>(iVar)*nSymMat + iMat;
                 bufDSend[buf_idx] = gradient(iPoint, iVar, iMat);
@@ -1858,7 +1858,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             base_nodes->SetSensor(iPoint,bufDRecv[buf_offset]);
             break;
           case MPI_QUANTITIES::SENSOR_ADAPT:
-            for (iVar = 0; iVar < GetnMetricSensor(); iVar++)
+            for (iVar = 0; iVar < GetnAdaptiveMetricSensor(); iVar++)
                base_nodes->SetSensor_Adapt(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case MPI_QUANTITIES::SOLUTION_GRADIENT:
@@ -1872,7 +1872,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
                 gradient(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
             break;
           case MPI_QUANTITIES::HESSIAN:
-            for (iVar = 0; iVar < GetnMetricSensor(); iVar++)
+            for (iVar = 0; iVar < GetnAdaptiveMetricSensor(); iVar++)
               for (iMat = 0; iMat < nSymMat; iMat++) {
                 const auto buf_idx = buf_offset + static_cast<unsigned long>(iVar)*nSymMat + iMat;
                 gradient(iPoint, iVar, iMat) = bufDRecv[buf_idx];
@@ -2418,18 +2418,18 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel, gradient, rmatrix);
 }
 
-void CSolver::AllocateMetricSensorArrays(unsigned short nSensors) {
+void CSolver::AllocateAdaptiveMetricArrays(unsigned short nSensors) {
   if (base_nodes == nullptr || nSensors == 0) return;
-  base_nodes->AllocateMetricSensorArrays(nSensors);
+  base_nodes->AllocateAdaptiveMetricArrays(nSensors);
 }
 
 void CSolver::SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *config) {
   /*--- Copy PRIMITIVE sensor values from primitive variable array into Sensor_Adapt.
    *    Other sensor types are skipped here. ---*/
-  for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
-    if (MetricSensors[iSensor].type != SensorType::PRIMITIVE) continue;
+  for (size_t iSensor = 0; iSensor < AdaptiveMetricSensors.size(); ++iSensor) {
+    if (AdaptiveMetricSensors[iSensor].type != SensorType::PRIMITIVE) continue;
 
-    const auto var_idx = MetricSensors[iSensor].var_idx;
+    const auto var_idx = AdaptiveMetricSensors[iSensor].var_idx;
     SU2_OMP_FOR_DYN(256)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       base_nodes->SetSensor_Adapt(iPoint, iSensor, base_nodes->GetPrimitive(iPoint, var_idx));
@@ -2441,11 +2441,11 @@ void CSolver::SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *confi
 void CSolver::SetSolverField_SensorAdapt(CSolver **solver, CGeometry *geometry, const CConfig *config) {
   /*--- Copy SOLVER_FIELD sensor values from the solution of their source solver into Sensor_Adapt.
    *    All solvers share the mesh, so point indices coincide. ---*/
-  for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
-    if (MetricSensors[iSensor].type != SensorType::SOLVER_FIELD) continue;
+  for (size_t iSensor = 0; iSensor < AdaptiveMetricSensors.size(); ++iSensor) {
+    if (AdaptiveMetricSensors[iSensor].type != SensorType::SOLVER_FIELD) continue;
 
-    const auto var_idx = MetricSensors[iSensor].var_idx;
-    const auto* source_nodes = solver[MetricSensors[iSensor].iSol]->GetNodes();
+    const auto var_idx = AdaptiveMetricSensors[iSensor].var_idx;
+    const auto* source_nodes = solver[AdaptiveMetricSensors[iSensor].iSol]->GetNodes();
     SU2_OMP_FOR_DYN(256)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       base_nodes->SetSensor_Adapt(iPoint, iSensor, source_nodes->GetSolution(iPoint, var_idx));
@@ -2457,10 +2457,10 @@ void CSolver::SetSolverField_SensorAdapt(CSolver **solver, CGeometry *geometry, 
 void CSolver::SetComputed_SensorAdapt(CGeometry *geometry, const CConfig *config) {
   /*--- Evaluate COMPUTED sensors via their stored lambdas (e.g. Mach number).
    *    Each lambda receives a pointer to the full primitive row for the point. ---*/
-  for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
-    if (MetricSensors[iSensor].type != SensorType::COMPUTED) continue;
+  for (size_t iSensor = 0; iSensor < AdaptiveMetricSensors.size(); ++iSensor) {
+    if (AdaptiveMetricSensors[iSensor].type != SensorType::COMPUTED) continue;
 
-    const auto& fn = MetricSensors[iSensor].fn;
+    const auto& fn = AdaptiveMetricSensors[iSensor].fn;
     SU2_OMP_FOR_DYN(256)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       base_nodes->SetSensor_Adapt(iPoint, iSensor, fn(base_nodes->GetPrimitive(iPoint)));
@@ -2472,7 +2472,7 @@ void CSolver::SetComputed_SensorAdapt(CGeometry *geometry, const CConfig *config
 void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, short idxVel, const unsigned short Kind_Solver) {
   const auto& solution = base_nodes->GetSensor_Adapt();
   auto& gradient = base_nodes->GetGradient_Adapt();
-  auto nHess = GetnMetricSensor();
+  auto nHess = GetnAdaptiveMetricSensor();
 
   computeGradientsGreenGauss(this, MPI_QUANTITIES::GRADIENT_ADAPT, PERIODIC_GRAD_ADAPT,
                              *geometry, *config, solution, 0, nHess, idxVel, gradient);
@@ -4712,15 +4712,15 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 }
 
 
-void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config, bool restartMetric) {
+void CSolver::ComputeAdaptiveMetric(CSolver **solver, CGeometry *geometry, const CConfig *config, bool restartMetric) {
   /*--- TODO: - goal-oriented metric ---*/
   /*---       - metric intersection  ---*/
-  const unsigned short nSensor = GetnMetricSensor();
+  const unsigned short nSensor = GetnAdaptiveMetricSensor();
 
   const unsigned long time_iter = config->GetTimeIter();
   const bool steady = (config->GetTime_Marching() == TIME_MARCHING::STEADY);
   const bool is_last_iter = (time_iter == config->GetnTime_Iter() - 1) || (steady);
-  const bool normalize = (config->GetNormalize_Metric());
+  const bool normalize = config->GetAdaptiveMetricParsedOptions().normalize;
 
   /*--- Integrate and normalize the metric tensor field ---*/
   vector<double> integrals;
@@ -4733,10 +4733,10 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
 
     if (iSensor == 0) {
       /*--- Add Hessian of sensor at position 0 to metric tensor */
-      AddMetrics(solver, geometry, config, iSensor, restartMetric);
+      AddAdaptiveMetric(solver, geometry, config, iSensor, restartMetric);
 
       /*--- Integrate metric field on the last iteration (the end of the simulation if steady) ---*/
-      auto& metrics = base_nodes->GetMetric();
+      auto& metrics = base_nodes->GetAdaptiveMetric();
       double integral = 0.0;
       if (is_last_iter)
         integral = integrateMetrics<double>(*geometry, *config, iSensor, metrics);
@@ -4749,8 +4749,8 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
       if (is_last_iter) {
         integrals.push_back(integral);
         if (rank == MASTER_NODE) {
-          const string& sensor_name = (iSensor < MetricSensors.size()) ? MetricSensors[iSensor].name : "unknown";
-          cout << "Global metric normalization integral for sensor ";
+          const string& sensor_name = (iSensor < AdaptiveMetricSensors.size()) ? AdaptiveMetricSensors[iSensor].name : "unknown";
+          cout << "Global adaptive metric normalization integral for sensor ";
           cout << sensor_name << ": " << integral << endl;
         }
       }
@@ -4760,7 +4760,7 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
   }
 }
 
-void CSolver::AddMetrics(CSolver **solver, const CGeometry*geometry, const CConfig *config,
+void CSolver::AddAdaptiveMetric(CSolver **solver, const CGeometry*geometry, const CConfig *config,
                          const unsigned short iSensor, bool restartMetric) {
   /*--- TODO: - goal-oriented metric ---*/
   /*---       - metric intersection  ---*/
@@ -4782,7 +4782,7 @@ void CSolver::AddMetrics(CSolver **solver, const CGeometry*geometry, const CConf
   for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
     for (auto iMat = 0; iMat < nSymMat; ++iMat) {
       double hess = SU2_TYPE::GetValue(varFlo->GetHessian(iPoint, iSensor, iMat));
-      varFlo->AddMetric(iPoint, iMat, coeff * hess);
+      varFlo->AddAdaptiveMetric(iPoint, iMat, coeff * hess);
     }
   }
 }

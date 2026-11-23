@@ -1,6 +1,6 @@
 /*!
- * \file metricUtils.hpp
- * \brief Utility functions for mesh adaptation metric computation.
+ * \file adaptiveMetricUtils.hpp
+ * \brief Utility functions for the adaptive metric computation (mesh adaptation).
  * \author B. Munguía
  * \version 8.5.0 "Harrier"
  *
@@ -41,7 +41,7 @@
 #include "../variables/CPrimitiveIndices.hpp"
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 
-namespace MetricUtils {
+namespace AdaptiveMetricUtils {
 
 /*!
  * \brief Build a map of supported computed sensor names to their point-wise evaluator lambdas.
@@ -145,10 +145,10 @@ SolverFieldNameToIndexMap(const CConfig* config, CSolver** solver_container) {
 }
 
 /*!
- * \brief Resolve the METRIC_SENSOR names and store them, in config order, in the flow solver.
+ * \brief Resolve the ADAPTIVE_METRIC_SENSOR names and store them, in config order, in the flow solver.
  *
  * Each name is matched case-insensitively, in this order:
- *   - CUSTOM:       listed in METRIC_CUSTOM_SENSOR; filled through the Python wrapper (CDriverBase::SetAdaptSensor).
+ *   - CUSTOM:       listed in ADAPTIVE_METRIC_CUSTOM_SENSOR; filled through the Python wrapper (CDriverBase::SetAdaptSensor).
  *   - PRIMITIVE:    a primitive variable of the flow solver.
  *   - COMPUTED:     a supported computed quantity (see ComputedNameToFunctionMap).
  *   - SOLVER_FIELD: a solution variable of a non-flow solver (see SolverFieldNameToIndexMap),
@@ -170,7 +170,7 @@ inline bool ResolveSensorIndices(
   constexpr auto no_index = std::numeric_limits<unsigned short>::max();
 
   if (solver_container[FLOW_SOL] == nullptr || !config->GetFluidProblem()) {
-    SU2_MPI::Error("COMPUTE_METRIC requires a flow solver.", CURRENT_FUNCTION);
+    SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC requires a flow solver.", CURRENT_FUNCTION);
   }
 
   /*--- Flow primitives and computed quantities ---*/
@@ -188,16 +188,16 @@ inline bool ResolveSensorIndices(
 
   const auto solver_fields = SolverFieldNameToIndexMap(config, solver_container);
 
-  const std::vector<std::string> custom_names = config->GetMetric_CustomSensorList();
+  const std::vector<std::string> custom_names = config->GetAdaptiveMetricParsedOptions().CustomSensorList();
   std::set<std::string> custom;
   for (const auto& name : custom_names) custom.insert(SensorKey(name));
 
   /*--- Resolve each sensor in config order ---*/
-  const std::vector<std::string> sensor_names = config->GetMetric_SensorList();
-  std::vector<CSolver::MetricSensorInfo> sensors;
+  const std::vector<std::string> sensor_names = config->GetAdaptiveMetricParsedOptions().SensorList();
+  std::vector<CSolver::AdaptiveMetricSensorInfo> sensors;
   for (const auto& sensor_name : sensor_names) {
     const std::string key = SensorKey(sensor_name);
-    CSolver::MetricSensorInfo info;
+    CSolver::AdaptiveMetricSensorInfo info;
     info.name = sensor_name;
     info.var_idx = no_index;
     std::string description;
@@ -223,8 +223,8 @@ inline bool ResolveSensorIndices(
       for (const auto& entry : primitives) available += " " + entry.first;
       for (const auto& entry : computed) available += " " + entry.first;
       for (const auto& entry : solver_fields) available += " " + entry.first;
-      SU2_MPI::Error("Unknown METRIC_SENSOR " + sensor_name + ". Available sensors:" + available +
-                     ". List sensors filled through the Python wrapper in METRIC_CUSTOM_SENSOR.",
+      SU2_MPI::Error("Unknown ADAPTIVE_METRIC_SENSOR " + sensor_name + ". Available sensors:" + available +
+                     ". List sensors filled through the Python wrapper in ADAPTIVE_METRIC_CUSTOM_SENSOR.",
                      CURRENT_FUNCTION);
     }
 
@@ -234,7 +234,7 @@ inline bool ResolveSensorIndices(
     sensors.push_back(info);
   }
 
-  solver_container[FLOW_SOL]->SetMetricSensors(sensors);
+  solver_container[FLOW_SOL]->SetAdaptiveMetricSensors(sensors);
   return !sensors.empty();
 }
 
@@ -245,10 +245,10 @@ inline bool ResolveSensorIndices(
  *
  * \param[in,out] solver_container - Array of solvers [iSol]
  */
-inline void InitializeMetrics(CSolver** solver_container) {
-  const auto nSensors = solver_container[FLOW_SOL]->GetnMetricSensor();
+inline void InitializeAdaptiveMetric(CSolver** solver_container) {
+  const auto nSensors = solver_container[FLOW_SOL]->GetnAdaptiveMetricSensor();
   if (nSensors > 0) {
-    solver_container[FLOW_SOL]->AllocateMetricSensorArrays(nSensors);
+    solver_container[FLOW_SOL]->AllocateAdaptiveMetricArrays(nSensors);
   }
 }
 
@@ -258,7 +258,7 @@ inline void InitializeMetrics(CSolver** solver_container) {
  * \return Number of sensors.
  */
 inline unsigned short TotalNumSensors(CSolver** solver_container) {
-  return solver_container[FLOW_SOL]->GetnMetricSensor();
+  return solver_container[FLOW_SOL]->GetnAdaptiveMetricSensor();
 }
 
-} // namespace MetricUtils
+} // namespace AdaptiveMetricUtils

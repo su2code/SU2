@@ -3074,6 +3074,41 @@ enum class SensorType {
   SOLVER_FIELD, /*!< \brief Solution variable of another solver (e.g. turbulence), copied into the flow solver. */
 };
 
+/*!
+ * \brief Structure containing parsed options for the adaptive metric used in anisotropic mesh adaptation.
+ */
+struct AdaptiveMetric_ParsedOptions {
+  bool compute = false;                    /*!< \brief Compute the adaptive metric field in post-processing. */
+  bool normalize = false;                  /*!< \brief Perform the Lp-norm normalization of the adaptive metric. */
+  ENUM_FLOW_GRADIENT kind_hessian_method = GREEN_GAUSS; /*!< \brief Numerical method for computation of Hessians. */
+
+  unsigned short n_sensors = 0;            /*!< \brief Number of adaptive metric sensors. */
+  std::string* sensor_names = nullptr;     /*!< \brief Names of the adaptive metric sensors. */
+  unsigned short n_custom_sensors = 0;     /*!< \brief Number of custom adaptive metric sensors. */
+  std::string* custom_sensor_names = nullptr; /*!< \brief Names of the sensors filled through the Python wrapper. */
+
+  unsigned short norm = 2;                 /*!< \brief Lp-norm used in the normalization. */
+  unsigned long complexity = 10000;        /*!< \brief Target mesh complexity. */
+  unsigned short n_time_subintervals = 1;  /*!< \brief Number of unsteady time sub-intervals for adaptation. */
+  su2double hmax = 100.0;                  /*!< \brief Maximum cell size. */
+  su2double hmin = 1.0e-8;                 /*!< \brief Minimum cell size. */
+  su2double armax = 1.0e6;                 /*!< \brief Maximum cell aspect ratio. */
+
+  /*!
+   * \brief Get the list of adaptive metric sensor names.
+   */
+  std::vector<std::string> SensorList() const {
+    return std::vector<std::string>(sensor_names, sensor_names + n_sensors);
+  }
+
+  /*!
+   * \brief Get the list of custom adaptive metric sensor names (filled through the Python wrapper).
+   */
+  std::vector<std::string> CustomSensorList() const {
+    return std::vector<std::string>(custom_sensor_names, custom_sensor_names + n_custom_sensors);
+  }
+};
+
 
 #undef MakePair
 /* END_CONFIG_ENUMS */

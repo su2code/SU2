@@ -517,14 +517,14 @@ class CDriverBase {
   /*!
    * \brief Get the local index of a named metric sensor in the flow solver.
    * Used by Python custom sensor registries to cache indices before the run loop.
-   * \param[in] sensor_name - Name as listed in METRIC_SENSOR config.
+   * \param[in] sensor_name - Name as listed in ADAPTIVE_METRIC_SENSOR config.
    * \return Sensor index, or -1 if not found.
    */
-  short GetMetricSensorIndex(const std::string& sensor_name) const;
+  short GetAdaptiveMetricSensorIndex(const std::string& sensor_name) const;
 
   /*!
    * \brief Set the values of a custom metric sensor on the nodes of the flow solver.
-   * \param[in] iSensor - Sensor index (see GetMetricSensorIndex); the sensor must be listed in METRIC_CUSTOM_SENSOR.
+   * \param[in] iSensor - Sensor index (see GetAdaptiveMetricSensorIndex); the sensor must be listed in ADAPTIVE_METRIC_CUSTOM_SENSOR.
    * \param[in] values - One value per domain node, or per node including halos.
    */
   void SetAdaptSensor(unsigned short iSensor, const vector<passivedouble>& values);

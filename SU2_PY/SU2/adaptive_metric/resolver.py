@@ -42,7 +42,7 @@ class CustomSensorRegistry:
         Args:
             sensors: Optional mapping of sensor name to callable. Each callable
                 must have the signature ``fn(driver) -> list[float]`` and names
-                must match entries in ``METRIC_SENSOR`` in the config exactly.
+                must match entries in ``ADAPTIVE_METRIC_SENSOR`` in the config exactly.
         """
         self._sensors: dict[str, SensorFn] = (
             dict(sensors) if sensors is not None else {}
@@ -65,14 +65,16 @@ class CustomSensorRegistry:
 
         Raises:
             ValueError: If a registered sensor name is not listed in
-                ``METRIC_SENSOR`` in the config.
+                ``ADAPTIVE_METRIC_SENSOR`` in the config.
         """
         for name in self._sensors:
-            idx = driver.GetMetricSensorIndex(name)
+            idx = driver.GetAdaptiveMetricSensorIndex(name)
             if idx < 0:
                 raise ValueError(
                     "Custom sensor '{}' not found in the driver. "
-                    "Ensure it is listed in METRIC_SENSOR in the config.".format(name)
+                    "Ensure it is listed in ADAPTIVE_METRIC_SENSOR in the config.".format(
+                        name
+                    )
                 )
             self._indices[name] = idx
 

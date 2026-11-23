@@ -3265,33 +3265,35 @@ void CConfig::SetConfig_Options() {
   /*--- options that are used for mesh adaptation ---*/
   /*!\par CONFIG_CATEGORY:Adaptation Options \ingroup Config*/
 
-  /*!\brief COMPUTE_METRIC \n DESCRIPTION: Compute an error estimate */
-  addBoolOption("COMPUTE_METRIC", Compute_Metric, false);
-  /*!\brief NORMALIZE_METRIC \n DESCRIPTION: Normalize the metric tensor */
-  addBoolOption("NORMALIZE_METRIC", Normalize_Metric, false);
+  /*!\brief COMPUTE_ADAPTIVE_METRIC \n DESCRIPTION: Compute the adaptive metric field for anisotropic mesh adaptation */
+  addBoolOption("COMPUTE_ADAPTIVE_METRIC", adaptiveMetric_ParsedOptions.compute, false);
+  /*!\brief NORMALIZE_ADAPTIVE_METRIC \n DESCRIPTION: Perform the Lp-norm normalization of the adaptive metric */
+  addBoolOption("NORMALIZE_ADAPTIVE_METRIC", adaptiveMetric_ParsedOptions.normalize, false);
   /*!\brief NUM_METHOD_HESS
    *  \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
-  addEnumOption("NUM_METHOD_HESS", Kind_Hessian_Method, Gradient_Map, GREEN_GAUSS);
+  addEnumOption("NUM_METHOD_HESS", adaptiveMetric_ParsedOptions.kind_hessian_method, Gradient_Map, GREEN_GAUSS);
 
-  /*!\brief METRIC_SENSOR \n DESCRIPTION: Sensors for mesh adaptation metric field */
-  addStringListOption("METRIC_SENSOR", nMetric_Sensor, Metric_Sensor);
-  /*!\brief METRIC_CUSTOM_SENSOR \n DESCRIPTION: Sensors of METRIC_SENSOR filled through the Python wrapper */
-  addStringListOption("METRIC_CUSTOM_SENSOR", nMetric_Custom_Sensor, Metric_Custom_Sensor);
-  /*!\brief METRIC_NORM \n DESCRIPTION: Lp-norm for mesh adaptation */
-  addUnsignedShortOption("METRIC_NORM", Metric_Norm, 2);
-  /*!\brief METRIC_COMPLEXITY \n DESCRIPTION: Constraint mesh complexity */
-  addUnsignedLongOption("METRIC_COMPLEXITY", Metric_Complexity, 10000);
+  /*!\brief ADAPTIVE_METRIC_SENSOR \n DESCRIPTION: Sensors for the adaptive metric field */
+  addStringListOption("ADAPTIVE_METRIC_SENSOR", adaptiveMetric_ParsedOptions.n_sensors,
+                      adaptiveMetric_ParsedOptions.sensor_names);
+  /*!\brief ADAPTIVE_METRIC_CUSTOM_SENSOR \n DESCRIPTION: Sensors of ADAPTIVE_METRIC_SENSOR filled through the Python wrapper */
+  addStringListOption("ADAPTIVE_METRIC_CUSTOM_SENSOR", adaptiveMetric_ParsedOptions.n_custom_sensors,
+                      adaptiveMetric_ParsedOptions.custom_sensor_names);
+  /*!\brief ADAPTIVE_METRIC_NORM \n DESCRIPTION: Lp-norm for the adaptive metric normalization */
+  addUnsignedShortOption("ADAPTIVE_METRIC_NORM", adaptiveMetric_ParsedOptions.norm, 2);
+  /*!\brief ADAPTIVE_METRIC_COMPLEXITY \n DESCRIPTION: Target mesh complexity */
+  addUnsignedLongOption("ADAPTIVE_METRIC_COMPLEXITY", adaptiveMetric_ParsedOptions.complexity, 10000);
   /*!\brief ADAP_TIME_SUBINTERVAL \n DESCRIPTION: Number of time subintervals in unsteady mesh adaptation */
-  addUnsignedShortOption("ADAP_TIME_SUBINTERVAL", nAdapt_Time_Subinterval, 1);
+  addUnsignedShortOption("ADAP_TIME_SUBINTERVAL", adaptiveMetric_ParsedOptions.n_time_subintervals, 1);
 
-  /*!\brief METRIC_HMAX \n DESCRIPTION: Constraint maximum cell size */
-  addDoubleOption("METRIC_HMAX", Metric_Hmax, 10.0);
-  /*!\brief METRIC_HMIN \n DESCRIPTION: Constraint minimum cell size */
-  addDoubleOption("METRIC_HMIN", Metric_Hmin, 1.0E-8);
-  /*!\brief METRIC_ARMAX \n DESCRIPTION: Constraint maximum cell aspect ratio */
-  addDoubleOption("METRIC_ARMAX", Metric_ARmax, 1.0E6);
-  /*!\brief METRIC_HGRAD \n DESCRIPTION: Size gradation smoothing parameter */
-  addPythonOption("METRIC_HGRAD");
+  /*!\brief ADAPTIVE_METRIC_HMAX \n DESCRIPTION: Constraint maximum cell size */
+  addDoubleOption("ADAPTIVE_METRIC_HMAX", adaptiveMetric_ParsedOptions.hmax, 100.0);
+  /*!\brief ADAPTIVE_METRIC_HMIN \n DESCRIPTION: Constraint minimum cell size */
+  addDoubleOption("ADAPTIVE_METRIC_HMIN", adaptiveMetric_ParsedOptions.hmin, 1.0E-8);
+  /*!\brief ADAPTIVE_METRIC_ARMAX \n DESCRIPTION: Constraint maximum cell aspect ratio */
+  addDoubleOption("ADAPTIVE_METRIC_ARMAX", adaptiveMetric_ParsedOptions.armax, 1.0E6);
+  /*!\brief ADAPTIVE_METRIC_HGRAD \n DESCRIPTION: Size gradation smoothing parameter */
+  addPythonOption("ADAPTIVE_METRIC_HGRAD");
 
   /*!\brief ADAP_ITER \n DESCRIPTION: Mesh adaptation inner iterations per complexity */
   addPythonOption("ADAP_ITER");
@@ -6072,11 +6074,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  /*--- Checks for mesh adaptation ---*/
-  if (Compute_Metric) {
+  /*--- Checks for the adaptive metric (mesh adaptation) ---*/
+  auto& adapt = adaptiveMetric_ParsedOptions;
+  if (adapt.compute) {
     /*--- Check that config is valid for requested sensor ---*/
-    for (unsigned short iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
-      const string& sensor_name = Metric_Sensor[iSensor];
+    for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
+      const string& sensor_name = adapt.sensor_names[iSensor];
       /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
       /*--- TODO: goal-oriented adaptation ---*/
       if (sensor_name == "GOAL") {
@@ -6084,31 +6087,31 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
     }
 
-    /*--- Every custom sensor must also be listed in METRIC_SENSOR (names are case-insensitive) ---*/
+    /*--- Every custom sensor must also be listed in ADAPTIVE_METRIC_SENSOR (names are case-insensitive) ---*/
     auto upper = [](string name) {
       PrintingToolbox::StringToUpperCase(name);
       return name;
     };
-    for (unsigned short iCustom = 0; iCustom < nMetric_Custom_Sensor; iCustom++) {
+    for (auto iCustom = 0u; iCustom < adapt.n_custom_sensors; iCustom++) {
       bool listed = false;
-      for (unsigned short iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
-        listed = listed || (upper(Metric_Custom_Sensor[iCustom]) == upper(Metric_Sensor[iSensor]));
+      for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
+        listed = listed || (upper(adapt.custom_sensor_names[iCustom]) == upper(adapt.sensor_names[iSensor]));
       }
       if (!listed) {
-        SU2_MPI::Error("METRIC_CUSTOM_SENSOR entry " + Metric_Custom_Sensor[iCustom] +
-                       " is not listed in METRIC_SENSOR.", CURRENT_FUNCTION);
+        SU2_MPI::Error("ADAPTIVE_METRIC_CUSTOM_SENSOR entry " + adapt.custom_sensor_names[iCustom] +
+                       " is not listed in ADAPTIVE_METRIC_SENSOR.", CURRENT_FUNCTION);
       }
     }
 
     /*--- Only GG Hessians for now ---*/
-    if (Kind_Hessian_Method != GREEN_GAUSS) {
+    if (adapt.kind_hessian_method != GREEN_GAUSS) {
       SU2_MPI::Error("NUM_METHOD_HESS must be GREEN_GAUSS.", CURRENT_FUNCTION);
     }
 
     /*--- Make sure only using single adaptation sub-interval for steady problems ---*/
     if(TimeMarching == TIME_MARCHING::STEADY)
-      nAdapt_Time_Subinterval = 1;
-    if (nAdapt_Time_Subinterval != 1)
+      adapt.n_time_subintervals = 1;
+    if (adapt.n_time_subintervals != 1)
       SU2_MPI::Error("Adaptation sub-intervals not yet supported. Set ADAP_TIME_SUBINTERVAL = 1 or remove from config.", CURRENT_FUNCTION);
   }
 
@@ -8385,27 +8388,28 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_COMPONENT::SU2_CFD || val_software == SU2_COMPONENT::SU2_SOL) {
-    if (Compute_Metric) {
+    const auto& adapt = adaptiveMetric_ParsedOptions;
+    if (adapt.compute) {
       cout << endl <<"---------------- Mesh Adaptation Information ( Zone "  << iZone << " ) -----------------" << endl;
-      cout << "Adaptation sensor(s): ";
-      for (unsigned short iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
-        cout << Metric_Sensor[iSensor];
-        if (iSensor < nMetric_Sensor - 1 ) cout << ", ";
+      cout << "Adaptive metric sensor(s): ";
+      for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
+        cout << adapt.sensor_names[iSensor];
+        if (iSensor + 1u < adapt.n_sensors) cout << ", ";
       }
       cout << endl;
       cout << "Hessian for adaptive metric: Green-Gauss." << endl;
-      if (Normalize_Metric) {
-        cout << "Target complexity: " << Metric_Complexity << endl;
+      if (adapt.normalize) {
+        cout << "Target complexity: " << adapt.complexity << endl;
         if (TimeMarching != TIME_MARCHING::STEADY) {
-          cout << "  Unsteady adaptation sub-intervals: " << nAdapt_Time_Subinterval << endl;
-          cout << "  Target space-time complexity: " << Metric_Complexity * nAdapt_Time_Subinterval << endl;
+          cout << "  Unsteady adaptation sub-intervals: " << adapt.n_time_subintervals << endl;
+          cout << "  Target space-time complexity: " << adapt.complexity * adapt.n_time_subintervals << endl;
         }
-        cout << "Lp norm: " << Metric_Norm << endl;
-        cout << "Min. edge length: " << Metric_Hmin << endl;
-        cout << "Max. edge length: " << Metric_Hmax << endl;
+        cout << "Lp norm: " << adapt.norm << endl;
+        cout << "Min. edge length: " << adapt.hmin << endl;
+        cout << "Max. edge length: " << adapt.hmax << endl;
       }
       else {
-        cout << "Output unnormalized metric field." << endl;
+        cout << "Output unnormalized adaptive metric field." << endl;
       }
     }
   }

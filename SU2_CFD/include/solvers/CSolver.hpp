@@ -211,14 +211,14 @@ public:
   vector<string> fields;
 
   /*--- Metric sensors for mesh adaptation ---*/
-  struct MetricSensorInfo {
+  struct AdaptiveMetricSensorInfo {
     unsigned short var_idx;                        /*!< \brief Variable index in the source solver (PRIMITIVE: primitive, SOLVER_FIELD: solution). */
     std::string name;                              /*!< \brief Sensor name as specified in config. */
     SensorType type = SensorType::PRIMITIVE;       /*!< \brief Category of sensor. */
     std::function<su2double(const su2double*)> fn; /*!< \brief Point-wise evaluator for COMPUTED sensors. */
     unsigned short iSol = FLOW_SOL;                /*!< \brief Solver slot the values are read from (SOLVER_FIELD type). */
   };
-  vector<MetricSensorInfo> MetricSensors;  /*!< \brief Sensor list in config order, one entry per sensor. */
+  vector<AdaptiveMetricSensorInfo> AdaptiveMetricSensors;  /*!< \brief Sensor list in config order, one entry per sensor. */
 
 
 #ifdef HAVE_LIBROM
@@ -629,7 +629,7 @@ public:
    * \brief Allocate Gradient_Adapt and Hessian arrays for the sensors assigned to this solver.
    * \param[in] nSensors - Number of sensors to allocate arrays for.
    */
-  virtual void AllocateMetricSensorArrays(unsigned short nSensors);
+  virtual void AllocateAdaptiveMetricArrays(unsigned short nSensors);
 
   /*!
    * \brief Compute the Green-Gauss Hessian of the solution.
@@ -4318,20 +4318,20 @@ public:
    * \brief Get the number of metric sensors assigned to this solver.
    * \return Number of metric sensors in this solver.
    */
-  inline unsigned short GetnMetricSensor() const { return static_cast<unsigned short>(MetricSensors.size()); }
+  inline unsigned short GetnAdaptiveMetricSensor() const { return static_cast<unsigned short>(AdaptiveMetricSensors.size()); }
 
   /*!
    * \brief Get the metric sensor list for this solver.
-   * \return Vector of MetricSensorInfo entries in config order.
+   * \return Vector of AdaptiveMetricSensorInfo entries in config order.
    */
-  inline const vector<MetricSensorInfo>& GetMetricSensors() const { return MetricSensors; }
+  inline const vector<AdaptiveMetricSensorInfo>& GetAdaptiveMetricSensors() const { return AdaptiveMetricSensors; }
 
   /*!
    * \brief Set the metric sensor list for this solver.
    * \param[in] sensors - Sensor entries in config order.
    */
-  inline void SetMetricSensors(const vector<MetricSensorInfo>& sensors) {
-    MetricSensors = sensors;
+  inline void SetAdaptiveMetricSensors(const vector<AdaptiveMetricSensorInfo>& sensors) {
+    AdaptiveMetricSensors = sensors;
   }
 
   /*!
@@ -4493,7 +4493,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
    */
-  void ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config, bool restartMetric);
+  void ComputeAdaptiveMetric(CSolver **solver, CGeometry *geometry, const CConfig *config, bool restartMetric);
 
   /*!
    * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
@@ -4503,7 +4503,7 @@ public:
    * \param[in] iSensor - Index of the sensor to work on.
    * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
    */
-  void AddMetrics(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+  void AddAdaptiveMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
                   const unsigned short iSensor, bool restartMetric);
 
 protected:

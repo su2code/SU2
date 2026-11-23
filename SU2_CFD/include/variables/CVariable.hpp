@@ -2521,32 +2521,32 @@ public:
    * \param[in] iMat - Metric tensor index.
    * \param[in] metric - Metric value.
    */
-  inline void SetMetric(unsigned long iPoint, unsigned short iMat, double metric) { Metric(iPoint,iMat) = metric; }
+  inline void SetAdaptiveMetric(unsigned long iPoint, unsigned short iMat, double metric) { Metric(iPoint,iMat) = metric; }
 
   /*!
    * \brief Get the metric of the entire solution.
    * \return Reference to the metric tensor field.
    */
-  inline su2matrix<double>& GetMetric(void) { return Metric; }
+  inline su2matrix<double>& GetAdaptiveMetric(void) { return Metric; }
 
   /*!
    * \brief Add the value of the metric.
    * \param[in] iMat - Metric tensor index.
    * \param[in] metric - Metric value.
    */
-  inline void AddMetric(unsigned long iPoint, unsigned short iMat, double metric) { Metric(iPoint,iMat) += metric; }
+  inline void AddAdaptiveMetric(unsigned long iPoint, unsigned short iMat, double metric) { Metric(iPoint,iMat) += metric; }
 
   /*!
    * \brief Get the value of the metric.
    * \param[in] iMat  - Metric tensor index.
    */
-  inline double GetMetric(unsigned long iPoint, unsigned short iMat) const { return Metric(iPoint,iMat); }
+  inline double GetAdaptiveMetric(unsigned long iPoint, unsigned short iMat) const { return Metric(iPoint,iMat); }
 
   /*!
    * \brief Allocate Sensor_Adapt, Gradient_Adapt, Hessian, and Metric arrays for specified sensor indices.
    * \param[in] nSensors - Number of metric sensors
    */
-  void AllocateMetricSensorArrays(unsigned short nSensors);
+  void AllocateAdaptiveMetricArrays(unsigned short nSensors);
   inline virtual su2double GetMomCoeff(unsigned long iPoint) { return 0.0; }
 
   inline virtual void SetMomCoeff(unsigned long iPoint, su2double val_Mom_Coeff) { }

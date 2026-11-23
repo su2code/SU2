@@ -34,9 +34,9 @@ install_data(['SU2/io/config.py',
               'SU2/io/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/io'))
 
-install_data(['SU2/metric/resolver.py',
-              'SU2/metric/__init__.py'],
-	      install_dir: join_paths(get_option('bindir'), 'SU2/metric'))
+install_data(['SU2/adaptive_metric/resolver.py',
+              'SU2/adaptive_metric/__init__.py'],
+	      install_dir: join_paths(get_option('bindir'), 'SU2/adaptive_metric'))
 
 install_data(['SU2/opt/project.py',
               'SU2/opt/scipy_tools.py',

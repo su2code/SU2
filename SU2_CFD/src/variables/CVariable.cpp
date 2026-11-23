@@ -156,7 +156,7 @@ void CVariable::RegisterUserDefinedSource() {
   RegisterContainer(true, UserDefinedSource);
 }
 
-void CVariable::AllocateMetricSensorArrays(unsigned short nSensors) {
+void CVariable::AllocateAdaptiveMetricArrays(unsigned short nSensors) {
   if (nSensors == 0) return;
   if (nDim == 0 || nPoint == 0)
     SU2_MPI::Error("nDim and nPoint must be set before allocating metric arrays.", CURRENT_FUNCTION);
