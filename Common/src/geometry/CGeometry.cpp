@@ -1211,6 +1211,17 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
     /*--- The trace of a rotation matrix is 1 + 2 cos(angle). ---*/
     const auto markerTag = config->GetMarker_All_TagBound(jMarker);
     const su2double* angles = config->GetPeriodicRotAngles(markerTag);
+
+    /*--- Above 180 deg the rotation matrix equals a smaller rotation in the other direction, which hides the
+     size of the sector. A sector that closes around the axis spans 360 deg / N, i.e. at most 180 deg. ---*/
+    for (auto iDim = 0u; iDim < 3; iDim++) {
+      if (fabs(angles[iDim]) > PI_NUMBER + angleTol) {
+        SU2_MPI::Error("Periodic points on the rotation axis require rotation angles of at most 180 degrees (marker " +
+                           markerTag + ").",
+                       CURRENT_FUNCTION);
+      }
+    }
+
     su2double rotMatrix[MAXNDIM][MAXNDIM];
     GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotMatrix);
     su2double cosAngle = 0.5 * (rotMatrix[0][0] + rotMatrix[1][1] + rotMatrix[2][2] - 1.0);
