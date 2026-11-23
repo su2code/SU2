@@ -42,6 +42,7 @@
 
 /*--- Reference state of the tests: siloxane MDM near its critical point, or an ideal gas at the same p and rho. ---*/
 constexpr double OUTLET_TEST_P = 1500112, OUTLET_TEST_RHO = 230;
+constexpr unsigned short OUTLET_TEST_MAXVAR = 5;
 
 // Gases of the outlet tests: 0 ideal (gamma 1.4), 1 Peng-Robinson, 2 van der Waals.
 inline std::unique_ptr<CFluidModel> MakeOutletTestGas(unsigned short kind) {
@@ -104,7 +105,7 @@ inline void SetOutletTestState(UnitQuadTestCase& test, CFluidModel& gas, const s
     nodes->SetSecondaryVar(point, &gas);
     if (grid != nullptr) test.geometry->nodes->SetGridVel(point, grid);
     for (auto k = 0u; k < nVar; ++k) solver->LinSysRes(point, k) = 0;
-    su2double zero[MAXNVAR * MAXNVAR] = {};
+    su2double zero[OUTLET_TEST_MAXVAR * OUTLET_TEST_MAXVAR] = {};
     solver->Jacobian.SetBlock(point, point, zero);
   }
 }
@@ -126,8 +127,8 @@ inline void OutwardNormal(const CGeometry& geometry, unsigned short marker, unsi
 
 // Mock numerics that return the boundary state as the residual and unit flux Jacobians, or zero (no diffusion).
 class OutletFluxProbe final : public CNumerics {
-  su2double residual[MAXNVAR] = {}, matrix[MAXNVAR][MAXNVAR] = {};
-  const su2double* rows[MAXNVAR];
+  su2double residual[OUTLET_TEST_MAXVAR] = {}, matrix[OUTLET_TEST_MAXVAR][OUTLET_TEST_MAXVAR] = {};
+  const su2double* rows[OUTLET_TEST_MAXVAR];
   bool zero;
 
  public:
@@ -237,10 +238,11 @@ inline unsigned long CountOutletFallbacks(CSolver* solver, const CConfig* config
 }
 
 // Implicit block of a Riemann outlet: the physical flux Jacobian at the boundary state along the outgoing waves of the
-// interior state, checked by finite differences.
-inline void CheckRiemannOutletJacobian(const su2double* block, CFluidModel& gas, const CNumerics& numerics,
-                                       unsigned short dim, const su2double* state, const su2double* boundary,
-                                       const su2double* unit, const su2double* normal, const su2double* grid) {
+// interior state, checked by finite differences. The block may be stored in reduced precision.
+template <class Scalar>
+void CheckRiemannOutletJacobian(const Scalar* block, CFluidModel& gas, const CNumerics& numerics, unsigned short dim,
+                                const su2double* state, const su2double* boundary, const su2double* unit,
+                                const su2double* normal, const su2double* grid) {
   const su2double gridNormal = grid ? GeometryToolbox::DotProduct(dim, grid, unit) : 0.0;
   gas.SetTDState_rhoe(
       state[0], state[dim + 1] / state[0] - .5 * GeometryToolbox::SquaredNorm(dim, state + 1) / (state[0] * state[0]));
