@@ -1035,6 +1035,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
          The RANS form above would use the wrong derivative where l_hyb differs from l_RANS = sqrt(k) / (beta* omega). ---*/
         Jacobian_i[0][0] = -1.5 * sqrt(ScalarVar_i[0]) / hybridLengthScale * Volume;
         Jacobian_i[0][1] = 0.0;
+        /*--- Same LM scaling of dk as in the residual. ---*/
+        if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM)
+          Jacobian_i[0][0] *= min(max(eff_intermittency, 0.1), 1.0);
       }
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
