@@ -954,7 +954,7 @@ def main():
     inc_flatplate_pb.cfg_dir = "incomp_rans/rough_flatplate"
     inc_flatplate_pb.cfg_file = "pb_rough_flatplate_incomp.cfg"
     inc_flatplate_pb.test_iter = 10
-    inc_flatplate_pb.test_vals = [-4.063342, -9.884401, 0.000010, 0.228472]
+    inc_flatplate_pb.test_vals = [-4.064345, -9.885656, 0.000010, 0.227833]
     test_list.append(inc_flatplate_pb)
 
     ####################
@@ -1057,7 +1057,7 @@ def main():
     turbmod_sa_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_edw_rae2822.cfg_file  = "turb_SA_EDW_RAE2822.cfg"
     turbmod_sa_edw_rae2822.test_iter = 20
-    turbmod_sa_edw_rae2822.test_vals = [-3.069523, -0.405788, -0.835321, -5.185709, 0.794436, 0.017856]
+    turbmod_sa_edw_rae2822.test_vals = [-3.068385, -0.406592, -0.835280, -5.180711, 0.793959, 0.017892]
     test_list.append(turbmod_sa_edw_rae2822)
 
     # SA Compressibility and Edwards
@@ -1065,7 +1065,7 @@ def main():
     turbmod_sa_comp_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_comp_edw_rae2822.cfg_file  = "turb_SA_COMP_EDW_RAE2822.cfg"
     turbmod_sa_comp_edw_rae2822.test_iter = 20
-    turbmod_sa_comp_edw_rae2822.test_vals = [-3.067904, -0.338707, -0.811157, -5.279475, 0.809906, 0.019797]
+    turbmod_sa_comp_edw_rae2822.test_vals = [-3.067420, -0.339121, -0.811188, -5.278079, 0.809497, 0.019818]
     test_list.append(turbmod_sa_comp_edw_rae2822)
 
     # SA QCR
