@@ -916,6 +916,9 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
+  /*--- Work space of the EDDES length scale, private to each thread and reused for all its points. ---*/
+  ShearLayerWorkspace slaWorkspace;
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
 
@@ -1035,7 +1038,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
 
-        const su2double delta = ShearLayerAdaptedLengthScale(geometry, iPoint, Vorticity, f_d < 0.99);
+        const su2double delta = ShearLayerAdaptedLengthScale(geometry, iPoint, Vorticity, f_d < 0.99, slaWorkspace);
 
         const su2double l_LES = C_DES * delta;
         DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);

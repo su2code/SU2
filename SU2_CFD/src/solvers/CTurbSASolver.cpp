@@ -1030,6 +1030,9 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
+  /*--- Work space of the EDDES length scale, private to each thread and reused for all its points. ---*/
+  ShearLayerWorkspace slaWorkspace;
+
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++){
 
@@ -1175,7 +1178,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
         const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
 
-        su2double maxDelta = ShearLayerAdaptedLengthScale(geometry, iPoint, vorticity, f_d < 0.99);
+        su2double maxDelta = ShearLayerAdaptedLengthScale(geometry, iPoint, vorticity, f_d < 0.99, slaWorkspace);
 
         if (LES_FilterWidth > 0.0){
           maxDelta = LES_FilterWidth;
