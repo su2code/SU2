@@ -4607,10 +4607,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
      the species. A name that matches no such wall would have no effect. ---*/
     for (unsigned short iCat = 0; iCat < nWall_Catalytic; iCat++) {
       bool found = false;
-      for (unsigned short iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
-        found = found || (Wall_Catalytic[iCat] == Marker_Isothermal[iMarker]);
-      for (unsigned short iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
-        found = found || (Wall_Catalytic[iCat] == Marker_HeatFlux[iMarker]);
+      for (unsigned short iWall = 0; iWall < nMarker_Isothermal; iWall++)
+        found = found || (Wall_Catalytic[iCat] == Marker_Isothermal[iWall]);
+      for (unsigned short iWall = 0; iWall < nMarker_HeatFlux; iWall++)
+        found = found || (Wall_Catalytic[iCat] == Marker_HeatFlux[iWall]);
       if (!found) {
         SU2_MPI::Error("CATALYTIC_WALL: the marker " + Wall_Catalytic[iCat] + " is not in MARKER_ISOTHERMAL\n"
                        "or MARKER_HEATFLUX. The marker names are case-sensitive.", CURRENT_FUNCTION);

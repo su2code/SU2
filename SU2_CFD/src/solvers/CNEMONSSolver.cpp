@@ -450,7 +450,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
        And add the contributions to the Jacobian due to energy. ---*/
       Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
-      for (auto iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+      for (unsigned long iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
         Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
