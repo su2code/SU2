@@ -168,13 +168,16 @@ void normalize(const CGeometry& geometry, const CConfig& config, const std::vect
     globalFactor[iSensor] = std::pow(N / integrals[iSensor], 2.0 / nDim);
   }
 
-  /*--- Size and aspect ratio constraints ---*/
-  const passivedouble hmin = SU2_TYPE::GetValue(adapt.hmin);
-  const passivedouble hmax = SU2_TYPE::GetValue(adapt.hmax);
-  const passivedouble armax = SU2_TYPE::GetValue(adapt.armax);
-  const passivedouble eigMax = 1.0 / (hmin * hmin);
-  const passivedouble eigMin = 1.0 / (hmax * hmax);
-  const passivedouble armax2 = armax * armax;
+  /*--- Size and aspect ratio constraints of each sensor ---*/
+  std::vector<passivedouble> eigMin(nSensor), eigMax(nSensor), armax2(nSensor);
+  for (auto iSensor = 0ul; iSensor < nSensor; ++iSensor) {
+    const passivedouble hmin = SU2_TYPE::GetValue(adapt.hmin[iSensor]);
+    const passivedouble hmax = SU2_TYPE::GetValue(adapt.hmax[iSensor]);
+    const passivedouble armax = SU2_TYPE::GetValue(adapt.armax[iSensor]);
+    eigMax[iSensor] = 1.0 / (hmin * hmin);
+    eigMin[iSensor] = 1.0 / (hmax * hmax);
+    armax2[iSensor] = armax * armax;
+  }
 
   passivedouble A[nDim][nDim], eigVec[nDim][nDim], eigVal[nDim];
 
@@ -188,11 +191,11 @@ void normalize(const CGeometry& geometry, const CConfig& config, const std::vect
 
       /*--- Scale and clip by the size constraints ---*/
       for (auto iDim = 0ul; iDim < nDim; ++iDim)
-        eigVal[iDim] = std::min(std::max(factor * eigVal[iDim], eigMin), eigMax);
+        eigVal[iDim] = std::min(std::max(factor * eigVal[iDim], eigMin[iSensor]), eigMax[iSensor]);
 
       /*--- Clip by the aspect ratio constraint ---*/
       const passivedouble eigLargest = *std::max_element(eigVal, eigVal + nDim);
-      for (auto iDim = 0ul; iDim < nDim; ++iDim) eigVal[iDim] = std::max(eigVal[iDim], eigLargest / armax2);
+      for (auto iDim = 0ul; iDim < nDim; ++iDim) eigVal[iDim] = std::max(eigVal[iDim], eigLargest / armax2[iSensor]);
 
       CBlasStructure::EigenRecomposition(A, eigVec, eigVal, nDim);
       storeSymTensor<nDim>(A, iPoint, iSensor, metric);

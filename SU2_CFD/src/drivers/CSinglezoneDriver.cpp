@@ -48,20 +48,14 @@ CSinglezoneDriver::CSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Resolving adaptive metric sensor indices." << endl;
 
-    bool resolved = AdaptiveMetricUtils::ResolveSensorIndices(
-      config_container[ZONE_0],
-      geometry_container[ZONE_0][INST_0][MESH_0],
-      solver_container[ZONE_0][INST_0][MESH_0]
-    );
-
-    if (resolved) {
-      AdaptiveMetricUtils::InitializeAdaptiveMetric(solver_container[ZONE_0][INST_0][MESH_0]);
-      unsigned long total_num_sensor = AdaptiveMetricUtils::TotalNumSensors(solver_container[ZONE_0][INST_0][MESH_0]);
-      if (rank == MASTER_NODE && total_num_sensor > 0)
-        cout << "Successfully resolved " << total_num_sensor << " adaptive metric sensors." << endl;
-    } else if (rank == MASTER_NODE) {
-      cout << "Warning: COMPUTE_ADAPTIVE_METRIC is enabled but no valid sensors found." << endl;
-    }
+    /*--- CConfig guarantees at least one sensor, and unknown names are an error. ---*/
+    auto solver = solver_container[ZONE_0][INST_0][MESH_0];
+    AdaptiveMetricUtils::ResolveSensorIndices(config_container[ZONE_0], geometry_container[ZONE_0][INST_0][MESH_0],
+                                              solver);
+    AdaptiveMetricUtils::InitializeAdaptiveMetric(solver);
+    if (rank == MASTER_NODE)
+      cout << "Successfully resolved " << AdaptiveMetricUtils::TotalNumSensors(solver) << " adaptive metric sensors."
+           << endl;
   }
 }
 
@@ -390,13 +384,9 @@ void CSinglezoneDriver::ComputeAdaptiveMetricField(bool restartMetric) {
   solver_flow->InitiateComms(geometry, config, MPI_QUANTITIES::SENSOR_ADAPT);
   solver_flow->CompleteComms(geometry, config, MPI_QUANTITIES::SENSOR_ADAPT);
 
-  if (config->GetAdaptiveMetricParsedOptions().kind_hessian_method == GREEN_GAUSS) {
-    if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
-    solver_flow->SetHessian_GG(geometry, config, idxVel, RUNTIME_FLOW_SYS);
-  }
-  else {
-    SU2_MPI::Error("Unsupported Hessian method.", CURRENT_FUNCTION);
-  }
+  /*--- Only Green-Gauss Hessians are available (checked in CConfig). ---*/
+  if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
+  solver_flow->SetHessian_GG(geometry, config, idxVel, RUNTIME_FLOW_SYS);
 
   if(rank == MASTER_NODE) cout << "Computing feature-based adaptive metric tensor." << endl;
   solver_flow->ComputeAdaptiveMetric(geometry, config, restartMetric);

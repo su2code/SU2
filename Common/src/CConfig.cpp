@@ -3268,7 +3268,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief COMPUTE_ADAPTIVE_METRIC \n DESCRIPTION: Compute the adaptive metric field for anisotropic mesh adaptation */
   addBoolOption("COMPUTE_ADAPTIVE_METRIC", adaptiveMetric_ParsedOptions.compute, false);
   /*!\brief NORMALIZE_ADAPTIVE_METRIC \n DESCRIPTION: Perform the Lp-norm normalization of the adaptive metric */
-  addBoolOption("NORMALIZE_ADAPTIVE_METRIC", adaptiveMetric_ParsedOptions.normalize, false);
+  addBoolOption("NORMALIZE_ADAPTIVE_METRIC", adaptiveMetric_ParsedOptions.normalize, true);
   /*!\brief NUM_METHOD_HESS
    *  \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
   addEnumOption("NUM_METHOD_HESS", adaptiveMetric_ParsedOptions.kind_hessian_method, Gradient_Map, GREEN_GAUSS);
@@ -3286,12 +3286,12 @@ void CConfig::SetConfig_Options() {
   /*!\brief ADAP_TIME_SUBINTERVAL \n DESCRIPTION: Number of time subintervals in unsteady mesh adaptation */
   addUnsignedShortOption("ADAP_TIME_SUBINTERVAL", adaptiveMetric_ParsedOptions.n_time_subintervals, 1);
 
-  /*!\brief ADAPTIVE_METRIC_HMAX \n DESCRIPTION: Constraint maximum cell size */
-  addDoubleOption("ADAPTIVE_METRIC_HMAX", adaptiveMetric_ParsedOptions.hmax, 100.0);
-  /*!\brief ADAPTIVE_METRIC_HMIN \n DESCRIPTION: Constraint minimum cell size */
-  addDoubleOption("ADAPTIVE_METRIC_HMIN", adaptiveMetric_ParsedOptions.hmin, 1.0E-8);
-  /*!\brief ADAPTIVE_METRIC_ARMAX \n DESCRIPTION: Constraint maximum cell aspect ratio */
-  addDoubleOption("ADAPTIVE_METRIC_ARMAX", adaptiveMetric_ParsedOptions.armax, 1.0E6);
+  /*!\brief ADAPTIVE_METRIC_HMAX \n DESCRIPTION: Constraint maximum cell size, one value for all sensors or one per sensor (default 100) */
+  addDoubleListOption("ADAPTIVE_METRIC_HMAX", adaptiveMetric_ParsedOptions.n_hmax, adaptiveMetric_ParsedOptions.hmax_list);
+  /*!\brief ADAPTIVE_METRIC_HMIN \n DESCRIPTION: Constraint minimum cell size, one value for all sensors or one per sensor (default 1e-8) */
+  addDoubleListOption("ADAPTIVE_METRIC_HMIN", adaptiveMetric_ParsedOptions.n_hmin, adaptiveMetric_ParsedOptions.hmin_list);
+  /*!\brief ADAPTIVE_METRIC_ARMAX \n DESCRIPTION: Constraint maximum cell aspect ratio, one value for all sensors or one per sensor (default 1e6) */
+  addDoubleListOption("ADAPTIVE_METRIC_ARMAX", adaptiveMetric_ParsedOptions.n_armax, adaptiveMetric_ParsedOptions.armax_list);
   /*!\brief ADAPTIVE_METRIC_HGRAD \n DESCRIPTION: Size gradation smoothing parameter */
   addPythonOption("ADAPTIVE_METRIC_HGRAD");
 
@@ -6077,21 +6077,31 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Checks for the adaptive metric (mesh adaptation) ---*/
   auto& adapt = adaptiveMetric_ParsedOptions;
   if (adapt.compute) {
-    /*--- Check that config is valid for requested sensor ---*/
-    for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
-      const string& sensor_name = adapt.sensor_names[iSensor];
-      /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
-      /*--- TODO: goal-oriented adaptation ---*/
-      if (sensor_name == "GOAL") {
-        SU2_MPI::Error("Adaptation sensor GOAL not yet supported.", CURRENT_FUNCTION);
-      }
-    }
-
-    /*--- Every custom sensor must also be listed in ADAPTIVE_METRIC_SENSOR (names are case-insensitive) ---*/
+    /*--- Sensor names are case-insensitive ---*/
     auto upper = [](string name) {
       PrintingToolbox::StringToUpperCase(name);
       return name;
     };
+
+    if (adapt.n_sensors == 0) {
+      SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC requires at least one ADAPTIVE_METRIC_SENSOR.", CURRENT_FUNCTION);
+    }
+
+    /*--- TODO: periodic communication of the sensor gradients and Hessians ---*/
+    if (nMarker_PerBound > 0) {
+      SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support periodic boundaries.", CURRENT_FUNCTION);
+    }
+
+    /*--- Check that config is valid for requested sensor ---*/
+    for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
+      /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
+      /*--- TODO: goal-oriented adaptation ---*/
+      if (upper(adapt.sensor_names[iSensor]) == "GOAL") {
+        SU2_MPI::Error("Adaptation sensor GOAL not yet supported.", CURRENT_FUNCTION);
+      }
+    }
+
+    /*--- Every custom sensor must also be listed in ADAPTIVE_METRIC_SENSOR ---*/
     for (auto iCustom = 0u; iCustom < adapt.n_custom_sensors; iCustom++) {
       bool listed = false;
       for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
@@ -6100,6 +6110,32 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       if (!listed) {
         SU2_MPI::Error("ADAPTIVE_METRIC_CUSTOM_SENSOR entry " + adapt.custom_sensor_names[iCustom] +
                        " is not listed in ADAPTIVE_METRIC_SENSOR.", CURRENT_FUNCTION);
+      }
+    }
+
+    /*--- Size and aspect ratio constraints: default, one value for all sensors, or one per sensor ---*/
+    auto perSensor = [&](const string& option, unsigned short nValues, const su2double* values,
+                         passivedouble defaultValue) {
+      if (nValues == 0) return vector<su2double>(adapt.n_sensors, defaultValue);
+      if (nValues == 1) return vector<su2double>(adapt.n_sensors, values[0]);
+      if (nValues != adapt.n_sensors) {
+        SU2_MPI::Error(option + " must have one value, or one value per ADAPTIVE_METRIC_SENSOR entry (" +
+                       to_string(adapt.n_sensors) + ").", CURRENT_FUNCTION);
+      }
+      return vector<su2double>(values, values + nValues);
+    };
+    adapt.hmax = perSensor("ADAPTIVE_METRIC_HMAX", adapt.n_hmax, adapt.hmax_list, adapt.default_hmax);
+    adapt.hmin = perSensor("ADAPTIVE_METRIC_HMIN", adapt.n_hmin, adapt.hmin_list, adapt.default_hmin);
+    adapt.armax = perSensor("ADAPTIVE_METRIC_ARMAX", adapt.n_armax, adapt.armax_list, adapt.default_armax);
+
+    for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
+      if (!(adapt.hmin[iSensor] > 0.0) || adapt.hmax[iSensor] < adapt.hmin[iSensor]) {
+        SU2_MPI::Error("ADAPTIVE_METRIC_HMIN must be positive and not larger than ADAPTIVE_METRIC_HMAX (sensor " +
+                       adapt.sensor_names[iSensor] + ").", CURRENT_FUNCTION);
+      }
+      if (adapt.armax[iSensor] < 1.0) {
+        SU2_MPI::Error("ADAPTIVE_METRIC_ARMAX must be at least 1 (sensor " + adapt.sensor_names[iSensor] + ").",
+                       CURRENT_FUNCTION);
       }
     }
 
@@ -8405,8 +8441,17 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           cout << "  Target space-time complexity: " << adapt.complexity * adapt.n_time_subintervals << endl;
         }
         cout << "Lp norm: " << adapt.norm << endl;
-        cout << "Min. edge length: " << adapt.hmin << endl;
-        cout << "Max. edge length: " << adapt.hmax << endl;
+        auto printPerSensor = [&](const string& label, const vector<su2double>& values) {
+          cout << label;
+          for (auto iSensor = 0u; iSensor < values.size(); iSensor++) {
+            cout << values[iSensor];
+            if (iSensor + 1u < values.size()) cout << ", ";
+          }
+          cout << endl;
+        };
+        printPerSensor("Min. edge length: ", adapt.hmin);
+        printPerSensor("Max. edge length: ", adapt.hmax);
+        printPerSensor("Max. aspect ratio: ", adapt.armax);
       }
       else {
         cout << "Output unnormalized adaptive metric field." << endl;

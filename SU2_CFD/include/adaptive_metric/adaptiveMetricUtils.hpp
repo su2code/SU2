@@ -159,9 +159,8 @@ SolverFieldNameToIndexMap(const CConfig* config, CSolver** solver_container) {
  * \param[in] config - Configuration containing sensor names
  * \param[in] geometry - Geometry for dimension info
  * \param[in,out] solver_container - Array of solvers [iSol]; the flow solver receives the sensors
- * \return True if at least one sensor was resolved
  */
-inline bool ResolveSensorIndices(
+inline void ResolveSensorIndices(
     const CConfig* config,
     const CGeometry* geometry,
     CSolver** solver_container) {
@@ -235,7 +234,6 @@ inline bool ResolveSensorIndices(
   }
 
   solver_container[FLOW_SOL]->SetAdaptiveMetricSensors(sensors);
-  return !sensors.empty();
 }
 
 /*!

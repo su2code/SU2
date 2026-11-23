@@ -3079,7 +3079,7 @@ enum class SensorType {
  */
 struct AdaptiveMetric_ParsedOptions {
   bool compute = false;                    /*!< \brief Compute the adaptive metric field in post-processing. */
-  bool normalize = false;                  /*!< \brief Perform the Lp-norm normalization of the adaptive metric. */
+  bool normalize = true;                   /*!< \brief Perform the Lp-norm normalization of the adaptive metric. */
   ENUM_FLOW_GRADIENT kind_hessian_method = GREEN_GAUSS; /*!< \brief Numerical method for computation of Hessians. */
 
   unsigned short n_sensors = 0;            /*!< \brief Number of adaptive metric sensors. */
@@ -3090,9 +3090,21 @@ struct AdaptiveMetric_ParsedOptions {
   unsigned short norm = 2;                 /*!< \brief Lp-norm used in the normalization. */
   unsigned long complexity = 10000;        /*!< \brief Target mesh complexity. */
   unsigned short n_time_subintervals = 1;  /*!< \brief Number of unsteady time sub-intervals for adaptation. */
-  su2double hmax = 100.0;                  /*!< \brief Maximum cell size. */
-  su2double hmin = 1.0e-8;                 /*!< \brief Minimum cell size. */
-  su2double armax = 1.0e6;                 /*!< \brief Maximum cell aspect ratio. */
+
+  /*--- Size and aspect ratio constraints, as parsed: empty (default), one value for all
+   *    sensors, or one value per sensor. ---*/
+  static constexpr passivedouble default_hmax = 100.0;  /*!< \brief Default maximum cell size. */
+  static constexpr passivedouble default_hmin = 1.0e-8; /*!< \brief Default minimum cell size. */
+  static constexpr passivedouble default_armax = 1.0e6; /*!< \brief Default maximum cell aspect ratio. */
+  unsigned short n_hmax = 0, n_hmin = 0, n_armax = 0; /*!< \brief Number of parsed values of each constraint. */
+  su2double* hmax_list = nullptr;          /*!< \brief Parsed maximum cell sizes. */
+  su2double* hmin_list = nullptr;          /*!< \brief Parsed minimum cell sizes. */
+  su2double* armax_list = nullptr;         /*!< \brief Parsed maximum cell aspect ratios. */
+
+  /*--- Constraints of each sensor, filled from the parsed values in CConfig::SetPostprocessing. ---*/
+  std::vector<su2double> hmax;             /*!< \brief Maximum cell size of each sensor. */
+  std::vector<su2double> hmin;             /*!< \brief Minimum cell size of each sensor. */
+  std::vector<su2double> armax;            /*!< \brief Maximum cell aspect ratio of each sensor. */
 
   /*!
    * \brief Get the list of adaptive metric sensor names.
