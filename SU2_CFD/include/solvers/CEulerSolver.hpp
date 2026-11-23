@@ -441,6 +441,43 @@ public:
                                          su2double *primitive_j);
 
   /*!
+   * \brief Outcome of ComputePressureOutletState.
+   */
+  enum class PressureOutletStatus {
+    Valid,        /*!< \brief The boundary state is set. */
+    InvalidState, /*!< \brief Invalid input, or the EOS or the integration along the isentrope failed. */
+    Backflow      /*!< \brief Flow enters through every characteristic, which needs inlet data. */
+  };
+
+  /*!
+   * \brief Boundary state of a static-pressure outlet (ordinary, Riemann and TurboRiemann markers).
+   * \details The interior entropy, tangential velocity and outgoing acoustic invariant are kept, and the pressure
+   *          is imposed along the isentrope of the fluid model (closed form for an ideal gas, integration in log(p)
+   *          otherwise). The normal velocity is relative to the grid. If the imposed pressure would accelerate the
+   *          outflow past sonic, the sonic state is used. Supersonic outflow keeps the interior state, and subsonic
+   *          reverse flow uses the same closure. Characteristic boundary conditions: K. W. Thompson,
+   *          J. Comput. Phys. 68 (1987) 1-24; T. J. Poinsot and S. K. Lele, J. Comput. Phys. 101 (1992) 104-129.
+   * \note This method is static to improve the chances of it being used in a thread-safe manner.
+   *       It overwrites the thermodynamic state of the fluid model.
+   * \param[in,out] fluidModel - The fluid model.
+   * \param[in] nDim - Number of physical dimensions.
+   * \param[in] interior - Interior conservative state.
+   * \param[in] normal - Outward unit normal.
+   * \param[in] gridNormal - Grid velocity along the normal.
+   * \param[in] targetPressure - Imposed static pressure.
+   * \param[in] turbulentK - Turbulent kinetic energy contained in the total energy; it is held fixed.
+   * \param[in] idealGas - Use the closed form of an ideal gas with the given gamma.
+   * \param[in] gamma - Ratio of specific heats, used only if idealGas is true.
+   * \param[out] boundary - Conservative boundary state, set only if the result is Valid.
+   * \return Valid, InvalidState or Backflow.
+   */
+  static PressureOutletStatus ComputePressureOutletState(CFluidModel* fluidModel, unsigned short nDim,
+                                                         const su2double* interior, const su2double* normal,
+                                                         su2double gridNormal, su2double targetPressure,
+                                                         su2double turbulentK, bool idealGas, su2double gamma,
+                                                         su2double* boundary);
+
+  /*!
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

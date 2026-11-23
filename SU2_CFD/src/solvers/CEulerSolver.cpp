@@ -39,6 +39,8 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/CTurboOutput.hpp"
 
+#include <array>
+
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
   CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>(*geometry, *config) {
@@ -5255,6 +5257,229 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
 }
 
+namespace {
+/*--- Integration of the static-pressure outlet state along the isentrope of a general EOS, in log(p). ---*/
+namespace OutletIsentrope {
+constexpr unsigned long MAX_STEPS = 10000;      /*!< \brief Step limit of the adaptive integration. */
+constexpr double FIRST_STEP = 0.05;             /*!< \brief First step in log(p). */
+constexpr double STEP_TOL = 1e-10;              /*!< \brief Largest accepted step-doubling error (scaled). */
+constexpr double GROW_TOL = 1e-12;              /*!< \brief Step-doubling error below which the step is doubled. */
+constexpr double MIN_STEP = 1e-12;              /*!< \brief Smallest step in log(p) before the integration fails. */
+constexpr double FINISH_TOL = 1e-13;            /*!< \brief Remaining change of log(p) taken with one Euler step. */
+constexpr double EOS_TOL = 1e-6;                /*!< \brief Largest relative change of density or energy by the EOS. */
+constexpr double PRESSURE_TOL = 1e-6;           /*!< \brief Largest relative pressure error at the end. */
+constexpr unsigned short SONIC_BISECTIONS = 40; /*!< \brief Bisections of the step that crosses the sonic point. */
+constexpr double SONIC_DELTA = 1e-5;            /*!< \brief Offset in log(p) of the finite-difference sonic slope. */
+constexpr double MIN_SONIC_SLOPE = 1e-12;       /*!< \brief Smallest usable slope of q-a along the isentrope. */
+}  // namespace OutletIsentrope
+
+using OutletStatus = CEulerSolver::PressureOutletStatus;
+using OutletState = std::array<su2double, 3>;  // Density, thermal energy, normal velocity relative to the grid.
+
+/*--- Pressure, temperature and sound speed of the current EOS state are positive and finite. ---*/
+bool IsOutletEOSStateValid(const CFluidModel& fluid) {
+  const auto p = SU2_TYPE::GetValue(fluid.GetPressure()), t = SU2_TYPE::GetValue(fluid.GetTemperature());
+  const auto a2 = SU2_TYPE::GetValue(fluid.GetSoundSpeed2());
+  return p > 0 && t > 0 && a2 > 0 && std::isfinite(p + t + a2);
+}
+
+/*--- Velocity, thermal energy (without the turbulent kinetic energy) and normal velocity relative to the grid of
+ * the interior state; leaves the EOS at the interior state. ---*/
+bool SetOutletInterior(CFluidModel& fluid, unsigned short nDim, const su2double* interior, const su2double* normal,
+                       su2double gridNormal, su2double turbulentK, su2double* velocity, su2double& energy,
+                       su2double& normalVelocity) {
+  for (auto iVar = 0u; iVar < nDim + 2u; ++iVar)
+    if (!std::isfinite(SU2_TYPE::GetValue(interior[iVar]))) return false;
+  const auto rho = interior[0];
+  if (!(rho > 0)) return false;
+  for (auto iDim = 0u; iDim < nDim; ++iDim) velocity[iDim] = interior[iDim + 1] / rho;
+  energy = interior[nDim + 1] / rho - 0.5 * GeometryToolbox::SquaredNorm(nDim, velocity) - turbulentK;
+  fluid.SetTDState_rhoe(rho, energy);
+  if (!IsOutletEOSStateValid(fluid)) return false;
+  normalVelocity = GeometryToolbox::DotProduct(nDim, velocity, normal) - gridNormal;
+  return true;
+}
+
+/*--- Ideal gas, closed form: q + 2a/(gamma-1) and the entropy are constant. The EOS is at the interior state. ---*/
+OutletStatus IdealGasOutletState(CFluidModel& fluid, su2double targetPressure, su2double gamma, OutletState& state) {
+  const auto rho = state[0], normalVelocity = state[2];
+  const auto pressure = fluid.GetPressure();
+  const su2double sound = sqrt(fluid.GetSoundSpeed2());
+  const su2double gm1 = gamma - 1;
+  /*--- Sound speed at the sonic limit and at the imposed pressure; expansion stops at the sonic state. ---*/
+  const su2double sonicSound = (gm1 * normalVelocity + 2 * sound) / (gamma + 1);
+  const su2double targetSound = sound * pow(targetPressure / pressure, gm1 / (2 * gamma));
+  const su2double boundarySound = fmax(targetSound, sonicSound);
+  const su2double density = rho * pow(boundarySound / sound, 2 / gm1);
+  const su2double q = normalVelocity + 2 * (sound - boundarySound) / gm1;
+  if (q <= -boundarySound) return OutletStatus::Backflow;
+  /*--- The pressure differs from the imposed one when the sonic limit is active. ---*/
+  const su2double p = pressure * pow(density / rho, gamma);
+  fluid.SetTDState_Prho(p, density);
+  if (!IsOutletEOSStateValid(fluid)) return OutletStatus::InvalidState;
+  state = {density, fluid.GetStaticEnergy(), q};
+  return OutletStatus::Valid;
+}
+
+/*--- Derivatives of density, thermal energy and normal velocity with respect to log(p) at constant entropy:
+ * d(rho)/dp = 1/a^2, de/dp = p/(rho^2 a^2), dq/dp = -1/(rho a). The EOS must not change the given state, e.g. by
+ * clamping it to a table range. ---*/
+bool EvaluateIsentrope(CFluidModel& fluid, su2double logPressure, const OutletState& y, OutletState& derivative,
+                       su2double referenceSound2) {
+  using namespace OutletIsentrope;
+  if (!(y[0] > 0) || !std::isfinite(SU2_TYPE::GetValue(y[0] + y[1] + y[2]))) return false;
+  const su2double p = exp(logPressure);
+  fluid.SetTDState_rhoe(y[0], y[1]);
+  if (!IsOutletEOSStateValid(fluid) || fabs(fluid.GetDensity() / y[0] - 1) > EOS_TOL ||
+      fabs(fluid.GetStaticEnergy() - y[1]) > EOS_TOL * (referenceSound2 + fabs(y[1])))
+    return false;
+  const auto a2 = fluid.GetSoundSpeed2();
+  derivative = {p / a2, p * p / (y[0] * y[0] * a2), -p / (y[0] * sqrt(a2))};
+  return true;
+}
+
+/*--- One classical RK4 step; leaves the EOS at the result. ---*/
+bool StepIsentrope(CFluidModel& fluid, su2double x, const OutletState& y, su2double h, OutletState& out,
+                   su2double referenceSound2) {
+  OutletState k1, k2, k3, k4, trial;
+  if (!EvaluateIsentrope(fluid, x, y, k1, referenceSound2)) return false;
+  for (auto k = 0u; k < 3; ++k) trial[k] = y[k] + .5 * h * k1[k];
+  if (!EvaluateIsentrope(fluid, x + .5 * h, trial, k2, referenceSound2)) return false;
+  for (auto k = 0u; k < 3; ++k) trial[k] = y[k] + .5 * h * k2[k];
+  if (!EvaluateIsentrope(fluid, x + .5 * h, trial, k3, referenceSound2)) return false;
+  for (auto k = 0u; k < 3; ++k) trial[k] = y[k] + h * k3[k];
+  if (!EvaluateIsentrope(fluid, x + h, trial, k4, referenceSound2)) return false;
+  for (auto k = 0u; k < 3; ++k) out[k] = y[k] + h * (k1[k] + 2 * k2[k] + 2 * k3[k] + k4[k]) / 6;
+  return EvaluateIsentrope(fluid, x + h, out, trial, referenceSound2);
+}
+
+/*--- Sonic point inside the step [x, x+h] by bisection, then one Newton correction so that the state and log(p)
+ * follow the movement of the sonic point with the inputs (for AD). ---*/
+bool FindSonicState(CFluidModel& fluid, su2double& x, OutletState& state, su2double h, su2double referenceSound2) {
+  using namespace OutletIsentrope;
+  OutletState half, fine;
+  su2double lower = 0, upper = 1;
+  for (auto k = 0u; k < SONIC_BISECTIONS; ++k) {
+    const su2double fraction = .5 * (lower + upper);
+    if (!StepIsentrope(fluid, x, state, fraction * h * .5, half, referenceSound2) ||
+        !StepIsentrope(fluid, x + fraction * h * .5, half, fraction * h * .5, fine, referenceSound2))
+      return false;
+    if (fine[2] >= sqrt(fluid.GetSoundSpeed2()))
+      upper = fraction;
+    else
+      lower = fraction;
+  }
+  x += .5 * (lower + upper) * h;
+  state = fine;
+  OutletState derivative;
+  if (!EvaluateIsentrope(fluid, x, state, derivative, referenceSound2)) return false;
+  const su2double sonicResidual = state[2] - sqrt(fluid.GetSoundSpeed2());
+  /*--- Slope of q-a along the isentrope; only the residual is differentiated, the slope is passive. ---*/
+  OutletState shifted = state, unused;
+  for (auto k = 0u; k < 3; ++k) shifted[k] += SONIC_DELTA * derivative[k];
+  if (!EvaluateIsentrope(fluid, x + SONIC_DELTA, shifted, unused, referenceSound2)) return false;
+  const double soundPlus = SU2_TYPE::GetValue(fluid.GetSoundSpeed());
+  shifted = state;
+  for (auto k = 0u; k < 3; ++k) shifted[k] -= SONIC_DELTA * derivative[k];
+  if (!EvaluateIsentrope(fluid, x - SONIC_DELTA, shifted, unused, referenceSound2)) return false;
+  const double soundMinus = SU2_TYPE::GetValue(fluid.GetSoundSpeed());
+  const double slope = SU2_TYPE::GetValue(derivative[2]) - (soundPlus - soundMinus) / (2 * SONIC_DELTA);
+  if (!std::isfinite(slope) || fabs(slope) < MIN_SONIC_SLOPE) return false;
+  const su2double correction = -sonicResidual / slope;
+  for (auto k = 0u; k < 3; ++k) state[k] += correction * derivative[k];
+  x += correction;
+  return true;
+}
+
+/*--- General EOS: integrate from the interior pressure to the imposed one, or to the sonic point. Adaptive RK4 with
+ * step doubling. The EOS must be at the interior state. ---*/
+OutletStatus IntegrateIsentrope(CFluidModel& fluid, su2double targetPressure, OutletState& state) {
+  using namespace OutletIsentrope;
+  const auto rho = state[0], energy = state[1];
+  const auto pressure = fluid.GetPressure(), sound2 = fluid.GetSoundSpeed2();
+  const su2double sound = sqrt(sound2);
+  su2double x = log(pressure), end = log(targetPressure);
+  const auto direction = end >= x ? 1.0 : -1.0;
+  su2double h = direction * FIRST_STEP;
+  bool finished = false;
+  for (auto iteration = 0ul; iteration < MAX_STEPS; ++iteration) {
+    if (fabs(end - x) < FINISH_TOL) {
+      /*--- One Euler step keeps the dependence on the inputs of the tiny remaining change. ---*/
+      OutletState derivative;
+      if (!EvaluateIsentrope(fluid, x, state, derivative, sound2)) return OutletStatus::InvalidState;
+      for (auto k = 0u; k < 3; ++k) state[k] += (end - x) * derivative[k];
+      x = end;
+      finished = true;
+      break;
+    }
+    if (fabs(h) > fabs(end - x)) h = end - x;
+    OutletState coarse, half, fine;
+    const bool valid = StepIsentrope(fluid, x, state, h, coarse, sound2) &&
+                       StepIsentrope(fluid, x, state, .5 * h, half, sound2) &&
+                       StepIsentrope(fluid, x + .5 * h, half, .5 * h, fine, sound2);
+    /*--- Error of density, energy and velocity, scaled by typical values. ---*/
+    su2double error = 1;
+    if (valid)
+      error = fmax(fabs(fine[0] - coarse[0]) / (rho + fabs(fine[0])),
+                   fmax(fabs(fine[1] - coarse[1]) / (fabs(energy) + sound2 + fabs(fine[1])),
+                        fabs(fine[2] - coarse[2]) / (sound + fabs(fine[2]))));
+    if (!valid || error > STEP_TOL) {
+      h *= .5;
+      if (fabs(h) < MIN_STEP) return OutletStatus::InvalidState;
+      continue;
+    }
+    if (fine[2] >= sqrt(fluid.GetSoundSpeed2())) {
+      if (!FindSonicState(fluid, x, state, h, sound2)) return OutletStatus::InvalidState;
+      finished = true;
+      break;
+    }
+    x += h;
+    state = fine;
+    if (error < GROW_TOL) h *= 2;
+  }
+  if (!finished) return OutletStatus::InvalidState;
+  fluid.SetTDState_rhoe(state[0], state[1]);
+  if (!IsOutletEOSStateValid(fluid)) return OutletStatus::InvalidState;
+  if (fabs(fluid.GetPressure() / exp(x) - 1) > PRESSURE_TOL) return OutletStatus::InvalidState;
+  if (state[2] <= -fluid.GetSoundSpeed()) return OutletStatus::Backflow;
+  return OutletStatus::Valid;
+}
+}  // namespace
+
+CEulerSolver::PressureOutletStatus CEulerSolver::ComputePressureOutletState(
+    CFluidModel* fluidModel, unsigned short nDim, const su2double* interior, const su2double* normal,
+    su2double gridNormal, su2double targetPressure, su2double turbulentK, bool idealGas, su2double gamma,
+    su2double* boundary) {
+  auto& fluid = *fluidModel;
+  if (!(targetPressure > 0) || !std::isfinite(SU2_TYPE::GetValue(targetPressure))) return OutletStatus::InvalidState;
+  su2double velocity[MAXNDIM] = {0.0}, energy, normalVelocity;
+  if (!SetOutletInterior(fluid, nDim, interior, normal, gridNormal, turbulentK, velocity, energy, normalVelocity))
+    return OutletStatus::InvalidState;
+  const su2double sound = sqrt(fluid.GetSoundSpeed2());
+
+  /*--- Wave directions: q-a, q, q+a with q relative to the grid. ---*/
+  if (normalVelocity <= -sound) return OutletStatus::Backflow;
+  if (normalVelocity >= sound) {
+    for (auto iVar = 0u; iVar < nDim + 2u; ++iVar) boundary[iVar] = interior[iVar];
+    return OutletStatus::Valid;
+  }
+
+  OutletState state = {interior[0], energy, normalVelocity};
+  const auto status = idealGas ? IdealGasOutletState(fluid, targetPressure, gamma, state)
+                               : IntegrateIsentrope(fluid, targetPressure, state);
+  if (status != OutletStatus::Valid) return status;
+
+  /*--- Lab-frame momentum with the interior tangential velocity; the total energy includes k again. ---*/
+  boundary[0] = state[0];
+  for (auto iDim = 0u; iDim < nDim; ++iDim) {
+    velocity[iDim] += (state[2] - normalVelocity) * normal[iDim];
+    boundary[iDim + 1] = state[0] * velocity[iDim];
+  }
+  boundary[nDim + 1] =
+      state[0] * (fluid.GetStaticEnergy() + 0.5 * GeometryToolbox::SquaredNorm(nDim, velocity) + turbulentK);
+  return OutletStatus::Valid;
+}
+
 void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                               CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker) {
@@ -5442,7 +5667,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       case STATIC_PRESSURE:
 
-        /*--- Only pressure is prescribed; CFluidModel::ComputePressureOutletState derives density and energy on the isentrope. ---*/
+        /*--- Only pressure is prescribed; ComputePressureOutletState derives density and energy on the isentrope. ---*/
         Pressure_e = config->GetRiemann_Var1(Marker_Tag);
         Pressure_e /= config->GetPressure_Ref();
         Density_e = Density_i;
@@ -5459,7 +5684,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       }
 
       // A linear characteristic jump can leave the EOS validity range for a large pressure change;
-      // static-pressure outlets instead follow the nonlinear isentrope in CFluidModel::ComputePressureOutletState.
+      // static-pressure outlets instead follow the nonlinear isentrope in ComputePressureOutletState.
       if (!pressureOutflow || implicit) {
         /*--- Compute P (matrix of right eigenvectors) ---*/
         conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
@@ -5513,12 +5738,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
       if (pressureOutflow) {
-        const auto status = GetFluidModel()->ComputePressureOutletState(nDim, u_i, UnitNormal, gridNormal, Pressure_e, u_b, tke_i, ideal_gas ? Gamma : su2double(0.0));
-        if (status != CFluidModel::PressureOutletStatus::Valid) {
+        const auto status = ComputePressureOutletState(GetFluidModel(), nDim, u_i, UnitNormal, gridNormal, Pressure_e,
+                                                       tke_i, ideal_gas, Gamma, u_b);
+        if (status != PressureOutletStatus::Valid) {
           // MPI error reporting uses shared state; only one OpenMP thread may enter it.
           SU2_OMP_CRITICAL
           {
-            if (status == CFluidModel::PressureOutletStatus::Backflow)
+            if (status == PressureOutletStatus::Backflow)
               SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
             else
               SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
@@ -6009,13 +6235,13 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         if (pressureOutflow) {
           // Apply each span's pressure to the local state; using a span average here would discard local waves.
           const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
-          const auto status = GetFluidModel()->ComputePressureOutletState(nDim, u_i, UnitNormal, gridNormal, Pressure_e,
-                                                   u_b, tke_i, ideal_gas ? Gamma : su2double(0.0));
-          if (status != CFluidModel::PressureOutletStatus::Valid) {
+          const auto status = ComputePressureOutletState(GetFluidModel(), nDim, u_i, UnitNormal, gridNormal, Pressure_e,
+                                                         tke_i, ideal_gas, Gamma, u_b);
+          if (status != PressureOutletStatus::Valid) {
             // MPI error reporting uses shared state; only one OpenMP thread may enter it.
             SU2_OMP_CRITICAL
             {
-              if (status == CFluidModel::PressureOutletStatus::Backflow)
+              if (status == PressureOutletStatus::Backflow)
                 SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
               else
                 SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +
@@ -7516,13 +7742,13 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     const auto* interior = nodes->GetSolution(iPoint);
     su2double boundary[MAXNVAR] = {};
     // Ordinary compressible outlets use the ideal-gas path; real-gas pressure outlets use BC_Riemann.
-    const auto status = GetFluidModel()->ComputePressureOutletState(nDim, interior, UnitNormal, gridNormal, pressure,
-                                             boundary, tke, Gamma);
-    if (status != CFluidModel::PressureOutletStatus::Valid) {
+    const auto status = ComputePressureOutletState(GetFluidModel(), nDim, interior, UnitNormal, gridNormal, pressure,
+                                                   tke, true, Gamma, boundary);
+    if (status != PressureOutletStatus::Valid) {
       // MPI error reporting uses shared state; only one OpenMP thread may enter it.
       SU2_OMP_CRITICAL
       {
-        if (status == CFluidModel::PressureOutletStatus::Backflow)
+        if (status == PressureOutletStatus::Backflow)
           SU2_MPI::Error("Static-pressure outflow requires an inflow state for backflow with all characteristics incoming on marker " + Marker_Tag, CURRENT_FUNCTION);
         else
           SU2_MPI::Error("Unable to construct an admissible static-pressure outflow state on marker " + Marker_Tag +

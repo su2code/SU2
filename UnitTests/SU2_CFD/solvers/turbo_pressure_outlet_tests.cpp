@@ -195,9 +195,9 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializ
             turbo->GetNormal(unit);
             for (auto d = 0u; d < dim; ++d) normal[d] = -normal[d];
             su2double boundary[5];
-            REQUIRE(gas->ComputePressureOutletState(dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit),
-                                                    target(span), boundary, turbulentK,
-                                                    kind == 0 ? 1.4 : 0) == CFluidModel::PressureOutletStatus::Valid);
+            REQUIRE(CEulerSolver::ComputePressureOutletState(
+                        gas.get(), dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), target(span),
+                        turbulentK, kind == 0, 1.4, boundary) == CEulerSolver::PressureOutletStatus::Valid);
             auto flux = [&](const su2double* boundary, su2double* result) {
               su2double v[3];
               for (auto d = 0u; d < dim; ++d) v[d] = boundary[d + 1] / boundary[0];
