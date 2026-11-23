@@ -2426,12 +2426,12 @@ void CSolver::AllocateAdaptiveMetricArrays(unsigned short nSensors) {
 void CSolver::SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *config) {
   /*--- Copy PRIMITIVE sensor values from primitive variable array into Sensor_Adapt.
    *    Other sensor types are skipped here. ---*/
-  for (size_t iSensor = 0; iSensor < AdaptiveMetricSensors.size(); ++iSensor) {
+  for (auto iSensor = 0ul; iSensor < AdaptiveMetricSensors.size(); ++iSensor) {
     if (AdaptiveMetricSensors[iSensor].type != SensorType::PRIMITIVE) continue;
 
     const auto var_idx = AdaptiveMetricSensors[iSensor].var_idx;
     SU2_OMP_FOR_DYN(256)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       base_nodes->SetSensor_Adapt(iPoint, iSensor, base_nodes->GetPrimitive(iPoint, var_idx));
     }
     END_SU2_OMP_FOR
@@ -2441,13 +2441,13 @@ void CSolver::SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *confi
 void CSolver::SetSolverField_SensorAdapt(CSolver **solver, CGeometry *geometry, const CConfig *config) {
   /*--- Copy SOLVER_FIELD sensor values from the solution of their source solver into Sensor_Adapt.
    *    All solvers share the mesh, so point indices coincide. ---*/
-  for (size_t iSensor = 0; iSensor < AdaptiveMetricSensors.size(); ++iSensor) {
+  for (auto iSensor = 0ul; iSensor < AdaptiveMetricSensors.size(); ++iSensor) {
     if (AdaptiveMetricSensors[iSensor].type != SensorType::SOLVER_FIELD) continue;
 
     const auto var_idx = AdaptiveMetricSensors[iSensor].var_idx;
     const auto* source_nodes = solver[AdaptiveMetricSensors[iSensor].iSol]->GetNodes();
     SU2_OMP_FOR_DYN(256)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       base_nodes->SetSensor_Adapt(iPoint, iSensor, source_nodes->GetSolution(iPoint, var_idx));
     }
     END_SU2_OMP_FOR
@@ -2457,12 +2457,12 @@ void CSolver::SetSolverField_SensorAdapt(CSolver **solver, CGeometry *geometry, 
 void CSolver::SetComputed_SensorAdapt(CGeometry *geometry, const CConfig *config) {
   /*--- Evaluate COMPUTED sensors via their stored lambdas (e.g. Mach number).
    *    Each lambda receives a pointer to the full primitive row for the point. ---*/
-  for (size_t iSensor = 0; iSensor < AdaptiveMetricSensors.size(); ++iSensor) {
+  for (auto iSensor = 0ul; iSensor < AdaptiveMetricSensors.size(); ++iSensor) {
     if (AdaptiveMetricSensors[iSensor].type != SensorType::COMPUTED) continue;
 
     const auto& fn = AdaptiveMetricSensors[iSensor].fn;
     SU2_OMP_FOR_DYN(256)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       base_nodes->SetSensor_Adapt(iPoint, iSensor, fn(base_nodes->GetPrimitive(iPoint)));
     }
     END_SU2_OMP_FOR

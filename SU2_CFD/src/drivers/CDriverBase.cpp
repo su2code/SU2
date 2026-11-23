@@ -443,8 +443,9 @@ short CDriverBase::GetAdaptiveMetricSensorIndex(const string& sensor_name) const
   auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
   if (flow_solver == nullptr) return -1;
   const auto& sensors = flow_solver->GetAdaptiveMetricSensors();
-  for (short i = 0; i < static_cast<short>(sensors.size()); ++i) {
-    if (AdaptiveMetricUtils::SensorKey(sensors[i].name) == AdaptiveMetricUtils::SensorKey(sensor_name)) return i;
+  for (auto iSensor = 0ul; iSensor < sensors.size(); ++iSensor) {
+    if (AdaptiveMetricUtils::SensorKey(sensors[iSensor].name) == AdaptiveMetricUtils::SensorKey(sensor_name))
+      return static_cast<short>(iSensor);
   }
   return -1;
 }
@@ -480,7 +481,7 @@ void CDriverBase::SetAdaptSensor(unsigned short iSensor, const vector<passivedou
                    std::to_string(nPoint) + " (all nodes).", CURRENT_FUNCTION);
   }
 
-  for (unsigned long iPoint = 0; iPoint < values.size(); iPoint++) {
+  for (auto iPoint = 0ul; iPoint < values.size(); iPoint++) {
     nodes->SetSensor_Adapt(iPoint, iSensor, values[iPoint]);
   }
 }

@@ -136,7 +136,7 @@ SolverFieldNameToIndexMap(const CConfig* config, CSolver** solver_container) {
 
   if (solver_container[SPECIES_SOL] != nullptr &&
       config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
-    for (unsigned short iVar = 0; iVar < solver_container[SPECIES_SOL]->GetnVar(); iVar++) {
+    for (auto iVar = 0u; iVar < solver_container[SPECIES_SOL]->GetnVar(); iVar++) {
       field_map["SPECIES_" + std::to_string(iVar)] = {SPECIES_SOL, iVar};
     }
   }

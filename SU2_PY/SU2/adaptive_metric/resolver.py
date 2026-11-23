@@ -42,7 +42,7 @@ class CustomSensorRegistry:
         Args:
             sensors: Optional mapping of sensor name to callable. Each callable
                 must have the signature ``fn(driver) -> list[float]`` and names
-                must match entries in ``ADAPTIVE_METRIC_SENSOR`` in the config exactly.
+                must match entries in ``ADAPTIVE_METRIC_SENSOR`` in the config (case-insensitive).
         """
         self._sensors: dict[str, SensorFn] = (
             dict(sensors) if sensors is not None else {}
