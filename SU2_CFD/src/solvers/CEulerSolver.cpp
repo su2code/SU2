@@ -5571,8 +5571,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       const auto Energy_i = nodes->GetEnergy(iPoint);
       const bool pressureOutflow = config->GetKind_Data_Riemann(Marker_Tag) == STATIC_PRESSURE;
-      const auto tke_i = pressureOutflow && tkeNeeded ? solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0) : su2double(0.0);
-      const su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i - tke_i;
+      const su2double StaticEnergy_i = Energy_i - 0.5 * Velocity2_i;
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -5746,7 +5745,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         const su2double gridNormal =
             dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal)
                          : su2double(0.0);
-        BuildPressureOutletState(Marker_Tag, u_i, UnitNormal, gridNormal, Pressure_e, tke_i, ideal_gas, u_b);
+        /*--- As for the other Riemann kinds, the SST turbulent kinetic energy is part of the EOS energy here. ---*/
+        BuildPressureOutletState(Marker_Tag, u_i, UnitNormal, gridNormal, Pressure_e, 0.0, ideal_gas, u_b);
       } else {
         /*--- Compute the characteristic jumps ---*/
         for (auto iVar = 0u; iVar < nVar; iVar++){
@@ -5773,7 +5773,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Velocity2_b = GeometryToolbox::SquaredNorm(nDim, Velocity_b);
 
       const su2double Energy_b = u_b[nVar-1]/Density_b;
-      const su2double StaticEnergy_b = Energy_b - 0.5*Velocity2_b - tke_i;
+      const su2double StaticEnergy_b = Energy_b - 0.5 * Velocity2_b;
       GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
 
       /*--- Store number of Newton iterations at BC ---*/
@@ -5784,8 +5784,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Temperature_b = GetFluidModel()->GetTemperature();
       const su2double Enthalpy_b = Energy_b + Pressure_b/Density_b;
       const su2double Kappa_b = GetFluidModel()->GetdPde_rho() / Density_b;
-      // With SST, E=e+|u|^2/2+k; differentiating pressure at fixed k requires e+k in chi.
-      const su2double Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * (StaticEnergy_b + tke_i);
+      const su2double Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
 
       /*--- Scalar boundary solvers also need the reconstructed primitive state in Euler runs. ---*/
       auto* V_boundary = GetCharacPrimVar(val_marker, iVertex);
@@ -6037,10 +6036,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         Density_i = nodes->GetDensity(iPoint);
 
         Energy_i = nodes->GetEnergy(iPoint);
-        // Keep SST kinetic energy in the conserved state, but exclude it from the thermal EOS input.
-        const su2double tke_i = pressureOutflow && tkeNeeded
-                                   ? solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0) : su2double(0.0);
-        StaticEnergy_i = Energy_i - 0.5*Velocity2_i - tke_i;
+        StaticEnergy_i = Energy_i - 0.5 * Velocity2_i;
 
         GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -6050,7 +6046,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         SoundSpeed_i = GetFluidModel()->GetSoundSpeed();
 
         Kappa_i = GetFluidModel()->GetdPde_rho() / Density_i;
-        Chi_i = GetFluidModel()->GetdPdrho_e() - Kappa_i * (StaticEnergy_i + tke_i);
+        Chi_i = GetFluidModel()->GetdPdrho_e() - Kappa_i * StaticEnergy_i;
 
         ProjVelocity_i = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -6209,7 +6205,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         if (pressureOutflow) {
           // Apply each span's pressure to the local state; using a span average here would discard local waves.
           const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
-          BuildPressureOutletState(Marker_Tag, u_i, UnitNormal, gridNormal, Pressure_e, tke_i, ideal_gas, u_b);
+          /*--- As for the other Riemann kinds, the SST turbulent kinetic energy is part of the EOS energy here. ---*/
+          BuildPressureOutletState(Marker_Tag, u_i, UnitNormal, gridNormal, Pressure_e, 0.0, ideal_gas, u_b);
         } else {
           /* --- Compute the boundary state u_e --- */
           u_e[0] = Density_e;
@@ -6242,13 +6239,13 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           Velocity2_b += Velocity_b[iDim]*Velocity_b[iDim];
         }
         Energy_b = u_b[nVar-1]/Density_b;
-        StaticEnergy_b = Energy_b - 0.5*Velocity2_b - tke_i;
+        StaticEnergy_b = Energy_b - 0.5 * Velocity2_b;
         GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
         Pressure_b = GetFluidModel()->GetPressure();
         Temperature_b = GetFluidModel()->GetTemperature();
         Enthalpy_b = Energy_b + Pressure_b/Density_b;
         Kappa_b = GetFluidModel()->GetdPde_rho() / Density_b;
-        Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * (StaticEnergy_b + tke_i);
+        Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
 
         // Turbulence and other scalar boundary solvers read this state even when viscous fluxes are disabled.
         V_boundary[prim_idx.Temperature()] = Temperature_b;

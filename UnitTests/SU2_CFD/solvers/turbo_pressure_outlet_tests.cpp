@@ -196,13 +196,14 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializ
             for (auto d = 0u; d < dim; ++d) normal[d] = -normal[d];
             su2double boundary[5];
             REQUIRE(CEulerSolver::ComputePressureOutletState(
-                        gas.get(), dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), target(span),
-                        turbulentK, kind == 0, 1.4, boundary) == CEulerSolver::PressureOutletStatus::Valid);
+                        gas.get(), dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), target(span), 0,
+                        kind == 0, 1.4, boundary) == CEulerSolver::PressureOutletStatus::Valid);
             auto flux = [&](const su2double* boundary, su2double* result) {
               su2double v[3];
               for (auto d = 0u; d < dim; ++d) v[d] = boundary[d + 1] / boundary[0];
               const su2double energy = boundary[dim + 1] / boundary[0];
-              gas->SetTDState_rhoe(boundary[0], energy - .5 * GeometryToolbox::SquaredNorm(dim, v) - turbulentK);
+              // As at the other Riemann kinds, the SST k stays in the energy passed to the EOS.
+              gas->SetTDState_rhoe(boundary[0], energy - .5 * GeometryToolbox::SquaredNorm(dim, v));
               const su2double pressure = gas->GetPressure(), h = energy + pressure / boundary[0];
               numerics.GetInviscidProjFlux(&boundary[0], v, &pressure, &h, normal, result);
               // The moving-grid transport term occurs once, in both explicit and implicit boundary paths.
@@ -230,8 +231,8 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializ
             // The implicit matrix uses a frozen characteristic projection, with local span pressure and SST k.
             for (auto column = 0u; column < dim + 2; ++column) {
               su2double plus[5], minus[5], fp[5], fm[5], increment[5];
-              OutgoingOutletIncrement(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), turbulentK,
-                                      column, increment);
+              OutgoingOutletIncrement(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit), 0, column,
+                                      increment);
               const double delta = 2e-5 * fmax(fabs(SU2_TYPE::GetValue(state[column])),
                                                column == 0 ? rho : rho * SU2_TYPE::GetValue(sound));
               for (auto k = 0u; k < dim + 2; ++k) {
@@ -293,7 +294,7 @@ TEST_CASE("TurboRiemann real-gas radial startup remains admissible", "[Pressure-
   TurboPressureOutlet(3, 1, {.3}, {.0006666168959384}, false, true);
 }
 
-TEST_CASE("TurboRiemann pressure outlet separates frozen turbulence energy from the EOS",
+TEST_CASE("TurboRiemann pressure outlet treats SST energy like the other Riemann kinds",
           "[Pressure-outlet][Turbo-outlet]") {
   for (auto kind : {0u, 1u}) TurboPressureOutlet(3, kind, {.3}, {.95}, true, true, true, false, false, 13);
 }
