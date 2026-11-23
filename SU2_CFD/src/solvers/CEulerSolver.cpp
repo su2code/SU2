@@ -5285,6 +5285,7 @@ constexpr double STEP_TOL = 1e-10;              /*!< \brief Largest accepted ste
 constexpr double GROW_TOL = 1e-12;              /*!< \brief Step-doubling error below which the step is doubled. */
 constexpr double MIN_STEP = 1e-12;              /*!< \brief Smallest step in log(p) before the integration fails. */
 constexpr double FINISH_TOL = 1e-13;            /*!< \brief Remaining change of log(p) taken with one Euler step. */
+constexpr double DIRECT_STEP = 1e-2;            /*!< \brief Largest change of log(p) taken with one RK4 step. */
 constexpr double EOS_TOL = 1e-6;                /*!< \brief Largest relative change of density or energy by the EOS. */
 constexpr double PRESSURE_TOL = 1e-6;           /*!< \brief Largest relative pressure error at the end. */
 constexpr unsigned short SONIC_BISECTIONS = 40; /*!< \brief Bisections of the step that crosses the sonic point. */
@@ -5377,9 +5378,9 @@ bool StepIsentrope(CFluidModel& fluid, su2double x, const OutletState& y, su2dou
 bool FindSonicState(CFluidModel& fluid, su2double& x, OutletState& state, su2double h, su2double referenceSound2) {
   using namespace OutletIsentrope;
   OutletState half, fine;
-  su2double lower = 0, upper = 1;
+  su2double lower = 0, upper = 1, fraction = 1;
   for (auto k = 0u; k < SONIC_BISECTIONS; ++k) {
-    const su2double fraction = .5 * (lower + upper);
+    fraction = .5 * (lower + upper);
     if (!StepIsentrope(fluid, x, state, fraction * h * .5, half, referenceSound2) ||
         !StepIsentrope(fluid, x + fraction * h * .5, half, fraction * h * .5, fine, referenceSound2))
       return false;
@@ -5388,7 +5389,8 @@ bool FindSonicState(CFluidModel& fluid, su2double& x, OutletState& state, su2dou
     else
       lower = fraction;
   }
-  x += .5 * (lower + upper) * h;
+  /*--- The state and log(p) of the last bisection step. ---*/
+  x += fraction * h;
   state = fine;
   OutletState derivative;
   if (!EvaluateIsentrope(fluid, x, state, derivative, referenceSound2)) return false;
@@ -5421,7 +5423,17 @@ OutletStatus IntegrateIsentrope(CFluidModel& fluid, su2double targetPressure, Ou
   const auto direction = end >= x ? 1.0 : -1.0;
   su2double h = direction * FIRST_STEP;
   bool finished = false;
-  for (auto iteration = 0ul; iteration < MAX_STEPS; ++iteration) {
+  /*--- A small change (e.g. at a converged outlet) needs no step control: one RK4 step is accurate to round-off
+   * there. The adaptive integration below is used if this step fails or reaches the sonic point. ---*/
+  if (fabs(end - x) >= FINISH_TOL && fabs(end - x) < DIRECT_STEP) {
+    OutletState next;
+    if (StepIsentrope(fluid, x, state, end - x, next, sound2) && next[2] < sqrt(fluid.GetSoundSpeed2())) {
+      x = end;
+      state = next;
+      finished = true;
+    }
+  }
+  for (auto iteration = 0ul; !finished && iteration < MAX_STEPS; ++iteration) {
     if (fabs(end - x) < FINISH_TOL) {
       /*--- One Euler step keeps the dependence on the inputs of the tiny remaining change. ---*/
       OutletState derivative;

@@ -93,7 +93,7 @@ TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressu
     // Subsonic reverse flow, outflow, near-sonic flow and supersonic outflow; the lowest pressure ratio stops the
     // expansion at the sonic point.
     for (const auto mach : {-.3, .3, .99, 1.4})
-      for (const auto ratio : {1., .95, .001}) {
+      for (const auto ratio : {1., .995, .95, .001}) {
         CAPTURE(kind, mach, ratio);
         const double u = mach * a + 20;
         const double values[6] = {rho, rho * u, rho * 5, rho * (e + .5 * (u * u + 25)), ratio * p, 20};

@@ -156,7 +156,7 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
       gas->SetTDState_Prho(p, rho);
       const auto e = gas->GetStaticEnergy(), sound = gas->GetSoundSpeed(), entropy = gas->GetEntropy();
       // The smallest ratio is 1000/1500112, reproducing the startup expansion past the sonic limit.
-      for (const auto ratio : {1., .9, 1.05, .0006666168959384}) {
+      for (const auto ratio : {1., .995, .9, 1.05, .0006666168959384}) {
         su2double out[2][5] = {};
         // Boost both flow and grid: the relative wave speeds and reconstructed thermodynamics must agree.
         for (auto frame = 0u; frame < 2; ++frame) {
@@ -231,6 +231,48 @@ TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame
       CHECK(CEulerSolver::ComputePressureOutletState(gas.get(), dim, state, normal, 0, p, 17.5, false, 0, unchanged) ==
             CEulerSolver::PressureOutletStatus::Backflow);
     }
+  }
+}
+
+namespace {
+// Counts the EOS evaluations of a wrapped fluid model.
+class CountingFluid final : public CFluidModel {
+  CFluidModel& gas;
+
+ public:
+  unsigned long calls = 0;
+  explicit CountingFluid(CFluidModel& wrapped) : gas(wrapped) {}
+  void SetTDState_rhoe(su2double rho, su2double e) override {
+    ++calls;
+    gas.SetTDState_rhoe(rho, e);
+    Density = gas.GetDensity();
+    StaticEnergy = gas.GetStaticEnergy();
+    Pressure = gas.GetPressure();
+    Temperature = gas.GetTemperature();
+    SoundSpeed2 = gas.GetSoundSpeed2();
+    Entropy = gas.GetEntropy();
+  }
+};
+}  // namespace
+
+TEST_CASE("Small pressure changes take a single integration step", "[Pressure-outlet]") {
+  // A converged outlet imposes almost the interior pressure: one RK4 step (4 stages and a final check), plus the
+  // interior and boundary states.
+  auto gas = MakeOutletTestGas(1);
+  CountingFluid counting(*gas);
+  const su2double p = 1500112, rho = 230, normal[2] = {1, 0};
+  gas->SetTDState_Prho(p, rho);
+  const su2double e = gas->GetStaticEnergy(), a = gas->GetSoundSpeed(),
+                  state[4] = {rho, rho * .3 * a, 0, rho * (e + .045 * a * a)};
+  for (const auto ratio : {1.001, .999, .995}) {
+    CAPTURE(ratio);
+    su2double boundary[4];
+    counting.calls = 0;
+    REQUIRE(CEulerSolver::ComputePressureOutletState(&counting, 2, state, normal, 0, ratio * p, 0, false, 0,
+                                                     boundary) == CEulerSolver::PressureOutletStatus::Valid);
+    CHECK(counting.calls == 7);
+    gas->SetTDState_rhoe(boundary[0], boundary[3] / boundary[0] - .5 * pow(boundary[1] / boundary[0], 2));
+    CHECK(SU2_TYPE::GetValue(gas->GetPressure()) == Approx(SU2_TYPE::GetValue(ratio * p)).epsilon(1e-9));
   }
 }
 
