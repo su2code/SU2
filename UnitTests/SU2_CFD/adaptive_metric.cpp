@@ -39,7 +39,8 @@
 
 namespace {
 
-/*--- Unit cube, so the domain volume is 1. ---*/
+/*--- Normalization parameters used in the checks. They must match the ADAPTIVE_METRIC_* options in
+ *    AdaptiveMetricTestCase::configOptions. The mesh is a unit cube, so the domain volume is 1. ---*/
 constexpr unsigned long COMPLEXITY = 1000;
 constexpr passivedouble HMIN = 1e-8, HMAX = 100.0, ARMAX = 1e6;
 
@@ -48,6 +49,7 @@ constexpr passivedouble HMIN = 1e-8, HMAX = 100.0, ARMAX = 1e6;
  *        0: identity, 1: rank-one v v^T with v = (1,1,0), 2: zero.
  */
 struct AdaptiveMetricTestCase {
+  /*--- The ADAPTIVE_METRIC_* values must match the constants above. ---*/
   const std::string configOptions =
       "SOLVER= EULER\n"
       "MESH_FORMAT= BOX\n"
@@ -60,9 +62,7 @@ struct AdaptiveMetricTestCase {
       "COMPUTE_ADAPTIVE_METRIC= YES\n"
       "ADAPTIVE_METRIC_SENSOR= (IDENTITY, RANK_ONE, ZERO)\n"
       "ADAPTIVE_METRIC_NORM= 2\n"
-      "ADAPTIVE_METRIC_COMPLEXITY= " +
-      std::to_string(COMPLEXITY) +
-      "\n"
+      "ADAPTIVE_METRIC_COMPLEXITY= 1000\n"
       "ADAPTIVE_METRIC_HMIN= 1E-8\n"
       "ADAPTIVE_METRIC_HMAX= 100.0\n"
       "ADAPTIVE_METRIC_ARMAX= 1E6\n";
