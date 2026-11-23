@@ -714,10 +714,11 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   /*--- The source term for progress variable is always positive, we clip from below to make sure. --- */
   if (idx_progvar >= 0) table_sources[idx_progvar] = fmax(0, table_sources[idx_progvar]);
 
-  /*--- Variance source 2 (mean(phi S) - mean(phi) mean(S)); the manifold gives mean(phi S). ---*/
-  for (const auto& var_mean : variance_sources)
-    table_sources[var_mean.first] =
-        2.0 * (table_sources[var_mean.first] - scalars[var_mean.second] * table_sources[var_mean.second]);
+  /*--- Variance source 2 (mean(phi S) - mean(phi) mean(S)), from mean(phi S) unless the manifold holds it. ---*/
+  if (!flamelet_config_options.tabulated_variance_source)
+    for (const auto& var_mean : variance_sources)
+      table_sources[var_mean.first] =
+          2.0 * (table_sources[var_mean.first] - scalars[var_mean.second] * table_sources[var_mean.second]);
   nodes->SetTableMisses(iPoint, misses);
 
   vector<su2double> source_scalar(flamelet_config_options.n_scalars);

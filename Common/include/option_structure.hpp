@@ -1623,6 +1623,7 @@ struct FluidFlamelet_ParsedOptions {
   int idx_progvar_var = -1;           /*!< \brief Scalar index of the progress variable variance, -1 if absent. */
   int idx_mixfrac_var = -1;           /*!< \brief Scalar index of the mixture fraction variance, -1 if absent. */
   su2double variance_dissipation_coeff = 2.0; /*!< \brief C_d in the variance dissipation C_d rho (eps/k) var. */
+  bool tabulated_variance_source = false;     /*!< \brief The variance source column holds the chemical variance source itself. */
 
   std::string *controlling_variable_names; /*!< \brief Names of the independent, transported scalars. */
   std::string* cv_source_names;            /*!< \brief Names of the source terms of the independent, transported scalars. */

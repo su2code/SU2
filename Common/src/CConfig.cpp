@@ -1530,6 +1530,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief FLAMELET_VARIANCE_DISSIPATION_COEFF \n DESCRIPTION: Coefficient C_d of the scalar variance dissipation C_d rho (eps/k) var \ingroup Config*/
   addDoubleOption("FLAMELET_VARIANCE_DISSIPATION_COEFF", flamelet_ParsedOptions.variance_dissipation_coeff, 2.0);
+  /*!\brief FLAMELET_TABULATED_VARIANCE_SOURCE \n DESCRIPTION: The variance source column of the manifold is the chemical variance source 2 (mean(phi S) - mean(phi) mean(S)) instead of mean(phi S) \ingroup Config*/
+  addBoolOption("FLAMELET_TABULATED_VARIANCE_SOURCE", flamelet_ParsedOptions.tabulated_variance_source, false);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
