@@ -31,7 +31,8 @@
 #include "../../../SU2_CFD/include/variables/CNSVariable.hpp"
 
 namespace {
-// Unit flux matrices expose I + the outgoing-wave projection in the assembled implicit block.
+// Returns the boundary state as the residual and unit flux Jacobians, so the assembled block shows which derivatives
+// the outlet adds to the implicit matrix.
 class OutletStateProbe final : public CNumerics {
   su2double state[5] = {}, identity[5][5] = {};
   const su2double* rows[5];
@@ -142,22 +143,16 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
         CHECK(SU2_TYPE::GetValue(solver->LinSysRes(point, row)) ==
               Approx(SU2_TYPE::GetValue(expected[row])).epsilon(1e-8).margin(1e-8));
       }
-      const su2double normal[3] = {1, 0, 0};
-      for (auto column = 0u; column < dim + 2; ++column) {
-        su2double increment[5];
-        OutgoingOutletIncrement(gas, dim, state, normal, grid[0], turbulentK, column, increment);
-        for (auto row = 0u; row < dim + 2; ++row) {
-          CHECK(solver->Jacobian.GetBlock(point, point)[row * (dim + 2) + column] ==
-                Approx(SU2_TYPE::GetValue(increment[row]) + (row == column ? 1. : 0.)).epsilon(1e-8).margin(1e-8));
-        }
-      }
+      // Only the flux derivative with respect to the interior state (unit here) enters the implicit matrix.
+      for (auto entry = 0u; entry < (dim + 2u) * (dim + 2u); ++entry)
+        CHECK(solver->Jacobian.GetBlock(point, point)[entry] == (entry % (dim + 3) == 0 ? 1. : 0.));
     }
     CHECK(CountOutletFallbacks(solver, test.config.get()) == (fallback ? domainVertices : 0));
   }
 }
 }  // namespace
 
-TEST_CASE("Ordinary pressure outlet uses relative normal characteristics and an outgoing-wave matrix",
+TEST_CASE("Ordinary pressure outlet uses relative normal characteristics and the interior flux Jacobian",
           "[Pressure-outlet]") {
   for (auto dim : {2u, 3u})
     for (const auto moving : {false, true})
@@ -174,7 +169,7 @@ TEST_CASE("Pressure outlet reconstruction is thread local", "[Pressure-outlet]")
   IdealOutlet(3, .3, .95, true, true);
 }
 
-TEST_CASE("Ordinary outlet projection keeps SST energy in the characteristic basis", "[Pressure-outlet]") {
+TEST_CASE("Ordinary pressure outlet keeps the SST energy out of the EOS", "[Pressure-outlet]") {
   for (auto dim : {2u, 3u})
     for (auto mach : {-.3, .3, 1.4}) IdealOutlet(dim, mach, .95, true, false, 1500);
 }

@@ -7831,37 +7831,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     auto residual = conv_numerics->ComputeResidual(config);
     LinSysRes.AddBlock(iPoint, residual);
-    if (implicit) {
-      su2double Pdata[MAXNVAR][MAXNVAR] = {}, Idata[MAXNVAR][MAXNVAR] = {};
-      su2double projection[MAXNVAR][MAXNVAR] = {}, matrix[MAXNVAR][MAXNVAR] = {};
-      su2double *P[MAXNVAR], *Pinv[MAXNVAR], *proj[MAXNVAR], *rows[MAXNVAR];
-      for (auto row = 0u; row < nVar; ++row) {
-        P[row] = Pdata[row];
-        Pinv[row] = Idata[row];
-        proj[row] = projection[row];
-        rows[row] = matrix[row];
-      }
-      const auto* velocity = V_domain + prim_idx.Velocity();
-      const su2double sound = V_domain[prim_idx.SoundSpeed()];
-      // Freeze the wave basis in the implicit update; the residual keeps the nonlinear outlet state.
-      // The general eigenvectors include frozen SST energy through enthalpy and chi.
-      const su2double rho = interior[0], enthalpy = V_domain[prim_idx.Enthalpy()];
-      const su2double kappa = Gamma_Minus_One, chi = -kappa * tke;
-      conv_numerics->GetPMatrix(&rho, velocity, &sound, &enthalpy, &chi, &kappa, UnitNormal, P);
-      conv_numerics->GetPMatrix_inv(Pinv, &rho, velocity, &sound, &chi, &kappa, UnitNormal);
-      const su2double q = GeometryToolbox::DotProduct(nDim, velocity, UnitNormal) - gridNormal;
-      su2double lambda[MAXNVAR];
-      for (auto iVar = 0u; iVar < nVar; ++iVar) lambda[iVar] = q;
-      lambda[nVar - 2] = q + sound;
-      lambda[nVar - 1] = q - sound;
-      OutgoingWaveProjection(nVar, P, Pinv, lambda, proj);
-      for (auto row = 0u; row < nVar; ++row)
-        for (auto col = 0u; col < nVar; ++col) {
-          matrix[row][col] = residual.jacobian_i[row][col];
-          for (auto k = 0u; k < nVar; ++k) matrix[row][col] += residual.jacobian_j[row][k] * projection[k][col];
-        }
-      Jacobian.AddBlock2Diag(iPoint, rows);
-    }
+    /*--- The implicit matrix treats the boundary state as fixed. ---*/
+    if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
   }
   END_SU2_OMP_FOR
 }
