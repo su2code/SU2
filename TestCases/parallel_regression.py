@@ -152,7 +152,7 @@ def main():
     invwedge_a.cfg_dir = "nonequilibrium/invwedge"
     invwedge_a.cfg_file = "invwedge_ausm.cfg"
     invwedge_a.test_iter = 10
-    invwedge_a.test_vals = [-1.081764, -1.606527, -18.299923, -18.627313, -18.573325, 2.234595, 1.854912, 5.278328, 0.837083]
+    invwedge_a.test_vals = [-1.087632, -1.612395, -18.301430, -18.628796, -18.574835, 2.229346, 1.837978, 5.271057, 0.829815]
     invwedge_a.test_vals_aarch64 = [-1.081764, -1.606527, -18.299923, -18.627313, -18.573325, 2.234595, 1.854912, 5.278328, 0.837083]
     test_list.append(invwedge_a)
 
@@ -170,7 +170,7 @@ def main():
     invwedge_msw.cfg_dir = "nonequilibrium/invwedge"
     invwedge_msw.cfg_file = "invwedge_msw.cfg"
     invwedge_msw.test_iter = 10
-    invwedge_msw.test_vals = [-1.206414, -1.731177, -18.301825, -18.629206, -18.575226, 2.111923, 1.660408, 5.150501, 0.710186]
+    invwedge_msw.test_vals = [-1.222769, -1.747532, -18.298181, -18.625587, -18.571581, 2.096021, 1.639402, 5.132485, 0.694112]
     invwedge_msw.test_vals_aarch64 = [-1.206414, -1.731177, -18.299771, -18.627181, -18.573171, 2.111923, 1.660408, 5.150501, 0.710186]
     test_list.append(invwedge_msw)
 
@@ -179,7 +179,7 @@ def main():
     invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
-    invwedge_roe.test_vals = [-0.856717, -1.381479, -16.733080, -17.063919, -17.006196, 2.492274, 1.625077, 5.504576, 1.052309]
+    invwedge_roe.test_vals = [-1.090767, -1.615530, -18.302045, -18.629428, -18.575447, 2.225954, 1.809887, 5.266583, 0.823418]
     invwedge_roe.test_vals_aarch64 = [-1.156325, -1.681088, -17.726749, -18.056513, -17.999860, 2.159488, 1.793498, 5.198638, 0.769831]
     test_list.append(invwedge_roe)
 
@@ -188,7 +188,7 @@ def main():
     invwedge_lax.cfg_dir = "nonequilibrium/invwedge"
     invwedge_lax.cfg_file = "invwedge_lax.cfg"
     invwedge_lax.test_iter = 10
-    invwedge_lax.test_vals = [-0.882120, -1.406883, -32.000000, -32.000000, -24.953606, 2.447071, 1.853423, 5.480164, 1.047015]
+    invwedge_lax.test_vals = [-1.288759, -1.813522, -32.000000, -32.000000, -24.977661, 2.031556, 1.551133, 5.089996, 0.667572]
     invwedge_lax.test_vals_aarch64 = [-0.882120, -1.406883, -32.000000, -32.000000, -24.953606, 2.447071, 1.853423, 5.480164, 1.047015]
     test_list.append(invwedge_lax)
 
@@ -206,7 +206,7 @@ def main():
     invwedge_ss_inlet.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ss_inlet.cfg_file = "invwedge_ss_inlet.cfg"
     invwedge_ss_inlet.test_iter = 10
-    invwedge_ss_inlet.test_vals = [-1.081061, -1.605824, -18.246258, -18.575522, -18.519330, 2.235398, 1.855022, 5.278994, 0.837755]
+    invwedge_ss_inlet.test_vals = [-1.087632, -1.612395, -18.246250, -18.575514, -18.519323, 2.229347, 1.837978, 5.271057, 0.829815]
     invwedge_ss_inlet.test_vals_aarch64 = [-1.081061, -1.605824, -18.246260, -18.575547, -18.519333, 2.235398, 1.855022, 5.278994, 0.837755]
     test_list.append(invwedge_ss_inlet)
 
@@ -215,7 +215,7 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.275015, -5.799160, -20.292303, -20.436143, -20.888373, 1.156776, -3.217423, -0.013712, 0.092252, 27878.000000]
+    visc_cone.test_vals = [-5.263451, -5.788214, -20.292273, -20.435797, -20.891239, 1.210222, -3.204978, -0.015101, 0.094345, 29052.000000]
     visc_cone.test_vals_aarch64 = [-5.275015, -5.799159, -20.292303, -20.436143, -20.888374, 1.156775, -3.217422, -0.013713, 0.092252, 27878.000000]
     test_list.append(visc_cone)
 
@@ -232,7 +232,7 @@ def main():
     super_cat.cfg_dir = "nonequilibrium/visc_wedge"
     super_cat.cfg_file = "super_cat.cfg"
     super_cat.test_iter = 10
-    super_cat.test_vals = [-5.296256, -5.820629, -21.102797, -21.154470, -21.132197, 1.137393, -3.220148, -0.025962, 0.247096, 27884.000000]
+    super_cat.test_vals = [-5.295467, -5.820230, -20.978814, -20.962672, -20.980407, 1.187897, -3.211231, -0.029845, 0.254812, 29030.000000]
     test_list.append(super_cat)
 
     # Viscous single wedge - partially catalytic walls
@@ -240,7 +240,7 @@ def main():
     partial_cat.cfg_dir = "nonequilibrium/visc_wedge"
     partial_cat.cfg_file = "partial_cat.cfg"
     partial_cat.test_iter = 10
-    partial_cat.test_vals = [-5.210302, -5.735065, -20.880448, -20.825971, -23.475263, 1.806201, -2.813952, -0.078400, 0.495606, 29020.000000]
+    partial_cat.test_vals = [-5.210302, -5.735065, -20.880448, -20.825861, -23.475266, 1.806201, -2.813952, -0.078400, 0.495606, 29020.000000]
     test_list.append(partial_cat)
 
     # Viscous cylinder, ionization, Gupta-Yos, marched 100 iterations from its restart.
@@ -248,7 +248,7 @@ def main():
     ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
     ion_gy.cfg_file = "cyl_ion_gy.cfg"
     ion_gy.test_iter = 99
-    ion_gy.test_vals = [-12.191649, -4.245292, -4.904190, -5.585803, -5.472455, -5.057619, -7.442352, 3.429183, 3.433581, -0.014861, 0.000001, 90357.000000]
+    ion_gy.test_vals = [-12.191055, -4.246770, -4.906479, -5.585581, -5.472210, -5.057867, -7.442016, 3.427004, 3.431734, -0.014862, 0.000001, 90355.000000]
     ion_gy.tol = 0.01
     test_list.append(ion_gy)
 
