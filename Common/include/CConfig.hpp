@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -81,7 +81,8 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
-  string FluidName;              /*!< \brief name of the applied fluid. */
+  string FluidName;               /*!< \brief name of the applied fluid. */
+  CanteraOptions cantera_ParsedOptions; /*!< \brief Options of the Cantera detailed chemistry model. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -515,7 +516,7 @@ private:
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
-  Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the heat equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
   LINEAR_SOLVER_INNER Kind_Linear_Solver_Inner; /*!< \brief Inner solver used in nested Krylov schemes. */
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
@@ -607,6 +608,7 @@ private:
   MUSCL_Kappa_Heat,        /*!< \brief Blending coefficient for U-MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_Kappa_AdjFlow,     /*!< \brief Blending coefficient for U-MUSCL scheme for the adj flow equations.*/
   MUSCL_Kappa_Species;     /*!< \brief Blending coefficient for U-MUSCL scheme for the species equations.*/
+  bool Use_Exact_HLLC_Jacobians; /*!< \brief Exact HLLC Jacobians with wave speeds held fixed. */
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
@@ -1185,7 +1187,7 @@ private:
 
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
-  su2double Max_Vel2;                   /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+  su2double Max_Vel2{0.0};              /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
   su2double RangePressure[2];           /*!< \brief The pressure difference pmax-pmin in the domain for the target mass flow rate scaling. */
   bool topology_optimization;           /*!< \brief If the structural solver should consider a variable density field to penalize element stiffness. */
   string top_optim_output_file;         /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
@@ -3408,6 +3410,14 @@ public:
   unsigned long GetInnerIter(void) const { return InnerIter; }
 
   /*!
+   * \brief Get the iteration counter that times a spark ignition.
+   * \return Outer iteration (multizone), time iteration (unsteady) or inner iteration.
+   */
+  unsigned long GetIgnitionIter() const {
+    return Multizone_Problem ? OuterIter : (Time_Domain ? TimeIter : InnerIter);
+  }
+
+  /*!
    * \brief Set the current physical time.
    * \param[in] val_t - Current physical time.
    */
@@ -4089,6 +4099,83 @@ public:
    * \brief Returns the name of the fluid we are using in CoolProp.
    */
   string GetFluid_Name(void) const { return FluidName; }
+
+  /*!
+   * \brief Returns the options of the Cantera detailed chemistry model.
+   */
+  const CanteraOptions& GetCanteraParsedOptions() const { return cantera_ParsedOptions; }
+
+  /*!
+   * \brief Returns the transport model used in Cantera.
+   */
+  const string& GetTransport_Model() const { return cantera_ParsedOptions.transport_model; }
+
+  /*!
+   * \brief Returns the chemical reaction mechanism file used in Cantera.
+   */
+  const string& GetChemical_MechanismFile() const { return cantera_ParsedOptions.mechanism_file; }
+
+  /*!
+   * \brief Returns the name of the phase in the chemical reaction mechanism file used in Cantera.
+   */
+  const string& GetPhase_Name() const { return cantera_ParsedOptions.phase_name; }
+
+  /*!
+   * \brief Returns the number of entries of CANTERA_SPECIES_NAMES, zero if all mechanism species are used.
+   */
+  unsigned short GetnCantera_SpeciesNames() const { return cantera_ParsedOptions.n_species_names; }
+
+  /*!
+   * \brief Returns the name of a species of the Cantera mixture, checked against the number of names.
+   */
+  const string& GetChemical_GasComposition(unsigned short val_index = 0) const {
+    if (val_index >= cantera_ParsedOptions.n_species_names) {
+      SU2_MPI::Error("Index out of range for CANTERA_SPECIES_NAMES.", CURRENT_FUNCTION);
+    }
+    return cantera_ParsedOptions.species_names[val_index];
+  }
+
+  /*!
+   * \brief Returns the label of a transported species in output fields: its name for Cantera if given, otherwise its index.
+   */
+  string GetSpecies_Label(unsigned short val_index) const {
+    const bool named = (Kind_FluidModel == FLUID_CANTERA) && (cantera_ParsedOptions.n_species_names != 0);
+    return named ? GetChemical_GasComposition(val_index) : to_string(val_index);
+  }
+
+  /*!
+   * \brief Get information about the Combustion-Detailed chemistry using Cantera.
+   * \return <code>TRUE</code> if combustion-detailed chemistry using Cantera is used; otherwise <code>FALSE</code>.
+   */
+  bool GetCanteraCombustion() const { return cantera_ParsedOptions.combustion; }
+
+  /*!
+   * \brief Get whether the diagonal chemical sink Jacobian is added to the implicit species equations.
+   */
+  bool GetChemical_Source_Jacobian() const { return cantera_ParsedOptions.source_jacobian; }
+
+  /*!
+   * \brief Get the temperature below which the chemical source terms are set to zero.
+   */
+  su2double GetCantera_DC_Min_Temp() const { return cantera_ParsedOptions.min_temperature; }
+
+  /*!
+   * \brief Get whether the species diffusion fluxes are corrected to sum to zero.
+   */
+  bool GetCantera_Correction_Velocity() const { return cantera_ParsedOptions.correction_velocity; }
+
+  /*!
+   * \brief Get High temperature applied during spark ignition.
+   * \return Spark Temperature.
+   */
+  su2double GetSpark_Temperature() const { return cantera_ParsedOptions.spark_temperature; }
+
+  /*!
+   * \brief Whether the fluid is a mixture of transported species with their own enthalpy diffusion
+   *        (FLUID_MIXTURE or FLUID_CANTERA).
+   */
+  bool GetMulticomponentFluid() const { return (Kind_FluidModel == FLUID_MIXTURE) || (Kind_FluidModel == FLUID_CANTERA); }
+
 
   /*!
    * \brief Option to define the density model for incompressible flows.
@@ -4776,6 +4863,15 @@ public:
    */
   bool GetMUSCL_Flow(void) const { return MUSCL_Flow; }
 
+  /*! \brief Whether the turbulence equations reconstruct. */
+  bool GetMUSCL_Turb(void) const { return MUSCL_Turb; }
+
+  /*! \brief Whether the species equations reconstruct. */
+  bool GetMUSCL_Species(void) const { return MUSCL_Species; }
+
+  /*! \brief Whether the heat equation reconstructs. */
+  bool GetMUSCL_Heat(void) const { return MUSCL_Heat; }
+
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \return MUSCL scheme.
@@ -4802,6 +4898,9 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
+
+  /*!\brief Get whether to use exact HLLC Jacobians with wave speeds held fixed. */
+  bool GetUse_Exact_HLLC_Jacobians(void) const { return Use_Exact_HLLC_Jacobians; }
 
   /*!
    * \brief Get whether to "Use Accurate Jacobians" for Standard SA turbulence model.
@@ -4977,6 +5076,12 @@ public:
    * \return Method for limiting the spatial gradients solving the species equation.
    */
   LIMITER GetKind_SlopeLimit_Species() const { return Kind_SlopeLimit_Species; }
+
+  /*!
+   * \brief Get the method for limiting the spatial gradients.
+   * \return Method for limiting the spatial gradients solving the heat equation.
+   */
+  LIMITER GetKind_SlopeLimit_Heat() const { return Kind_SlopeLimit_Heat; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.

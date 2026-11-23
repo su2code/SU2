@@ -2,7 +2,7 @@
  * \file CConfig_tests.cpp
  * \brief Unit tests for option defaults that depend on other options.
  * \author SU2 Contributors
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -86,4 +86,90 @@ TEST_CASE("INIT_OPTION_INC defaults", "[Config]") {
   CHECK(GetInitOptionInc(ideal_gas_options + "INIT_OPTION_INC= OPERATING_PRESSURE\n") ==
         INIT_OPTION_INC::OPERATING_PRESSURE);
   CHECK(GetInitOptionInc(ideal_gas_options + "INIT_OPTION_INC= DENSITY_INIT\n") == INIT_OPTION_INC::DENSITY_INIT);
+}
+
+TEST_CASE("Supported multigrid levels are retained", "[Config][MultigridLimits]") {
+  for (const auto levels : {0, 10}) {
+    std::stringstream options(base_options + "MGLEVEL= " + std::to_string(levels) + "\n");
+    CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+    CHECK(config.GetnMGLevels() == levels);
+  }
+}
+
+TEST_CASE("Excessive multigrid levels are rejected", "[.MultigridLimitError]") {
+  std::stringstream options(base_options + "MGLEVEL= 11\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+  FAIL("An unsupported multigrid hierarchy was accepted.");
+}
+
+TEST_CASE("Streamwise periodic Rotation support", "[.StreamwisePeriodicSupportRotation]") {
+  auto base = base_options;
+  const std::string custom = "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)";
+  base.replace(base.find(custom), custom.size(), "MARKER_CUSTOM= (z_minus)\nMARKER_SYM= (z_plus)");
+  std::stringstream options(base +
+                            "INC_NONDIM= DIMENSIONAL\nKIND_STREAMWISE_PERIODIC= PRESSURE_DROP\n"
+                            "INC_ENERGY_EQUATION= YES\nSTREAMWISE_PERIODIC_TEMPERATURE= YES\n"
+                            "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 90,0,0, 1,0,0)\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+}
+
+TEST_CASE("Streamwise periodic TinyRotation support", "[.StreamwisePeriodicSupportTinyRotation]") {
+  auto base = base_options;
+  const std::string custom = "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)";
+  base.replace(base.find(custom), custom.size(), "MARKER_CUSTOM= (z_minus)\nMARKER_SYM= (z_plus)");
+  std::stringstream options(base +
+                            "INC_NONDIM= DIMENSIONAL\nKIND_STREAMWISE_PERIODIC= PRESSURE_DROP\n"
+                            "INC_ENERGY_EQUATION= YES\nSTREAMWISE_PERIODIC_TEMPERATURE= YES\n"
+                            "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 1e-12,0,0, 1,0,0)\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+}
+
+TEST_CASE("Streamwise periodic Zero support", "[.StreamwisePeriodicSupportZero]") {
+  auto base = base_options;
+  const std::string custom = "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)";
+  base.replace(base.find(custom), custom.size(), "MARKER_CUSTOM= (z_minus)\nMARKER_SYM= (z_plus)");
+  std::stringstream options(base +
+                            "INC_NONDIM= DIMENSIONAL\nKIND_STREAMWISE_PERIODIC= PRESSURE_DROP\n"
+                            "INC_ENERGY_EQUATION= YES\nSTREAMWISE_PERIODIC_TEMPERATURE= YES\n"
+                            "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 0,0,0)\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+}
+
+TEST_CASE("Streamwise periodic Convection support", "[.StreamwisePeriodicSupportConvection]") {
+  auto base = base_options;
+  const std::string custom = "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)";
+  base.replace(base.find(custom), custom.size(), "MARKER_CUSTOM= (z_minus)");
+  std::stringstream options(
+      base +
+      "INC_NONDIM= DIMENSIONAL\nKIND_STREAMWISE_PERIODIC= PRESSURE_DROP\n"
+      "INC_ENERGY_EQUATION= YES\nSTREAMWISE_PERIODIC_TEMPERATURE= YES\n"
+      "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)\nMARKER_HEATTRANSFER= (z_plus,1,300)\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+}
+
+TEST_CASE("Streamwise periodic CHT support", "[.StreamwisePeriodicSupportCHT]") {
+  auto base = base_options;
+  const std::string custom = "MARKER_CUSTOM= (x_minus, x_plus, z_plus, z_minus)";
+  base.replace(base.find(custom), custom.size(), "MARKER_CUSTOM= (z_minus)");
+  std::stringstream options(base +
+                            "INC_NONDIM= DIMENSIONAL\nKIND_STREAMWISE_PERIODIC= PRESSURE_DROP\n"
+                            "INC_ENERGY_EQUATION= YES\nSTREAMWISE_PERIODIC_TEMPERATURE= YES\n"
+                            "MARKER_PERIODIC= (x_minus,x_plus, 0,0,0, 0,0,0, 1,0,0)\nMARKER_CHT_INTERFACE= (z_plus)\n");
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+}
+
+TEST_CASE("HLLC and AUSM SLAU Jacobian options are independent", "[Config][HLLCOptions]") {
+  for (const auto accurate : {false, true}) {
+    for (const auto exactHLLC : {false, true}) {
+      std::stringstream options(base_options + "USE_ACCURATE_FLUX_JACOBIANS= " + (accurate ? "YES" : "NO") +
+                                "\nUSE_EXACT_HLLC_JACOBIANS= " + (exactHLLC ? "YES" : "NO") + "\n");
+      CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+      CHECK(config.GetUse_Accurate_Jacobians() == accurate);
+      CHECK(config.GetUse_Exact_HLLC_Jacobians() == exactHLLC);
+    }
+  }
+  std::stringstream options(base_options);
+  CConfig config(options, SU2_COMPONENT::SU2_CFD, false);
+  CHECK_FALSE(config.GetUse_Accurate_Jacobians());
+  CHECK_FALSE(config.GetUse_Exact_HLLC_Jacobians());
 }

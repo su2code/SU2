@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,6 +37,7 @@
 
 #include "../include/basic_types/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
+#include "../include/toolboxes/geometry_toolbox.hpp"
 #include "../include/toolboxes/SwapBytes.hpp"
 
 using namespace PrintingToolbox;
@@ -1287,6 +1288,26 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
 
+  /*!\par CONFIG_CATEGORY: Cantera fluid model \ingroup Config*/
+  /*!\brief CANTERA_MECHANISM_FILE \n DESCRIPTION: Chemical reaction mechanism file (YAML) \n OPTIONS: see Cantera homepage \n DEFAULT: none, required \ingroup Config*/
+  addStringOption("CANTERA_MECHANISM_FILE", cantera_ParsedOptions.mechanism_file, string(""));
+  /*!\brief CANTERA_PHASE_NAME \n DESCRIPTION: Name of the phase in the chemical mechanism file \n OPTIONS: see Cantera homepage \n DEFAULT: none, required \ingroup Config*/
+  addStringOption("CANTERA_PHASE_NAME", cantera_ParsedOptions.phase_name, string(""));
+  /*!\brief CANTERA_TRANSPORT_MODEL \n DESCRIPTION: Transport model \n OPTIONS: see Cantera homepage \n DEFAULT: mixture-averaged \ingroup Config*/
+  addStringOption("CANTERA_TRANSPORT_MODEL", cantera_ParsedOptions.transport_model, string("mixture-averaged"));
+  /*!\brief CANTERA_SPECIES_NAMES \n DESCRIPTION: Names of the transported species, the last one is the remainder \n DEFAULT: all species of the mechanism \ingroup Config*/
+  addStringListOption("CANTERA_SPECIES_NAMES", cantera_ParsedOptions.n_species_names, cantera_ParsedOptions.species_names);
+  /*!\brief CANTERA_COMBUSTION \n DESCRIPTION: Add the chemical source terms of the detailed chemistry to the species equations \n DEFAULT: false \ingroup Config*/
+  addBoolOption("CANTERA_COMBUSTION", cantera_ParsedOptions.combustion, false);
+  /*!\brief CANTERA_SPARK_TEMPERATURE \n DESCRIPTION: Temperature [K] inside the spark region while the spark is active \n DEFAULT: 1000 K \ingroup Config*/
+  addDoubleOption("CANTERA_SPARK_TEMPERATURE", cantera_ParsedOptions.spark_temperature, 1000.0);
+  /*!\brief CANTERA_SOURCE_JACOBIAN \n DESCRIPTION: Add the diagonal chemical sink Jacobian to the implicit species equations \n DEFAULT: true \ingroup Config*/
+  addBoolOption("CANTERA_SOURCE_JACOBIAN", cantera_ParsedOptions.source_jacobian, true);
+  /*!\brief CANTERA_DC_MIN_TEMP \n DESCRIPTION: Temperature [K] below which the chemical source terms are set to zero \n DEFAULT: 500 K \ingroup Config*/
+  addDoubleOption("CANTERA_DC_MIN_TEMP", cantera_ParsedOptions.min_temperature, 500.0);
+  /*!\brief CANTERA_CORRECTION_VELOCITY \n DESCRIPTION: Correct the species diffusion fluxes so that they sum to zero \n DEFAULT: true \ingroup Config*/
+  addBoolOption("CANTERA_CORRECTION_VELOCITY", cantera_ParsedOptions.correction_velocity, true);
+
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
   addEnumOption("INTERPOLATION_METHOD",datadriven_ParsedOptions.interp_algorithm_type, DataDrivenMethod_Map, ENUM_DATADRIVEN_METHOD::LUT);
@@ -2178,6 +2199,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
   /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
+  /*!\brief USE_EXACT_HLLC_JACOBIANS \n DESCRIPTION: Exact HLLC Jacobians with wave speeds held fixed \ingroup Config*/
+  addBoolOption("USE_EXACT_HLLC_JACOBIANS", Use_Exact_HLLC_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
   addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Control numerical properties of the global Jacobian matrix using a multiplication factor for incompressible central schemes \ingroup Config*/
@@ -3630,7 +3653,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "\n";
     cout << "-------------------------------------------------------------------------\n";
     cout << "|    ___ _   _ ___                                                      |\n";
-    cout << "|   / __| | | |_  )   Release 8.5.0 \"Harrier\"                           |\n";
+    cout << "|   / __| | | |_  )   Release 8.6.0 \"Harrier\"                           |\n";
     cout << "|   \\__ \\ |_| |/ /                                                      |\n";
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n"; break;
@@ -3734,7 +3757,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                     (Kind_FluidModel == FLUID_MIXTURE) ||
                     (Kind_FluidModel == FLUID_FLAMELET) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
-                    (Kind_FluidModel == CONSTANT_DENSITY));
+                    (Kind_FluidModel == CONSTANT_DENSITY)||
+                    (Kind_FluidModel == FLUID_CANTERA));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
                     (Kind_FluidModel == SU2_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
@@ -4035,6 +4059,27 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (!MUSCL_Flow || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = LIMITER::NONE;
   if (!MUSCL_AdjFlow || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = LIMITER::NONE;
   if (!MUSCL_AdjTurb || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = LIMITER::NONE;
+
+  /*--- The SHARP_EDGES and WALL_DISTANCE limiters are first order within a distance proportional to
+   * VENKAT_LIMITER_COEFF * ADJ_SHARP_LIMITER_COEFF, with a zero width they are first order everywhere.
+   * Only the limiters of the active equations are checked. ---*/
+  const bool turb = Kind_Turb_Model != TURB_MODEL::NONE;
+  const bool heat =
+      Weakly_Coupled_Heat || Kind_Solver == MAIN_SOLVER::HEAT_EQUATION || Kind_Solver == MAIN_SOLVER::DISC_ADJ_HEAT;
+  vector<LIMITER> activeLimiters = {Kind_SlopeLimit_Flow};
+  if (turb) activeLimiters.push_back(Kind_SlopeLimit_Turb);
+  if (Kind_Species_Model != SPECIES_MODEL::NONE) activeLimiters.push_back(Kind_SlopeLimit_Species);
+  if (heat) activeLimiters.push_back(Kind_SlopeLimit_Heat);
+  if (ContinuousAdjoint) activeLimiters.push_back(Kind_SlopeLimit_AdjFlow);
+  if (ContinuousAdjoint && turb) activeLimiters.push_back(Kind_SlopeLimit_AdjTurb);
+  for (const auto kind : activeLimiters) {
+    if ((kind == LIMITER::SHARP_EDGES || kind == LIMITER::WALL_DISTANCE) &&
+        !(Venkat_LimiterCoeff > 0.0 && AdjSharp_LimiterCoeff > 0.0)) {
+      SU2_MPI::Error("The SHARP_EDGES and WALL_DISTANCE slope limiters need VENKAT_LIMITER_COEFF > 0 and\n"
+                     "ADJ_SHARP_LIMITER_COEFF > 0 (they set the width of the region limited to first order).",
+                     CURRENT_FUNCTION);
+    }
+  }
 
   /*--- Set the default for thrust in ActDisk ---*/
 
@@ -4388,6 +4433,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
             "to be equal to the number of entries of SPECIES_INIT + 1",
             CURRENT_FUNCTION);
       }
+      for (unsigned short i = 0; i < cantera_ParsedOptions.n_species_names; i++) {
+        for (unsigned short j = 0; j < i; j++) {
+          if (cantera_ParsedOptions.species_names[i] == cantera_ParsedOptions.species_names[j]) {
+            SU2_MPI::Error("Species '" + cantera_ParsedOptions.species_names[i] +
+                               "' appears more than once in CANTERA_SPECIES_NAMES.",
+                           CURRENT_FUNCTION);
+          }
+        }
+      }
       /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
        VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
        and it will remain constant through the complete domain. --- */
@@ -4467,6 +4521,79 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         default:
           if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
           break;
+      }
+    }
+
+    if ((Kind_FluidModel != FLUID_CANTERA) && cantera_ParsedOptions.combustion) {
+      SU2_MPI::Error(
+          "The use of CANTERA_COMBUSTION=YES requires the use of FLUID_MODEL=FLUID_CANTERA,\n"
+          "detailed chemistry cannot be performed with other fluid models",
+          CURRENT_FUNCTION);
+    }
+
+    if ((flamelet_ParsedOptions.ignition_method != FLAMELET_INIT_TYPE::SPARK) && cantera_ParsedOptions.combustion) {
+      SU2_MPI::Error(
+          "The use of CANTERA_COMBUSTION=YES requires the use of FLAME_INIT_METHOD=SPARK,\n"
+          "Other ignition methods are not currently available",
+          CURRENT_FUNCTION);
+    }
+
+    if (Kind_FluidModel == FLUID_CANTERA) {
+      if (Kind_Regime != ENUM_REGIME::INCOMPRESSIBLE || Kind_Solver == MAIN_SOLVER::INC_EULER) {
+        SU2_MPI::Error(
+            "FLUID_CANTERA is only available for the incompressible viscous solvers, "
+            "SOLVER= INC_NAVIER_STOKES or INC_RANS.",
+            CURRENT_FUNCTION);
+      }
+      if (cantera_ParsedOptions.mechanism_file.empty() || cantera_ParsedOptions.phase_name.empty()) {
+        SU2_MPI::Error(
+            "The use of FLUID_CANTERA requires CANTERA_MECHANISM_FILE and CANTERA_PHASE_NAME to be set,\n"
+            "there are no default values.",
+            CURRENT_FUNCTION);
+      }
+      /*--- Without CANTERA_SPECIES_NAMES all species of the mechanism are used, otherwise the number of names must
+       equal the number of transported scalar equations solved + 1.--- */
+      if (cantera_ParsedOptions.n_species_names != 0 && cantera_ParsedOptions.n_species_names != nSpecies_Init + 1) {
+        SU2_MPI::Error(
+            "The use of FLUID_CANTERA requires the number of entries for CANTERA_SPECIES_NAMES,\n"
+            "to be equal to the number of entries of SPECIES_INIT + 1 (or CANTERA_SPECIES_NAMES to be omitted).",
+            CURRENT_FUNCTION);
+      }
+      /*--- Check whether the density model used is correct, in the case of FLUID_CANTERA the density model must be
+       VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
+       and it will remain constant through the complete domain. --- */
+      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the INC_DENSITY_MODEL option to be VARIABLE",
+                       CURRENT_FUNCTION);
+      }
+      /*--- Check whether the Kind scalar model used is correct, in the case of FLUID_CANTERA the kind scalar model must
+       be SPECIES_TRANSPORT. Otherwise, if the scalar model is NONE, the species transport equations will not be solved.
+       --- */
+      if (Kind_Species_Model != SPECIES_MODEL::SPECIES_TRANSPORT) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the KIND_SCALAR_MODEL option to be SPECIES_TRANSPORT",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Ref_Inc_NonDim != DIMENSIONAL) {
+        SU2_MPI::Error(
+            "The use of FLUID_CANTERA requires the option INC_NONDIM= DIMENSIONAL, the nondimensionalization is "
+            "currently unavailable.",
+            CURRENT_FUNCTION);
+      }
+
+      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CANTERA) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the CONDUCTIVITY_MODEL option to be CANTERA",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_ViscosityModel != VISCOSITYMODEL::CANTERA) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the VISCOSITY_MODEL option to be CANTERA",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_Diffusivity_Model != DIFFUSIVITYMODEL::CANTERA) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the DIFFUSIVITY_MODEL option to be CANTERA",
+                       CURRENT_FUNCTION);
       }
     }
 
@@ -4657,6 +4784,36 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
 
   Rotating_Frame = (Kind_GridMovement == ROTATING_FRAME);
+
+  /*--- The finite volume flow solvers apply these source terms with a single numerics object, which is built
+   for only one of them: combinations would apply one source several times and ignore the others. Only these
+   solvers (and their discrete adjoints) are checked: e.g. elasticity uses BODY_FORCE and GRAVITY_FORCE together. ---*/
+
+  if (GetFluidProblem() && !GetNEMOProblem()) {
+    const bool inc = (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE);
+    const int nSources = int(Body_Force) + int(Rotating_Frame) + int(Axisymmetric) + int(GravityForce && !inc) +
+                         int(inc && Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ) +
+                         int(inc && Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE);
+    if (nSources > 1) {
+      SU2_MPI::Error("Only one of BODY_FORCE, GRID_MOVEMENT= ROTATING_FRAME, AXISYMMETRIC, GRAVITY_FORCE (compressible), "
+                     "INC_DENSITY_MODEL= BOUSSINESQ and KIND_STREAMWISE_PERIODIC (incompressible) can be used at a time.",
+                     CURRENT_FUNCTION);
+    }
+  }
+
+  /*--- The second source object, for radiation, the energy correction of incompressible streamwise periodic flow
+   (without periodic temperature) or vorticity confinement, is also built for only one of them. ---*/
+
+  if (GetFluidProblem() && !GetNEMOProblem()) {
+    const bool inc = (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE);
+    const bool periodicOutlet = inc && Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE && Energy_Equation &&
+                                !Streamwise_Periodic_Temperature;
+    if (int(Radiation) + int(periodicOutlet) + int(VorticityConfinement) > 1) {
+      SU2_MPI::Error("Only one of RADIATION, the energy correction of KIND_STREAMWISE_PERIODIC (incompressible, "
+                     "STREAMWISE_PERIODIC_TEMPERATURE= NO) and VORTICITY_CONFINEMENT can be used at a time.",
+                     CURRENT_FUNCTION);
+    }
+  }
 
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
@@ -5016,6 +5173,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    *    derived from the cycle, or it stays on the coarsest level for the entire run. ---*/
 
   if (Restart || ((Kind_MGCycle == MG_CYCLE::FULL) && ContinuousAdjoint)) Kind_MGCycle = MG_CYCLE::V;
+
+  /*--- The multigrid arrays hold at most 10 coarse levels (CMultiGridIntegration::MAX_MG_LEVELS). ---*/
+  if (nMGLevels > 10) {
+    SU2_MPI::Error("MGLEVEL must be between 0 and 10; larger multigrid hierarchies are not supported.", CURRENT_FUNCTION);
+  }
 
   FinestMesh = MESH_0;
   if (Kind_MGCycle == MG_CYCLE::FULL) FinestMesh = nMGLevels;
@@ -5459,7 +5621,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET) {
+    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET && Kind_FluidModel != FLUID_CANTERA) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }
@@ -5611,12 +5773,24 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Streamwise Periodic Flow + Incompressible Euler: Not tested yet.", CURRENT_FUNCTION);
     if (nMarker_PerBound == 0)
       SU2_MPI::Error("A MARKER_PERIODIC pair has to be set with KIND_STREAMWISE_PERIODIC != NONE.", CURRENT_FUNCTION);
+    /*--- The first pair defines the streamwise direction used by every source. ---*/
+    const auto* translation = GetPeriodic_Translation(0);
+    if (GeometryToolbox::SquaredNorm(3, translation) == 0)
+      SU2_MPI::Error("The first streamwise periodic pair must have a nonzero translation.", CURRENT_FUNCTION);
+    const auto* angles = GetPeriodicRotAngles(Marker_PerBound[0]);
+    if (GeometryToolbox::HasRotation(angles))
+      SU2_MPI::Error("The first streamwise periodic pair must be purely translational.", CURRENT_FUNCTION);
+    if (Energy_Equation && Streamwise_Periodic_Temperature && (nMarker_HeatTransfer || nMarker_CHTInterface))
+      SU2_MPI::Error("STREAMWISE_PERIODIC_TEMPERATURE requires prescribed MARKER_HEATFLUX walls; "
+                     "MARKER_HEATTRANSFER and MARKER_CHT_INTERFACE are unsupported.", CURRENT_FUNCTION);
     if (Energy_Equation && Streamwise_Periodic_Temperature && nMarker_Isothermal != 0)
       SU2_MPI::Error("No MARKER_ISOTHERMAL marker allowed with STREAMWISE_PERIODIC_TEMPERATURE= YES, only MARKER_HEATFLUX & MARKER_SYM.", CURRENT_FUNCTION);
     if (Ref_Inc_NonDim != DIMENSIONAL)
       SU2_MPI::Error("Streamwise Periodicity only works with \"INC_NONDIM= DIMENSIONAL\", the nondimensionalization with source terms doesn;t work in general.", CURRENT_FUNCTION);
     if (Axisymmetric)
       SU2_MPI::Error("Streamwise Periodicity terms does not not have axisymmetric corrections.", CURRENT_FUNCTION);
+    if (nMGLevels != 0)
+      SU2_MPI::Error("Streamwise Periodicity does not support multigrid, use MGLEVEL= 0.", CURRENT_FUNCTION);
     if (!Energy_Equation) Streamwise_Periodic_Temperature = false;
   } else {
     /*--- Safety measure ---*/
@@ -6022,6 +6196,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*--- Once consistency is checked set the var that is used throughout the code. ---*/
     nSpecies = nSpecies_Init;
+
+    if (nSpecies > MAX_TRANSPORTED_SPECIES) {
+      SU2_MPI::Error(
+          "The species model supports at most " + to_string(MAX_TRANSPORTED_SPECIES) +
+              " transported species equations (the number of SPECIES_INIT entries, one less than the species of a\n"
+              "mixture), but " + to_string(nSpecies) + " were given.\n"
+              "To run more species, increase MAX_TRANSPORTED_SPECIES in Common/include/option_structure.hpp and\n"
+              "recompile. If the compiler then reports a failed static_assert, raise the limit it names as well\n"
+              "(for example MAXNVAR of CSysMatrix in Common/include/linear_algebra/CSysMatrix.hpp).",
+          CURRENT_FUNCTION);
+    }
 
     /*--- Check whether some variables (or their sums) are in physical bounds. [0,1] for species related quantities. ---*/
     /*--- Note, only for species transport, not for flamelet model ---*/

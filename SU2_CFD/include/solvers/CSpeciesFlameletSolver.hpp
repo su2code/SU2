@@ -2,7 +2,7 @@
  * \file CSpeciesFlameletSolver.hpp
  * \brief Headers of the CSpeciesFlameletSolver class
  * \author D. Mayer, N. Beishuizen, T. Economon, E. Bunschoten
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,10 +37,10 @@
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
+  FluidFlamelet_ParsedOptions flamelet_config_options;
   const su2double default_flame_thickness{1.0};
   su2double global_flame_thickness;
   bool calc_flame_thickness{false};
-  FluidFlamelet_ParsedOptions flamelet_config_options;
   bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
   /*!< \brief Number of points outside the manifold domain, shared across OpenMP threads so it can be
    *          accumulated atomically and reduced by the master thread alone in Preprocessing. */

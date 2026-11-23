@@ -2,7 +2,7 @@
  * \file CHeatVariable.cpp
  * \brief Definition of the variables for heat equation problems.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 #include "../../include/variables/CHeatVariable.hpp"
 
 CHeatVariable::CHeatVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CScalarVariable(npoint, ndim, nvar, config) {
+  : CScalarVariable(npoint, ndim, nvar, config, config->GetMUSCL_Heat()) {
 
   const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                           (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));

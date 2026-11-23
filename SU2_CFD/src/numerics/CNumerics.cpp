@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,7 +53,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Gamma_Minus_One = Gamma - 1.0;
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
-  energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  energy_multicomponent =
+      config->GetMulticomponentFluid() && config->GetEnergy_Equation();
 
   tau = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
