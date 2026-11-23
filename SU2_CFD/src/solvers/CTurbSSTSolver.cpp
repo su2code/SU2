@@ -423,7 +423,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Store the intermittency ---*/
-    
+
     if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
     }
@@ -927,8 +927,8 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
     const su2double VortMag   = max(GeometryToolbox::Norm(3, Vorticity), 1e-12);
 
     const su2double kappa2 = 0.41*0.41;
-    const su2double wallDist2 = geometry->nodes->GetWall_Distance(iPoint)*geometry->nodes->GetWall_Distance(iPoint); 
-    
+    const su2double wallDist2 = geometry->nodes->GetWall_Distance(iPoint)*geometry->nodes->GetWall_Distance(iPoint);
+
     const su2double eddyVisc = nodes->GetmuT(iPoint)/flowNodes->GetDensity(iPoint);
     const su2double lamVisc = flowNodes->GetLaminarViscosity(iPoint)/flowNodes->GetDensity(iPoint);
 
@@ -968,14 +968,14 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
 
         const su2double l_LES = C_DES * h_max;
-        
+
         DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
         if (l_RANS > l_LES) lesSensor = f_d;
 
         break;
       }
       case SST_IDDES: {
-        
+
         // Constants
         const su2double C_w = 0.15;
         const su2double C_dt1 = 20.0;
@@ -995,7 +995,6 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double f_e2 = 1.0 - max(f_t, f_l);
         const su2double f_e1 = alpha >= 0.0 ? 2.0 * exp(-11.09*alpha*alpha) : 2.0 * exp(-9.0*alpha*alpha);
         const su2double f_e = f_e2 * max((f_e1 - 1.0), 0.0);
-          
 
         const su2double Delta = min(max(C_w * max(sqrt(wallDist2), h_max), h_wn), h_max);
         const su2double l_LES = C_DES * Delta;
@@ -1007,7 +1006,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
       }
       case SST_SIDDES: {
         /*--- Simplified IDDES without the elevating function, following Menter (ANSYS). ---*/
-        
+
         // Constants
         const su2double C_w = 0.15;
         const su2double C_dt1 = 20.0;
