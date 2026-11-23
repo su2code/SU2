@@ -1423,10 +1423,8 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       /*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
       if (implicit) {
 
-        /*--- The residual of this condition is the pressure force only, so its Jacobian is the
-         derivative of the pressure, in the momentum equations. Terms of the convective flux
-         must not be added: the residual does not have them, and they make the implicit
-         system unstable at high CFL numbers. ---*/
+        /*--- The residual of this condition is the pressure force, in the momentum equations,
+         so its Jacobian is the derivative of the pressure. ---*/
         for (auto iVar = 0ul; iVar < nVar; iVar++)
           for (auto jVar = 0ul; jVar < nVar; jVar++)
             Jacobian_i[iVar][jVar] = 0.0;
