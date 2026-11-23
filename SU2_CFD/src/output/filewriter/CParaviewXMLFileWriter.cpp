@@ -27,11 +27,84 @@
 
 #include "../../../include/output/filewriter/CParaviewXMLFileWriter.hpp"
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <type_traits>
 
 const string CParaviewXMLFileWriter::fileExt = ".vtu";
+
+namespace {
+
+/*!
+ * \brief How a volume output field is written to the VTK file.
+ */
+enum class FieldKind {
+  SCALAR, /*!< \brief Written as a scalar array. */
+  VECTOR, /*!< \brief First component of a vector; written as a 3-component array. */
+  TENSOR, /*!< \brief First component of a symmetric tensor; written as a 6-component array. */
+  SKIP    /*!< \brief Other component of a vector or tensor; written with its first component. */
+};
+
+/*!
+ * \brief Remove the double quotes from a field name.
+ */
+string unquoted(string name) {
+  name.erase(remove(name.begin(), name.end(), '"'), name.end());
+  return name;
+}
+
+/*!
+ * \brief Group the fields into vectors (<name>_x, _y[, _z]) and symmetric tensors (<name>_xx, _xy, _yy[, _xz, _yz,
+ *        _zz]). Fields are grouped only if the components are adjacent, in that order, and share the same prefix;
+ *        every other field is a scalar.
+ * \param[in] fieldNames - Names of all the output fields.
+ * \param[in] varStart - Index of the first field after the coordinates.
+ * \param[in] nDim - Number of spatial dimensions.
+ * \return Kind of each field.
+ */
+vector<FieldKind> classifyFields(const vector<string>& fieldNames, unsigned long varStart, unsigned short nDim) {
+  const vector<string> vectorSuffixes = (nDim == 3) ? vector<string>{"_x", "_y", "_z"} : vector<string>{"_x", "_y"};
+  const vector<string> tensorSuffixes = (nDim == 3) ? vector<string>{"_xx", "_xy", "_yy", "_xz", "_yz", "_zz"}
+                                                    : vector<string>{"_xx", "_xy", "_yy"};
+
+  vector<FieldKind> kinds(fieldNames.size(), FieldKind::SCALAR);
+
+  /*--- Check if the fields starting at iField are the components of a group. ---*/
+  auto isGroup = [&](unsigned long iField, const vector<string>& suffixes) {
+    if (iField + suffixes.size() > fieldNames.size()) return false;
+    const string first = unquoted(fieldNames[iField]);
+    const auto& suffix = suffixes.front();
+    if (first.size() <= suffix.size() || first.compare(first.size() - suffix.size(), suffix.size(), suffix) != 0)
+      return false;
+    const string prefix = first.substr(0, first.size() - suffix.size());
+    for (auto iComp = 1ul; iComp < suffixes.size(); ++iComp) {
+      if (unquoted(fieldNames[iField + iComp]) != prefix + suffixes[iComp]) return false;
+    }
+    return true;
+  };
+
+  /*--- Mark the first component of a group with its kind and the other components as skipped. ---*/
+  auto markGroup = [&](unsigned long iField, FieldKind kind, unsigned long nComp) {
+    kinds[iField] = kind;
+    for (auto iComp = 1ul; iComp < nComp; ++iComp) kinds[iField + iComp] = FieldKind::SKIP;
+    return nComp;
+  };
+
+  auto iField = varStart;
+  while (iField < fieldNames.size()) {
+    if (isGroup(iField, tensorSuffixes)) {
+      iField += markGroup(iField, FieldKind::TENSOR, tensorSuffixes.size());
+    } else if (isGroup(iField, vectorSuffixes)) {
+      iField += markGroup(iField, FieldKind::VECTOR, vectorSuffixes.size());
+    } else {
+      ++iField;
+    }
+  }
+  return kinds;
+}
+
+}  // namespace
 
 CParaviewXMLFileWriter::CParaviewXMLFileWriter(CParallelDataSorter *valDataSorter, bool valDoublePrecision) :
   CFileWriter(valDataSorter, fileExt), doublePrecision(valDoublePrecision){
@@ -149,105 +222,34 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   unsigned short varStart = 2;
   if (nDim == 3) varStart++;
 
+  /*--- Group the vector and tensor components of the fields. ---*/
+
+  const auto fieldKinds = classifyFields(fieldNames, varStart, nDim);
+
   /*--- Loop over all variables that have been registered in the output. ---*/
 
-  unsigned short VarCounter = varStart;
   for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
 
-    string fieldname = fieldNames[iField];
-    fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
-                    fieldname.end());
-
-    /*--- Check whether this field is a vector, tensor, or scalar. ---*/
-    /*--- Check tensor components first (longer patterns) to avoid false matches ---*/
-
-    bool output_variable = true, isVector = false, isTensor = false;
-
-    // Check for tensor components first (_xx, _xy, _yy, _xz, _yz, _zz)
-    size_t found = fieldNames[iField].find("_xx");
-    if (found!=string::npos) {
-      output_variable = true;
-      isTensor        = true;
-    }
-    found = fieldNames[iField].find("_xy");
-    if (found!=string::npos) {
-      /*--- We have found a tensor, so skip the XY component. ---*/
-      output_variable = false;
-      isTensor        = true;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_yy");
-    if (found!=string::npos) {
-      /*--- We have found a tensor, so skip the YY component. ---*/
-      output_variable = false;
-      isTensor        = true;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_xz");
-    if (found!=string::npos) {
-      /*--- We have found a tensor, so skip the XZ component. ---*/
-      output_variable = false;
-      isTensor        = true;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_yz");
-    if (found!=string::npos) {
-      /*--- We have found a tensor, so skip the YZ component. ---*/
-      output_variable = false;
-      isTensor        = true;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_zz");
-    if (found!=string::npos) {
-      /*--- We have found a tensor, so skip the ZZ component. ---*/
-      output_variable = false;
-      isTensor        = true;
-      VarCounter++;
-    }
-
-    // Check for vector components only if not a tensor (_x, _y, _z)
-    if (!isTensor) {
-      found = fieldNames[iField].find("_x");
-      if (found!=string::npos) {
-        output_variable = true;
-        isVector        = true;
-      }
-      found = fieldNames[iField].find("_y");
-      if (found!=string::npos) {
-        /*--- We have found a vector, so skip the Y component. ---*/
-        output_variable = false;
-        VarCounter++;
-      }
-      found = fieldNames[iField].find("_z");
-      if (found!=string::npos) {
-        /*--- We have found a vector, so skip the Z component. ---*/
-        output_variable = false;
-        VarCounter++;
-      }
-    }
+    string fieldname = unquoted(fieldNames[iField]);
 
     /*--- Write the point data as an <X,Y,Z> vector, tensor, or a scalar. ---*/
 
-    if (output_variable && isTensor) {
-
-      /*--- Adjust the string name to remove the tensor component suffix ---*/
-
-      fieldname.erase(fieldname.end()-3,fieldname.end());
-
-      AddDataArray(realType, fieldname, NTENSOR, myPoint*NTENSOR, GlobalPoint*NTENSOR);
-
-    } else if (output_variable && isVector) {
-
-      /*--- Adjust the string name to remove the leading "X-" ---*/
-
-      fieldname.erase(fieldname.end()-2,fieldname.end());
-
-      AddDataArray(realType, fieldname, NCOORDS, myPoint*NCOORDS, GlobalPoint*NCOORDS);
-
-    } else if (output_variable) {
-
-      AddDataArray(realType, fieldname, 1, myPoint, GlobalPoint);
-
+    switch (fieldKinds[iField]) {
+      case FieldKind::TENSOR:
+        /*--- Remove the "_xx" suffix ---*/
+        fieldname.erase(fieldname.end()-3,fieldname.end());
+        AddDataArray(realType, fieldname, NTENSOR, myPoint*NTENSOR, GlobalPoint*NTENSOR);
+        break;
+      case FieldKind::VECTOR:
+        /*--- Remove the "_x" suffix ---*/
+        fieldname.erase(fieldname.end()-2,fieldname.end());
+        AddDataArray(realType, fieldname, NCOORDS, myPoint*NCOORDS, GlobalPoint*NCOORDS);
+        break;
+      case FieldKind::SCALAR:
+        AddDataArray(realType, fieldname, 1, myPoint, GlobalPoint);
+        break;
+      case FieldKind::SKIP:
+        break;
     }
 
   }
@@ -337,136 +339,66 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   /*--- Loop over all variables that have been registered in the output. ---*/
 
-  VarCounter = varStart;
   for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
-
-    /*--- Check whether this field is a vector, tensor, or scalar. ---*/
-    /*--- Check tensor components first (longer patterns) to avoid double counting ---*/
-
-    bool output_variable = true, isVector = false, isTensor = false;
-
-    // Check for tensor components first (_xx, _xy, _yy, _xz, _yz, _zz)
-    size_t found = fieldNames[iField].find("_xx");
-    if (found!=string::npos) {
-      output_variable = true;
-      isTensor        = true;
-    }
-    found = fieldNames[iField].find("_xy");
-    if (found!=string::npos) {
-      /*--- We have found a tensor, so skip the XY component. ---*/
-      output_variable = false;
-      isTensor        = true;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_yy");
-    if (found!=string::npos) {
-      /*--- We have found a tensor, so skip the YY component. ---*/
-      output_variable = false;
-      isTensor        = true;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_xz");
-    if (found!=string::npos) {
-      /*--- We have found a tensor, so skip the XZ component. ---*/
-      output_variable = false;
-      isTensor        = true;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_yz");
-    if (found!=string::npos) {
-      /*--- We have found a tensor, so skip the YZ component. ---*/
-      output_variable = false;
-      isTensor        = true;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_zz");
-    if (found!=string::npos) {
-      /*--- We have found a tensor, so skip the ZZ component. ---*/
-      output_variable = false;
-      isTensor        = true;
-      VarCounter++;
-    }
-
-    // Check for vector components only if not a tensor (_x, _y, _z)
-    if (!isTensor) {
-      found = fieldNames[iField].find("_x");
-      if (found!=string::npos) {
-        output_variable = true;
-        isVector        = true;
-      }
-      found = fieldNames[iField].find("_y");
-      if (found!=string::npos) {
-        /*--- We have found a vector, so skip the Y component. ---*/
-        output_variable = false;
-        VarCounter++;
-      }
-      found = fieldNames[iField].find("_z");
-      if (found!=string::npos) {
-        /*--- We have found a vector, so skip the Z component. ---*/
-        output_variable = false;
-        VarCounter++;
-      }
-    }
 
     /*--- Write the point data as a tensor, <X,Y,Z> vector, or scalar. ---*/
 
-    if (output_variable && isTensor) {
+    switch (fieldKinds[iField]) {
+      case FieldKind::TENSOR:
 
-      /*--- Grow the buffer to hold tensor data; the other arrays pass their own (smaller) sizes. ---*/
-      if (dataBuffer.size() < myPoint*NTENSOR) dataBuffer.resize(myPoint*NTENSOR);
+        /*--- Grow the buffer to hold tensor data; the other arrays pass their own (smaller) sizes. ---*/
+        if (dataBuffer.size() < myPoint*NTENSOR) dataBuffer.resize(myPoint*NTENSOR);
 
-      for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
-        dataBuffer[iPoint*NTENSOR + 0] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+0,iPoint)); // XX
-        dataBuffer[iPoint*NTENSOR + 1] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+2,iPoint)); // YY
-        dataBuffer[iPoint*NTENSOR + 3] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+1,iPoint)); // XY
-        if (nDim == 2) {
-          /*--- For 2D tensors, set the off-diagonal z-components to 0, and zz-component to 1 ---*/
-
-          dataBuffer[iPoint*NTENSOR + 2] = 1.0; // ZZ = 1
-          dataBuffer[iPoint*NTENSOR + 4] = 0.0; // YZ = 0
-          dataBuffer[iPoint*NTENSOR + 5] = 0.0; // XZ = 0
-        } else {
-          /*--- For 3D tensors, get the z-components ---*/
-          dataBuffer[iPoint*NTENSOR + 2] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+5,iPoint)); // ZZ
-          dataBuffer[iPoint*NTENSOR + 4] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+4,iPoint)); // YZ
-          dataBuffer[iPoint*NTENSOR + 5] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+3,iPoint)); // XZ
-        }
-      }
-
-      writeRealArray(myPoint*NTENSOR, GlobalPoint*NTENSOR, dataSorter->GetnPointCumulative(rank)*NTENSOR);
-
-      VarCounter++;
-
-    } else if (output_variable && isVector) {
-
-      /*--- Load up the buffer for writing this rank's vector data. ---*/
-
-      for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
-        for (unsigned short iDim = 0; iDim < NCOORDS; iDim++) {
-          if (nDim == 2 && iDim == 2) {
-            dataBuffer[iPoint*NCOORDS + iDim] = 0.0;
+        /*--- Components are stored as xx, xy, yy[, xz, yz, zz]; VTK expects xx, yy, zz, xy, yz, xz. ---*/
+        for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
+          dataBuffer[iPoint*NTENSOR + 0] = SU2_TYPE::GetValue(dataSorter->GetData(iField+0,iPoint)); // XX
+          dataBuffer[iPoint*NTENSOR + 1] = SU2_TYPE::GetValue(dataSorter->GetData(iField+2,iPoint)); // YY
+          dataBuffer[iPoint*NTENSOR + 3] = SU2_TYPE::GetValue(dataSorter->GetData(iField+1,iPoint)); // XY
+          if (nDim == 2) {
+            /*--- For 2D tensors, set the off-diagonal z-components to 0, and zz-component to 1 ---*/
+            dataBuffer[iPoint*NTENSOR + 2] = 1.0; // ZZ = 1
+            dataBuffer[iPoint*NTENSOR + 4] = 0.0; // YZ = 0
+            dataBuffer[iPoint*NTENSOR + 5] = 0.0; // XZ = 0
           } else {
-            dataBuffer[iPoint*NCOORDS + iDim] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter+iDim,iPoint));
+            /*--- For 3D tensors, get the z-components ---*/
+            dataBuffer[iPoint*NTENSOR + 2] = SU2_TYPE::GetValue(dataSorter->GetData(iField+5,iPoint)); // ZZ
+            dataBuffer[iPoint*NTENSOR + 4] = SU2_TYPE::GetValue(dataSorter->GetData(iField+4,iPoint)); // YZ
+            dataBuffer[iPoint*NTENSOR + 5] = SU2_TYPE::GetValue(dataSorter->GetData(iField+3,iPoint)); // XZ
           }
         }
-      }
 
-      writeRealArray(myPoint*NCOORDS, GlobalPoint*NCOORDS, dataSorter->GetnPointCumulative(rank)*NCOORDS);
+        writeRealArray(myPoint*NTENSOR, GlobalPoint*NTENSOR, dataSorter->GetnPointCumulative(rank)*NTENSOR);
+        break;
 
-      VarCounter++;
+      case FieldKind::VECTOR:
 
-    } else if (output_variable) {
+        /*--- Load up the buffer for writing this rank's vector data. ---*/
+        for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
+          for (unsigned short iDim = 0; iDim < NCOORDS; iDim++) {
+            if (nDim == 2 && iDim == 2) {
+              dataBuffer[iPoint*NCOORDS + iDim] = 0.0;
+            } else {
+              dataBuffer[iPoint*NCOORDS + iDim] = SU2_TYPE::GetValue(dataSorter->GetData(iField+iDim,iPoint));
+            }
+          }
+        }
 
-      /*--- For now, create a temp 1D buffer to load up the data for writing.
-       This will be replaced with a derived data type most likely. ---*/
+        writeRealArray(myPoint*NCOORDS, GlobalPoint*NCOORDS, dataSorter->GetnPointCumulative(rank)*NCOORDS);
+        break;
 
-      for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
-        dataBuffer[iPoint] = SU2_TYPE::GetValue(dataSorter->GetData(VarCounter,iPoint));
-      }
+      case FieldKind::SCALAR:
 
-      writeRealArray(myPoint, GlobalPoint, dataSorter->GetnPointCumulative(rank));
+        /*--- For now, create a temp 1D buffer to load up the data for writing.
+         This will be replaced with a derived data type most likely. ---*/
+        for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
+          dataBuffer[iPoint] = SU2_TYPE::GetValue(dataSorter->GetData(iField,iPoint));
+        }
 
-      VarCounter++;
+        writeRealArray(myPoint, GlobalPoint, dataSorter->GetnPointCumulative(rank));
+        break;
+
+      case FieldKind::SKIP:
+        break;
     }
 
   }
