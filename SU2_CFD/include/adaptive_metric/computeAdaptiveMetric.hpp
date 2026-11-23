@@ -1,8 +1,10 @@
 /*!
  * \file computeAdaptiveMetric.hpp
- * \brief Generic implementation of the adaptive metric tensor computation.
- * \note This allows the same implementation to be used for goal-oriented
- *       or feature-based mesh adaptation.
+ * \brief Computation of the adaptive metric tensor for anisotropic mesh adaptation.
+ * \note The metric of each sensor is built from the absolute value of its Hessian (accumulated in
+ *       time for unsteady flows), then optionally normalized in the Lp norm. The absolute value and
+ *       the eigenvalue floor are only applied in eigenspace, inside each pass that needs them, and
+ *       the final sizes are set by the size and aspect ratio constraints.
  * \author B. Munguía
  * \version 8.5.0 "Harrier"
  *
@@ -29,349 +31,49 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
-#include <algorithm>
-#include <limits>
-#include <cmath>
-#include "../../../Common/include/parallelization/mpi_structure.hpp"
-#include "../../../Common/include/parallelization/omp_structure.hpp"
-#include "../../../Common/include/linear_algebra/blas_structure.hpp"
-#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/containers/container_decorators.hpp"
 
-namespace tensor {
-struct metric {
-  template <class MatrixType, class MetricType>
-  static void get(MetricType& metric_field, const unsigned long iPoint,
-                  const unsigned short iSensor, MatrixType& mat, unsigned short nDim) {
-    switch(nDim) {
-      case 2: {
-        mat[0][0] = metric_field(iPoint, 0); mat[0][1] = metric_field(iPoint, 1);
-        mat[1][0] = metric_field(iPoint, 1); mat[1][1] = metric_field(iPoint, 2);
-        break;
-      }
-      case 3: {
-        mat[0][0] = metric_field(iPoint, 0); mat[0][1] = metric_field(iPoint, 1); mat[0][2] = metric_field(iPoint, 3);
-        mat[1][0] = metric_field(iPoint, 1); mat[1][1] = metric_field(iPoint, 2); mat[1][2] = metric_field(iPoint, 4);
-        mat[2][0] = metric_field(iPoint, 3); mat[2][1] = metric_field(iPoint, 4); mat[2][2] = metric_field(iPoint, 5);
-        break;
-      }
-    }
-  }
-
-  template <class ScalarType, class MatrixType, class MetricType>
-  static void set(MetricType& metric_field, const unsigned long iPoint,
-                  const unsigned short iSensor, MatrixType& mat, ScalarType scale,
-                  unsigned short nDim) {
-    switch(nDim) {
-      case 2: {
-        metric_field(iPoint, 0) = mat[0][0] * scale;
-        metric_field(iPoint, 1) = mat[0][1] * scale;
-        metric_field(iPoint, 2) = mat[1][1] * scale;
-        break;
-      }
-      case 3: {
-        metric_field(iPoint, 0) = mat[0][0] * scale;
-        metric_field(iPoint, 1) = mat[0][1] * scale;
-        metric_field(iPoint, 2) = mat[1][1] * scale;
-        metric_field(iPoint, 3) = mat[0][2] * scale;
-        metric_field(iPoint, 4) = mat[1][2] * scale;
-        metric_field(iPoint, 5) = mat[2][2] * scale;
-        break;
-      }
-    }
-  }
-};
-
-struct hessian {
-  template <class MatrixType, class MetricType>
-  static void get(MetricType& metric_field, const unsigned long iPoint,
-                  const unsigned short iSensor, MatrixType& mat, unsigned short nDim) {
-    switch(nDim) {
-      case 2: {
-        mat[0][0] = metric_field(iPoint, iSensor, 0); mat[0][1] = metric_field(iPoint, iSensor, 1);
-        mat[1][0] = metric_field(iPoint, iSensor, 1); mat[1][1] = metric_field(iPoint, iSensor, 2);
-        break;
-      }
-      case 3: {
-        mat[0][0] = metric_field(iPoint, iSensor, 0); mat[0][1] = metric_field(iPoint, iSensor, 1); mat[0][2] = metric_field(iPoint, iSensor, 3);
-        mat[1][0] = metric_field(iPoint, iSensor, 1); mat[1][1] = metric_field(iPoint, iSensor, 2); mat[1][2] = metric_field(iPoint, iSensor, 4);
-        mat[2][0] = metric_field(iPoint, iSensor, 3); mat[2][1] = metric_field(iPoint, iSensor, 4); mat[2][2] = metric_field(iPoint, iSensor, 5);
-        break;
-      }
-    }
-  }
-
-  template <class ScalarType, class MatrixType, class MetricType>
-  static void set(MetricType& metric_field, const unsigned long iPoint,
-                  const unsigned short iSensor,  MatrixType& mat, ScalarType scale,
-                  unsigned short nDim) {
-    switch(nDim) {
-      case 2: {
-        metric_field(iPoint, iSensor, 0) = mat[0][0] * scale;
-        metric_field(iPoint, iSensor, 1) = mat[0][1] * scale;
-        metric_field(iPoint, iSensor, 2) = mat[1][1] * scale;
-        break;
-      }
-      case 3: {
-        metric_field(iPoint, iSensor, 0) = mat[0][0] * scale;
-        metric_field(iPoint, iSensor, 1) = mat[0][1] * scale;
-        metric_field(iPoint, iSensor, 2) = mat[1][1] * scale;
-        metric_field(iPoint, iSensor, 3) = mat[0][2] * scale;
-        metric_field(iPoint, iSensor, 4) = mat[1][2] * scale;
-        metric_field(iPoint, iSensor, 5) = mat[2][2] * scale;
-        break;
-      }
-    }
-  }
-};
-}  // namespace tensor
-
-namespace detail {
+class CGeometry;
+class CConfig;
 
 /*!
- * \brief Compute determinant of eigenvalues for different dimensions.
- * \param[in] EigVal - Array of eigenvalues.
- * \return Determinant value.
+ * \brief Set all components of the adaptive metric field to zero.
+ * \param[in,out] metric - Adaptive metric field (nPoint, nSensor, nSymMat).
  */
-template<size_t nDim, class ScalarType>
-ScalarType computeDeterminant(const ScalarType* EigVal) {
-  if constexpr (nDim == 2) {
-    return EigVal[0] * EigVal[1];
-  } else if constexpr (nDim == 3) {
-    return EigVal[0] * EigVal[1] * EigVal[2];
-  } else {
-    static_assert(nDim == 2 || nDim == 3, "Only 2D and 3D supported");
-    return ScalarType(0.0);
-  }
-}
+void resetAdaptiveMetric(C3DPassiveMatrix& metric);
 
 /*!
- * \brief Make the eigenvalues of the metrics positive.
+ * \brief Add coeff * |H| of each sensor to its adaptive metric, where |H| is the matrix absolute value of the Hessian.
+ * \note No eigenvalue floor is applied here; normalization floors the eigenvalues of the accumulated metric.
  * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] iSensor - Index of the sensor to work on.
- * \param[in,out] metric - Metric container.
+ * \param[in] hessian - Hessian field of the sensors (nPoint, nSensor, nSymMat).
+ * \param[in] coeff - Weight of this contribution (e.g. the time step for unsteady flows, negative to remove one).
+ * \param[in,out] metric - Adaptive metric field (nPoint, nSensor, nSymMat).
  */
-template<size_t nDim, class ScalarType, class Tensor, class MetricType>
-void setPositiveDefiniteMetrics(CGeometry& geometry, const CConfig& config,
-                               unsigned short iSensor, MetricType& metric) {
-
-  const unsigned long nPointDomain = geometry.GetnPointDomain();
-
-  ScalarType A[nDim][nDim], EigVec[nDim][nDim], EigVal[nDim], work[nDim];
-
-  /*--- Minimum eigenvalue threshold ---*/
-  const ScalarType eps = 1e-20;
-
-  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-    /*--- Get full metric tensor ---*/
-    Tensor::get(metric, iPoint, iSensor, A, nDim);
-
-    /*--- Compute eigenvalues and eigenvectors ---*/
-    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
-
-    /*--- Make positive definite by taking absolute value of eigenvalues ---*/
-    /*--- Handle NaN and very small values that could cause numerical issues ---*/
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      if (std::isnan(EigVal[iDim])) {
-        /*--- NaN detected, set to small positive value ---*/
-        EigVal[iDim] = eps;
-      } else {
-        /*--- Take absolute value and ensure minimum threshold ---*/
-        EigVal[iDim] = max(fabs(EigVal[iDim]), eps);
-      }
-    }
-
-    CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
-
-    /*--- Store upper half of metric tensor ---*/
-    Tensor::set(metric, iPoint, iSensor, A, 1.0, nDim);
-  }
-}
+void accumulateAdaptiveMetric(const CGeometry& geometry, const CVectorOfMatrix& hessian, passivedouble coeff,
+                              C3DPassiveMatrix& metric);
 
 /*!
- * \brief Integrate the Hessian field for the Lp-norm normalization of the metric.
+ * \brief Integrate det(|M|)^(p/(2p+n)) of each sensor's metric over the domain, for the Lp-norm normalization.
+ * \note Nothing is stored; the eigenvalues are floored in eigenspace only for this computation.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
- * \param[in] iSensor - Index of the sensor to work on.
- * \param[in] metric - Metric container.
- * \return Integral of the metric tensor determinant.
-*/
-template<size_t nDim, class ScalarType, class MetricType>
-ScalarType integrateMetrics(CGeometry& geometry, const CConfig& config,
-                            unsigned short iSensor, MetricType& metric) {
-
-  const unsigned long nPointDomain = geometry.GetnPointDomain();
-
-  /*--- Constants defining normalization ---*/
-  const auto& adapt = config.GetAdaptiveMetricParsedOptions();
-  const ScalarType p = adapt.norm;
-  const ScalarType normExp = p / (2.0 * p + nDim);
-
-  ScalarType localIntegral = 0.0;
-  ScalarType globalIntegral = 0.0;
-  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-    auto nodes = geometry.nodes;
-
-    /*--- Calculate determinant ---*/
-    ScalarType det;
-    if constexpr (nDim == 2) {
-      const ScalarType m00 = metric(iPoint, 0);
-      const ScalarType m01 = metric(iPoint, 1);
-      const ScalarType m11 = metric(iPoint, 2);
-      det = m00 * m11 - m01 * m01;
-    } else if constexpr (nDim == 3) {
-      const ScalarType m00 = metric(iPoint, 0);
-      const ScalarType m01 = metric(iPoint, 1);
-      const ScalarType m11 = metric(iPoint, 2);
-      const ScalarType m02 = metric(iPoint, 3);
-      const ScalarType m12 = metric(iPoint, 4);
-      const ScalarType m22 = metric(iPoint, 5);
-      det = m00 * (m11 * m22 - m12 * m12) - m01 * (m01 * m22 - m02 * m12) + m02 * (m01 * m12 - m02 * m11);
-    }
-
-    /*--- Integrate determinant ---*/
-    const ScalarType Vol = SU2_TYPE::GetValue(nodes->GetVolume(iPoint));
-    localIntegral += pow(abs(det), normExp) * Vol;
-  }
-
-  SU2_MPI::Allreduce(&localIntegral, &globalIntegral, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-  return globalIntegral;
-}
-
-/*!
- * \brief Perform an Lp-norm normalization of the metric.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] iSensor - Index of the sensor to work on.
- * \param[in] integral - Integral of the metric tensor determinant.
- * \param[in,out] metric - Metric container.
+ * \param[in] metric - Adaptive metric field (nPoint, nSensor, nSymMat).
+ * \return Global integral for each sensor.
  */
-template<size_t nDim, class ScalarType, class Tensor, class MetricType>
-void normalizeMetrics(CGeometry& geometry, const CConfig& config,
-                      unsigned short iSensor, ScalarType integral,
-                      MetricType& metric) {
-
-  const unsigned long nPointDomain = geometry.GetnPointDomain();
-
-  /*--- Constants defining normalization ---*/
-  const auto& adapt = config.GetAdaptiveMetricParsedOptions();
-  const ScalarType p = adapt.norm;
-  const ScalarType N = static_cast<ScalarType>(adapt.complexity * adapt.n_time_subintervals);
-  const ScalarType globalFactor = pow(N / integral, 2.0 / nDim);
-  const ScalarType normExp = -1.0 / (2.0 * p + nDim);
-
-  /*--- Size constraints ---*/
-  const ScalarType hmin = SU2_TYPE::GetValue(adapt.hmin);
-  const ScalarType hmax = SU2_TYPE::GetValue(adapt.hmax);
-  const ScalarType eigmax = 1.0 / pow(hmin, 2.0);
-  const ScalarType eigmin = 1.0 / pow(hmax, 2.0);
-  const ScalarType armax2 = pow(SU2_TYPE::GetValue(adapt.armax), 2.0);
-
-  ScalarType A[nDim][nDim], EigVec[nDim][nDim], EigVal[nDim], work[nDim];
-
-  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-    /*--- Decompose metric ---*/
-    Tensor::get(metric, iPoint, iSensor, A, nDim);
-    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
-
-    /*--- Normalize eigenvalues ---*/
-    const ScalarType det = computeDeterminant<nDim>(EigVal);
-    const ScalarType factor = globalFactor * pow(abs(det), normExp);
-    for (auto iDim = 0u; iDim < nDim; ++iDim)
-      EigVal[iDim] = factor * EigVal[iDim];
-
-    /*--- Clip by user-specified size constraints ---*/
-    for (auto iDim = 0u; iDim < nDim; ++iDim)
-      EigVal[iDim] = min(max(abs(EigVal[iDim]), eigmin), eigmax);
-
-    /*--- Clip by user-specified aspect ratio ---*/
-    unsigned short iMax = 0;
-    for (auto iDim = 1u; iDim < nDim; ++iDim)
-      iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
-
-    for (auto iDim = 0u; iDim < nDim; ++iDim)
-      EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
-
-    /*--- Recompose and store metric ---*/
-    CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
-    Tensor::set(metric, iPoint, iSensor, A, 1.0, nDim);
-  }
-}
-} // end namespace detail
+std::vector<passivedouble> integrateAdaptiveMetric(const CGeometry& geometry, const CConfig& config,
+                                                   const C3DPassiveMatrix& metric);
 
 /*!
- * \brief Make the eigenvalues of the metrics positive.
+ * \brief Perform the Lp-norm normalization of each sensor's metric and apply the size and aspect ratio constraints.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
- * \param[in] iSensor - Index of the sensor to work on.
- * \param[in,out] metric - Metric container.
+ * \param[in] integrals - Global integrals from integrateAdaptiveMetric.
+ * \param[in] sensorNames - Name of each sensor, for error messages.
+ * \param[in,out] metric - Adaptive metric field (nPoint, nSensor, nSymMat).
  */
-template<class ScalarType, class Tensor, class MetricType>
-void setPositiveDefiniteMetrics(CGeometry& geometry, const CConfig& config,
-                               unsigned short iSensor, MetricType& metric) {
-  switch (geometry.GetnDim()) {
-    case 2:
-      detail::setPositiveDefiniteMetrics<2, ScalarType, Tensor>(geometry, config, iSensor, metric);
-      break;
-    case 3:
-      detail::setPositiveDefiniteMetrics<3, ScalarType, Tensor>(geometry, config, iSensor, metric);
-      break;
-    default:
-      SU2_MPI::Error("Too many dimensions for metric computation.", CURRENT_FUNCTION);
-      break;
-  }
-}
-
-/*!
- * \brief Integrate the Hessian field for the Lp-norm normalization of the metric.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] iSensor - Index of the sensor to work on.
- * \param[in] metric - Metric container.
- * \return Integral of the metric tensor determinant.
-*/
-template<class ScalarType, class MetricType>
-ScalarType integrateMetrics(CGeometry& geometry, const CConfig& config,
-                            unsigned short iSensor, MetricType& metric) {
-  ScalarType integral = ScalarType(0.0);
-  switch (geometry.GetnDim()) {
-    case 2:
-      integral = detail::integrateMetrics<2, ScalarType>(geometry, config, iSensor, metric);
-      break;
-    case 3:
-      integral = detail::integrateMetrics<3, ScalarType>(geometry, config, iSensor, metric);
-      break;
-    default:
-      SU2_MPI::Error("Too many dimensions for metric integration.", CURRENT_FUNCTION);
-      break;
-  }
-
-  return integral;
-}
-
-/*!
- * \brief Perform an Lp-norm normalization of the metric.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] iSensor - Index of the sensor to work on.
- * \param[in] integral - Integral of the metric tensor determinant.
- * \param[in,out] metric - Metric container.
- */
-template<class ScalarType, class Tensor, class MetricType>
-void normalizeMetrics(CGeometry& geometry, const CConfig& config,
-                     unsigned short iSensor, ScalarType integral,
-                     MetricType& metric) {
-  switch (geometry.GetnDim()) {
-    case 2:
-      detail::normalizeMetrics<2, ScalarType, Tensor>(geometry, config, iSensor, integral, metric);
-      break;
-    case 3:
-      detail::normalizeMetrics<3, ScalarType, Tensor>(geometry, config, iSensor, integral, metric);
-      break;
-    default:
-      SU2_MPI::Error("Too many dimensions for metric normalization.", CURRENT_FUNCTION);
-      break;
-  }
-}
+void normalizeAdaptiveMetric(const CGeometry& geometry, const CConfig& config,
+                             const std::vector<passivedouble>& integrals,
+                             const std::vector<std::string>& sensorNames, C3DPassiveMatrix& metric);

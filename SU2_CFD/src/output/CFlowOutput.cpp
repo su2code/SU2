@@ -4375,16 +4375,23 @@ void CFlowOutput::AddMeshAdaptationOutputs(const CConfig* config) {
       }
     }
 
-    // Metric tensor
-    // Common metric tensor components for both 2D and 3D
-    AddVolumeOutput("ADAPTIVE_METRIC_XX", "AdaptiveMetric_xx", "ADAPTIVE_METRIC", "x-x-component of the adaptive metric");
-    AddVolumeOutput("ADAPTIVE_METRIC_XY", "AdaptiveMetric_xy", "ADAPTIVE_METRIC", "x-y-component of the adaptive metric");
-    AddVolumeOutput("ADAPTIVE_METRIC_YY", "AdaptiveMetric_yy", "ADAPTIVE_METRIC", "y-y-component of the adaptive metric");
-    // Additional components for 3D
-    if (nDim == 3) {
-      AddVolumeOutput("ADAPTIVE_METRIC_XZ", "AdaptiveMetric_xz", "ADAPTIVE_METRIC", "x-z-component of the adaptive metric");
-      AddVolumeOutput("ADAPTIVE_METRIC_YZ", "AdaptiveMetric_yz", "ADAPTIVE_METRIC", "y-z-component of the adaptive metric");
-      AddVolumeOutput("ADAPTIVE_METRIC_ZZ", "AdaptiveMetric_zz", "ADAPTIVE_METRIC", "z-z-component of the adaptive metric");
+    // Adaptive metric tensors
+    for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++){
+      string sens_str = adapt.sensor_names[iSensor];
+      string sens_title = ToTitleCase(sens_str);
+      const string key = "ADAPTIVE_METRIC_" + sens_str + "_";
+      const string name = "AdaptiveMetric_" + sens_title + "_";
+      const string desc = "-component of the " + sens_title + " adaptive metric";
+      // Common metric tensor components for both 2D and 3D
+      AddVolumeOutput(key + "XX", name + "xx", "ADAPTIVE_METRIC", "x-x" + desc);
+      AddVolumeOutput(key + "XY", name + "xy", "ADAPTIVE_METRIC", "x-y" + desc);
+      AddVolumeOutput(key + "YY", name + "yy", "ADAPTIVE_METRIC", "y-y" + desc);
+      // Additional components for 3D
+      if (nDim == 3) {
+        AddVolumeOutput(key + "XZ", name + "xz", "ADAPTIVE_METRIC", "x-z" + desc);
+        AddVolumeOutput(key + "YZ", name + "yz", "ADAPTIVE_METRIC", "y-z" + desc);
+        AddVolumeOutput(key + "ZZ", name + "zz", "ADAPTIVE_METRIC", "z-z" + desc);
+      }
     }
 
     // Dual-cell volume
@@ -4434,17 +4441,19 @@ void CFlowOutput::LoadMeshAdaptationOutputs(const CConfig* config, const CSolver
       }
     }
 
-    // Metric tensor
-    // Common metric tensor components for both 2D and 3D
-    SetVolumeOutputValue("ADAPTIVE_METRIC_XX", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 0));
-    SetVolumeOutputValue("ADAPTIVE_METRIC_XY", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 1));
-    SetVolumeOutputValue("ADAPTIVE_METRIC_YY", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 2));
-
-    // Additional components for 3D
-    if (nDim == 3) {
-      SetVolumeOutputValue("ADAPTIVE_METRIC_XZ", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 3));
-      SetVolumeOutputValue("ADAPTIVE_METRIC_YZ", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 4));
-      SetVolumeOutputValue("ADAPTIVE_METRIC_ZZ", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, 5));
+    // Adaptive metric tensors
+    for (auto iSensor = 0u; iSensor < sensors.size(); iSensor++){
+      const string key = "ADAPTIVE_METRIC_" + sensors[iSensor].name + "_";
+      // Common metric tensor components for both 2D and 3D
+      SetVolumeOutputValue(key + "XX", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, iSensor, 0));
+      SetVolumeOutputValue(key + "XY", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, iSensor, 1));
+      SetVolumeOutputValue(key + "YY", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, iSensor, 2));
+      // Additional components for 3D
+      if (nDim == 3) {
+        SetVolumeOutputValue(key + "XZ", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, iSensor, 3));
+        SetVolumeOutputValue(key + "YZ", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, iSensor, 4));
+        SetVolumeOutputValue(key + "ZZ", iPoint, Node_Flow->GetAdaptiveMetric(iPoint, iSensor, 5));
+      }
     }
 
     // Dual-cell volume

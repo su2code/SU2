@@ -165,13 +165,13 @@ void CVariable::AllocateAdaptiveMetricArrays(unsigned short nSensors) {
   if (Sensor_Adapt.size() == 0 || Sensor_Adapt.cols() != nSensors) {
     Sensor_Adapt.resize(nPoint, nSensors) = su2double(0.0);
   }
-  if (Gradient_Adapt.size() == 0 || Gradient_Adapt.cols() != nSensors) {
+  if (Gradient_Adapt.size() == 0 || Gradient_Adapt.rows() != nSensors) {
     Gradient_Adapt.resize(nPoint, nSensors, nDim, 0.0);
   }
-  if (Hessian.size() == 0 || Hessian.cols() != nSensors) {
+  if (Hessian.size() == 0 || Hessian.rows() != nSensors) {
     Hessian.resize(nPoint, nSensors, nSymMat, 0.0);
   }
-  if (Metric.size() == 0 || Metric.cols() != nSymMat) {
-    Metric.resize(nPoint, nSymMat) = 0.0;
+  if (AdaptiveMetric.size() == 0 || AdaptiveMetric.rows() != nSensors) {
+    AdaptiveMetric.resize(nPoint, nSensors, nSymMat, 0.0);
   }
 }

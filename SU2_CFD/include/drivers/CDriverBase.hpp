@@ -523,6 +523,13 @@ class CDriverBase {
   short GetAdaptiveMetricSensorIndex(const std::string& sensor_name) const;
 
   /*!
+   * \brief Finalize the time-integrated adaptive metric of an unsteady run (no-op for steady runs).
+   * \note Call once, after the last time step and before writing the final output. The C++ main
+   *       loop does this automatically; Python scripts that drive the time loop must call it.
+   */
+  void FinalizeAdaptiveMetric();
+
+  /*!
    * \brief Set the values of a custom metric sensor on the nodes of the flow solver.
    * \param[in] iSensor - Sensor index (see GetAdaptiveMetricSensorIndex); the sensor must be listed in ADAPTIVE_METRIC_CUSTOM_SENSOR.
    * \param[in] values - One value per domain node, or per node including halos.

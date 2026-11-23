@@ -54,6 +54,11 @@ def main():
     driver.Postprocess()
     driver.Update()
     driver.Monitor(0)
+
+    # Finalize the time-integrated metric
+    # No-op for steady runs
+    # Needed after the last time step of unsteady runs
+    driver.FinalizeAdaptiveMetric()
     driver.Output(0)
 
     driver.Finalize()

@@ -449,6 +449,16 @@ short CDriverBase::GetAdaptiveMetricSensorIndex(const string& sensor_name) const
   return -1;
 }
 
+void CDriverBase::FinalizeAdaptiveMetric() {
+  auto* config = config_container[selected_zone];
+  if (!config->GetAdaptiveMetricParsedOptions().compute) return;
+
+  auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
+  if (flow_solver == nullptr) return;
+
+  flow_solver->FinalizeAdaptiveMetric(geometry_container[selected_zone][INST_0][MESH_0], config);
+}
+
 void CDriverBase::SetAdaptSensor(unsigned short iSensor, const vector<passivedouble>& values) {
   auto* nodes = GetSolverAndCheckMarker(FLOW_SOL)->GetNodes();
   const auto& sensors = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->GetAdaptiveMetricSensors();

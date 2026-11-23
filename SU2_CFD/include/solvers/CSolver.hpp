@@ -4487,24 +4487,33 @@ public:
   }
 
   /*!
-   * \brief Compute the goal-oriented metric.
-   * \param[in] solver - Physical definition of the problem.
+   * \brief Add the current Hessians of all sensors to their adaptive metrics.
+   * \note Steady: the metric is |H|, normalized if requested. Unsteady: dt*|H| is accumulated
+   *       (half weight on the first step); call FinalizeAdaptiveMetric when the run stops.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
    */
-  void ComputeAdaptiveMetric(CSolver **solver, CGeometry *geometry, const CConfig *config, bool restartMetric);
+  void ComputeAdaptiveMetric(CGeometry *geometry, const CConfig *config, bool restartMetric);
 
   /*!
-   * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
-   * \param[in] solver - Physical definition of the problem.
+   * \brief Finalize the time-integrated adaptive metric of an unsteady run at the step where it stops.
+   * \note Applies the half weight of the last step, then integrates and (if requested) normalizes.
+   *       Does nothing for steady runs, or if nothing was accumulated since the last finalization.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iSensor - Index of the sensor to work on.
-   * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
    */
-  void AddAdaptiveMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                  const unsigned short iSensor, bool restartMetric);
+  void FinalizeAdaptiveMetric(CGeometry *geometry, const CConfig *config);
+
+private:
+  unsigned long nAdaptiveMetricSteps = 0; /*!< \brief Number of time steps accumulated in the unsteady adaptive metric. */
+
+  /*!
+   * \brief Integrate the adaptive metric of all sensors, print the integrals, and normalize if requested.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void IntegrateAndNormalizeAdaptiveMetric(CGeometry *geometry, const CConfig *config);
 
 protected:
   /*!

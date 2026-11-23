@@ -106,7 +106,7 @@ protected:
   MatrixType Sensor_Adapt;     /*!< \brief Variables for which we need gradients for anisotropy in mesh adaptation. */
   CVectorOfMatrix Gradient_Adapt; /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
   CVectorOfMatrix Hessian;        /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
-  su2matrix<double> Metric;       /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
+  C3DPassiveMatrix AdaptiveMetric; /*!< \brief Adaptive metric tensor of each sensor for anisotropic mesh adaptation. */
 
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
@@ -2460,17 +2460,6 @@ public:
   inline su2double GetSensor_Adapt(unsigned long iPoint, unsigned long iVar) const { return Sensor_Adapt(iPoint,iVar); }
 
   /*!
-   * \brief Set the gradient of the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] gradient - Gradient of the solution.
-   */
-  inline void SetGradient_Adapt(unsigned long iPoint, su2double** gradient) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      for (unsigned long iDim = 0; iDim < nDim; iDim++)
-        Gradient_Adapt(iPoint,iVar,iDim) = gradient[iVar][iDim];
-  }
-
-  /*!
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */
@@ -2517,33 +2506,24 @@ public:
   inline su2double GetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iMat) const { return Hessian(iPoint,iVar,iMat); }
 
   /*!
-   * \brief Set the value of the metric.
-   * \param[in] iMat - Metric tensor index.
-   * \param[in] metric - Metric value.
+   * \brief Get the adaptive metric field of all sensors.
+   * \return Reference to the adaptive metric field (nPoint, nSensor, nSymMat).
    */
-  inline void SetAdaptiveMetric(unsigned long iPoint, unsigned short iMat, double metric) { Metric(iPoint,iMat) = metric; }
+  inline C3DPassiveMatrix& GetAdaptiveMetric(void) { return AdaptiveMetric; }
 
   /*!
-   * \brief Get the metric of the entire solution.
-   * \return Reference to the metric tensor field.
+   * \brief Get a component of the adaptive metric of a sensor.
+   * \param[in] iPoint - Point index.
+   * \param[in] iSensor - Sensor index.
+   * \param[in] iMat - Symmetric tensor component index.
+   * \return Value of the adaptive metric component.
    */
-  inline su2matrix<double>& GetAdaptiveMetric(void) { return Metric; }
+  inline passivedouble GetAdaptiveMetric(unsigned long iPoint, unsigned long iSensor, unsigned long iMat) const {
+    return AdaptiveMetric(iPoint, iSensor, iMat);
+  }
 
   /*!
-   * \brief Add the value of the metric.
-   * \param[in] iMat - Metric tensor index.
-   * \param[in] metric - Metric value.
-   */
-  inline void AddAdaptiveMetric(unsigned long iPoint, unsigned short iMat, double metric) { Metric(iPoint,iMat) += metric; }
-
-  /*!
-   * \brief Get the value of the metric.
-   * \param[in] iMat  - Metric tensor index.
-   */
-  inline double GetAdaptiveMetric(unsigned long iPoint, unsigned short iMat) const { return Metric(iPoint,iMat); }
-
-  /*!
-   * \brief Allocate Sensor_Adapt, Gradient_Adapt, Hessian, and Metric arrays for specified sensor indices.
+   * \brief Allocate Sensor_Adapt, Gradient_Adapt, Hessian, and AdaptiveMetric arrays for the given number of sensors.
    * \param[in] nSensors - Number of metric sensors
    */
   void AllocateAdaptiveMetricArrays(unsigned short nSensors);

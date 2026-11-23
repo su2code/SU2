@@ -4712,77 +4712,70 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 }
 
 
-void CSolver::ComputeAdaptiveMetric(CSolver **solver, CGeometry *geometry, const CConfig *config, bool restartMetric) {
+void CSolver::ComputeAdaptiveMetric(CGeometry *geometry, const CConfig *config, bool restartMetric) {
   /*--- TODO: - goal-oriented metric ---*/
   /*---       - metric intersection  ---*/
-  const unsigned short nSensor = GetnAdaptiveMetricSensor();
+  auto& metric = base_nodes->GetAdaptiveMetric();
+  const auto& hessian = base_nodes->GetHessian();
 
-  const unsigned long time_iter = config->GetTimeIter();
-  const bool steady = (config->GetTime_Marching() == TIME_MARCHING::STEADY);
-  const bool is_last_iter = (time_iter == config->GetnTime_Iter() - 1) || (steady);
-  const bool normalize = config->GetAdaptiveMetricParsedOptions().normalize;
-
-  /*--- Integrate and normalize the metric tensor field ---*/
-  vector<double> integrals;
-  for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-    /*--- Make the Hessian eigenvalues positive definite ---*/
-    auto& hessians = base_nodes->GetHessian();
-    setPositiveDefiniteMetrics<su2double, tensor::hessian>(*geometry, *config, iSensor, hessians);
-
-    if (iSensor == 0) {
-      /*--- Add Hessian of sensor at position 0 to metric tensor */
-      AddAdaptiveMetric(solver, geometry, config, iSensor, restartMetric);
-
-      /*--- Integrate metric field on the last iteration (the end of the simulation if steady) ---*/
-      auto& metrics = base_nodes->GetAdaptiveMetric();
-      double integral = 0.0;
-      if (is_last_iter)
-        integral = integrateMetrics<double>(*geometry, *config, iSensor, metrics);
-
-      /*--- Normalize the metric field for steady simulations, or if requested for unsteady ---*/
-      if (steady || (normalize && is_last_iter))
-        normalizeMetrics<double, tensor::metric>(*geometry, *config, iSensor, integral, metrics);
-
-      /*--- Store the integral to be written ---*/
-      if (is_last_iter) {
-        integrals.push_back(integral);
-        if (rank == MASTER_NODE) {
-          const string& sensor_name = (iSensor < AdaptiveMetricSensors.size()) ? AdaptiveMetricSensors[iSensor].name : "unknown";
-          cout << "Global adaptive metric normalization integral for sensor ";
-          cout << sensor_name << ": " << integral << endl;
-        }
-      }
-    } // iSensor == 0
-    } // BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+  if (!config->GetTime_Domain()) {
+    /*--- Steady: the metric is the absolute value of the current Hessian ---*/
+    resetAdaptiveMetric(metric);
+    accumulateAdaptiveMetric(*geometry, hessian, 1.0, metric);
+    IntegrateAndNormalizeAdaptiveMetric(geometry, config);
   }
+  else {
+    /*--- Unsteady: trapezoidal time integration of |H|. The first step has half weight; the
+     *    half weight of the last step is applied in FinalizeAdaptiveMetric, since only the
+     *    driver knows when the run stops (e.g. MAX_TIME or time convergence). ---*/
+    const bool first_step = (config->GetTimeIter() == 0) || restartMetric;
+    if (first_step) {
+      resetAdaptiveMetric(metric);
+      nAdaptiveMetricSteps = 0;
+    }
+    const passivedouble dt = SU2_TYPE::GetValue(config->GetTime_Step());
+    accumulateAdaptiveMetric(*geometry, hessian, (first_step ? 0.5 : 1.0) * dt, metric);
+    nAdaptiveMetricSteps++;
+  }
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CSolver::AddAdaptiveMetric(CSolver **solver, const CGeometry*geometry, const CConfig *config,
-                         const unsigned short iSensor, bool restartMetric) {
-  /*--- TODO: - goal-oriented metric ---*/
-  /*---       - metric intersection  ---*/
-  auto varFlo = solver[FLOW_SOL]->GetNodes();
+void CSolver::FinalizeAdaptiveMetric(CGeometry *geometry, const CConfig *config) {
+  if (!config->GetTime_Domain() || nAdaptiveMetricSteps == 0) return;
 
-  const unsigned long nPointDomain = geometry->GetnPointDomain();
-  const unsigned short nSymMat = 3*(nDim-1);
-
-  const unsigned long time_iter = config->GetTimeIter();
-  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                             (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
-                             (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
-  const bool is_first_iter = (time_iter == 0) || (restartMetric);
-  const bool is_last_iter = (time_iter == config->GetnTime_Iter() - 1);
-
-  double coeff = (time_stepping && (is_first_iter || is_last_iter))? 0.5 : 1.0;
-  if (time_stepping) coeff *= SU2_TYPE::GetValue(config->GetTime_Step());
-
-  for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-    for (auto iMat = 0; iMat < nSymMat; ++iMat) {
-      double hess = SU2_TYPE::GetValue(varFlo->GetHessian(iPoint, iSensor, iMat));
-      varFlo->AddAdaptiveMetric(iPoint, iMat, coeff * hess);
-    }
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+  /*--- Half weight on the last step, unless it was also the first one ---*/
+  if (nAdaptiveMetricSteps > 1) {
+    const passivedouble dt = SU2_TYPE::GetValue(config->GetTime_Step());
+    accumulateAdaptiveMetric(*geometry, base_nodes->GetHessian(), -0.5 * dt, base_nodes->GetAdaptiveMetric());
   }
+  nAdaptiveMetricSteps = 0;
+
+  IntegrateAndNormalizeAdaptiveMetric(geometry, config);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+}
+
+void CSolver::IntegrateAndNormalizeAdaptiveMetric(CGeometry *geometry, const CConfig *config) {
+  auto& metric = base_nodes->GetAdaptiveMetric();
+
+  /*--- The integrals are printed even without normalization, since a normalization
+   *    over several unsteady sub-intervals needs them. ---*/
+  const auto integrals = integrateAdaptiveMetric(*geometry, *config, metric);
+
+  vector<string> names;
+  for (const auto& sensor : AdaptiveMetricSensors) names.push_back(sensor.name);
+
+  if (rank == MASTER_NODE) {
+    for (auto iSensor = 0ul; iSensor < names.size(); ++iSensor)
+      cout << "Global adaptive metric normalization integral for sensor " << names[iSensor] << ": "
+           << integrals[iSensor] << endl;
+  }
+
+  if (config->GetAdaptiveMetricParsedOptions().normalize)
+    normalizeAdaptiveMetric(*geometry, *config, integrals, names, metric);
 }

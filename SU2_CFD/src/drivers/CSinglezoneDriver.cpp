@@ -113,6 +113,10 @@ void CSinglezoneDriver::StartSolver() {
 
     Monitor(TimeIter);
 
+    /*--- Finalize the time-integrated adaptive metric before the last output. ---*/
+
+    if (StopCalc) FinalizeAdaptiveMetric();
+
     /*--- Output the solution in files. ---*/
 
     Output(TimeIter);
@@ -395,5 +399,5 @@ void CSinglezoneDriver::ComputeAdaptiveMetricField(bool restartMetric) {
   }
 
   if(rank == MASTER_NODE) cout << "Computing feature-based adaptive metric tensor." << endl;
-  solver_flow->ComputeAdaptiveMetric(solver, geometry, config, restartMetric);
+  solver_flow->ComputeAdaptiveMetric(geometry, config, restartMetric);
 }
