@@ -5706,7 +5706,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
       const auto Energy_i = nodes->GetEnergy(iPoint);
       const bool pressureOutflow = config->GetKind_Data_Riemann(Marker_Tag) == STATIC_PRESSURE;
-      const su2double StaticEnergy_i = Energy_i - 0.5 * Velocity2_i;
+      const su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -5908,7 +5908,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Velocity2_b = GeometryToolbox::SquaredNorm(nDim, Velocity_b);
 
       const su2double Energy_b = u_b[nVar-1]/Density_b;
-      const su2double StaticEnergy_b = Energy_b - 0.5 * Velocity2_b;
+      const su2double StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
       GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
 
       /*--- Store number of Newton iterations at BC ---*/
@@ -6171,7 +6171,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         Density_i = nodes->GetDensity(iPoint);
 
         Energy_i = nodes->GetEnergy(iPoint);
-        StaticEnergy_i = Energy_i - 0.5 * Velocity2_i;
+        StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
         GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -6374,7 +6374,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           Velocity2_b += Velocity_b[iDim]*Velocity_b[iDim];
         }
         Energy_b = u_b[nVar-1]/Density_b;
-        StaticEnergy_b = Energy_b - 0.5 * Velocity2_b;
+        StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
         GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
         Pressure_b = GetFluidModel()->GetPressure();
         Temperature_b = GetFluidModel()->GetTemperature();
