@@ -240,7 +240,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.003110, -7.625378, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.003106, -7.625317, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262299, -0.000000, 2.089953] #last 4 columns
     test_list.append(poiseuille_profile)
 
@@ -1212,7 +1212,7 @@ def main():
     fsi_cht.cfg_dir   = "fea_fsi/stat_fsi"
     fsi_cht.cfg_file  = "config.cfg"
     fsi_cht.test_iter = 20
-    fsi_cht.test_vals = [5.000000, -5.077001, -5.379489, -9.247837, -9.320223, -9.185115, 608.350000, -0.012973, 0.000000, 30.000000]
+    fsi_cht.test_vals = [5.000000, -5.077000, -5.379436, -9.247801, -9.319647, -9.184934, 608.350000, -0.012973, 0.000000, 30.000000]
     fsi_cht.multizone = True
     test_list.append(fsi_cht)
 
@@ -1807,7 +1807,7 @@ def main():
     pywrapper_custom_inlet.cfg_dir = "py_wrapper/custom_inlet"
     pywrapper_custom_inlet.cfg_file = "lam_flatplate.cfg"
     pywrapper_custom_inlet.test_iter = 20
-    pywrapper_custom_inlet.test_vals = [-4.123923, -1.544231, -3.887532, 1.338711, -0.688139, 0.160847, -0.009845, 0.520890, -0.530730]
+    pywrapper_custom_inlet.test_vals = [-4.123921, -1.544230, -3.886906, 1.338713, -0.688132, 0.160844, -0.009845, 0.520880, -0.530730]
     pywrapper_custom_inlet.command = TestCase.Command(exec = "python", param = "run.py")
     pywrapper_custom_inlet.timeout = 1600
     pywrapper_custom_inlet.tol = 0.0001

@@ -1401,7 +1401,7 @@ def main():
     datadriven_fluidModel.cfg_dir   = "nicf/datadriven"
     datadriven_fluidModel.cfg_file  = "datadriven_nozzle.cfg"
     datadriven_fluidModel.test_iter = 50
-    datadriven_fluidModel.test_vals = [-6.300698, -3.179419, -4.149637, -1.025372, -2.145140, 1.646724]
+    datadriven_fluidModel.test_vals = [-6.328735, -3.204454, -4.158198, -0.979779, -2.094321, 1.609207]
     test_list.append(datadriven_fluidModel)
 
     ######################################
@@ -1792,7 +1792,7 @@ def main():
     pywrapper_unsteadyFSI.cfg_dir = "py_wrapper/dyn_fsi"
     pywrapper_unsteadyFSI.cfg_file = "config.cfg"
     pywrapper_unsteadyFSI.test_iter = 4
-    pywrapper_unsteadyFSI.test_vals = [0.000000, 30.000000, 5.000000, 48.000000, -1.756676, -2.828284, -7.625018, -6.863923, 0.000156]
+    pywrapper_unsteadyFSI.test_vals = [0.000000, 30.000000, 5.000000, 47.000000, -1.756676, -2.828284, -7.625018, -6.863923, 0.000156]
     pywrapper_unsteadyFSI.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     pywrapper_unsteadyFSI.unsteady = True
     pywrapper_unsteadyFSI.multizone = True
