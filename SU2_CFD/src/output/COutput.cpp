@@ -1380,7 +1380,9 @@ void COutput::PrepareHistoryFile(CConfig *config){
 
   /*--- Open the history file ---*/
 
-  histFile.open(historyFilename, ios::out);
+  ios_base::openmode mode = ios::out;
+  if (!config->GetWrt_History_Overwrite()) mode = ios::app;
+  histFile.open(historyFilename, mode);
 
   /*--- Create and format the history file table ---*/
 

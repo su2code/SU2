@@ -752,6 +752,7 @@ private:
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
   Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
+  Wrt_History_Overwrite,              /*!< \brief Overwrite history file or append iteration number.*/
   PyCustomSource,                     /*!< \brief Use a user-defined custom source term .*/
   Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
@@ -5804,6 +5805,12 @@ public:
    * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
    */
   bool GetWrt_Volume_Overwrite(void) const { return Wrt_Volume_Overwrite; }
+
+  /*!
+   * \brief Flag for whether history file is overwritten.
+   * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
+   */
+  bool GetWrt_History_Overwrite(void) const { return Wrt_History_Overwrite; }
 
   /*!
    * \brief Get whether filenames are appended the zone number automatically (multiphysics solver).
