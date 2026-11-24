@@ -422,6 +422,7 @@ private:
   unsigned long OuterIter;          /*!< \brief Current Outer iterations for multizone problems. */
   unsigned long InnerIter;          /*!< \brief Current inner iterations for multizone problems. */
   unsigned long TimeIter;           /*!< \brief Current time iterations for multizone problems. */
+  bool LoadingRestart = false;      /*!< \brief True while the solvers load a restart file. */
   long Unst_AdjointIter;            /*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;          /*!< \brief Iteration the number of time steps to be averaged, counting from the back */
   su2double PhysicalTime;           /*!< \brief Physical time at the current iteration in the solver for unsteady problems. */
@@ -3407,11 +3408,23 @@ public:
 
   /*!
    * \brief Get the iteration counter that times a spark ignition.
-   * \return Outer iteration (multizone), time iteration (unsteady) or inner iteration.
+   * \return Time iteration (unsteady), outer iteration (multizone) or inner iteration.
    */
   unsigned long GetIgnitionIter() const {
-    return Multizone_Problem ? OuterIter : (Time_Domain ? TimeIter : InnerIter);
+    return Time_Domain ? TimeIter : (Multizone_Problem ? OuterIter : InnerIter);
   }
+
+  /*!
+   * \brief Set whether the solvers are currently loading a restart file.
+   * \param[in] val_loading - True while the restart files are being read.
+   */
+  void SetLoadingRestart(bool val_loading) { LoadingRestart = val_loading; }
+
+  /*!
+   * \brief Whether the solvers are currently loading a restart file.
+   * \note The iteration counters are not yet set to the restart iteration at that point.
+   */
+  bool GetLoadingRestart() const { return LoadingRestart; }
 
   /*!
    * \brief Set the current physical time.

@@ -4449,11 +4449,27 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           CURRENT_FUNCTION);
     }
 
-    if ((flamelet_ParsedOptions.ignition_method != FLAMELET_INIT_TYPE::SPARK) && cantera_ParsedOptions.combustion) {
-      SU2_MPI::Error(
-          "The use of CANTERA_COMBUSTION=YES requires the use of FLAME_INIT_METHOD=SPARK,\n"
-          "Other ignition methods are not currently available",
-          CURRENT_FUNCTION);
+    if (cantera_ParsedOptions.combustion) {
+      const auto ignition_method = flamelet_ParsedOptions.ignition_method;
+      if (Restart) {
+        /*--- A restarted solution is already ignited, the spark is not needed. ---*/
+        if ((ignition_method == FLAMELET_INIT_TYPE::SPARK) && (rank == MASTER_NODE)) {
+          cout << "WARNING: FLAME_INIT_METHOD= SPARK is set while restarting a CANTERA_COMBUSTION=YES solution,\n"
+                  "         the spark will be applied again to the restarted solution if SPARK_INIT is active.\n"
+                  "         Use FLAME_INIT_METHOD= NONE to restart without ignition." << endl;
+        }
+      } else if (ignition_method == FLAMELET_INIT_TYPE::NONE) {
+        SU2_MPI::Error(
+            "The use of CANTERA_COMBUSTION=YES requires the use of FLAME_INIT_METHOD=SPARK.\n"
+            "FLAME_INIT_METHOD= NONE is only allowed when restarting, it looks like you are trying to restart,\n"
+            "set RESTART_SOL= YES to restart without ignition.",
+            CURRENT_FUNCTION);
+      } else if (ignition_method != FLAMELET_INIT_TYPE::SPARK) {
+        SU2_MPI::Error(
+            "The use of CANTERA_COMBUSTION=YES requires the use of FLAME_INIT_METHOD=SPARK,\n"
+            "Other ignition methods are not currently available",
+            CURRENT_FUNCTION);
+      }
     }
 
     if (Kind_FluidModel == FLUID_CANTERA) {

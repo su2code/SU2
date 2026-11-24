@@ -1176,6 +1176,9 @@ void CDriver::RestartSolver(CSolver ***solver, CGeometry **geometry,
   /*--- Restart direct solvers. ---*/
 
   if (restart || restart_flow) {
+    /*--- The iteration counters are not set to the restart iteration yet, prevent time-dependent
+     *    modifications of the loaded solution (e.g. spark ignition) during the restart. ---*/
+    config->SetLoadingRestart(true);
     for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
       auto sol = solver[MESH_0][iSol];
       if (sol && !sol->GetAdjoint()) {
@@ -1185,6 +1188,7 @@ void CDriver::RestartSolver(CSolver ***solver, CGeometry **geometry,
         END_SU2_OMP_PARALLEL
       }
     }
+    config->SetLoadingRestart(false);
   }
 
   /*--- Restart adjoint solvers. ---*/
