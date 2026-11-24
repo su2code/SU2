@@ -28,7 +28,7 @@
 #include "../../include/variables/CPoissonVariable.hpp"
 
 CPoissonVariable::CPoissonVariable(su2double value, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CScalarVariable(npoint, ndim, nvar, config) {
+  : CScalarVariable(npoint, ndim, nvar, config, false) {
 
   /*--- Initialization ---*/
 

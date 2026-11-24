@@ -851,6 +851,112 @@ void CFVMFlowSolverBase<V, R>::UpdateCustomBoundaryConditions(
 }
 
 template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::SetCompressibleNonDimValues(CConfig *config, su2double Pressure_FreeStream,
+                                                           su2double Density_FreeStream,
+                                                           su2double Temperature_FreeStream,
+                                                           su2double Viscosity_FreeStream,
+                                                           su2double ModVel_FreeStream) const {
+
+  const su2double Mach = config->GetMach();
+
+  /*--- Reference pressure, density and temperature. ---*/
+
+  su2double Pressure_Ref = 0.0, Density_Ref = 0.0, Temperature_Ref = 0.0;
+
+  if (config->GetRef_NonDim() == DIMENSIONAL) {
+    Pressure_Ref      = 1.0;
+    Density_Ref       = 1.0;
+    Temperature_Ref   = 1.0;
+  }
+  else if (config->GetRef_NonDim() == FREESTREAM_PRESS_EQ_ONE) {
+    Pressure_Ref      = Pressure_FreeStream;     // Pressure_FreeStream = 1.0
+    Density_Ref       = Density_FreeStream;      // Density_FreeStream = 1.0
+    Temperature_Ref   = Temperature_FreeStream;  // Temperature_FreeStream = 1.0
+  }
+  else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
+    Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
+    Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
+    Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
+  }
+  else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
+    Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
+    Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
+    Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
+  }
+  config->SetPressure_Ref(Pressure_Ref);
+  config->SetDensity_Ref(Density_Ref);
+  config->SetTemperature_Ref(Temperature_Ref);
+
+  /*--- Reference values that are derived from the three above. ---*/
+
+  const su2double Length_Ref       = 1.0;
+  const su2double Velocity_Ref     = sqrt(config->GetPressure_Ref()/config->GetDensity_Ref());
+  const su2double Time_Ref         = Length_Ref/Velocity_Ref;
+  const su2double Omega_Ref        = Velocity_Ref/Length_Ref;
+  const su2double Force_Ref        = config->GetDensity_Ref()*Velocity_Ref*Velocity_Ref*Length_Ref*Length_Ref;
+  const su2double Heat_Flux_Ref    = Density_Ref*Velocity_Ref*Velocity_Ref*Velocity_Ref;
+  const su2double Gas_Constant_Ref = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();
+  const su2double Viscosity_Ref    = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;
+  const su2double Conductivity_Ref = Viscosity_Ref*Gas_Constant_Ref;
+  const su2double Froude           = ModVel_FreeStream/sqrt(STANDARD_GRAVITY*Length_Ref);
+
+  config->SetLength_Ref(Length_Ref);
+  config->SetVelocity_Ref(Velocity_Ref);
+  config->SetTime_Ref(Time_Ref);
+  config->SetOmega_Ref(Omega_Ref);
+  config->SetForce_Ref(Force_Ref);
+  config->SetHeat_Flux_Ref(Heat_Flux_Ref);
+  config->SetGas_Constant_Ref(Gas_Constant_Ref);
+  config->SetViscosity_Ref(Viscosity_Ref);
+  config->SetConductivity_Ref(Conductivity_Ref);
+  config->SetFroude(Froude);
+
+  /*--- Divide by reference values, to compute the non-dimensional free-stream values. ---*/
+
+  const su2double Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref();
+  config->SetPressure_FreeStreamND(Pressure_FreeStreamND);
+
+  const su2double Density_FreeStreamND = Density_FreeStream/config->GetDensity_Ref();
+  config->SetDensity_FreeStreamND(Density_FreeStreamND);
+
+  su2double Velocity_FreeStreamND[MAXNDIM] = {0.0};
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
+    Velocity_FreeStreamND[iDim] = config->GetVelocity_FreeStream()[iDim]/Velocity_Ref;
+    config->SetVelocity_FreeStreamND(Velocity_FreeStreamND[iDim], iDim);
+  }
+
+  const su2double Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref();
+  config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
+
+  const su2double Gas_ConstantND = config->GetGas_Constant()/Gas_Constant_Ref;
+  config->SetGas_ConstantND(Gas_ConstantND);
+
+  const su2double ModVel_FreeStreamND = GeometryToolbox::Norm(nDim, Velocity_FreeStreamND);
+  config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
+
+  const su2double Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;
+  config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
+
+  /*--- Free-stream turbulence quantities, from the turbulence intensity and the viscosity ratio. ---*/
+
+  const su2double TurbIntensity = config->GetTurbulenceIntensity_FreeStream();
+
+  const su2double Tke_FreeStream = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*TurbIntensity*TurbIntensity);
+  config->SetTke_FreeStream(Tke_FreeStream);
+
+  const su2double Tke_FreeStreamND = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*TurbIntensity*TurbIntensity);
+  config->SetTke_FreeStreamND(Tke_FreeStreamND);
+
+  const su2double Omega_FreeStream =
+      Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
+  config->SetOmega_FreeStream(Omega_FreeStream);
+
+  const su2double Omega_FreeStreamND =
+      Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
+  config->SetOmega_FreeStreamND(Omega_FreeStreamND);
+}
+
+template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter,
                                                 bool update_geo, su2double* SolutionRestart,
                                                 unsigned short nVar_Restart) {
@@ -1155,6 +1261,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                          (config->GetKind_FluidModel() == IDEAL_GAS);
   const auto iVel = prim_idx.Velocity();
+  const bool compressibleProjection = FlowRegime == ENUM_REGIME::COMPRESSIBLE && iVel == 1 && nVar == nDim + 2;
 
   /*--- Blazek chapter 8.:
    * The components of the momentum residual normal to the symmetry plane are zeroed out.
@@ -1184,8 +1291,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
     }
 
-    /*--- Energy terms due to grid movement (aka work of pressure forces). ---*/
-    if (dynamic_grid) {
+    /*--- The classical compressible projection below already supplies wall pressure work. ---*/
+    if (dynamic_grid && !compressibleProjection) {
       su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -1217,8 +1324,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       /*--- Compute the residual using an upwind scheme. ---*/
       auto residual = conv_numerics->ComputeResidual(config);
 
-      /*--- Use just the energy fluxes to update the residual, adding the others would
-       * increase numerical diffusion which we wish to avoid if possible. ---*/
+      /*--- Energy fluxes for the other conservative layouts. ---*/
       for (auto iVar = iVel + nDim; iVar < nVar; iVar++) {
         LinSysRes(iPoint, iVar) += residual.residual[iVar];
       }
@@ -1243,14 +1349,16 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     su2double* solutionOld = nodes->GetSolution_Old(iPoint);
 
     su2double gridVel[MAXNDIM] = {};
+    su2double gridNormalVel = 0.0;
     if (dynamic_grid) {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
       }
+      gridNormalVel = GeometryToolbox::DotProduct(nDim, gridVel, UnitNormal);
       if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
         for(auto iDim = 0u; iDim < nDim; iDim++) {
           /*--- Multiply by density since we are correcting conservative variables. ---*/
-          gridVel[iDim] *= nodes->GetDensity(iPoint);
+          gridVel[iDim] *= compressibleProjection ? solutionOld[0] : nodes->GetDensity(iPoint);
         }
       }
     }
@@ -1261,11 +1369,19 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       solutionOld[iVel + iDim] -= vp * UnitNormal[iDim];
     }
+    if (compressibleProjection) {
+      solutionOld[iVel + nDim] -= gridNormalVel * vp;
+    }
 
     /*--- Keep only the tangential part of the momentum residuals. ---*/
     su2double normalRes = 0.0;
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       normalRes += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
+    }
+    if (compressibleProjection) {
+      /*--- Project in the wall frame: normal momentum follows density, with consistent pressure work. ---*/
+      normalRes -= gridNormalVel * LinSysRes(iPoint, 0);
+      LinSysRes(iPoint, iVel + nDim) -= gridNormalVel * normalRes;
     }
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       LinSysRes(iPoint, iVel + iDim) -= normalRes * UnitNormal[iDim];
@@ -1273,8 +1389,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
     /*--- Jacobian contribution for implicit integration. ---*/
     if (implicit) {
-      /*--- Modify the Jacobians according to the modification of the residual
-       * J_new = (I - n * n^T) * J where n = {0, nx, ny, nz, 0, ...} ---*/
+      /*--- Apply the same wall-frame projection to the Jacobians. ---*/
       su2double mat[MAXNVAR * MAXNVAR] = {};
 
       for (auto iVar = 0u; iVar < nVar; iVar++)
@@ -1282,6 +1397,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       for (auto iDim = 0u; iDim < nDim; iDim++)
         for (auto jDim = 0u; jDim < nDim; jDim++)
           mat[(iDim + iVel) * nVar + jDim + iVel] -= UnitNormal[iDim] * UnitNormal[jDim];
+      if (compressibleProjection) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          mat[(iDim + iVel) * nVar] += gridNormalVel * UnitNormal[iDim];
+          mat[(iVel + nDim) * nVar + iVel + iDim] -= gridNormalVel * UnitNormal[iDim];
+        }
+        mat[(iVel + nDim) * nVar] += gridNormalVel * gridNormalVel;
+      }
 
       auto ModifyJacobian = [&](const unsigned long jPoint) {
         su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
@@ -1305,6 +1427,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       normalRes += Res_TruncError[iVel + iDim] * UnitNormal[iDim];
+    }
+    if (compressibleProjection) {
+      normalRes -= gridNormalVel * Res_TruncError[0];
+      Res_TruncError[iVel + nDim] -= gridNormalVel * normalRes;
     }
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       Res_TruncError[iVel + iDim] -= normalRes * UnitNormal[iDim];
@@ -2974,6 +3100,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::MultigridProjectEulerWall(CGeometry* geo
                                                                    bool use_solution_old) {
   const auto iVel = prim_idx.Velocity();
   const auto nDim = geometry->GetnDim();
+  const bool compressibleProjection = FlowRegime == ENUM_REGIME::COMPRESSIBLE && iVel == 1 && nVar == nDim + 2;
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != EULER_WALL) continue;
@@ -3004,12 +3131,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::MultigridProjectEulerWall(CGeometry* geo
        *    For dynamic grids subtract the grid velocity to enforce (v - v_grid).n = 0,
        *    multiplying by density for compressible flow (conservative variables). ---*/
       su2double gridVel[MAXNDIM] = {};
-      if (dynamic_grid && !use_solution_old) {
+      su2double gridNormalVel = 0.0;
+      if (dynamic_grid && (compressibleProjection || !use_solution_old)) {
         for (auto iDim = 0u; iDim < nDim; iDim++)
           gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
+        gridNormalVel = GeometryToolbox::DotProduct(nDim, gridVel, UnitNormal);
         if constexpr (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            gridVel[iDim] *= nodes->GetDensity(iPoint);
+          /*--- Corrections carry their own density increment, rather than the current solution density. ---*/
+          const auto density = compressibleProjection ? sol[0] : nodes->GetDensity(iPoint);
+          for (auto iDim = 0u; iDim < nDim; iDim++) gridVel[iDim] *= density;
         }
       }
 
@@ -3019,6 +3149,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::MultigridProjectEulerWall(CGeometry* geo
 
       /*--- Project to tangent plane. ---*/
       for (auto iDim = 0u; iDim < nDim; iDim++) sol[iVel + iDim] -= momentum_n * UnitNormal[iDim];
+      if (compressibleProjection) sol[iVel + nDim] -= gridNormalVel * momentum_n;
     }
     END_SU2_OMP_FOR
   }
