@@ -1021,6 +1021,12 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
+      /*--- Same LM scaling of dk as in the residual. ---*/
+      if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+        const su2double dk_factor = min(max(eff_intermittency, 0.1), 1.0);
+        Jacobian_i[0][0] *= dk_factor;
+        Jacobian_i[0][1] *= dk_factor;
+      }
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
 
