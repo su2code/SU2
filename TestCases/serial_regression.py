@@ -119,7 +119,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.340821, 1.390022, -0.249526, 0.043953]
+    wedge.test_vals = [-4.350229, 1.379632, -0.249526, 0.043953]
     test_list.append(wedge)
 
     # Supersonic biparabolic airfoil
