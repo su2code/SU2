@@ -138,8 +138,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
    * the configuration-file marker list, which is the same on every rank. ---*/
   outletFallbacks = !config->GetTime_Domain() && config->GetTime_Marching() != TIME_MARCHING::HARMONIC_BALANCE;
   bool pressureOutlets = false;
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_CfgFile(); iMarker++) {
-    const auto tag = config->GetMarker_CfgFile_TagBound(iMarker);
+  for (auto iMarkerCfg = 0u; iMarkerCfg < config->GetnMarker_CfgFile(); iMarkerCfg++) {
+    const auto tag = config->GetMarker_CfgFile_TagBound(iMarkerCfg);
     const auto kind = config->GetMarker_CfgFile_KindBC(tag);
     pressureOutlets |=
         kind == OUTLET_FLOW || (kind == RIEMANN_BOUNDARY && (config->GetKind_Data_Riemann(tag) == STATIC_PRESSURE ||
