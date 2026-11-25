@@ -98,6 +98,17 @@ protected:
 #endif
 
 public:
+
+  /*!
+   * \brief How a volume output field is written by writers that group vector and tensor components.
+   */
+  enum class FieldKind {
+    SCALAR, /*!< \brief Written as a scalar array. */
+    VECTOR, /*!< \brief First component of a vector (<name>_x, _y[, _z]). */
+    TENSOR, /*!< \brief First component of a symmetric tensor (<name>_xx, _xy, _yy[, _xz, _yz, _zz]). */
+    SKIP    /*!< \brief Other component of a vector or tensor; written with its first component. */
+  };
+
   /*!
    * \brief Construct a file writer using field names, the data sorter and the file extension.
    * \param[in] valDataSorter - The parallel sorted data to write
@@ -196,6 +207,25 @@ protected:
    * \return Boolean indicating whether the closing was successful.
    */
   bool CloseMPIFile();
+
+  /*!
+   * \brief Remove the double quotes from a field name.
+   * \param[in] name - Field name.
+   * \return Field name without quotes.
+   */
+  static string UnquotedFieldName(string name);
+
+  /*!
+   * \brief Group the fields into vectors (<name>_x, _y[, _z]) and symmetric tensors (<name>_xx, _xy, _yy[, _xz, _yz,
+   *        _zz]). Fields are grouped only if the components are adjacent, in that order, and share the same prefix;
+   *        every other field is a scalar.
+   * \param[in] fieldNames - Names of all the output fields.
+   * \param[in] varStart - Index of the first field after the coordinates.
+   * \param[in] nDim - Number of spatial dimensions.
+   * \return Kind of each field.
+   */
+  static vector<FieldKind> ClassifyFields(const vector<string>& fieldNames, unsigned long varStart,
+                                          unsigned short nDim);
 
 };
 

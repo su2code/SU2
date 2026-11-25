@@ -34,78 +34,6 @@
 
 const string CParaviewXMLFileWriter::fileExt = ".vtu";
 
-namespace {
-
-/*!
- * \brief How a volume output field is written to the VTK file.
- */
-enum class FieldKind {
-  SCALAR, /*!< \brief Written as a scalar array. */
-  VECTOR, /*!< \brief First component of a vector; written as a 3-component array. */
-  TENSOR, /*!< \brief First component of a symmetric tensor; written as a 6-component array. */
-  SKIP    /*!< \brief Other component of a vector or tensor; written with its first component. */
-};
-
-/*!
- * \brief Remove the double quotes from a field name.
- */
-string unquoted(string name) {
-  name.erase(remove(name.begin(), name.end(), '"'), name.end());
-  return name;
-}
-
-/*!
- * \brief Group the fields into vectors (<name>_x, _y[, _z]) and symmetric tensors (<name>_xx, _xy, _yy[, _xz, _yz,
- *        _zz]). Fields are grouped only if the components are adjacent, in that order, and share the same prefix;
- *        every other field is a scalar.
- * \param[in] fieldNames - Names of all the output fields.
- * \param[in] varStart - Index of the first field after the coordinates.
- * \param[in] nDim - Number of spatial dimensions.
- * \return Kind of each field.
- */
-vector<FieldKind> classifyFields(const vector<string>& fieldNames, unsigned long varStart, unsigned short nDim) {
-  const vector<string> vectorSuffixes = (nDim == 3) ? vector<string>{"_x", "_y", "_z"} : vector<string>{"_x", "_y"};
-  const vector<string> tensorSuffixes = (nDim == 3) ? vector<string>{"_xx", "_xy", "_yy", "_xz", "_yz", "_zz"}
-                                                    : vector<string>{"_xx", "_xy", "_yy"};
-
-  vector<FieldKind> kinds(fieldNames.size(), FieldKind::SCALAR);
-
-  /*--- Check if the fields starting at iField are the components of a group. ---*/
-  auto isGroup = [&](unsigned long iField, const vector<string>& suffixes) {
-    if (iField + suffixes.size() > fieldNames.size()) return false;
-    const string first = unquoted(fieldNames[iField]);
-    const auto& suffix = suffixes.front();
-    if (first.size() <= suffix.size() || first.compare(first.size() - suffix.size(), suffix.size(), suffix) != 0)
-      return false;
-    const string prefix = first.substr(0, first.size() - suffix.size());
-    for (auto iComp = 1ul; iComp < suffixes.size(); ++iComp) {
-      if (unquoted(fieldNames[iField + iComp]) != prefix + suffixes[iComp]) return false;
-    }
-    return true;
-  };
-
-  /*--- Mark the first component of a group with its kind and the other components as skipped. ---*/
-  auto markGroup = [&](unsigned long iField, FieldKind kind, unsigned long nComp) {
-    kinds[iField] = kind;
-    for (auto iComp = 1ul; iComp < nComp; ++iComp) kinds[iField + iComp] = FieldKind::SKIP;
-    return nComp;
-  };
-
-  auto iField = varStart;
-  while (iField < fieldNames.size()) {
-    if (isGroup(iField, tensorSuffixes)) {
-      iField += markGroup(iField, FieldKind::TENSOR, tensorSuffixes.size());
-    } else if (isGroup(iField, vectorSuffixes)) {
-      iField += markGroup(iField, FieldKind::VECTOR, vectorSuffixes.size());
-    } else {
-      ++iField;
-    }
-  }
-  return kinds;
-}
-
-}  // namespace
-
 CParaviewXMLFileWriter::CParaviewXMLFileWriter(CParallelDataSorter *valDataSorter, bool valDoublePrecision) :
   CFileWriter(valDataSorter, fileExt), doublePrecision(valDoublePrecision){
 
@@ -224,13 +152,13 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   /*--- Group the vector and tensor components of the fields. ---*/
 
-  const auto fieldKinds = classifyFields(fieldNames, varStart, nDim);
+  const auto fieldKinds = ClassifyFields(fieldNames, varStart, nDim);
 
   /*--- Loop over all variables that have been registered in the output. ---*/
 
   for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
 
-    string fieldname = unquoted(fieldNames[iField]);
+    string fieldname = UnquotedFieldName(fieldNames[iField]);
 
     /*--- Write the point data as an <X,Y,Z> vector, tensor, or a scalar. ---*/
 
