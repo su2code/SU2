@@ -182,6 +182,11 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], SU2_COMPO
 
   Multizone_Problem = config->GetMultizone_Problem();
 
+  /*--- See the adaptive metric checks in SetPostprocessing. ---*/
+  if (adaptiveMetric_ParsedOptions.compute && Multizone_Problem) {
+    SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support multizone problems.", CURRENT_FUNCTION);
+  }
+
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software) {
@@ -6275,6 +6280,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- TODO: periodic communication of the sensor gradients and Hessians ---*/
     if (nMarker_PerBound > 0) {
       SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support periodic boundaries.", CURRENT_FUNCTION);
+    }
+
+    /*--- The metric is only computed by the single-zone primal driver (CSinglezoneDriver). Zone configs
+     *    inherit the multizone flag after this check, so it is repeated in the zone constructor. ---*/
+    if (Multizone_Problem || nZone > 1) {
+      SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support multizone problems.", CURRENT_FUNCTION);
+    }
+    if (TimeMarching == TIME_MARCHING::HARMONIC_BALANCE) {
+      SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support harmonic balance.", CURRENT_FUNCTION);
+    }
+    if (DiscreteAdjoint) {
+      SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support the discrete adjoint.", CURRENT_FUNCTION);
     }
 
     /*--- Check that config is valid for requested sensor ---*/
