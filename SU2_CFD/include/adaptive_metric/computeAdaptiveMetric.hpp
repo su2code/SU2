@@ -6,7 +6,7 @@
  *       the eigenvalue floor are only applied in eigenspace, inside each pass that needs them, and
  *       the final sizes are set by the size and aspect ratio constraints.
  * \author B. Munguía
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

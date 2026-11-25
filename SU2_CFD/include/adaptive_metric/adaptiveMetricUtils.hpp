@@ -2,7 +2,7 @@
  * \file adaptiveMetricUtils.hpp
  * \brief Utility functions for the adaptive metric computation (mesh adaptation).
  * \author B. Munguía
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file adaptive_metric.cpp
  * \brief Unit tests for the adaptive metric normalization (mesh adaptation).
  * \author B. Munguía
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
