@@ -129,7 +129,7 @@ std::vector<passivedouble> integrate(const CGeometry& geometry, const CConfig& c
   const passivedouble normExp = p / (2.0 * p + nDim);
 
   passivedouble A[nDim][nDim], eigVec[nDim][nDim], eigVal[nDim];
-  std::vector<passivedouble> localIntegral(nSensor, 0.0), globalIntegral(nSensor, 0.0);
+  std::vector<passivedouble> localIntegral(nSensor, 0.0);
 
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
     const passivedouble volume = SU2_TYPE::GetValue(geometry.nodes->GetVolume(iPoint));
@@ -140,8 +140,14 @@ std::vector<passivedouble> integrate(const CGeometry& geometry, const CConfig& c
     }
   }
 
-  SU2_MPI::Allreduce(localIntegral.data(), globalIntegral.data(), static_cast<int>(nSensor), MPI_DOUBLE, MPI_SUM,
+  /*--- SU2_MPI with MPI_DOUBLE expects su2double buffers, which are AD types in AD and direct differentiation
+   *    builds, so reduce through su2double copies of the (passive) integrals. ---*/
+  std::vector<su2double> localBuffer(localIntegral.begin(), localIntegral.end()), globalBuffer(nSensor, 0.0);
+  SU2_MPI::Allreduce(localBuffer.data(), globalBuffer.data(), static_cast<int>(nSensor), MPI_DOUBLE, MPI_SUM,
                      SU2_MPI::GetComm());
+
+  std::vector<passivedouble> globalIntegral(nSensor);
+  for (auto iSensor = 0ul; iSensor < nSensor; ++iSensor) globalIntegral[iSensor] = SU2_TYPE::GetValue(globalBuffer[iSensor]);
 
   return globalIntegral;
 }
