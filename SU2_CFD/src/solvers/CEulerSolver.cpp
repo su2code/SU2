@@ -5704,8 +5704,9 @@ bool FindReservoirTotalPressure(CFluidModel& fluid, su2double restPressure, su2d
   if (!residual(y0, r0)) return false;
   y1 = y0 - r0;  // The residual grows about one-to-one with log(p_t).
   if (!residual(y1, r1)) return false;
+  /*--- Stop before the secant step divides by a zero residual change. ---*/
   for (auto iteration = 0u;
-       iteration < SECANT_ITERATIONS && fabs(y1 - y0) > SECANT_STEP_TOL && fabs(r1) > SECANT_TOL && r1 != r0;
+       iteration < SECANT_ITERATIONS && fabs(y1 - y0) > SECANT_STEP_TOL && fabs(r1) > SECANT_TOL && fabs(r1 - r0) > 0;
        ++iteration) {
     const double y2 = y1 - r1 * (y1 - y0) / (r1 - r0);
     y0 = y1;

@@ -6082,9 +6082,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("OUTLET_BACKFLOW_TYPE needs one entry (DIRECTION or INTERIOR_TANGENTIAL) per MARKER_OUTLET_BACKFLOW "
                    "marker.", CURRENT_FUNCTION);
   OutletBackflowSpecs.clear();
-  for (auto iMarker = 0u; iMarker < nMarker_Outlet_Backflow; iMarker++) {
-    const auto& tag = Marker_Outlet_Backflow[iMarker];
-    for (auto jMarker = 0u; jMarker < iMarker; jMarker++)
+  for (auto iBackflow = 0u; iBackflow < nMarker_Outlet_Backflow; iBackflow++) {
+    const auto& tag = Marker_Outlet_Backflow[iBackflow];
+    for (auto jMarker = 0u; jMarker < iBackflow; jMarker++)
       if (Marker_Outlet_Backflow[jMarker] == tag)
         SU2_MPI::Error("MARKER_OUTLET_BACKFLOW lists marker " + tag + " twice.", CURRENT_FUNCTION);
     bool pressureOutlet = false;
@@ -6096,10 +6096,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " must be a MARKER_OUTLET, or a MARKER_RIEMANN with "
                      "STATIC_PRESSURE or RADIAL_EQUILIBRIUM.", CURRENT_FUNCTION);
     OutletBackflowSpec spec;
-    spec.totalTemperature = OutletBackflow_Ttotal[iMarker];
-    spec.totalPressure = OutletBackflow_Ptotal[iMarker];
-    spec.direction = OutletBackflow_FlowDir[iMarker];
-    if (nOutlet_Backflow_Types != 0) spec.type = Kind_Outlet_Backflow[iMarker];
+    spec.totalTemperature = OutletBackflow_Ttotal[iBackflow];
+    spec.totalPressure = OutletBackflow_Ptotal[iBackflow];
+    spec.direction = OutletBackflow_FlowDir[iBackflow];
+    if (nOutlet_Backflow_Types != 0) spec.type = Kind_Outlet_Backflow[iBackflow];
     if (spec.type == OUTLET_BACKFLOW_TYPE::INTERIOR_TANGENTIAL &&
         (spec.direction[0] != 0.0 || spec.direction[1] != 0.0 || spec.direction[2] != 0.0))
       SU2_MPI::Error("MARKER_OUTLET_BACKFLOW marker " + tag + " uses OUTLET_BACKFLOW_TYPE= INTERIOR_TANGENTIAL, which "
