@@ -303,20 +303,24 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
 
 namespace PeriodicCommHelpers {
   /*--- B = Ql*B*Qr^T on the momentum rows and columns of B, a null matrix leaves that side alone. ---*/
-  template <class Matrix>
+  template <class Matrix, class Scalar>
   void RotateMomentumBlock(const Matrix* Ql, const Matrix* Qr, unsigned short nDim, unsigned short nVar,
-                           su2activematrix& B) {
-    auto rotate = [nDim](const Matrix& Q, auto&& x) {
-      su2double v[3];
-      for (auto d = 0u; d < nDim; d++) v[d] = x(d);
-      for (auto d = 0u; d < nDim; d++) {
-        su2double s = 0.0;
-        for (auto e = 0u; e < nDim; e++) s += Q[d][e] * v[e];
-        x(d) = s;
+                           su2matrix<Scalar>& B) {
+    auto rotate = [nDim](const Matrix& Q, auto&& component) {
+      Scalar vec[3];
+      for (auto iDim = 0u; iDim < nDim; iDim++) vec[iDim] = component(iDim);
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        Scalar sum = 0.0;
+        for (auto jDim = 0u; jDim < nDim; jDim++) sum += Q[iDim][jDim] * vec[jDim];
+        component(iDim) = sum;
       }
     };
-    if (Ql) for (auto c = 0u; c < nVar; c++) rotate(*Ql, [&](unsigned d) -> su2double& { return B(1 + d, c); });
-    if (Qr) for (auto r = 0u; r < nVar; r++) rotate(*Qr, [&](unsigned d) -> su2double& { return B(r, 1 + d); });
+    if (Ql)
+      for (auto jVar = 0u; jVar < nVar; jVar++)
+        rotate(*Ql, [&](unsigned iDim) -> Scalar& { return B(1 + iDim, jVar); });
+    if (Qr)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        rotate(*Qr, [&](unsigned iDim) -> Scalar& { return B(iVar, 1 + iDim); });
   }
 
   CVectorOfMatrix& selectGradient(CVariable* nodes, unsigned short commType) {
@@ -4631,12 +4635,11 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 
 void CSolver::SetPeriodicMaster(CGeometry *geometry, const CConfig *config) {
   const auto nPeriodic = config->GetnMarker_Periodic();
-  const auto nPointAll = geometry->GetnPoint();
 
-  PeriodicMaster.assign(nPointAll, -1);
-  PeriodicMasterMarker.assign(nPointAll, 0);
-  vector<unsigned short> nPeriodicMarker(nPointAll, 0);
-  vector<bool> passive(nPointAll, false);
+  PeriodicMaster.assign(nPoint, -1);
+  PeriodicMasterMarker.assign(nPoint, 0);
+  vector<unsigned short> nPeriodicMarker(nPoint, 0);
+  vector<bool> passive(nPoint, false);
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
@@ -4656,7 +4659,7 @@ void CSolver::SetPeriodicMaster(CGeometry *geometry, const CConfig *config) {
   }
 
   /*--- Points on several periodic markers keep the treatment of the comms only. ---*/
-  for (auto iPoint = 0ul; iPoint < nPointAll; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     const auto master = PeriodicMaster[iPoint];
     if (master < 0) continue;
     if (nPeriodicMarker[iPoint] != 1 || nPeriodicMarker[master] != 1 || passive[master]) PeriodicMaster[iPoint] = -1;
@@ -4664,7 +4667,7 @@ void CSolver::SetPeriodicMaster(CGeometry *geometry, const CConfig *config) {
 
   /*--- A point is coupled only if all its blocks fit in the sparsity pattern of its master. Columns of passive
    * points without a master are ignored, their increment is zero in the linear system. ---*/
-  for (auto iPoint = 0ul; iPoint < nPointAll; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     const auto master = PeriodicMaster[iPoint];
     if (master < 0) continue;
     const bool ownRow = iPoint < nPointDomain;
@@ -4687,10 +4690,10 @@ void CSolver::CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config)
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
-  if (PeriodicMaster.size() != geometry->GetnPoint()) SetPeriodicMaster(geometry, config);
+  if (PeriodicMaster.size() != nPoint) SetPeriodicMaster(geometry, config);
 
   /*--- Rotation from the frame of each periodic marker to the frame of its match, null if none. ---*/
-  using RotationMatrix = std::array<std::array<su2double, 3>, 3>;
+  using RotationMatrix = std::array<std::array<passivedouble, 3>, 3>;
   const auto nMarker = config->GetnMarker_All();
   vector<RotationMatrix> rotations(nMarker);
   vector<const RotationMatrix*> markerRotation(nMarker, nullptr);
@@ -4698,20 +4701,23 @@ void CSolver::CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config)
     if (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
     const auto* angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
     if (!GeometryToolbox::HasRotation(angles)) continue;
-    if (nDim == 2) GeometryToolbox::RotationMatrix(angles[2], rotations[iMarker]);
-    else GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotations[iMarker]);
+    const auto theta = SU2_TYPE::GetValue(angles[0]);
+    const auto phi = SU2_TYPE::GetValue(angles[1]);
+    const auto psi = SU2_TYPE::GetValue(angles[2]);
+    if (nDim == 2) GeometryToolbox::RotationMatrix(psi, rotations[iMarker]);
+    else GeometryToolbox::RotationMatrix(theta, phi, psi, rotations[iMarker]);
     markerRotation[iMarker] = &rotations[iMarker];
   }
   auto Rotation = [&](unsigned long iPoint) -> const RotationMatrix* {
     return PeriodicMaster[iPoint] >= 0 ? markerRotation[PeriodicMasterMarker[iPoint]] : nullptr;
   };
 
-  su2activematrix block(nVar, nVar), zero(nVar, nVar);
-  zero = su2double(0.0);
+  su2passivematrix block(nVar, nVar), zero(nVar, nVar);
+  zero = passivedouble(0.0);
   auto ReadBlock = [&](unsigned long iRow, unsigned long iCol) {
     const auto view = Jacobian.GetBlockView(iRow, iCol);
-    for (auto i = 0u; i < nVar; i++)
-      for (auto j = 0u; j < nVar; j++) block(i, j) = view(i, j);
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      for (auto jVar = 0u; jVar < nVar; jVar++) block(iVar, jVar) = view(iVar, jVar);
   };
 
   /*--- Rows of passive points go to the rows of their masters. ---*/
@@ -4728,7 +4734,7 @@ void CSolver::CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config)
   }
 
   /*--- Columns of passive points go to the columns of their masters. ---*/
-  for (auto iPoint = 0ul; iPoint < PeriodicMaster.size(); iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     const auto master = PeriodicMaster[iPoint];
     if (master < 0) continue;
     for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
