@@ -297,7 +297,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-4.017572, 1.709456, -0.249527, 0.043953]
+    wedge.test_vals = [-4.017584, 1.709444, -0.249527, 0.043953]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -351,7 +351,7 @@ def main():
     ramp.cfg_dir = "euler/ramp"
     ramp.cfg_file = "inv_ramp.cfg"
     ramp.test_iter = 10
-    ramp.test_vals = [-13.649257, -8.009323, -0.076277, 0.054839]
+    ramp.test_vals = [-13.649280, -8.009500, -0.076277, 0.054839]
     ramp.test_vals_aarch64 = [-13.648406, -8.014579, -0.076277, 0.054839]
     test_list.append(ramp)
 
@@ -367,7 +367,7 @@ def main():
     ramp_msw.cfg_dir = "euler/ramp"
     ramp_msw.cfg_file = "inv_ramp_msw.cfg"
     ramp_msw.test_iter = 100
-    ramp_msw.test_vals = [-7.242600, -1.471141, -0.077507, 0.054419]
+    ramp_msw.test_vals = [-7.032593, -1.280788, -0.077507, 0.054419]
     # Newton-Krylov residual histories vary across MPI environments; keep force checks tight.
     ramp_msw.tol = [0.5, 0.5, 0.00001, 0.00001]
     test_list.append(ramp_msw)
@@ -478,6 +478,14 @@ def main():
     periodic2d_no_limiter.test_vals = [-3.216881, -0.582813, -0.629049, 2.266141, -1.056877, -811.470000]
     test_list.append(periodic2d_no_limiter)
 
+    # Same case with a Riemann static-pressure outlet
+    periodic2d_no_limiter_riemann = TestCase('periodic2d_no_limiter_riemann')
+    periodic2d_no_limiter_riemann.cfg_dir = "navierstokes/periodic2D"
+    periodic2d_no_limiter_riemann.cfg_file = "no_limiter_riemann.cfg"
+    periodic2d_no_limiter_riemann.test_iter = 100
+    periodic2d_no_limiter_riemann.test_vals = [-3.216878, -0.582314, -0.628636, 2.266530, -1.057965, -811.500000]
+    test_list.append(periodic2d_no_limiter_riemann)
+
     # 2D rotational periodic sector with multigrid
     periodic2d_multigrid = TestCase('periodic2d_multigrid')
     periodic2d_multigrid.cfg_dir = "navierstokes/periodic2D"
@@ -559,7 +567,7 @@ def main():
     turb_flatplate_sst_roughBCKnopp.cfg_dir = "rans/flatplate/roughness/bc_knopp"
     turb_flatplate_sst_roughBCKnopp.cfg_file = "turb_SST_flatplate_roughBCKnopp.cfg"
     turb_flatplate_sst_roughBCKnopp.test_iter = 10
-    turb_flatplate_sst_roughBCKnopp.test_vals = [-5.058634, -2.460850, -2.847064, 0.447200, -2.595042, 1.497149, -0.188079, 0.004571]
+    turb_flatplate_sst_roughBCKnopp.test_vals = [-5.066211, -2.470493, -2.852002, 0.439182, -2.595927, 1.496827, -0.188074, 0.004571]
     test_list.append(turb_flatplate_sst_roughBCKnopp)
 
     # FLAT PLATE, ROUGHNESS BC AUPOIX SST
@@ -567,7 +575,7 @@ def main():
     turb_flatplate_sst_roughBCAupoix.cfg_dir = "rans/flatplate/roughness/bc_aupoix"
     turb_flatplate_sst_roughBCAupoix.cfg_file = "turb_SST_flatplate_roughBCAupoix.cfg"
     turb_flatplate_sst_roughBCAupoix.test_iter = 10
-    turb_flatplate_sst_roughBCAupoix.test_vals = [-5.278728, -2.302982, -2.890419, 0.227585, -1.393786, 3.192601, -0.188729, 0.0071821]
+    turb_flatplate_sst_roughBCAupoix.test_vals = [-5.290256, -2.305824, -2.892141, 0.214819, -1.393793, 3.192602, -0.188753, 0.007182]
     test_list.append(turb_flatplate_sst_roughBCAupoix)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA, restart from a solution without wall functions
@@ -735,7 +743,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-5.130750, 0.443668, -2.927522, 1.604842, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-5.130749, 0.443668, -2.921599, 1.610952, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.143310, -9.163287, -10.858232, -5.787715, 0.000000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
@@ -1390,7 +1398,7 @@ def main():
     coolprop_fluidModel.cfg_dir   = "nicf/coolprop"
     coolprop_fluidModel.cfg_file  = "fluidModel.cfg"
     coolprop_fluidModel.test_iter = 5
-    coolprop_fluidModel.test_vals = [-4.666146, -0.172864, 4.492817, 0.000000, 0.000000]
+    coolprop_fluidModel.test_vals = [-4.666868, -0.172864, 4.492817, 0.000000, 0.000000]
     coolprop_fluidModel.enabled_on_cpu_arch = ["x86_64"]
     test_list.append(coolprop_fluidModel)
 
@@ -1399,7 +1407,7 @@ def main():
     coolprop_transportModel.cfg_dir   = "nicf/coolprop"
     coolprop_transportModel.cfg_file  = "transportModel.cfg"
     coolprop_transportModel.test_iter = 5
-    coolprop_transportModel.test_vals = [-4.667122, -0.172865, 4.687652, 0.000000, 0.000000]
+    coolprop_transportModel.test_vals = [-4.667851, -0.172865, 4.687645, 0.000000, 0.000000]
     coolprop_transportModel.enabled_on_cpu_arch = ["x86_64"]
     test_list.append(coolprop_transportModel)
 
@@ -1408,7 +1416,7 @@ def main():
     datadriven_fluidModel.cfg_dir   = "nicf/datadriven"
     datadriven_fluidModel.cfg_file  = "datadriven_nozzle.cfg"
     datadriven_fluidModel.test_iter = 50
-    datadriven_fluidModel.test_vals = [-6.283594, -3.253961, -4.172935, -0.949415, -2.046039, 1.546933]
+    datadriven_fluidModel.test_vals = [-6.328735, -3.204454, -4.158198, -0.979779, -2.094321, 1.609207]
     test_list.append(datadriven_fluidModel)
 
     ######################################
@@ -1539,7 +1547,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.464267, -1.541047]
+    bars_SST_2D.test_vals = [13.000000, -0.464267, -1.525399]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
@@ -1799,7 +1807,7 @@ def main():
     pywrapper_unsteadyFSI.cfg_dir = "py_wrapper/dyn_fsi"
     pywrapper_unsteadyFSI.cfg_file = "config.cfg"
     pywrapper_unsteadyFSI.test_iter = 4
-    pywrapper_unsteadyFSI.test_vals = [0.000000, 30.000000, 5.000000, 48.000000, -1.756676, -2.828284, -7.625018, -6.863923, 0.000156]
+    pywrapper_unsteadyFSI.test_vals = [0.000000, 30.000000, 5.000000, 47.000000, -1.756676, -2.828284, -7.625018, -6.863923, 0.000156]
     pywrapper_unsteadyFSI.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     pywrapper_unsteadyFSI.unsteady = True
     pywrapper_unsteadyFSI.multizone = True
