@@ -4269,10 +4269,23 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
   }
 }
 
+void CFlowOutput::WriteAdditionalFiles(const CConfig *config) {
+  if (!config->GetFixed_CL_Mode() || !config->GetFinite_Difference_Mode()) return;
+
+  if (FixedCLChangedAoA()) {
+    lastInnerIter = curInnerIter - 1;
+  } else if (FixedCLRestoredAoA()) {
+    const auto currentIter = curInnerIter;
+    curInnerIter = lastInnerIter;
+    WriteMetaData(config);
+    curInnerIter = currentIter;
+  }
+}
+
 void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
   PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
 
-  if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
+  if (FixedCLChangedAoA()){
     FixedCLSummary.AddColumn("Fixed CL Mode", 40);
     FixedCLSummary.AddColumn("Value", 30);
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
@@ -4282,7 +4295,6 @@ void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
     FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
     if (config->GetFinite_Difference_Mode()){
       FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
-      lastInnerIter = curInnerIter - 1;
     }
     else
       FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
@@ -4290,7 +4302,7 @@ void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
     SetScreenHeader(config);
   }
 
-  else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
+  else if (config->GetFinite_Difference_Mode() && FixedCLRestoredAoA()){
     FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
     FixedCLSummary.AddColumn("Value", 30);
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
@@ -4303,9 +4315,6 @@ void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
     }
     FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
     FixedCLSummary.PrintFooter();
-    curInnerIter = lastInnerIter;
-    WriteMetaData(config);
-    curInnerIter = config->GetInnerIter();
   }
 }
 
