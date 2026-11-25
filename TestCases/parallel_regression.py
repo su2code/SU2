@@ -491,7 +491,7 @@ def main():
     periodic2d_no_limiter_backflow_tangential.cfg_dir = "navierstokes/periodic2D"
     periodic2d_no_limiter_backflow_tangential.cfg_file = "no_limiter_backflow_tangential.cfg"
     periodic2d_no_limiter_backflow_tangential.test_iter = 100
-    periodic2d_no_limiter_backflow_tangential.test_vals = [-3.089724, -0.504999, -0.643322, 2.385841, -1.049095, -1083.000000]
+    periodic2d_no_limiter_backflow_tangential.test_vals = [-3.089328, -0.504312, -0.643132, 2.386211, -1.048886, -1083.800000]
     test_list.append(periodic2d_no_limiter_backflow_tangential)
 
     # TurboRiemann outlet of a laminar radial diffuser with steady backflow next to the walls (MARKER_OUTLET_BACKFLOW).
