@@ -216,7 +216,6 @@ private:
   nSpecies_per_Wall,              /*!< \brief Number of species defined per wall markers. */
   nMarker_Inlet_Turb,             /*!< \brief Number of inlet turbulent markers. */
   nTurb_Properties,               /*!< \brief Number of turbulent properties per inlet markers. */
-  nMarker_Outlet_Backflow,        /*!< \brief Number of static-pressure outlets with backflow reservoir data. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
   nMarker_Giles,                  /*!< \brief Number of Giles flow markers. */
   nRelaxFactor_Giles,             /*!< \brief Number of relaxation factors for Giles markers. */
@@ -273,7 +272,6 @@ private:
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
   *Marker_Wall_Species,           /*!< \brief Wall species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
-  *Marker_Outlet_Backflow,        /*!< \brief Static-pressure outlets with backflow reservoir data. */
   *Marker_Riemann,                /*!< \brief Riemann markers. */
   *Marker_Giles,                  /*!< \brief Giles markers. */
   *Marker_Shroud,                 /*!< \brief Shroud markers. */
@@ -312,10 +310,6 @@ private:
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
-  su2double *OutletBackflow_Ttotal;          /*!< \brief Reservoir total temperature for outlet backflow. */
-  su2double *OutletBackflow_Ptotal;          /*!< \brief Reservoir total pressure for outlet backflow. */
-  su2double **OutletBackflow_FlowDir;        /*!< \brief Backflow direction for outlets (zero: boundary normal). */
-  vector<OutletBackflowSpec> OutletBackflowSpecs; /*!< \brief Checked reservoir data per MARKER_OUTLET_BACKFLOW entry. */
   WALL_SPECIES_TYPE **Kind_Wall_Species;        /*!< \brief Species boundary condition type for wall boundaries (FLUX or VALUE) per species. */
   su2double **Wall_SpeciesVal;               /*!< \brief Specified species flux or value for wall boundaries per species. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
@@ -655,8 +649,6 @@ private:
   INLET_TYPE Kind_Inlet;
   INLET_TYPE *Kind_Inc_Inlet;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
-  OUTLET_BACKFLOW_TYPE *Kind_Outlet_Backflow; /*!< \brief Backflow velocity type per MARKER_OUTLET_BACKFLOW entry. */
-  unsigned short nOutlet_Backflow_Types;      /*!< \brief Number of OUTLET_BACKFLOW_TYPE entries. */
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
@@ -1384,6 +1376,18 @@ private:
    class of COptionBase that turns the string into a value) ---*/
 
   map<string, COptionBase*> option_map;
+
+  /*--- Backflow reservoirs (MARKER_OUTLET_BACKFLOW, OUTLET_BACKFLOW_TYPE). These members come last so that the other
+   members keep their offsets: moving them can change how the compiler vectorizes some numerics (seen with GCC 13),
+   and with it the regression values of unrelated cases. ---*/
+  unsigned short nMarker_Outlet_Backflow;     /*!< \brief Number of outlets with backflow reservoir data. */
+  string *Marker_Outlet_Backflow;             /*!< \brief Static-pressure outlets with backflow reservoir data. */
+  su2double *OutletBackflow_Ttotal;           /*!< \brief Reservoir total temperature for outlet backflow. */
+  su2double *OutletBackflow_Ptotal;           /*!< \brief Reservoir total pressure for outlet backflow. */
+  su2double **OutletBackflow_FlowDir;         /*!< \brief Backflow direction for outlets (zero: boundary normal). */
+  OUTLET_BACKFLOW_TYPE *Kind_Outlet_Backflow; /*!< \brief Backflow velocity type per MARKER_OUTLET_BACKFLOW entry. */
+  unsigned short nOutlet_Backflow_Types;      /*!< \brief Number of OUTLET_BACKFLOW_TYPE entries. */
+  vector<OutletBackflowSpec> OutletBackflowSpecs; /*!< \brief Checked reservoir data per marker. */
 
 
   // All of the addXxxOptions take in the name of the option, and a reference to the field of that option
