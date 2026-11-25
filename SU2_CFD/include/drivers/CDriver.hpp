@@ -424,10 +424,11 @@ class CDriver : public CDriverBase {
   virtual void StartSolver() {}
 
   /*!
-   * \brief Stop with an error if a run ends while backflow at a static-pressure outlet is limited to sonic inflow.
-   * \note Called at the end of StartSolver; scripts that drive the iterations themselves must call it too.
+   * \brief Stop with an error if a steady run ends while a static-pressure outlet still uses a fallback state
+   *        (sonic-limited backflow or the interior state).
+   * \note Called at the end of StartSolver; Python scripts that run the iterations themselves should call it too.
    */
-  void CheckOutletBackflowAtEnd() const;
+  void CheckPressureOutletFallbacks() const;
 
   /*!
    * \brief Deallocation routine

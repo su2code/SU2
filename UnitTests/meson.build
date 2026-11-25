@@ -30,9 +30,11 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
                        'SU2_CFD/solvers/pressure_outlet_backflow_tests.cpp',
                        'SU2_CFD/solvers/pressure_outlet_boundary_tests.cpp',
                        'SU2_CFD/solvers/turbo_pressure_outlet_tests.cpp',
+                       'SU2_CFD/solvers/moving_wall_tests.cpp',
                        'SU2_CFD/solvers/supersonic_outlet_tests.cpp',
                        'SU2_CFD/nemo_viscous_assembly.cpp',
                        'SU2_CFD/windowing.cpp',
+                       'SU2_CFD/limiters.cpp',
                        'Common/toolboxes/random_toolbox_tests.cpp',
                        'Common/linear_algebra/quantization_tests.cpp',
                        'Common/linear_algebra/edge_residual_blocks_tests.cpp'])
@@ -69,10 +71,8 @@ if get_option('enable-tests')
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)
-    # Fatal boundary cases need separate processes; they cannot run inside the normal Catch suite.
-    test('Characteristic boundary admissibility', python,
-         args: files('SU2_CFD/solvers/check_characteristic_boundary_admissibility.py') + [test_driver.full_path()],
-         timeout: 180)
+    test('Multigrid configuration limits', python,
+         args: files('Common/check_multigrid_limits.py') + [test_driver.full_path()])
     test('Streamwise periodic support', python,
          args: files('Common/check_periodic_support.py') + [test_driver.full_path(), '--streamwise'],
          timeout: 150)

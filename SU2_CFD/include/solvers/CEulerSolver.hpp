@@ -130,7 +130,6 @@ protected:
   su2activematrix AveragePressure;
   su2activematrix OldAveragePressure;
   su2activematrix RadialEquilibriumPressure;
-
   su2activematrix AverageDensity;
   su2activematrix OldAverageDensity;
   su2activematrix AverageNu;
@@ -165,61 +164,20 @@ protected:
 
   /*--- End of Turbomachinery Solver Variables ---*/
 
-  /*--- Static-pressure outlet backflow ---*/
+  /*--- Fallback states of static-pressure outlets in steady runs ---*/
 
-  /*!
-   * \brief Backflow data of a static-pressure outlet for one boundary call, nondimensional.
-   */
-  struct OutletBackflowData {
-    unsigned short markerCfg = 0;    /*!< \brief Index in the configuration-file marker list (same on all ranks). */
-    bool hasReservoir = false;       /*!< \brief MARKER_OUTLET_BACKFLOW is given for the marker. */
-    bool interiorTangential = false; /*!< \brief Inflow keeps the interior tangential velocity. */
-    bool totalStateValid = false;    /*!< \brief totalState holds the reservoir (positive total pressure). */
-    su2double totalPressure = 0.0, totalTemperature = 0.0, direction[MAXNDIM] = {0.0};
-    CFluidModel::ReservoirTotalState totalState;
+  /*! \brief Kinds of fallback states, counted per configuration-file marker. */
+  enum OUTLET_FALLBACK : unsigned short {
+    OUTLET_SONIC_BACKFLOW = 0,
+    OUTLET_INTERIOR_STATE = 1,
+    N_OUTLET_FALLBACKS = 2
   };
 
-  /*! \brief Kinds of backflow events counted per marker. */
-  enum OUTLET_BACKFLOW_EVENT : unsigned short { SONIC_LIMIT = 0, RESERVOIR_FAILED = 1, N_OUTLET_BACKFLOW_EVENTS = 2 };
-
-  bool outletBackflowFallback = false; /*!< \brief Steady run (not harmonic balance): sonic limit instead of error. */
-  bool outletBackflowMonitor = false;  /*!< \brief Backflow events can occur, so they are monitored. */
-  vector<unsigned long> OutletBackflowEvents;       /*!< \brief Local vertex evaluations per event and cfg marker. */
-  vector<unsigned long> OutletBackflowEventsGlobal; /*!< \brief Same, summed over ranks at the last monitor call. */
-  vector<unsigned long> OutletBackflowLastWarning;  /*!< \brief Inner iteration + 1 of the last warning (0: none). */
-  vector<unsigned long> OutletBackflowLastActive;   /*!< \brief Inner iteration + 1 of the last event (0: none). */
-
-  /*!
-   * \brief Read the backflow data of a marker, and the reservoir total state when it is uniform.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Marker index.
-   * \param[in] idealGamma - Ideal-gas gamma, or zero for a general EOS.
-   * \return Nondimensional backflow data.
-   */
-  OutletBackflowData GetOutletBackflowData(const CConfig* config, unsigned short val_marker,
-                                           su2double idealGamma) const;
-
-  /*!
-   * \brief Boundary state of a static-pressure outlet (ordinary, Riemann or TurboRiemann).
-   * \details Outflow follows CFluidModel::ComputePressureOutletState. With reservoir data, inward flow takes the
-   * reservoir inflow state (if that fails, the treatment without data is used and the event is counted). Without
-   * data, subsonic backflow keeps the pressure-outlet closure; backflow through every characteristic is limited to
-   * sonic inflow in steady runs (counted) and is an error in unsteady and harmonic-balance runs.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] backflow - Backflow data of this marker.
-   * \param[in] Marker_Tag - Marker name for error messages.
-   * \param[in] interior - Interior conservative state.
-   * \param[in] unitNormal - Outward unit normal.
-   * \param[in] gridNormal - Grid velocity along the normal.
-   * \param[in] pressure - Imposed static pressure (nondimensional).
-   * \param[in] tke - Frozen SST turbulent kinetic energy.
-   * \param[in] idealGamma - Ideal-gas gamma, or zero for a general EOS.
-   * \param[out] boundary - Conservative boundary state.
-   */
-  void ComputeStaticPressureOutletState(const CConfig* config, const OutletBackflowData& backflow,
-                                        const string& Marker_Tag, const su2double* interior,
-                                        const su2double* unitNormal, su2double gridNormal, su2double pressure,
-                                        su2double tke, su2double idealGamma, su2double* boundary);
+  bool outletFallbacks = false;                    /*!< \brief Steady run: fallback states instead of errors. */
+  vector<unsigned long> OutletFallbackCount;       /*!< \brief Local vertex evaluations per marker and kind. */
+  vector<unsigned long> OutletFallbackCountGlobal; /*!< \brief Same, summed over ranks at the last monitor call. */
+  vector<unsigned long> OutletFallbackLastWarning; /*!< \brief Inner iteration + 1 of the last warning (0: none). */
+  vector<unsigned long> OutletFallbackLastActive;  /*!< \brief Inner iteration + 1 of the last fallback (0: none). */
 
   inline su2double GetTangGridVelIn(unsigned short val_blade, unsigned long val_span) {
     return TurboVelocityIn[val_blade][val_span][1] - RelTangVelocityIn[val_blade][val_span];
@@ -400,7 +358,55 @@ protected:
    */
   void SetReferenceValues(const CConfig& config) final;
 
-public:
+ public:
+  /*!
+   * \brief Backflow reservoir of a static-pressure outlet (MARKER_OUTLET_BACKFLOW), nondimensional.
+   */
+  struct PressureOutletReservoir {
+    su2double totalPressure = 0.0;        /*!< \brief Zero: imposed pressure at zero normal speed. */
+    su2double totalTemperature = 0.0;     /*!< \brief Total temperature. */
+    su2double direction[MAXNDIM] = {0.0}; /*!< \brief Inflow direction; zero means the inward normal. */
+    bool interiorTangential = false;      /*!< \brief Normal inflow plus the interior tangential velocity. */
+    /*--- Total state for a positive total pressure, the same at every vertex (SetReservoirTotalState). ---*/
+    bool totalStateSet = false;
+    su2double statePressure = 0.0, stateDensity = 0.0, stateEnergy = 0.0;
+    su2double sonicPressure = 0.0; /*!< \brief Sonic pressure of normal inflow on a fixed grid (zero: unknown). */
+  };
+
+ protected:
+  /*!
+   * \brief Boundary state of a static-pressure outlet (see ComputePressureOutletState).
+   * \details With a reservoir, flow that enters relative to the grid takes the reservoir inflow state
+   *          (ComputeReservoirInflowState). If the state cannot be built, steady runs use a fallback and count it:
+   *          the sonic backflow state (ComputeSonicBackflowState) for flow that enters through every characteristic,
+   *          otherwise the interior state. Unsteady and harmonic-balance runs stop with an error instead.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Marker index.
+   * \param[in] interior - Interior conservative state.
+   * \param[in] unitNormal - Outward unit normal.
+   * \param[in] gridNormal - Grid velocity along the normal.
+   * \param[in] pressure - Imposed static pressure (nondimensional).
+   * \param[in] tke - Turbulent kinetic energy contained in the total energy.
+   * \param[in] idealGas - Use the closed form of an ideal gas.
+   * \param[in] reservoir - Backflow reservoir of the marker, or nullptr.
+   * \param[out] boundary - Conservative boundary state.
+   */
+  void BuildPressureOutletState(const CConfig* config, unsigned short val_marker, const su2double* interior,
+                                const su2double* unitNormal, su2double gridNormal, su2double pressure, su2double tke,
+                                bool idealGas, const PressureOutletReservoir* reservoir, su2double* boundary);
+
+  /*!
+   * \brief Backflow reservoir of a static-pressure outlet, from MARKER_OUTLET_BACKFLOW.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Marker index.
+   * \param[in] idealGas - Use the closed form of an ideal gas.
+   * \param[out] reservoir - Nondimensional reservoir, with its total state if the total pressure is positive.
+   * \return False if the marker has no reservoir.
+   */
+  bool GetPressureOutletReservoir(const CConfig* config, unsigned short val_marker, bool idealGas,
+                                  PressureOutletReservoir& reservoir) const;
+
+ public:
   CEulerSolver() = delete;
 
   /*!
@@ -424,16 +430,16 @@ public:
   inline CFluidModel* GetFluidModel(void) const final { return FluidModel[omp_get_thread_num()]; }
 
   /*!
-   * \brief Sum the static-pressure outlet backflow events over ranks, warn when they start or stop, and reset.
+   * \brief Sum the fallback states of static-pressure outlets over ranks, warn when they start or stop, and reset.
    * \note Call once per inner iteration, outside OpenMP parallel regions, on every rank.
    * \param[in] config - Definition of the particular problem.
    */
-  void MonitorOutletBackflow(const CConfig* config);
+  void MonitorPressureOutletFallbacks(const CConfig* config);
 
   /*!
-   * \brief Number of static-pressure outlet vertex evaluations limited to sonic backflow at the last monitor call.
+   * \brief Number of static-pressure outlet vertex evaluations that used a fallback state, at the last monitor call.
    */
-  unsigned long GetOutletBackflowClamped() const;
+  unsigned long GetPressureOutletFallbacks() const;
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
@@ -508,6 +514,111 @@ public:
                                          unsigned short nDim,
                                          su2double *primitive_i,
                                          su2double *primitive_j);
+
+  /*!
+   * \brief Outcome of ComputePressureOutletState.
+   */
+  enum class PressureOutletStatus {
+    Valid,        /*!< \brief The boundary state is set. */
+    InvalidState, /*!< \brief Invalid input, or the EOS or the integration along the isentrope failed. */
+    Backflow      /*!< \brief Flow enters through every characteristic, which needs inlet data. */
+  };
+
+  /*!
+   * \brief Boundary state of a static-pressure outlet (ordinary, Riemann and TurboRiemann markers).
+   * \details The interior entropy, tangential velocity and outgoing acoustic invariant are kept, and the pressure
+   *          is imposed along the isentrope of the fluid model (closed form for an ideal gas, integration in log(p)
+   *          otherwise). The normal velocity is relative to the grid. If the imposed pressure would accelerate the
+   *          outflow past sonic, the sonic state is used. Supersonic outflow keeps the interior state, and subsonic
+   *          reverse flow uses the same closure. Characteristic boundary conditions: K. W. Thompson,
+   *          J. Comput. Phys. 68 (1987) 1-24; T. J. Poinsot and S. K. Lele, J. Comput. Phys. 101 (1992) 104-129.
+   * \note This method is static to improve the chances of it being used in a thread-safe manner.
+   *       It overwrites the thermodynamic state of the fluid model.
+   * \param[in,out] fluidModel - The fluid model.
+   * \param[in] nDim - Number of physical dimensions.
+   * \param[in] interior - Interior conservative state.
+   * \param[in] normal - Outward unit normal.
+   * \param[in] gridNormal - Grid velocity along the normal.
+   * \param[in] targetPressure - Imposed static pressure.
+   * \param[in] turbulentK - Turbulent kinetic energy contained in the total energy; it is held fixed.
+   * \param[in] idealGas - Use the closed form of an ideal gas with the given gamma.
+   * \param[in] gamma - Ratio of specific heats, used only if idealGas is true.
+   * \param[out] boundary - Conservative boundary state, set only if the result is Valid.
+   * \return Valid, InvalidState or Backflow.
+   */
+  static PressureOutletStatus ComputePressureOutletState(CFluidModel* fluidModel, unsigned short nDim,
+                                                         const su2double* interior, const su2double* normal,
+                                                         su2double gridNormal, su2double targetPressure,
+                                                         su2double turbulentK, bool idealGas, su2double gamma,
+                                                         su2double* boundary);
+
+  /*!
+   * \brief Fallback state of a static-pressure outlet when the flow enters through every characteristic (Backflow
+   *        from ComputePressureOutletState), used in steady runs.
+   * \details The interior outgoing acoustic invariant is followed to the imposed pressure, as for subsonic reverse
+   *          flow. If that gives supersonic inflow, the boundary keeps the imposed pressure and the interior entropy
+   * and tangential velocity, and the inward normal velocity relative to the grid is limited to the sound speed. The
+   * state is therefore continuous with subsonic reverse flow. Same parameters as ComputePressureOutletState. \return
+   * Valid or InvalidState.
+   */
+  static PressureOutletStatus ComputeSonicBackflowState(CFluidModel* fluidModel, unsigned short nDim,
+                                                        const su2double* interior, const su2double* normal,
+                                                        su2double gridNormal, su2double targetPressure,
+                                                        su2double turbulentK, bool idealGas, su2double gamma,
+                                                        su2double* boundary);
+
+  /*!
+   * \brief Projection onto the outgoing waves, I - sum over lambda_k < 0 of P(:,k) invP(k,:).
+   * \note Used by the characteristic outlets as the approximate derivative of the boundary state.
+   * \param[in] nVar - Number of variables.
+   * \param[in] P - Right eigenvectors (columns).
+   * \param[in] invP - Left eigenvectors (rows).
+   * \param[in] lambda - Wave speeds relative to the grid, in the order of the eigenvectors.
+   * \param[out] projection - Projection matrix.
+   */
+  static void OutgoingWaveProjection(unsigned short nVar, const su2double* const* P, const su2double* const* invP,
+                                     const su2double* lambda, su2double** projection);
+
+  /*!
+   * \brief Total state of a backflow reservoir with a positive total pressure, which is the same at every vertex.
+   * \note Overwrites the thermodynamic state of the fluid model.
+   * \param[in,out] fluidModel - The fluid model.
+   * \param[in] idealGas - Use the closed form of an ideal gas with the given gamma.
+   * \param[in] gamma - Ratio of specific heats, used only if idealGas is true.
+   * \param[in,out] reservoir - Reservoir; its total state is set.
+   * \return False if the EOS state is not valid.
+   */
+  static bool SetReservoirTotalState(CFluidModel* fluidModel, bool idealGas, su2double gamma,
+                                     PressureOutletReservoir& reservoir);
+
+  /*!
+   * \brief Boundary state of a static-pressure outlet where the flow enters from a reservoir at rest.
+   * \details The state has the reservoir total enthalpy and entropy, the reservoir direction (or the interior
+   *          tangential velocity) and meets the interior outgoing acoustic invariant, as a total-condition inlet.
+   *          Its normal speed relative to the grid is at most sonic; flow that enters through every characteristic
+   *          takes the sonic state of the reservoir. If the interior wave cannot draw flow in, or the grid moves
+   *          outward faster than sound in the reservoir, the state is the reservoir at rest.
+   * \note This method is static to improve the chances of it being used in a thread-safe manner.
+   *       It overwrites the thermodynamic state of the fluid model.
+   * \param[in,out] fluidModel - The fluid model.
+   * \param[in] nDim - Number of physical dimensions.
+   * \param[in] interior - Interior conservative state.
+   * \param[in] normal - Outward unit normal.
+   * \param[in] gridNormal - Grid velocity along the normal.
+   * \param[in] targetPressure - Imposed static pressure, used only if the reservoir total pressure is zero.
+   * \param[in] turbulentK - Turbulent kinetic energy contained in the total energy; it is held fixed.
+   * \param[in] idealGas - Use the closed form of an ideal gas with the given gamma.
+   * \param[in] gamma - Ratio of specific heats, used only if idealGas is true.
+   * \param[in] reservoir - Backflow reservoir.
+   * \param[out] boundary - Conservative boundary state, set only if the result is Valid.
+   * \return Valid or InvalidState.
+   */
+  static PressureOutletStatus ComputeReservoirInflowState(CFluidModel* fluidModel, unsigned short nDim,
+                                                          const su2double* interior, const su2double* normal,
+                                                          su2double gridNormal, su2double targetPressure,
+                                                          su2double turbulentK, bool idealGas, su2double gamma,
+                                                          const PressureOutletReservoir& reservoir,
+                                                          su2double* boundary);
 
   /*!
    * \brief Source term integration.

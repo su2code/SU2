@@ -101,7 +101,7 @@ void CSinglezoneDriver::StartSolver() {
 
   }
 
-  CheckOutletBackflowAtEnd();
+  CheckPressureOutletFallbacks();
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {

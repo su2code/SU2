@@ -2882,18 +2882,21 @@ CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MP
 
 CFluidDriver::~CFluidDriver() = default;
 
-void CDriver::CheckOutletBackflowAtEnd() const {
+void CDriver::CheckPressureOutletFallbacks() const {
   /*--- The counts were summed over ranks at the last monitor call, so all ranks take the same decision. ---*/
-  unsigned long limited = 0;
+  unsigned long fallbacks = 0;
   for (auto iZone = 0u; iZone < nZone; iZone++)
     for (auto iInst = 0u; iInst < nInst[iZone]; iInst++)
       if (const auto* flow = dynamic_cast<const CEulerSolver*>(solver_container[iZone][iInst][MESH_0][FLOW_SOL]))
-        limited += flow->GetOutletBackflowClamped();
-  if (limited > 0)
-    SU2_MPI::Error("The steady run ended while backflow at a static-pressure outlet was still limited to sonic "
-                   "inflow at " + std::to_string(limited) + " vertex evaluations. This is not a solution of the "
-                   "outlet condition: give the outlet a reservoir with MARKER_OUTLET_BACKFLOW, or reach a state "
-                   "without backflow (e.g. lower or adaptive CFL).", CURRENT_FUNCTION);
+        fallbacks += flow->GetPressureOutletFallbacks();
+  if (fallbacks > 0)
+    SU2_MPI::Error(
+        "The steady run ended while a static-pressure outlet still used a fallback state (backflow "
+        "limited to sonic inflow, or the interior state) at " +
+            std::to_string(fallbacks) +
+            " vertex evaluations. This is not a solution of the outlet condition: reach a state without full "
+            "backflow (e.g. with a lower or adaptive CFL), or check the outlet pressure and the EOS range.",
+        CURRENT_FUNCTION);
 }
 
 void CFluidDriver::StartSolver(){
@@ -2946,8 +2949,6 @@ void CFluidDriver::StartSolver(){
     Iter++;
 
   }
-
-  CheckOutletBackflowAtEnd();
 }
 
 
