@@ -849,6 +849,14 @@ def main():
     harmonic_balance.test_vals = [-1.556449, 0.840517, 0.943602, 3.957291]
     test_list.append(harmonic_balance)
 
+    # Restart of the case above: each time instance must read its own file (solution_flow_<iInst>.dat)
+    harmonic_balance_restart           = TestCase('harmonic_balance_restart')
+    harmonic_balance_restart.cfg_dir   = "harmonic_balance"
+    harmonic_balance_restart.cfg_file  = "HB_restart.cfg"
+    harmonic_balance_restart.test_iter = 5
+    harmonic_balance_restart.test_vals = [-1.394503, 1.126209, 0.985757, 4.105627, 0.005692]
+    test_list.append(harmonic_balance_restart)
+
     # Turbulent pitching NACA 64a010 airfoil
     hb_rans_preconditioning           = TestCase('hb_rans_preconditioning')
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
