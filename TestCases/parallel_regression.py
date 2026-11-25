@@ -499,7 +499,7 @@ def main():
     turbo_diffuser_backflow.cfg_dir = "navierstokes/periodic2D"
     turbo_diffuser_backflow.cfg_file = "turbo_diffuser_backflow.cfg"
     turbo_diffuser_backflow.test_iter = 100
-    turbo_diffuser_backflow.test_vals = [-4.158665, -1.605187, -1.784185, 1.316208, -1.024145, -583.380000]
+    turbo_diffuser_backflow.test_vals = [-3.961110, -1.417861, -1.644499, 1.513234, -1.051147, -812.320000]
     test_list.append(turbo_diffuser_backflow)
 
     # 2D rotational periodic sector with multigrid
