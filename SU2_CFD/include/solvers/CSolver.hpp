@@ -4511,8 +4511,8 @@ public:
 
   /*!
    * \brief Add the current Hessians of all sensors to their adaptive metrics.
-   * \note Steady: the metric is |H|, normalized if requested. Unsteady: dt*|H| is accumulated
-   *       (half weight on the first step); call FinalizeAdaptiveMetric when the run stops.
+   * \note Steady: the metric is |H|, normalized if requested. Unsteady: |H| is integrated in time
+   *       with the trapezoidal rule, one sample per call; call FinalizeAdaptiveMetric when the run stops.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
@@ -4521,7 +4521,7 @@ public:
 
   /*!
    * \brief Finalize the time-integrated adaptive metric of an unsteady run at the step where it stops.
-   * \note Applies the half weight of the last step, then integrates and (if requested) normalizes.
+   * \note Integrates and (if requested) normalizes the metric; the next sample starts a new time interval.
    *       Does nothing for steady runs, or if nothing was accumulated since the last finalization.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4529,7 +4529,8 @@ public:
   void FinalizeAdaptiveMetric(CGeometry *geometry, const CConfig *config);
 
 private:
-  unsigned long nAdaptiveMetricSteps = 0; /*!< \brief Number of time steps accumulated in the unsteady adaptive metric. */
+  unsigned long nAdaptiveMetricSamples = 0; /*!< \brief Number of samples in the unsteady adaptive metric. */
+  CVectorOfMatrix AdaptiveMetricPrevHessian; /*!< \brief Hessians of the previous sample, for the trapezoidal rule. */
 
   /*!
    * \brief Integrate the adaptive metric of all sensors, print the integrals, and normalize if requested.

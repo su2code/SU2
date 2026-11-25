@@ -4752,33 +4752,39 @@ void CSolver::ComputeAdaptiveMetric(CGeometry *geometry, const CConfig *config, 
     IntegrateAndNormalizeAdaptiveMetric(geometry, config);
   }
   else {
-    /*--- Unsteady: trapezoidal time integration of |H|. The first step has half weight; the
-     *    half weight of the last step is applied in FinalizeAdaptiveMetric, since only the
-     *    driver knows when the run stops (e.g. MAX_TIME or time convergence). ---*/
-    const bool first_step = (config->GetTimeIter() == 0) || restartMetric;
-    if (first_step) {
+    /*--- Unsteady: trapezoidal time integration of |H| over the samples (one per time step, plus the
+     *    restart solution on an unsteady restart), which also holds for a time step that changes
+     *    (e.g. UNST_CFL_NUMBER). Each interval of length dt between the previous sample and this one
+     *    adds dt/2 (|H_prev| + |H|), so the first and last samples get half weight without knowing
+     *    in advance which sample is the last (e.g. MAX_TIME or time convergence). ---*/
+    if (restartMetric || nAdaptiveMetricSamples == 0) {
       resetAdaptiveMetric(metric);
-      nAdaptiveMetricSteps = 0;
+      nAdaptiveMetricSamples = 0;
     }
-    const passivedouble dt = SU2_TYPE::GetValue(config->GetTime_Step());
-    accumulateAdaptiveMetric(*geometry, hessian, (first_step ? 0.5 : 1.0) * dt, metric);
-    nAdaptiveMetricSteps++;
+    else {
+      /*--- Length of the time step that led from the previous sample to this one. ---*/
+      const passivedouble dt = SU2_TYPE::GetValue(config->GetDelta_UnstTimeND());
+      accumulateAdaptiveMetric(*geometry, AdaptiveMetricPrevHessian, 0.5 * dt, metric);
+      accumulateAdaptiveMetric(*geometry, hessian, 0.5 * dt, metric);
+    }
+    AdaptiveMetricPrevHessian = hessian;
+    nAdaptiveMetricSamples++;
   }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CSolver::FinalizeAdaptiveMetric(CGeometry *geometry, const CConfig *config) {
-  if (!config->GetTime_Domain() || nAdaptiveMetricSteps == 0) return;
+  if (!config->GetTime_Domain() || nAdaptiveMetricSamples == 0) return;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-  /*--- Half weight on the last step, unless it was also the first one ---*/
-  if (nAdaptiveMetricSteps > 1) {
-    const passivedouble dt = SU2_TYPE::GetValue(config->GetTime_Step());
-    accumulateAdaptiveMetric(*geometry, base_nodes->GetHessian(), -0.5 * dt, base_nodes->GetAdaptiveMetric());
+  if (nAdaptiveMetricSamples == 1 && rank == MASTER_NODE) {
+    cout << "WARNING: the unsteady adaptive metric has a single sample (no time interval), so it is zero." << endl;
   }
-  nAdaptiveMetricSteps = 0;
+
+  /*--- The next sample starts a new time interval. ---*/
+  nAdaptiveMetricSamples = 0;
 
   IntegrateAndNormalizeAdaptiveMetric(geometry, config);
   }
