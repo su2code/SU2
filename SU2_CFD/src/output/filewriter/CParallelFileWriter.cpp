@@ -365,3 +365,16 @@ vector<CFileWriter::FieldKind> CFileWriter::ClassifyFields(const vector<string>&
   }
   return kinds;
 }
+
+void CFileWriter::GetSymmetricTensor(unsigned long firstVar, unsigned long iPoint,
+                                     passivedouble (&tensor)[3][3]) const {
+  const bool is3D = (dataSorter->GetnDim() == 3);
+  auto component = [&](unsigned long iComp) { return dataSorter->GetData(firstVar + iComp, iPoint); };
+
+  tensor[0][0] = component(0);
+  tensor[0][1] = tensor[1][0] = component(1);
+  tensor[1][1] = component(2);
+  tensor[0][2] = tensor[2][0] = is3D ? component(3) : 0.0;
+  tensor[1][2] = tensor[2][1] = is3D ? component(4) : 0.0;
+  tensor[2][2] = is3D ? component(5) : 1.0;
+}

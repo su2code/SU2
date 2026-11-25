@@ -227,5 +227,14 @@ protected:
   static vector<FieldKind> ClassifyFields(const vector<string>& fieldNames, unsigned long varStart,
                                           unsigned short nDim);
 
+  /*!
+   * \brief Get the full 3x3 symmetric tensor whose lower-triangular components (xx, xy, yy[, xz, yz, zz]) are the
+   *        fields starting at firstVar. In 2D, zz = 1 and the xz and yz components are 0.
+   * \param[in] firstVar - Index of the xx component.
+   * \param[in] iPoint - Point index.
+   * \param[out] tensor - Full symmetric tensor.
+   */
+  void GetSymmetricTensor(unsigned long firstVar, unsigned long iPoint, passivedouble (&tensor)[3][3]) const;
+
 };
 
