@@ -151,7 +151,6 @@ protected:
   std::unordered_map<unsigned long, size_t> PeriodicProjIndex;  /*!< \brief Local point to compact projection row. */
   vector<long> PeriodicMaster;  /*!< \brief Local master point of each coupled passive periodic point, or -1. */
   vector<unsigned short> PeriodicMasterMarker;  /*!< \brief Periodic marker of each passive point, gives its rotation. */
-  vector<unsigned long> PeriodicPassive;  /*!< \brief Coupled passive periodic points. */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
@@ -337,16 +336,25 @@ public:
   void CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Map each coupled passive periodic point to its master on the same rank (built once).
+   * \brief Map each coupled passive periodic point to its master on the same rank.
    */
   void SetPeriodicMaster(CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Whether two points are periodic images of each other on this rank.
+   * \brief Whether jPoint is the periodic donor of iPoint on this rank.
+   * \note Only happens on meshes one cell thick in the periodic direction.
    */
-  inline bool ArePeriodicImages(unsigned long iPoint, unsigned long jPoint) const {
-    if (PeriodicMaster.empty()) return false;
-    return PeriodicMaster[iPoint] == static_cast<long>(jPoint) || PeriodicMaster[jPoint] == static_cast<long>(iPoint);
+  inline bool IsPeriodicImage(const CGeometry *geometry, const CConfig *config, unsigned long iPoint,
+                              unsigned long jPoint) const {
+    if (!geometry->nodes->GetPeriodicBoundary(iPoint) || !geometry->nodes->GetPeriodicBoundary(jPoint)) return false;
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
+      const auto iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
+      if (iVertex < 0) continue;
+      const auto* vertex = geometry->vertex[iMarker][iVertex];
+      if (vertex->GetDonorProcessor() == rank && vertex->GetDonorPoint() == static_cast<long>(jPoint)) return true;
+    }
+    return false;
   }
 
   /*!

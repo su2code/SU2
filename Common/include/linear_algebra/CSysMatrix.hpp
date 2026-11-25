@@ -227,8 +227,7 @@ struct CBlockView {
   /*!
    * \brief Write the block from callable \p f(i,j).
    *        \p Overwrite=true overwrites (or quantizes for Q_LU_SGS off-diagonal blocks);
-   *        \p Overwrite=false accumulates into non-quantized storage only — accumulating into
-   *        quantized storage would require decode-accumulate-encode and is a silent no-op.
+   *        \p Overwrite=false accumulates (quantized storage is decoded, added and re-encoded).
    *        Only enabled for mutable (non-const ScalarType) views.
    */
   template <bool Overwrite, class F, class S = ScalarType, su2enable_if<!std::is_const_v<S>> = 0>
@@ -241,8 +240,20 @@ struct CBlockView {
           else
             ptr[i * nVar + j] += f(i, j);
         }
-    } else if constexpr (Overwrite) {
-      if (qs) EncodeQuantBlock(f, qs, qv, nVar);
+    } else if (qs) {
+      if constexpr (Overwrite) {
+        EncodeQuantBlock(f, qs, qv, nVar);
+      } else {
+        using T = std::remove_const_t<ScalarType>;
+        for (auto r = 0ul; r < nVar; ++r) {
+          /*--- The old scale is kept because EncodeQuantRow overwrites qs[r] before re-reading the row. ---*/
+          const auto scale = DecodeQuantScale(qs[r]);
+          const auto sum = [&](unsigned long i, unsigned long j) {
+            return static_cast<T>(qv[i * nVar + j] * scale) + f(i, j);
+          };
+          EncodeQuantRow(sum, qs[r], qv + r * nVar, nVar, r);
+        }
+      }
     }
   }
 };
