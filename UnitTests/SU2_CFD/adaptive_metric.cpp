@@ -44,9 +44,12 @@
 namespace {
 
 /*--- Normalization parameters used in the checks. They must match the ADAPTIVE_METRIC_* options in
- *    configOptions. The mesh is the unit square (2D) or unit cube (3D), so the domain volume is 1. ---*/
+ *    configOptions. The mesh is the unit square (2D) or unit cube (3D), so the domain volume is 1.
+ *    ARMAX bounds the eigenvalue ratio of the stored metric by ARMAX^2, and re-decomposing the stored
+ *    metric recovers its smallest eigenvalue only to ~ARMAX^2 * machine epsilon; ARMAX = 1e3 keeps that
+ *    roundoff (~1e-10) well inside the tolerance of the aspect ratio check. ---*/
 constexpr unsigned long COMPLEXITY = 1000;
-constexpr passivedouble HMIN = 1e-8, HMAX = 100.0, ARMAX = 1e6;
+constexpr passivedouble HMIN = 1e-8, HMAX = 100.0, ARMAX = 1e3;
 
 /*!
  * \brief Config of a uniform 9 x 9 (x 9) node mesh of the unit square (cube), with three sensors.
@@ -69,7 +72,7 @@ std::string configOptions(unsigned short nDim) {
          "ADAPTIVE_METRIC_COMPLEXITY= 1000\n"
          "ADAPTIVE_METRIC_HMIN= 1E-8\n"
          "ADAPTIVE_METRIC_HMAX= 100.0\n"
-         "ADAPTIVE_METRIC_ARMAX= 1E6\n";
+         "ADAPTIVE_METRIC_ARMAX= 1E3\n";
 }
 
 /*!
