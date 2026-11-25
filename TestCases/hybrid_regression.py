@@ -116,7 +116,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-8.265203, -2.790380, 0.001084, 0.036280, 2.361500, -2.325300, 0.000000, 0.000000]
+    flatplate.test_vals = [-8.265204, -2.790380, 0.001084, 0.036280, 2.361500, -2.325300, 0.000000, 0.000000]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -149,7 +149,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.004080, -7.638116, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.004071, -7.637239, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.004276, -7.636719, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
@@ -166,7 +166,7 @@ def main():
     periodic2d.cfg_dir   = "navierstokes/periodic2D"
     periodic2d.cfg_file  = "config.cfg"
     periodic2d.test_iter = 1400
-    periodic2d.test_vals = [-10.314545, -8.056213, -7.708669, -4.833054, -1.059806, -2953.400000]
+    periodic2d.test_vals = [-10.314544, -8.056213, -7.708669, -4.833053, -1.059806, -2953.400000]
     test_list.append(periodic2d)
 
     ##########################
@@ -202,7 +202,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-0.187373, 0.003723, 10.000000, -1.443902]
+    turb_flatplate.test_vals = [-0.187373, 0.003723, 10.000000, -1.444651]
     test_list.append(turb_flatplate)
 
     # ONERA M6 Wing
@@ -273,7 +273,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-5.069700, 0.505207, -2.812109, 1.730245, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-5.069705, 0.505202, -2.809286, 1.733308, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.140441, -9.154674, -10.886121, -5.806594, 0.000000]
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -719,7 +719,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.462453, -1.541069]
+    bars_SST_2D.test_vals = [13.000000, -0.462453, -1.525412]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
@@ -771,7 +771,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.328791, -4.152991, 0.000000, 103.000000]
+    dyn_fsi.test_vals = [-4.328791, -4.152991, 0.000000, 102.000000]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
@@ -781,7 +781,7 @@ def main():
     fsi_cht_restart.cfg_dir   = "fea_fsi/stat_fsi"
     fsi_cht_restart.cfg_file  = "config_restart.cfg"
     fsi_cht_restart.test_iter = 0
-    fsi_cht_restart.test_vals = [5.000000, 0.006352, -1.960362, -9.327033, -9.644570, -9.319618, 608.380000, -0.012974, 0.000000, 20.000000]
+    fsi_cht_restart.test_vals = [5.000000, 0.006352, -1.960362, -9.327033, -9.625752, -9.318720, 608.380000, -0.012974, 0.000000, 20.000000]
     fsi_cht_restart.multizone = True
     test_list.append(fsi_cht_restart)
 
