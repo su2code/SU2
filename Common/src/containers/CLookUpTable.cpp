@@ -438,6 +438,26 @@ bool CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::ve
   return inside;
 }
 
+bool CLookUpTable::InterpolateBetweenLevels(const std::vector<unsigned long>& idx_var,
+                                            std::vector<su2double>& val_vars, const su2double val_CV1,
+                                            const su2double val_CV2, const su2double val_CV3,
+                                            std::pair<unsigned long, unsigned long> levels) {
+  /* Determine val_CV1 and val_CV2 for the two levels. */
+  std::array<std::array<su2double, 2>, 2> lower_upper_CV1_2 = ComputeNormalizedXY(levels, val_CV1, val_CV2, val_CV3);
+  su2double val_CV1_lower = lower_upper_CV1_2[0][0], val_CV2_lower = lower_upper_CV1_2[0][1],
+            val_CV1_upper = lower_upper_CV1_2[1][0], val_CV2_upper = lower_upper_CV1_2[1][1];
+
+  /* Perform 2D interpolations on both levels. */
+  std::vector<su2double> val_vars_lower(val_vars.size()), val_vars_upper(val_vars.size());
+  auto inside_lower = LookUp_XY(idx_var, val_vars_lower, val_CV1_lower, val_CV2_lower, levels.first);
+  auto inside_upper = LookUp_XY(idx_var, val_vars_upper, val_CV1_upper, val_CV2_upper, levels.second);
+
+  /* Linear interpolation, or extrapolation, along the z-direction. */
+  Linear_Interpolation(val_CV3, levels.first, levels.second, val_vars_lower, val_vars_upper, val_vars);
+
+  return (inside_upper && inside_lower);
+}
+
 bool CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars,
                               const su2double val_CV1, const su2double val_CV2, const su2double val_CV3) {
   /*--- Perform quasi-3D interpolation for a vector of variables with names val_names_var
@@ -447,28 +467,21 @@ bool CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::ve
   std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_CV3);
   bool within_z_limits = (inclusion_levels.first != inclusion_levels.second);
 
+  /*--- Beyond the outer levels, extrapolate linearly from the two outermost levels, up to one level
+   * spacing beyond the table, so that looked-up quantities keep their dependence on val_CV3. ---*/
+  if (!within_z_limits && n_table_levels > 1) {
+    const bool below = val_CV3 < z_values_levels.front();
+    const unsigned long i_low = below ? 0 : n_table_levels - 2;
+    const pair<unsigned long, unsigned long> outer_levels = make_pair(i_low, i_low + 1);
+    const su2double dz = z_values_levels[i_low + 1] - z_values_levels[i_low];
+    const su2double z_extrap = below ? max(val_CV3, z_values_levels.front() - dz)
+                                     : min(val_CV3, z_values_levels.back() + dz);
+    InterpolateBetweenLevels(idx_var, val_vars, val_CV1, val_CV2, z_extrap, outer_levels);
+    return false;
+  }
+
   if (within_z_limits) {
-    /* 2: Determine val_CV1 and val_CV2 for the inclusion table levels. */
-    std::array<std::array<su2double, 2>, 2> lower_upper_CV1_2 =
-        ComputeNormalizedXY(inclusion_levels, val_CV1, val_CV2, val_CV3);
-    su2double val_CV1_lower = lower_upper_CV1_2[0][0], val_CV2_lower = lower_upper_CV1_2[0][1],
-              val_CV1_upper = lower_upper_CV1_2[1][0], val_CV2_upper = lower_upper_CV1_2[1][1];
-
-    /* 3: Perform 2D interpolations on upper and lower inclusion levels */
-    unsigned long lower_level = inclusion_levels.first;
-    unsigned long upper_level = inclusion_levels.second;
-
-    std::vector<su2double> val_vars_lower, val_vars_upper;
-    val_vars_lower.resize(val_vars.size());
-    val_vars_upper.resize(val_vars.size());
-    auto inside_lower = LookUp_XY(idx_var, val_vars_lower, val_CV1_lower, val_CV2_lower, lower_level);
-    auto inside_upper = LookUp_XY(idx_var, val_vars_upper, val_CV1_upper, val_CV2_upper, upper_level);
-
-    /* 4: Perform linear interpolation along the z-direction using the x-y interpolation results
-             from upper and lower trapezoidal maps */
-    Linear_Interpolation(val_CV3, lower_level, upper_level, val_vars_lower, val_vars_upper, val_vars);
-
-    return (inside_upper && inside_lower);
+    return InterpolateBetweenLevels(idx_var, val_vars, val_CV1, val_CV2, val_CV3, inclusion_levels);
   } else {
     /* Perform single, 2D interpolation when val_CV3 lies outside table bounds */
     unsigned long bound_level = inclusion_levels.first;

@@ -273,6 +273,15 @@ class CLookUpTable {
                                                               const su2double val_CV3);
 
   /*!
+   * \brief Interpolate linearly in the third controlling variable between two table levels, or extrapolate
+   *        when val_CV3 lies outside them.
+   * \returns whether the query point lies inside the data on both levels.
+   */
+  bool InterpolateBetweenLevels(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars,
+                                const su2double val_CV1, const su2double val_CV2, const su2double val_CV3,
+                                std::pair<unsigned long, unsigned long> levels);
+
+  /*!
    * \brief Find the triangle within which the query point (val_CV1, val_CV2) is located.
    * \param[in] val_CV1 - First controlling variable value.
    * \param[in] val_CV2 - Second controlling variable value.
