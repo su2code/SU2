@@ -736,8 +736,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   if (idx_progvar >= 0) table_sources[idx_progvar] = fmax(0, table_sources[idx_progvar]);
 
   /*--- Difference of the progress variable source within the table range, for its implicit treatment. ---*/
-  if (idx_progvar >= 0 && flamelet_config_options.implicit_progvar_source &&
-      config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT) {
+  if (idx_progvar >= 0 && config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT) {
     const int idx_var = flamelet_config_options.idx_progvar_var;
     const su2double c = scalars[idx_progvar];
     su2double c_min, c_max;

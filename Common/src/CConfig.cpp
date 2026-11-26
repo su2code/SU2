@@ -1535,9 +1535,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLAMELET_TABULATED_VARIANCE_SOURCE \n DESCRIPTION: The variance source column of the manifold is the chemical variance source 2 (mean(phi S) - mean(phi) mean(S)) instead of mean(phi S) \ingroup Config*/
   addBoolOption("FLAMELET_TABULATED_VARIANCE_SOURCE", flamelet_ParsedOptions.tabulated_variance_source, false);
 
-  /*!\brief FLAMELET_IMPLICIT_PV_SOURCE \n DESCRIPTION: Treat the progress variable source implicitly where it decreases with the progress variable \ingroup Config*/
-  addBoolOption("FLAMELET_IMPLICIT_PV_SOURCE", flamelet_ParsedOptions.implicit_progvar_source, false);
-
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
   /*!\brief DIFFUSIVITY_MODEL\n DESCRIPTION: mass diffusivity model \n DEFAULT constant disffusivity \ingroup Config*/
