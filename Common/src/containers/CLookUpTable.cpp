@@ -32,6 +32,8 @@
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
+#include <limits>
+
 using namespace std;
 
 CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, string name_CV2_in)
@@ -49,6 +51,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
   if (rank == MASTER_NODE) cout << "Detecting all unique edges and setting edge to triangle connectivity ..." << endl;
 
   IdentifyUniqueEdges();
+  ComputeRangeCV1();
 
   if (rank == MASTER_NODE) cout << " done." << endl;
 
@@ -394,6 +397,98 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
       interp_mat_inv[i][j] = global_M(i, j);
     }
   }
+}
+
+void CLookUpTable::ComputeRangeCV1() {
+  range_CV2.resize(n_table_levels);
+  range_CV1.resize(n_table_levels);
+  const su2double big = std::numeric_limits<passivedouble>::max();
+
+  for (auto i_level = 0ul; i_level < n_table_levels; i_level++) {
+    const su2double* x = table_data[i_level][idx_CV1];
+    const su2double* y = table_data[i_level][idx_CV2];
+
+    /*--- Boundary edges belong to a single triangle; store them with increasing y. ---*/
+    vector<std::array<unsigned long, 2>> boundary;
+    for (auto i_edge = 0ul; i_edge < edges[i_level].size(); i_edge++) {
+      if (edge_to_triangle[i_level][i_edge].size() != 1) continue;
+      auto a = edges[i_level][i_edge][0], b = edges[i_level][i_edge][1];
+      if (y[a] > y[b]) std::swap(a, b);
+      if (y[b] > y[a]) boundary.push_back({a, b});
+    }
+
+    auto& breaks = range_CV2[i_level];
+    for (const auto& e : boundary) {
+      breaks.push_back(y[e[0]]);
+      breaks.push_back(y[e[1]]);
+    }
+    sort(breaks.begin(), breaks.end());
+    breaks.erase(unique(breaks.begin(), breaks.end()), breaks.end());
+    if (breaks.size() < 2) {
+      breaks.clear();
+      continue;
+    }
+
+    /*--- Between two breaks the boundary is linear; keep the edges with the lowest and highest x halfway. ---*/
+    const auto n_intervals = breaks.size() - 1;
+    auto& range = range_CV1[i_level];
+    range.assign(n_intervals, {0, 0, 0, 0});
+    vector<su2double> x_low_mid(n_intervals, big), x_high_mid(n_intervals, -big);
+    for (const auto& e : boundary) {
+      const auto a = e[0], b = e[1];
+      auto x_at = [&](const su2double val_y) { return x[a] + (x[b] - x[a]) * (val_y - y[a]) / (y[b] - y[a]); };
+      const auto k_begin = lower_bound(breaks.begin(), breaks.end(), y[a]) - breaks.begin();
+      const auto k_end = lower_bound(breaks.begin(), breaks.end(), y[b]) - breaks.begin();
+      for (auto k = k_begin; k < k_end; k++) {
+        const su2double x_mid = x_at(0.5 * (breaks[k] + breaks[k + 1]));
+        if (x_mid < x_low_mid[k]) {
+          x_low_mid[k] = x_mid;
+          range[k][0] = x_at(breaks[k]);
+          range[k][1] = x_at(breaks[k + 1]);
+        }
+        if (x_mid > x_high_mid[k]) {
+          x_high_mid[k] = x_mid;
+          range[k][2] = x_at(breaks[k]);
+          range[k][3] = x_at(breaks[k + 1]);
+        }
+      }
+    }
+  }
+}
+
+bool CLookUpTable::GetRangeCV1OnLevel(const su2double val_CV2, const unsigned long i_level, su2double& val_min,
+                                      su2double& val_max) const {
+  const auto& breaks = range_CV2[i_level];
+  if (breaks.empty()) return false;
+  const long n_intervals = breaks.size() - 1;
+  const long k = min(max(long(upper_bound(breaks.begin(), breaks.end(), val_CV2) - breaks.begin()) - 1, 0L),
+                     n_intervals - 1);
+  const su2double t = fmin(fmax((val_CV2 - breaks[k]) / (breaks[k + 1] - breaks[k]), su2double(0.0)), su2double(1.0));
+  const auto& range = range_CV1[i_level][k];
+  val_min = range[0] + t * (range[1] - range[0]);
+  val_max = range[2] + t * (range[3] - range[2]);
+  return true;
+}
+
+bool CLookUpTable::GetRangeCV1(const su2double val_CV2, const su2double val_CV3, su2double& val_min,
+                               su2double& val_max) {
+  if (table_dim == 2) return GetRangeCV1OnLevel(val_CV2, 0, val_min, val_max);
+  auto levels = FindInclusionLevels(val_CV3);
+  if (levels.first == levels.second) return GetRangeCV1OnLevel(val_CV2, levels.first, val_min, val_max);
+  /*--- Map the range of each level back to the query, like the lookup maps the query to the levels. ---*/
+  const auto map_0 = ComputeNormalizedXY(levels, 0.0, val_CV2, val_CV3);
+  const auto map_1 = ComputeNormalizedXY(levels, 1.0, val_CV2, val_CV3);
+  val_min = -std::numeric_limits<passivedouble>::max();
+  val_max = std::numeric_limits<passivedouble>::max();
+  for (auto side = 0u; side < 2; side++) {
+    const auto i_level = (side == 0) ? levels.first : levels.second;
+    su2double level_min, level_max;
+    if (!GetRangeCV1OnLevel(map_0[side][1], i_level, level_min, level_max)) return false;
+    const su2double x_0 = map_0[side][0], dx = map_1[side][0] - map_0[side][0];
+    val_min = fmax(val_min, (level_min - x_0) / dx);
+    val_max = fmin(val_max, (level_max - x_0) / dx);
+  }
+  return true;
 }
 
 std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const su2double val_CV3) {

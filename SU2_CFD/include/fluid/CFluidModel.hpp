@@ -170,6 +170,14 @@ class CFluidModel {
   virtual su2double GetScalarVarianceLimit(const su2double* scalars, unsigned short i_var) { return 1.0e15; }
 
   /*!
+   * \brief Minimum and maximum progress variable at the state of the transported scalars.
+   * \returns Whether the fluid model provides the progress variable range.
+   */
+  virtual bool GetProgressVariableBounds(const su2double* scalars, su2double& c_min, su2double& c_max) {
+    return false;
+  }
+
+  /*!
    * \brief Get fluid dynamic viscosity.
    */
   inline virtual su2double GetLaminarViscosity() {

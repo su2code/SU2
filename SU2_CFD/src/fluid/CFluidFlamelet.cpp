@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <limits>
 #include <memory>
 #include <string>
 #include "../../include/fluid/CFluidFlamelet.hpp"
@@ -236,6 +237,19 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     val_vars_ProgVarBounds.resize(varnames_ProgVarBounds.size());
   }
 
+  /*--- Sources with this suffix are divided by c*(1-c*), so they vanish at the progress variable bounds. ---*/
+  const string reduced_suffix = "_Reduced";
+  reduced_sources.resize(n_sources);
+  for (auto iVar = 0u; iVar < n_sources; iVar++) {
+    const string& name = varnames_Sources[iVar];
+    reduced_sources[iVar] = (name.size() > reduced_suffix.size()) &&
+                            (name.compare(name.size() - reduced_suffix.size(), reduced_suffix.size(), reduced_suffix) == 0);
+    if (reduced_sources[iVar] && varnames_ProgVarBounds.empty())
+      SU2_MPI::Error(string("The reduced source ") + name + " requires transport of " + FLAMELET_CV_NAME::PROGVAR_VAR +
+                         ", which provides the progress variable range.",
+                     CURRENT_FUNCTION);
+  }
+
   preferential_diffusion = flamelet_options.preferential_diffusion;
 
   if (!preferential_diffusion && flamelet_options.preferential_diffusion)
@@ -292,6 +306,9 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
                            FLAMELET_PROGVAR_BOUNDS::MIN + " and " + FLAMELET_PROGVAR_BOUNDS::MAX + " in the table.",
                        CURRENT_FUNCTION);
       for (const auto& name : varnames_ProgVarBounds) LUT_idx_ProgVarBounds.push_back(look_up_table->GetIndexOfVar(name));
+      /*--- With table axes (c, h) and levels in the variance, the table edge bounds c at each h. ---*/
+      progvar_range_from_table = (n_control_vars == 3) && (flamelet_options.idx_progvar == 0) &&
+                                 (flamelet_options.idx_progvar_var == 2);
     }
   }
 }
@@ -303,32 +320,68 @@ su2double CFluidFlamelet::GetScalarVarianceLimit(const su2double* scalars, unsig
   return CFluidModel::GetScalarVarianceLimit(scalars, i_var);
 }
 
+bool CFluidFlamelet::GetProgressVariableBounds(const su2double* scalars, su2double& c_min, su2double& c_max) {
+  if (varnames_ProgVarBounds.empty()) return false;
+  SetManifoldInputs(scalars);
+  c_min = val_vars_ProgVarBounds[0];
+  c_max = val_vars_ProgVarBounds[1];
+  return true;
+}
+
 bool CFluidFlamelet::SetManifoldInputs(const su2double* scalars) {
   for (auto iCV = 0u; iCV < n_control_vars; iCV++) manifold_inputs[iCV] = scalars[iCV];
 
-  /*--- Variance divided by its upper limit, 0 where the mean is at a bound. ---*/
-  auto normalize = [](su2double variance, su2double limit) {
-    return (limit > 0) ? fmin(fmax(variance / limit, su2double(0.0)), su2double(1.0)) : su2double(0.0);
+  /*--- Variance divided by its upper limit plus an offset that keeps the ratio continuous at the bounds of the mean. ---*/
+  auto normalize = [](su2double variance, su2double limit, su2double range) {
+    const su2double denominator = limit + 1e-12 * range * range;
+    return (denominator > 0) ? fmin(fmax(variance / denominator, su2double(0.0)), su2double(1.0)) : su2double(0.0);
   };
 
   const int i_zvar = flamelet_options.idx_mixfrac_var;
   if (i_zvar >= 0) {
     const su2double z = scalars[flamelet_options.idx_mixfrac];
     limit_mixfrac_var = fmax(z * (1.0 - z), su2double(0.0));
-    manifold_inputs[i_zvar] = normalize(scalars[i_zvar], limit_mixfrac_var);
+    manifold_inputs[i_zvar] = normalize(scalars[i_zvar], limit_mixfrac_var, 1.0);
   }
+
+  /*--- Moves the progress variable of the lookup just inside the table edge and below c_max. ---*/
+  const int i_c = flamelet_options.idx_progvar;
+  auto clamp_to_table = [&](su2double c_max) {
+    su2double edge_min, edge_max;
+    if (!look_up_table->GetRangeCV1(manifold_inputs[1], manifold_inputs[2], edge_min, edge_max)) return c_max;
+    const su2double margin = 1e-10 * (edge_max - edge_min);
+    manifold_inputs[i_c] = fmin(fmax(scalars[i_c], edge_min + margin), fmin(edge_max, c_max) - margin);
+    return edge_max;
+  };
 
   bool inside{true};
   const int i_cvar = flamelet_options.idx_progvar_var;
   if (i_cvar >= 0) {
     /*--- The range of the progress variable does not depend on its variance. ---*/
     manifold_inputs[i_cvar] = 0.0;
+    su2double edge_max{0};
+    if (progvar_range_from_table) edge_max = clamp_to_table(std::numeric_limits<passivedouble>::max());
     inside = LookUpManifold(FLAMELET_LOOKUP_OPS::PROGVAR_BOUNDS, manifold_inputs, val_vars_ProgVarBounds);
-    const su2double c = scalars[flamelet_options.idx_progvar];
+    if (progvar_range_from_table) val_vars_ProgVarBounds[1] = fmin(val_vars_ProgVarBounds[1], edge_max);
+    const su2double c = scalars[i_c];
     limit_progvar_var = fmax((c - val_vars_ProgVarBounds[0]) * (val_vars_ProgVarBounds[1] - c), su2double(0.0));
-    manifold_inputs[i_cvar] = normalize(scalars[i_cvar], limit_progvar_var);
+    manifold_inputs[i_cvar] = normalize(scalars[i_cvar], limit_progvar_var,
+                                        val_vars_ProgVarBounds[1] - val_vars_ProgVarBounds[0]);
+    if (progvar_range_from_table) clamp_to_table(val_vars_ProgVarBounds[1]);
   }
   return inside;
+}
+
+void CFluidFlamelet::ScaleReducedSources(const su2double* scalars, vector<su2double>& sources) const {
+  if (varnames_ProgVarBounds.empty()) return;
+  const su2double c_min = val_vars_ProgVarBounds[0];
+  const su2double c_range = val_vars_ProgVarBounds[1] - c_min;
+  const su2double c_star =
+      (c_range > 0) ? fmin(fmax((scalars[flamelet_options.idx_progvar] - c_min) / c_range, su2double(0.0)), su2double(1.0))
+                    : su2double(0.0);
+  const su2double factor = c_star * (1.0 - c_star);
+  for (auto iVar = 0u; iVar < sources.size(); iVar++)
+    if (reduced_sources[iVar]) sources[iVar] *= factor;
 }
 
 bool CFluidFlamelet::LookUpManifold(unsigned short lookup_type, const vector<su2double>& inputs,
@@ -405,6 +458,7 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
 
   bool inside = SetManifoldInputs(input_scalar.data());
   inside = LookUpManifold(lookup_type, manifold_inputs, output_refs) && inside;
+  if (lookup_type == FLAMELET_LOOKUP_OPS::SOURCES) ScaleReducedSources(input_scalar.data(), output_refs);
 
   extrapolation = inside ? 0 : 1;
   for (auto iVar = 0u; iVar < output_refs.size(); iVar++) AD::SetPreaccOut(output_refs[iVar]);

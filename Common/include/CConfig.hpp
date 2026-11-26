@@ -449,6 +449,7 @@ private:
   CFLRedCoeff_AdjFlow,         /*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,         /*!< \brief CFL reduction coefficient for the adjoint turbulent problem. */
   CFLRedCoeff_Species,         /*!< \brief CFL reduction coefficient on the species problem. */
+  Scalar_TimeStep_Ratio,       /*!< \brief Maximum ratio of the scalar to the flow time step. */
   CFLFineGrid,                 /*!< \brief CFL of the finest grid. */
   Max_DeltaTime,               /*!< \brief Max delta time. */
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
@@ -894,6 +895,7 @@ private:
   su2double Gamma,      /*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,         /*!< \brief Value of the bulk modulus for incompressible flows. */
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
+  Beta_Local_Floor,     /*!< \brief Lower bound of the local velocity^2 in Beta, as a fraction of the domain maximum. */
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
   *Molecular_Weight;    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
@@ -1780,6 +1782,12 @@ public:
    * \return Value of the epsilon^2 multiplier for Beta in the incompressible preconditioner.
    */
   su2double GetBeta_Factor(void) const { return Beta_Factor; }
+
+  /*!
+   * \brief Lower bound of the local velocity^2 in the incompressible preconditioner, as a fraction of the maximum.
+   * \return 1 gives a uniform Beta from the maximum velocity in the domain.
+   */
+  su2double GetBeta_Local_Floor(void) const { return Beta_Local_Floor; }
 
   /*!
    * \brief Get the value of specific gas constant.
@@ -7493,6 +7501,12 @@ public:
    * \return Value of the CFL reduction in species problems.
    */
   su2double GetCFLRedCoeff_Species() const { return CFLRedCoeff_Species; }
+
+  /*!
+   * \brief Maximum ratio of the scalar to the flow time step.
+   * \return 1 to use the flow time step, larger values to use the local scalar time step up to this ratio.
+   */
+  su2double GetScalar_TimeStep_Ratio() const { return Scalar_TimeStep_Ratio; }
 
   /*!
    * \brief Get the flow direction unit vector at an inlet boundary.

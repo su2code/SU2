@@ -1446,6 +1446,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
   /* DESCRIPTION: Epsilon^2 multipier in Beta calculation for incompressible preconditioner.  */
   addDoubleOption("BETA_FACTOR", Beta_Factor, 4.1);
+  /*!\brief BETA_LOCAL_FLOOR \n DESCRIPTION: Lower bound of the local velocity^2 in Beta, as a fraction of the maximum velocity^2. 1 gives a uniform Beta. \ingroup Config*/
+  addDoubleOption("BETA_LOCAL_FLOOR", Beta_Local_Floor, 1.0);
   /*!\brief MACH_NUMBER  \n DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values). 0.0 by default \ingroup Config*/
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /*!\brief INIT_OPTION \n DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS \ingroup Config*/
@@ -1532,6 +1534,9 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("FLAMELET_VARIANCE_DISSIPATION_COEFF", flamelet_ParsedOptions.variance_dissipation_coeff, 2.0);
   /*!\brief FLAMELET_TABULATED_VARIANCE_SOURCE \n DESCRIPTION: The variance source column of the manifold is the chemical variance source 2 (mean(phi S) - mean(phi) mean(S)) instead of mean(phi S) \ingroup Config*/
   addBoolOption("FLAMELET_TABULATED_VARIANCE_SOURCE", flamelet_ParsedOptions.tabulated_variance_source, false);
+
+  /*!\brief FLAMELET_IMPLICIT_PV_SOURCE \n DESCRIPTION: Treat the progress variable source implicitly where it decreases with the progress variable \ingroup Config*/
+  addBoolOption("FLAMELET_IMPLICIT_PV_SOURCE", flamelet_ParsedOptions.implicit_progvar_source, false);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -1955,6 +1960,9 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /*!\brief CFL_REDUCTION_SPECIES \n DESCRIPTION: Reduction factor of the CFL coefficient in the species problem \n DEFAULT: 1.0 */
   addDoubleOption("CFL_REDUCTION_SPECIES", CFLRedCoeff_Species, 1.0);
+  /*!\brief SCALAR_TIME_STEP_RATIO \n DESCRIPTION: Maximum ratio of the scalar to the flow time step. Above 1, scalars use their local convective
+   * and diffusive time step, capped at this ratio times the flow time step. \n DEFAULT: 1.0 */
+  addDoubleOption("SCALAR_TIME_STEP_RATIO", Scalar_TimeStep_Ratio, 1.0);
   /* DESCRIPTION: External iteration offset due to restart */
   addUnsignedLongOption("EXT_ITER_OFFSET", ExtIter_OffSet, 0);
   // these options share nRKStep as their size, which is not a good idea in general

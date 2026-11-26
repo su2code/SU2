@@ -73,6 +73,7 @@ class CFluidFlamelet final : public CFluidModel {
   vector<su2double> manifold_inputs; /*!< \brief Controlling variables with the variances normalized. */
   su2double limit_progvar_var = 0,   /*!< \brief Upper limit of the progress variable variance. */
       limit_mixfrac_var = 0;         /*!< \brief Upper limit of the mixture fraction variance. */
+  bool progvar_range_from_table = false; /*!< \brief Bound the progress variable by the edge of the table. */
 
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
@@ -116,6 +117,15 @@ class CFluidFlamelet final : public CFluidModel {
    * \returns Whether the look-up of the progress variable range is inside the manifold.
    */
   bool SetManifoldInputs(const su2double* scalars);
+
+  /*!
+   * \brief Multiply the reduced sources by c*(1-c*), with c* the progress variable scaled to [0,1] by its range.
+   * \param[in] scalars - Transported scalars, after SetManifoldInputs.
+   * \param[in,out] sources - Source terms of the manifold.
+   */
+  void ScaleReducedSources(const su2double* scalars, vector<su2double>& sources) const;
+
+  vector<bool> reduced_sources; /*!< \brief Whether a source is given divided by c*(1-c*). */
 
   /*! \brief
    * Returns true if the string is null or zero (ignores case).
@@ -164,6 +174,12 @@ class CFluidFlamelet final : public CFluidModel {
    * \returns Upper limit of the variance.
    */
   su2double GetScalarVarianceLimit(const su2double* scalars, unsigned short i_var) override;
+
+  /*!
+   * \brief Minimum and maximum progress variable at the state of the transported scalars.
+   * \returns Whether the manifold provides the progress variable range.
+   */
+  bool GetProgressVariableBounds(const su2double* scalars, su2double& c_min, su2double& c_max) override;
 
   /*!
    * \brief Check for out-of-bounds condition for data set interpolation.

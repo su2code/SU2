@@ -99,6 +99,12 @@ class CLookUpTable {
    */
   su2vector<su2vector<unsigned long>> hull;
 
+  /*! \brief Values of the second controlling variable at which the boundary of each table level has a vertex. */
+  su2vector<std::vector<su2double>> range_CV2;
+
+  /*! \brief First controlling variable on the lower and upper boundary at both ends of each range_CV2 interval. */
+  su2vector<std::vector<std::array<su2double, 4>>> range_CV1;
+
   /*! \brief
    * Trapezoidal map objects for the table levels.
    */
@@ -142,6 +148,17 @@ class CLookUpTable {
    * \brief Construct a list of all the edges and a list of the pair of elements left and right of the edge.
    */
   void IdentifyUniqueEdges();
+
+  /*!
+   * \brief Tabulate the range of the first controlling variable covered by each table level, from its boundary edges.
+   */
+  void ComputeRangeCV1();
+
+  /*!
+   * \brief Range of the first controlling variable covered by a table level at a value of the second.
+   * \returns false if the level has no extent in the second controlling variable.
+   */
+  bool GetRangeCV1OnLevel(su2double val_CV2, unsigned long i_level, su2double& val_min, su2double& val_max) const;
 
   /*!
    * \brief Read the lookup table from file and store the data.
@@ -304,6 +321,13 @@ class CLookUpTable {
 
  public:
   CLookUpTable(const std::string& file_name_lut, std::string name_CV1_in, std::string name_CV2_in);
+
+  /*!
+   * \brief Range of the first controlling variable inside the table at the given second and third controlling variable.
+   * \note For a 3D table, the range is common to both table levels the lookup interpolates between.
+   * \returns false if a level has no extent in the second controlling variable.
+   */
+  bool GetRangeCV1(su2double val_CV2, su2double val_CV3, su2double& val_min, su2double& val_max);
 
   /*!
    * \brief Print information to screen.

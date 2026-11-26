@@ -487,9 +487,29 @@ void CScalarSolver<VariableType>::SetTime_Step(CGeometry *geometry, CSolver **so
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
+  const su2double max_ratio = config->GetScalar_TimeStep_Ratio();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
+
+    /*--- Scalars are carried at the flow speed, without the artificial sound speed of the flow time step. ---*/
+    if (max_ratio > 1.0 && !geometry->nodes->GetPhysicalBoundary(iPoint)) {
+      su2double lambda_conv = 0.0;
+      for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnNeighbor(iPoint); iNeigh++) {
+        const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+        const auto* normal = geometry->edges->GetNormal(geometry->nodes->GetEdge(iPoint, iNeigh));
+        su2double proj_vel = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          proj_vel += 0.5 * (flowNodes->GetVelocity(iPoint, iDim) + flowNodes->GetVelocity(jPoint, iDim)) * normal[iDim];
+        lambda_conv += fabs(proj_vel);
+      }
+      const su2double vol = geometry->nodes->GetVolume(iPoint);
+      const su2double cfl = nodes->GetLocalCFL(iPoint);
+      const su2double dt_conv = cfl * vol / max(lambda_conv, EPS);
+      const su2double dt_visc = cfl * 0.25 * vol * vol / max(flowNodes->GetMax_Lambda_Visc(iPoint), EPS);
+      dt = min({dt_conv, dt_visc, max_ratio * dt});
+    }
     nodes->SetDelta_Time(iPoint, dt);
   }
   END_SU2_OMP_FOR

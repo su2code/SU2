@@ -2259,11 +2259,14 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
   /*--- Allow an override if user supplies a large epsilon^2. ---*/
 
-  su2double BetaInc2 = max(epsilon2_default, config->GetBeta_Factor()) * config->GetMax_Vel2();
+  const su2double beta_factor = max(epsilon2_default, config->GetBeta_Factor());
+
+  /*--- Local velocity scale, bounded below by a fraction of the domain maximum. ---*/
+  const su2double floor_vel2 = config->GetBeta_Local_Floor() * config->GetMax_Vel2();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
-    nodes->SetBetaInc2(iPoint, BetaInc2);
+    nodes->SetBetaInc2(iPoint, beta_factor * max(floor_vel2, nodes->GetVelocity2(iPoint)));
   END_SU2_OMP_FOR
 
 }

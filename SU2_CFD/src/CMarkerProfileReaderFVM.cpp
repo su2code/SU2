@@ -79,7 +79,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
   ifstream profile_file;
   profile_file.open(filename.data(), ios::in);
   bool nmarkFound = false;
-  unsigned long skip = 0;
+  vector<unsigned long> skip;
 
   /*--- Identify the markers and data set in the profile file ---*/
 
@@ -95,6 +95,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
       numberOfRowsInProfile.resize(numberOfProfiles);
       numberOfColumnsInProfile.resize(numberOfProfiles);
+      skip.assign(numberOfProfiles, 0);
 
       for (unsigned short iMarker = 0 ; iMarker < numberOfProfiles; iMarker++) {
 
@@ -120,15 +121,15 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         getline (profile_file, text_line);
         string::size_type dataheader = text_line.find ("# COORD",0);
         if (dataheader == 0) {
-          skip = 0;
+          skip[iMarker] = 0;
         } else {
           /*--- no header, but we have read a line, so we have to read one line less data ---*/
-          skip = 1;
+          skip[iMarker] = 1;
         }
 
         /*--- Skip the data. This is read in the next loop. ---*/
 
-        for (unsigned long iRow = 0; iRow < (numberOfRowsInProfile[iMarker]-skip); iRow++) getline (profile_file, text_line);
+        for (unsigned long iRow = 0; iRow < (numberOfRowsInProfile[iMarker]-skip[iMarker]); iRow++) getline (profile_file, text_line);
 
       }
     }
@@ -166,7 +167,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         getline (profile_file, text_line);
 
         /*--- if skip=0 then we can expect column format description ---*/
-        if (skip == 0) getline (profile_file, text_line);
+        if (skip[iMarker] == 0) getline (profile_file, text_line);
 
         /*--- Now read the data for each row and store. ---*/
 
