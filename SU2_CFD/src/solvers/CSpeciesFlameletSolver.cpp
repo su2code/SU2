@@ -104,6 +104,12 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
                             n_not_in_domain_local = 0;)
 
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    pd_jacobian = flamelet_config_options.preferential_diffusion && (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    if (pd_jacobian) SetPrefDiffJacobianSteps();
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
   /* Update global flame thickness value. */
   if (calc_flame_thickness) {
     /*--- Every thread takes part in this, it reduces over the points of the rank and over ranks,
@@ -776,7 +782,82 @@ unsigned long CSpeciesFlameletSolver::SetPreferentialDiffusionScalars(CFluidMode
   for (auto i_beta = 0u; i_beta < FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS; i_beta++) {
     nodes->SetAuxVar(iPoint, i_beta, beta_scalar[i_beta]);
   }
+  if (!pd_jacobian) return misses;
+
+  /*--- Differences of the beta scalars and of the temperature, which drives the thermal term: central inside
+   * the manifold, one-sided towards it at its edges, and the ordinary diffusion Jacobian where neither fits. ---*/
+  const auto n_cv = flamelet_config_options.n_control_vars;
+  auto beta_index = [this](int i_cv) {
+    if (i_cv == idx_progvar) return I_BETA_PROGVAR;
+    if (i_cv == idx_enth) return I_BETA_ENTH;
+    return I_BETA_MIXFRAC;
+  };
+  const su2double temperature = fluid_model_local->GetTemperature();
+  vector<su2double> scalars_fd(scalars), beta_plus(beta_scalar.size()), beta_minus(beta_scalar.size());
+
+  for (auto j_cv = 0u; j_cv < n_cv; j_cv++) {
+    const su2double step = pd_jacobian_step[j_cv];
+    scalars_fd[j_cv] = scalars[j_cv] + step;
+    bool inside_plus = fluid_model_local->EvaluateDataSet(scalars_fd, FLAMELET_LOOKUP_OPS::PREFDIF, beta_plus) == 0;
+    fluid_model_local->SetTDState_T(temperature, scalars_fd.data());
+    inside_plus = inside_plus && (fluid_model_local->GetExtrapolation() == 0);
+    su2double temperature_plus = fluid_model_local->GetTemperature();
+    scalars_fd[j_cv] = scalars[j_cv] - step;
+    bool inside_minus = fluid_model_local->EvaluateDataSet(scalars_fd, FLAMELET_LOOKUP_OPS::PREFDIF, beta_minus) == 0;
+    fluid_model_local->SetTDState_T(temperature, scalars_fd.data());
+    inside_minus = inside_minus && (fluid_model_local->GetExtrapolation() == 0);
+    su2double temperature_minus = fluid_model_local->GetTemperature();
+    scalars_fd[j_cv] = scalars[j_cv];
+
+    su2double span = 2 * step;
+    if (!inside_plus) {
+      beta_plus = beta_scalar;
+      temperature_plus = temperature;
+      span = step;
+    }
+    if (!inside_minus) {
+      beta_minus = beta_scalar;
+      temperature_minus = temperature;
+      span = step;
+    }
+    const bool usable = (misses == 0) && (inside_plus || inside_minus);
+
+    for (auto i_cv = 0u; i_cv < n_cv; i_cv++) {
+      su2double value = (i_cv == j_cv) ? su2double(1.0) : su2double(0.0);
+      if (usable) {
+        const auto i_beta = beta_index(i_cv);
+        su2double d_state = (beta_plus[i_beta] - beta_minus[i_beta]) / span;
+        if (static_cast<int>(i_cv) == idx_enth)
+          d_state += beta_scalar[I_BETA_ENTH_THERMAL] * (temperature_plus - temperature_minus) / span;
+        value = d_state - ((i_cv == j_cv) ? 1.0 : 0.0);
+        /*--- The total diagonal, ordinary diffusion included, is kept positive. ---*/
+        if (i_cv == j_cv) value = max(value, su2double(-0.9));
+      }
+      nodes->SetPrefDiffJacobian(iPoint, i_cv * n_cv + j_cv, value);
+    }
+  }
+  fluid_model_local->SetTDState_T(temperature, scalars.data());
   return misses;
+}
+
+void CSpeciesFlameletSolver::SetPrefDiffJacobianSteps() {
+  const auto n_cv = flamelet_config_options.n_control_vars;
+  passivedouble local_min[MAXNVAR], local_max[MAXNVAR], global_min[MAXNVAR], global_max[MAXNVAR];
+  for (auto i_cv = 0u; i_cv < n_cv; i_cv++) {
+    local_min[i_cv] = std::numeric_limits<passivedouble>::max();
+    local_max[i_cv] = std::numeric_limits<passivedouble>::lowest();
+  }
+  for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+    for (auto i_cv = 0u; i_cv < n_cv; i_cv++) {
+      const passivedouble value = SU2_TYPE::GetValue(nodes->GetSolution(i_point, i_cv));
+      local_min[i_cv] = min(local_min[i_cv], value);
+      local_max[i_cv] = max(local_max[i_cv], value);
+    }
+  }
+  SU2_MPI::Allreduce(local_min, global_min, n_cv, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(local_max, global_max, n_cv, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  for (auto i_cv = 0u; i_cv < n_cv; i_cv++)
+    pd_jacobian_step[i_cv] = max(1e-3 * (global_max[i_cv] - global_min[i_cv]), 1e-12);
 }
 
 void CSpeciesFlameletSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics**,

@@ -48,6 +48,14 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   /*!< \brief Number of points outside the manifold domain, shared across OpenMP threads so it can be
    *          accumulated atomically and reduced by the master thread alone in Preprocessing. */
   unsigned long n_not_in_domain_local = 0;
+  bool pd_jacobian = false; /*!< \brief Whether the preferential diffusion Jacobian is evaluated this iteration. */
+  passivedouble pd_jacobian_step[MAXNVAR] = {0}; /*!< \brief Finite difference step per controlling variable. */
+
+  /*!
+   * \brief Set the finite difference steps of the preferential diffusion Jacobian, a fraction of the global
+   *        range of each controlling variable.
+   */
+  void SetPrefDiffJacobianSteps();
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -127,7 +135,8 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
                                  const vector<su2double>& scalars);
 
   /*!
-   * \brief Retrieve the preferential diffusion scalar values from manifold.
+   * \brief Retrieve the preferential diffusion scalar values from manifold, and their derivatives to the
+   *        controlling variables when the scheme is implicit.
    * \param[in] fluid_model_local - pointer to flamelet fluid model.
    * \param[in] iPoint - node ID.
    * \param[in] scalars - local scalar solution.

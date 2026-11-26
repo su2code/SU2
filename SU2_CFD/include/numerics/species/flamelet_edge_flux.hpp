@@ -58,9 +58,8 @@ class CScalarFlux_Flamelet final
    * \brief Preferential diffusion, two terms with the shape of the ordinary diffusion but of
    *        states the model synthesises: div(D grad(beta - phi)) for each controlling variable,
    *        and a thermal term div(beta_T D grad(T)) on the enthalpy equation.
-   * \note The thermal term has no implicit part, matching the treatment of the heat flux it
-   *       models; the first term has the same thin shear layer Jacobian as the ordinary diffusion,
-   *       because it is the same operator applied to a shifted state.
+   * \note The Jacobian couples the controlling variables through the derivatives of beta - phi, with
+   *       the thermal term folded into the enthalpy row; the solver evaluates them from the manifold.
    */
   template <class VariableType>
   FORCEINLINE void extraDiffusionTerms(const FlowIndices& idx, const ScalarFluxOptions& opt, Int iPoint,
@@ -106,11 +105,16 @@ class CScalarFlux_Flamelet final
       if (!opt.oneSided) res.flux_j(iScalar) += D * projGrad;
 
       if (opt.implicit) {
-        res.jac_ii(iScalar, iScalar) += D * proj_on_rho_i;
-        if (!opt.oneSided) {
-          res.jac_ij(iScalar, iScalar) -= D * proj_on_rho_j;
-          res.jac_ji(iScalar, iScalar) -= D * proj_on_rho_i;
-          res.jac_jj(iScalar, iScalar) += D * proj_on_rho_j;
+        for (auto jScalar = 0u; jScalar < nControlVars; ++jScalar) {
+          const auto iEntry = iScalar * nControlVars + jScalar;
+          const Double dState_i = gatherVariables(iPoint, side_i.scalarNodes.GetPrefDiffJacobian(), iEntry);
+          const Double dState_j = gatherVariables(jPoint, side_j.scalarNodes.GetPrefDiffJacobian(), iEntry);
+          res.jac_ii(iScalar, jScalar) += D * proj_on_rho_i * dState_i;
+          if (!opt.oneSided) {
+            res.jac_ij(iScalar, jScalar) -= D * proj_on_rho_j * dState_j;
+            res.jac_ji(iScalar, jScalar) -= D * proj_on_rho_i * dState_i;
+            res.jac_jj(iScalar, jScalar) += D * proj_on_rho_j * dState_j;
+          }
         }
       }
     }

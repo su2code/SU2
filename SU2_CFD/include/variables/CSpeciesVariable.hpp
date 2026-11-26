@@ -39,9 +39,22 @@ class CSpeciesVariable : public CScalarVariable {
   MatrixType SpeciesSourceTerm; /*!< \brief Matrix (nPoint, nVar) of chemical source terms for species transport*/
   MatrixType SpeciesSourceJacobian; /*!< \brief Matrix (nPoint, nVar) of the diagonal chemical source Jacobian. */
   VectorType HeatRelease; /*!< \brief Vector of heat release due to combustion for species transport*/
+  MatrixType PrefDiffJacobian; /*!< \brief Matrix (nPoint, nCV*nCV), row-major d(beta_i - phi_i)/d(phi_j) of the preferential diffusion terms. */
 
  public:
   static constexpr size_t MAXNVAR = MAX_TRANSPORTED_SPECIES; /*!< \brief Max number of variables for static arrays. */
+
+  /*!
+   * \brief Derivatives of the preferential diffusion states to the controlling variables, row-major per point.
+   */
+  inline const MatrixType& GetPrefDiffJacobian() const { return PrefDiffJacobian; }
+
+  /*!
+   * \brief Set one derivative of a preferential diffusion state, entry iCV*nCV + jCV.
+   */
+  inline void SetPrefDiffJacobian(unsigned long iPoint, unsigned long iEntry, su2double val) {
+    PrefDiffJacobian(iPoint, iEntry) = val;
+  }
 
   /*!
    * \brief Constructor of the class.
