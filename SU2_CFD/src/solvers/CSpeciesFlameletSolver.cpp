@@ -918,15 +918,37 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
   SU2_ZONE_SCOPED
   su2double scalars[MAXNVAR], delta = 1e-3;
   for (auto iVar = 0u; iVar < nVar; iVar++) scalars[iVar] = scalar_solution[iVar];
-  bool outside = false;
-  scalars[idx_flame_front] += delta;
-  while (!outside) {
-    /*--- Note that 300.0 is a dummy temperature here and not used. ---*/
+
+  /*--- Note that 300.0 is a dummy temperature here and not used. ---*/
+  auto inside = [&](su2double pv) {
+    scalars[idx_flame_front] = pv;
     fluid_model->SetTDState_T(300.0, scalars);
-    if ((fluid_model->GetExtrapolation() == 1) || fluid_model->GetTemperature() > T_ignition) outside = true;
-    scalars[idx_flame_front] += delta;
+    return fluid_model->GetExtrapolation() == 0;
+  };
+
+  /*--- March up while the state stays inside the manifold, until the ignition temperature is exceeded. ---*/
+  const su2double pv_unburnt = scalar_solution[idx_flame_front];
+  su2double pv_burnt = pv_unburnt, pv_trial = pv_unburnt + delta;
+  bool ignited = false;
+  while (!ignited && inside(pv_trial)) {
+    pv_burnt = pv_trial;
+    ignited = fluid_model->GetTemperature() > T_ignition;
+    pv_trial += delta;
   }
-  su2double pv_burnt = scalars[idx_flame_front] - delta;
+
+  /*--- The march left the manifold: bisect to its edge and keep a margin inside it. ---*/
+  if (!ignited) {
+    su2double pv_out = pv_trial;
+    for (int iter = 0; iter < 30; iter++) {
+      const su2double pv_mid = 0.5 * (pv_burnt + pv_out);
+      if (inside(pv_mid)) pv_burnt = pv_mid;
+      else pv_out = pv_mid;
+    }
+    const su2double pv_margin = pv_burnt - 1e-3 * (pv_burnt - pv_unburnt);
+    if (inside(pv_margin)) pv_burnt = pv_margin;
+  }
+  inside(pv_burnt);
+
   if (rank == MASTER_NODE) {
     cout << "Burnt progress variable determined from flamelet table: " << pv_burnt << endl;
     cout << "Burnt temperature from flamelet table: " << fluid_model->GetTemperature() << endl;
