@@ -50,6 +50,7 @@ class CScalarFlux_Flamelet final
   explicit CScalarFlux_Flamelet(const CConfig& config)
       : Base(config),
         preferentialDiffusion(config.GetFlameletParsedOptions().preferential_diffusion),
+        unityLewisPart(config.GetFlameletParsedOptions().preferential_diffusion_excess ? 0.0 : 1.0),
         nControlVars(config.GetFlameletParsedOptions().n_control_vars),
         idxProgVar(config.GetFlameletParsedOptions().idx_progvar),
         idxEnth(config.GetFlameletParsedOptions().idx_enth) {}
@@ -57,7 +58,8 @@ class CScalarFlux_Flamelet final
   /*!
    * \brief Preferential diffusion, two terms with the shape of the ordinary diffusion but of
    *        states the model synthesises: div(D grad(beta - phi)) for each controlling variable,
-   *        and a thermal term div(beta_T D grad(T)) on the enthalpy equation.
+   *        and a thermal term div(beta_T D grad(T)) on the enthalpy equation. With the excess
+   *        scalars of the manifold, beta - phi and beta_T are read directly.
    * \note The Jacobian couples the controlling variables through the derivatives of beta - phi, with
    *       the thermal term folded into the enthalpy row; the solver evaluates them from the manifold.
    */
@@ -82,17 +84,17 @@ class CScalarFlux_Flamelet final
       const auto iBeta = betaIndex(iScalar);
 
       const Double phi_i = gatherVariables(iPoint, side_i.scalarNodes.GetAuxVar(), iBeta) -
-                           gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), iScalar);
+                           unityLewisPart * gatherVariables(iPoint, side_i.scalarNodes.GetSolution(), iScalar);
       const Double phi_j = gatherVariables(jPoint, side_j.scalarNodes.GetAuxVar(), iBeta) -
-                           gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), iScalar);
+                           unityLewisPart * gatherVariables(jPoint, side_j.scalarNodes.GetSolution(), iScalar);
 
       auto grad_i = gatherVariables<nDim>(iPoint, side_i.scalarNodes.GetAuxVarGradient(), iBeta);
       auto grad_j = gatherVariables<nDim>(jPoint, side_j.scalarNodes.GetAuxVarGradient(), iBeta);
       const auto gradPhi_i = gatherVariables<nDim>(iPoint, side_i.scalarNodes.GetGradient(), iScalar);
       const auto gradPhi_j = gatherVariables<nDim>(jPoint, side_j.scalarNodes.GetGradient(), iScalar);
       for (int iDim = 0; iDim < nDim; ++iDim) {
-        grad_i(iDim) -= gradPhi_i(iDim);
-        grad_j(iDim) -= gradPhi_j(iDim);
+        grad_i(iDim) -= unityLewisPart * gradPhi_i(iDim);
+        grad_j(iDim) -= unityLewisPart * gradPhi_j(iDim);
       }
 
       const Double D_i = gatherVariables(iPoint, side_i.scalarNodes.GetDiffusivity(), iScalar);
@@ -140,6 +142,7 @@ class CScalarFlux_Flamelet final
 
  private:
   const bool preferentialDiffusion;
+  const su2double unityLewisPart; /*!< \brief 1 when beta holds the full scalar, 0 when it holds the excess. */
   const unsigned short nControlVars;
   const int idxProgVar, idxEnth;
 

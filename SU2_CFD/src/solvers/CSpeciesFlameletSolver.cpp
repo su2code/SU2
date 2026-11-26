@@ -834,6 +834,11 @@ unsigned long CSpeciesFlameletSolver::SetPreferentialDiffusionScalars(CFluidMode
   const su2double temperature = fluid_model_local->GetTemperature();
   vector<su2double> scalars_fd(scalars), beta_plus(beta_scalar.size()), beta_minus(beta_scalar.size());
 
+  /*--- The excess scalars hold beta - phi; without derivatives only the ordinary diffusion is implicit. ---*/
+  const bool excess = flamelet_config_options.preferential_diffusion_excess;
+  const su2double unity_lewis_part = excess ? 0.0 : 1.0;
+  const su2double fallback_diagonal = excess ? 0.0 : 1.0;
+
   for (auto j_cv = 0u; j_cv < n_cv; j_cv++) {
     const su2double step = pd_jacobian_step[j_cv];
     scalars_fd[j_cv] = scalars[j_cv] + step;
@@ -862,13 +867,13 @@ unsigned long CSpeciesFlameletSolver::SetPreferentialDiffusionScalars(CFluidMode
     const bool usable = (misses == 0) && (inside_plus || inside_minus);
 
     for (auto i_cv = 0u; i_cv < n_cv; i_cv++) {
-      su2double value = (i_cv == j_cv) ? su2double(1.0) : su2double(0.0);
+      su2double value = (i_cv == j_cv) ? fallback_diagonal : su2double(0.0);
       if (usable) {
         const auto i_beta = beta_index(i_cv);
         su2double d_state = (beta_plus[i_beta] - beta_minus[i_beta]) / span;
         if (static_cast<int>(i_cv) == idx_enth)
           d_state += beta_scalar[I_BETA_ENTH_THERMAL] * (temperature_plus - temperature_minus) / span;
-        value = d_state - ((i_cv == j_cv) ? 1.0 : 0.0);
+        value = d_state - ((i_cv == j_cv) ? unity_lewis_part : 0.0);
         /*--- The total diagonal, ordinary diffusion included, is kept positive. ---*/
         if (i_cv == j_cv) value = max(value, su2double(-0.9));
       }

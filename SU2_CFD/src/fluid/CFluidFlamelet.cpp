@@ -221,10 +221,11 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   val_vars_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
 
   /*--- Beta scalars of absent controlling variables are not in the manifold. ---*/
-  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = (flamelet_options.idx_progvar >= 0) ? "Beta_ProgVar" : "NULL";
-  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = "Beta_Enth_Thermal";
-  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = "Beta_Enth";
-  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = (flamelet_options.idx_mixfrac >= 0) ? "Beta_MixFrac" : "NULL";
+  const string suffix_PD = flamelet_options.preferential_diffusion_excess ? "_Excess" : "";
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = (flamelet_options.idx_progvar >= 0) ? "Beta_ProgVar" + suffix_PD : "NULL";
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = "Beta_Enth_Thermal" + suffix_PD;
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = "Beta_Enth" + suffix_PD;
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = (flamelet_options.idx_mixfrac >= 0) ? "Beta_MixFrac" + suffix_PD : "NULL";
 
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = beta_progvar;
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = beta_enth_thermal;

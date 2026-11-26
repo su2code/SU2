@@ -2423,6 +2423,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Enable preferential diffusion for FGM simulations. \n DEFAULT: false */
   addBoolOption("PREFERENTIAL_DIFFUSION", flamelet_ParsedOptions.preferential_diffusion, false);
+  /* DESCRIPTION: Preferential diffusion from the *_Excess manifold columns, beta minus its value at unity Lewis numbers,
+   * added to the ordinary diffusion. \n DEFAULT: false */
+  addBoolOption("PREFERENTIAL_DIFFUSION_EXCESS", flamelet_ParsedOptions.preferential_diffusion_excess, false);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
