@@ -1606,7 +1606,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool boussinesq     = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
   const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
-  const bool vol_heat       = config->GetHeatSource();
   const bool turbulent      = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
@@ -1889,19 +1888,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Implicit part ---*/
 
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-      if (vol_heat) {
-
-        if(solver_container[RAD_SOL]->GetNodes()->GetVol_HeatSource(iPoint)) {
-
-          auto Volume = geometry->nodes->GetVolume(iPoint);
-
-          /*--- Subtract integrated source from the residual. ---*/
-          LinSysRes(iPoint, nDim+1) -= config->GetHeatSource_Val()*Volume;
-        }
-
-      }
-
     }
     END_SU2_OMP_FOR
 
