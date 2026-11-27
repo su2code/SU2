@@ -229,7 +229,7 @@ protected:
 
   /*!
    * \brief Get the full 3x3 symmetric tensor whose lower-triangular components (xx, xy, yy[, xz, yz, zz]) are the
-   *        fields starting at firstVar. In 2D, zz = 1 and the xz and yz components are 0.
+   *        fields starting at firstVar. In 2D, the zz, xz and yz components are 0.
    * \param[in] firstVar - Index of the xx component.
    * \param[in] iPoint - Point index.
    * \param[out] tensor - Full symmetric tensor.

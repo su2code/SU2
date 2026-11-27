@@ -283,8 +283,8 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
           dataBuffer[iPoint*NTENSOR + 1] = SU2_TYPE::GetValue(dataSorter->GetData(iField+2,iPoint)); // YY
           dataBuffer[iPoint*NTENSOR + 3] = SU2_TYPE::GetValue(dataSorter->GetData(iField+1,iPoint)); // XY
           if (nDim == 2) {
-            /*--- For 2D tensors, set the off-diagonal z-components to 0, and zz-component to 1 ---*/
-            dataBuffer[iPoint*NTENSOR + 2] = 1.0; // ZZ = 1
+            /*--- For 2D tensors, set the z-components to 0 ---*/
+            dataBuffer[iPoint*NTENSOR + 2] = 0.0; // ZZ = 0
             dataBuffer[iPoint*NTENSOR + 4] = 0.0; // YZ = 0
             dataBuffer[iPoint*NTENSOR + 5] = 0.0; // XZ = 0
           } else {
