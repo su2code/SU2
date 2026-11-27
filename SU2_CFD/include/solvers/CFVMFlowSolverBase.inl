@@ -254,9 +254,8 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
   /*--- Communicate and store volume and the number of neighbors for
    any dual CVs that lie on on periodic markers. ---*/
 
+  CommunicatePeriodicVolume(geometry, config);
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
   }

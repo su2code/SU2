@@ -331,6 +331,12 @@ public:
                              unsigned short commType);
 
   /*!
+   * \brief Set the periodic volume of each periodic point, the volume of its matches on the other periodic faces.
+   * \note Called again when the mesh coordinates are recorded, so the periodic volume depends on them.
+   */
+  void CommunicatePeriodicVolume(CGeometry *geometry, const CConfig *config);
+
+  /*!
    * \brief Move the off-diagonal Jacobian blocks of passive periodic points to their masters, rotated.
    * \note Call before the PERIODIC_RESIDUAL comms. A passive point is coupled if its master is on the same rank and
    *       all its blocks fit in the sparsity pattern.

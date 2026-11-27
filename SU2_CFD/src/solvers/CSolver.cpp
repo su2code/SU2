@@ -4633,6 +4633,14 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 
 }
 
+void CSolver::CommunicatePeriodicVolume(CGeometry *geometry, const CConfig *config) {
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) geometry->nodes->SetPeriodicVolume(iPoint, 0.0);
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+  }
+}
+
 void CSolver::SetPeriodicMaster(CGeometry *geometry, const CConfig *config) {
   const auto nPeriodic = config->GetnMarker_Periodic();
 
