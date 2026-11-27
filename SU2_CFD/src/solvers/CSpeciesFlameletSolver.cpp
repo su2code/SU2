@@ -653,14 +653,10 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   vector<su2double> source_scalar(flamelet_config_options.n_scalars);
   for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++) source_scalar[iCV] = table_sources[iCV];
 
-  /*--- Forward difference of the progress variable source, used only by the implicit Jacobian. ---*/
+  /*--- Derivative of the progress variable source for the implicit Jacobian, zero where the source is clipped. ---*/
   if ((config->GetKind_TimeIntScheme() == EULER_IMPLICIT) && !AD::TapeActive()) {
-    const su2double delta = 1e-6;
-    vector<su2double> scalars_pert = scalars;
-    scalars_pert[I_PROGVAR] += delta;
-    vector<su2double> sources_pert(table_sources.size());
-    fluid_model_local->EvaluateDataSet(scalars_pert, FLAMELET_LOOKUP_OPS::SOURCES, sources_pert);
-    const su2double dsource = (fmax(0, sources_pert[I_PROGVAR]) - table_sources[I_PROGVAR]) / delta;
+    const su2double dsource =
+        (table_sources[I_PROGVAR] > 0) ? fluid_model_local->GetProgVarSourceJacobian(scalars) : su2double(0.0);
     static_cast<CSpeciesFlameletVariable*>(nodes)->SetSourceJacobianPV(iPoint, F * dsource);
   }
 

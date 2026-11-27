@@ -78,6 +78,7 @@ class CFluidFlamelet final : public CFluidModel {
   MLPToolbox::CIOMap* iomap_PD;        /*!< \brief Input-output map for the preferential diffusion scalars. */
   MLPToolbox::CIOMap* iomap_Sources;   /*!< \brief Input-output map for species source terms. */
   MLPToolbox::CIOMap* iomap_LookUp;    /*!< \brief Input-output map for passive look-up terms. */
+  MLPToolbox::CIOMap* iomap_SourceJacobian; /*!< \brief Input-output map for the progress variable source Jacobian. */
   MLPToolbox::CIOMap* iomap_Current;
 #endif
 
@@ -92,6 +93,8 @@ class CFluidFlamelet final : public CFluidModel {
       val_vars_Sources,          /*!< \brief References to source terms. */
       val_vars_LookUp,           /*!< \brief References passive look-up terms. */
       val_vars_PD;               /*!< \brief References to preferential diffusion scalars. */
+
+  su2double source_pv_jac; /*!< \brief Derivative of the progress variable source with respect to the progress variable. */
 
   void PreprocessLookUp(CConfig* config);
 
@@ -134,6 +137,13 @@ class CFluidFlamelet final : public CFluidModel {
    */
   unsigned long EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
                                        vector<su2double>& output_refs);
+
+  /*!
+   * \brief Derivative of the progress variable source term with respect to the progress variable.
+   * \note Analytic for the MLP method, forward difference for the lookup table.
+   * \param[in] input_scalar - controlling variables used to interpolate manifold.
+   */
+  su2double GetProgVarSourceJacobian(const vector<su2double>& input_scalar) override;
 
   /*!
    * \brief Check for out-of-bounds condition for data set interpolation.
