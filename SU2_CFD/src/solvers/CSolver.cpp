@@ -4682,34 +4682,43 @@ void CSolver::SetPeriodicMaster(CGeometry *geometry, const CConfig *config) {
     }
     if (!fits) PeriodicMaster[iPoint] = -1;
   }
+
+  PeriodicPassive.clear();
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+    if (PeriodicMaster[iPoint] >= 0) PeriodicPassive.push_back(iPoint);
+
+  /*--- Rotation from the frame of each periodic marker to the frame of its match, empty if none. ---*/
+  PeriodicRotation.assign(config->GetnMarker_All(), su2passivematrix());
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All() && rotate_periodic; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
+    const auto* angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
+    if (!GeometryToolbox::HasRotation(angles)) continue;
+    auto& rotation = PeriodicRotation[iMarker];
+    rotation.resize(3, 3) = passivedouble(0.0);
+    const auto theta = SU2_TYPE::GetValue(angles[0]);
+    const auto phi = SU2_TYPE::GetValue(angles[1]);
+    const auto psi = SU2_TYPE::GetValue(angles[2]);
+    if (nDim == 2) GeometryToolbox::RotationMatrix(psi, rotation);
+    else GeometryToolbox::RotationMatrix(theta, phi, psi, rotation);
+  }
 }
 
 void CSolver::CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config) {
   SU2_ZONE_SCOPED
   if (!implicit_periodic || config->GetnMarker_Periodic() == 0) return;
 
+  /*--- The table is built on the first call, the sparsity pattern of the Jacobian is fixed by then. ---*/
+  const bool built = PeriodicMaster.size() == nPoint;
+  if (built && PeriodicPassive.empty()) return;
+
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
-  if (PeriodicMaster.size() != nPoint) SetPeriodicMaster(geometry, config);
+  if (!built) SetPeriodicMaster(geometry, config);
 
-  /*--- Rotation from the frame of each periodic marker to the frame of its match, null if none. ---*/
-  using RotationMatrix = std::array<std::array<passivedouble, 3>, 3>;
-  const auto nMarker = config->GetnMarker_All();
-  vector<RotationMatrix> rotations(nMarker);
-  vector<const RotationMatrix*> markerRotation(nMarker, nullptr);
-  for (auto iMarker = 0u; iMarker < nMarker && rotate_periodic; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
-    const auto* angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
-    if (!GeometryToolbox::HasRotation(angles)) continue;
-    const auto theta = SU2_TYPE::GetValue(angles[0]);
-    const auto phi = SU2_TYPE::GetValue(angles[1]);
-    const auto psi = SU2_TYPE::GetValue(angles[2]);
-    if (nDim == 2) GeometryToolbox::RotationMatrix(psi, rotations[iMarker]);
-    else GeometryToolbox::RotationMatrix(theta, phi, psi, rotations[iMarker]);
-    markerRotation[iMarker] = &rotations[iMarker];
-  }
-  auto Rotation = [&](unsigned long iPoint) -> const RotationMatrix* {
-    return PeriodicMaster[iPoint] >= 0 ? markerRotation[PeriodicMasterMarker[iPoint]] : nullptr;
+  auto Rotation = [&](unsigned long iPoint) -> const su2passivematrix* {
+    if (PeriodicMaster[iPoint] < 0) return nullptr;
+    const auto& rotation = PeriodicRotation[PeriodicMasterMarker[iPoint]];
+    return rotation.size() ? &rotation : nullptr;
   };
 
   su2passivematrix block(nVar, nVar), zero(nVar, nVar);
@@ -4721,9 +4730,9 @@ void CSolver::CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config)
   };
 
   /*--- Rows of passive points go to the rows of their masters. ---*/
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+  for (const auto iPoint : PeriodicPassive) {
+    if (iPoint >= nPointDomain) continue;
     const auto master = PeriodicMaster[iPoint];
-    if (master < 0) continue;
     for (const auto kPoint : geometry->nodes->GetPoints(iPoint)) {
       const unsigned long col = PeriodicMaster[kPoint] >= 0 ? PeriodicMaster[kPoint] : kPoint;
       if (!Jacobian.GetBlockView(master, col)) continue;
@@ -4734,14 +4743,13 @@ void CSolver::CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config)
   }
 
   /*--- Columns of passive points go to the columns of their masters. ---*/
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+  for (const auto iPoint : PeriodicPassive) {
     const auto master = PeriodicMaster[iPoint];
-    if (master < 0) continue;
     for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
       if (jPoint >= nPointDomain || PeriodicMaster[jPoint] >= 0) continue;
       if (!Jacobian.GetBlockView(jPoint, master)) continue;
       ReadBlock(jPoint, iPoint);
-      PeriodicCommHelpers::RotateMomentumBlock<RotationMatrix>(nullptr, Rotation(iPoint), nDim, nVar, block);
+      PeriodicCommHelpers::RotateMomentumBlock<su2passivematrix>(nullptr, Rotation(iPoint), nDim, nVar, block);
       Jacobian.AddBlock(jPoint, master, block);
       Jacobian.SetBlock(jPoint, iPoint, zero);
     }

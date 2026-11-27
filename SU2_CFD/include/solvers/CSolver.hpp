@@ -151,6 +151,8 @@ protected:
   std::unordered_map<unsigned long, size_t> PeriodicProjIndex;  /*!< \brief Local point to compact projection row. */
   vector<long> PeriodicMaster;  /*!< \brief Local master point of each coupled passive periodic point, or -1. */
   vector<unsigned short> PeriodicMasterMarker;  /*!< \brief Periodic marker of each passive point, gives its rotation. */
+  vector<unsigned long> PeriodicPassive;  /*!< \brief Coupled passive periodic points. */
+  vector<su2passivematrix> PeriodicRotation;  /*!< \brief Rotation of each periodic marker to its match, empty if none. */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
@@ -336,7 +338,7 @@ public:
   void CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Map each coupled passive periodic point to its master on the same rank.
+   * \brief Map each coupled passive periodic point to its master on the same rank, and set the marker rotations.
    */
   void SetPeriodicMaster(CGeometry *geometry, const CConfig *config);
 
