@@ -628,7 +628,7 @@ struct SelectMPIWrapper {
 };
 
 /*--- In AD we specialize for the passive wrapper. ---*/
-#if defined CODI_REVERSE_TYPE
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
 template <>
 struct SelectMPIWrapper<passivedouble> {
 #if defined HAVE_MPI
