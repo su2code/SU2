@@ -50,6 +50,7 @@ Alessandro Gastaldi
 Aman uz zaman Baig
 Amit Sachdeva
 Ana Lourenco
+Andrea Rausa
 Andrew Burkett
 Andrew Wendorff
 Angelo Passariello
