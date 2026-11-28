@@ -84,6 +84,7 @@ class CFluidFlamelet final : public CFluidModel {
   MLPToolbox::CIOMap* iomap_Sources;   /*!< \brief Input-output map for species source terms. */
   MLPToolbox::CIOMap* iomap_LookUp;    /*!< \brief Input-output map for passive look-up terms. */
   MLPToolbox::CIOMap* iomap_ProgVarBounds; /*!< \brief Input-output map for the progress variable range. */
+  MLPToolbox::CIOMap* iomap_SourceJacobian; /*!< \brief Input-output map for the progress variable source Jacobian. */
 #endif
 
   vector<su2double> scalars_vector;
@@ -126,6 +127,8 @@ class CFluidFlamelet final : public CFluidModel {
   void ScaleReducedSources(const su2double* scalars, vector<su2double>& sources) const;
 
   vector<bool> reduced_sources; /*!< \brief Whether a source is given divided by c*(1-c*). */
+
+  su2double source_pv_jac; /*!< \brief Network derivative of the progress variable source to the progress variable. */
 
   /*! \brief
    * Returns true if the string is null or zero (ignores case).
@@ -180,6 +183,12 @@ class CFluidFlamelet final : public CFluidModel {
    * \returns Whether the manifold provides the progress variable range.
    */
   bool GetProgressVariableBounds(const su2double* scalars, su2double& c_min, su2double& c_max) override;
+
+  /*!
+   * \brief Derivative of the progress variable source at constant normalized variance, zero where it is clipped.
+   * \note Analytic for the MLP method, a central difference inside the progress variable range for the table.
+   */
+  su2double GetProgVarSourceJacobian(const vector<su2double>& scalars) override;
 
   /*!
    * \brief Check for out-of-bounds condition for data set interpolation.

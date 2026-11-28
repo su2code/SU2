@@ -735,34 +735,9 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   /*--- The source term for progress variable is always positive, we clip from below to make sure. --- */
   if (idx_progvar >= 0) table_sources[idx_progvar] = fmax(0, table_sources[idx_progvar]);
 
-  /*--- Difference of the progress variable source within the table range, for its implicit treatment. ---*/
-  if (idx_progvar >= 0 && config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT) {
-    const int idx_var = flamelet_config_options.idx_progvar_var;
-    const su2double c = scalars[idx_progvar];
-    su2double c_min, c_max;
-    su2double c_lo = c - 1e-3, c_hi = c + 1e-3, s_var = 0.0;
-    const bool bounded = fluid_model_local->GetProgressVariableBounds(scalars.data(), c_min, c_max) && (c_max > c_min);
-    if (bounded) {
-      /*--- Both points lie strictly inside the range, at the normalized variance of the node. ---*/
-      const su2double delta = 1e-3 * (c_max - c_min);
-      const su2double lower = c_min + 1e-2 * delta, upper = c_max - 1e-2 * delta;
-      const su2double c_in = fmin(fmax(c, lower), upper);
-      c_lo = fmax(c_in - delta, lower);
-      c_hi = fmin(c_in + delta, upper);
-      const su2double room = (c - c_min) * (c_max - c);
-      if (idx_var >= 0 && room > 0) s_var = fmin(fmax(scalars[idx_var] / room, su2double(0.0)), su2double(1.0));
-    }
-    vector<su2double> shifted(scalars), sources_shifted(table_sources.size());
-    su2double source_pm[2];
-    for (int side = 0; side < 2; side++) {
-      shifted[idx_progvar] = (side == 0) ? c_hi : c_lo;
-      if (bounded && idx_var >= 0)
-        shifted[idx_var] = s_var * (shifted[idx_progvar] - c_min) * (c_max - shifted[idx_progvar]);
-      fluid_model_local->EvaluateDataSet(shifted, FLAMELET_LOOKUP_OPS::SOURCES, sources_shifted);
-      source_pm[side] = fmax(0, sources_shifted[idx_progvar]);
-    }
-    progvar_source_slope[iPoint] = F * (source_pm[0] - source_pm[1]) / (c_hi - c_lo);
-  }
+  /*--- Derivative of the progress variable source, for its implicit treatment. ---*/
+  if (idx_progvar >= 0 && config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT)
+    progvar_source_slope[iPoint] = F * fluid_model_local->GetProgVarSourceJacobian(scalars);
 
   /*--- Variance source 2 (mean(phi S) - mean(phi) mean(S)), from mean(phi S) unless the manifold holds it. ---*/
   if (!flamelet_config_options.tabulated_variance_source)

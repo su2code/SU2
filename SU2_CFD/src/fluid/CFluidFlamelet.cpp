@@ -120,6 +120,7 @@ CFluidFlamelet::~CFluidFlamelet() {
     delete lookup_mlp;
     if (preferential_diffusion) delete iomap_PD;
     if (flamelet_options.idx_progvar_var >= 0) delete iomap_ProgVarBounds;
+    if (flamelet_options.idx_progvar >= 0) delete iomap_SourceJacobian;
   }
 #endif
 }
@@ -273,6 +274,12 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
       iomap_ProgVarBounds = new MLPToolbox::CIOMap(controlling_variable_names, varnames_ProgVarBounds);
       lookup_mlp->PairVariableswithMLPs(*iomap_ProgVarBounds);
     }
+    const int i_c = flamelet_options.idx_progvar;
+    if (i_c >= 0) {
+      iomap_SourceJacobian = new MLPToolbox::CIOMap(controlling_variable_names, {varnames_Sources[i_c]});
+      iomap_SourceJacobian->AddQueryJacobian(varnames_Sources[i_c], controlling_variable_names[i_c], &source_pv_jac);
+      lookup_mlp->PairVariableswithMLPs(*iomap_SourceJacobian);
+    }
 #endif
   } else {
     for (auto iVar = 0u; iVar < varnames_TD.size(); iVar++) {
@@ -327,6 +334,57 @@ bool CFluidFlamelet::GetProgressVariableBounds(const su2double* scalars, su2doub
   c_min = val_vars_ProgVarBounds[0];
   c_max = val_vars_ProgVarBounds[1];
   return true;
+}
+
+su2double CFluidFlamelet::GetProgVarSourceJacobian(const vector<su2double>& scalars) {
+  const int i_c = flamelet_options.idx_progvar;
+  if (i_c < 0) return 0.0;
+
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
+    su2double jacobian{0};
+#ifdef USE_MLPCPP
+    SetManifoldInputs(scalars.data());
+    su2double source{0};
+    vector<su2double*> refs_vars{&source};
+    if (!lookup_mlp->Predict(*iomap_SourceJacobian, manifold_inputs, refs_vars)) return 0.0;
+    jacobian = source_pv_jac;
+    if (reduced_sources[i_c]) {
+      /*--- Product rule with the reduction factor c*(1-c*). ---*/
+      const su2double c_min = val_vars_ProgVarBounds[0], c_range = val_vars_ProgVarBounds[1] - c_min;
+      if (c_range <= 0) return 0.0;
+      const su2double c_star = (scalars[i_c] - c_min) / c_range;
+      if (c_star <= 0 || c_star >= 1) return 0.0;
+      jacobian = c_star * (1.0 - c_star) * source_pv_jac + source * (1.0 - 2.0 * c_star) / c_range;
+    }
+    if (source <= 0) return 0.0;
+#endif
+    return jacobian;
+  }
+
+  const int idx_var = flamelet_options.idx_progvar_var;
+  const su2double c = scalars[i_c];
+  su2double c_min, c_max;
+  su2double c_lo = c - 1e-3, c_hi = c + 1e-3, s_var = 0.0;
+  const bool bounded = GetProgressVariableBounds(scalars.data(), c_min, c_max) && (c_max > c_min);
+  if (bounded) {
+    /*--- Both points lie strictly inside the range, at the normalized variance of the node. ---*/
+    const su2double delta = 1e-3 * (c_max - c_min);
+    const su2double lower = c_min + 1e-2 * delta, upper = c_max - 1e-2 * delta;
+    const su2double c_in = fmin(fmax(c, lower), upper);
+    c_lo = fmax(c_in - delta, lower);
+    c_hi = fmin(c_in + delta, upper);
+    const su2double room = (c - c_min) * (c_max - c);
+    if (idx_var >= 0 && room > 0) s_var = fmin(fmax(scalars[idx_var] / room, su2double(0.0)), su2double(1.0));
+  }
+  vector<su2double> shifted(scalars), sources_shifted(varnames_Sources.size());
+  su2double source_pm[2];
+  for (int side = 0; side < 2; side++) {
+    shifted[i_c] = (side == 0) ? c_hi : c_lo;
+    if (bounded && idx_var >= 0) shifted[idx_var] = s_var * (shifted[i_c] - c_min) * (c_max - shifted[i_c]);
+    EvaluateDataSet(shifted, FLAMELET_LOOKUP_OPS::SOURCES, sources_shifted);
+    source_pm[side] = fmax(0, sources_shifted[i_c]);
+  }
+  return (source_pm[0] - source_pm[1]) / (c_hi - c_lo);
 }
 
 bool CFluidFlamelet::SetManifoldInputs(const su2double* scalars) {

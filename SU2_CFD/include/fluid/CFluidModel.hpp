@@ -178,6 +178,12 @@ class CFluidModel {
   }
 
   /*!
+   * \brief Derivative of the progress variable source term with respect to the progress variable.
+   * \param[in] scalars - Transported scalars.
+   */
+  virtual su2double GetProgVarSourceJacobian(const vector<su2double>& scalars) { return 0.0; }
+
+  /*!
    * \brief Get fluid dynamic viscosity.
    */
   inline virtual su2double GetLaminarViscosity() {
