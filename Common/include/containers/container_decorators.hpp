@@ -3,7 +3,7 @@
  * \brief Collection of small classes that decorate C2DContainer to
  * augment its functionality, e.g. give it extra dimensions.
  * \author P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -204,6 +204,7 @@ class C3DContainerDecorator {
  */
 using C3DIntMatrix = C3DContainerDecorator<su2matrix<unsigned long> >;
 using C3DDoubleMatrix = C3DContainerDecorator<su2activematrix>;
+using C3DPassiveMatrix = C3DContainerDecorator<su2passivematrix>;
 using CVectorOfMatrix = C3DDoubleMatrix;
 
 /*!

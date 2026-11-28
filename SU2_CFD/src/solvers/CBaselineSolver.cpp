@@ -2,7 +2,7 @@
  * \file CBaselineSolver.cpp
  * \brief Main subroutines for CBaselineSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,6 +41,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
   /*--- Define geometry constants in the solver structure ---*/
 
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   /*--- Routines to access the number of variables and string names. ---*/
 

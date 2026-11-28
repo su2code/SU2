@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subroutines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,6 +49,10 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, const CSolver* fl
   /*--- Initialize nVarGrad for deallocation ---*/
 
   nVarGrad = nVar;
+
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nSymMat = 3 * (nDim - 1);
 
   /*--- Define some structures for locating max residuals ---*/
 

@@ -2,7 +2,7 @@
  * \file CAdjTurbVariable.cpp
  * \brief Main subroutines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   adjoint = true;
 
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 

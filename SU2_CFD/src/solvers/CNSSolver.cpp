@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -716,8 +716,8 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     const su2double There = nodes->GetTemperature(Point_Normal);
 
     if (cht_mode) {
-      Twall = GetCHTWallTemperature(config, val_marker, iVertex, dist_ij,
-                                    thermal_conductivity, There, Temperature_Ref);
+      Twall = GetCHTWallTemperature(config, val_marker, iVertex, thermal_conductivity,
+                                    dist_ij, There, Temperature_Ref);
     } else if (config->GetMarker_All_PyCustom(val_marker)) {
       Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
     }

@@ -2,7 +2,7 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,6 +39,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   nVar = dynamic? 3*direct_solver->GetnVar() : direct_solver->GetnVar();
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;

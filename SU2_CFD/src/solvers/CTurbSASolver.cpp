@@ -2,7 +2,7 @@
  * \file CTurbSASolver.cpp
  * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -54,6 +54,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver
   /*--- Initialize nVarGrad for deallocation ---*/
 
   nVarGrad = nVar;
+
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nSymMat = 3 * (nDim - 1);
 
   /*--- Add Langevin equations if the Stochastic Backscatter Model is used ---*/
 

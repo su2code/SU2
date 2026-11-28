@@ -2,7 +2,7 @@
  * \file CAdjEulerSolver.cpp
  * \brief Main subroutines for solving Euler adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -92,6 +92,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Define geometry constans in the solver structure ---*/
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
   nMarker = config->GetnMarker_All();
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();

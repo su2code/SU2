@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -138,7 +138,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 
       jacobian[3][0] = -Gamma*U_i[2]*U_i[3]/(U_i[0]*U_i[0]) + (Gamma-1)*U_i[2]*(U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]*U_i[0]);
       jacobian[3][1] = -(Gamma-1)*U_i[2]*U_i[1]/(U_i[0]*U_i[0]);
-      jacobian[3][2] = Gamma*U_i[3]/U_i[0] - 1/2*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
+      jacobian[3][2] = Gamma*U_i[3]/U_i[0] - 0.5*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
       jacobian[3][3] = Gamma*U_i[2]/U_i[0];
 
       for (iVar=0; iVar < nVar; iVar++)
@@ -288,7 +288,7 @@ CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   energy   = config->GetEnergy_Equation();
   viscous  = config->GetViscous();
-  multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
+  multicomponent = config->GetMulticomponentFluid();
 }
 
 CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
@@ -794,8 +794,10 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
     /*--- If a RANS turbulence model is used, an additional source term, based on the eddy viscosity gradient is added. ---*/
     if(turbulent) {
 
-      /*--- Compute a scalar factor ---*/
-      scalar_factor = SPvals.Streamwise_Periodic_IntegratedHeatFlow / (SPvals.Streamwise_Periodic_MassFlow * sqrt(norm2_translation) * Prandtl_Turb);
+      /*--- Compute a scalar factor. The temperature is T = T_periodic + Q / (mdot * cp * |t|^2) * dot_prod(t*x)
+            (Patankar et al., J. Heat Transfer 99(2), 1977), so the turbulent heat flux cp * mu_t / Pr_t * grad(T)
+            has the extra divergence Q / (mdot * |t|^2 * Pr_t) * dot_prod(t*grad(mu_t)). ---*/
+      scalar_factor = SPvals.Streamwise_Periodic_IntegratedHeatFlow / (SPvals.Streamwise_Periodic_MassFlow * norm2_translation * Prandtl_Turb);
 
       /*--- Compute scalar product between periodic translation vector and eddy viscosity gradient. ---*/
       dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, AuxVar_Grad_i[0]);

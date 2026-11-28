@@ -2,7 +2,7 @@
  * \file CTransLMSolver.cpp
  * \brief Main subroutines for Langtry-Menter Transition model solver.
  * \author A. Aranake, S. Kang.
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,6 +59,10 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, const CSolv
   /*--- Initialize nVarGrad for deallocation ---*/
 
   nVarGrad = nVar;
+
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nSymMat = 3 * (nDim - 1);
 
   /*--- Define variables needed for transition from config file */
   options = config->GetLMParsedOptions();

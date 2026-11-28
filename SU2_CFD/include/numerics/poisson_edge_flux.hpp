@@ -3,7 +3,7 @@
  * \brief Pressure correction (Poisson) equation as a third-layer scalar flux,
  *        see numerics/scalar/scalar_edge_flux.hpp.
  * \author T. Aalbers, P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,21 +55,16 @@ class CScalarFlux_Poisson final
 
   /*!
    * \brief Momentum coefficient, an i/j average, identical for both edge sides (TSL Jacobian).
-   * \note A point under a strong velocity BC has no momentum equation, and so no momentum
-   *       coefficient of its own; the edge uses that of its other node instead.
+   * \note A point under a strong velocity BC has no momentum equation; its coefficient is the average
+   *       of its neighbours' (see CPoissonSolver::SetMomCoeff).
    */
   template <class VariableType>
   FORCEINLINE CPair<Vector<Double, nVar>> coefficients(const FlowIndices&, Int iPoint,
                                                        const EdgeSide<VariableType>& side_i, Int jPoint,
                                                        const EdgeSide<VariableType>& side_j,
                                                        const CPair<Double>&) const {
-    const bool strong_i = side_i.flowNodes->GetStrongBC(iPoint);
-    const bool strong_j = side_j.flowNodes->GetStrongBC(jPoint);
-
-    const Double coeff_i = strong_i ? gatherVariables(jPoint, side_j.scalarNodes.GetMomCoeff())
-                                    : gatherVariables(iPoint, side_i.scalarNodes.GetMomCoeff());
-    const Double coeff_j = strong_j ? gatherVariables(iPoint, side_i.scalarNodes.GetMomCoeff())
-                                    : gatherVariables(jPoint, side_j.scalarNodes.GetMomCoeff());
+    const Double coeff_i = gatherVariables(iPoint, side_i.scalarNodes.GetMomCoeff());
+    const Double coeff_j = gatherVariables(jPoint, side_j.scalarNodes.GetMomCoeff());
 
     Vector<Double, nVar> D;
     D(0) = 0.5 * (coeff_i + coeff_j);

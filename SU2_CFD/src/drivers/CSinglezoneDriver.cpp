@@ -2,7 +2,7 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,7 @@
 #include "../../include/definition_structure.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIteration.hpp"
+#include "../../include/adaptive_metric/adaptiveMetricUtils.hpp"
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
@@ -39,6 +40,23 @@ CSinglezoneDriver::CSinglezoneDriver(char* confFile,
 
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
+
+  /*--- Resolve and allocate metric sensor arrays if metric computation is enabled.
+   *    Done here so the arrays are ready regardless of whether the C++ StartSolver()
+   *    main loop or the Python wrapper (Preprocess/Run/Postprocess) is used. ---*/
+  if (config_container[ZONE_0]->GetAdaptiveMetricParsedOptions().compute) {
+    if (rank == MASTER_NODE)
+      cout << "Resolving adaptive metric sensor indices." << endl;
+
+    /*--- CConfig guarantees at least one sensor, and unknown names are an error. ---*/
+    auto solver = solver_container[ZONE_0][INST_0][MESH_0];
+    AdaptiveMetricUtils::ResolveSensorIndices(config_container[ZONE_0], geometry_container[ZONE_0][INST_0][MESH_0],
+                                              solver);
+    AdaptiveMetricUtils::InitializeAdaptiveMetric(solver);
+    if (rank == MASTER_NODE)
+      cout << "Successfully resolved " << AdaptiveMetricUtils::TotalNumSensors(solver) << " adaptive metric sensors."
+           << endl;
+  }
 }
 
 CSinglezoneDriver::~CSinglezoneDriver() = default;
@@ -89,6 +107,10 @@ void CSinglezoneDriver::StartSolver() {
 
     Monitor(TimeIter);
 
+    /*--- Finalize the time-integrated adaptive metric before the last output. ---*/
+
+    if (StopCalc) FinalizeAdaptiveMetric();
+
     /*--- Output the solution in files. ---*/
 
     Output(TimeIter);
@@ -101,6 +123,7 @@ void CSinglezoneDriver::StartSolver() {
 
   }
 
+  CheckPressureOutletFallbacks();
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
@@ -142,6 +165,17 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
+  /*--- Compute the initial metric tensor if performing an unsteady restart. ---*/
+  /*--- The metric at RestartIter-1 is the endpoint of sub-interval i-1, and the
+        initial metric of sub-interval i, so we calculate it after setting the
+        initial condition. ---*/
+  if (config_container[ZONE_0]->GetTime_Domain() &&
+      config_container[ZONE_0]->GetAdaptiveMetricParsedOptions().compute &&
+      config_container[ZONE_0]->GetRestart() &&
+      TimeIter == config_container[ZONE_0]->GetRestart_Iter()) {
+    ComputeAdaptiveMetricField(true);
+  }
+
   /*--- Run a predictor step ---*/
   if (config_container[ZONE_0]->GetPredictor())
     iteration_container[ZONE_0][INST_0]->Predictor(output_container[ZONE_0], integration_container, geometry_container, solver_container,
@@ -178,6 +212,11 @@ void CSinglezoneDriver::Postprocess() {
   if (config_container[ZONE_0]->GetRelaxation())
     iteration_container[ZONE_0][INST_0]->Relaxation(output_container[ZONE_0], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
+  /*--- Compute metric for anisotropic mesh adaptation ---*/
+
+  if (config_container[ZONE_0]->GetAdaptiveMetricParsedOptions().compute)
+    ComputeAdaptiveMetricField();
 
 }
 
@@ -322,4 +361,34 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 bool CSinglezoneDriver::GetTimeConvergence() const{
   SU2_ZONE_SCOPED
   return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
+}
+
+void CSinglezoneDriver::ComputeAdaptiveMetricField(bool restartMetric) {
+
+  auto solver = solver_container[ZONE_0][INST_0][MESH_0];
+  auto solver_flow = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  auto geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+  auto config = config_container[ZONE_0];
+  int idxVel = -1;
+
+  if (rank == MASTER_NODE){
+    cout << endl <<"------------------------ Compute Adaptive Metric ------------------------" << endl;
+    cout << "Storing sensor values needed for the adaptive metric." << endl;
+  }
+
+  /*--- Populate primitive, computed and solver-field sensor slots in Sensor_Adapt.
+   *    Custom sensors (CUSTOM type) must have been set already via the Python wrapper
+   *    (CustomSensorRegistry.populate) before ComputeAdaptiveMetricField is called. ---*/
+  solver_flow->SetPrimitive_SensorAdapt(geometry, config);
+  solver_flow->SetComputed_SensorAdapt(geometry, config);
+  solver_flow->SetSolverField_SensorAdapt(solver, geometry, config);
+  solver_flow->InitiateComms(geometry, config, MPI_QUANTITIES::SENSOR_ADAPT);
+  solver_flow->CompleteComms(geometry, config, MPI_QUANTITIES::SENSOR_ADAPT);
+
+  /*--- Only Green-Gauss Hessians are available (checked in CConfig). ---*/
+  if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
+  solver_flow->SetHessian_GG(geometry, config, idxVel, RUNTIME_FLOW_SYS);
+
+  if(rank == MASTER_NODE) cout << "Computing feature-based adaptive metric tensor." << endl;
+  solver_flow->ComputeAdaptiveMetric(geometry, config, restartMetric);
 }

@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.hpp
  * \brief Headers of the CIncEulerSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -246,8 +246,9 @@ public:
    * \param[in] nDim - Number of physical dimensions.
    * \param[in] scalar - scalar variable.
    * \param[in,out] primitive - Primitive variables.
+   * \return Whether the evaluation of the fluid state failed.
    */
-  static void ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, const su2double* scalar,
+  static bool ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, const su2double* scalar,
                                              su2double* primitive);
 
   /*!

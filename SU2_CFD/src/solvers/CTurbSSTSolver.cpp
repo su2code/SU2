@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subroutines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,6 +55,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, const CSolv
   /*--- Initialize nVarGrad for deallocation ---*/
 
   nVarGrad = nVar;
+
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nSymMat = 3 * (nDim - 1);
 
   /*--- Single grid simulation ---*/
 

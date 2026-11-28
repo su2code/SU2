@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -422,6 +422,13 @@ class CDriver : public CDriverBase {
    * \brief Launch the computation for all zones and all physics.
    */
   virtual void StartSolver() {}
+
+  /*!
+   * \brief Stop with an error if a steady run ends while a static-pressure outlet still uses a fallback state
+   *        (sonic-limited backflow or the interior state).
+   * \note Called at the end of StartSolver; Python scripts that run the iterations themselves should call it too.
+   */
+  void CheckPressureOutletFallbacks() const;
 
   /*!
    * \brief Deallocation routine

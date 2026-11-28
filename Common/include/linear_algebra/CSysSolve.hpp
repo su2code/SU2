@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -109,8 +109,9 @@ class CSysSolve {
   mutable VectorType p;   /*!< \brief Direction in CG and BCGSTAB. */
   mutable VectorType z;   /*!< \brief Preconditioned residual/direction in CG/BCGSTAB. */
 
-  mutable VectorType r_0; /*!< \brief The "arbitrary" vector in BCGSTAB. */
-  mutable VectorType v;   /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
+  mutable VectorType r_0;    /*!< \brief The "arbitrary" vector in BCGSTAB. */
+  mutable VectorType v;      /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
+  mutable VectorType x_best; /*!< \brief BCGSTAB iterate with the smallest residual. */
 
   mutable bool ritz_failed = false;
   mutable unsigned long k = 0, k_new = 0;

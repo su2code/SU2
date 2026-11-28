@@ -4,7 +4,7 @@
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
  * \author P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -69,7 +69,14 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   const auto chunkSize = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
-  static constexpr size_t MAXNVAR = 20;
+  static constexpr size_t MAXNVAR = 32;
+
+  /*--- Called by all threads of a parallel region: only the master may call MPI (MPI_THREAD_FUNNELED). ---*/
+  if (varEnd > MAXNVAR) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    SU2_MPI::Error("Number of variables is too large, increase MAXNVAR.", CURRENT_FUNCTION);
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
@@ -179,6 +186,135 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   solver->InitiateComms(&geometry, &config, kindMpiComm);
   solver->CompleteComms(&geometry, &config, kindMpiComm);
 }
+
+/*!
+ * \brief Add the symmetric part of flux (x) area to the lower triangle of the Hessian of a variable at a point.
+ * \note The lower triangle is stored as xx, xy, yy[, xz, yz, zz], i.e. component (i,j), i >= j, is at i*(i+1)/2 + j.
+ *       The Green-Gauss Hessian of the gradient is not symmetric in general, so its symmetric part is stored.
+ * \param[in,out] hessian - Hessian field.
+ * \param[in] iPoint - Point index.
+ * \param[in] iVar - Variable index.
+ * \param[in] flux - Gradient flux through the face (already scaled and signed).
+ * \param[in] area - Face normal.
+ */
+template <size_t nDim, class GradientType, class AreaType>
+FORCEINLINE void addSymOuterProduct(GradientType& hessian, size_t iPoint, size_t iVar, const su2double (&flux)[nDim],
+                                    const AreaType& area) {
+  for (auto i = 0ul; i < nDim; ++i) {
+    for (auto j = 0ul; j <= i; ++j) {
+      hessian(iPoint, iVar, i * (i + 1) / 2 + j) += 0.5 * (flux[i] * area[j] + flux[j] * area[i]);
+    }
+  }
+}
+
+template<size_t nDim, class GradientType>
+void computeHessiansGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
+                               CGeometry& geometry, const CConfig& config, const GradientType& gradient,
+                               const size_t varBegin, const size_t varEnd, const int idxVel, GradientType& hessian) {
+  const size_t nPointDomain = geometry.GetnPointDomain();
+
+#ifdef HAVE_OMP
+  constexpr size_t OMP_MAX_CHUNK = 512;
+
+  const auto chunkSize = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_CHUNK);
+#endif
+
+  constexpr size_t nSymMat = 3 * (nDim - 1);
+
+  /*--- For each (non-halo) volume integrate the gradient over its faces (edges). ---*/
+
+  SU2_OMP_FOR_DYN(chunkSize)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+    auto nodes = geometry.nodes;
+
+    /*--- Clear the Hessian. --*/
+
+    for (auto iVar = varBegin; iVar < varEnd; ++iVar)
+      for (auto iMat = 0ul; iMat < nSymMat; ++iMat) hessian(iPoint, iVar, iMat) = 0.0;
+
+    /*--- Handle averaging and division by volume in one constant. ---*/
+
+    const su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint));
+
+    /*--- Add a contribution due to each neighbor. ---*/
+
+    for (auto iNeigh = 0ul; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
+      const auto iEdge = nodes->GetEdge(iPoint,iNeigh);
+      const auto jPoint = nodes->GetPoint(iPoint,iNeigh);
+
+      /*--- Determine if edge points inwards or outwards of iPoint.
+       *    If inwards we need to flip the area vector. ---*/
+
+      const su2double dir = (iPoint < jPoint)? 1.0 : -1.0;
+      const su2double weight = dir * halfOnVol;
+
+      const auto area = geometry.edges->GetNormal(iEdge);
+
+      for (auto iVar = varBegin; iVar < varEnd; ++iVar) {
+        su2double flux[nDim];
+        for (auto iDim = 0ul; iDim < nDim; ++iDim)
+          flux[iDim] = weight * (gradient(iPoint, iVar, iDim) + gradient(jPoint, iVar, iDim));
+
+        addSymOuterProduct<nDim>(hessian, iPoint, iVar, flux, area);
+      }
+    }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Add edges of markers that contribute to the Hessians ---*/
+  for (auto iMarker = 0ul; iMarker < geometry.GetnMarker(); ++iMarker) {
+    if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+      (config.GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
+      (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+    /*--- Work is shared in inner loop as two markers
+     *    may try to update the same point. ---*/
+
+      SU2_OMP_FOR_STAT(32)
+      for (auto iVertex = 0ul; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
+        const auto iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
+        auto nodes = geometry.nodes;
+
+        /*--- Halo points do not need to be considered. ---*/
+
+        if (!nodes->GetDomain(iPoint)) continue;
+
+        const su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
+        const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
+
+        for (auto iVar = varBegin; iVar < varEnd; ++iVar) {
+          /*--- The vertex normal points into the domain, hence the negative sign. ---*/
+          su2double flux[nDim];
+          for (auto iDim = 0ul; iDim < nDim; ++iDim)
+            flux[iDim] = -gradient(iPoint, iVar, iDim) / volume;
+
+          addSymOuterProduct<nDim>(hessian, iPoint, iVar, flux, area);
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+  }
+
+  /*--- Compute the corrections for symmetry planes and Euler walls. ---*/
+  /*--- TODO? correctHessiansSymmetry<nDim>() ---*/
+
+  /*--- If no solver was provided we do not communicate ---*/
+
+  if (solver == nullptr) return;
+
+  /*--- Account for periodic contributions. ---*/
+
+  for (auto iPeriodic = 1ul; iPeriodic <= config.GetnMarker_Periodic()/2u; ++iPeriodic)
+  {
+    solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+    solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+  }
+
+  /*--- Obtain the Hessians at halo points from the MPI ranks that own them. ---*/
+
+  solver->InitiateComms(&geometry, &config, kindMpiComm);
+  solver->CompleteComms(&geometry, &config, kindMpiComm);
+
+}
 }  // namespace detail
 
 
@@ -205,3 +341,23 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
       break;
   }
 }
+
+template<class GradientType>
+void computeHessiansGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
+                               CGeometry& geometry, const CConfig& config, const GradientType& gradient,
+                               const size_t varBegin, const size_t varEnd, const int idxVel, GradientType& hessian) {
+  switch (geometry.GetnDim()) {
+  case 2:
+    detail::computeHessiansGreenGauss<2>(solver, kindMpiComm, kindPeriodicComm, geometry, config, gradient,
+                                         varBegin, varEnd, idxVel, hessian);
+    break;
+  case 3:
+    detail::computeHessiansGreenGauss<3>(solver, kindMpiComm, kindPeriodicComm, geometry, config, gradient,
+                                         varBegin, varEnd, idxVel, hessian);
+    break;
+  default:
+    SU2_MPI::Error("Too many dimensions to compute Hessians.", CURRENT_FUNCTION);
+    break;
+  }
+}
+

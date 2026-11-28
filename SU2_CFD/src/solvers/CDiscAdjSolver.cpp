@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,6 +42,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();

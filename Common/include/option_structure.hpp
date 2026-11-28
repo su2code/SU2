@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -97,6 +97,14 @@ constexpr passivedouble BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzm
 constexpr passivedouble AVOGAD_CONSTANT = 6.0221415E26;       /*!< \brief Avogadro's constant, number of particles in one kmole. */
 constexpr passivedouble FUND_ELEC_CHARGE_CGS = 4.8032047E-10; /*!< \brief Fundamental electric charge in CGS units, cm^(3/2) g^(1/2) s^(-1). */
 constexpr passivedouble STD_REF_TEMP = 298.15;  /*!< \brief Standard reference temperature for enthalpy in Kelvin. */
+
+/*!
+ * \brief Maximum number of transported species (scalar equations of the species model).
+ * \note Sizes the stack storage of the species edge-flux kernel and the static arrays of the species solver. It
+ *       must not exceed the limits of the linear algebra (CSysMatrix::MAXNVAR), the multigrid and the limiters;
+ *       static_asserts at those places fail to compile when it does, and name the limit to raise.
+ */
+constexpr unsigned short MAX_TRANSPORTED_SPECIES = 20;
 constexpr passivedouble EPS = 1.0E-16;        /*!< \brief Error scale. */
 constexpr passivedouble TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
 
@@ -651,6 +659,7 @@ enum ENUM_FLUIDMODEL {
   COOLPROP = 10,          /*!< \brief Thermodynamics library. */
   FLUID_FLAMELET = 11,    /*!< \brief lookup table (LUT) method for premixed flamelets. */
   DATADRIVEN_FLUID = 12,  /*!< \brief multi-layer perceptron driven fluid model. */
+  FLUID_CANTERA = 13,     /*!< \brief Reacting flows model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -666,6 +675,7 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("COOLPROP", COOLPROP)
   MakePair("DATADRIVEN_FLUID", DATADRIVEN_FLUID)
   MakePair("FLUID_FLAMELET", FLUID_FLAMELET)
+  MakePair("FLUID_CANTERA", FLUID_CANTERA)
 };
 
 /*!
@@ -784,6 +794,7 @@ enum class VISCOSITYMODEL {
   POLYNOMIAL, /*!< \brief Polynomial viscosity. */
   FLAMELET, /*!< \brief LUT method for flamelets */
   COOLPROP, /*!< \brief CoolProp viscosity. */
+  CANTERA,  /*!< \brief Cantera viscosity. */
 };
 static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
@@ -791,6 +802,7 @@ static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
   MakePair("FLAMELET", VISCOSITYMODEL::FLAMELET)
   MakePair("COOLPROP", VISCOSITYMODEL::COOLPROP)
+  MakePair("CANTERA", VISCOSITYMODEL::CANTERA)
 };
 
 /*!
@@ -814,6 +826,7 @@ enum class CONDUCTIVITYMODEL {
   POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
   FLAMELET, /*!< \brief LUT method for flamelets */
   COOLPROP, /*!< \brief COOLPROP thermal conductivity. */
+  CANTERA,  /*!< \brief CANTERA thermal conductivity. */
 };
 static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
@@ -821,6 +834,7 @@ static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
   MakePair("FLAMELET", CONDUCTIVITYMODEL::FLAMELET)
   MakePair("COOLPROP", CONDUCTIVITYMODEL::COOLPROP)
+  MakePair("CANTERA", CONDUCTIVITYMODEL::CANTERA)
 };
 
 /*!
@@ -844,6 +858,7 @@ enum class DIFFUSIVITYMODEL {
   UNITY_LEWIS,          /*!< \brief Unity Lewis model for mass diffusion in scalar transport. */
   CONSTANT_LEWIS,      /*!< \brief Different Lewis number model for mass diffusion in scalar transport. */
   FLAMELET,            /*!< \brief flamelet model for tabulated chemistry, diffusivity from lookup table */
+  CANTERA,    /*!< \brief Mixture average diffusivity from CANTERA */
 };
 
 static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
@@ -852,6 +867,7 @@ static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
   MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
   MakePair("CONSTANT_LEWIS", DIFFUSIVITYMODEL::CONSTANT_LEWIS)
   MakePair("FLAMELET", DIFFUSIVITYMODEL::FLAMELET)
+  MakePair("CANTERA", DIFFUSIVITYMODEL::CANTERA)
 };
 
 /*!
@@ -1608,6 +1624,43 @@ struct FluidFlamelet_ParsedOptions {
   bool thickenedflame_correction{true}; /*!< \brief Thickened flame correction. */
   su2double Flame_T_ignition = 5000;    /*!< \brief Ignition temperature for the flame, used for initialization. */
 
+  /*!
+   * \brief Whether the artificial spark is active at the given iteration.
+   * \param[in] iter - Iteration counter that times the spark, see CConfig::GetIgnitionIter().
+   */
+  bool SparkActive(unsigned long iter) const {
+    if (ignition_method != FLAMELET_INIT_TYPE::SPARK) return false;
+    const unsigned long start = static_cast<unsigned long>(std::ceil(SU2_TYPE::GetValue(spark_init[4])));
+    const unsigned long duration = static_cast<unsigned long>(std::ceil(SU2_TYPE::GetValue(spark_init[5])));
+    return (iter >= start) && (iter <= start + duration);
+  }
+
+  /*!
+   * \brief Whether a point is inside the spark region.
+   * \param[in] nDim - Number of dimensions.
+   * \param[in] coord - Coordinates of the point.
+   */
+  bool InSpark(unsigned short nDim, const su2double* coord) const {
+    su2double dist2 = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) dist2 += (coord[iDim] - spark_init[iDim]) * (coord[iDim] - spark_init[iDim]);
+    return dist2 < spark_init[3] * spark_init[3];
+  }
+};
+
+/*!
+ * \brief Structure containing the parsed options of the Cantera detailed chemistry model (FLUID_CANTERA).
+ */
+struct CanteraOptions {
+  std::string mechanism_file;                      /*!< \brief Chemical reaction mechanism file, required. */
+  std::string phase_name;                          /*!< \brief Name of the phase in the mechanism file, required. */
+  std::string transport_model = "mixture-averaged"; /*!< \brief Cantera transport model. */
+  unsigned short n_species_names = 0;              /*!< \brief Number of species names. */
+  std::string* species_names = nullptr;            /*!< \brief Names of the species, the last one is the remainder. */
+  bool combustion = false;                         /*!< \brief Add the chemical source terms to the species equations. */
+  su2double spark_temperature = 1000.0;            /*!< \brief Temperature inside the spark region while it is active. */
+  bool source_jacobian = true;                     /*!< \brief Diagonal chemical sink Jacobian in the implicit species equations. */
+  su2double min_temperature = 500.0;               /*!< \brief Temperature below which the chemistry is skipped. */
+  bool correction_velocity = true;                 /*!< \brief Correction velocity of the species diffusion fluxes. */
 };
 
 /*!
@@ -2865,6 +2918,10 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_GRAD_ADAPT ,  /*!< \brief Gradient vectors for anisotropic sizing metric (periodic only). */
+  PERIODIC_HESSIAN    ,  /*!< \brief Hessian tensors for anisotropic sizing metric (periodic only). */
+  PERIODIC_AUXVAR_LS  ,  /*!< \brief Auxiliary scalar gradient communication for weighted least-squares. */
+  PERIODIC_AUXVAR_GG  ,  /*!< \brief Auxiliary scalar gradient communication for Green-Gauss. */
 };
 
 /*!
@@ -2898,6 +2955,9 @@ enum class MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  SENSOR_ADAPT         ,  /*!< \brief Sensors for anisotropic sizing metric tensor. */
+  GRADIENT_ADAPT       ,  /*!< \brief Gradient vectors for anisotropic sizing metric tensor. */
+  HESSIAN              ,  /*!< \brief Hessian tensors for anisotropic sizing metric tensor. */
   MOM_COEFF            ,  /*!< \brief Momentum coefficient for the Rhie-Chow scheme. */
   MOM_CORRECTION       ,  /*!< \brief Momentum correction for the pressure-based poisson solver (used when computing HbyA). */
   HBYA_CORRECTION      ,  /*!< \brief HbyA correction for the pressure-based poisson solver. */
@@ -3001,12 +3061,12 @@ static const MapType<std::string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_
  * \brief Container to hold Variables for streamwise Periodic flow as they are often used together in places.
  */
 struct StreamwisePeriodicValues {
-  su2double Streamwise_Periodic_PressureDrop;       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
-  su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
-  su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
-  su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
-  su2double Streamwise_Periodic_BoundaryArea;       /*!< \brief Global Surface area of the streamwise periodic interface. */
-  su2double Streamwise_Periodic_AvgDensity;         /*!< \brief Area avg density on the periodic interface. */
+  su2double Streamwise_Periodic_PressureDrop = 0.0; /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
+  su2double Streamwise_Periodic_MassFlow = 0.0; /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
+  su2double Streamwise_Periodic_IntegratedHeatFlow = 0.0; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+  su2double Streamwise_Periodic_InletTemperature = 0.0; /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+  su2double Streamwise_Periodic_BoundaryArea = 0.0; /*!< \brief Global Surface area of the streamwise periodic interface. */
+  su2double Streamwise_Periodic_AvgDensity = 0.0; /*!< \brief Area avg density on the periodic interface. */
 };
 
 /*!
@@ -3057,6 +3117,63 @@ enum class DEFORM_KIND {
 static const MapType<std::string, DEFORM_KIND> Deform_Kind_Map = {
   MakePair("ELASTIC",   DEFORM_KIND::ELASTIC)
   MakePair("RBF",       DEFORM_KIND::RBF)
+};
+
+/*!
+ * \brief Type of sensor for anisotropic metrics.
+ */
+enum class SensorType {
+  PRIMITIVE, /*!< \brief Value read directly from the primitive variable array. */
+  COMPUTED,  /*!< \brief Officially-supported computed quantity (e.g. Mach number). */
+  CUSTOM,    /*!< \brief User-defined sensor populated externally via the Python wrapper. */
+  SOLVER_FIELD, /*!< \brief Solution variable of another solver (e.g. turbulence), copied into the flow solver. */
+};
+
+/*!
+ * \brief Structure containing parsed options for the adaptive metric used in anisotropic mesh adaptation.
+ */
+struct AdaptiveMetric_ParsedOptions {
+  bool compute = false;                    /*!< \brief Compute the adaptive metric field in post-processing. */
+  bool normalize = true;                   /*!< \brief Perform the Lp-norm normalization of the adaptive metric. */
+  ENUM_FLOW_GRADIENT kind_hessian_method = GREEN_GAUSS; /*!< \brief Numerical method for computation of Hessians. */
+
+  unsigned short n_sensors = 0;            /*!< \brief Number of adaptive metric sensors. */
+  std::string* sensor_names = nullptr;     /*!< \brief Names of the adaptive metric sensors. */
+  unsigned short n_custom_sensors = 0;     /*!< \brief Number of custom adaptive metric sensors. */
+  std::string* custom_sensor_names = nullptr; /*!< \brief Names of the sensors filled through the Python wrapper. */
+
+  unsigned short norm = 2;                 /*!< \brief Lp-norm used in the normalization. */
+  unsigned long complexity = 10000;        /*!< \brief Target mesh complexity. */
+  unsigned short n_time_subintervals = 1;  /*!< \brief Number of unsteady time sub-intervals for adaptation. */
+
+  /*--- Size and aspect ratio constraints, as parsed: empty (default), one value for all
+   *    sensors, or one value per sensor. ---*/
+  static constexpr passivedouble default_hmax = 100.0;  /*!< \brief Default maximum cell size. */
+  static constexpr passivedouble default_hmin = 1.0e-8; /*!< \brief Default minimum cell size. */
+  static constexpr passivedouble default_armax = 1.0e6; /*!< \brief Default maximum cell aspect ratio. */
+  unsigned short n_hmax = 0, n_hmin = 0, n_armax = 0; /*!< \brief Number of parsed values of each constraint. */
+  su2double* hmax_list = nullptr;          /*!< \brief Parsed maximum cell sizes. */
+  su2double* hmin_list = nullptr;          /*!< \brief Parsed minimum cell sizes. */
+  su2double* armax_list = nullptr;         /*!< \brief Parsed maximum cell aspect ratios. */
+
+  /*--- Constraints of each sensor, filled from the parsed values in CConfig::SetPostprocessing. ---*/
+  std::vector<su2double> hmax;             /*!< \brief Maximum cell size of each sensor. */
+  std::vector<su2double> hmin;             /*!< \brief Minimum cell size of each sensor. */
+  std::vector<su2double> armax;            /*!< \brief Maximum cell aspect ratio of each sensor. */
+
+  /*!
+   * \brief Get the list of adaptive metric sensor names.
+   */
+  std::vector<std::string> SensorList() const {
+    return std::vector<std::string>(sensor_names, sensor_names + n_sensors);
+  }
+
+  /*!
+   * \brief Get the list of custom adaptive metric sensor names (filled through the Python wrapper).
+   */
+  std::vector<std::string> CustomSensorList() const {
+    return std::vector<std::string>(custom_sensor_names, custom_sensor_names + n_custom_sensors);
+  }
 };
 
 

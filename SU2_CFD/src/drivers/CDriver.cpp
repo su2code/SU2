@@ -2,7 +2,7 @@
  * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,6 +33,7 @@
 #include "../../../Common/include/geometry/CMultiGridGeometry.hpp"
 
 #include "../../include/solvers/CSolverFactory.hpp"
+#include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 
 #include "../../include/output/COutputFactory.hpp"
@@ -1389,7 +1390,11 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
     else {
       numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
     }
-    numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
+    if (config->GetCanteraCombustion()) {
+      numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceCombustion_Species(nDim, nVar_Species, config);
+    } else {
+      numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
+    }
   }
 }
 
@@ -2876,6 +2881,23 @@ CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MP
 }
 
 CFluidDriver::~CFluidDriver() = default;
+
+void CDriver::CheckPressureOutletFallbacks() const {
+  /*--- The counts were summed over ranks at the last monitor call, so all ranks take the same decision. ---*/
+  unsigned long fallbacks = 0;
+  for (auto iZone = 0u; iZone < nZone; iZone++)
+    for (auto iInst = 0u; iInst < nInst[iZone]; iInst++)
+      if (const auto* flow = dynamic_cast<const CEulerSolver*>(solver_container[iZone][iInst][MESH_0][FLOW_SOL]))
+        fallbacks += flow->GetPressureOutletFallbacks();
+  if (fallbacks > 0)
+    SU2_MPI::Error(
+        "The steady run ended while a static-pressure outlet still used a fallback state (backflow "
+        "limited to sonic inflow, or the interior state) at " +
+            std::to_string(fallbacks) +
+            " vertex evaluations. This is not a solution of the outlet condition: reach a state without full "
+            "backflow (e.g. with a lower or adaptive CFL), or check the outlet pressure and the EOS range.",
+        CURRENT_FUNCTION);
+}
 
 void CFluidDriver::StartSolver(){
   SU2_ZONE_SCOPED

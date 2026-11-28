@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -238,6 +238,8 @@ class CGeometry {
     std::vector<unsigned long> colorOffsets;
 
     std::vector<uint8_t> lineletColor; /*!< \brief Coloring transfered to points, for visualization. */
+
+    bool computed = false; /*!< \brief Set once the (collective) computation is done, even if a rank has no linelets. */
   };
 
  protected:
@@ -1974,7 +1976,8 @@ class CGeometry {
   virtual void SetWallDistance(su2double val) {}
 
   /*!
-   * \brief Compute the distances to the closest vertex on viscous walls over the entire domain
+   * \brief Compute the distances to the closest vertex on viscous walls over the entire domain.
+   * \note Without viscous walls, all points get a distance of 1e15.
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] geometry_container - Geometrical definition of the problem.
    */

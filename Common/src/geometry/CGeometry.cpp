@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -4339,7 +4339,10 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
 
 const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) const {
   auto& li = lineletInfo;
-  if (!li.linelets.empty() || nPoint == 0) return li;
+  /*--- Do not use "linelets.empty()" as the check, some ranks may have no linelets, and this
+   * function contains collective communication that all ranks must call the same number of times. ---*/
+  if (li.computed) return li;
+  li.computed = true;
 
   li.lineletIdx.resize(nPoint, CLineletInfo::NO_LINELET);
 
@@ -4444,7 +4447,7 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
   SU2_MPI::Allreduce(&sumNPoints, &globalNPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLinelet, &globalNLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && globalNLineLets > 0) {
     std::cout << "Computed linelet structure, "
               << static_cast<unsigned long>(passivedouble(globalNPoints) / globalNLineLets)
               << " points in each line (average)." << std::endl;
@@ -4470,7 +4473,8 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
 
   const auto coloring = colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(
       CCompressedSparsePatternUL(adjacency), 1, false, true);
-  const auto nColors = coloring.getOuterSize();
+  /*--- unsigned long because it is communicated as MPI_UNSIGNED_LONG below. ---*/
+  const unsigned long nColors = coloring.getOuterSize();
 
   /*--- Sort linelets by color. ---*/
   std::vector<std::vector<unsigned long>> sortedLinelets;
@@ -4538,12 +4542,30 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
   const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
   return 2 * Vol / GeometryToolbox::Norm(3, Normal);
 }
+
+/*--- Whether any equation system of a zone uses the WALL_DISTANCE slope limiter. ---*/
+bool UsesWallDistanceLimiter(const CConfig* config) {
+  constexpr auto wall = LIMITER::WALL_DISTANCE;
+  const bool turb = config->GetKind_Turb_Model() != TURB_MODEL::NONE;
+  const bool species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
+  const bool heat = config->GetWeakly_Coupled_Heat() || config->GetKind_Solver() == MAIN_SOLVER::HEAT_EQUATION ||
+                    config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_HEAT;
+  const bool adjoint = config->GetContinuous_Adjoint();
+  const bool flowLimiter = config->GetKind_SlopeLimit_Flow() == wall;
+  const bool turbLimiter = turb && config->GetKind_SlopeLimit_Turb() == wall;
+  const bool speciesLimiter = species && config->GetKind_SlopeLimit_Species() == wall;
+  const bool heatLimiter = heat && config->GetKind_SlopeLimit_Heat() == wall;
+  const bool adjFlowLimiter = adjoint && config->GetKind_SlopeLimit_AdjFlow() == wall;
+  const bool adjTurbLimiter = adjoint && turb && config->GetKind_SlopeLimit_AdjTurb() == wall;
+  return flowLimiter || turbLimiter || speciesLimiter || heatLimiter || adjFlowLimiter || adjTurbLimiter;
+}
 }  // namespace
 
 void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container,
                                     const int record_zone) {
   int nZone = config_container[ZONE_0]->GetnZone();
   bool allEmpty = true;
+  bool limiterNeedsWalls = false;
   vector<bool> wallDistanceNeeded(nZone, false);
 
   for (int iInst = 0; iInst < config_container[ZONE_0]->GetnTimeInstances(); iInst++) {
@@ -4555,6 +4577,12 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
           kindSolver == MAIN_SOLVER::DISC_ADJ_RANS || kindSolver == MAIN_SOLVER::DISC_ADJ_INC_RANS ||
           kindSolver == MAIN_SOLVER::FEM_LES || kindSolver == MAIN_SOLVER::FEM_RANS) {
         wallDistanceNeeded[iZone] = true;
+      }
+
+      /*--- The WALL_DISTANCE slope limiter also needs it (without it, it limits to first order everywhere). ---*/
+      if (UsesWallDistanceLimiter(config_container[iZone])) {
+        wallDistanceNeeded[iZone] = true;
+        limiterNeedsWalls = true;
       }
 
       /*--- Set the wall distances in all zones to the numerical limit.
@@ -4579,11 +4607,17 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       }
     }
 
-    /*--- If there are no viscous walls in the entire domain, set distances to zero ---*/
+    /*--- Without viscous walls every point is far from a wall. The distance is large but finite,
+     * so that its square does not overflow, and the turbulence models take their free-shear limit. ---*/
     if (allEmpty) {
+      if (limiterNeedsWalls) {
+        SU2_MPI::Error("The WALL_DISTANCE slope limiter needs viscous walls (it limits to first order near them).",
+                       CURRENT_FUNCTION);
+      }
+      constexpr passivedouble noWallDistance = 1e15;
       for (int iZone = 0; iZone < nZone; iZone++) {
         CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
-        geometry->SetWallDistance(0.0);
+        geometry->SetWallDistance(noWallDistance);
       }
       continue;
     }

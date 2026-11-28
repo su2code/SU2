@@ -2,7 +2,7 @@
  * \file CPyWrapperMatrixView.hpp
  * \brief Simple matrix views to use with the python wrapper.
  * \author P. Gomes
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -92,7 +92,7 @@ class CPyWrapperMatrixView {
 
   /*--- Define the functions required by the interface macro. ---*/
   inline const su2double& Access(unsigned long row, unsigned long col) const {
-    if (row > rows_ || col > cols_) SU2_MPI::Error(name_ + " out of bounds", "CPyWrapperMatrixView");
+    if (row >= rows_ || col >= cols_) SU2_MPI::Error(name_ + " out of bounds", "CPyWrapperMatrixView");
     return data_[row * cols_ + col];
   }
   inline su2double& Access(unsigned long row, unsigned long col) {
@@ -133,7 +133,7 @@ class CPyWrapperMarkerMatrixView {
 
   /*--- Define the functions required by the interface macro. ---*/
   inline const su2double& Access(unsigned long row, unsigned long col) const {
-    if (row > rows_ || col > cols_) SU2_MPI::Error(name_ + " out of bounds", "CPyWrapperMarkerMatrixView");
+    if (row >= rows_ || col >= cols_) SU2_MPI::Error(name_ + " out of bounds", "CPyWrapperMarkerMatrixView");
     return data_[vertices_[row]->GetNode() * cols_ + col];
   }
   inline su2double& Access(unsigned long row, unsigned long col) {
@@ -183,7 +183,8 @@ class CPyWrapper3DMatrixView {
 
   /*--- Define the functions required by the interface macro. ---*/
   inline const su2double& Access(unsigned long row, unsigned long col, unsigned long dim) const {
-    if (row > rows_ || col > cols_ || dim > dims_) SU2_MPI::Error(name_ + " out of bounds", "CPyWrapper3DMatrixView");
+    if (row >= rows_ || col >= cols_ || dim >= dims_)
+      SU2_MPI::Error(name_ + " out of bounds", "CPyWrapper3DMatrixView");
     return data_[row * (cols_ * dims_) + col * dims_ + dim];
   }
   inline su2double& Access(unsigned long row, unsigned long col, unsigned long dim) {

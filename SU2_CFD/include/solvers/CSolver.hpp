@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,12 +31,14 @@
 
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 #include <iostream>
 #include <set>
+#include <unordered_map>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -86,7 +88,8 @@ protected:
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nSecondaryVar,                 /*!< \brief Number of primitive variables of the problem. */
   nVarGrad,                      /*!< \brief Number of variables for deallocating the LS Cvector. */
-  nDim;                          /*!< \brief Number of dimensions of the problem. */
+  nDim,                          /*!< \brief Number of dimensions of the problem. */
+  nSymMat;                       /*!< \brief Number of symmetric matrix componenents for Hessian and metric tensor. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;    /*!< \brief Number of points of the computational grid. */
   su2double Max_Delta_Time, /*!< \brief Maximum value of the delta time for all the control volumes. */
@@ -146,6 +149,8 @@ protected:
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
+  su2activematrix PeriodicProj;  /*!< \brief Min/max reconstruction increments at periodic receive points (for limiters). */
+  std::unordered_map<unsigned long, size_t> PeriodicProjIndex;  /*!< \brief Local point to compact projection row. */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
@@ -205,6 +210,17 @@ public:
 
   vector<string> fields;
 
+  /*--- Metric sensors for mesh adaptation ---*/
+  struct AdaptiveMetricSensorInfo {
+    unsigned short var_idx;                        /*!< \brief Variable index in the source solver (PRIMITIVE: primitive, SOLVER_FIELD: solution). */
+    std::string name;                              /*!< \brief Sensor name as specified in config. */
+    SensorType type = SensorType::PRIMITIVE;       /*!< \brief Category of sensor. */
+    std::function<su2double(const su2double*)> fn; /*!< \brief Point-wise evaluator for COMPUTED sensors. */
+    unsigned short iSol = FLOW_SOL;                /*!< \brief Solver slot the values are read from (SOLVER_FIELD type). */
+  };
+  vector<AdaptiveMetricSensorInfo> AdaptiveMetricSensors;  /*!< \brief Sensor list in config order, one entry per sensor. */
+
+
 #ifdef HAVE_LIBROM
   std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
 #endif
@@ -220,6 +236,23 @@ public:
   virtual ~CSolver(void);
 
   /*!
+   * \brief Whether the artificial ignition spark is active at the current iteration.
+   * \param[in] config - Definition of the particular problem.
+   */
+  static bool SparkActive(const CConfig* config) {
+    return config->GetFlameletParsedOptions().SparkActive(config->GetIgnitionIter());
+  }
+
+  /*!
+   * \brief Whether a point lies inside the artificial ignition spark region.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] coord - Coordinates of the point.
+   */
+  bool InSpark(const CConfig* config, const su2double* coord) const {
+    return config->GetFlameletParsedOptions().InSpark(nDim, coord);
+  }
+
+  /*!
    * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
    * \return Nodes of the solver.
    */
@@ -231,6 +264,8 @@ public:
     assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
     return base_nodes;
   }
+
+  bool HasPeriodicRotation(const CConfig& config) const;
 
   /*!
    * \brief Helper function to define the type and number of variables per point for each communication type.
@@ -579,11 +614,54 @@ public:
   void SetSolution_Limiter(CGeometry *geometry, const CConfig *config);
 
   /*!
+   * \brief Reference value of each variable for the limiters of SetSolution_Limiter, which then use an epsilon
+   *        relative to max(|solution|, |reference|) (see computeLimiters_impl). Null: absolute epsilon.
+   */
+  inline virtual const su2double* GetLimiterReference() const { return nullptr; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
+
+  /*!
+   * \brief Copy PRIMITIVE sensor values from primitive variable array into Sensor_Adapt.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Evaluate COMPUTED sensors (e.g. Mach number) and store results in Sensor_Adapt.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetComputed_SensorAdapt(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Copy SOLVER_FIELD sensor values (e.g. turbulence variables) from their source solver into Sensor_Adapt.
+   * \param[in] solver - Solver container holding the source solvers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSolverField_SensorAdapt(CSolver **solver, CGeometry *geometry, const CConfig *config);
+
+    /*!
+   * \brief Allocate Gradient_Adapt and Hessian arrays for the sensors assigned to this solver.
+   * \param[in] nSensors - Number of sensors to allocate arrays for.
+   */
+  virtual void AllocateAdaptiveMetricArrays(unsigned short nSensors);
+
+  /*!
+   * \brief Compute the Green-Gauss Hessian of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] idxVel - Index to velocity, -1 if no velocity is present in the solver.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetHessian_GG(CGeometry *geometry, const CConfig *config, short idxVel, const unsigned short Kind_Solver);
 
   /*!
    * \brief A virtual member.
@@ -4232,6 +4310,22 @@ public:
   inline void SetRotatePeriodic(bool val_rotate_periodic) { rotate_periodic = val_rotate_periodic; }
 
   /*!
+   * \brief Storage for the limiters with rotational periodicity: the min and max, over the edges of the periodic
+   *        matches of each point, of the reconstruction increments (communicated with PERIODIC_LIM_PRIM_1).
+   * \param[in] geometry - Periodic receive points of this mesh level.
+   * \param[in] config - Definition of the particular problem.
+   * \return The matrix (unique periodic receive points x 2*nPrimVarGrad, min then max), nullptr without rotation.
+   */
+  su2activematrix* GetPeriodicProjections(const CGeometry& geometry, const CConfig& config);
+
+  /*! \brief Reconstruction increment bounds for a periodic receive point, nullptr for other points. */
+  inline su2double* GetPeriodicProjection(unsigned long iPoint) {
+    const auto& indices = PeriodicProjIndex;
+    const auto it = indices.find(iPoint);
+    return it == indices.end() ? nullptr : PeriodicProj[it->second];
+  }
+
+  /*!
    * \brief Retrieve the solver name for output purposes.
    * \returns Name of the solver.
    */
@@ -4242,6 +4336,26 @@ public:
    * \return A vector containing the solution fields.
    */
   inline vector<string> GetSolutionFields() const{return fields;}
+
+  /*!
+   * \brief Get the number of metric sensors assigned to this solver.
+   * \return Number of metric sensors in this solver.
+   */
+  inline unsigned short GetnAdaptiveMetricSensor() const { return static_cast<unsigned short>(AdaptiveMetricSensors.size()); }
+
+  /*!
+   * \brief Get the metric sensor list for this solver.
+   * \return Vector of AdaptiveMetricSensorInfo entries in config order.
+   */
+  inline const vector<AdaptiveMetricSensorInfo>& GetAdaptiveMetricSensors() const { return AdaptiveMetricSensors; }
+
+  /*!
+   * \brief Set the metric sensor list for this solver.
+   * \param[in] sensors - Sensor entries in config order.
+   */
+  inline void SetAdaptiveMetricSensors(const vector<AdaptiveMetricSensorInfo>& sensors) {
+    AdaptiveMetricSensors = sensors;
+  }
 
   /*!
    * \brief A virtual member.
@@ -4338,7 +4452,7 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   inline virtual void ComputeHbyA(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
-  
+
   /*!
    * \brief Save snapshot or POD data using libROM
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4376,24 +4490,54 @@ public:
     END_SU2_OMP_FOR
   }
 
-inline void CustomSourceResidual(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  inline void CustomSourceResidual(CGeometry *geometry, CSolver **solver_container,
+                                  CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  AD::StartNoSharedReading();
+    AD::StartNoSharedReading();
 
-  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,2*omp_get_max_threads()))
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    /*--- Get control volume size. ---*/
-    su2double Volume = geometry->nodes->GetVolume(iPoint);
-    /*--- Compute the residual for this control volume and subtract. ---*/
-    for (auto iVar = 0ul; iVar < nVar; iVar++) {
-      LinSysRes(iPoint,iVar) -= base_nodes->GetUserDefinedSource()(iPoint, iVar) * Volume;
+    SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,2*omp_get_max_threads()))
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      /*--- Get control volume size. ---*/
+      su2double Volume = geometry->nodes->GetVolume(iPoint);
+      /*--- Compute the residual for this control volume and subtract. ---*/
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
+        LinSysRes(iPoint,iVar) -= base_nodes->GetUserDefinedSource()(iPoint, iVar) * Volume;
+      }
     }
-  }
-  END_SU2_OMP_FOR
+    END_SU2_OMP_FOR
 
-  AD::EndNoSharedReading();
-}
+    AD::EndNoSharedReading();
+  }
+
+  /*!
+   * \brief Add the current Hessians of all sensors to their adaptive metrics.
+   * \note Steady: the metric is |H|, normalized if requested. Unsteady: |H| is integrated in time
+   *       with the trapezoidal rule, one sample per call; call FinalizeAdaptiveMetric when the run stops.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
+   */
+  void ComputeAdaptiveMetric(CGeometry *geometry, const CConfig *config, bool restartMetric);
+
+  /*!
+   * \brief Finalize the time-integrated adaptive metric of an unsteady run at the step where it stops.
+   * \note Integrates and (if requested) normalizes the metric; the next sample starts a new time interval.
+   *       Does nothing for steady runs, or if nothing was accumulated since the last finalization.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinalizeAdaptiveMetric(CGeometry *geometry, const CConfig *config);
+
+private:
+  unsigned long nAdaptiveMetricSamples = 0; /*!< \brief Number of samples in the unsteady adaptive metric. */
+  CVectorOfMatrix AdaptiveMetricPrevHessian; /*!< \brief Hessians of the previous sample, for the trapezoidal rule. */
+
+  /*!
+   * \brief Integrate the adaptive metric of all sensors, print the integrals, and normalize if requested.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void IntegrateAndNormalizeAdaptiveMetric(CGeometry *geometry, const CConfig *config);
 
 protected:
   /*!

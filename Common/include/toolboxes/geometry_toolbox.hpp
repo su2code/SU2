@@ -1,7 +1,7 @@
 /*!
  * \file geometry_toolbox.hpp
  * \brief Collection of common lightweight geometry-oriented methods.
- * \version 8.5.0 "Harrier"
+ * \version 8.6.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,6 +27,7 @@
 #pragma once
 
 #include <cmath>
+#include <algorithm>
 
 namespace GeometryToolbox {
 /// \addtogroup GeometryToolbox
@@ -215,6 +216,31 @@ inline void Rotate(const Scalar R[][nDim], const Scalar* O, const Scalar* d, Sca
   }
 }
 
+/*! \return Whether any of the three supplied rotation angles is nonzero. */
+template <class Scalar>
+inline bool HasRotation(const Scalar* angles) {
+  // Configured zero stays exact after degree conversion and negation; retain every nonzero rotation.
+  return angles[0] != 0.0 || angles[1] != 0.0 || angles[2] != 0.0;
+}
+
+/*! \brief Rotate component bounds in place, enclosing the rotated box. */
+template <class Scalar, int nDim>
+inline void RotateBox(const Scalar R[][nDim], Scalar* vMin, Scalar* vMax) {
+  using std::max;
+  using std::min;
+  Scalar rotMin[nDim] = {0.0}, rotMax[nDim] = {0.0};
+  for (int iDim = 0; iDim < nDim; ++iDim) {
+    for (int jDim = 0; jDim < nDim; ++jDim) {
+      const Scalar fromMin = R[iDim][jDim] * vMin[jDim];
+      const Scalar fromMax = R[iDim][jDim] * vMax[jDim];
+      rotMin[iDim] += min(fromMin, fromMax);
+      rotMax[iDim] += max(fromMin, fromMax);
+    }
+  }
+  std::copy_n(rotMin, nDim, vMin);
+  std::copy_n(rotMax, nDim, vMax);
+}
+
 /*! \brief Tangent projection  */
 template <class Mat, class Scalar, class Int>
 inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector, Scalar* proj) {
@@ -224,5 +250,27 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
 
   for (Int iDim = 0; iDim < nDim; iDim++) proj[iDim] -= normalProj * vector[iDim];
 }
+/*!
+ * \brief Check if a point lies inside an ellipsoid (ellipse in 2D) rotated about the z axis.
+ * \note Intermediate values are stored with an explicit type, because with AD types "auto" would hold
+ *       expression templates.
+ * \param[in] nDim - Number of dimensions, only the first nDim coordinates and semi-axes are used.
+ * \param[in] coord - Coordinates of the point.
+ * \param[in] center - Center of the ellipsoid.
+ * \param[in] axes - Semi-axes of the ellipsoid.
+ * \param[in] rotZ - Rotation of the ellipsoid about the z axis, in radians.
+ * \return True if the point is inside the ellipsoid or on its surface.
+ */
+template <class T, typename Int>
+inline bool PointInEllipsoid(Int nDim, const T* coord, const T* center, const T* axes, const T& rotZ) {
+  const T dx = coord[0] - center[0];
+  const T dy = coord[1] - center[1];
+  const T x = dx * cos(rotZ) + dy * sin(rotZ);
+  const T y = -dx * sin(rotZ) + dy * cos(rotZ);
+  T check = pow(x / axes[0], 2) + pow(y / axes[1], 2);
+  if (nDim == 3) check += pow((coord[2] - center[2]) / axes[2], 2);
+  return check <= 1;
+}
+
 /// @}
 }  // namespace GeometryToolbox
