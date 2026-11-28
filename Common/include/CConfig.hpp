@@ -1345,6 +1345,9 @@ private:
   /*--- Additional flamelet solver options ---*/
   FluidFlamelet_ParsedOptions flamelet_ParsedOptions; /*!< \brief Additional flamelet solver options */
 
+  /*--- Adaptive metric (mesh adaptation) options ---*/
+  AdaptiveMetric_ParsedOptions adaptiveMetric_ParsedOptions; /*!< \brief Adaptive metric options */
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -9846,6 +9849,11 @@ public:
    */
   unsigned short GetKind_HybridRANSLES(void) const { return Kind_HybridRANSLES; }
 
+  bool IsHybridSST() const {
+    return Kind_HybridRANSLES == SST_DDES || Kind_HybridRANSLES == SST_IDDES ||
+           Kind_HybridRANSLES == SST_SIDDES || Kind_HybridRANSLES == SST_EDDES;
+  }
+
   /*!
    * \brief Get if the LES mode must be enforced.
    * \return TRUE if LES is enforced.
@@ -10503,6 +10511,12 @@ public:
    * \return option data structure for the flamelet fluid model.
    */
   const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
+
+  /*!
+   * \brief Get parsed option data structure for the adaptive metric (mesh adaptation).
+   * \return option data structure for the adaptive metric.
+   */
+  const AdaptiveMetric_ParsedOptions& GetAdaptiveMetricParsedOptions() const { return adaptiveMetric_ParsedOptions; }
 
   /*!
    * \brief Get the enthalpy BC mode for the flamelet solver.

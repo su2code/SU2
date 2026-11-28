@@ -55,6 +55,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, const CSolver
 
   nVarGrad = nVar;
 
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nSymMat = 3 * (nDim - 1);
+
   /*--- Add Langevin equations if the Stochastic Backscatter Model is used ---*/
 
   if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
@@ -224,9 +228,9 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
         auto Vorticity = flowNodes->GetVorticity(iPoint);
-        auto PrimGrad_Flow = flowNodes->GetGradient_Primitive(iPoint);
+        auto VelGrad = flowNodes->GetGradient_Primitive(iPoint) + prim_idx.Velocity();
         auto Laminar_Viscosity = flowNodes->GetLaminarViscosity(iPoint);
-        nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+        nodes->SetVortex_Tilting(iPoint, VelGrad, Vorticity, Laminar_Viscosity);
       }
       END_SU2_OMP_FOR
     }
@@ -1026,15 +1030,17 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
   const su2double fw_star = 0.424, cv1_3 = pow(7.1, 3), k2 = pow(0.41, 2);
   const su2double cb1   = 0.1355, ct3 = 1.2, ct4 = 0.5;
-  const su2double sigma = 2./3., cb2 = 0.622, f_max = 1.0, f_min = 0.1, a1 = 0.15, a2 = 0.3;
+  const su2double sigma = 2./3., cb2 = 0.622;
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
+
+  /*--- Work space of the EDDES length scale, private to each thread and reused for all its points. ---*/
+  ShearLayerWorkspace slaWorkspace;
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++){
 
     const auto coord_i       = geometry->nodes->GetCoord(iPoint);
-    const auto nNeigh        = geometry->nodes->GetnPoint(iPoint);
     const auto wallDistance  = geometry->nodes->GetWall_Distance(iPoint);
     const auto velocityGrad  = flowNodes->GetVelocityGradient(iPoint);
     const auto vorticity     = flowNodes->GetVorticity(iPoint);
@@ -1104,8 +1110,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
           maxDelta = LES_FilterWidth;
         }
 
-        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
 
         const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
@@ -1146,8 +1152,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
                                   pow(ratioOmega[1], 2)*delta[0]*delta[2] +
                                   pow(ratioOmega[2], 2)*delta[0]*delta[1]);
 
-        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
 
         if (f_d < 0.99){
           maxDelta = deltaDDES;
@@ -1173,46 +1179,10 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
          Flow Turbulence Combust - 2015
          ---*/
 
-        su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
 
-        const su2double omega = GeometryToolbox::Norm(3, vorticity);
-
-        su2double ratioOmega[MAXNDIM] = {};
-
-        for (auto iDim = 0; iDim < 3; iDim++){
-          ratioOmega[iDim] = vorticity[iDim]/omega;
-        }
-
-        const su2double deltaDDES = geometry->nodes->GetMaxLength(iPoint);
-
-        su2double ln_max = 0.0;
-        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-          const auto coord_j = geometry->nodes->GetCoord(jPoint);
-          su2double delta[MAXNDIM] = {};
-          for (auto iDim = 0u; iDim < nDim; iDim++){
-            delta[iDim] = fabs(coord_j[iDim] - coord_i[iDim]);
-          }
-          su2double ln[3];
-          ln[0] = delta[1]*ratioOmega[2] - delta[2]*ratioOmega[1];
-          ln[1] = delta[2]*ratioOmega[0] - delta[0]*ratioOmega[2];
-          ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
-          const su2double aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
-          ln_max = max(ln_max, aux_ln);
-          vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
-        }
-        vortexTiltingMeasure /= (nNeigh + 1);
-
-        const su2double f_kh = max(f_min,
-                                   min(f_max,
-                                       f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
-
-        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
-
-        su2double maxDelta = (ln_max/sqrt(3.0)) * f_kh;
-        if (f_d < 0.999){
-          maxDelta = deltaDDES;
-        }
+        su2double maxDelta = ShearLayerAdaptedLengthScale(geometry, iPoint, vorticity, f_d < 0.99, slaWorkspace);
 
         if (LES_FilterWidth > 0.0){
           maxDelta = LES_FilterWidth;

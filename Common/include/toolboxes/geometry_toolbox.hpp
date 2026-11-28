@@ -60,6 +60,51 @@ inline void PointPointReflect(Int nDim, const T* a, const T* b, T* d) {
   for (Int i = 0; i < nDim; i++) d[i] = 2 * b[i] - a[i];
 }
 
+/*!
+ * \brief Compute the mean rate of strain matrix.
+ * \details The parameter primvargrad can be e.g. PrimVar_Grad_i or Mean_GradPrimVar.
+ * \param[in] nDim - 2 or 3
+ * \param[out] rateofstrain - Rate of strain matrix
+ * \param[in] velgrad - A velocity gradient matrix.
+ * \tparam Mat1 - any type that supports the [][] interface
+ * \tparam Mat2 - any type that supports the [][] interface
+ */
+template <class Mat1, class Mat2>
+inline void ComputeMeanRateOfStrainMatrix(size_t nDim, Mat1& rateofstrain, const Mat2& velgrad) {
+  /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
+
+  if (nDim == 3) {
+    rateofstrain[0][0] = velgrad[0][0];
+    rateofstrain[1][1] = velgrad[1][1];
+    rateofstrain[2][2] = velgrad[2][2];
+    rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
+    rateofstrain[0][2] = 0.5 * (velgrad[0][2] + velgrad[2][0]);
+    rateofstrain[1][2] = 0.5 * (velgrad[1][2] + velgrad[2][1]);
+    rateofstrain[1][0] = rateofstrain[0][1];
+    rateofstrain[2][1] = rateofstrain[1][2];
+    rateofstrain[2][0] = rateofstrain[0][2];
+  } else {  // nDim==2
+    rateofstrain[0][0] = velgrad[0][0];
+    rateofstrain[1][1] = velgrad[1][1];
+    rateofstrain[2][2] = 0.0;
+    rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
+    rateofstrain[0][2] = 0.0;
+    rateofstrain[1][2] = 0.0;
+    rateofstrain[1][0] = rateofstrain[0][1];
+    rateofstrain[2][1] = rateofstrain[1][2];
+    rateofstrain[2][0] = rateofstrain[0][2];
+  }
+}
+
+/*! \brief Magnitude of an edge projected onto a unit wall normal. */
+template <class T, typename Int>
+inline T WallNormalEdgeLength(Int nDim, const T* a, const T* b, const T* normal) {
+  T projection(0);
+  for (Int i = 0; i < nDim; ++i) projection += (b[i] - a[i]) * normal[i];
+  using std::abs;
+  return abs(projection);
+}
+
 /*! \return a.b */
 template <class T, typename Int>
 inline T DotProduct(Int nDim, const T* a, const T* b) {
@@ -250,5 +295,27 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
 
   for (Int iDim = 0; iDim < nDim; iDim++) proj[iDim] -= normalProj * vector[iDim];
 }
+/*!
+ * \brief Check if a point lies inside an ellipsoid (ellipse in 2D) rotated about the z axis.
+ * \note Intermediate values are stored with an explicit type, because with AD types "auto" would hold
+ *       expression templates.
+ * \param[in] nDim - Number of dimensions, only the first nDim coordinates and semi-axes are used.
+ * \param[in] coord - Coordinates of the point.
+ * \param[in] center - Center of the ellipsoid.
+ * \param[in] axes - Semi-axes of the ellipsoid.
+ * \param[in] rotZ - Rotation of the ellipsoid about the z axis, in radians.
+ * \return True if the point is inside the ellipsoid or on its surface.
+ */
+template <class T, typename Int>
+inline bool PointInEllipsoid(Int nDim, const T* coord, const T* center, const T* axes, const T& rotZ) {
+  const T dx = coord[0] - center[0];
+  const T dy = coord[1] - center[1];
+  const T x = dx * cos(rotZ) + dy * sin(rotZ);
+  const T y = -dx * sin(rotZ) + dy * cos(rotZ);
+  T check = pow(x / axes[0], 2) + pow(y / axes[1], 2);
+  if (nDim == 3) check += pow((coord[2] - center[2]) / axes[2], 2);
+  return check <= 1;
+}
+
 /// @}
 }  // namespace GeometryToolbox

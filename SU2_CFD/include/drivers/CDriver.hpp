@@ -424,6 +424,13 @@ class CDriver : public CDriverBase {
   virtual void StartSolver() {}
 
   /*!
+   * \brief Stop with an error if a steady run ends while a static-pressure outlet still uses a fallback state
+   *        (sonic-limited backflow or the interior state).
+   * \note Called at the end of StartSolver; Python scripts that run the iterations themselves should call it too.
+   */
+  void CheckPressureOutletFallbacks() const;
+
+  /*!
    * \brief Deallocation routine
    */
   void Finalize() override;
