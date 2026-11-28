@@ -114,6 +114,7 @@ CFluidFlamelet::~CFluidFlamelet() {
     delete iomap_TD;
     delete iomap_Sources;
     delete iomap_LookUp;
+    delete iomap_SourceJacobian;
     delete lookup_mlp;
     if (preferential_diffusion) delete iomap_PD;
   }
@@ -244,6 +245,11 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
       iomap_PD = new MLPToolbox::CIOMap(controlling_variable_names, varnames_PD);
       lookup_mlp->PairVariableswithMLPs(*iomap_PD);
     }
+    iomap_SourceJacobian =
+        new MLPToolbox::CIOMap(controlling_variable_names, {varnames_Sources[I_PROGVAR]});
+    iomap_SourceJacobian->AddQueryJacobian(varnames_Sources[I_PROGVAR], controlling_variable_names[I_PROGVAR],
+                                           &source_pv_jac);
+    lookup_mlp->PairVariableswithMLPs(*iomap_SourceJacobian);
 #endif
   } else {
     for (auto iVar = 0u; iVar < varnames_TD.size(); iVar++) {
@@ -341,4 +347,37 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   for (auto iVar = 0u; iVar < output_refs.size(); iVar++) AD::SetPreaccOut(output_refs[iVar]);
   AD::EndPreacc();
   return extrapolation;
+}
+
+su2double CFluidFlamelet::GetProgVarSourceJacobian(const vector<su2double>& input_scalar) {
+  const su2double val_prog = input_scalar[I_PROGVAR], val_enth = input_scalar[I_ENTH];
+  const su2double val_mixfrac = include_mixture_fraction ? input_scalar[I_MIXFRAC] : 0.0;
+  switch (Kind_DataDriven_Method) {
+    case ENUM_DATADRIVEN_METHOD::LUT: {
+      const su2double delta = 1e-6;
+      const unsigned long idx = LUT_idx_Sources[I_PROGVAR];
+      su2double source, source_pert;
+      if (include_mixture_fraction) {
+        look_up_table->LookUp_XYZ(idx, &source, val_prog, val_enth, val_mixfrac);
+        look_up_table->LookUp_XYZ(idx, &source_pert, val_prog + delta, val_enth, val_mixfrac);
+      } else {
+        look_up_table->LookUp_XY(idx, &source, val_prog, val_enth);
+        look_up_table->LookUp_XY(idx, &source_pert, val_prog + delta, val_enth);
+      }
+      source_pv_jac = (source_pert - source) / delta;
+      break;
+    }
+    case ENUM_DATADRIVEN_METHOD::MLP: {
+#ifdef USE_MLPCPP
+      su2double source;
+      vector<su2double*> refs_vars{&source};
+      if (!lookup_mlp->Predict(*iomap_SourceJacobian, input_scalar, refs_vars)) source_pv_jac = 0.0;
+#endif
+      break;
+    }
+    default:
+      source_pv_jac = 0.0;
+      break;
+  }
+  return source_pv_jac;
 }

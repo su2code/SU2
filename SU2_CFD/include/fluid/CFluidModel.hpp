@@ -162,6 +162,12 @@ class CFluidModel {
   }
 
   /*!
+   * \brief Derivative of the progress variable source term with respect to the progress variable.
+   * \param[in] input_scalar - data manifold query data.
+   */
+  virtual su2double GetProgVarSourceJacobian(const vector<su2double>& input_scalar) { return 0.0; }
+
+  /*!
    * \brief Get fluid dynamic viscosity.
    */
   inline virtual su2double GetLaminarViscosity() {

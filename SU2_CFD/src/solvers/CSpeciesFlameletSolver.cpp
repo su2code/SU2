@@ -440,8 +440,12 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
     /*--- Implicit: analytic Jacobian for auxiliary species from the split source form.
      *   S_aux_i = source_prod_i + source_cons_i * Y_aux_i
      *   dS_aux_i/dY_aux_i = source_cons_i
-     *   J_ii += -source_cons_i * V ---*/
+     *   J_ii += -source_cons_i * V
+     *   The progress variable gets the decreasing part of its source, per unit of rho*PV. ---*/
     if (implicit) {
+      const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(i_point);
+      const su2double dsource_dpv = fn->GetSourceJacobianPV(i_point);
+      Jacobian.AddVal2Diag(i_point, I_PROGVAR, fmax(0.0, -dsource_dpv) / density * volume);
       for (auto i_aux = 0u; i_aux < n_aux; i_aux++) {
         Jacobian.AddVal2Diag(i_point, n_CV + i_aux, -fn->GetAuxSourceCons(i_point, i_aux) * volume);
       }
@@ -648,6 +652,13 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
 
   vector<su2double> source_scalar(flamelet_config_options.n_scalars);
   for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++) source_scalar[iCV] = table_sources[iCV];
+
+  /*--- Derivative of the progress variable source for the implicit Jacobian, zero where the source is clipped. ---*/
+  if ((config->GetKind_TimeIntScheme() == EULER_IMPLICIT) && !AD::TapeActive()) {
+    const su2double dsource =
+        (table_sources[I_PROGVAR] > 0) ? fluid_model_local->GetProgVarSourceJacobian(scalars) : su2double(0.0);
+    static_cast<CSpeciesFlameletVariable*>(nodes)->SetSourceJacobianPV(iPoint, F * dsource);
+  }
 
   /*--- Source term for the auxiliary species transport equations. ---*/
   for (size_t i_aux = 0; i_aux < flamelet_config_options.n_user_scalars; i_aux++) {

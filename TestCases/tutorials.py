@@ -177,7 +177,7 @@ def main():
     premixed_hydrogen.cfg_dir = "../Tutorials/incompressible_flow/Inc_Combustion/1__premixed_hydrogen"
     premixed_hydrogen.cfg_file = "H2_burner.cfg"
     premixed_hydrogen.test_iter = 10
-    premixed_hydrogen.test_vals = [-8.769581, -9.719802, -10.162061, -3.439369, -11.529638]
+    premixed_hydrogen.test_vals = [-8.769561, -9.719764, -10.153709, -3.439324, -11.528261]
     test_list.append(premixed_hydrogen)
 
     ### Compressible Flow

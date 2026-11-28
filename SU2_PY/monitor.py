@@ -46,12 +46,15 @@ matplotlib.rcParams["legend.fontsize"] = 20
 
 RESIDUAL_PATTERN = re.compile("rms|Res")
 COEFFICIENT_PATTERN = re.compile("^(CD|CL|CMx|CMy|CMz|CFx|CFy|CFz)$")
-# inner counter: first of these present in the history, else the row index
+# inner counter: first of these present in the history, else the row number from 1
 ITERATION_COLUMNS = ("Inner_Iter", "Outer_Iter")
+INNER_COLUMN = "Inner_Iter"
+OUTER_COLUMN = "Outer_Iter"
 TIME_COLUMN = "Time_Iter"
 MAX_POINTS = 4000
 READ_BLOCK_BYTES = 32 * 1024 * 1024
 UPDATE_INTERVAL_MS = 1000
+INNER_TIP = "Plot every inner iteration, not only the last one of each step"
 LOGO_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logoSU2.png")
 
 
@@ -84,10 +87,13 @@ class HistoryReader:
         self.cols = None
         self.iter_col = None
         self.time_col = None
+        self.outer_col = None
+        self.has_inner_col = False
         self.names = []
         self.buf = np.empty((1024, 0))
         self.iters = np.empty(1024)
         self.times = np.empty(1024)
+        self.outers = np.empty(1024)
         self.n = 0
         self.version += 1
         self.readHeader()
@@ -124,9 +130,14 @@ class HistoryReader:
                 self.iter_col = allnames.index(counter)
                 break
         self.time_col = allnames.index(TIME_COLUMN) if TIME_COLUMN in allnames else None
+        self.outer_col = (
+            allnames.index(OUTER_COLUMN) if OUTER_COLUMN in allnames else None
+        )
+        self.has_inner_col = INNER_COLUMN in allnames
         self.buf = np.empty((1024, len(self.cols)))
         self.iters = np.empty(1024)
         self.times = np.empty(1024)
+        self.outers = np.empty(1024)
         self.offset = offset
 
     # reads the complete lines appended since the last call; returns True if rows were added
@@ -155,7 +166,11 @@ class HistoryReader:
                 wanted = sorted(
                     {
                         *self.cols,
-                        *(c for c in (self.iter_col, self.time_col) if c is not None),
+                        *(
+                            c
+                            for c in (self.iter_col, self.time_col, self.outer_col)
+                            if c is not None
+                        ),
                     }
                 )
                 table = pd.read_csv(
@@ -169,17 +184,22 @@ class HistoryReader:
                 iters = (
                     table[self.iter_col].to_numpy()
                     if self.iter_col is not None
-                    else np.arange(self.n, self.n + len(table), dtype=np.float64)
+                    else np.arange(self.n + 1, self.n + len(table) + 1, dtype=np.float64)
                 )
                 times = (
                     table[self.time_col].to_numpy()
                     if self.time_col is not None
                     else iters
                 )
+                outers = (
+                    table[self.outer_col].to_numpy()
+                    if self.outer_col is not None
+                    else iters
+                )
             except (pd.errors.EmptyDataError, pd.errors.ParserError, ValueError):
                 break
             self.offset += end + 1
-            self.append(rows, iters, times)
+            self.append(rows, iters, times, outers)
             added = True
 
         if added:
@@ -192,35 +212,98 @@ class HistoryReader:
     # True once Time_Iter takes more than one value, i.e. the history is unsteady
     def timeAdvances(self):
         times = self.times[: self.n]
-        return self.hasTime() and self.n > 0 and times.max() > times.min()
+        return bool(self.hasTime() and self.n > 0 and times.max() > times.min())
 
-    # rows at or after iteration 'start', thinned to at most MAX_POINTS;
-    # by time step, only the last row of each Time_Iter is kept
-    def rowsFrom(self, start, byTime=False):
-        counter = self.times if byTime and self.hasTime() else self.iters
-        counter = counter[: self.n]
-        keep = counter >= start
-        if byTime and self.hasTime():
-            keep[:-1] &= counter[1:] != counter[:-1]
-        rows = np.flatnonzero(keep)
-        return rows[:: max(1, -(-len(rows) // MAX_POINTS))]
+    # counter that groups the inner iterations into steps: the first of Time_Iter and
+    # Outer_Iter that advances, else the first present; None without Inner_Iter
+    def stepCounter(self):
+        if not self.has_inner_col or self.n == 0:
+            return None
+        present = []
+        if self.hasTime():
+            present.append(self.times[: self.n])
+        if self.outer_col is not None:
+            present.append(self.outers[: self.n])
+        for steps in present:
+            if steps.max() > steps.min():
+                return steps
+        return present[0] if present else None
 
-    def append(self, rows, iters, times):
+    # True once the history holds more than one step
+    def stepsAdvance(self):
+        steps = self.stepCounter()
+        return steps is not None and bool(steps.max() > steps.min())
+
+    # True when some time step or outer iteration holds more than one row
+    def hasInnerRows(self):
+        steps = self.stepCounter()
+        return steps is not None and bool(np.any(steps[1:] == steps[:-1]))
+
+    # first row, row count and value of every group of equal step counters
+    @staticmethod
+    def groups(steps):
+        starts = np.flatnonzero(np.r_[True, steps[1:] != steps[:-1]])
+        counts = np.diff(np.r_[starts, len(steps)])
+        return starts, counts, steps[starts]
+
+    # inner iterations counted over all steps, assuming Inner_Iter restarts at 0 every step
+    def cumulativeInner(self, steps):
+        starts, counts, _ = self.groups(steps)
+        within = np.arange(self.n) - np.repeat(starts, counts)
+        if self.has_inner_col:
+            within = self.iters[: self.n]
+            lengths = within[starts + counts - 1] + 1
+        else:
+            lengths = counts
+        offsets = np.r_[0, np.cumsum(lengths)[:-1]]
+        return np.repeat(offsets, counts) + within
+
+    # time step plus the fraction of the step, so the last row of a step lands on Time_Iter
+    def fractionalTime(self, steps):
+        starts, counts, values = self.groups(steps)
+        span = counts.astype(np.float64)
+        if len(span) > 1:
+            span[-1] = max(span[-1], span[-2])
+        within = np.arange(self.n) - np.repeat(starts, counts)
+        return np.repeat(values - 1, counts) + (within + 1) / np.repeat(span, counts)
+
+    # rows whose x value, or time step when plotted by time, is at or after 'start', and
+    # their x values, thinned to MAX_POINTS;
+    # without 'inner' only the last row of each time step or outer iteration is kept
+    def select(self, start, byTime=False, inner=False):
+        byTime = byTime and self.hasTime()
+        steps = self.stepCounter()
+        keep = np.ones(self.n, dtype=bool)
+        first = None
+        if steps is None:
+            x = (self.times if byTime else self.iters)[: self.n]
+            if byTime:
+                keep[:-1] = x[1:] != x[:-1]
+        elif inner:
+            x = self.fractionalTime(steps) if byTime else self.cumulativeInner(steps)
+            first = steps if byTime else None
+        else:
+            keep[:-1] = steps[1:] != steps[:-1]
+            x = self.times[: self.n] if byTime else self.cumulativeInner(steps)
+        rows = np.flatnonzero(keep & ((x if first is None else first) >= start))
+        rows = rows[:: max(1, -(-len(rows) // MAX_POINTS))]
+        return rows, x[rows]
+
+    def append(self, rows, iters, times, outers):
         needed = self.n + len(rows)
         if needed > len(self.buf):
             size = max(needed, 2 * len(self.buf))
             grown = np.empty((size, self.buf.shape[1]))
             grown[: self.n] = self.buf[: self.n]
             self.buf = grown
-            grownIters = np.empty(size)
-            grownIters[: self.n] = self.iters[: self.n]
-            self.iters = grownIters
-            grownTimes = np.empty(size)
-            grownTimes[: self.n] = self.times[: self.n]
-            self.times = grownTimes
+            for name in ("iters", "times", "outers"):
+                column = np.empty(size)
+                column[: self.n] = getattr(self, name)[: self.n]
+                setattr(self, name, column)
         self.buf[self.n : needed] = rows
         self.iters[self.n : needed] = iters
         self.times[self.n : needed] = times
+        self.outers[self.n : needed] = outers
         self.n = needed
 
 
@@ -267,7 +350,17 @@ class MatplotlibFigure(QWidget):
         return self.reader.names if self.reader is not None else []
 
     # plots the residuals from iteration 'start' on; ymin/ymax of None means automatic range
-    def plot(self, listonoff, normalize, start, ymin, ymax, byTime=False, update=True):
+    def plot(
+        self,
+        listonoff,
+        normalize,
+        start,
+        ymin,
+        ymax,
+        byTime=False,
+        inner=False,
+        update=True,
+    ):
         if self.reader is None:
             return
         if update:
@@ -280,6 +373,7 @@ class MatplotlibFigure(QWidget):
             ymin,
             ymax,
             byTime,
+            inner,
             self.reader.version,
         )
         if key == self.lastkey:
@@ -297,19 +391,20 @@ class MatplotlibFigure(QWidget):
             ax.set_ylabel(self.ylabel)
             self.lines = [ax.plot([], [], label=names[i])[0] for i in shown]
 
-        ax.set_xlabel(
-            "time iterations" if byTime and self.reader.hasTime() else "iterations"
-        )
+        if byTime and self.reader.hasTime():
+            ax.set_xlabel("time iterations")
+        elif self.reader.stepsAdvance():
+            ax.set_xlabel("cumulative inner iterations")
+        else:
+            ax.set_xlabel("iterations")
         n = self.reader.n
-        rows = self.reader.rowsFrom(start, byTime)
-        x = (
-            self.reader.times if byTime and self.reader.hasTime() else self.reader.iters
-        )[rows]
+        rows, x = self.reader.select(start, byTime, inner)
         for line, i in zip(self.lines, shown):
             y = self.reader.buf[rows, i]
             if normalize and n > 1 and abs(self.reader.buf[1, i]) > 1e-6:
                 y = 1 + y - self.reader.buf[1, i]
             line.set_data(x, y)
+            line.set_marker("o" if len(x) == 1 else "None")
 
         ax.set_autoscaley_on(True)
         ax.relim()
@@ -386,6 +481,7 @@ class PlotTab(QWidget):
         self.normalize = False
         self.chkbx = []
         self.chkbx_names = []
+        self.inner_advance = False
         self.make_tab(title)
 
     def setFile(self, filename, label, tooltip):
@@ -402,6 +498,29 @@ class PlotTab(QWidget):
         if has != self.btn_time.isEnabled() or not has:
             self.btn_time.setEnabled(has)
             self.btn_time.setChecked(has)
+
+    # enabled when some step holds several inner rows; checked by default until a
+    # second step appears, the tooltip gives the reason when greyed out
+    def updateInnerSwitch(self):
+        reader = self.figure.reader
+        has = reader is not None and reader.hasInnerRows()
+        advance = reader is not None and reader.stepsAdvance()
+        if reader is None or has:
+            reason = INNER_TIP
+        elif not reader.has_inner_col:
+            reason = "Not available: no Inner_Iter column, add ITER to HISTORY_OUTPUT"
+        elif reader.stepCounter() is None:
+            reason = "Every row of the history is an inner iteration"
+        else:
+            reason = "Not available: one row per time step, set HISTORY_WRT_FREQ_INNER"
+        self.btn_inner.setToolTip(reason)
+        if has != self.btn_inner.isEnabled() or advance != self.inner_advance or not has:
+            self.btn_inner.setEnabled(has)
+            self.btn_inner.setChecked(
+                (has and not advance)
+                or (reader is not None and reader.has_inner_col and not has and not advance)
+            )
+        self.inner_advance = advance
 
     def setRunning(self, running):
         self.btn_plot_data.setText("stop" if running else "start")
@@ -491,7 +610,13 @@ class PlotTab(QWidget):
         self.btn_time.setToolTip(
             "Plot against Time_Iter (last inner iteration of each step) instead of inner iterations"
         )
+        self.btn_time.setEnabled(False)
         self.btn_time.stateChanged.connect(lambda _: self.changedata())
+
+        self.btn_inner = QCheckBox("Inner iterations")
+        self.btn_inner.setToolTip(INNER_TIP)
+        self.btn_inner.setEnabled(False)
+        self.btn_inner.stateChanged.connect(lambda _: self.changedata())
 
         # now we add all the buttons in a vertical list
         self.btn_layout = QVBoxLayout()
@@ -500,6 +625,7 @@ class PlotTab(QWidget):
         self.btn_layout.addWidget(self.btn_plot_data)
         self.btn_layout.addWidget(self.btn_normalize)
         self.btn_layout.addWidget(self.btn_time)
+        self.btn_layout.addWidget(self.btn_inner)
         self.btn_layout.addLayout(range_layout)
         self.btn_layout.addLayout(self.chk_layout)
 
@@ -542,6 +668,7 @@ class PlotTab(QWidget):
             self.parse(self.edit_ymin, float),
             self.parse(self.edit_ymax, float),
             self.btn_time.isChecked(),
+            self.btn_inner.isChecked(),
             update=update,
         )
 
@@ -552,6 +679,7 @@ class PlotTab(QWidget):
             if self.figure.names() != self.chkbx_names:
                 self.update_chkbx(self.figure.names())
         self.updateTimeSwitch()
+        self.updateInnerSwitch()
         self.draw(update=False)
 
     # ################################### #
@@ -600,7 +728,7 @@ class MyTableWidget(QWidget):
         fname = QFileDialog.getOpenFileName(
             self,
             "Open file",
-            "history.csv",
+            os.path.join(os.getcwd(), "history.csv"),
             filter="csv files (*.csv)\n" "dat files (*.dat)\n" "all files (*)",
         )
         if fname[0] == "":
