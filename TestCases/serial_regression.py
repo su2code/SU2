@@ -123,9 +123,9 @@ def main():
     test_list.append(wedge)
 
     # Supersonic biparabolic airfoil
-    biparabolic           = TestCase('biparabolic')
-    biparabolic.cfg_dir   = "euler/biparabolic"
-    biparabolic.cfg_file  = "BIPARABOLIC.cfg"
+    biparabolic = TestCase('biparabolic')
+    biparabolic.cfg_dir = "euler/biparabolic"
+    biparabolic.cfg_file = "BIPARABOLIC.cfg"
     biparabolic.test_iter = 25
     biparabolic.test_vals = [-2.177974, 0.460848, 0.278048, 3.447020]
     test_list.append(biparabolic)
@@ -1007,7 +1007,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 20
-    edge_PPR.test_vals = [-12.051551, -5.877885, -0.000034, 0.000000]
+    edge_PPR.test_vals = [-12.051128, -5.877603, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
 

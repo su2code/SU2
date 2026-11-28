@@ -604,7 +604,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 25
-    edge_VW.test_vals = [-11.723086, -5.536517, -0.000009, 0.000000]
+    edge_VW.test_vals = [-11.723639, -5.537067, -0.000009, 0.000000]
     test_list.append(edge_VW)
 
     # Rarefaction shock wave edge_PPR

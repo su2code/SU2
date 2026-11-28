@@ -6984,6 +6984,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   }
   END_SU2_OMP_FOR
 
+  /*--- Allocate on the whole team before the master computes periodic slip normals. ---*/
+  if (nPeriodicSend || nPeriodicRecv) AllocatePeriodicComms(nDim);
   SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeModifiedSymmetryNormals(config);)
 }
 
