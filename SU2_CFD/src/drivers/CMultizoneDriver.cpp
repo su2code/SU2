@@ -211,6 +211,7 @@ void CMultizoneDriver::StartSolver() {
 
   }
 
+  CheckPressureOutletFallbacks();
 }
 
 void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
