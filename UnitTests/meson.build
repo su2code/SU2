@@ -22,6 +22,7 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
                        'SU2_CFD/output/CNEMOCompOutput_tests.cpp',
                        'SU2_CFD/output/COutput_convergence_tests.cpp',
                        'SU2_CFD/gradients.cpp',
+                       'SU2_CFD/adaptive_metric.cpp',
                        'SU2_CFD/periodic_limiters.cpp',
                        'SU2_CFD/scalar_muscl.cpp',
                        'SU2_CFD/scalar_limiter_eps.cpp',
@@ -35,6 +36,7 @@ su2_cfd_tests = files(['Common/CConfig_tests.cpp',
                        'SU2_CFD/windowing.cpp',
                        'SU2_CFD/limiters.cpp',
                        'Common/toolboxes/random_toolbox_tests.cpp',
+                       'Common/toolboxes/geometry_toolbox_tests.cpp',
                        'Common/linear_algebra/quantization_tests.cpp',
                        'Common/linear_algebra/edge_residual_blocks_tests.cpp'])
 
@@ -77,6 +79,9 @@ if get_option('enable-tests')
          timeout: 150)
     test('NEMO convergence field migration', python,
          args: files('SU2_CFD/output/check_nemo_convergence_migration.py') + [test_driver.full_path()],
+         timeout: 300)
+    test('CConfig option errors', python,
+         args: files('Common/check_config_errors.py') + [test_driver.full_path()],
          timeout: 300)
   endif
 

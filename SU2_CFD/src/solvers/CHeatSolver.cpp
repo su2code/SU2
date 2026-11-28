@@ -50,6 +50,10 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, const CSolver* fl
 
   nVarGrad = nVar;
 
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nSymMat = 3 * (nDim - 1);
+
   /*--- Define some structures for locating max residuals ---*/
 
   Residual_RMS.resize(nVar,0.0);

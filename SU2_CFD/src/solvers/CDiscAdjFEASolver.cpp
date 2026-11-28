@@ -39,6 +39,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   nVar = dynamic? 3*direct_solver->GetnVar() : direct_solver->GetnVar();
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
