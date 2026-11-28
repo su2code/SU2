@@ -942,7 +942,10 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
   auto inside = [&](su2double pv) {
     scalars[idx_flame_front] = pv;
     fluid_model->SetTDState_T(300.0, scalars);
-    return fluid_model->GetExtrapolation() == 0;
+    if (fluid_model->GetExtrapolation() != 0) return false;
+    /*--- The lookup clamps the progress variable to the table edge, so the upper bound is checked explicitly. ---*/
+    su2double c_min, c_max;
+    return !fluid_model->GetProgressVariableBounds(scalars, c_min, c_max) || pv <= c_max;
   };
 
   /*--- March up while the state stays inside the manifold, until the ignition temperature is exceeded. ---*/
