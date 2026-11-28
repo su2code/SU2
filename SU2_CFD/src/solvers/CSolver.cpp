@@ -215,7 +215,7 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case PERIODIC_IMPLICIT:
-      COUNT_PER_POINT  = nVar;
+      COUNT_PER_POINT  = 2*nVar;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case PERIODIC_LAPLACIAN:
@@ -693,12 +693,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
+              bufDSend[buf_offset+nVar+iVar] = LinSysRes(iPoint, iVar);
             }
 
-            /*--- Rotate the momentum components of the solution array. ---*/
+            /*--- Rotate the momentum components of the solution and of the residual. ---*/
 
             if (rotate_periodic) {
               Rotate(zeros, &base_nodes->GetSolution(iPoint)[1], &bufDSend[buf_offset+1]);
+              Rotate(zeros, &LinSysRes(iPoint, 1), &bufDSend[buf_offset+nVar+1]);
             }
 
             break;
@@ -1326,6 +1328,13 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 for (iVar = 0; iVar < nVar; iVar++) {
                   base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset]);
                   base_nodes->SetSolution_Old(iPoint, iVar, bufDRecv[buf_offset]);
+                  buf_offset++;
+                }
+
+                /*--- The passive point shows the residual of the combined control volume of its master. ---*/
+
+                for (iVar = 0; iVar < nVar; iVar++) {
+                  LinSysRes(iPoint, iVar) = bufDRecv[buf_offset];
                   buf_offset++;
                 }
 
