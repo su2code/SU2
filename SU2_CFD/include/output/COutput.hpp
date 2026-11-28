@@ -665,8 +665,9 @@ protected:
   /*!
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
+   * \param[in] printHeader - If false, only set up the columns and do not write the header to the file.
    */
-  void SetHistoryFileHeader(const CConfig *config);
+  void SetHistoryFileHeader(const CConfig *config, bool printHeader);
 
   /*!
    * \brief Write the history file output
