@@ -240,6 +240,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   static bool SparkActive(const CConfig* config) {
+    /*--- Never ignite while a restart is being loaded, the iteration counters are not set yet
+     *    and the spark would overwrite the restart solution. ---*/
+    if (config->GetLoadingRestart()) return false;
     return config->GetFlameletParsedOptions().SparkActive(config->GetIgnitionIter());
   }
 
