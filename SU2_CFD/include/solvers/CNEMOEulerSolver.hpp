@@ -314,6 +314,15 @@ public:
                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final;
 
   /*!
+   * \brief No projection of the solution at Euler walls for multigrid.
+   * \note The NEMO Euler wall is imposed weakly, through the pressure flux (see BC_Sym_Plane),
+   *       not by the projection of the momentum. The version of the base class also uses the
+   *       index of the primitive velocity, which is not the index of the NEMO momentum.
+   */
+  inline void MultigridProjectEulerWall(CGeometry* /*geometry*/, const CConfig* /*config*/,
+                                        bool /*use_solution_old*/) final {}
+
+  /*!
    * \brief Impose a subsonic inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

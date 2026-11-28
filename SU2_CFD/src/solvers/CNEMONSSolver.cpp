@@ -270,13 +270,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   }
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  /*--- Set "Proportional control" coefficient ---*/
-  const su2double pcontrol = 1.0;
-
-  /*--- Get the locations of the primitive variables ---*/
-  const unsigned short T_INDEX = nodes->GetTIndex();
-  const unsigned short TVE_INDEX = nodes->GetTveIndex();
-
   /*--- Loop over all of the vertices on this boundary marker ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -293,25 +286,16 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     /*--- Initialize the convective & viscous residuals to zero ---*/
     for (auto iVar = 0ul; iVar < nVar; iVar++) {Res_Visc[iVar] = 0.0;}
 
-    /*--- Set the residual on the boundary with the specified heat flux ---*/
-    // TODO: Look into this!
-    // Note: Contributions from qtr and qve are used for proportional control
-    //       to drive the solution toward the specified heatflux more quickly.
-    const auto GradV  = nodes->GetGradient_Primitive(iPoint);
-    su2double dTdn   = 0.0;
-    su2double dTvedn = 0.0;
-    for (auto iDim = 0ul; iDim < nDim; iDim++) {
-      dTdn   += GradV[T_INDEX][iDim]*Normal[iDim];
-      dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
-    }
+    /*--- Set the residual on the boundary with the specified heat flux. The total energy
+     receives the specified flux, which is the sum of the conduction of both energy modes.
+     The vib.-el. energy receives the part conducted by the vib.-el. mode. With one
+     specified flux this part is not known, it is taken in proportion to the thermal
+     conductivities (same normal gradient of both temperatures at the wall). ---*/
     const su2double ktr = nodes->GetThermalConductivity(iPoint);
     const su2double kve = nodes->GetThermalConductivity_ve(iPoint);
 
-    /*--- Compute residual ---*/
-    Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
-                                    Wall_HeatFlux*Area;
-    Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
-                                    Wall_HeatFlux*Area;
+    Res_Visc[nSpecies+nDim]   = Wall_HeatFlux*Area;
+    Res_Visc[nSpecies+nDim+1] = Wall_HeatFlux*Area * kve/(ktr+kve);
 
     /*--- Impose the value of the velocity as a strong boundary
     condition (Dirichlet). Fix the velocity and remove any
@@ -448,15 +432,17 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     if (implicit) {
       su2double Jacobian_i[MAXNVAR][MAXNVAR] = {{0.0}};
 
-      /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
+      /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations.
+       The residual depends on the temperatures of the wall point through the conduction
+       term (factor 1) and through the proportional control term (factor -C). ---*/
       const auto dTdU   = nodes->GetdTdU(iPoint);
       const auto dTvedU = nodes->GetdTvedU(iPoint);
       const su2double theta = GeometryToolbox::SquaredNorm(nDim, UnitNormal);
 
       for (auto iVar = 0ul; iVar < nVar; iVar++) {
-        Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dist_ij*dTdU[iVar] +
-                                              kve*theta/dist_ij*dTvedU[iVar])*Area;
-        Jacobian_i[nSpecies+nDim+1][iVar] = - kve*theta/dist_ij*dTvedU[iVar]*Area;
+        Jacobian_i[nSpecies+nDim][iVar]   = -(C-1.0)*(ktr*theta/dist_ij*dTdU[iVar] +
+                                                      kve*theta/dist_ij*dTvedU[iVar])*Area;
+        Jacobian_i[nSpecies+nDim+1][iVar] = -(C-1.0)*kve*theta/dist_ij*dTvedU[iVar]*Area;
       }
 
       /*--- Enforce the no-slip boundary condition in a strong way by
@@ -464,7 +450,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
        And add the contributions to the Jacobian due to energy. ---*/
       Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
-      for (auto iVar = 1u; iVar <= nDim; iVar++) {
+      for (unsigned long iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
         Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
@@ -588,7 +574,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
           // Temperature
           for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
             for (auto jSpecies = 0ul; jSpecies < nSpecies; jSpecies++) {
-              Jacobian_j[nSpecies+nDim][iSpecies] += Jacobian_j[jSpecies][iSpecies]*hs[iSpecies];
+              Jacobian_j[nSpecies+nDim][iSpecies] += Jacobian_j[jSpecies][iSpecies]*hs[jSpecies];
             }
             Jacobian_j[nSpecies+nDim][nSpecies+nDim] += Res_Visc[iSpecies]/Area*(Ru/Ms[iSpecies] +
                                                                                  Cvtrs[iSpecies]  );
@@ -598,7 +584,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
           // Vib.-El. Temperature
           for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
             for (auto jSpecies = 0ul; jSpecies < nSpecies; jSpecies++)
-              Jacobian_j[nSpecies+nDim+1][iSpecies] += Jacobian_j[jSpecies][iSpecies]*eves[iSpecies];
+              Jacobian_j[nSpecies+nDim+1][iSpecies] += Jacobian_j[jSpecies][iSpecies]*eves[jSpecies];
             Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
           }
 
@@ -631,7 +617,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         const auto& RxnTable = FluidModel->GetCatalyticRecombination();
 
         /*--- Common catalytic flux factor ---*/
-        const su2double factor = gam*rho*sqrt(RuSI*Tw/2/PI_NUMBER)*Area;
+        const su2double factor = gam*rho*sqrt(Ru*Tw/2/PI_NUMBER)*Area;
 
         /*--- Compute catalytic recombination flux ---*/
         // Ref: 10.2514/6.2022-1636
@@ -642,9 +628,10 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         }
       }
 
+      /*--- Energy carried by the species fluxes. The species residuals already include the area. ---*/
       for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++) {
-        Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies])*Area;
-        Res_Visc[nSpecies+nDim+1] += (Res_Visc[iSpecies]*eves[iSpecies])*Area;
+        Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs[iSpecies];
+        Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves[iSpecies];
       }
 
       /*--- Viscous contribution to the residual at the wall ---*/
@@ -687,6 +674,11 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   const unsigned short T_INDEX   = nodes->GetTIndex();
   const unsigned short VEL_INDEX = nodes->GetVelIndex();
   const unsigned short TVE_INDEX = nodes->GetTveIndex();
+  const unsigned short RHOS_INDEX = nodes->GetRhosIndex();
+
+  /*--- Universal gas constant [J/(kmol*K)] and molar masses [kg/kmol] ---*/
+  const su2double Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
+  const auto& Ms = FluidModel->GetSpeciesMolarMass();
 
   /*--- Loop over boundary points to calculate energy flux ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -735,8 +727,10 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
     /*--- Retrieve Primitive Gradients ---*/
     const auto Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
 
-    /*--- Calculate specific gas constant --- */
-    const su2double GasConstant = FluidModel->ComputeGasConstant();
+    /*--- Calculate specific gas constant of the mixture at the wall point --- */
+    su2double GasConstant = 0.0;
+    for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
+      GasConstant += nodes->GetPrimitive(iPoint, RHOS_INDEX+iSpecies)/Density * Ru/Ms[iSpecies];
 
     /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
     const su2double dTn = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
@@ -745,11 +739,16 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
     /*--- Calculate molecular mean free path ---*/
     const su2double Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2.0*GasConstant*Ti));
 
-    /*--- Calculate Temperature Slip ---*/
-    su2double Tslip = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;
+    /*--- Calculate Temperature Slip. The jump of the vib.-el. temperature is the
+     jump of the temperature times the ratio of the thermal diffusivities and of
+     the normal gradients. It is written without the division by dTn, which can be
+     zero. A gas with no vib.-el. heat capacity has no jump. ---*/
+    const su2double SlipCoeff = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda;
+
+    su2double Tslip = SlipCoeff*dTn+Twall;
 
     su2double Tslip_ve = Twall;
-    if (dTven !=0) Tslip_ve = (Tslip-Twall)*(kve*rhoCvtr/dTn)/(ktr*rhoCvve/dTven)+Twall;
+    if (rhoCvve > EPS) Tslip_ve = SlipCoeff*dTven*(kve*rhoCvtr)/(ktr*rhoCvve)+Twall;
 
     /*--- Calculate temperature gradients tangent to surface ---*/
     su2double Vector_Tangent_dT[MAXNDIM] = {0.0}, Vector_Tangent_dTve[MAXNDIM] = {0.0};
