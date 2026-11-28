@@ -34,6 +34,10 @@ install_data(['SU2/io/config.py',
               'SU2/io/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/io'))
 
+install_data(['SU2/adaptive_metric/resolver.py',
+              'SU2/adaptive_metric/__init__.py'],
+	      install_dir: join_paths(get_option('bindir'), 'SU2/adaptive_metric'))
+
 install_data(['SU2/opt/project.py',
               'SU2/opt/scipy_tools.py',
               'SU2/opt/__init__.py'],
@@ -74,3 +78,10 @@ install_data(['SU2_Nastran/__init__.py',
         install_dir: join_paths(get_option('bindir'), 'SU2_Nastran'))
 
 install_subdir(['../externals/FADO'], install_dir: get_option('bindir'))
+
+install_data(['monitor.py'],
+             install_dir: join_paths(get_option('bindir')))
+
+install_data(['SU2_MON'],
+             install_dir: join_paths(get_option('bindir')),
+             install_mode: 'rwxr-xr-x')
