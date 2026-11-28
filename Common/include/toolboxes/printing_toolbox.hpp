@@ -84,6 +84,12 @@ class CTablePrinter {
   int GetNumColumns() const;
 
   /*!
+   * \brief Get the header names of all columns added so far.
+   * \return Vector of column header names.
+   */
+  const std::vector<std::string>& GetColumnHeaders() const { return column_headers_; }
+
+  /*!
    * \brief Get total width of the table.
    * \return Total width of the table.
    */

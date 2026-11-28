@@ -1128,7 +1128,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
   return TimeConvergence;
 }
 
-void COutput::SetHistoryFileHeader(const CConfig *config) {
+void COutput::SetHistoryFileHeader(const CConfig *config, bool printHeader) {
 
   unsigned short iField_Output = 0,
       iReqField = 0,
@@ -1163,6 +1163,10 @@ void COutput::SetHistoryFileHeader(const CConfig *config) {
       }
     }
   }
+
+  /*--- When appending to an existing history file, the header is already there. ---*/
+
+  if (!printHeader) return;
 
   if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) {
     histFile << "VARIABLES = \\" << endl;
@@ -1378,9 +1382,25 @@ void COutput::CheckFullMG_Startup(const CConfig *config) const {
 
 void COutput::PrepareHistoryFile(CConfig *config){
 
-  /*--- Open the history file ---*/
+  /*--- With WRT_HISTORY_OVERWRITE= NO, read the column names of an existing history file. ---*/
 
-  histFile.open(historyFilename, ios::out);
+  vector<string> existingColumns;
+  if (!config->GetWrt_History_Overwrite()) {
+    ifstream existingFile(historyFilename);
+    string headerLine;
+    getline(existingFile, headerLine);
+    if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) {
+      getline(existingFile, headerLine);  // the first line is "VARIABLES = \"
+    }
+    for (auto& column : PrintingToolbox::split(headerLine, historySep[0])) {
+      existingColumns.push_back(PrintingToolbox::trim(column));
+    }
+  }
+  const bool appendToFile = !existingColumns.empty();
+
+  /*--- Open the history file. Appending keeps the existing rows, otherwise the file is overwritten. ---*/
+
+  histFile.open(historyFilename, appendToFile ? ios::app : ios::out);
 
   /*--- Create and format the history file table ---*/
 
@@ -1390,9 +1410,18 @@ void COutput::PrepareHistoryFile(CConfig *config){
   historyFileTable->SetPrintHeaderBottomLine(false);
   historyFileTable->SetPrecision(config->GetOutput_Precision());
 
-  /*--- Add the header to the history file. ---*/
+  /*--- Set up the columns, and write the header unless it is already in the file. ---*/
 
-  SetHistoryFileHeader(config);
+  SetHistoryFileHeader(config, !appendToFile);
+
+  /*--- When appending, the columns of the existing file must match the requested HISTORY_OUTPUT. ---*/
+
+  if (appendToFile && existingColumns != historyFileTable->GetColumnHeaders()) {
+    SU2_MPI::Error("The columns of the existing history file " + historyFilename +
+                   " do not match the requested HISTORY_OUTPUT.\n"
+                   "Use the same HISTORY_OUTPUT as the previous run, or set WRT_HISTORY_OVERWRITE= YES.",
+                   CURRENT_FUNCTION);
+  }
 
 }
 
