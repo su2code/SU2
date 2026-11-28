@@ -46,30 +46,16 @@ CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
   SU2_ZONE_SCOPED
 
-  unsigned long iPoint;
-  unsigned short iDim;
-
-  su2double CP[3]={0.0,0.0,0.0};
-  su2double alpha = config->GetHeatSource_Rot_Z() * PI_NUMBER/180.0;
-  su2double OP_rot[3]={0.0,0.0,0.0};
-  const su2double *OP;
+  const su2double alpha = config->GetHeatSource_Rot_Z() * PI_NUMBER/180.0;
   const su2double *OC = config->GetHeatSource_Center();
   const su2double *Axes = config->GetHeatSource_Axes();
-  su2double check;
+
   // Reset the boolean for all points
   nodes->ResetVol_HeatSource();
   // Loop over all points and determine whether they are inside
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-    check = 0;
-    OP = geometry->nodes->GetCoord(iPoint);
-    // Reference point with respect to center of the ellipse
-    for (iDim = 0; iDim < nDim; iDim++) CP[iDim] = OP[iDim]-OC[iDim];
-    // Rotate point with respect to Z axis
-    OP_rot[0] = OC[0] + CP[0]*cos(alpha) + CP[1]*sin(alpha);
-    OP_rot[1] = OC[1] - CP[0]*sin(alpha) + CP[1]*cos(alpha);
-    // Check if rotated point is inside the ellipse
-    for (iDim = 0; iDim < nDim; iDim++) check += pow(OP_rot[iDim]-OC[iDim],2.0)/pow(Axes[iDim], 2.0);
-    if (check <=1) nodes->SetVol_HeatSource(iPoint);
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    const auto *OP = geometry->nodes->GetCoord(iPoint);
+    if (GeometryToolbox::PointInEllipsoid(nDim, OP, OC, Axes, alpha)) nodes->SetVol_HeatSource(iPoint);
   }
 
 }
