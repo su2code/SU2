@@ -162,6 +162,10 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
 
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
+      /*--- Set the instance index, so that each time instance reads its own restart file. ---*/
+
+      config_container[iZone]->SetiInst(iInst);
+
       /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
        The solver classes are specific to a particular set of governing equations,
        and they contain the subroutines with instructions for computing each spatial
