@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include <numeric>
 #include <utility>
 #include <vector>
@@ -318,3 +319,62 @@ bool CFileWriter::CloseMPIFile(){
   return true;
 }
 
+string CFileWriter::UnquotedFieldName(string name) {
+  name.erase(remove(name.begin(), name.end(), '"'), name.end());
+  return name;
+}
+
+vector<CFileWriter::FieldKind> CFileWriter::ClassifyFields(const vector<string>& fieldNames, unsigned long varStart,
+                                                           unsigned short nDim) {
+  const vector<string> vectorSuffixes = (nDim == 3) ? vector<string>{"_x", "_y", "_z"} : vector<string>{"_x", "_y"};
+  const vector<string> tensorSuffixes = (nDim == 3) ? vector<string>{"_xx", "_xy", "_yy", "_xz", "_yz", "_zz"}
+                                                    : vector<string>{"_xx", "_xy", "_yy"};
+
+  vector<FieldKind> kinds(fieldNames.size(), FieldKind::SCALAR);
+
+  /*--- Check if the fields starting at iField are the components of a group. ---*/
+  auto isGroup = [&](unsigned long iField, const vector<string>& suffixes) {
+    if (iField + suffixes.size() > fieldNames.size()) return false;
+    const string first = UnquotedFieldName(fieldNames[iField]);
+    const auto& suffix = suffixes.front();
+    if (first.size() <= suffix.size() || first.compare(first.size() - suffix.size(), suffix.size(), suffix) != 0)
+      return false;
+    const string prefix = first.substr(0, first.size() - suffix.size());
+    for (auto iComp = 1ul; iComp < suffixes.size(); ++iComp) {
+      if (UnquotedFieldName(fieldNames[iField + iComp]) != prefix + suffixes[iComp]) return false;
+    }
+    return true;
+  };
+
+  /*--- Mark the first component of a group with its kind and the other components as skipped. ---*/
+  auto markGroup = [&](unsigned long iField, FieldKind kind, unsigned long nComp) {
+    kinds[iField] = kind;
+    for (auto iComp = 1ul; iComp < nComp; ++iComp) kinds[iField + iComp] = FieldKind::SKIP;
+    return nComp;
+  };
+
+  auto iField = varStart;
+  while (iField < fieldNames.size()) {
+    if (isGroup(iField, tensorSuffixes)) {
+      iField += markGroup(iField, FieldKind::TENSOR, tensorSuffixes.size());
+    } else if (isGroup(iField, vectorSuffixes)) {
+      iField += markGroup(iField, FieldKind::VECTOR, vectorSuffixes.size());
+    } else {
+      ++iField;
+    }
+  }
+  return kinds;
+}
+
+void CFileWriter::GetSymmetricTensor(unsigned long firstVar, unsigned long iPoint,
+                                     passivedouble (&tensor)[3][3]) const {
+  const bool is3D = (dataSorter->GetnDim() == 3);
+  auto component = [&](unsigned long iComp) { return dataSorter->GetData(firstVar + iComp, iPoint); };
+
+  tensor[0][0] = component(0);
+  tensor[0][1] = tensor[1][0] = component(1);
+  tensor[1][1] = component(2);
+  tensor[0][2] = tensor[2][0] = is3D ? component(3) : 0.0;
+  tensor[1][2] = tensor[2][1] = is3D ? component(4) : 0.0;
+  tensor[2][2] = is3D ? component(5) : 0.0;
+}

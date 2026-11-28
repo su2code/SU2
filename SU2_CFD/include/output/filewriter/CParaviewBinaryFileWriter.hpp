@@ -77,7 +77,13 @@ class CParaviewBinaryFileWriter final: public CFileWriter{
    * \brief Write 3 fields starting at firstVar as a vector (the third component is 0 in 2D).
    * \param[in] firstVar - Index of the first field in the data sorter.
    */
-  void WriteVectorArray(unsigned short firstVar);
+  void WriteVectorArray(unsigned long firstVar);
+
+  /*!
+   * \brief Write a symmetric tensor field as a full 3x3 tensor of each point.
+   * \param[in] firstVar - Index of the xx component in the data sorter (see CFileWriter::GetSymmetricTensor).
+   */
+  void WriteTensorArray(unsigned long firstVar);
 
   /*!
    * \brief Write the point values of this rank (nComponents per point) at their place in the file.
