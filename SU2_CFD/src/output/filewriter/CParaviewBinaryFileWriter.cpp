@@ -95,7 +95,7 @@ void CParaviewBinaryFileWriter::WritePointArray(vector<float>& buffer, unsigned 
                         sizeInBytesPerPoint*dataSorter->GetnPointCumulative(rank));
 }
 
-void CParaviewBinaryFileWriter::WriteVectorArray(unsigned short firstVar) {
+void CParaviewBinaryFileWriter::WriteVectorArray(unsigned long firstVar) {
 
   /*--- There are always 3 components, the third one is 0 in 2D. ---*/
 
@@ -113,6 +113,21 @@ void CParaviewBinaryFileWriter::WriteVectorArray(unsigned short firstVar) {
     }
   }
   WritePointArray(buffer, NCOORDS);
+}
+
+void CParaviewBinaryFileWriter::WriteTensorArray(unsigned long firstVar) {
+
+  constexpr unsigned short NTENSOR = 9;
+  const unsigned long myPoint = dataSorter->GetnPoints();
+
+  vector<float> buffer(myPoint*NTENSOR);
+  for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) {
+    passivedouble tensor[3][3];
+    GetSymmetricTensor(firstVar, iPoint, tensor);
+    for (unsigned short i = 0; i < 3; i++)
+      for (unsigned short j = 0; j < 3; j++) buffer[iPoint*NTENSOR + 3*i + j] = (float)tensor[i][j];
+  }
+  WritePointArray(buffer, NTENSOR);
 }
 
 void CParaviewBinaryFileWriter::WritePoints() {
@@ -229,39 +244,47 @@ void CParaviewBinaryFileWriter::WritePointData() {
 
   const unsigned short varStart = (dataSorter->GetnDim() == 3) ? 3 : 2;
 
-  /*--- Loop over all variables that have been registered in the output. A field ending in "_x" starts a
-   vector, written with its "_y" (and "_z") components, which are then skipped. ---*/
+  /*--- Group the vector and tensor components of the fields. ---*/
 
-  unsigned short VarCounter = varStart;
+  const auto fieldKinds = ClassifyFields(fieldNames, varStart, dataSorter->GetnDim());
+
+  /*--- Loop over all variables that have been registered in the output. ---*/
+
   for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
 
-    string fieldname = fieldNames[iField];
-    fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
+    string fieldname = UnquotedFieldName(fieldNames[iField]);
 
-    const bool isVector = fieldNames[iField].find("_x") != string::npos;
-    const bool isY = fieldNames[iField].find("_y") != string::npos;
-    const bool isZ = fieldNames[iField].find("_z") != string::npos;
+    switch (fieldKinds[iField]) {
+      case FieldKind::TENSOR:
 
-    if (isY || isZ) {
-      VarCounter += isY + isZ;
-    } else if (isVector) {
+        /*--- Remove the "_xx" from the name; tensors are written as full 3x3 matrices. ---*/
 
-      /*--- Remove the "_x" from the name. ---*/
+        fieldname.erase(fieldname.end()-3, fieldname.end());
+        WriteMPIString("\nTENSORS " + fieldname + " float\n", MASTER_NODE);
+        WriteTensorArray(iField);
+        break;
 
-      fieldname.erase(fieldname.end()-2, fieldname.end());
-      WriteMPIString("\nVECTORS " + fieldname + " float\n", MASTER_NODE);
-      WriteVectorArray(VarCounter);
-      VarCounter++;
+      case FieldKind::VECTOR:
 
-    } else {
+        /*--- Remove the "_x" from the name. ---*/
 
-      WriteMPIString("\nSCALARS " + fieldname + " float 1\n", MASTER_NODE);
-      WriteMPIString("LOOKUP_TABLE default\n", MASTER_NODE);
+        fieldname.erase(fieldname.end()-2, fieldname.end());
+        WriteMPIString("\nVECTORS " + fieldname + " float\n", MASTER_NODE);
+        WriteVectorArray(iField);
+        break;
 
-      vector<float> buffer(myPoint);
-      for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) buffer[iPoint] = (float)dataSorter->GetData(VarCounter, iPoint);
-      WritePointArray(buffer, 1);
-      VarCounter++;
+      case FieldKind::SCALAR: {
+        WriteMPIString("\nSCALARS " + fieldname + " float 1\n", MASTER_NODE);
+        WriteMPIString("LOOKUP_TABLE default\n", MASTER_NODE);
+
+        vector<float> buffer(myPoint);
+        for (auto iPoint = 0ul; iPoint < myPoint; iPoint++) buffer[iPoint] = (float)dataSorter->GetData(iField, iPoint);
+        WritePointArray(buffer, 1);
+        break;
+      }
+
+      case FieldKind::SKIP:
+        break;
     }
   }
 }

@@ -204,6 +204,7 @@ class C3DContainerDecorator {
  */
 using C3DIntMatrix = C3DContainerDecorator<su2matrix<unsigned long> >;
 using C3DDoubleMatrix = C3DContainerDecorator<su2activematrix>;
+using C3DPassiveMatrix = C3DContainerDecorator<su2passivematrix>;
 using CVectorOfMatrix = C3DDoubleMatrix;
 
 /*!
