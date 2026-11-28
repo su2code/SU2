@@ -304,12 +304,14 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   /*--- Upwind second order reconstruction ---*/
   if (muscl && !center && !Output) {
 
-    /*--- Calculate the gradients ---*/
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetPrimitive_Gradient_GG(geometry, config, true);
-    }
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetPrimitive_Gradient_LS(geometry, config, true);
+    /*--- Gradient computation for MUSCL reconstruction. ---*/
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
+      default: break;
     }
 
     /*--- Limiter computation ---*/
@@ -441,7 +443,6 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 
     /*--- Pass supplementary information to CNumerics ---*/
     SetNumericsThermoState(numerics, nodes, iPoint, nodes, jPoint);
-    numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(jPoint));
 
     /*--- Set the largest convective eigenvalue ---*/
     numerics->SetLambda(nodes->GetLambda(iPoint), nodes->GetLambda(jPoint));
@@ -518,7 +519,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       numerics->SetPrimitive   (V_i, V_j);
       numerics->SetConservative(U_i, U_j);
       SetNumericsThermoState(numerics, nodes, iPoint, nodes, jPoint);
-      numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(jPoint));
 
     } else {
 
@@ -1356,8 +1356,10 @@ void CNEMOEulerSolver::AddViscousBoundaryResidual(CGeometry *geometry, CNumerics
                                  nodes_bound->GetSolution(iPoint_bound));
   visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
                               nodes_bound->GetPrimitive(iPoint_bound));
+  /*--- The boundary state has no gradient of its own, the gradient of the boundary point is used
+   for both states (the numerics average the two). ---*/
   visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                    nodes_bound->GetGradient_Primitive(iPoint_bound));
+                                    nodes->GetGradient_Primitive(iPoint));
 
   /*--- Pass supplementary information to CNumerics ---*/
   SetNumericsThermoState(visc_numerics, nodes, iPoint, nodes_bound, iPoint_bound);
@@ -1509,7 +1511,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
 
       /*--- Pass supplementary information to CNumerics ---*/
       SetNumericsThermoState(conv_numerics, nodes, iPoint, node_infty, 0);
-      conv_numerics->SetGamma(nodes->GetGamma(iPoint), node_infty->GetGamma(0));
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
@@ -1599,8 +1600,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Compute Gamma using domain state ---*/
-      Gamma = nodes->GetGamma(iPoint);
-      Gamma_Minus_One = Gamma - 1.0;
+      const su2double GammaDomain = nodes->GetGamma(iPoint);
+      const su2double GammaMinusOne = GammaDomain - 1.0;
 
       /*--- Retrieve the specified back pressure for this outlet. ---*/
       su2double P_Exit;
@@ -1651,16 +1652,16 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
          (T and Tve) and species concentraition are also assumed to be extrapolated.
          ---*/
 
-        const su2double Entropy = Pressure*pow(1.0/Density,Gamma);
-        const su2double Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+        const su2double Entropy = Pressure*pow(1.0/Density,GammaDomain);
+        const su2double Riemann = Vn + 2.0*SoundSpeed/GammaMinusOne;
 
         /*--- Compute the new fictious state at the outlet ---*/
         //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
         //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
-        Density    = pow(P_Exit/Entropy,1.0/Gamma);
+        Density    = pow(P_Exit/Entropy,1.0/GammaDomain);
         Pressure   = P_Exit;
-        SoundSpeed = sqrt(Gamma*P_Exit/Density);
-        const su2double Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+        SoundSpeed = sqrt(GammaDomain*P_Exit/Density);
+        const su2double Vn_Exit    = Riemann - 2.0*SoundSpeed/GammaMinusOne;
         Velocity2  = 0.0;
         for (auto iDim = 0ul; iDim < nDim; iDim++) {
           Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
@@ -1716,7 +1717,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 
       /*--- Passing supplementary information to CNumerics ---*/
       SetNumericsThermoState(conv_numerics, nodes, iPoint, node_infty, 0);
-      conv_numerics->SetGamma(nodes->GetGamma(iPoint), node_infty->GetGamma(0));
       if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
         conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
@@ -1799,6 +1799,8 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
 
     /*--- Pass supplementary info to CNumerics ---*/
     SetNumericsThermoState(conv_numerics, nodes, iPoint, &node_inlet, 0);
+    if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+      conv_numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
     const bool dynamic_grid = config->GetGrid_Movement();
     if (dynamic_grid)
@@ -1857,7 +1859,8 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(
 
     /*--- Pass supplementary information to CNumerics ---*/
     SetNumericsThermoState(conv_numerics, nodes, iPoint, nodes, iPoint);
-    conv_numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(iPoint));
+    if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+      conv_numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
     const bool dynamic_grid = config->GetGrid_Movement();
     if (dynamic_grid)
