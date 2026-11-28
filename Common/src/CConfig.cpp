@@ -4721,6 +4721,31 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                      CURRENT_FUNCTION);
     }
 
+    if (nemo && !noneq_gas) {
+      SU2_MPI::Error("The NEMO solver requires FLUID_MODEL= SU2_NONEQ or MUTATIONPP.", CURRENT_FUNCTION);
+    }
+
+    /*--- The NEMO fluid models work with dimensional values, and the solver passes
+     its values to them without scaling. ---*/
+    if (nemo && Ref_NonDim != DIMENSIONAL) {
+      SU2_MPI::Error("The NEMO solver requires REF_DIMENSIONALIZATION= DIMENSIONAL.", CURRENT_FUNCTION);
+    }
+
+    /*--- SU2TCLIB has no collision integrals for argon. ---*/
+    if (Kind_FluidModel == SU2_NONEQ && GasModel == "ARGON" && Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS) {
+      SU2_MPI::Error("The Gupta-Yos transport model is not available for GAS_MODEL= ARGON using SU2TCLIB.\n"
+                     "Please use the WILKE or SUTHERLAND transport model instead.", CURRENT_FUNCTION);
+    }
+
+    /*--- The NEMO solver reads one mass fraction per species from these lists. ---*/
+    if (nemo && nMarker_Supersonic_Inlet != 0 && nSpecies_inlet != nSpecies) {
+      SU2_MPI::Error("INLET_GAS_COMPOSITION must have one mass fraction per species, as GAS_COMPOSITION.", CURRENT_FUNCTION);
+    }
+
+    if (nemo && Supercatalytic_Wall && nWall_Catalytic != 0 && nSpecies_Cat_Wall != nSpecies) {
+      SU2_MPI::Error("SUPERCATALYTIC_WALL_COMPOSITION must have one mass fraction per species, as GAS_COMPOSITION.", CURRENT_FUNCTION);
+    }
+
     if (Kind_FluidModel == SU2_NONEQ && GasModel == "AIR-7" && nWall_Catalytic != 0) {
       SU2_MPI::Error("Catalytic wall recombination is not yet available for ionized flows in SU2_NEMO.", CURRENT_FUNCTION);
     }

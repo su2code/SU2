@@ -1046,6 +1046,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Density_FreeStream = FluidModel->GetDensity();
   soundspeed         = FluidModel->ComputeSoundSpeed();
   Gamma              = FluidModel->ComputeGamma();
+  Mach2Vel_FreeStream = soundspeed;
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
   if (nDim == 2) {
