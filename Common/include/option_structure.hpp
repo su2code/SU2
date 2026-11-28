@@ -2214,6 +2214,18 @@ static const MapType<std::string, INLET_TYPE> Inlet_Map = {
 };
 
 /*!
+ * \brief Velocity of the backflow that enters a static-pressure outlet from its reservoir (MARKER_OUTLET_BACKFLOW).
+ */
+enum class OUTLET_BACKFLOW_TYPE {
+  DIRECTION,           /*!< \brief Along the given direction (zero: inward normal), no other velocity. */
+  INTERIOR_TANGENTIAL, /*!< \brief Along the inward normal, plus the tangential velocity of the interior. */
+};
+static const MapType<std::string, OUTLET_BACKFLOW_TYPE> OutletBackflow_Map = {
+  MakePair("DIRECTION", OUTLET_BACKFLOW_TYPE::DIRECTION)
+  MakePair("INTERIOR_TANGENTIAL", OUTLET_BACKFLOW_TYPE::INTERIOR_TANGENTIAL)
+};
+
+/*!
  * \brief Types outlet boundary treatments
  */
 enum class INC_OUTLET_TYPE {

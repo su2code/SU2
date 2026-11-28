@@ -32,12 +32,15 @@
 namespace {
 // BC_Riemann static-pressure outlet on a moving grid, at the start-up state of an MDM nozzle. A low back pressure
 // leaves the Peng-Robinson validity range under a linear characteristic jump, but not along the isentrope.
-void RiemannPressureOutlet(su2double pressure, bool backflow = false) {
+// The extra options can add a backflow reservoir (MARKER_OUTLET_BACKFLOW) and select an unsteady run.
+void RiemannPressureOutlet(su2double pressure, bool backflow = false, const std::string& extraOptions = "") {
+  CAPTURE(pressure, backflow, extraOptions);
   UnitQuadTestCase test;
   std::ostringstream options;
   options << OutletTestOptions(2, 1, 0, true, "5,129,5")
           << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 20,0,0\nMARKER_EULER= (x_minus,y_minus,y_plus)\n"
-          << "MARKER_MONITORING= (x_minus)\nMARKER_RIEMANN= (x_plus,STATIC_PRESSURE," << pressure << ",0,0,0,0)\n";
+          << "MARKER_MONITORING= (x_minus)\nMARKER_RIEMANN= (x_plus,STATIC_PRESSURE," << pressure << ",0,0,0,0)\n"
+          << extraOptions;
   test.config_options = options.str();
   test.InitConfig();
   test.InitGeometry();
@@ -54,6 +57,8 @@ void RiemannPressureOutlet(su2double pressure, bool backflow = false) {
   const su2double grid[2] = {20, 0};
   SetOutletTestState(test, *gas, state, grid, 0);
   const auto marker = OutletTestMarker(*test.config, "x_plus");
+  CEulerSolver::PressureOutletReservoir reservoir;
+  const bool hasReservoir = OutletTestReservoir(*test.config, "x_plus", reservoir);
   SU2_OMP_PARALLEL {
     CUpwGeneralHLLC_Flow numerics(2, 4, test.config.get());
     solver->BC_Riemann(test.geometry.get(), test.solver, &numerics, nullptr, test.config.get(), marker);
@@ -66,7 +71,7 @@ void RiemannPressureOutlet(su2double pressure, bool backflow = false) {
     su2double normal[2], unit[2], boundary[4], flux[4];
     OutwardNormal(*test.geometry, marker, vertex, 2, normal, unit);
     if (ExpectedSteadyOutletState(*gas, 2, state, unit, GeometryToolbox::DotProduct(2, grid, unit), pressure, 0, false,
-                                  0, boundary))
+                                  0, boundary, hasReservoir ? &reservoir : nullptr))
       ++fallbacks;
     PhysicalOutletFlux(*gas, numerics, 2, boundary, normal, grid, flux);
     CheckOutletPrimitives(solver->GetCharacPrimVar(marker, vertex), *gas, 2);
@@ -75,8 +80,9 @@ void RiemannPressureOutlet(su2double pressure, bool backflow = false) {
     CheckRiemannOutletJacobian(solver->Jacobian.GetBlock(point, point), *gas, numerics, 2, state, boundary, unit,
                                normal, grid);
   }
-  // Full backflow and an invalid pressure use the steady fallback states, which the monitor counts.
-  CHECK((fallbacks > 0) == (backflow || pressure <= 0));
+  // Full backflow without a reservoir and an invalid pressure use the steady fallback states, which the monitor
+  // counts.
+  CHECK((fallbacks > 0) == ((backflow && !hasReservoir) || pressure <= 0));
   CHECK(CountOutletFallbacks(solver, test.config.get()) == fallbacks);
 }
 }  // namespace
@@ -88,6 +94,14 @@ TEST_CASE("Riemann pressure outlet follows the isentrope from the start-up state
 TEST_CASE("Riemann pressure outlet uses the steady fallback states", "[Pressure-outlet]") {
   RiemannPressureOutlet(0);
   RiemannPressureOutlet(1400000, true);
+}
+
+TEST_CASE("Riemann pressure outlet takes backflow from the reservoir", "[Pressure-outlet][Outlet-backflow]") {
+  const std::string reservoir = "MARKER_OUTLET_BACKFLOW= (x_plus,600,1550000,0,0,0)\n";
+  const std::string unsteady = "TIME_DOMAIN= YES\nTIME_MARCHING= DUAL_TIME_STEPPING-2ND_ORDER\nTIME_STEP= 1e-5\n";
+  // Outflow is unaffected by the reservoir; backflow takes the reservoir state in steady and unsteady runs.
+  for (const auto& extra : {reservoir, reservoir + unsteady})
+    for (const auto backflow : {false, true}) RiemannPressureOutlet(1400000, backflow, extra);
 }
 
 TEST_CASE("Nonlinear pressure outflow preserves the acoustic invariant and frame", "[Pressure-outlet]") {

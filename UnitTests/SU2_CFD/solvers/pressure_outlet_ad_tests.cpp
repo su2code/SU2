@@ -24,6 +24,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <tuple>
 #include "catch.hpp"
 #include "pressure_outlet_test_utils.hpp"
 
@@ -32,8 +33,9 @@ using Status = CEulerSolver::PressureOutletStatus;
 
 // Compare the derivative of every output with central finite differences of the complete map, one input at a time.
 // Inputs: four conservative variables, then the imposed pressure and the grid speed along the normal.
+// The margin can include the relative noise of a map (e.g. of nested EOS integrations) divided by the step.
 template <class Map>
-void CheckMapDerivatives(const Map& evaluate, const double* values, const double* scale) {
+void CheckMapDerivatives(const Map& evaluate, const double* values, const double* scale, double relativeNoise = 0) {
   for (auto column = 0u; column < 6; ++column) {
     const double delta = 2e-5 * fmax(fabs(values[column]), scale[column]);
     su2double plus[6], minus[6], fp[4], fm[4];
@@ -67,7 +69,9 @@ void CheckMapDerivatives(const Map& evaluate, const double* values, const double
       const double derivative = SU2_TYPE::GetDerivative(output[row]);
 #endif
       INFO("row=" << row << " column=" << column);
-      CHECK(derivative == Approx(expected).epsilon(3e-4).margin(2e-4));
+      const double noise =
+          relativeNoise * fmax(fabs(SU2_TYPE::GetValue(fp[row])), fabs(SU2_TYPE::GetValue(fm[row]))) / delta;
+      CHECK(derivative == Approx(expected).epsilon(3e-4).margin(2e-4 + noise));
     }
   }
 }
@@ -106,5 +110,53 @@ TEST_CASE("Pressure outlet state derivatives match finite differences", "[Pressu
       const double values[6] = {rho, rho * u, rho * 5, rho * (e + .5 * (u * u + 25)), ratio * p, 20};
       CheckMapDerivatives(sonic, values, scale);
     }
+  }
+}
+
+TEST_CASE("Reservoir backflow state derivatives match finite differences", "[Pressure-outlet-AD]") {
+  for (auto kind : {0u, 1u, 2u}) {
+    auto gas = MakeOutletTestGas(kind);
+    const double rho = 230, p = 1500112;
+    gas->SetTDState_Prho(p, rho);
+    const double e = SU2_TYPE::GetValue(gas->GetStaticEnergy()), a = SU2_TYPE::GetValue(gas->GetSoundSpeed());
+    const double temperature = SU2_TYPE::GetValue(gas->GetTemperature());
+    const su2double normal[2] = {1, 0};
+    const double scale[6] = {rho, rho * a, rho * a, rho * a * a, p, a};
+    // input[4] is the reservoir total pressure, or with a zero total pressure the imposed pressure. The solver
+    // precomputes the total state of a positive total pressure (SetReservoirTotalState).
+    auto reservoirMap = [&](su2double* input, su2double* output, bool zeroTotal, bool tangential, bool precomputed) {
+      CEulerSolver::PressureOutletReservoir reservoir;
+      reservoir.totalPressure = zeroTotal ? su2double(0) : input[4];
+      reservoir.totalTemperature = temperature;
+      reservoir.interiorTangential = tangential;
+      if (precomputed) REQUIRE(CEulerSolver::SetReservoirTotalState(gas.get(), kind == 0, 1.4, reservoir));
+      return CEulerSolver::ComputeReservoirInflowState(gas.get(), 2, input, normal, input[5], input[4], 0, kind == 0,
+                                                       1.4, reservoir, output);
+    };
+    // Subsonic inflow (the root carries the derivatives), the sonic limit and the reservoir at rest (both independent
+    // of the interior): normal Mach number relative to the grid, pressure ratio and grid speed.
+    for (const auto precomputed : {false, true})
+      for (const auto& [mach, ratio, grid] : {std::tuple<double, double, double>{-.3, 1.05, -20},
+                                              {-.05, 1.05, -20},
+                                              {-1.3, 1.05, -20},
+                                              {-1.3, 1.05, 0},
+                                              {-.02, .9, 0}}) {
+        CAPTURE(kind, precomputed, mach, ratio, grid);
+        const double u = mach * a + grid;
+        const double values[6] = {rho, rho * u, rho * 5, rho * (e + .5 * (u * u + 25)), ratio * p, grid};
+        CheckMapDerivatives(
+            [&](su2double* in, su2double* out) { return reservoirMap(in, out, false, false, precomputed); }, values,
+            scale, 1e-9);
+      }
+    // Inflow with the interior tangential velocity, with a positive and a zero total pressure.
+    for (const auto zeroTotal : {false, true})
+      for (const auto mach : {-.3, -.05}) {
+        CAPTURE(kind, zeroTotal, mach);
+        const double grid = -20, u = mach * a + grid, ratio = zeroTotal ? 1. : 1.05;
+        const double values[6] = {rho, rho * u, rho * .3 * a, rho * (e + .5 * (u * u + .09 * a * a)), ratio * p, grid};
+        CheckMapDerivatives(
+            [&](su2double* in, su2double* out) { return reservoirMap(in, out, zeroTotal, true, false); }, values, scale,
+            1e-9);
+      }
   }
 }

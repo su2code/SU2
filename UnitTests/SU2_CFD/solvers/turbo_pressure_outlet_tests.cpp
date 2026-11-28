@@ -57,10 +57,12 @@ class FrozenOutletTurbulence final : public CSolver {
 };
 
 // Build the mesh, turbo vertices and solver once, then check every listed Mach number and outlet pressure ratio.
+// The extra options can add a backflow reservoir (MARKER_OUTLET_BACKFLOW) and select an unsteady run.
 void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializer_list<double> machs,
                          std::initializer_list<double> ratios, bool moving, bool radial, bool implicit = true,
-                         bool totalConditions = false, bool threaded = false, double turbulentK = 0) {
-  CAPTURE(dim, kind, moving, radial, implicit, totalConditions, threaded, turbulentK);
+                         bool totalConditions = false, bool threaded = false, double turbulentK = 0,
+                         const std::string& extraOptions = "") {
+  CAPTURE(dim, kind, moving, radial, implicit, totalConditions, threaded, turbulentK, extraOptions);
   // Axial turbo normals point along x in 2D and along z in 3D.
   const unsigned short normalDim = dim == 2 ? 0 : 2;
   const std::string inlet = dim == 2 ? "x_minus" : "z_minus", outlet = dim == 2 ? "x_plus" : "z_plus";
@@ -79,6 +81,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializ
           << ',' << firstRatio * p << (totalConditions ? ",600,1,0,0)\n" : ",0,0,0,0)\n");
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 20,-7,30\n";
   if (dim == 3) options << "MARKER_PERIODIC= (y_minus,y_plus,0,0,0,0,0,0,0,1,0)\n";
+  options << extraOptions;
   test.config_options = options.str();
   test.InitConfig();
   test.InitGeometry();
@@ -107,6 +110,8 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializ
   const su2double grid[3] = {moving ? 20. : 0., moving ? -7. : 0., moving ? 30. : 0.};
   const auto marker = OutletTestMarker(*config, outlet);
   const auto spans = test.geometry->GetnSpanWiseSections(OUTFLOW);
+  CEulerSolver::PressureOutletReservoir reservoir;
+  const bool hasReservoir = OutletTestReservoir(*config, outlet, reservoir);
   CUpwGeneralHLLC_Flow numerics(dim, dim + 2, config);
   for (const auto ratio : ratios) {
     // Only static-pressure and radial-equilibrium outlets read these pressures.
@@ -134,7 +139,7 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializ
           OutwardNormal(*test.geometry, marker, oldVertex, dim, normal, unused);
           turbo->GetNormal(unit);
           if (ExpectedSteadyOutletState(*gas, dim, state, unit, GeometryToolbox::DotProduct(dim, grid, unit),
-                                        target(span), 0, kind == 0, 1.4, boundary))
+                                        target(span), 0, kind == 0, 1.4, boundary, hasReservoir ? &reservoir : nullptr))
             ++fallbacks;
           // The moving-grid transport term appears once, in the explicit and the implicit path.
           PhysicalOutletFlux(*gas, numerics, dim, boundary, normal, moving ? grid : nullptr, flux);
@@ -149,8 +154,9 @@ void TurboPressureOutlet(unsigned short dim, unsigned short kind, std::initializ
             CheckRiemannOutletJacobian(solver->Jacobian.GetBlock(point, point), *gas, numerics, dim, state, boundary,
                                        unit, normal, moving ? grid : nullptr);
         }
-      // Full backflow and an invalid pressure use the steady fallback states, which the monitor counts.
-      CHECK((fallbacks > 0) == (mach <= -1 || ratio <= 0));
+      // Full backflow without a reservoir and an invalid pressure use the steady fallback states, which the monitor
+      // counts.
+      CHECK((fallbacks > 0) == ((mach <= -1 && !hasReservoir) || ratio <= 0));
       CHECK(CountOutletFallbacks(solver, config) == fallbacks);
     }
   }
@@ -199,4 +205,33 @@ TEST_CASE("TurboRiemann real-gas radial startup remains admissible", "[Pressure-
 TEST_CASE("TurboRiemann pressure outlet treats the SST energy like the other Riemann kinds",
           "[Pressure-outlet][Turbo-outlet]") {
   for (auto kind : {0u, 1u}) TurboPressureOutlet(3, kind, {.3}, {.95}, true, true, true, false, false, 13);
+}
+
+TEST_CASE("TurboRiemann pressure outlets take backflow from the reservoir", "[Pressure-outlet][Outlet-backflow]") {
+  for (auto kind : {0u, 1u, 2u}) {
+    // Reservoir 5% above the interior pressure at the interior temperature; zero direction: inward normal.
+    auto gas = MakeOutletTestGas(kind);
+    gas->SetTDState_Prho(OUTLET_TEST_P, OUTLET_TEST_RHO);
+    std::ostringstream temperature;
+    temperature << std::setprecision(17) << SU2_TYPE::GetValue(gas->GetTemperature());
+    for (auto dim : {2u, 3u}) {
+      const std::string outlet = dim == 2 ? "x_plus" : "z_plus";
+      const std::string reservoir =
+          "MARKER_OUTLET_BACKFLOW= (" + outlet + "," + temperature.str() + ",1575117.6,0,0,0)\n";
+      for (const auto radial : {false, true})
+        TurboPressureOutlet(dim, kind, {-1.4, -.3, .3}, {.95}, false, radial, true, false, false, 0, reservoir);
+      // A zero total pressure stands for the span pressure at zero normal speed, also with the interior tangential
+      // velocity; on a moving grid.
+      if (dim == 3)
+        for (const std::string type : {"", "OUTLET_BACKFLOW_TYPE= (INTERIOR_TANGENTIAL)\n"})
+          TurboPressureOutlet(3, kind, {-1.4, -.3, .3}, {.95}, true, true, true, false, false, 0,
+                              "MARKER_OUTLET_BACKFLOW= (z_plus," + temperature.str() + ",0,0,0,0)\n" + type);
+    }
+    // Unsteady runs use the reservoir as well.
+    if (kind == 1)
+      TurboPressureOutlet(2, 1, {-1.4, -.3}, {.95}, false, false, true, false, false, 0,
+                          "MARKER_OUTLET_BACKFLOW= (x_plus," + temperature.str() +
+                              ",1575117.6,0,0,0)\nTIME_DOMAIN= YES\nTIME_MARCHING= DUAL_TIME_STEPPING-2ND_ORDER\n"
+                              "TIME_STEP= 1e-5\n");
+  }
 }

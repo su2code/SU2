@@ -209,15 +209,34 @@ inline void OutgoingOutletIncrement(CFluidModel& gas, unsigned short dim, const 
                        rho * GeometryToolbox::DotProduct(dim, velocity, projectedVelocity);
 }
 
+// Backflow reservoir of a marker from MARKER_OUTLET_BACKFLOW (dimensional test cases); false without one.
+inline bool OutletTestReservoir(const CConfig& config, const std::string& tag,
+                                CEulerSolver::PressureOutletReservoir& reservoir) {
+  const auto* spec = config.GetOutletBackflowSpec(tag);
+  if (spec == nullptr) return false;
+  reservoir.totalTemperature = spec->totalTemperature;
+  reservoir.totalPressure = spec->totalPressure;
+  for (auto d = 0u; d < 3; ++d) reservoir.direction[d] = spec->direction[d];
+  reservoir.interiorTangential = spec->type == OUTLET_BACKFLOW_TYPE::INTERIOR_TANGENTIAL;
+  return true;
+}
+
 // Boundary state that the static-pressure outlets of a steady run use (CEulerSolver::BuildPressureOutletState):
-// the outlet state, the sonic backflow state for flow entering through every characteristic, or else the interior.
+// the outlet state, the reservoir inflow state where that state enters relative to the grid (with a reservoir),
+// the sonic backflow state for flow entering through every characteristic, or else the interior.
 // Returns true if a fallback was used.
 inline bool ExpectedSteadyOutletState(CFluidModel& gas, unsigned short dim, const su2double* state,
                                       const su2double* normal, su2double gridNormal, su2double pressure,
-                                      su2double turbulentK, bool idealGas, su2double gamma, su2double* boundary) {
+                                      su2double turbulentK, bool idealGas, su2double gamma, su2double* boundary,
+                                      const CEulerSolver::PressureOutletReservoir* reservoir = nullptr) {
   using Status = CEulerSolver::PressureOutletStatus;
   auto status = CEulerSolver::ComputePressureOutletState(&gas, dim, state, normal, gridNormal, pressure, turbulentK,
                                                          idealGas, gamma, boundary);
+  if (reservoir != nullptr &&
+      (status == Status::Backflow ||
+       (status == Status::Valid && GeometryToolbox::DotProduct(dim, boundary + 1, normal) < gridNormal * boundary[0])))
+    status = CEulerSolver::ComputeReservoirInflowState(&gas, dim, state, normal, gridNormal, pressure, turbulentK,
+                                                       idealGas, gamma, *reservoir, boundary);
   if (status == Status::Valid) return false;
   if (status == Status::Backflow)
     status = CEulerSolver::ComputeSonicBackflowState(&gas, dim, state, normal, gridNormal, pressure, turbulentK,

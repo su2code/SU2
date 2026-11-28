@@ -5369,8 +5369,10 @@ bool FindSonicState(CFluidModel& fluid, su2double& x, OutletState& state, su2dou
 }
 
 /*--- General EOS: integrate from the interior pressure to the imposed one, or to the sonic point. Adaptive RK4 with
- * step doubling. The EOS must be at the interior state. ---*/
-OutletStatus IntegrateIsentrope(CFluidModel& fluid, su2double targetPressure, OutletState& state) {
+ * step doubling. The EOS must be at the interior state. Without sonicStop the integration passes the sonic point and
+ * returns Valid for any normal velocity (used along the isentropes of backflow reservoirs). ---*/
+OutletStatus IntegrateIsentrope(CFluidModel& fluid, su2double targetPressure, OutletState& state,
+                                bool sonicStop = true) {
   using namespace OutletIsentrope;
   const auto rho = state[0], energy = state[1];
   const auto pressure = fluid.GetPressure(), sound2 = fluid.GetSoundSpeed2();
@@ -5383,7 +5385,8 @@ OutletStatus IntegrateIsentrope(CFluidModel& fluid, su2double targetPressure, Ou
    * there. The adaptive integration below is used if this step fails or reaches the sonic point. ---*/
   if (fabs(end - x) >= FINISH_TOL && fabs(end - x) < DIRECT_STEP) {
     OutletState next;
-    if (StepIsentrope(fluid, x, state, end - x, next, sound2) && next[2] < sqrt(fluid.GetSoundSpeed2())) {
+    if (StepIsentrope(fluid, x, state, end - x, next, sound2) &&
+        (!sonicStop || next[2] < sqrt(fluid.GetSoundSpeed2()))) {
       x = end;
       state = next;
       finished = true;
@@ -5415,7 +5418,7 @@ OutletStatus IntegrateIsentrope(CFluidModel& fluid, su2double targetPressure, Ou
       if (fabs(h) < MIN_STEP) return OutletStatus::InvalidState;
       continue;
     }
-    if (fine[2] >= sqrt(fluid.GetSoundSpeed2())) {
+    if (sonicStop && fine[2] >= sqrt(fluid.GetSoundSpeed2())) {
       if (!FindSonicState(fluid, x, state, h, sound2)) return OutletStatus::InvalidState;
       finished = true;
       break;
@@ -5428,8 +5431,442 @@ OutletStatus IntegrateIsentrope(CFluidModel& fluid, su2double targetPressure, Ou
   fluid.SetTDState_rhoe(state[0], state[1]);
   if (!IsOutletEOSStateValid(fluid)) return OutletStatus::InvalidState;
   if (fabs(fluid.GetPressure() / exp(x) - 1) > PRESSURE_TOL) return OutletStatus::InvalidState;
-  if (state[2] <= -fluid.GetSoundSpeed()) return OutletStatus::Backflow;
+  if (sonicStop && state[2] <= -fluid.GetSoundSpeed()) return OutletStatus::Backflow;
   return OutletStatus::Valid;
+}
+
+/*--- Backflow from a reservoir at rest into a static-pressure outlet (MARKER_OUTLET_BACKFLOW). ---*/
+namespace OutletReservoir {
+constexpr unsigned short ROOT_ITERATIONS = 200;  /*!< \brief Iteration limit of the inflow pressure search. */
+constexpr double ROOT_TOL = 1e-12;               /*!< \brief Converged speed residual (relative to sound). */
+constexpr double STEP_TOL = 1e-13;               /*!< \brief Converged Newton step in log(p). */
+constexpr double BRACKET_TOL = 1e-14;            /*!< \brief Converged bracket of the inflow pressure. */
+constexpr double SONIC_DELTA = 1e-6;             /*!< \brief Offset in log(p) of the sonic slope. */
+constexpr unsigned short DENSITY_STEPS = 4;      /*!< \brief Newton steps on the total density. */
+constexpr double DENSITY_DELTA = 1e-6;           /*!< \brief Relative density offset of dp/drho. */
+constexpr unsigned short SPEED_ITERATIONS = 50;  /*!< \brief Iteration limit of the pressure at a speed. */
+constexpr double SPEED_NOISE_TOL = 1e-8;         /*!< \brief Steps that stop shrinking below this converge. */
+constexpr double MAX_LOG_STEP = .5;              /*!< \brief Largest Newton step in log(p). */
+constexpr unsigned short SECANT_ITERATIONS = 50; /*!< \brief Iteration limit of the total pressure search. */
+constexpr double SECANT_STEP_TOL = 1e-12;        /*!< \brief Converged secant step in log(p). */
+constexpr double SECANT_TOL = 1e-11;             /*!< \brief Converged secant residual in log(p). */
+constexpr double SECANT_ACCEPT = 1e-8;           /*!< \brief Largest accepted secant residual. */
+constexpr double SECANT_DELTA = 1e-5;            /*!< \brief Offset in log(p) of the secant slope. */
+constexpr unsigned short BRACKET_STEPS = 60;     /*!< \brief Steps that bracket the sonic pressure. */
+constexpr double BRACKET_STEP = .5;              /*!< \brief Bracketing step in log(p). */
+constexpr unsigned short SONIC_ITERATIONS = 100; /*!< \brief Iteration limit of the sonic pressure search. */
+constexpr double SONIC_TOL = 1e-12;              /*!< \brief Converged sonic residual (relative) and bracket. */
+constexpr double NORMAL_TOL = 1e-12;             /*!< \brief Tolerance of a direction along the normal. */
+}  // namespace OutletReservoir
+
+/*--- Reservoir at rest and the interior data that the inflow state must meet. ---*/
+struct ReservoirInflow {
+  bool idealGas = false;
+  su2double gamma = 0;
+  su2double totalPressure = 0, totalEnthalpy = 0, totalEnergy = 0, totalDensity = 0;
+  su2double density = 0, energy = 0, normalVelocity = 0, pressure = 0, sound = 0;  // Interior, relative to the grid.
+  su2double directionNormal = 0, gridNormal = 0;  // Inflow direction and grid velocity along the outward normal.
+};
+
+/*--- Copy without dependencies for automatic differentiation: the searches use it, so that only the final correction
+ * with the active data is recorded (implicit function theorem). ---*/
+ReservoirInflow PassiveReservoir(const ReservoirInflow& data) {
+  ReservoirInflow passive = data;
+  for (auto* value : {&passive.gamma, &passive.totalPressure, &passive.totalEnthalpy, &passive.totalEnergy,
+                      &passive.totalDensity, &passive.density, &passive.energy, &passive.normalVelocity,
+                      &passive.pressure, &passive.sound, &passive.directionNormal, &passive.gridNormal})
+    *value = SU2_TYPE::GetValue(*value);
+  return passive;
+}
+
+/*--- Static state on the reservoir isentrope at a pressure: density, thermal energy, speed from the total enthalpy,
+ * and sound speed. ---*/
+bool EvaluateReservoirState(CFluidModel& fluid, const ReservoirInflow& data, su2double pressure, su2double& density,
+                            su2double& energy, su2double& speed, su2double& sound) {
+  if (!(pressure > 0) || !std::isfinite(SU2_TYPE::GetValue(pressure))) return false;
+  su2double enthalpy;
+  if (data.idealGas) {
+    /*--- h = h_t (p/p_t)^((gamma-1)/gamma), rho = rho_t (p/p_t)^(1/gamma). ---*/
+    const su2double gamma = data.gamma, ratio = pressure / data.totalPressure;
+    enthalpy = data.totalEnthalpy * pow(ratio, (gamma - 1) / gamma);
+    density = data.totalDensity * pow(ratio, 1 / gamma);
+    energy = enthalpy / gamma;
+    sound = sqrt((gamma - 1) * enthalpy);
+  } else {
+    /*--- The velocity component of the integration is not used. ---*/
+    OutletState state = {data.totalDensity, data.totalEnergy, 0};
+    fluid.SetTDState_rhoe(state[0], state[1]);
+    if (IntegrateIsentrope(fluid, pressure, state, false) != OutletStatus::Valid) return false;
+    density = state[0];
+    energy = state[1];
+    enthalpy = energy + fluid.GetPressure() / density;
+    sound = sqrt(fluid.GetSoundSpeed2());
+  }
+  const su2double speed2 = 2 * (data.totalEnthalpy - enthalpy);
+  speed = speed2 > 0 ? su2double(sqrt(speed2)) : su2double(0.0);
+  return density > 0 && std::isfinite(SU2_TYPE::GetValue(density + energy + sound));
+}
+
+/*--- Speed along the inflow direction whose normal component meets the interior outgoing invariant at a pressure,
+ * and its derivative with respect to log(p). ---*/
+bool EvaluateInteriorInvariantSpeed(CFluidModel& fluid, const ReservoirInflow& data, su2double pressure,
+                                    su2double& speed, su2double& slope) {
+  su2double density, sound, normalVelocity;
+  if (data.idealGas) {
+    /*--- q + 2a/(gamma-1) is constant along the interior isentrope. ---*/
+    const su2double gamma = data.gamma, ratio = pressure / data.pressure;
+    density = data.density * pow(ratio, 1 / gamma);
+    sound = data.sound * pow(ratio, (gamma - 1) / (2 * gamma));
+    normalVelocity = data.normalVelocity + 2 * (data.sound - sound) / (gamma - 1);
+  } else {
+    /*--- Without the sonic stop the invariant is a smooth, monotone function of the pressure. ---*/
+    OutletState state = {data.density, data.energy, data.normalVelocity};
+    fluid.SetTDState_rhoe(data.density, data.energy);
+    if (IntegrateIsentrope(fluid, pressure, state, false) != OutletStatus::Valid) return false;
+    density = state[0];
+    sound = sqrt(fluid.GetSoundSpeed2());
+    normalVelocity = state[2];
+  }
+  /*--- dq/d(log p) = -p/(rho a), divided by the (negative) normal component of the direction. ---*/
+  speed = (normalVelocity + data.gridNormal) / data.directionNormal;
+  slope = -pressure / (density * sound * data.directionNormal);
+  return true;
+}
+
+/*--- Squared speed minus the squared speed at which the normal inflow relative to the grid is sonic,
+ * speed * directionNormal - gridNormal = -sound (no sonic inflow exists if the grid outruns sound). ---*/
+su2double SonicInflowExcess(const ReservoirInflow& data, su2double speed, su2double sound) {
+  const su2double sonicSpeed = fmax(su2double(0.0), su2double(sound - data.gridNormal)) / -data.directionNormal;
+  return speed * speed - sonicSpeed * sonicSpeed;
+}
+
+/*--- Reservoir pressure at which the normal inflow relative to the grid is sonic; the total pressure if the grid
+ * moves outward faster than sound in the reservoir at rest. ---*/
+bool FindReservoirSonicPressure(CFluidModel& fluid, const ReservoirInflow& data, su2double& pressure) {
+  using namespace OutletReservoir;
+  if (data.idealGas) {
+    /*--- With V = (a - g) / (-n.d), V^2 = 2 (h_t - h) and a^2 = (gamma - 1) h, the sonic sound speed solves
+     * A a^2 + B a + C = 0 with A = 1/(n.d)^2 + 2/(gamma-1), B = -2 g/(n.d)^2, C = g^2/(n.d)^2 - 2 h_t. ---*/
+    const su2double gamma = data.gamma, inverse2 = 1 / (data.directionNormal * data.directionNormal);
+    if (data.gridNormal > 0 && data.gridNormal * data.gridNormal >= (gamma - 1) * data.totalEnthalpy) {
+      pressure = data.totalPressure;
+      return true;
+    }
+    const su2double A = inverse2 + 2 / (gamma - 1), B = -2 * data.gridNormal * inverse2;
+    const su2double C = data.gridNormal * data.gridNormal * inverse2 - 2 * data.totalEnthalpy;
+    const su2double sound = (-B + sqrt(B * B - 4 * A * C)) / (2 * A);
+    if (!(sound > data.gridNormal) || !(sound > 0)) return false;
+    pressure = data.totalPressure * pow(sound * sound / ((gamma - 1) * data.totalEnthalpy), gamma / (gamma - 1));
+    return true;
+  }
+  /*--- The excess falls from positive at low pressure to negative at the total pressure. Bracket it by steps in
+   * log(p), then use regula falsi with the Illinois modification. ---*/
+  su2double density, energy, speed, sound;
+  auto excess = [&](su2double x, su2double& value) {
+    if (!EvaluateReservoirState(fluid, data, exp(x), density, energy, speed, sound)) return false;
+    value = SonicInflowExcess(data, speed, sound);
+    return true;
+  };
+  su2double upper = log(data.totalPressure), lower = upper, valueUpper, valueLower = -1;
+  if (!excess(upper, valueUpper)) return false;
+  if (valueUpper >= 0) {
+    pressure = data.totalPressure;
+    return true;
+  }
+  if (!(valueUpper < 0)) return false;
+  for (auto step = 0u; step < BRACKET_STEPS && valueLower <= 0; ++step) {
+    if (step > 0) {
+      upper = lower;
+      valueUpper = valueLower;
+    }
+    lower -= BRACKET_STEP;
+    if (!excess(lower, valueLower)) return false;
+  }
+  if (valueLower <= 0) return false;
+  const su2double scale = fabs(valueUpper);
+  su2double x = lower;
+  int side = 0;
+  for (auto iteration = 0u; iteration < SONIC_ITERATIONS && upper - lower > SONIC_TOL; ++iteration) {
+    x = (lower * valueUpper - upper * valueLower) / (valueUpper - valueLower);
+    if (!(x > lower && x < upper)) x = .5 * (lower + upper);
+    su2double value;
+    if (!excess(x, value)) return false;
+    if (fabs(value) < SONIC_TOL * scale) break;
+    if (value > 0) {
+      lower = x;
+      valueLower = value;
+      if (side == -1) valueUpper *= .5;
+      side = -1;
+    } else {
+      upper = x;
+      valueUpper = value;
+      if (side == 1) valueLower *= .5;
+      side = 1;
+    }
+  }
+  pressure = exp(x);
+  return true;
+}
+
+/*--- Reservoir total state from its total pressure and temperature. Real-gas (p,T) inversions stop at a loose
+ * tolerance from a history-dependent guess, so the density is polished by Newton steps at fixed temperature from a
+ * passive guess: the state is reproducible and its derivatives come only from p(rho, T_t) = p_t. The slope dp/drho
+ * is a passive central difference, since not every EOS provides it at fixed temperature. ---*/
+bool SetReservoirTotalConditions(CFluidModel& fluid, su2double totalPressure, su2double totalTemperature,
+                                 ReservoirInflow& data) {
+  using namespace OutletReservoir;
+  fluid.SetTDState_PT(totalPressure, totalTemperature);
+  if (!IsOutletEOSStateValid(fluid)) return false;
+  su2double totalDensity = SU2_TYPE::GetValue(fluid.GetDensity());
+  const double temperature = SU2_TYPE::GetValue(totalTemperature);
+  for (auto iteration = 0u; iteration < DENSITY_STEPS; ++iteration) {
+    const double rho = SU2_TYPE::GetValue(totalDensity), step = DENSITY_DELTA * rho;
+    fluid.SetTDState_rhoT(rho + step, temperature);
+    const double pressurePlus = SU2_TYPE::GetValue(fluid.GetPressure());
+    fluid.SetTDState_rhoT(rho - step, temperature);
+    const double slope = (pressurePlus - SU2_TYPE::GetValue(fluid.GetPressure())) / (2 * step);
+    fluid.SetTDState_rhoT(totalDensity, totalTemperature);
+    if (!(slope > 0) || !IsOutletEOSStateValid(fluid)) return false;
+    totalDensity -= (fluid.GetPressure() - totalPressure) / slope;
+  }
+  fluid.SetTDState_rhoT(totalDensity, totalTemperature);
+  if (!IsOutletEOSStateValid(fluid)) return false;
+  data.totalPressure = fluid.GetPressure();
+  data.totalDensity = fluid.GetDensity();
+  data.totalEnergy = fluid.GetStaticEnergy();
+  data.totalEnthalpy = data.totalEnergy + data.totalPressure / data.totalDensity;
+  return true;
+}
+
+/*--- Pressure on the reservoir isentrope where the flow has a given speed. ---*/
+bool FindReservoirSpeedPressure(CFluidModel& fluid, const ReservoirInflow& data, su2double speed, su2double& pressure) {
+  using namespace OutletReservoir;
+  if (!(speed > 0)) {
+    pressure = data.totalPressure;
+    return true;
+  }
+  if (data.idealGas) {
+    const su2double gamma = data.gamma, enthalpy = data.totalEnthalpy - .5 * speed * speed;
+    if (!(enthalpy > 0)) return false;
+    pressure = data.totalPressure * pow(enthalpy / data.totalEnthalpy, gamma / (gamma - 1));
+    return true;
+  }
+  /*--- Newton in log(p) on V(p)^2 = speed^2, with d(V^2)/d(log p) = -2 p/rho, on passive values. ---*/
+  const auto passive = PassiveReservoir(data);
+  const su2double target = SU2_TYPE::GetValue(speed * speed);
+  su2double density, energy, velocity, sound;
+  su2double x = log(passive.totalPressure) - .5 * target * passive.totalDensity / passive.totalPressure;
+  bool converged = false;
+  su2double previousStep = 1;
+  for (auto iteration = 0u; iteration < SPEED_ITERATIONS && !converged; ++iteration) {
+    const su2double p = exp(x);
+    if (!EvaluateReservoirState(fluid, passive, p, density, energy, velocity, sound)) return false;
+    const su2double step = (velocity * velocity - target) * density / (2 * p);
+    x += fmax(su2double(-MAX_LOG_STEP), fmin(su2double(MAX_LOG_STEP), step));
+    /*--- Stop at round-off, or where the steps stop shrinking at the accuracy of the EOS integration. ---*/
+    converged = fabs(step) < STEP_TOL || (fabs(step) < SPEED_NOISE_TOL && fabs(step) > .5 * previousStep);
+    previousStep = fabs(step);
+  }
+  if (!converged) return false;
+  /*--- One Newton correction with the active data carries the derivatives of the root. ---*/
+  const su2double p = SU2_TYPE::GetValue(exp(x));
+  if (!EvaluateReservoirState(fluid, data, p, density, energy, velocity, sound)) return false;
+  const double slope = -2 * SU2_TYPE::GetValue(p / density);
+  pressure = p * exp(-(velocity * velocity - speed * speed) / slope);
+  return true;
+}
+
+/*--- Reservoir with a given total temperature whose pressure at a given speed is restPressure. ---*/
+bool FindReservoirTotalPressure(CFluidModel& fluid, su2double restPressure, su2double totalTemperature, su2double speed,
+                                ReservoirInflow& data) {
+  using namespace OutletReservoir;
+  if (!SetReservoirTotalConditions(fluid, restPressure, totalTemperature, data)) return false;
+  if (!(speed > 0)) return true;
+  if (data.idealGas) {
+    /*--- The total enthalpy of an ideal gas depends on the total temperature only. ---*/
+    const su2double gamma = data.gamma, ratio = 1 - .5 * speed * speed / data.totalEnthalpy;
+    if (!(ratio > 0)) return false;
+    return SetReservoirTotalConditions(fluid, restPressure * pow(ratio, -gamma / (gamma - 1)), totalTemperature, data);
+  }
+  /*--- Secant iterations in log(p_t) on log p(speed) - log(restPressure), with passive values. The residual is only
+   * as accurate as the isentrope integration. ---*/
+  const double target = log(SU2_TYPE::GetValue(restPressure));
+  const su2double passiveSpeed = SU2_TYPE::GetValue(speed), passiveTemperature = SU2_TYPE::GetValue(totalTemperature);
+  auto residual = [&](double y, double& value) {
+    ReservoirInflow trial = data;
+    su2double pressure;
+    if (!SetReservoirTotalConditions(fluid, exp(y), passiveTemperature, trial) ||
+        !FindReservoirSpeedPressure(fluid, PassiveReservoir(trial), passiveSpeed, pressure))
+      return false;
+    value = log(SU2_TYPE::GetValue(pressure)) - target;
+    return true;
+  };
+  double y0 = target, y1, r0, r1;
+  if (!residual(y0, r0)) return false;
+  y1 = y0 - r0;  // The residual grows about one-to-one with log(p_t).
+  if (!residual(y1, r1)) return false;
+  /*--- Stop before the secant step divides by a zero residual change. ---*/
+  for (auto iteration = 0u;
+       iteration < SECANT_ITERATIONS && fabs(y1 - y0) > SECANT_STEP_TOL && fabs(r1) > SECANT_TOL && fabs(r1 - r0) > 0;
+       ++iteration) {
+    const double y2 = y1 - r1 * (y1 - y0) / (r1 - r0);
+    y0 = y1;
+    r0 = r1;
+    y1 = y2;
+    if (!residual(y1, r1)) return false;
+  }
+  double rPlus;
+  if (fabs(r1) > SECANT_ACCEPT || !residual(y1 + SECANT_DELTA, rPlus)) return false;
+  const double slope = (rPlus - r1) / SECANT_DELTA;
+  if (!(slope > 0)) return false;
+  /*--- One Newton correction with the active data carries the derivatives of the root. ---*/
+  su2double pressure;
+  if (!SetReservoirTotalConditions(fluid, exp(y1), totalTemperature, data) ||
+      !FindReservoirSpeedPressure(fluid, data, speed, pressure))
+    return false;
+  const su2double y = y1 - (log(pressure) - log(restPressure)) / slope;
+  return SetReservoirTotalConditions(fluid, exp(y), totalTemperature, data);
+}
+
+/*--- Interior and reservoir data, inflow direction and tangential velocity of the reservoir inflow state. ---*/
+bool BuildReservoirInflow(CFluidModel& fluid, unsigned short nDim, const su2double* interior, const su2double* normal,
+                          su2double gridNormal, su2double targetPressure, su2double turbulentK, bool idealGas,
+                          su2double gamma, const CEulerSolver::PressureOutletReservoir& reservoir,
+                          ReservoirInflow& data, su2double* direction, su2double* tangential) {
+  const su2double totalPressure = reservoir.totalPressure, totalTemperature = reservoir.totalTemperature;
+  if (!(totalTemperature > 0) || !(totalPressure > 0 || (totalPressure == 0 && targetPressure > 0)) ||
+      !std::isfinite(SU2_TYPE::GetValue(totalPressure + totalTemperature + targetPressure)))
+    return false;
+  data.idealGas = idealGas;
+  data.gamma = gamma;
+
+  su2double velocity[3] = {0.0};
+  if (!SetOutletInterior(fluid, nDim, interior, normal, gridNormal, turbulentK, velocity, data.energy,
+                         data.normalVelocity))
+    return false;
+  data.density = interior[0];
+  data.pressure = fluid.GetPressure();
+  data.sound = sqrt(fluid.GetSoundSpeed2());
+
+  /*--- The interior tangential velocity (lab frame) is kept; the inflow itself is then normal. ---*/
+  if (reservoir.interiorTangential) {
+    if (GeometryToolbox::Norm(nDim, reservoir.direction) > 0) return false;
+    const su2double normalPart = GeometryToolbox::DotProduct(nDim, velocity, normal);
+    for (auto iDim = 0u; iDim < nDim; ++iDim) tangential[iDim] = velocity[iDim] - normalPart * normal[iDim];
+  }
+  /*--- Guard the square root at zero, where AD would give 0 * infinity. ---*/
+  const su2double tangentialSpeed2 = GeometryToolbox::SquaredNorm(nDim, tangential);
+  const su2double tangentialSpeed = tangentialSpeed2 > 0 ? su2double(sqrt(tangentialSpeed2)) : su2double(0.0);
+
+  /*--- A zero direction means the inward normal; a direction that does not enter cannot carry inflow. ---*/
+  for (auto iDim = 0u; iDim < nDim; ++iDim) direction[iDim] = reservoir.direction[iDim];
+  su2double length = GeometryToolbox::Norm(nDim, direction);
+  if (!(length > 0)) {
+    for (auto iDim = 0u; iDim < nDim; ++iDim) direction[iDim] = -normal[iDim];
+    length = 1;
+  }
+  for (auto iDim = 0u; iDim < nDim; ++iDim) direction[iDim] /= length;
+  data.gridNormal = gridNormal;
+  data.directionNormal = GeometryToolbox::DotProduct(nDim, direction, normal);
+  if (!(data.directionNormal < 0)) return false;
+
+  /*--- A zero total pressure means a reservoir with the imposed pressure where the inflow has no normal velocity,
+   * i.e. at the tangential speed (a plenum at rest without tangential velocity). ---*/
+  if (totalPressure > 0 && reservoir.totalStateSet) {
+    data.totalPressure = reservoir.statePressure;
+    data.totalDensity = reservoir.stateDensity;
+    data.totalEnergy = reservoir.stateEnergy;
+    data.totalEnthalpy = data.totalEnergy + data.totalPressure / data.totalDensity;
+  } else if (totalPressure > 0
+                 ? !SetReservoirTotalConditions(fluid, totalPressure, totalTemperature, data)
+                 : !FindReservoirTotalPressure(fluid, targetPressure, totalTemperature, tangentialSpeed, data)) {
+    return false;
+  }
+  if (tangentialSpeed > 0) {
+    /*--- The normal motion sees the reservoir expanded to the tangential speed: same entropy, total enthalpy reduced
+     * by the tangential kinetic energy, which the boundary state gets back at the end. ---*/
+    su2double pressure, density, energy, speed, sound;
+    if (!FindReservoirSpeedPressure(fluid, data, tangentialSpeed, pressure) ||
+        !EvaluateReservoirState(fluid, data, pressure, density, energy, speed, sound))
+      return false;
+    data.totalPressure = pressure;
+    data.totalDensity = density;
+    data.totalEnergy = energy;
+    data.totalEnthalpy = energy + pressure / density;
+  }
+  return true;
+}
+
+/*--- Subsonic inflow pressure between the sonic and the total pressure (bracket in log(p)). ---*/
+bool SolveReservoirInflowRoot(CFluidModel& fluid, const ReservoirInflow& data, const ReservoirInflow& passive,
+                              su2double lower, su2double upper, su2double residualLower, su2double residualUpper,
+                              su2double& density, su2double& energy, su2double& speed) {
+  using namespace OutletReservoir;
+  /*--- The interior invariant speed grows and the reservoir speed falls with the pressure, so the residual is
+   * monotone. Newton steps in log(p) are safeguarded by bisection when a step leaves the bracket or does not halve
+   * the previous one (rtsafe). ---*/
+  su2double x = lower - residualLower * (upper - lower) / (residualUpper - residualLower);
+  su2double step = upper - lower, previousStep = step, slope, sound;
+  bool converged = false;
+  for (auto iteration = 0u; iteration < ROOT_ITERATIONS && !converged; ++iteration) {
+    su2double invariantSpeed;
+    const su2double p = exp(x);
+    if (!EvaluateInteriorInvariantSpeed(fluid, passive, p, invariantSpeed, slope) ||
+        !EvaluateReservoirState(fluid, passive, p, density, energy, speed, sound))
+      return false;
+    const su2double residual = invariantSpeed - speed;
+    if (fabs(residual) < ROOT_TOL * passive.sound) {
+      converged = true;
+      break;
+    }
+    if (residual < 0)
+      lower = x;
+    else
+      upper = x;
+    const su2double derivative = speed > 0 ? su2double(slope + p / (density * speed)) : su2double(0.0);
+    const bool bisect = !(derivative > 0) ||
+                        ((x - upper) * derivative - residual) * ((x - lower) * derivative - residual) > 0 ||
+                        fabs(2 * residual) > fabs(previousStep * derivative);
+    previousStep = step;
+    step = bisect ? su2double(x - .5 * (lower + upper)) : su2double(residual / derivative);
+    x -= step;
+    converged = fabs(step) < STEP_TOL || upper - lower < BRACKET_TOL;
+  }
+  if (!converged) return false;
+
+  /*--- One Newton correction with the active data carries the derivatives of the root. ---*/
+  su2double invariantSpeed;
+  const su2double p = SU2_TYPE::GetValue(exp(x));
+  if (!EvaluateInteriorInvariantSpeed(fluid, data, p, invariantSpeed, slope) ||
+      !EvaluateReservoirState(fluid, data, p, density, energy, speed, sound) || !(speed > 0))
+    return false;
+  const double derivative = SU2_TYPE::GetValue(slope + p / (density * speed));
+  const su2double pressure = p * exp(-(invariantSpeed - speed) / derivative);
+  return EvaluateReservoirState(fluid, data, pressure, density, energy, speed, sound);
+}
+
+/*--- Reservoir state with sonic normal inflow relative to the grid; it depends on the reservoir only. ---*/
+bool ReservoirSonicState(CFluidModel& fluid, const ReservoirInflow& data, const ReservoirInflow& passive,
+                         su2double sonicPressure, su2double& density, su2double& energy, su2double& speed) {
+  using namespace OutletReservoir;
+  su2double sound;
+  if (data.idealGas) {
+    if (!FindReservoirSonicPressure(fluid, data, sonicPressure)) return false;
+  } else {
+    /*--- One Newton step in log(p) on the sonic excess with the active data, with a passive central slope. ---*/
+    su2double excess[2];
+    for (auto side = 0u; side < 2; ++side) {
+      if (!EvaluateReservoirState(fluid, passive, sonicPressure * exp(side ? SONIC_DELTA : -SONIC_DELTA), density,
+                                  energy, speed, sound))
+        return false;
+      excess[side] = SonicInflowExcess(passive, speed, sound);
+    }
+    const double slope = SU2_TYPE::GetValue((excess[1] - excess[0]) / (2 * SONIC_DELTA));
+    if (!EvaluateReservoirState(fluid, data, sonicPressure, density, energy, speed, sound) || !(slope < 0))
+      return false;
+    sonicPressure = sonicPressure * exp(-SonicInflowExcess(data, speed, sound) / slope);
+  }
+  return EvaluateReservoirState(fluid, data, sonicPressure, density, energy, speed, sound);
 }
 }  // namespace
 
@@ -5513,12 +5950,122 @@ void CEulerSolver::OutgoingWaveProjection(unsigned short nVar, const su2double* 
   }
 }
 
+bool CEulerSolver::SetReservoirTotalState(CFluidModel* fluidModel, bool idealGas, su2double gamma,
+                                          PressureOutletReservoir& reservoir) {
+  reservoir.totalStateSet = false;
+  ReservoirInflow data;
+  data.idealGas = idealGas;
+  data.gamma = gamma;
+  if (!(reservoir.totalPressure > 0) ||
+      !SetReservoirTotalConditions(*fluidModel, reservoir.totalPressure, reservoir.totalTemperature, data))
+    return false;
+  reservoir.statePressure = data.totalPressure;
+  reservoir.stateDensity = data.totalDensity;
+  reservoir.stateEnergy = data.totalEnergy;
+  /*--- The sonic pressure of normal inflow on a fixed grid is the same at every vertex. ---*/
+  data.directionNormal = -1;
+  data.gridNormal = 0;
+  su2double sonicPressure;
+  reservoir.sonicPressure =
+      FindReservoirSonicPressure(*fluidModel, PassiveReservoir(data), sonicPressure) ? sonicPressure : su2double(0.0);
+  reservoir.totalStateSet = true;
+  return true;
+}
+
+CEulerSolver::PressureOutletStatus CEulerSolver::ComputeReservoirInflowState(
+    CFluidModel* fluidModel, unsigned short nDim, const su2double* interior, const su2double* normal,
+    su2double gridNormal, su2double targetPressure, su2double turbulentK, bool idealGas, su2double gamma,
+    const PressureOutletReservoir& reservoir, su2double* boundary) {
+  using namespace OutletReservoir;
+  auto& fluid = *fluidModel;
+  ReservoirInflow data;
+  su2double direction[MAXNDIM] = {0.0}, tangential[MAXNDIM] = {0.0};
+  if (!BuildReservoirInflow(fluid, nDim, interior, normal, gridNormal, targetPressure, turbulentK, idealGas, gamma,
+                            reservoir, data, direction, tangential))
+    return OutletStatus::InvalidState;
+
+  /*--- The searches use passive values. The precomputed sonic pressure applies to normal inflow without tangential
+   * velocity on a fixed grid. ---*/
+  const auto passive = PassiveReservoir(data);
+  const bool uniformSonic = reservoir.totalStateSet && reservoir.sonicPressure > 0 && reservoir.totalPressure > 0 &&
+                            !reservoir.interiorTangential && passive.gridNormal == 0 &&
+                            fabs(passive.directionNormal + 1) < NORMAL_TOL;
+  su2double sonicPressure = uniformSonic ? su2double(SU2_TYPE::GetValue(reservoir.sonicPressure)) : su2double(0.0);
+  if (!uniformSonic && !FindReservoirSonicPressure(fluid, passive, sonicPressure)) return OutletStatus::InvalidState;
+
+  /*--- Subsonic inflow (root between the sonic and the total pressure), sonic inflow, or the reservoir at rest. ---*/
+  enum class Inflow { Subsonic, Sonic, Rest } kind = Inflow::Subsonic;
+  su2double residualLower = 0, residualUpper = 0, slope, density, energy, speed, sound;
+  if (!(sonicPressure < passive.totalPressure)) {
+    /*--- The grid outruns sound in the reservoir: even the reservoir at rest enters faster than sound. ---*/
+    kind = Inflow::Rest;
+  } else if (passive.normalVelocity <= -passive.sound) {
+    /*--- The outgoing invariant also enters the domain: no interior information remains. ---*/
+    kind = Inflow::Sonic;
+  } else {
+    if (!EvaluateInteriorInvariantSpeed(fluid, passive, passive.totalPressure, residualUpper, slope))
+      return OutletStatus::InvalidState;
+    if (residualUpper <= 0) {
+      /*--- The interior wave cannot draw flow in even at the total pressure. ---*/
+      kind = Inflow::Rest;
+    } else {
+      if (!EvaluateInteriorInvariantSpeed(fluid, passive, sonicPressure, residualLower, slope) ||
+          !EvaluateReservoirState(fluid, passive, sonicPressure, density, energy, speed, sound))
+        return OutletStatus::InvalidState;
+      residualLower -= speed;
+      if (residualLower >= 0) kind = Inflow::Sonic;
+    }
+  }
+
+  bool valid = true;
+  if (kind == Inflow::Subsonic) {
+    valid = SolveReservoirInflowRoot(fluid, data, passive, log(sonicPressure), log(passive.totalPressure),
+                                     residualLower, residualUpper, density, energy, speed);
+  } else if (kind == Inflow::Sonic) {
+    valid = ReservoirSonicState(fluid, data, passive, sonicPressure, density, energy, speed);
+  } else {
+    density = data.totalDensity;
+    energy = data.totalEnergy;
+    speed = 0;
+  }
+  if (!valid) return OutletStatus::InvalidState;
+
+  fluid.SetTDState_rhoe(density, energy);
+  if (!IsOutletEOSStateValid(fluid)) return OutletStatus::InvalidState;
+  boundary[0] = density;
+  for (auto iDim = 0u; iDim < nDim; ++iDim) boundary[iDim + 1] = density * (speed * direction[iDim] + tangential[iDim]);
+  boundary[nDim + 1] =
+      density * (energy + .5 * (speed * speed + GeometryToolbox::SquaredNorm(nDim, tangential)) + turbulentK);
+  return OutletStatus::Valid;
+}
+
+bool CEulerSolver::GetPressureOutletReservoir(const CConfig* config, unsigned short val_marker, bool idealGas,
+                                              PressureOutletReservoir& reservoir) const {
+  const auto* spec = config->GetOutletBackflowSpec(config->GetMarker_All_TagBound(val_marker));
+  if (spec == nullptr) return false;
+  reservoir.totalPressure = spec->totalPressure / config->GetPressure_Ref();
+  reservoir.totalTemperature = spec->totalTemperature / config->GetTemperature_Ref();
+  for (auto iDim = 0u; iDim < nDim; iDim++) reservoir.direction[iDim] = spec->direction[iDim];
+  reservoir.interiorTangential = spec->type == OUTLET_BACKFLOW_TYPE::INTERIOR_TANGENTIAL;
+  /*--- A positive total pressure gives the same total state at every vertex. ---*/
+  if (reservoir.totalPressure > 0) SetReservoirTotalState(GetFluidModel(), idealGas, Gamma, reservoir);
+  return true;
+}
+
 void CEulerSolver::BuildPressureOutletState(const CConfig* config, unsigned short val_marker, const su2double* interior,
                                             const su2double* unitNormal, su2double gridNormal, su2double pressure,
-                                            su2double tke, bool idealGas, su2double* boundary) {
+                                            su2double tke, bool idealGas, const PressureOutletReservoir* reservoir,
+                                            su2double* boundary) {
   auto* fluid = GetFluidModel();
   auto status = ComputePressureOutletState(fluid, nDim, interior, unitNormal, gridNormal, pressure, tke, idealGas,
                                            Gamma, boundary);
+  /*--- With a reservoir, flow that enters relative to the grid takes the reservoir inflow state. ---*/
+  if (reservoir != nullptr &&
+      (status == PressureOutletStatus::Backflow ||
+       (status == PressureOutletStatus::Valid &&
+        GeometryToolbox::DotProduct(nDim, boundary + 1, unitNormal) < gridNormal * boundary[0])))
+    status = ComputeReservoirInflowState(fluid, nDim, interior, unitNormal, gridNormal, pressure, tke, idealGas, Gamma,
+                                         *reservoir, boundary);
   if (status == PressureOutletStatus::Valid) return;
 
   if (outletFallbacks) {
@@ -5623,6 +6170,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     P_Tensor[iVar] = new su2double[nVar];
     invP_Tensor[iVar] = new su2double[nVar];
   }
+
+  /*--- Backflow reservoir of a static-pressure outlet (MARKER_OUTLET_BACKFLOW), if any. ---*/
+  PressureOutletReservoir reservoir;
+  const bool hasReservoir = GetPressureOutletReservoir(config, val_marker, ideal_gas, reservoir);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -5837,7 +6388,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal)
                          : su2double(0.0);
         /*--- As for the other Riemann kinds, the SST turbulent kinetic energy is part of the EOS energy here. ---*/
-        BuildPressureOutletState(config, val_marker, u_i, UnitNormal, gridNormal, Pressure_e, 0.0, ideal_gas, u_b);
+        BuildPressureOutletState(config, val_marker, u_i, UnitNormal, gridNormal, Pressure_e, 0.0, ideal_gas,
+                                 hasReservoir ? &reservoir : nullptr, u_b);
       } else {
         /*--- Compute the characteristic jumps ---*/
         for (auto iVar = 0u; iVar < nVar; iVar++){
@@ -6055,6 +6607,9 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   const bool pressureOutflow = dataKind == STATIC_PRESSURE || dataKind == RADIAL_EQUILIBRIUM;
   const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
                          config->GetKind_FluidModel() == IDEAL_GAS;
+  /*--- Backflow reservoir of a static-pressure outlet (MARKER_OUTLET_BACKFLOW), if any. ---*/
+  PressureOutletReservoir reservoir;
+  const bool hasReservoir = GetPressureOutletReservoir(config, val_marker, ideal_gas, reservoir);
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
@@ -6297,7 +6852,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           /*--- Each vertex uses the pressure of its span. ---*/
           const su2double gridNormal = dynamic_grid ? GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal) : su2double(0.0);
           /*--- As for the other Riemann kinds, the SST turbulent kinetic energy is part of the EOS energy here. ---*/
-          BuildPressureOutletState(config, val_marker, u_i, UnitNormal, gridNormal, Pressure_e, 0.0, ideal_gas, u_b);
+          BuildPressureOutletState(config, val_marker, u_i, UnitNormal, gridNormal, Pressure_e, 0.0, ideal_gas,
+                                   hasReservoir ? &reservoir : nullptr, u_b);
         } else {
           /* --- Compute the boundary state u_e --- */
           u_e[0] = Density_e;
@@ -7754,6 +8310,9 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const bool tkeNeeded = config->GetKind_Turb_Model() == TURB_MODEL::SST;
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  /*--- Backflow reservoir (MARKER_OUTLET_BACKFLOW), if any. ---*/
+  PressureOutletReservoir reservoir;
+  const bool hasReservoir = GetPressureOutletReservoir(config, val_marker, true, reservoir);
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; ++iVertex) {
@@ -7777,7 +8336,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     const auto* interior = nodes->GetSolution(iPoint);
     su2double boundary[MAXNVAR] = {};
     /*--- MARKER_OUTLET is limited to ideal gases (see CConfig); real gases use MARKER_RIEMANN. ---*/
-    BuildPressureOutletState(config, val_marker, interior, UnitNormal, gridNormal, pressure, tke, true, boundary);
+    BuildPressureOutletState(config, val_marker, interior, UnitNormal, gridNormal, pressure, tke, true,
+                             hasReservoir ? &reservoir : nullptr, boundary);
 
     const su2double density = boundary[0], energy = boundary[nVar - 1] / density;
     const auto* V_domain = nodes->GetPrimitive(iPoint);

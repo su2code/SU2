@@ -29,8 +29,10 @@
 
 namespace {
 // BC_Outlet with an ideal gas, normal Mach number relative to the grid and pressure ratio to the interior.
+// The extra options can add a backflow reservoir (MARKER_OUTLET_BACKFLOW) and select an unsteady run.
 void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bool moving, bool threaded = false,
-                 double turbulentK = 0) {
+                 double turbulentK = 0, const std::string& extraOptions = "") {
+  CAPTURE(dim, normalMach, pressureRatio, moving, threaded, turbulentK, extraOptions);
   UnitQuadTestCase test;
   std::ostringstream options;
   options << std::setprecision(17) << OutletTestOptions(dim, 0, turbulentK, true, threaded ? "5,17,17" : "5,5,5")
@@ -38,6 +40,7 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
           << "y_minus,y_plus" << (dim == 3 ? ",z_minus,z_plus" : "") << ")\nMARKER_MONITORING= (x_minus)\n"
           << "MARKER_OUTLET= (x_plus," << pressureRatio * OUTLET_TEST_P << ")\n";
   if (moving) options << "GRID_MOVEMENT= STEADY_TRANSLATION\nTRANSLATION_RATE= 500,240,0\n";
+  options << extraOptions;
   test.config_options = options.str();
   test.InitConfig();
   test.InitGeometry();
@@ -76,13 +79,15 @@ void IdealOutlet(unsigned short dim, double normalMach, double pressureRatio, bo
     out[dim + 1] =
         out[0] * (boundarySound * boundarySound / .56 + .5 * GeometryToolbox::SquaredNorm(dim, v) + turbulentK);
   };
-  // Full backflow and an invalid pressure use the steady fallback states.
+  // Full backflow and an invalid pressure use the steady fallback states; a reservoir supplies the backflow.
   su2double expected[5];
   const su2double outward[3] = {1, 0, 0};
-  const bool fallback = normalMach <= -1 || pressureRatio <= 0;
-  if (fallback)
+  CEulerSolver::PressureOutletReservoir reservoir;
+  const bool hasReservoir = OutletTestReservoir(*test.config, "x_plus", reservoir);
+  const bool fallback = pressureRatio <= 0 || (normalMach <= -1 && !hasReservoir);
+  if (fallback || hasReservoir)
     CHECK(ExpectedSteadyOutletState(*gas, dim, state, outward, grid[0], pressureRatio * p, turbulentK, true, 1.4,
-                                    expected));
+                                    expected, hasReservoir ? &reservoir : nullptr) == fallback);
   else
     reference(state, expected);
   unsigned long domainVertices = 0;
@@ -116,6 +121,29 @@ TEST_CASE("Ordinary pressure outlet uses the steady fallback states", "[Pressure
 
 TEST_CASE("Pressure outlet reconstruction is thread local", "[Pressure-outlet]") {
   IdealOutlet(3, .3, .95, true, true);
+}
+
+TEST_CASE("Ordinary pressure outlet takes backflow from the MARKER_OUTLET_BACKFLOW reservoir",
+          "[Pressure-outlet][Outlet-backflow]") {
+  // Reservoir about 7% above the interior pressure, near the interior temperature (186 K); zero direction: normal.
+  const std::string reservoir = "MARKER_OUTLET_BACKFLOW= (x_plus, 190, 1600000, 0, 0, 0)\n";
+  for (auto dim : {2u, 3u})
+    for (const auto moving : {false, true})
+      for (const auto normalMach : {-1.4, -.3, 0., .3})
+        for (const auto ratio : {1., .95, 1.02}) IdealOutlet(dim, normalMach, ratio, moving, false, 0, reservoir);
+  // The moving grid (500 m/s outward) outruns sound in the reservoir, which then enters at rest.
+  IdealOutlet(3, -.3, 1.02, false, false, 1500, reservoir);
+  IdealOutlet(3, -.3, .95, false, true, 0, reservoir);
+  // A zero total pressure stands for the imposed outlet pressure at zero normal speed, also with the interior
+  // tangential velocity (here supersonic).
+  for (const std::string type : {"", "OUTLET_BACKFLOW_TYPE= (INTERIOR_TANGENTIAL)\n"})
+    for (const auto normalMach : {-1.4, -.3, 0.})
+      for (const auto ratio : {.95, 1.02})
+        IdealOutlet(2, normalMach, ratio, false, false, 0,
+                    "MARKER_OUTLET_BACKFLOW= (x_plus, 190, 0, 0, 0, 0)\n" + type);
+  // Unsteady runs use the reservoir as well.
+  const std::string unsteady = "TIME_DOMAIN= YES\nTIME_MARCHING= DUAL_TIME_STEPPING-2ND_ORDER\nTIME_STEP= 1e-5\n";
+  for (const auto normalMach : {-1.4, -.3}) IdealOutlet(2, normalMach, 1.02, false, false, 0, reservoir + unsteady);
 }
 
 TEST_CASE("Ordinary pressure outlet keeps the SST energy out of the EOS", "[Pressure-outlet]") {

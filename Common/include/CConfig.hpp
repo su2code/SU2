@@ -55,6 +55,16 @@
 using namespace std;
 
 /*!
+ * \brief Backflow reservoir of a static-pressure outlet (MARKER_OUTLET_BACKFLOW and OUTLET_BACKFLOW_TYPE).
+ */
+struct OutletBackflowSpec {
+  su2double totalTemperature = 0.0;     /*!< \brief Dimensional total temperature. */
+  su2double totalPressure = 0.0;        /*!< \brief Dimensional total pressure; zero means the imposed pressure. */
+  const su2double* direction = nullptr; /*!< \brief Three components; zero means the inward normal. */
+  OUTLET_BACKFLOW_TYPE type = OUTLET_BACKFLOW_TYPE::DIRECTION; /*!< \brief Velocity of the inflow. */
+};
+
+/*!
  * \class CConfig
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
@@ -1369,6 +1379,18 @@ private:
    class of COptionBase that turns the string into a value) ---*/
 
   map<string, COptionBase*> option_map;
+
+  /*--- Backflow reservoirs (MARKER_OUTLET_BACKFLOW, OUTLET_BACKFLOW_TYPE). These members come last so that the other
+   members keep their offsets: moving them can change how the compiler vectorizes some numerics (seen with GCC 13),
+   and with it the regression values of unrelated cases. ---*/
+  unsigned short nMarker_Outlet_Backflow;     /*!< \brief Number of outlets with backflow reservoir data. */
+  string *Marker_Outlet_Backflow;             /*!< \brief Static-pressure outlets with backflow reservoir data. */
+  su2double *OutletBackflow_Ttotal;           /*!< \brief Reservoir total temperature for outlet backflow. */
+  su2double *OutletBackflow_Ptotal;           /*!< \brief Reservoir total pressure for outlet backflow. */
+  su2double **OutletBackflow_FlowDir;         /*!< \brief Backflow direction for outlets (zero: boundary normal). */
+  OUTLET_BACKFLOW_TYPE *Kind_Outlet_Backflow; /*!< \brief Backflow velocity type per MARKER_OUTLET_BACKFLOW entry. */
+  unsigned short nOutlet_Backflow_Types;      /*!< \brief Number of OUTLET_BACKFLOW_TYPE entries. */
+  vector<OutletBackflowSpec> OutletBackflowSpecs; /*!< \brief Checked reservoir data per marker. */
 
 
   // All of the addXxxOptions take in the name of the option, and a reference to the field of that option
@@ -7520,6 +7542,13 @@ public:
    * \return The outlet pressure.
    */
   su2double GetOutlet_Pressure(const string& val_index) const;
+
+  /*!
+   * \brief Get the backflow reservoir of a static-pressure outlet.
+   * \param[in] val_marker - Marker tag.
+   * \return Reservoir data, or nullptr if the marker has none.
+   */
+  const OutletBackflowSpec* GetOutletBackflowSpec(const string& val_marker) const;
 
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.

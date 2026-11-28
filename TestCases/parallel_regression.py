@@ -486,6 +486,22 @@ def main():
     periodic2d_no_limiter_riemann.test_vals = [-3.216878, -0.582314, -0.628636, 2.266530, -1.057965, -811.500000]
     test_list.append(periodic2d_no_limiter_riemann)
 
+    # Outlet backflow from a reservoir at the outlet pressure, keeping the interior swirl (MARKER_OUTLET_BACKFLOW).
+    periodic2d_no_limiter_backflow_tangential = TestCase('periodic2d_no_limiter_backflow_tangential')
+    periodic2d_no_limiter_backflow_tangential.cfg_dir = "navierstokes/periodic2D"
+    periodic2d_no_limiter_backflow_tangential.cfg_file = "no_limiter_backflow_tangential.cfg"
+    periodic2d_no_limiter_backflow_tangential.test_iter = 100
+    periodic2d_no_limiter_backflow_tangential.test_vals = [-3.089328, -0.504312, -0.643132, 2.386211, -1.048886, -1083.800000]
+    test_list.append(periodic2d_no_limiter_backflow_tangential)
+
+    # TurboRiemann outlet of a laminar radial diffuser with steady backflow next to the walls (MARKER_OUTLET_BACKFLOW).
+    turbo_diffuser_backflow = TestCase('turbo_diffuser_backflow')
+    turbo_diffuser_backflow.cfg_dir = "navierstokes/periodic2D"
+    turbo_diffuser_backflow.cfg_file = "turbo_diffuser_backflow.cfg"
+    turbo_diffuser_backflow.test_iter = 100
+    turbo_diffuser_backflow.test_vals = [-3.961110, -1.417861, -1.644499, 1.513234, -1.051147, -812.320000]
+    test_list.append(turbo_diffuser_backflow)
+
     # 2D rotational periodic sector with multigrid
     periodic2d_multigrid = TestCase('periodic2d_multigrid')
     periodic2d_multigrid.cfg_dir = "navierstokes/periodic2D"
