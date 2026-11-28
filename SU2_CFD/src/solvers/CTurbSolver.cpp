@@ -316,3 +316,109 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(CSolver** solver_container,
   }
   END_SU2_OMP_FOR
 }
+
+su2double CTurbSolver::ShearLayerAdaptedLengthScale(const CGeometry* geometry, unsigned long iPoint,
+                                                    const su2double* vorticity, bool shielded,
+                                                    ShearLayerWorkspace& workspace) const {
+  const su2double omega = GeometryToolbox::Norm(int(MAXNDIM), vorticity);
+
+  /*--- Without vorticity its direction is undefined and Delta_omega vanishes, use the standard DES length-scale. ---*/
+  if (omega < 1e-12) return geometry->nodes->GetMaxLength(iPoint);
+
+  su2double direction[MAXNDIM];
+  for (auto iDim = 0u; iDim < MAXNDIM; iDim++) direction[iDim] = vorticity[iDim] / omega;
+
+  /*--- Delta_omega = max_{n,m} |l_n - l_m| / sqrt(3), with l_n = n_omega x r_n and r_n the vertices of the control
+   volume (Eq. 1). The control volume of a point is its median-dual cell, whose vertices are the midpoints of the edges
+   of the point and the centroids of the faces and of the elements that contain it (and the point itself where the
+   cell is cut by a boundary). On hexahedral grids the extreme vertices are the 8 element centroids. ---*/
+  auto& projected = workspace.projected;
+  auto& visitedFaces = workspace.faces;
+  projected.clear();
+  visitedFaces.clear();
+
+  const auto coord_i = geometry->nodes->GetCoord(iPoint);
+  auto addVertex = [&](const su2double* vertex) {
+    su2double relative[MAXNDIM] = {0.0, 0.0, 0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++) relative[iDim] = vertex[iDim] - coord_i[iDim];
+    array<su2double, MAXNDIM> cross;
+    GeometryToolbox::CrossProduct(direction, relative, cross.data());
+    projected.push_back(cross);
+  };
+
+  addVertex(coord_i);
+
+  for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+    const auto coord_j = geometry->nodes->GetCoord(jPoint);
+    su2double midpoint[MAXNDIM] = {0.0, 0.0, 0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++) midpoint[iDim] = 0.5 * (coord_i[iDim] + coord_j[iDim]);
+    addVertex(midpoint);
+  }
+
+  for (const auto iElem : geometry->nodes->GetElems(iPoint)) {
+    const auto* elem = geometry->elem[iElem];
+    addVertex(elem->GetCG());
+
+    for (auto iFace = 0u; iFace < elem->GetnFaces(); iFace++) {
+      const auto nNodesFace = elem->GetnNodesFace(iFace);
+      bool containsPoint = false;
+      array<unsigned long, N_POINTS_QUADRILATERAL> faceNodes;
+      faceNodes.fill(numeric_limits<unsigned long>::max());
+      su2double centroid[MAXNDIM] = {0.0, 0.0, 0.0};
+      for (auto iNode = 0u; iNode < nNodesFace; iNode++) {
+        const auto jPoint = elem->GetNode(elem->GetFaces(iFace, iNode));
+        containsPoint = containsPoint || (jPoint == iPoint);
+        faceNodes[iNode] = jPoint;
+        const auto coord_j = geometry->nodes->GetCoord(jPoint);
+        for (auto iDim = 0u; iDim < nDim; iDim++) centroid[iDim] += coord_j[iDim] / nNodesFace;
+      }
+      /*--- Faces shared by two elements are added once, identified by their sorted (padded) nodes. ---*/
+      if (containsPoint) {
+        sort(faceNodes.begin(), faceNodes.end());
+        if (find(visitedFaces.begin(), visitedFaces.end(), faceNodes) == visitedFaces.end()) {
+          visitedFaces.push_back(faceNodes);
+          addVertex(centroid);
+        }
+      }
+    }
+  }
+
+  /*--- Select the farthest pair without taping every candidate, then differentiate the selected distance. ---*/
+  const bool wasActive = AD::BeginPassive();
+  su2double diameter2 = 0.0;
+  size_t farthestN = 0, farthestM = 0;
+  for (auto n = 0ul; n < projected.size(); n++) {
+    for (auto m = n + 1; m < projected.size(); m++) {
+      su2double dist2 = 0.0;
+      for (auto iDim = 0u; iDim < MAXNDIM; iDim++) dist2 += pow(projected[n][iDim] - projected[m][iDim], 2);
+      if (dist2 > diameter2) {
+        diameter2 = dist2;
+        farthestN = n;
+        farthestM = m;
+      }
+    }
+  }
+  AD::EndPassive(wasActive);
+
+  /*--- Without a pair at positive distance Delta_omega is 0, skip the sqrt whose derivative is infinite there. ---*/
+  su2double deltaOmega = 0.0;
+  if (farthestN != farthestM) {
+    diameter2 = 0.0;
+    for (auto iDim = 0u; iDim < MAXNDIM; iDim++)
+      diameter2 += pow(projected[farthestN][iDim] - projected[farthestM][iDim], 2);
+    deltaOmega = sqrt(diameter2 / 3.0);
+  }
+
+  /*--- In the RANS region F_KH is set to 1 to shield the boundary layer (Eq. 6, epsilon = 0.01). ---*/
+  if (shielded) return deltaOmega;
+
+  /*--- F_KH of the vortex tilting measure averaged over the point and its neighbors (Eq. 4). ---*/
+  su2double vortexTilting = nodes->GetVortex_Tilting(iPoint);
+  for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) vortexTilting += nodes->GetVortex_Tilting(jPoint);
+  vortexTilting /= geometry->nodes->GetnPoint(iPoint) + 1;
+
+  const su2double fMax = 1.0, fMin = 0.1, a1 = 0.15, a2 = 0.3;
+  const su2double fKH = max(fMin, min(fMax, fMin + (fMax - fMin) / (a2 - a1) * (vortexTilting - a1)));
+
+  return deltaOmega * fKH;
+}

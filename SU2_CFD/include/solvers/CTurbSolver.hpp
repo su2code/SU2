@@ -42,6 +42,30 @@ protected:
 
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
 
+  /*!
+   * \brief Work space of ShearLayerAdaptedLengthScale. Declare one per thread outside the loop over points, so that
+   *        its capacity is reused and no memory is allocated per point.
+   */
+  struct ShearLayerWorkspace {
+    vector<array<su2double, MAXNDIM>> projected;                /*!< \brief Projected control volume vertices. */
+    vector<array<unsigned long, N_POINTS_QUADRILATERAL>> faces; /*!< \brief Sorted nodes of the visited faces. */
+  };
+
+  /*!
+   * \brief Shear-layer-adapted subgrid length-scale of the EDDES models, Delta_SLA = Delta_omega * F_KH(<VTM>).
+   * \note Shur et al., An Enhanced Version of DES with Rapid Transition from RANS to LES in Separated Flows,
+   *       Flow Turbulence Combust 95, 2015, Eqs. (1)-(6). Delta_omega is computed on the vertices of the median-dual
+   *       control volume of the point, so it applies to any type of grid.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - Point index.
+   * \param[in] vorticity - Vorticity vector at the point.
+   * \param[in] shielded - True in the RANS region (f_d < 0.99), where F_KH is set to 1 (Eq. 6).
+   * \param[in,out] workspace - Reusable work space of the calling thread.
+   * \return Delta_SLA, or the maximum edge length where the vorticity vanishes.
+   */
+  su2double ShearLayerAdaptedLengthScale(const CGeometry* geometry, unsigned long iPoint, const su2double* vorticity,
+                                         bool shielded, ShearLayerWorkspace& workspace) const;
+
 public:
   /*!
    * \brief Destructor of the class.
