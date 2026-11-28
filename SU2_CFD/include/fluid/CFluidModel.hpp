@@ -91,6 +91,42 @@ class CFluidModel {
    */
   static unique_ptr<CDiffusivityModel> MakeMassDiffusivityModel(const CConfig* config, unsigned short iSpecies);
 
+  /*!
+   * \brief Newton-Raphson iteration on temperature, shared by the models that invert the enthalpy iteratively.
+   * \note A step beyond a bound is clamped to it and the iteration continues, a second step beyond the bound
+   *       taken from the bound itself means that the solution is out of range.
+   * \param[in] temperatureStep - Callable returning the Newton step, (h_target - h(T)) / Cp(T), at a temperature.
+   * \param[in] minTemperature - Lower bound for the temperature.
+   * \param[in] maxTemperature - Upper bound for the temperature.
+   * \param[in,out] temperature - Start of the iteration on entry, last iterate on exit.
+   * \return True if the iteration converged inside the bounds.
+   */
+  template <class Scalar, class StepFunction>
+  static bool SolveTemperatureNewton(StepFunction&& temperatureStep, const Scalar& minTemperature,
+                                     const Scalar& maxTemperature, Scalar& temperature) {
+    /*--- Convergence criterion for temperature, high accuracy needed for restarts. ---*/
+    constexpr passivedouble tolerance = 1e-5;
+    constexpr int maxIterations = 20;
+
+    bool atBound = false;
+    for (int iter = 0; iter < maxIterations; ++iter) {
+      const Scalar delta = temperatureStep(temperature);
+      if (!std::isfinite(SU2_TYPE::GetValue(delta))) break;
+
+      const bool belowMin = temperature + delta < minTemperature;
+      if (belowMin || temperature + delta > maxTemperature) {
+        if (atBound) break;
+        temperature = belowMin ? minTemperature : maxTemperature;
+        atBound = true;
+        continue;
+      }
+      temperature += delta;
+      atBound = false;
+      if (fabs(delta) <= tolerance) return true;
+    }
+    return false;
+  }
+
  public:
   virtual ~CFluidModel() {}
 
@@ -213,11 +249,6 @@ class CFluidModel {
    * \brief Get Heat release due to combustion.
    */
   inline virtual su2double GetHeatRelease() { return 0.0; }
-
-  /*!
-   * \brief Whether the last temperature-from-enthalpy iteration failed, so the state is non-physical.
-   */
-  inline virtual bool GetTemperatureIterationFailed() const { return false; }
 
   /*!
    * \brief Get the enthalpy diffusivity terms for all species being solved.
@@ -404,10 +435,19 @@ class CFluidModel {
   virtual void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) {}
 
   /*!
-   * \brief Virtual member. Initial temperature for the next iterative SetTDState_h call.
-   * \param[in] val_temperature - Temperature guess, e.g. the previous value at the point.
+   * \brief Set the state from the enthalpy, solving for the temperature iteratively if the model needs to.
+   * \note Models that compute the temperature directly ignore the guess and always succeed.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_temperature_guess - Start of the temperature iteration, e.g. the previous temperature at the
+   *            point. A value <= 0 means no guess is available.
+   * \param[in] val_scalars - Scalar mass fractions.
+   * \return True if a valid state was found. If false, the state of the model must not be used.
    */
-  virtual void SetTemperatureGuess(su2double val_temperature) {}
+  virtual bool SolveTDState_h(su2double val_enthalpy, su2double val_temperature_guess,
+                              const su2double* val_scalars = nullptr) {
+    SetTDState_h(val_enthalpy, val_scalars);
+    return true;
+  }
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

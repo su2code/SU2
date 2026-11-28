@@ -28,6 +28,7 @@
 #pragma once
 
 #include <array>
+#include <limits>
 
 #include "CFluidModel.hpp"
 
@@ -90,24 +91,31 @@ class CIncIdealGasPolynomial final : public CFluidModel {
   }
 
   /*!
-   * \brief Set the Dimensionless State using enthalpy.
+   * \brief Set the Dimensionless State using enthalpy, starting from the reference temperature.
+   * \note A failed iteration is not reported, use SolveTDState_h where that matters.
    * \param[in] val_enthalpy - Enthalpy value at the point.
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
+    SolveTDState_h(val_enthalpy, 0.0, val_scalars);
+  }
+
+  /*!
+   * \brief Set the Dimensionless State using enthalpy, by Newton-Raphson iteration on temperature.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_temperature_guess - Start of the iteration, <= 0 to start from the reference temperature.
+   * \param[in] val_scalars - Scalar mass fractions (not used).
+   * \return True if the iteration converged above the minimum temperature.
+   */
+  bool SolveTDState_h(su2double val_enthalpy, su2double val_temperature_guess,
+                      const su2double* val_scalars = nullptr) override {
     Enthalpy = val_enthalpy;
-    /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
-    const su2double toll = 1e-5;
-    su2double temp_iter = 300.0;
-    su2double Cp_iter = 0.0;
-    su2double delta_temp_iter = 1e10;
-    su2double delta_enthalpy_iter;
-    const int counter_limit = 20;
+    /*--- The guess is passive, the converged temperature does not depend on it. ---*/
+    su2double temperature = (val_temperature_guess > 0.0) ? SU2_TYPE::GetValue(val_temperature_guess)
+                                                          : Std_Ref_Temp_ND;
+    su2double Cp_iter = coeffs_[0];
 
-    int counter = 0;
-
-    /*--- Compute temperature given enthalpy using Newton-Raphson. ---*/
-    while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
-      /* Evaluate the new Cp and enthalpy from the coefficients and temperature. */
+    /*--- Newton step from Cp and the enthalpy evaluated from the coefficients at a temperature. ---*/
+    auto temperatureStep = [&](const su2double& temp_iter) {
       Cp_iter = coeffs_[0];
       su2double Enthalpy_iter = coeffs_[0] * (temp_iter - Std_Ref_Temp_ND);
       su2double t_i = 1.0;
@@ -118,26 +126,19 @@ class CIncIdealGasPolynomial final : public CFluidModel {
         Cp_iter += coeffs_[i] * t_i;
         Enthalpy_iter += coeffs_[i] * (t_i * temp_iter - tref_i * Std_Ref_Temp_ND) / (i + 1);
       }
+      return su2double((Enthalpy - Enthalpy_iter) / Cp_iter);
+    };
 
-      delta_enthalpy_iter = Enthalpy - Enthalpy_iter;
+    /*--- Only the minimum temperature bounds the iteration. With a positive Cp the enthalpy increases with
+     temperature, so a step below the minimum taken from the minimum itself means the solution is below it. ---*/
+    const su2double Temperature_Max = std::numeric_limits<passivedouble>::max();
+    const bool converged = SolveTemperatureNewton(temperatureStep, Temperature_Min, Temperature_Max, temperature);
 
-      delta_temp_iter = delta_enthalpy_iter / Cp_iter;
-
-      temp_iter += delta_temp_iter;
-      if (temp_iter < Temperature_Min) {
-        cout << "Warning: Negative temperature has been found during Newton-Raphson." << endl;
-        temp_iter = Temperature_Min;
-        break;
-      }
-    }
-
-    Temperature = temp_iter;
+    Temperature = temperature;
     Cp = Cp_iter;
-    if (counter == counter_limit) {
-      cout << "Warning: Newton-Raphson exceeds max. iterations in temperature computation." << endl;
-    }
     Density = Pressure / (Temperature * Gas_Constant);
     Cv = Cp / Gamma;
+    return converged;
   }
 
  private:
