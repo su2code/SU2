@@ -516,7 +516,7 @@ private:
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
-  Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the heat equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
   LINEAR_SOLVER_INNER Kind_Linear_Solver_Inner; /*!< \brief Inner solver used in nested Krylov schemes. */
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
@@ -608,6 +608,7 @@ private:
   MUSCL_Kappa_Heat,        /*!< \brief Blending coefficient for U-MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_Kappa_AdjFlow,     /*!< \brief Blending coefficient for U-MUSCL scheme for the adj flow equations.*/
   MUSCL_Kappa_Species;     /*!< \brief Blending coefficient for U-MUSCL scheme for the species equations.*/
+  bool Use_Exact_HLLC_Jacobians; /*!< \brief Exact HLLC Jacobians with wave speeds held fixed. */
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
@@ -1343,6 +1344,9 @@ private:
 
   /*--- Additional flamelet solver options ---*/
   FluidFlamelet_ParsedOptions flamelet_ParsedOptions; /*!< \brief Additional flamelet solver options */
+
+  /*--- Adaptive metric (mesh adaptation) options ---*/
+  AdaptiveMetric_ParsedOptions adaptiveMetric_ParsedOptions; /*!< \brief Adaptive metric options */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -4895,6 +4899,9 @@ public:
    */
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
 
+  /*!\brief Get whether to use exact HLLC Jacobians with wave speeds held fixed. */
+  bool GetUse_Exact_HLLC_Jacobians(void) const { return Use_Exact_HLLC_Jacobians; }
+
   /*!
    * \brief Get whether to "Use Accurate Jacobians" for Standard SA turbulence model.
    * \return yes/no.
@@ -5069,6 +5076,12 @@ public:
    * \return Method for limiting the spatial gradients solving the species equation.
    */
   LIMITER GetKind_SlopeLimit_Species() const { return Kind_SlopeLimit_Species; }
+
+  /*!
+   * \brief Get the method for limiting the spatial gradients.
+   * \return Method for limiting the spatial gradients solving the heat equation.
+   */
+  LIMITER GetKind_SlopeLimit_Heat() const { return Kind_SlopeLimit_Heat; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
@@ -10493,6 +10506,12 @@ public:
    * \return option data structure for the flamelet fluid model.
    */
   const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
+
+  /*!
+   * \brief Get parsed option data structure for the adaptive metric (mesh adaptation).
+   * \return option data structure for the adaptive metric.
+   */
+  const AdaptiveMetric_ParsedOptions& GetAdaptiveMetricParsedOptions() const { return adaptiveMetric_ParsedOptions; }
 
   /*!
    * \brief Get the enthalpy BC mode for the flamelet solver.

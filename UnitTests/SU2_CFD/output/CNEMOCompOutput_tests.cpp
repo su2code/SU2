@@ -41,7 +41,7 @@
 
 namespace {
 
-std::unique_ptr<CConfig> MakeNEMOConfig(bool multizone) {
+std::unique_ptr<CConfig> MakeNEMOConfig(bool multizone, const std::string& extraOptions = "") {
   std::stringstream options;
   options << "SOLVER= NEMO_EULER\n"
           << "GAS_MODEL= AIR-5\n"
@@ -51,7 +51,8 @@ std::unique_ptr<CConfig> MakeNEMOConfig(bool multizone) {
           << "MACH_NUMBER= 5.0\n"
           << "FREESTREAM_PRESSURE= 101325.0\n"
           << "FREESTREAM_TEMPERATURE= 288.15\n"
-          << "FREESTREAM_TEMPERATURE_VE= 288.15\n";
+          << "FREESTREAM_TEMPERATURE_VE= 288.15\n"
+          << extraOptions;
   auto config = std::make_unique<CConfig>(options, SU2_COMPONENT::SU2_CFD, false);
   config->SetMultizone_Problem(multizone);
   return config;
@@ -253,5 +254,45 @@ TEST_CASE("NEMO history loads reduced residuals by species-first index", "[NEMO]
       CAPTURE(multizone);
       CheckLoadedResiduals(dimension, multizone);
     }
+  }
+}
+
+TEST_CASE("NEMO limiter volume fields are named after the primitive variables", "[NEMO][Output]") {
+  auto config =
+      MakeNEMOConfig(false, "CONV_NUM_METHOD_FLOW= ROE\nMUSCL_FLOW= YES\nSLOPE_LIMITER_FLOW= VENKATAKRISHNAN\n");
+  REQUIRE(config->GetKind_SlopeLimit_Flow() == LIMITER::VENKATAKRISHNAN);
+
+  for (unsigned short dimension : {2, 3}) {
+    CAPTURE(dimension);
+    CNEMOCompOutput output(config.get(), dimension);
+    output.SetVolumeOutputFields(config.get());
+
+    /* The limiters are those of the reconstructed primitive variables (species densities, T, Tve, velocity,
+     * pressure), not of the conservative ones. */
+    std::stringstream printed;
+    auto origBuf = std::cout.rdbuf(printed.rdbuf());
+    output.PrintVolumeFields();
+    std::cout.rdbuf(origBuf);
+    const auto fields = printed.str();
+
+    /* A name in the table is followed by padding or by the column separator. */
+    auto hasField = [&fields](const std::string& name) {
+      return fields.find(name + " ") != std::string::npos || fields.find(name + "|") != std::string::npos;
+    };
+
+    std::vector<std::string> expected;
+    for (auto iSpecies = 0u; iSpecies < config->GetnSpecies(); ++iSpecies)
+      expected.push_back("LIMITER_DENSITY_" + std::to_string(iSpecies));
+    for (const std::string name : {"LIMITER_TEMPERATURE_TR", "LIMITER_TEMPERATURE_VE", "LIMITER_VELOCITY-X",
+                                   "LIMITER_VELOCITY-Y", "LIMITER_PRESSURE"})
+      expected.push_back(name);
+    if (dimension == 3) expected.push_back("LIMITER_VELOCITY-Z");
+
+    for (const auto& name : expected) {
+      INFO("volume field " << name);
+      CHECK(hasField(name));
+    }
+    CHECK(fields.find("LIMITER_MOMENTUM") == std::string::npos);
+    CHECK(fields.find("LIMITER_ENERGY") == std::string::npos);
   }
 }

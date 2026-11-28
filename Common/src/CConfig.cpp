@@ -37,6 +37,7 @@
 
 #include "../include/basic_types/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
+#include "../include/toolboxes/geometry_toolbox.hpp"
 #include "../include/toolboxes/SwapBytes.hpp"
 
 using namespace PrintingToolbox;
@@ -180,6 +181,11 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], SU2_COMPO
     SetOutput(val_software, val_iZone);
 
   Multizone_Problem = config->GetMultizone_Problem();
+
+  /*--- See the adaptive metric checks in SetPostprocessing. ---*/
+  if (adaptiveMetric_ParsedOptions.compute && Multizone_Problem) {
+    SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support multizone problems.", CURRENT_FUNCTION);
+  }
 
 }
 
@@ -2198,6 +2204,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
   /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
+  /*!\brief USE_EXACT_HLLC_JACOBIANS \n DESCRIPTION: Exact HLLC Jacobians with wave speeds held fixed \ingroup Config*/
+  addBoolOption("USE_EXACT_HLLC_JACOBIANS", Use_Exact_HLLC_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
   addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Control numerical properties of the global Jacobian matrix using a multiplication factor for incompressible central schemes \ingroup Config*/
@@ -3282,6 +3290,64 @@ void CConfig::SetConfig_Options() {
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
 
+  /*--- options that are used for mesh adaptation ---*/
+  /*!\par CONFIG_CATEGORY:Adaptation Options \ingroup Config*/
+
+  /*!\brief COMPUTE_ADAPTIVE_METRIC \n DESCRIPTION: Compute the adaptive metric field for anisotropic mesh adaptation */
+  addBoolOption("COMPUTE_ADAPTIVE_METRIC", adaptiveMetric_ParsedOptions.compute, false);
+  /*!\brief NORMALIZE_ADAPTIVE_METRIC \n DESCRIPTION: Perform the Lp-norm normalization of the adaptive metric */
+  addBoolOption("NORMALIZE_ADAPTIVE_METRIC", adaptiveMetric_ParsedOptions.normalize, true);
+  /*!\brief NUM_METHOD_HESS
+   *  \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
+  addEnumOption("NUM_METHOD_HESS", adaptiveMetric_ParsedOptions.kind_hessian_method, Gradient_Map, GREEN_GAUSS);
+
+  /*!\brief ADAPTIVE_METRIC_SENSOR \n DESCRIPTION: Sensors for the adaptive metric field */
+  addStringListOption("ADAPTIVE_METRIC_SENSOR", adaptiveMetric_ParsedOptions.n_sensors,
+                      adaptiveMetric_ParsedOptions.sensor_names);
+  /*!\brief ADAPTIVE_METRIC_CUSTOM_SENSOR \n DESCRIPTION: Sensors of ADAPTIVE_METRIC_SENSOR filled through the Python wrapper */
+  addStringListOption("ADAPTIVE_METRIC_CUSTOM_SENSOR", adaptiveMetric_ParsedOptions.n_custom_sensors,
+                      adaptiveMetric_ParsedOptions.custom_sensor_names);
+  /*!\brief ADAPTIVE_METRIC_NORM \n DESCRIPTION: Lp-norm for the adaptive metric normalization */
+  addUnsignedShortOption("ADAPTIVE_METRIC_NORM", adaptiveMetric_ParsedOptions.norm, 2);
+  /*!\brief ADAPTIVE_METRIC_COMPLEXITY \n DESCRIPTION: Target mesh complexity */
+  addUnsignedLongOption("ADAPTIVE_METRIC_COMPLEXITY", adaptiveMetric_ParsedOptions.complexity, 10000);
+  /*!\brief ADAP_TIME_SUBINTERVAL \n DESCRIPTION: Number of time subintervals in unsteady mesh adaptation */
+  addUnsignedShortOption("ADAP_TIME_SUBINTERVAL", adaptiveMetric_ParsedOptions.n_time_subintervals, 1);
+
+  /*!\brief ADAPTIVE_METRIC_HMAX \n DESCRIPTION: Constraint maximum cell size, one value for all sensors or one per sensor (default 100) */
+  addDoubleListOption("ADAPTIVE_METRIC_HMAX", adaptiveMetric_ParsedOptions.n_hmax, adaptiveMetric_ParsedOptions.hmax_list);
+  /*!\brief ADAPTIVE_METRIC_HMIN \n DESCRIPTION: Constraint minimum cell size, one value for all sensors or one per sensor (default 1e-8) */
+  addDoubleListOption("ADAPTIVE_METRIC_HMIN", adaptiveMetric_ParsedOptions.n_hmin, adaptiveMetric_ParsedOptions.hmin_list);
+  /*!\brief ADAPTIVE_METRIC_ARMAX \n DESCRIPTION: Constraint maximum cell aspect ratio, one value for all sensors or one per sensor (default 1e6) */
+  addDoubleListOption("ADAPTIVE_METRIC_ARMAX", adaptiveMetric_ParsedOptions.n_armax, adaptiveMetric_ParsedOptions.armax_list);
+  /*!\brief ADAPTIVE_METRIC_HGRAD \n DESCRIPTION: Size gradation smoothing parameter */
+  addPythonOption("ADAPTIVE_METRIC_HGRAD");
+
+  /*!\brief ADAP_ITER \n DESCRIPTION: Mesh adaptation inner iterations per complexity */
+  addPythonOption("ADAP_ITER");
+  /*!\brief ADAP_COMPLEXITIES \n DESCRIPTION: List of constraint (target) mesh complexities for mesh convergence study */
+  addPythonOption("ADAP_COMPLEXITIES");
+  /*!\brief ADAP_FLOW_ITERS \n DESCRIPTION: Primal solver iterations at each target complexity */
+  addPythonOption("ADAP_FLOW_ITERS");
+  /*!\brief ADAP_ADJ_ITERS \n DESCRIPTION: Adjoint solver iterations at each target complexity */
+  addPythonOption("ADAP_ADJ_ITERS");
+  /*!\brief ADAP_FLOW_CFLS \n DESCRIPTION: Primal solver CFL number at each target complexity */
+  addPythonOption("ADAP_FLOW_CFLS");
+  /*!\brief ADAP_ADJ_CFLS \n DESCRIPTION: Adjoint solver CFL number at each target complexity */
+  addPythonOption("ADAP_ADJ_CFLS");
+  /*!\brief ADAP_RESIDUAL_REDUCTIONS \n DESCRIPTION: Residual reduction at each target complexity */
+  addPythonOption("ADAP_RESIDUAL_REDUCTIONS");
+  /*!\brief ADAP_HMAXS \n DESCRIPTION: Maximum cell size at each target complexity */
+  addPythonOption("ADAP_HMAXS");
+  /*!\brief ADAP_HMINS \n DESCRIPTION: Minimum cell size at each target complexity */
+  addPythonOption("ADAP_HMINS");
+  /*!\brief ADAP_HGRAD \n DESCRIPTION: Size gradation smoothing parameter */
+  addPythonOption("ADAP_HGRAD");
+  /*!\brief ADAP_HAUSD \n DESCRIPTION: Hausdorff distance parameter for surface remeshing */
+  addPythonOption("ADAP_HAUSD");
+  /*!\brief ADAP_ANGLE \n DESCRIPTION: Sharp angle detection parameter for surface remeshing */
+  addPythonOption("ADAP_ANGLE");
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -3999,6 +4065,27 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (!MUSCL_AdjFlow || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = LIMITER::NONE;
   if (!MUSCL_AdjTurb || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = LIMITER::NONE;
 
+  /*--- The SHARP_EDGES and WALL_DISTANCE limiters are first order within a distance proportional to
+   * VENKAT_LIMITER_COEFF * ADJ_SHARP_LIMITER_COEFF, with a zero width they are first order everywhere.
+   * Only the limiters of the active equations are checked. ---*/
+  const bool turb = Kind_Turb_Model != TURB_MODEL::NONE;
+  const bool heat =
+      Weakly_Coupled_Heat || Kind_Solver == MAIN_SOLVER::HEAT_EQUATION || Kind_Solver == MAIN_SOLVER::DISC_ADJ_HEAT;
+  vector<LIMITER> activeLimiters = {Kind_SlopeLimit_Flow};
+  if (turb) activeLimiters.push_back(Kind_SlopeLimit_Turb);
+  if (Kind_Species_Model != SPECIES_MODEL::NONE) activeLimiters.push_back(Kind_SlopeLimit_Species);
+  if (heat) activeLimiters.push_back(Kind_SlopeLimit_Heat);
+  if (ContinuousAdjoint) activeLimiters.push_back(Kind_SlopeLimit_AdjFlow);
+  if (ContinuousAdjoint && turb) activeLimiters.push_back(Kind_SlopeLimit_AdjTurb);
+  for (const auto kind : activeLimiters) {
+    if ((kind == LIMITER::SHARP_EDGES || kind == LIMITER::WALL_DISTANCE) &&
+        !(Venkat_LimiterCoeff > 0.0 && AdjSharp_LimiterCoeff > 0.0)) {
+      SU2_MPI::Error("The SHARP_EDGES and WALL_DISTANCE slope limiters need VENKAT_LIMITER_COEFF > 0 and\n"
+                     "ADJ_SHARP_LIMITER_COEFF > 0 (they set the width of the region limited to first order).",
+                     CURRENT_FUNCTION);
+    }
+  }
+
   /*--- Set the default for thrust in ActDisk ---*/
 
   if ((Kind_ActDisk == NET_THRUST) || (Kind_ActDisk == BC_THRUST)
@@ -4709,6 +4796,36 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   Rotating_Frame = (Kind_GridMovement == ROTATING_FRAME);
 
+  /*--- The finite volume flow solvers apply these source terms with a single numerics object, which is built
+   for only one of them: combinations would apply one source several times and ignore the others. Only these
+   solvers (and their discrete adjoints) are checked: e.g. elasticity uses BODY_FORCE and GRAVITY_FORCE together. ---*/
+
+  if (GetFluidProblem() && !GetNEMOProblem()) {
+    const bool inc = (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE);
+    const int nSources = int(Body_Force) + int(Rotating_Frame) + int(Axisymmetric) + int(GravityForce && !inc) +
+                         int(inc && Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ) +
+                         int(inc && Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE);
+    if (nSources > 1) {
+      SU2_MPI::Error("Only one of BODY_FORCE, GRID_MOVEMENT= ROTATING_FRAME, AXISYMMETRIC, GRAVITY_FORCE (compressible), "
+                     "INC_DENSITY_MODEL= BOUSSINESQ and KIND_STREAMWISE_PERIODIC (incompressible) can be used at a time.",
+                     CURRENT_FUNCTION);
+    }
+  }
+
+  /*--- The second source object, for radiation, the energy correction of incompressible streamwise periodic flow
+   (without periodic temperature) or vorticity confinement, is also built for only one of them. ---*/
+
+  if (GetFluidProblem() && !GetNEMOProblem()) {
+    const bool inc = (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE);
+    const bool periodicOutlet = inc && Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE && Energy_Equation &&
+                                !Streamwise_Periodic_Temperature;
+    if (int(Radiation) + int(periodicOutlet) + int(VorticityConfinement) > 1) {
+      SU2_MPI::Error("Only one of RADIATION, the energy correction of KIND_STREAMWISE_PERIODIC (incompressible, "
+                     "STREAMWISE_PERIODIC_TEMPERATURE= NO) and VORTICITY_CONFINEMENT can be used at a time.",
+                     CURRENT_FUNCTION);
+    }
+  }
+
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each option, a value has been declared for each moving marker. ---*/
@@ -5067,6 +5184,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    *    derived from the cycle, or it stays on the coarsest level for the entire run. ---*/
 
   if (Restart || ((Kind_MGCycle == MG_CYCLE::FULL) && ContinuousAdjoint)) Kind_MGCycle = MG_CYCLE::V;
+
+  /*--- The multigrid arrays hold at most 10 coarse levels (CMultiGridIntegration::MAX_MG_LEVELS). ---*/
+  if (nMGLevels > 10) {
+    SU2_MPI::Error("MGLEVEL must be between 0 and 10; larger multigrid hierarchies are not supported.", CURRENT_FUNCTION);
+  }
 
   FinestMesh = MESH_0;
   if (Kind_MGCycle == MG_CYCLE::FULL) FinestMesh = nMGLevels;
@@ -5662,12 +5784,24 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Streamwise Periodic Flow + Incompressible Euler: Not tested yet.", CURRENT_FUNCTION);
     if (nMarker_PerBound == 0)
       SU2_MPI::Error("A MARKER_PERIODIC pair has to be set with KIND_STREAMWISE_PERIODIC != NONE.", CURRENT_FUNCTION);
+    /*--- The first pair defines the streamwise direction used by every source. ---*/
+    const auto* translation = GetPeriodic_Translation(0);
+    if (GeometryToolbox::SquaredNorm(3, translation) == 0)
+      SU2_MPI::Error("The first streamwise periodic pair must have a nonzero translation.", CURRENT_FUNCTION);
+    const auto* angles = GetPeriodicRotAngles(Marker_PerBound[0]);
+    if (GeometryToolbox::HasRotation(angles))
+      SU2_MPI::Error("The first streamwise periodic pair must be purely translational.", CURRENT_FUNCTION);
+    if (Energy_Equation && Streamwise_Periodic_Temperature && (nMarker_HeatTransfer || nMarker_CHTInterface))
+      SU2_MPI::Error("STREAMWISE_PERIODIC_TEMPERATURE requires prescribed MARKER_HEATFLUX walls; "
+                     "MARKER_HEATTRANSFER and MARKER_CHT_INTERFACE are unsupported.", CURRENT_FUNCTION);
     if (Energy_Equation && Streamwise_Periodic_Temperature && nMarker_Isothermal != 0)
       SU2_MPI::Error("No MARKER_ISOTHERMAL marker allowed with STREAMWISE_PERIODIC_TEMPERATURE= YES, only MARKER_HEATFLUX & MARKER_SYM.", CURRENT_FUNCTION);
     if (Ref_Inc_NonDim != DIMENSIONAL)
       SU2_MPI::Error("Streamwise Periodicity only works with \"INC_NONDIM= DIMENSIONAL\", the nondimensionalization with source terms doesn;t work in general.", CURRENT_FUNCTION);
     if (Axisymmetric)
       SU2_MPI::Error("Streamwise Periodicity terms does not not have axisymmetric corrections.", CURRENT_FUNCTION);
+    if (nMGLevels != 0)
+      SU2_MPI::Error("Streamwise Periodicity does not support multigrid, use MGLEVEL= 0.", CURRENT_FUNCTION);
     if (!Energy_Equation) Streamwise_Periodic_Temperature = false;
   } else {
     /*--- Safety measure ---*/
@@ -6134,6 +6268,95 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (flamelet_ParsedOptions.Flame_T_ignition <= Inc_Temperature_Init) {
       SU2_MPI::Error("Flame ignition temperature must be higher than the initial temperature of the flow field.", CURRENT_FUNCTION);
     }
+  }
+
+  /*--- Checks for the adaptive metric (mesh adaptation) ---*/
+  auto& adapt = adaptiveMetric_ParsedOptions;
+  if (adapt.compute) {
+    /*--- Sensor names are case-insensitive ---*/
+    auto upper = [](string name) {
+      PrintingToolbox::StringToUpperCase(name);
+      return name;
+    };
+
+    if (adapt.n_sensors == 0) {
+      SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC requires at least one ADAPTIVE_METRIC_SENSOR.", CURRENT_FUNCTION);
+    }
+
+    /*--- TODO: periodic communication of the sensor gradients and Hessians ---*/
+    if (nMarker_PerBound > 0) {
+      SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support periodic boundaries.", CURRENT_FUNCTION);
+    }
+
+    /*--- The metric is only computed by the single-zone primal driver (CSinglezoneDriver). Zone configs
+     *    inherit the multizone flag after this check, so it is repeated in the zone constructor. ---*/
+    if (Multizone_Problem || nZone > 1) {
+      SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support multizone problems.", CURRENT_FUNCTION);
+    }
+    if (TimeMarching == TIME_MARCHING::HARMONIC_BALANCE) {
+      SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support harmonic balance.", CURRENT_FUNCTION);
+    }
+    if (DiscreteAdjoint) {
+      SU2_MPI::Error("COMPUTE_ADAPTIVE_METRIC does not yet support the discrete adjoint.", CURRENT_FUNCTION);
+    }
+
+    /*--- Check that config is valid for requested sensor ---*/
+    for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
+      /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
+      /*--- TODO: goal-oriented adaptation ---*/
+      if (upper(adapt.sensor_names[iSensor]) == "GOAL") {
+        SU2_MPI::Error("Adaptation sensor GOAL not yet supported.", CURRENT_FUNCTION);
+      }
+    }
+
+    /*--- Every custom sensor must also be listed in ADAPTIVE_METRIC_SENSOR ---*/
+    for (auto iCustom = 0u; iCustom < adapt.n_custom_sensors; iCustom++) {
+      bool listed = false;
+      for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
+        listed = listed || (upper(adapt.custom_sensor_names[iCustom]) == upper(adapt.sensor_names[iSensor]));
+      }
+      if (!listed) {
+        SU2_MPI::Error("ADAPTIVE_METRIC_CUSTOM_SENSOR entry " + adapt.custom_sensor_names[iCustom] +
+                       " is not listed in ADAPTIVE_METRIC_SENSOR.", CURRENT_FUNCTION);
+      }
+    }
+
+    /*--- Size and aspect ratio constraints: default, one value for all sensors, or one per sensor ---*/
+    auto perSensor = [&](const string& option, unsigned short nValues, const su2double* values,
+                         passivedouble defaultValue) {
+      if (nValues == 0) return vector<su2double>(adapt.n_sensors, defaultValue);
+      if (nValues == 1) return vector<su2double>(adapt.n_sensors, values[0]);
+      if (nValues != adapt.n_sensors) {
+        SU2_MPI::Error(option + " must have one value, or one value per ADAPTIVE_METRIC_SENSOR entry (" +
+                       to_string(adapt.n_sensors) + ").", CURRENT_FUNCTION);
+      }
+      return vector<su2double>(values, values + nValues);
+    };
+    adapt.hmax = perSensor("ADAPTIVE_METRIC_HMAX", adapt.n_hmax, adapt.hmax_list, adapt.default_hmax);
+    adapt.hmin = perSensor("ADAPTIVE_METRIC_HMIN", adapt.n_hmin, adapt.hmin_list, adapt.default_hmin);
+    adapt.armax = perSensor("ADAPTIVE_METRIC_ARMAX", adapt.n_armax, adapt.armax_list, adapt.default_armax);
+
+    for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
+      if (!(adapt.hmin[iSensor] > 0.0) || adapt.hmax[iSensor] < adapt.hmin[iSensor]) {
+        SU2_MPI::Error("ADAPTIVE_METRIC_HMIN must be positive and not larger than ADAPTIVE_METRIC_HMAX (sensor " +
+                       adapt.sensor_names[iSensor] + ").", CURRENT_FUNCTION);
+      }
+      if (adapt.armax[iSensor] < 1.0) {
+        SU2_MPI::Error("ADAPTIVE_METRIC_ARMAX must be at least 1 (sensor " + adapt.sensor_names[iSensor] + ").",
+                       CURRENT_FUNCTION);
+      }
+    }
+
+    /*--- Only GG Hessians for now ---*/
+    if (adapt.kind_hessian_method != GREEN_GAUSS) {
+      SU2_MPI::Error("NUM_METHOD_HESS must be GREEN_GAUSS.", CURRENT_FUNCTION);
+    }
+
+    /*--- Make sure only using single adaptation sub-interval for steady problems ---*/
+    if(TimeMarching == TIME_MARCHING::STEADY)
+      adapt.n_time_subintervals = 1;
+    if (adapt.n_time_subintervals != 1)
+      SU2_MPI::Error("Adaptation sub-intervals not yet supported. Set ADAP_TIME_SUBINTERVAL = 1 or remove from config.", CURRENT_FUNCTION);
   }
 
 }
@@ -8405,6 +8628,42 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     if (GetKind_ActDisk() == BLADE_ELEMENT) {
       cout << endl << "Actuator disk with blade element momentum (BEM) method." << endl;
       cout << "Actuator disk BEM method propeller data read from file: " << GetBEM_prop_filename() << endl;
+    }
+  }
+
+  if (val_software == SU2_COMPONENT::SU2_CFD || val_software == SU2_COMPONENT::SU2_SOL) {
+    const auto& adapt = adaptiveMetric_ParsedOptions;
+    if (adapt.compute) {
+      cout << endl <<"---------------- Mesh Adaptation Information ( Zone "  << iZone << " ) -----------------" << endl;
+      cout << "Adaptive metric sensor(s): ";
+      for (auto iSensor = 0u; iSensor < adapt.n_sensors; iSensor++) {
+        cout << adapt.sensor_names[iSensor];
+        if (iSensor + 1u < adapt.n_sensors) cout << ", ";
+      }
+      cout << endl;
+      cout << "Hessian for adaptive metric: Green-Gauss." << endl;
+      if (adapt.normalize) {
+        cout << "Target complexity: " << adapt.complexity << endl;
+        if (TimeMarching != TIME_MARCHING::STEADY) {
+          cout << "  Unsteady adaptation sub-intervals: " << adapt.n_time_subintervals << endl;
+          cout << "  Target space-time complexity: " << adapt.complexity * adapt.n_time_subintervals << endl;
+        }
+        cout << "Lp norm: " << adapt.norm << endl;
+        auto printPerSensor = [&](const string& label, const vector<su2double>& values) {
+          cout << label;
+          for (auto iSensor = 0u; iSensor < values.size(); iSensor++) {
+            cout << values[iSensor];
+            if (iSensor + 1u < values.size()) cout << ", ";
+          }
+          cout << endl;
+        };
+        printPerSensor("Min. edge length: ", adapt.hmin);
+        printPerSensor("Max. edge length: ", adapt.hmax);
+        printPerSensor("Max. aspect ratio: ", adapt.armax);
+      }
+      else {
+        cout << "Output unnormalized adaptive metric field." << endl;
+      }
     }
   }
 }

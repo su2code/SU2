@@ -50,6 +50,7 @@ Alessandro Gastaldi
 Aman uz zaman Baig
 Amit Sachdeva
 Ana Lourenco
+Andrea Rausa
 Andrew Burkett
 Andrew Wendorff
 Angelo Passariello
@@ -103,6 +104,7 @@ JonathanSmith1936
 Joseph Signorelli
 Joshua A. Kelly
 Josy P. Pullockara
+Kajetan R. Gulaj
 Kedar Naik
 Kürşat Yurt
 LaSerpe

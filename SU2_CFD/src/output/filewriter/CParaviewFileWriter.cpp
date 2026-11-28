@@ -108,61 +108,64 @@ void CParaviewFileWriter::WriteData(string val_filename){
   unsigned short varStart = 2;
   if (nDim == 3) varStart++;
 
-  /*--- Need to adjust container location to avoid PointID tag and coords. ---*/
-  unsigned short VarCounter = varStart;
+  /*--- Group the vector and tensor components of the fields. ---*/
 
-  for (unsigned short iField = varStart; iField < fieldNames.size(); iField++) {
+  const auto fieldKinds = ClassifyFields(fieldNames, varStart, nDim);
 
-    string fieldname = fieldNames[iField];
+  for (unsigned long iField = varStart; iField < fieldNames.size(); iField++) {
 
-    fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
+    if (fieldKinds[iField] == FieldKind::SKIP) continue;
 
-    bool output_variable = true, isVector = false;
-    size_t found = fieldNames[iField].find("_x");
-    if (found!=string::npos) {
-      output_variable = true;
-      isVector = true;
-    }
-    found = fieldNames[iField].find("_y");
-    if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Y component. ---*/
-      output_variable = false;
-      VarCounter++;
-    }
-    found = fieldNames[iField].find("_z");
-    if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Z component. ---*/
-      output_variable = false;
-      VarCounter++;
-    }
-
-    if (!output_variable) continue;
+    string fieldname = UnquotedFieldName(fieldNames[iField]);
 
     resetData();
 
-    if (isVector) {
+    switch (fieldKinds[iField]) {
+      case FieldKind::TENSOR:
 
-      fieldname.erase(fieldname.end()-2,fieldname.end());
+        /*--- Remove the "_xx" suffix; tensors are written as full 3x3 matrices. ---*/
 
-      WriteMPIString("\nVECTORS " + fieldname + " double\n", MASTER_NODE);
+        fieldname.erase(fieldname.end()-3,fieldname.end());
 
-      for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-        data << dataSorter->GetData(VarCounter+0, iPoint) << "\t" << dataSorter->GetData(VarCounter+1, iPoint) << "\t";
-        if (nDim == 3) data << dataSorter->GetData(VarCounter+2, iPoint) << "\t";
-        if (nDim == 2) data << "0.0" << "\t";
-      }
+        WriteMPIString("\nTENSORS " + fieldname + " double\n", MASTER_NODE);
 
-    } else {
+        for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
+          passivedouble tensor[3][3];
+          GetSymmetricTensor(iField, iPoint, tensor);
+          for (const auto& row : tensor)
+            for (const auto value : row) data << value << "\t";
+        }
+        break;
 
-      WriteMPIString("\nSCALARS " + fieldname + " double 1\nLOOKUP_TABLE default\n", MASTER_NODE);
+      case FieldKind::VECTOR:
 
-      for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-        data << dataSorter->GetData(VarCounter, iPoint) << "\t";
-      }
+        /*--- Remove the "_x" suffix. ---*/
+
+        fieldname.erase(fieldname.end()-2,fieldname.end());
+
+        WriteMPIString("\nVECTORS " + fieldname + " double\n", MASTER_NODE);
+
+        for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
+          data << dataSorter->GetData(iField+0, iPoint) << "\t" << dataSorter->GetData(iField+1, iPoint) << "\t";
+          if (nDim == 3) data << dataSorter->GetData(iField+2, iPoint) << "\t";
+          if (nDim == 2) data << "0.0" << "\t";
+        }
+        break;
+
+      case FieldKind::SCALAR:
+
+        WriteMPIString("\nSCALARS " + fieldname + " double 1\nLOOKUP_TABLE default\n", MASTER_NODE);
+
+        for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
+          data << dataSorter->GetData(iField, iPoint) << "\t";
+        }
+        break;
+
+      case FieldKind::SKIP:
+        break;
     }
 
     WriteMPIStringAll(data.str());
-    VarCounter++;
   }
 
   CloseMPIFile();
