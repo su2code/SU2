@@ -48,8 +48,7 @@ class CFluidFlamelet final : public CFluidModel {
   su2double beta_progvar, beta_enth_thermal, beta_enth, beta_mixfrac;
   int rank;
 
-  bool include_mixture_fraction = false, /*!< \brief include mixture fraction in controlling variables. */
-       preferential_diffusion = false;     /*!< \brief use preferential diffusion physics. */
+  bool preferential_diffusion = false; /*!< \brief use preferential diffusion physics. */
 
   unsigned short n_scalars, n_lookups, n_user_scalars, /*!< \brief number of passive reactant species. */
       n_control_vars;                                  /*!< \brief number of controlling variables. */
@@ -68,7 +67,12 @@ class CFluidFlamelet final : public CFluidModel {
   vector<unsigned long> LUT_idx_TD,
                         LUT_idx_Sources,
                         LUT_idx_LookUp,
-                        LUT_idx_PD;
+                        LUT_idx_PD,
+                        LUT_idx_ProgVarBounds;
+
+  vector<su2double> manifold_inputs; /*!< \brief Controlling variables with the variances normalized. */
+  su2double limit_progvar_var = 0,   /*!< \brief Upper limit of the progress variable variance. */
+      limit_mixfrac_var = 0;         /*!< \brief Upper limit of the mixture fraction variance. */
 
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
@@ -78,7 +82,7 @@ class CFluidFlamelet final : public CFluidModel {
   MLPToolbox::CIOMap* iomap_PD;        /*!< \brief Input-output map for the preferential diffusion scalars. */
   MLPToolbox::CIOMap* iomap_Sources;   /*!< \brief Input-output map for species source terms. */
   MLPToolbox::CIOMap* iomap_LookUp;    /*!< \brief Input-output map for passive look-up terms. */
-  MLPToolbox::CIOMap* iomap_Current;
+  MLPToolbox::CIOMap* iomap_ProgVarBounds; /*!< \brief Input-output map for the progress variable range. */
 #endif
 
   vector<su2double> scalars_vector;
@@ -86,14 +90,32 @@ class CFluidFlamelet final : public CFluidModel {
   vector<string> varnames_TD, /*!< \brief Lookup names for thermodynamic state variables. */
       varnames_Sources,       /*!< \brief Lookup names for source terms. */
       varnames_LookUp,        /*!< \brief Lookup names for passive look-up terms. */
-      varnames_PD;            /*!< \brief Lookup names for preferential diffusion scalars. */
+      varnames_PD,            /*!< \brief Lookup names for preferential diffusion scalars. */
+      varnames_ProgVarBounds; /*!< \brief Lookup names for the minimum and maximum progress variable. */
 
   vector<su2double> val_vars_TD, /*!< \brief References to thermodynamic state variables. */
       val_vars_Sources,          /*!< \brief References to source terms. */
       val_vars_LookUp,           /*!< \brief References passive look-up terms. */
-      val_vars_PD;               /*!< \brief References to preferential diffusion scalars. */
+      val_vars_PD,               /*!< \brief References to preferential diffusion scalars. */
+      val_vars_ProgVarBounds;    /*!< \brief References to the minimum and maximum progress variable. */
 
   void PreprocessLookUp(CConfig* config);
+
+  /*!
+   * \brief Interpolate the manifold, without normalizing the inputs.
+   * \param[in] lookup_type - Look-up operation to be performed (FLAMELET_LOOKUP_OPS).
+   * \param[in] inputs - Manifold inputs in the order of the controlling variables.
+   * \param[out] output_refs - Interpolated output variables.
+   * \returns Whether the query is inside the manifold.
+   */
+  bool LookUpManifold(unsigned short lookup_type, const vector<su2double>& inputs, vector<su2double>& output_refs);
+
+  /*!
+   * \brief Set manifold_inputs to the controlling variables, each variance divided by its upper limit.
+   * \param[in] scalars - Transported scalars.
+   * \returns Whether the look-up of the progress variable range is inside the manifold.
+   */
+  bool SetManifoldInputs(const su2double* scalars);
 
   /*! \brief
    * Returns true if the string is null or zero (ignores case).
@@ -134,6 +156,14 @@ class CFluidFlamelet final : public CFluidModel {
    */
   unsigned long EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
                                        vector<su2double>& output_refs);
+
+  /*!
+   * \brief Largest value a scalar variance can take, (mean - min)(max - mean) for its mean.
+   * \param[in] scalars - Transported scalars.
+   * \param[in] i_var - Index of the variance.
+   * \returns Upper limit of the variance.
+   */
+  su2double GetScalarVarianceLimit(const su2double* scalars, unsigned short i_var) override;
 
   /*!
    * \brief Check for out-of-bounds condition for data set interpolation.
