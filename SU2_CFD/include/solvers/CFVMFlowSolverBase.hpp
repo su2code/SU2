@@ -478,6 +478,9 @@ class CFVMFlowSolverBase : public CSolver {
       {
         auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
 
+        /*--- The edge to a periodic image is left out, the states of both points are tied. ---*/
+        if (implicit_periodic && IsPeriodicImage(geometry, config, iPoint, jPoint)) continue;
+
         auto iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
         auto Normal = geometry->edges->GetNormal(iEdge);
         auto Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);

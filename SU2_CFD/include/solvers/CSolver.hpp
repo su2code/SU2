@@ -151,6 +151,10 @@ protected:
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
   su2activematrix PeriodicProj;  /*!< \brief Min/max reconstruction increments at periodic receive points (for limiters). */
   std::unordered_map<unsigned long, size_t> PeriodicProjIndex;  /*!< \brief Local point to compact projection row. */
+  vector<long> PeriodicMaster;  /*!< \brief Local master point of each coupled passive periodic point, or -1. */
+  vector<unsigned short> PeriodicMasterMarker;  /*!< \brief Periodic marker of each passive point, gives its rotation. */
+  vector<unsigned long> PeriodicPassive;  /*!< \brief Coupled passive periodic points. */
+  vector<su2passivematrix> PeriodicRotation;  /*!< \brief Rotation of each periodic marker to its match, empty if none. */
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
@@ -338,6 +342,41 @@ public:
                              const CConfig *config,
                              unsigned short val_periodic_index,
                              unsigned short commType);
+
+  /*!
+   * \brief Set the periodic volume of each periodic point, the volume of its matches on the other periodic faces.
+   * \note Called again when the mesh coordinates are recorded, so the periodic volume depends on them.
+   */
+  void CommunicatePeriodicVolume(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Move the off-diagonal Jacobian blocks of passive periodic points to their masters, rotated.
+   * \note Call before the PERIODIC_RESIDUAL comms. A passive point is coupled if its master is on the same rank and
+   *       all its blocks fit in the sparsity pattern.
+   */
+  void CouplePeriodicJacobian(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Map each coupled passive periodic point to its master on the same rank, and set the marker rotations.
+   */
+  void SetPeriodicMaster(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Whether jPoint is the periodic donor of iPoint on this rank.
+   * \note Only happens on meshes one cell thick in the periodic direction.
+   */
+  inline bool IsPeriodicImage(const CGeometry *geometry, const CConfig *config, unsigned long iPoint,
+                              unsigned long jPoint) const {
+    if (!geometry->nodes->GetPeriodicBoundary(iPoint) || !geometry->nodes->GetPeriodicBoundary(jPoint)) return false;
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) continue;
+      const auto iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
+      if (iVertex < 0) continue;
+      const auto* vertex = geometry->vertex[iMarker][iVertex];
+      if (vertex->GetDonorProcessor() == rank && vertex->GetDonorPoint() == static_cast<long>(jPoint)) return true;
+    }
+    return false;
+  }
 
   /*!
    * \brief Set number of linear solver iterations.

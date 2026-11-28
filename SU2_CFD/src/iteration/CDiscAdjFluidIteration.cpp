@@ -478,6 +478,8 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
     CGeometry::UpdateGeometry(geometry[iZone][iInst], config[iZone]);
     END_SU2_OMP_PARALLEL
 
+    solvers0[FLOW_SOL]->CommunicatePeriodicVolume(geometry0, config[iZone]);
+
     CGeometry::ComputeWallDistance(config, geometry, iZone);
   }
 
