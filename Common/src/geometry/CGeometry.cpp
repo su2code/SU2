@@ -4542,6 +4542,56 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
   const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
   return 2 * Vol / GeometryToolbox::Norm(3, Normal);
 }
+/*! \brief Average the vertex normals of a wall element and normalize the result.
+ *  With active = false the vertex normals are read as passive values. */
+std::array<su2double, 3> WallElementNormal(const CGeometry* geometry, unsigned short iMarker, unsigned long iElem,
+                                           bool active) {
+  std::array<su2double, 3> normal = {};
+  const auto* element = geometry->bound[iMarker][iElem];
+  for (auto iNode = 0u; iNode < element->GetnNodes(); ++iNode) {
+    const auto iPoint = element->GetNode(iNode);
+    const auto iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
+    for (auto iDim = 0u; iDim < geometry->GetnDim(); ++iDim) {
+      const su2double component = geometry->vertex[iMarker][iVertex]->GetNormal(iDim);
+      normal[iDim] += active ? component : su2double(SU2_TYPE::GetValue(component));
+    }
+  }
+  for (auto& component : normal) component /= element->GetnNodes();
+  const auto magnitude = GeometryToolbox::Norm(3, normal.data());
+  if (magnitude > 0.0)
+    for (auto& component : normal) component /= magnitude;
+  return normal;
+}
+
+/*! \brief Collect unit wall-element normals for each marker of one zone. */
+su2vector<su2matrix<su2double>> CollectWallNormals(const CGeometry* geometry, const CConfig* config, bool active) {
+  su2vector<su2matrix<su2double>> normals;
+  normals.resize(geometry->GetnMarker());
+  for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); ++iMarker) {
+    if (!config->GetViscous_Wall(iMarker)) {
+      normals[iMarker].resize(1, 3) = su2double(0.0);
+      continue;
+    }
+    normals[iMarker].resize(geometry->GetnElem_Bound(iMarker), 3);
+    for (auto iElem = 0ul; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
+      const auto normal = WallElementNormal(geometry, iMarker, iElem, active);
+      for (auto iDim = 0u; iDim < 3; ++iDim) normals[iMarker](iElem, iDim) = normal[iDim];
+    }
+  }
+  return normals;
+}
+
+/*! \brief Adapt one marker's normal matrix to the recursive NdFlattener interface. */
+auto WallNormalMatrix(const su2matrix<su2double>& normals) {
+  return make_pair(normals.rows(), [&normals](auto iElem) {
+    return make_pair(normals.cols(), [&normals, iElem](auto iDim) { return normals(iElem, iDim); });
+  });
+}
+
+/*! \brief Adapt a zone's marker normals without copying the matrices. */
+auto WallNormalMarkers(const su2vector<su2matrix<su2double>>& normals) {
+  return make_pair(normals.size(), [&normals](auto iMarker) { return WallNormalMatrix(normals[iMarker]); });
+}
 
 /*--- Whether any equation system of a zone uses the WALL_DISTANCE slope limiter. ---*/
 bool UsesWallDistanceLimiter(const CConfig* config) {
@@ -4639,6 +4689,33 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     for (int jZone = 0; jZone < nZone; jZone++) {
       if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall() > 0) {
         geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(roughness_global);
+      }
+    }
+
+    /*--- IDDES needs the normal of the nearest wall, including walls on other ranks and zones. ---*/
+    bool needWallNormals = false;
+    for (int iZone = 0; iZone < nZone; ++iZone) {
+      const auto hybrid = config_container[iZone]->GetKind_HybridRANSLES();
+      needWallNormals = needWallNormals || hybrid == SST_IDDES || hybrid == SST_SIDDES;
+    }
+    if (needWallNormals) {
+      /*--- When recording for a specific zone, the normals of other zones are passive (all zones are still
+       *    gathered to keep the indexing) and only that zone is updated, to avoid cross-zone AD dependencies. ---*/
+      su2vector<su2vector<su2matrix<su2double>>> wallNormals;
+      wallNormals.resize(nZone);
+      for (int iZone = 0; iZone < nZone; ++iZone) {
+        const bool active = record_zone < 0 || iZone == record_zone;
+        wallNormals[iZone] =
+            CollectWallNormals(geometry_container[iZone][iInst][MESH_0], config_container[iZone], active);
+      }
+      auto normal_i = make_pair(nZone, [&wallNormals](auto iZone) { return WallNormalMarkers(wallNormals[iZone]); });
+      NdFlattener<4> localNormals(normal_i);
+      NdFlattener<5> globalNormals(Nd_MPI_Environment(), localNormals);
+      for (int iZone = 0; iZone < nZone; ++iZone) {
+        if (record_zone >= 0 && iZone != record_zone) continue;
+        const auto hybrid = config_container[iZone]->GetKind_HybridRANSLES();
+        if (hybrid == SST_IDDES || hybrid == SST_SIDDES)
+          geometry_container[iZone][iInst][MESH_0]->nodes->SetWallNormals(globalNormals);
       }
     }
 
