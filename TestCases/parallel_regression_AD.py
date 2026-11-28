@@ -141,6 +141,14 @@ def main():
     discadj_incomp_turb_NACA0012_sst.test_vals_aarch64 = [-4.294502, -3.069650, -7.086569, 0.000000, -1.151213]
     test_list.append(discadj_incomp_turb_NACA0012_sst)
 
+    # Adjoint Incompressible Turbulent Morse swirling jet, SA, one-cell periodic wedge
+    discadj_incomp_turb_morse_swirl_jet           = TestCase('discadj_incomp_turb_morse_swirl_jet')
+    discadj_incomp_turb_morse_swirl_jet.cfg_dir   = "incomp_rans/morse_swirl_jet"
+    discadj_incomp_turb_morse_swirl_jet.cfg_file  = "morse_sa_adjoint.cfg"
+    discadj_incomp_turb_morse_swirl_jet.test_iter = 10
+    discadj_incomp_turb_morse_swirl_jet.test_vals = [10.000000, -5.548784, -3.649149, -1.128684]
+    test_list.append(discadj_incomp_turb_morse_swirl_jet)
+
     ####################################################################
     ###  Disc. Adj. Axisymmetric RANS                                ###
     ####################################################################
