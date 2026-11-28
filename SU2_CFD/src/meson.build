@@ -123,6 +123,8 @@ su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CFEASolverBase.cpp',
                       'solvers/CGradientSmoothingSolver.cpp'])
 
+su2_cfd_src += files(['adaptive_metric/computeAdaptiveMetric.cpp'])
+
 su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/template.cpp',
                       'numerics/radiation.cpp',

@@ -103,6 +103,11 @@ protected:
 
   VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
 
+  MatrixType Sensor_Adapt;     /*!< \brief Variables for which we need gradients for anisotropy in mesh adaptation. */
+  CVectorOfMatrix Gradient_Adapt; /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
+  CVectorOfMatrix Hessian;        /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
+  C3DPassiveMatrix AdaptiveMetric; /*!< \brief Adaptive metric tensor of each sensor for anisotropic mesh adaptation. */
+
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */
@@ -110,6 +115,8 @@ protected:
   unsigned long nPrimVarGrad = 0;    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
   unsigned long nAuxVar = 0; /*!< \brief Number of auxiliary variables. */
+  unsigned long nSymMat = 0;        /*!< \brief Number of symmetric matrix componenents for Hessian and metric tensor. */
+
 
   /*!< \brief Handed out by the base implementations of the container accessors of fields only
    * some models have, e.g. GetF1blending; a solver that has no such field never reads it. */
@@ -2438,6 +2445,102 @@ public:
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
 
+  /*!
+   * \brief Set the gradient of the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] gradient - Gradient of the solution.
+   */
+  inline void SetSensor_Adapt(unsigned long iPoint, unsigned long iVar, su2double primitive) { Sensor_Adapt(iPoint,iVar) = primitive; }
+
+  /*!
+   * \brief Get the gradient of the entire solution.
+   * \return Reference to gradient.
+   */
+  inline const MatrixType& GetSensor_Adapt(void) const { return Sensor_Adapt; }
+
+  /*!
+   * \brief Get the value of the solution gradient.
+   * \param[in] iPoint - Point index.
+   * \return Value of the gradient solution.
+   */
+  inline su2double *GetSensor_Adapt(unsigned long iPoint) { return Sensor_Adapt[iPoint]; }
+
+  /*!
+   * \brief Get the value of the solution gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Variable index.
+   * \return Value of the solution gradient.
+   */
+  inline su2double GetSensor_Adapt(unsigned long iPoint, unsigned long iVar) const { return Sensor_Adapt(iPoint,iVar); }
+
+  /*!
+   * \brief Get the gradient of the entire solution.
+   * \return Reference to gradient.
+   */
+  inline CVectorOfMatrix& GetGradient_Adapt(void) { return Gradient_Adapt; }
+
+  /*!
+   * \brief Get the value of the solution gradient.
+   * \param[in] iPoint - Point index.
+   * \return Value of the gradient solution.
+   */
+  inline CMatrixView<su2double> GetGradient_Adapt(unsigned long iPoint) { return Gradient_Adapt[iPoint]; }
+
+  /*!
+   * \brief Get the value of the solution gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Variable index.
+   * \param[in] iDim - Dimension index.
+   * \return Value of the solution gradient.
+   */
+  inline su2double GetGradient_Adapt(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Gradient_Adapt(iPoint,iVar,iDim); }
+
+  /*!
+   * \brief Set the Hessian of the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Variable index.
+   * \param[in] iMat - Hessian tensor index.
+   * \param[in] hess - Hessian of the solution.
+   */
+  inline void SetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iMat, su2double hess) { Hessian(iPoint,iVar,iMat) = hess; }
+
+  /*!
+   * \brief Get the Hessian tensor field.
+   * \return Reference to the Hessian field.
+   */
+  inline CVectorOfMatrix& GetHessian(void) { return Hessian; }
+
+  /*!
+   * \brief Get the value of the Hessian.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Variable index.
+   * \param[in] iMat - Hessian tensor index.
+   * \return Value of the Hessian.
+   */
+  inline su2double GetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iMat) const { return Hessian(iPoint,iVar,iMat); }
+
+  /*!
+   * \brief Get the adaptive metric field of all sensors.
+   * \return Reference to the adaptive metric field (nPoint, nSensor, nSymMat).
+   */
+  inline C3DPassiveMatrix& GetAdaptiveMetric(void) { return AdaptiveMetric; }
+
+  /*!
+   * \brief Get a component of the adaptive metric of a sensor.
+   * \param[in] iPoint - Point index.
+   * \param[in] iSensor - Sensor index.
+   * \param[in] iMat - Symmetric tensor component index.
+   * \return Value of the adaptive metric component.
+   */
+  inline passivedouble GetAdaptiveMetric(unsigned long iPoint, unsigned long iSensor, unsigned long iMat) const {
+    return AdaptiveMetric(iPoint, iSensor, iMat);
+  }
+
+  /*!
+   * \brief Allocate Sensor_Adapt, Gradient_Adapt, Hessian, and AdaptiveMetric arrays for the given number of sensors.
+   * \param[in] nSensors - Number of metric sensors
+   */
+  void AllocateAdaptiveMetricArrays(unsigned short nSensors);
   inline virtual su2double GetMomCoeff(unsigned long iPoint) { return 0.0; }
 
   inline virtual void SetMomCoeff(unsigned long iPoint, su2double val_Mom_Coeff) { }
