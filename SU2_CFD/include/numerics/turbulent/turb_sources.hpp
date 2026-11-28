@@ -261,7 +261,9 @@ class CSourceBase_TurbSA : public CNumerics {
         var.d_fv2 = 0.0;
       } else {
         var.fv2 = 1 - ScalarVar_i[0] / (nu + ScalarVar_i[0] * var.fv1);
-        var.d_fv2 = -(1 / nu - Ji_2 * var.d_fv1) / pow(1 + var.Ji * var.fv1, 2);
+        /*--- fv2 uses nue/nu, not Ji, which includes the roughness shift. ---*/
+        const su2double chi = ScalarVar_i[0] / nu;
+        var.d_fv2 = -(1 / nu - pow(chi, 2) * var.d_fv1) / pow(1 + chi * var.fv1, 2);
       }
 
       /*--- Evaluate Omega with a rotational correction term. ---*/
@@ -393,15 +395,15 @@ struct Bsl {
 struct Edw {
   template <class MatrixType>
   static void get(const su2double*, unsigned short nDim, const MatrixType& velocity_grad, CSAVariables& var) {
-    su2double Sbar = 0.0;
+    su2double Sbar = 0.0, divVel = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
       for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
         Sbar += (velocity_grad[iDim][jDim] + velocity_grad[jDim][iDim]) * velocity_grad[iDim][jDim];
       }
+      divVel += velocity_grad[iDim][iDim];
     }
-    for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
-      Sbar -= (2.0 / 3.0) * pow(velocity_grad[iDim][iDim], 2);
-    }
+    /*--- The square of the divergence, not the sum of the squared normal gradients. ---*/
+    Sbar -= (2.0 / 3.0) * pow(divVel, 2);
     var.Omega = sqrt(max(Sbar, 0.0));
   }
 };
@@ -517,11 +519,13 @@ struct Bsl {
 /*! \brief Edward. */
 struct Edw {
   static void get(const su2double& nue, CSAVariables& var) {
-    var.r = min(nue * var.inv_Shat * var.inv_k2_d2, 10.0);
-    var.r = tanh(var.r) / tanh(1.0);
+    const su2double r0 = min(nue * var.inv_Shat * var.inv_k2_d2, 10.0);
+    var.r = tanh(r0) / tanh(1.0);
 
+    /*--- Chain rule through tanh, evaluated at the argument r0, zero where r0 is clipped. ---*/
     var.d_r = (var.Shat - nue * var.d_Shat) * pow(var.inv_Shat, 2) * var.inv_k2_d2;
-    var.d_r = (1 - pow(tanh(var.r), 2.0)) * (var.d_r) / tanh(1.0);
+    var.d_r = (1 - pow(tanh(r0), 2)) * var.d_r / tanh(1.0);
+    if (r0 >= 10.0) var.d_r = 0.0;
   }
 };
 };
